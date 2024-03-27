@@ -59,12 +59,12 @@ describe("Challenger unit tests", () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state);
+        const challenger = await createTestChallenger(trackedStateContext, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
     });
 
     it("Should add unconfirmed transaction", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state);
+        const challenger = await createTestChallenger(trackedStateContext, challengerAddress, state);
         const agentB = await createTestAgent(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
@@ -76,7 +76,7 @@ describe("Challenger unit tests", () => {
     });
 
     it("Should delete unconfirmed transactions", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state);
+        const challenger = await createTestChallenger(trackedStateContext, challengerAddress, state);
         const agentB = await createTestAgent(context, ownerAddress, underlyingAddress);
         // create tracked agent
         const trackedAgent = await state.createAgentWithCurrentState(agentB.vaultAddress);
@@ -99,7 +99,7 @@ describe("Challenger unit tests", () => {
         const lastBlock = await web3.eth.getBlockNumber();
         const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
         await mockState.initialize();
-        const challenger = await createTestChallenger(challengerAddress, mockState);
+        const challenger = await createTestChallenger(trackedStateContext, challengerAddress, mockState);
         expect(challenger.address).to.eq(challengerAddress);
         await challenger.runStep();
         expect(spyConsole).to.be.called.once;
@@ -110,7 +110,7 @@ describe("Challenger unit tests", () => {
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
-        const challenger = await createTestChallenger(challengerAddress, state);
+        const challenger = await createTestChallenger(trackedStateContext, challengerAddress, state);
         expect(challenger).to.not.be.undefined;
     });
 });

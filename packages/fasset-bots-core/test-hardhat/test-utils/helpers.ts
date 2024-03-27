@@ -11,7 +11,7 @@ import { loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
 import { createAgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../src/config/orm";
 import { requireSecret } from "../../src/config/secrets";
-import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
@@ -72,12 +72,12 @@ export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralT
     await vaultCollateralToken.mintAmount(ownerAddress, amount);
 }
 
-export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), testNotifierTransports);
+export async function createTestChallenger(context: IChallengerContext, address: string, state: TrackedState): Promise<Challenger> {
+    return new Challenger(context, new ScopedRunner(), address, state, await context.blockchainIndexer.getBlockHeight(), testNotifierTransports);
 }
 
-export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
-    return new Liquidator(new ScopedRunner(), address, state, testNotifierTransports);
+export async function createTestLiquidator(context: ILiquidatorContext, address: string, state: TrackedState): Promise<Liquidator> {
+    return new Liquidator(context, new ScopedRunner(), address, state, testNotifierTransports);
 }
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {

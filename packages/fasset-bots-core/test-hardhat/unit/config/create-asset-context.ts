@@ -1,9 +1,8 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import rewire from "rewire";
+import { createChallengerContext } from "../../../src/config";
 import { BotConfig, BotFAssetConfig } from "../../../src/config/BotConfig";
-import { createActorAssetContext } from "../../../src/config/create-asset-context";
-import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { CollateralType } from "../../../src/fasset/AssetManagerTypes";
 import { MockChain } from "../../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
@@ -80,7 +79,7 @@ describe("Create asset context unit tests", () => {
             nativeChainInfo: testNativeChainInfo,
             notifiers: testNotifierTransports,
         };
-        await expect(createActorAssetContext(config, fAssetConfig, ActorBaseKind.CHALLENGER))
+        await expect(createChallengerContext(config, fAssetConfig))
             .to.eventually.be.rejectedWith(`Either contractsJsonFile or addressUpdater must be defined`)
             .and.be.an.instanceOf(Error);
     });

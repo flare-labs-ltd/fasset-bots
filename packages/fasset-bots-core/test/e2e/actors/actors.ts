@@ -7,16 +7,16 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { BotConfig, createBotConfig, loadConfigFile } from "../../../src/config/BotConfig";
+import { BotConfig, BotFAssetConfig, createBotConfig, loadConfigFile } from "../../../src/config/BotConfig";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
-import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
+import { createAssetContext, createChallengerContext, createNativeContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { getSecrets, requireSecret } from "../../../src/config/secrets";
 import { AgentEntity } from "../../../src/entities/agent";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
-import { IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { AgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { TrackedState } from "../../../src/state/TrackedState";
@@ -25,6 +25,7 @@ import { createTestAgentBot, createTestChallenger, createTestLiquidator, createT
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
 import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 import { testNotifierTransports } from "../../test-utils/testNotifierTransports";
+import { requireNotNull } from "../../../src/utils";
 use(chaiAsPromised);
 
 const fAssetSymbol = "FtestXRP";
@@ -40,12 +41,13 @@ describe("Actor tests - coston", () => {
     let ownerAddress: string;
     // for challenger, liquidator, systemKeeper
     let actorConfig: BotConfig;
-    let actorContext: IAssetActorContext;
     let state: TrackedState;
     let runSimplifiedConfig: BotConfigFile;
     let challengerAddress: string;
     let liquidatorAddress: string;
     let systemKeeperAddress: string;
+    let chainConfig1: BotFAssetConfig;
+    let chainConfig2: BotFAssetConfig;
     // newly create agents that are destroyed after these tests
     const destroyAgentsAfterTests: string[] = [];
 
@@ -64,13 +66,13 @@ describe("Actor tests - coston", () => {
         orm = botConfig.orm!;
         actorConfig = await createBotConfig(runSimplifiedConfig, ownerAddress);
         // contexts
-        const chainConfig1 = botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        chainConfig1 = requireNotNull(botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol));
         context = await createAssetContext(botConfig, chainConfig1!);
-        const chainConfig2 = actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-        actorContext = await createActorAssetContext(actorConfig, chainConfig2!, ActorBaseKind.CHALLENGER);
+        chainConfig2 = requireNotNull(actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol));
         // tracked state
         const lastBlock = await web3.eth.getBlockNumber();
-        state = new TrackedState(actorContext, lastBlock);
+        const trackedStateContext = await createNativeContext(actorConfig, chainConfig2!);
+        state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
     });
 
@@ -115,14 +117,16 @@ describe("Actor tests - coston", () => {
     });
 
     it("Should create challenger", async () => {
-        const challenger = await createTestChallenger(challengerAddress, state);
+        const challengerContext = await createChallengerContext(actorConfig, chainConfig2);
+        const challenger = await createTestChallenger(challengerContext, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
         const blockHeight = await context.blockchainIndexer.getBlockHeight();
         expect(challenger.lastEventUnderlyingBlockHandled).to.be.lte(blockHeight);
     });
 
     it("Should create liquidator", async () => {
-        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const liquidatorContext = await createChallengerContext(actorConfig, chainConfig2);
+        const liquidator = await createTestLiquidator(liquidatorContext, liquidatorAddress, state);
         expect(liquidator.address).to.eq(liquidatorAddress);
     });
 

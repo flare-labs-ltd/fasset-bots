@@ -145,7 +145,7 @@ describe("Fuzzing tests", () => {
         // create liquidators
         const firstLiquidatorAddress = firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS;
         for (let i = 0; i < N_LIQUIDATORS; i++) {
-            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], commonTrackedState, notifiers);
+            const liquidator = new Liquidator(context, runner, accounts[firstLiquidatorAddress + i], commonTrackedState, notifiers);
             liquidators.push(liquidator);
             // await context.fAsset.mint(accounts[1], 100);
             eventFormatter.addAddress(`LIQUIDATOR_${i}`, liquidator.address);
@@ -153,7 +153,7 @@ describe("Fuzzing tests", () => {
         }
         // create challenger
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
-        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), notifiers);
+        challenger = new Challenger(context, runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), notifiers);
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];

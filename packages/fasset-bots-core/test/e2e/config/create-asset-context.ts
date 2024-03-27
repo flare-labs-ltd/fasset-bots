@@ -1,18 +1,17 @@
+import { expect, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
+import rewire from "rewire";
 import { BotConfig, createBotConfig, updateConfigFilePaths } from "../../../src/config/BotConfig";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
-import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
-import { IAssetAgentBotContext, IAssetActorContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { createAssetContext, createChallengerContext, createLiquidatorContext, createTimekeeperContext } from "../../../src/config/create-asset-context";
+import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { artifacts, initWeb3 } from "../../../src/utils/web3";
 import { COSTON_RPC, COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
-import rewire from "rewire";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+use(chaiAsPromised);
 const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
 const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
-import chaiAsPromised from "chai-as-promised";
-import { expect, use } from "chai";
-import { artifacts, initWeb3 } from "../../../src/utils/web3";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
-import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
-use(chaiAsPromised);
 
 const AddressUpdater = artifacts.require("AddressUpdater");
 
@@ -80,7 +79,7 @@ describe("Create asset context tests", () => {
     it("Should create simplified asset context from contracts", async () => {
         actorRunConfig = simpleLoadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         actorConfig = await createBotConfig(actorRunConfig, accounts[0]);
-        const context: IAssetActorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0], ActorBaseKind.CHALLENGER);
+        const context = await createChallengerContext(actorConfig, actorConfig.fAssets[0]);
         expect(context).is.not.null;
     });
 
@@ -88,7 +87,7 @@ describe("Create asset context tests", () => {
     it("Should create simplified asset context from address updater", async () => {
         actorRunConfig = simpleLoadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER);
         actorConfig = await createBotConfig(actorRunConfig, accounts[0]);
-        const context: IAssetActorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0], ActorBaseKind.TIME_KEEPER);
+        const context = await createTimekeeperContext(actorConfig, actorConfig.fAssets[0]);
         expect(context).is.not.null;
     });
 
@@ -98,9 +97,8 @@ describe("Create asset context tests", () => {
         actorRunConfig.attestationProviderUrls = undefined;
         actorRunConfig.fAssetInfos[0].indexerUrl = undefined;
         actorConfig = await createBotConfig(actorRunConfig, accounts[0]);
-        const context: IAssetActorContext = await createActorAssetContext(actorConfig, actorConfig.fAssets[0], ActorBaseKind.LIQUIDATOR);
+        const context = await createLiquidatorContext(actorConfig, actorConfig.fAssets[0]);
         expect(context).is.not.null;
-        expect(context.attestationProvider).to.be.undefined;
     });
 
     it("Should not create asset context - contractsJsonFile or addressUpdater must be defined", async () => {
@@ -108,7 +106,7 @@ describe("Create asset context tests", () => {
         actorConfig = await createBotConfig(actorRunConfig, accounts[0]);
         actorConfig.addressUpdater = undefined;
         actorConfig.contractsJsonFile = undefined;
-        await expect(createActorAssetContext(actorConfig, actorConfig.fAssets[0], ActorBaseKind.CHALLENGER))
+        await expect(createChallengerContext(actorConfig, actorConfig.fAssets[0]))
             .to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined")
             .and.be.an.instanceOf(Error);
     });
@@ -137,10 +135,10 @@ describe("Create asset context tests", () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].blockchainIndexerClient = undefined;
-        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.CHALLENGER))
+        await expect(createChallengerContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith(`Missing blockchain indexer configuration`)
             .and.be.an.instanceOf(Error);
-        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.TIME_KEEPER))
+        await expect(createTimekeeperContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith(`Missing blockchain indexer configuration`)
             .and.be.an.instanceOf(Error);
     });
@@ -149,10 +147,10 @@ describe("Create asset context tests", () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         botConfig = await createBotConfig(runConfig, accounts[0]);
         botConfig.fAssets[0].stateConnector = undefined;
-        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.CHALLENGER))
+        await expect(createChallengerContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith(`Missing state connector configuration`)
             .and.be.an.instanceOf(Error);
-        await expect(createActorAssetContext(botConfig, botConfig.fAssets[0], ActorBaseKind.TIME_KEEPER))
+        await expect(createTimekeeperContext(botConfig, botConfig.fAssets[0]))
             .to.eventually.be.rejectedWith(`Missing state connector configuration`)
             .and.be.an.instanceOf(Error);
     });

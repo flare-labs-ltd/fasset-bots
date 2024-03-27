@@ -1,12 +1,15 @@
 import BN from "bn.js";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { BotConfig, BotFAssetConfig, createChallengerContext } from "../config";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
+import { IChallengerContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
 import { AttestationHelperError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
+import { web3 } from "../utils";
 import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { EventArgs } from "../utils/events/common";
@@ -35,6 +38,7 @@ export class Challenger extends ActorBase {
     challengeStrategy: ChallengeStrategy;
 
     constructor(
+        public context: IChallengerContext,
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState,
@@ -43,12 +47,12 @@ export class Challenger extends ActorBase {
     ) {
         super(runner, address, state);
         this.notifier = new ChallengerNotifier(this.address, notifierTransports);
-        if (state.context.challengeStrategy === undefined) {
-            this.challengeStrategy = new DefaultChallengeStrategy(state, address);
+        if (context.challengeStrategy === undefined) {
+            this.challengeStrategy = new DefaultChallengeStrategy(context, state, address);
         } else {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const strategies = require("./plugins/ChallengeStrategy");
-            this.challengeStrategy = new strategies[state.context.challengeStrategy.className](state, address);
+            this.challengeStrategy = new strategies[context.challengeStrategy.className](context, state, address);
         }
     }
 
@@ -56,6 +60,18 @@ export class Challenger extends ActorBase {
     transactionForPaymentReference = new Map<string, string>(); // paymentReference => transaction hash
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>(); // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
+
+    static async create(config: BotConfig, address: string, fAsset: BotFAssetConfig): Promise<Challenger> {
+        logger.info(`Challenger ${address} started to create asset context.`);
+        const context = await createChallengerContext(config, fAsset);
+        logger.info(`Challenger ${address} initialized asset context.`);
+        const lastBlock = await web3.eth.getBlockNumber();
+        const trackedState = new TrackedState(context, lastBlock);
+        await trackedState.initialize();
+        const blockHeight = await context.blockchainIndexer.getBlockHeight();
+        logger.info(`Challenger ${address} initialized tracked state.`);
+        return new Challenger(context, new ScopedRunner(), address, trackedState, blockHeight, config.notifiers);
+    }
 
     /**
      * This is the main method, where "automatic" logic is gathered.
@@ -76,23 +92,23 @@ export class Challenger extends ActorBase {
             const events = await this.state.readUnhandledEvents();
             logger.info(`Challenger ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
-                if (eventIs(event, this.state.context.assetManager, "RedemptionRequested")) {
+                if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
                     this.handleRedemptionRequested(event.args);
                     logger.info(`Challenger ${this.address} stored active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, "RedemptionPerformed")) {
+                } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
                     logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, "RedemptionPaymentBlocked")) {
+                } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
                     logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, "RedemptionPaymentFailed")) {
+                } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
                     await this.handleRedemptionFinished(event.args);
                     logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
-                } else if (eventIs(event, this.state.context.assetManager, "UnderlyingWithdrawalConfirmed")) {
+                } else if (eventIs(event, this.context.assetManager, "UnderlyingWithdrawalConfirmed")) {
                     logger.info(`Challenger ${this.address} received event 'UnderlyingWithdrawalConfirmed' with data ${formatArgs(event.args)}.`);
                     await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
                 }
@@ -105,7 +121,7 @@ export class Challenger extends ActorBase {
         const from = this.lastEventUnderlyingBlockHandled;
         const to = await this.getLatestUnderlyingBlock();
         logger.info(`Challenger ${this.address} started reading unhandled underlying transactions FROM ${from} TO ${to}.`);
-        const transactions = await this.state.context.blockchainIndexer!.getTransactionsWithinBlockRange(from, to);
+        const transactions = await this.context.blockchainIndexer.getTransactionsWithinBlockRange(from, to);
         logger.info(`Challenger ${this.address} finished reading unhandled underlying transactions FROM ${from} TO ${to}.`);
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
@@ -352,8 +368,8 @@ export class Challenger extends ActorBase {
      * @param underlyingAddressString underlying address
      */
     async waitForDecreasingBalanceProof(scope: EventScope, txHash: string, underlyingAddressString: string) {
-        await this.state.context.blockchainIndexer!.waitForUnderlyingTransactionFinalization(txHash);
-        return await this.state.context.attestationProvider!.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
+        await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
+        return await this.context.attestationProvider.proveBalanceDecreasingTransaction(txHash, underlyingAddressString)
             .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError], ActorBaseKind.CHALLENGER, this.address));
     }
 
@@ -378,7 +394,7 @@ export class Challenger extends ActorBase {
      * @returns underlying block height
      */
     async getLatestUnderlyingBlock(): Promise<number> {
-        const blockHeight = await this.state.context.blockchainIndexer!.getBlockHeight();
+        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         return blockHeight;
     }
 }

@@ -1,4 +1,4 @@
-import { IAssetActorContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetNativeChainContext } from "../../src/fasset-bots/IAssetBotContext";
 import { MockChainWallet } from "../../src/mock/MockChain";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { TrackedState } from "../../src/state/TrackedState";
@@ -6,7 +6,7 @@ import { FuzzingStateAgent } from "./FuzzingStateAgent";
 
 export class FuzzingState extends TrackedState {
     constructor(
-        public context: IAssetActorContext,
+        public context: IAssetNativeChainContext,
         currentEventBlock: number,
         public wallet: MockChainWallet
     ) {

@@ -1,8 +1,7 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance } from "../../typechain-truffle";
-import { ActorBaseKind } from "../fasset-bots/ActorBase";
-import { IAssetAgentBotContext, IAssetActorContext, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext, IAssetNativeChainContext, IChallengerContext, ILiquidatorContext, ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { fail } from "../utils/helpers";
+import { assertNotNull, fail } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { BotConfig, BotFAssetConfig } from "./BotConfig";
 import { BotConfigFile, BotFAssetInfo } from "./config-files/BotConfigFile";
@@ -20,18 +19,10 @@ const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
  * Creates asset context needed for AgentBot.
  */
 export async function createAssetContext(botConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetAgentBotContext> {
-    if (!chainConfig.wallet) {
-        throw new Error("Missing wallet configuration");
-    }
-    if (!chainConfig.blockchainIndexerClient) {
-        throw new Error("Missing blockchain indexer configuration");
-    }
-    if (!chainConfig.stateConnector) {
-        throw new Error("Missing state connector configuration");
-    }
-    if (!chainConfig.verificationClient) {
-        throw new Error("Missing verification client configuration");
-    }
+    assertNotNull(chainConfig.wallet, "Missing wallet configuration");
+    assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
+    assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
+    assertNotNull(chainConfig.verificationClient, "Missing verification client configuration");
     const nativeContext = await createNativeContext(botConfig, chainConfig);
     return {
         ...nativeContext,
@@ -45,33 +36,46 @@ export async function createAssetContext(botConfig: BotConfig, chainConfig: BotF
 }
 
 /**
- * Creates lightweight asset context needed for Tracked State (for challenger and liquidator).
+ * Creates lightweight asset context (for timekeeper).
  */
-export async function createActorAssetContext(
-    trackedStateConfig: BotConfig,
-    chainConfig: BotFAssetConfig,
-    actorKind: ActorBaseKind
-): Promise<IAssetActorContext> {
-    if ((actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER) && !chainConfig.blockchainIndexerClient) {
-        throw new Error("Missing blockchain indexer configuration");
-    }
-    if ((actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER) && !chainConfig.stateConnector) {
-        throw new Error("Missing state connector configuration");
-    }
-    const nativeContext = await createNativeContext(trackedStateConfig, chainConfig);
-    const attestationProvider = actorKind === ActorBaseKind.CHALLENGER || actorKind === ActorBaseKind.TIME_KEEPER
-        ? new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId)
-        : undefined;
+export async function createTimekeeperContext(config: BotConfig, chainConfig: BotFAssetConfig): Promise<ITimekeeperContext> {
+    assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
+    assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
+    const nativeContext = await createNativeContext(config, chainConfig);
+    const attestationProvider = new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId);
     return {
         ...nativeContext,
-        nativeChainInfo: trackedStateConfig.nativeChainInfo,
+        nativeChainInfo: config.nativeChainInfo,
         blockchainIndexer: chainConfig.blockchainIndexerClient,
         attestationProvider: attestationProvider,
-        liquidationStrategy: trackedStateConfig.liquidationStrategy,
-        challengeStrategy: trackedStateConfig.challengeStrategy,
     };
 }
 
+/**
+ * Creates lightweight asset context (for challenger).
+ */
+export async function createChallengerContext(config: BotConfig, chainConfig: BotFAssetConfig): Promise<IChallengerContext> {
+    const contextWithUnderlyingChain = await createTimekeeperContext(config, chainConfig);
+    return {
+        ...contextWithUnderlyingChain,
+        challengeStrategy: config.challengeStrategy,
+    }
+}
+
+/**
+ * Creates lightweight asset context (for liquidator).
+ */
+export async function createLiquidatorContext(config: BotConfig, chainConfig: BotFAssetConfig): Promise<ILiquidatorContext> {
+    const nativeContext = await createNativeContext(config, chainConfig);
+    return {
+        ...nativeContext,
+        liquidationStrategy: config.liquidationStrategy,
+    };
+}
+
+/**
+ * Creates lightweight asset context (for liquidator).
+ */
 export async function createNativeContext(config: BotConfig | BotConfigFile, chainConfig: BotFAssetConfig | BotFAssetInfo): Promise<IAssetNativeChainContext> {
     if (!config.addressUpdater && !config.contractsJsonFile) {
         throw new Error("Either contractsJsonFile or addressUpdater must be defined");

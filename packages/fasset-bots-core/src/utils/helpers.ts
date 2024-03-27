@@ -75,6 +75,15 @@ export function requireNotNull<T>(x: T, errorMessage?: string): NonNullable<T> {
 }
 
 /**
+ * Check if value is non-null and throw otherwise.
+ */
+export function assertNotNull<T>(x: T, errorMessage?: string): asserts x is NonNullable<T> {
+    if (x == null) {
+        throw new Error(errorMessage ?? "Value is null or undefined");
+    }
+}
+
+/**
  * Helper wrapper to convert number to BN
  * @param x number expressed in any reasonable type
  * @returns same number as BN

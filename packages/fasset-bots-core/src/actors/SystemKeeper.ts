@@ -1,8 +1,10 @@
 import { MintingExecuted } from "../../typechain-truffle/AssetManager";
+import { BotConfig, BotFAssetConfig, createNativeContext } from "../config";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
+import { web3 } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
@@ -19,6 +21,17 @@ export class SystemKeeper extends ActorBase {
         public state: TrackedState
     ) {
         super(runner, address, state);
+    }
+
+    static async create(config: BotConfig, address: string, fAsset: BotFAssetConfig): Promise<SystemKeeper> {
+        logger.info(`SystemKeeper ${address} started to create asset context.`);
+        const context = await createNativeContext(config, fAsset);
+        logger.info(`SystemKeeper ${address} initialized asset context.`);
+        const lastBlock = await web3.eth.getBlockNumber();
+        const trackedState = new TrackedState(context, lastBlock);
+        await trackedState.initialize();
+        logger.info(`SystemKeeper ${address} initialized tracked state.`);
+        return new SystemKeeper(new ScopedRunner(), address, trackedState);
     }
 
     /**

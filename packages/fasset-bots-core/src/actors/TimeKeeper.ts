@@ -1,7 +1,6 @@
+import { createTimekeeperContext } from "../config";
 import { BotConfig } from "../config/BotConfig";
-import { createActorAssetContext } from "../config/create-asset-context";
-import { ActorBaseKind } from "../fasset-bots/ActorBase";
-import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
+import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { requireNotNull, sleep, web3DeepNormalize } from "../utils";
 import { logger } from "../utils/logger";
@@ -11,7 +10,7 @@ export class TimeKeeper {
 
     constructor(
         public address: string,
-        public context: IAssetActorContext,
+        public context: ITimekeeperContext,
         public intervalInMs: number
     ) {}
 
@@ -26,7 +25,7 @@ export class TimeKeeper {
     static async startTimekeepers(config: BotConfig, timekeeperAddress: string, interval: number) {
         const timekeepers: TimeKeeper[] = [];
         for (const chain of config.fAssets) {
-            const assetContext = await createActorAssetContext(config, chain, ActorBaseKind.TIME_KEEPER);
+            const assetContext = await createTimekeeperContext(config, chain);
             const timekeeper = new TimeKeeper(timekeeperAddress, assetContext, interval);
             timekeeper.loopDelay = config.loopDelay;
             timekeepers.push(timekeeper);

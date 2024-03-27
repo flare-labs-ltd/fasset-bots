@@ -34,16 +34,22 @@ export interface IAssetAgentBotContext extends IAssetNativeChainContext {
     verificationClient: IVerificationApiClient;
 }
 
-// lightweight context
-export interface IAssetActorContext extends IAssetNativeChainContext {
-    blockchainIndexer?: BlockchainIndexerHelper; // only for challenger
-    attestationProvider?: AttestationHelper; // only for challenger
-    // liquidation / challenger strategies
+export interface ITimekeeperContext extends IAssetNativeChainContext {
+    blockchainIndexer: BlockchainIndexerHelper;
+    attestationProvider: AttestationHelper;
+}
+
+export interface ILiquidatorContext extends IAssetNativeChainContext {
     liquidationStrategy?: {
         // only for liquidator
         className: string;
         config?: any;
     };
+}
+
+export interface IChallengerContext extends IAssetNativeChainContext {
+    blockchainIndexer: BlockchainIndexerHelper;
+    attestationProvider: AttestationHelper;
     challengeStrategy?: {
         // only for challenger
         className: string;

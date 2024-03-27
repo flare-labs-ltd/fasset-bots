@@ -57,7 +57,7 @@ describe("Liquidator tests", () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
         const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
         // mock price changes
         await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
@@ -67,7 +67,7 @@ describe("Liquidator tests", () => {
     });
 
     it("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
-        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyLiquidation = spy.on(agentBot.notifier, "sendLiquidationStartAlert");
@@ -99,7 +99,7 @@ describe("Liquidator tests", () => {
     });
 
     it("Should check collateral ratio after minting execution", async () => {
-        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyMinting = spy.on(liquidator, "handleMintingExecuted");
@@ -111,7 +111,7 @@ describe("Liquidator tests", () => {
     });
 
     it("Should liquidate agent", async () => {
-        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[81]);
         // vaultCollateralToken
         const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
@@ -155,7 +155,7 @@ describe("Liquidator tests", () => {
         const lastBlock = await web3.eth.getBlockNumber();
         const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
         await mockState.initialize();
-        const liquidator = await createTestLiquidator(liquidatorAddress, mockState);
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, mockState);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyMinting = spy.on(liquidator, "handleMintingExecuted");
@@ -170,7 +170,7 @@ describe("Liquidator tests", () => {
         const lastBlock = await web3.eth.getBlockNumber();
         const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
         await mockState.initialize();
-        const liquidator = await createTestLiquidator(liquidatorAddress, mockState);
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, mockState);
         const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         await mockState.getAgentTriggerAdd(agentBot.agent.vaultAddress);
@@ -184,8 +184,8 @@ describe("Liquidator tests", () => {
     it("Should catch full liquidation", async () => {
         const challengerState = new TrackedState(trackedStateContext, await web3.eth.getBlockNumber());
         await challengerState.initialize();
-        const challenger = await createTestChallenger(challengerAddress, challengerState);
-        const liquidator = await createTestLiquidator(liquidatorAddress, state);
+        const challenger = await createTestChallenger(trackedStateContext, challengerAddress, challengerState);
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
         const spyLiquidation = spy.on(liquidator, "handleFullLiquidationStarted");
         const spyChlg = spy.on(challenger, "illegalTransactionChallenge");
         // create test actors
