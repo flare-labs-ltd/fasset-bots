@@ -7,14 +7,17 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { BotConfig, createAgentBotDefaultSettings, createBotConfig, loadAgentSettings, loadConfigFile } from "../../../src/config/BotConfig";
-import { BotConfigFile } from "../../../src/config/config-files";
+import { BotConfig, createBotConfig, loadConfigFile } from "../../../src/config/BotConfig";
+import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
+import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
+import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
 import { getSecrets, requireSecret } from "../../../src/config/secrets";
 import { AgentEntity } from "../../../src/entities/agent";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
-import { AgentBotDefaultSettings, IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetActorContext, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { AgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
@@ -146,7 +149,7 @@ describe("Actor tests - coston", () => {
     });
 
     it("Should not create agent - unknown address", async () => {
-        const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(COSTON_TEST_AGENT_SETTINGS));
+        const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, loadAgentSettings(COSTON_TEST_AGENT_SETTINGS));
         const underlyingAddress = "underlying";
         const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
         const owner = new OwnerAddressPair("ownerAddress", "ownerAddress");

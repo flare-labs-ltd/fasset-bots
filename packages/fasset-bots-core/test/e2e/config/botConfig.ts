@@ -1,5 +1,5 @@
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotFAssetConfig, createBotConfig, createChainConfig, createStateConnectorClient, createWalletClient, loadConfigFile, updateConfigFilePaths } from "../../../src/config/BotConfig";
-import { BotConfigFile } from "../../../src/config/config-files";
+import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { initWeb3 } from "../../../src/utils/web3";
 import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_CONTRACTS_MISSING_VERIFIER, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
 import chaiAsPromised from "chai-as-promised";

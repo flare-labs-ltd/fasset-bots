@@ -4,7 +4,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { BotConfig, BotFAssetConfig, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
-import { BotConfigFile } from "../config/config-files";
+import { BotConfigFile } from "../config/config-files/BotConfigFile";
 import { createAssetContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";

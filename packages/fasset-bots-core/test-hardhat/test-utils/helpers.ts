@@ -6,10 +6,13 @@ import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
-import { createAgentBotDefaultSettings, decodedChainId, loadAgentSettings } from "../../src/config/BotConfig";
+import { decodedChainId } from "../../src/config/BotConfig";
+import { loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
+import { createAgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../src/config/orm";
 import { requireSecret } from "../../src/config/secrets";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
@@ -51,7 +54,7 @@ export async function createTestAgentBot(
     ownerUnderlyingAddress?: string,
     autoSetWorkAddress: boolean = true,
     notifiers: NotifierTransport[] = testNotifierTransports,
-    options?: AgentBotDefaultSettings,
+    options?: AgentVaultInitSettings,
 ): Promise<AgentBot> {
     await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
@@ -59,7 +62,7 @@ export async function createTestAgentBot(
     context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, underlyingAddress);
-    const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+    const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
 }
@@ -89,7 +92,7 @@ export async function createTestAgent(
 ): Promise<Agent> {
     await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+    const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
     return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
@@ -146,7 +149,7 @@ export async function createTestAgentBotAndMakeAvailable(
     ownerUnderlyingAddress?: string,
     autoSetWorkAddress: boolean = true,
     notifier: NotifierTransport[] = [],
-    options?: AgentBotDefaultSettings,
+    options?: AgentVaultInitSettings,
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, autoSetWorkAddress, notifier, options);
     await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, agentBot.agent.owner.workAddress);

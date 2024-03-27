@@ -4,8 +4,6 @@ import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
 import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { EntityManager } from "@mikro-orm/core";
 import path from "path";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { CollateralClass } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
@@ -18,14 +16,13 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
-import { requireNotNull, toBIPS, toBN } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
+import { requireNotNull } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { artifacts } from "../utils/web3";
-import { AgentSettingsConfig, BotConfigFile, BotFAssetInfo } from "./config-files";
+import { BotConfigFile, BotFAssetInfo } from "./config-files/BotConfigFile";
 import { loadContracts } from "./contracts";
 import { IJsonLoader, JsonLoader } from "./json-loader";
 import { CreateOrmOptions, EM, ORM } from "./orm";
@@ -71,9 +68,6 @@ export interface BotFAssetConfig {
 
 export const botConfigLoader: IJsonLoader<BotConfigFile> =
     new JsonLoader(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON");
-
-export const agentSettingsLoader: IJsonLoader<AgentSettingsConfig> =
-    new JsonLoader(resolveInFassetBotsCore("run-config/schema/agent-settings.schema.json"), "agent settings JSON");
 
 /**
  * Loads configuration file and checks it.
@@ -262,48 +256,6 @@ export async function createChainConfig(
         fAssetSymbol: chainInfo.fAssetSymbol,
         priceChangeEmitter: chainInfo.priceChangeEmitter,
     };
-}
-
-export function loadAgentSettings(fname: string) {
-    try {
-        return agentSettingsLoader.load(fname);
-    } catch (error) {
-        throw CommandLineError.wrap(error);
-    }
-}
-
-/**
- * Creates agents initial settings from AgentSettingsConfig, that are needed for agent to be created.
- * @param context fasset agent bot context
- * @param agentSettingsConfigPath path to default agent configuration file
- * @param poolTokenSuffix
- * @returns instance of AgentBotDefaultSettings
- */
-export async function createAgentBotDefaultSettings(
-    context: IAssetAgentBotContext,
-    agentSettings: AgentSettingsConfig
-): Promise<AgentBotDefaultSettings> {
-    const collateralTypes = await context.assetManager.getCollateralTypes();
-    const vaultCollateralToken = collateralTypes.find((token) =>
-        Number(token.collateralClass) === CollateralClass.VAULT &&
-        token.tokenFtsoSymbol === agentSettings.vaultCollateralFtsoSymbol &&
-        toBN(token.validUntil).eqn(0));
-    if (!vaultCollateralToken) {
-        throw new Error(`Invalid vault collateral token ${agentSettings.vaultCollateralFtsoSymbol}`);
-    }
-    const agentBotSettings: AgentBotDefaultSettings = {
-        vaultCollateralToken: vaultCollateralToken.token,
-        poolTokenSuffix: agentSettings.poolTokenSuffix,
-        feeBIPS: toBIPS(agentSettings.fee),
-        poolFeeShareBIPS: toBIPS(agentSettings.poolFeeShare),
-        mintingVaultCollateralRatioBIPS: toBIPS(agentSettings.mintingVaultCollateralRatio),
-        mintingPoolCollateralRatioBIPS: toBIPS(agentSettings.mintingPoolCollateralRatio),
-        poolExitCollateralRatioBIPS: toBIPS(agentSettings.poolExitCollateralRatio),
-        buyFAssetByAgentFactorBIPS: toBIPS(agentSettings.buyFAssetByAgentFactor),
-        poolTopupCollateralRatioBIPS: toBIPS(agentSettings.poolTopupCollateralRatio),
-        poolTopupTokenPriceFactorBIPS: toBIPS(agentSettings.poolTopupTokenPriceFactor),
-    };
-    return agentBotSettings;
 }
 
 /**

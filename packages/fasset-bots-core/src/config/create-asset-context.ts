@@ -5,7 +5,7 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { fail } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { BotConfig, BotFAssetConfig } from "./BotConfig";
-import { BotConfigFile, BotFAssetInfo } from "./config-files";
+import { BotConfigFile, BotFAssetInfo } from "./config-files/BotConfigFile";
 import { ChainContracts, loadContracts } from "./contracts";
 
 const AssetManager = artifacts.require("AssetManager");

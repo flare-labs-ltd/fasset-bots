@@ -1,11 +1,10 @@
-import BN from "bn.js";
 import { AddressUpdaterInstance, AgentOwnerRegistryInstance, AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { ContractWithEvents } from "../utils/events/truffle";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
+import { ContractWithEvents } from "../utils/events/truffle";
 
 export type AddressUpdaterEvents = import("../../typechain-truffle/AddressUpdater").AllEvents;
 export type WNatEvents = import("../../typechain-truffle/WNat").AllEvents;
@@ -33,19 +32,6 @@ export interface IAssetAgentBotContext extends IAssetNativeChainContext {
     wallet: IBlockChainWallet;
     attestationProvider: AttestationHelper;
     verificationClient: IVerificationApiClient;
-}
-
-export interface AgentBotDefaultSettings {
-    vaultCollateralToken: string;
-    poolTokenSuffix: string;
-    feeBIPS: BN;
-    poolFeeShareBIPS: BN;
-    mintingVaultCollateralRatioBIPS: BN;
-    mintingPoolCollateralRatioBIPS: BN;
-    poolExitCollateralRatioBIPS: BN;
-    buyFAssetByAgentFactorBIPS: BN;
-    poolTopupCollateralRatioBIPS: BN;
-    poolTopupTokenPriceFactorBIPS: BN;
 }
 
 // lightweight context

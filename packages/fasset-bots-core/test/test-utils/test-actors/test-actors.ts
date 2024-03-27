@@ -2,9 +2,11 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { createAgentBotDefaultSettings, loadAgentSettings } from "../../../src/config/BotConfig";
+import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
+import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { AgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent } from "../../../src/fasset/Agent";
 import { Minter } from "../../../src/mock/Minter";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -42,7 +44,7 @@ export async function createTestAgentBot(
     console.log(`Creating agent bot...`);
     const settings = loadAgentSettings(defaultAgentConfigPath);
     settings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, settings);
+    const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, settings);
     return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
 }
 

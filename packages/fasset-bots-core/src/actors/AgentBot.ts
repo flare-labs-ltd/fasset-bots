@@ -6,7 +6,8 @@ import { decodedChainId } from "../config/BotConfig";
 import { EM } from "../config/orm";
 import { requireSecret } from "../config/secrets";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -90,7 +91,7 @@ export class AgentBot {
         context: IAssetAgentBotContext,
         owner: OwnerAddressPair,
         addressValidityProof: AddressValidity.Proof,
-        agentSettingsConfig: AgentBotDefaultSettings,
+        agentSettingsConfig: AgentVaultInitSettings,
         notifierTransports: NotifierTransport[]
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);

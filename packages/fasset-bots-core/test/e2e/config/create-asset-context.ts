@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { BotConfig, createBotConfig, updateConfigFilePaths } from "../../../src/config/BotConfig";
-import { BotConfigFile } from "../../../src/config/config-files";
+import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createActorAssetContext, createAssetContext } from "../../../src/config/create-asset-context";
 import { IAssetAgentBotContext, IAssetActorContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { COSTON_RPC, COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";

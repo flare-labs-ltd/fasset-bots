@@ -1,14 +1,14 @@
 import { expect, use } from "chai";
-import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
-import { initWeb3 } from "../../../src/utils/web3";
-import spies from "chai-spies";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
-import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
 import chaiAsPromised from "chai-as-promised";
+import spies from "chai-spies";
+import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
+import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { loadAgentSettings } from "../../../src/config";
 import { requireEnv } from "../../../src/utils";
+import { initWeb3 } from "../../../src/utils/web3";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
+import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
+import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 use(spies);
 

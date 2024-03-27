@@ -6,7 +6,7 @@ import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
-import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
@@ -257,7 +257,7 @@ describe("Fuzzing tests", () => {
         // assert.isTrue(commonTrackedState.failedExpectations.length === 0, "fuzzing state has expectation failures");
     });
 
-    function createAgentOptions(): AgentBotDefaultSettings {
+    function createAgentOptions(): AgentVaultInitSettings {
         const vaultCollateral = randomChoice(context.collaterals.filter(isVaultCollateral));
         const poolCollateral = context.collaterals.filter(isPoolCollateral)[0];
         const mintingVaultCollateralRatioBIPS = mulDecimal(toBN(vaultCollateral.minCollateralRatioBIPS), randomNum(1, 1.5));
