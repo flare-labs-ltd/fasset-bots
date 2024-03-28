@@ -381,9 +381,8 @@ describe("Challenger tests", () => {
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - payment blocked
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
-        const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference, {
-            status: TX_BLOCKED,
-        } as TransactionOptionsWithFee & { status?: number });
+        const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference,
+            { status: TX_BLOCKED } as TransactionOptionsWithFee & { status?: number });
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
         redemption.txHash = txHash;
@@ -394,7 +393,7 @@ describe("Challenger tests", () => {
         // catch 'RedemptionPaymentBlocked' event
         await challenger.runStep();
         // send notification
-        const spyRedemption = spy.on(agentBot.notifier, "sendRedemptionFailedOrBlocked");
+        const spyRedemption = spy.on(agentBot.notifier, "sendRedemptionBlocked");
         await agentBot.runStep(orm.em);
         expect(spyRedemption).to.have.been.called.once;
     });

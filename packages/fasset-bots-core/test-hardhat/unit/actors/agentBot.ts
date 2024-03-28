@@ -294,7 +294,7 @@ describe("Agent bot unit tests", () => {
     it("Should not receive proof 1 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
-        const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
+        const spyProof = spy.on(agentBot.notifier, "sendMintingNoProofObtained");
         // create minting
         const mt = orm.em.create(AgentMinting, {
             state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
@@ -317,7 +317,7 @@ describe("Agent bot unit tests", () => {
     it("Should not receive proof 2 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
-        const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
+        const spyProof = spy.on(agentBot.notifier, "sendMintingNoProofObtained");
         // create minting
         const mt = orm.em.create(AgentMinting, {
             state: AgentMintingState.REQUEST_PAYMENT_PROOF,
@@ -340,7 +340,7 @@ describe("Agent bot unit tests", () => {
     it("Should not receive proof 3 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
-        const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
+        const spyProof = spy.on(agentBot.notifier, "sendRedemptionNoProofObtained");
         // create redemption
         const rd = orm.em.create(AgentRedemption, {
             state: AgentRedemptionState.REQUESTED_PROOF,
@@ -362,7 +362,7 @@ describe("Agent bot unit tests", () => {
     it("Should not receive proof 4 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, undefined, false);
-        const spyProof = spy.on(agentBot.notifier, "sendNoProofObtained");
+        const spyProof = spy.on(agentBot.notifier, "sendDailyTaskNoProofObtained");
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         agentEnt.dailyProofRequestData = "";
         agentEnt.dailyProofRequestRound = 0;

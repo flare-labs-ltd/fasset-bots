@@ -120,7 +120,7 @@ describe("System keeper tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
-        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
+        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
@@ -154,7 +154,7 @@ describe("System keeper tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
-        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
+        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
