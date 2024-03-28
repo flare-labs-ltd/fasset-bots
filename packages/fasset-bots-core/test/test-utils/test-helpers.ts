@@ -6,7 +6,7 @@ import { ORM } from "../../src/config/orm";
 import { requireSecret } from "../../src/config/secrets";
 import { AgentEntity } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
-import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
@@ -84,7 +84,7 @@ export async function balanceOfVaultCollateral(vaultCollateralTokenAddress: stri
     return await vaultCollateralToken.balanceOf(address);
 }
 
-export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, destroyAgentsAfterTests: string[]) {
+export async function cleanUp(context: IAssetAgentContext, orm: ORM, ownerAddress: string, destroyAgentsAfterTests: string[]) {
     const destroyAgents = destroyAgentsAfterTests;
     const waitingTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
     for (const agentAddress of destroyAgents) {
@@ -110,7 +110,7 @@ export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAdd
     }
 }
 
-export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, agentAddress: string, ownerAddress: string) {
+export async function destroyAgent(context: IAssetAgentContext, orm: ORM, agentAddress: string, ownerAddress: string) {
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentAddress, active: true } as FilterQuery<AgentEntity>);
     const agentBot = await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
     const agentInfoForAnnounce = await context.assetManager.getAgentInfo(agentAddress);
@@ -142,7 +142,7 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
     }
 }
 
-export async function findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentBotContext, orm: ORM): Promise<AgentBot> {
+export async function findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentContext, orm: ORM): Promise<AgentBot> {
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVaultAddress, active: true } as FilterQuery<AgentEntity>);
     return await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
 }

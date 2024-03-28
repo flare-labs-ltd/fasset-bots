@@ -50,6 +50,7 @@ export interface BotConfigFile {
     // either one must be set
     addressUpdater?: string;
     contractsJsonFile?: string;
+    // liquidation strategies for liquidator and challenger
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator
     challengeStrategy?: BotStrategyDefinition; // only for challenger
 }

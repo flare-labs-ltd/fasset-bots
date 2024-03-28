@@ -8,7 +8,7 @@ import { loadAgentConfigFile } from "../config/config-file-loader";
 import { BotConfigFile } from "../config/config-files/BotConfigFile";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, TokenExitType } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { Minter } from "../mock/Minter";
@@ -69,7 +69,7 @@ type CleanupRegistration = (handler: () => Promise<void>) => void;
 export class UserBotCommands {
     static deepCopyWithObjectCreate = true;
 
-    context!: IAssetAgentBotContext;
+    context!: IAssetAgentContext;
     configFile!: BotConfigFile;
     botConfig!: BotConfig;
     fassetConfig!: BotFAssetConfig;

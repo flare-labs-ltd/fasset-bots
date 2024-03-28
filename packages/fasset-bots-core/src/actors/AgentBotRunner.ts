@@ -4,7 +4,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { squashSpace } from "../utils/formatting";
 import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -15,7 +15,7 @@ export class AgentBotRunner {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public contexts: Map<string, IAssetAgentBotContext>,
+        public contexts: Map<string, IAssetAgentContext>,
         public orm: ORM,
         public ownerManagementAddress: string,
         public loopDelay: number,
@@ -74,7 +74,7 @@ export class AgentBotRunner {
     static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
         const ownerAddress = requireSecret("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
-        const contexts: Map<string, IAssetAgentBotContext> = new Map();
+        const contexts: Map<string, IAssetAgentContext> = new Map();
         for (const chainConfig of botConfig.fAssets) {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.symbol, assetContext);

@@ -1,5 +1,5 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance } from "../../typechain-truffle";
-import { IAssetAgentBotContext, IAssetNativeChainContext, IChallengerContext, ILiquidatorContext, ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext, IAssetNativeChainContext, IChallengerContext, ILiquidatorContext, ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { assertNotNull, fail } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
@@ -18,7 +18,7 @@ const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 /**
  * Creates asset context needed for AgentBot.
  */
-export async function createAgentBotContext(botConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetAgentBotContext> {
+export async function createAgentBotContext(botConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetAgentContext> {
     assertNotNull(chainConfig.wallet, "Missing wallet configuration");
     assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
     assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
@@ -42,8 +42,7 @@ export async function createTimekeeperContext(config: BotConfig, chainConfig: Bo
     assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
     assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
     const nativeContext = await createNativeContext(config, chainConfig);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const attestationProvider = new AttestationHelper(chainConfig.stateConnector!, chainConfig.blockchainIndexerClient!, chainConfig.chainInfo.chainId);
+    const attestationProvider = new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId);
     return {
         ...nativeContext,
         nativeChainInfo: config.nativeChainInfo,
@@ -66,7 +65,7 @@ export async function createChallengerContext(config: BotConfig, chainConfig: Bo
 /**
  * Creates lightweight asset context (for liquidator).
  */
-export async function createLiquidatorContext(config: BotConfig, chainConfig: BotFAssetConfig): Promise<ILiquidatorContext> {
+export async function createLiquidatorContext(config: BotConfig | BotConfigFile, chainConfig: BotFAssetConfig | BotFAssetInfo): Promise<ILiquidatorContext> {
     const nativeContext = await createNativeContext(config, chainConfig);
     return {
         ...nativeContext,
@@ -93,8 +92,8 @@ export async function createNativeContext(config: BotConfig | BotConfigFile, cha
         const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
         return { nativeChainInfo: config.nativeChainInfo, addressUpdater, assetManager, assetManagerController, wNat, fAsset, priceChangeEmitter, agentOwnerRegistry };
     } else {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const addressUpdater = await AddressUpdater.at(config.addressUpdater!);
+        assertNotNull(config.addressUpdater);
+        const addressUpdater = await AddressUpdater.at(config.addressUpdater);
         const [assetManager, assetManagerController] = await getAssetManagerAndController(chainConfig, addressUpdater, null);
         const settings = await assetManager.getSettings();
         const priceChangeEmitter = await IPriceChangeEmitter.at(await addressUpdater.getContractAddress(priceChangeEmitterName));

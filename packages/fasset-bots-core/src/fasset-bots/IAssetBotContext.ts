@@ -26,7 +26,7 @@ export interface IAssetNativeChainContext {
     agentOwnerRegistry: ContractWithEvents<AgentOwnerRegistryInstance, AgentOwnerRegistryEvents>;
 }
 
-export interface IAssetAgentBotContext extends IAssetNativeChainContext {
+export interface IAssetAgentContext extends IAssetNativeChainContext {
     chainInfo: ChainInfo;
     blockchainIndexer: BlockchainIndexerHelper;
     wallet: IBlockChainWallet;

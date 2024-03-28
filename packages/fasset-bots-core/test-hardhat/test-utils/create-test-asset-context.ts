@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
-import { IAssetAgentBotContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
 import { LiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
@@ -51,7 +51,7 @@ export const ftsoUsdcInitialPrice = 1.01;
 export const ftsoUsdtInitialPrice = 0.99;
 
 export type TestAssetBotContext = Modify<
-    IAssetAgentBotContext,
+    IAssetAgentContext,
     {
         natFtso: FtsoMockInstance;
         assetFtso: FtsoMockInstance;

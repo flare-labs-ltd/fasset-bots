@@ -17,7 +17,7 @@ import { ORM } from "../../../src/config/orm";
 import { getSecrets, requireSecret } from "../../../src/config/secrets";
 import { AgentEntity } from "../../../src/entities/agent";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
-import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { AgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { TrackedState } from "../../../src/state/TrackedState";
@@ -36,7 +36,7 @@ describe("Actor tests - coston", () => {
     // for agent
     let botConfig: BotConfig;
     let runConfig: BotConfigFile;
-    let context: IAssetAgentBotContext;
+    let context: IAssetAgentContext;
     let orm: ORM;
     let ownerManagementAddress: string;
     let ownerAddress: string;
@@ -96,7 +96,7 @@ describe("Actor tests - coston", () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const contexts: Map<string, IAssetAgentBotContext> = new Map();
+        const contexts: Map<string, IAssetAgentContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
         const agentBotRunner = new AgentBotRunner(contexts, orm, ownerAddress, 5, testNotifierTransports);
         expect(agentBotRunner.loopDelay).to.eq(5);

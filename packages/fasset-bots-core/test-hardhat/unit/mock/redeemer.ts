@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -8,7 +8,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 
 describe("Redeemer unit tests", () => {
     let accounts: string[];
-    let context: IAssetAgentBotContext;
+    let context: IAssetAgentContext;
     let redeemerAddress: string;
     const redeemerUnderlyingAddress = "REDEEMER_ADDRESS";
 

@@ -6,7 +6,7 @@ import { decodedChainId } from "../config/BotConfig";
 import { EM } from "../config/orm";
 import { requireSecret } from "../config/secrets";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -59,11 +59,11 @@ export class AgentBot {
     runner?: IRunner;
     maxHandleEventBlocks = 1000;
 
-    static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentBotContext) {
+    static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
     }
 
-    static async initializeUnderlyingAddress(context: IAssetAgentBotContext, owner: OwnerAddressPair, underlyingAddress: string) {
+    static async initializeUnderlyingAddress(context: IAssetAgentContext, owner: OwnerAddressPair, underlyingAddress: string) {
         // on XRP chain, send 10 XRP from owners account to activate agent's account
         await this.activateUnderlyingAccount(context, owner, underlyingAddress);
         // validate address
@@ -88,7 +88,7 @@ export class AgentBot {
      */
     static async create(
         rootEm: EM,
-        context: IAssetAgentBotContext,
+        context: IAssetAgentContext,
         owner: OwnerAddressPair,
         addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentVaultInitSettings,
@@ -128,7 +128,7 @@ export class AgentBot {
      * @param underlyingAddress agent's underlying address
      * @param ownerAddress agent's owner native address
      */
-    static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
+    static async proveEOAaddress(context: IAssetAgentContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, reference);
@@ -144,7 +144,7 @@ export class AgentBot {
      * @param notifier
      * @returns instance of AgentBot class
      */
-    static async fromEntity(context: IAssetAgentBotContext, agentEntity: AgentEntity, notifierTransports: NotifierTransport[]): Promise<AgentBot> {
+    static async fromEntity(context: IAssetAgentContext, agentEntity: AgentEntity, notifierTransports: NotifierTransport[]): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         // get collateral pool
@@ -171,7 +171,7 @@ export class AgentBot {
      * @param context fasset agent bot context
      * @param agentUnderlyingAddress agent's underlying address
      */
-    static async activateUnderlyingAccount(context: IAssetAgentBotContext, owner: OwnerAddressPair, agentUnderlyingAddress: string): Promise<void> {
+    static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, agentUnderlyingAddress: string): Promise<void> {
         try {
             if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;

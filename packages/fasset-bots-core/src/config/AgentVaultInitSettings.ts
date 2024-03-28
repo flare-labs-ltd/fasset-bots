@@ -3,7 +3,7 @@ import { CollateralClass } from "..";
 import { AgentSettingsConfig } from ".";
 import { IJsonLoader, JsonLoader } from "./json-loader";
 import { CommandLineError, resolveInFassetBotsCore, toBIPS, toBN } from "../utils";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 
 
 export interface AgentVaultInitSettings {
@@ -38,7 +38,7 @@ export function loadAgentSettings(fname: string) {
  * @returns instance of AgentBotDefaultSettings
  */
 export async function createAgentVaultInitSettings(
-    context: IAssetAgentBotContext,
+    context: IAssetAgentContext,
     agentSettings: AgentSettingsConfig
 ): Promise<AgentVaultInitSettings> {
     const collateralTypes = await context.assetManager.getCollateralTypes();

@@ -1,4 +1,4 @@
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { FormatSettings, formatFixed } from "./formatting";
 import { BNish, toBN, toBNExp } from "./helpers";
@@ -10,7 +10,7 @@ const IERC20 = artifacts.require("IERC20Metadata");
 
 export class AgentTokenConverter {
     constructor(
-        public context: IAssetAgentBotContext,
+        public context: IAssetAgentContext,
         public agentVaultAddress: string,
         public type: AgentTokenType
     ) {}

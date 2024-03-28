@@ -6,7 +6,7 @@ import { BotConfig, createBotConfig } from "../../../src/config/BotConfig";
 import { updateConfigFilePaths } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createAgentBotContext, createChallengerContext, createLiquidatorContext, createTimekeeperContext } from "../../../src/config/create-asset-context";
-import { IAssetAgentBotContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { artifacts, initWeb3 } from "../../../src/utils/web3";
 import { COSTON_RPC, COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
@@ -36,7 +36,7 @@ describe("Create asset context tests", () => {
     it("Should create asset context from contracts", async () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         botConfig = await createBotConfig(runConfig, accounts[0]);
-        const context: IAssetAgentBotContext = await createAgentBotContext(botConfig, botConfig.fAssets[0]);
+        const context: IAssetAgentContext = await createAgentBotContext(botConfig, botConfig.fAssets[0]);
         expect(context).is.not.null;
         expect(context.chainInfo.chainId).to.eq(botConfig.fAssets[0].chainInfo.chainId);
     });
@@ -45,7 +45,7 @@ describe("Create asset context tests", () => {
     it("Should create asset context from address updater", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as BotConfigFile;
         botConfig = await createBotConfig(runConfig, accounts[0]);
-        const context: IAssetAgentBotContext = await createAgentBotContext(botConfig, botConfig.fAssets[0]);
+        const context: IAssetAgentContext = await createAgentBotContext(botConfig, botConfig.fAssets[0]);
         expect(context).is.not.null;
         expect(context.chainInfo.chainId).to.eq(botConfig.fAssets[0].chainInfo.chainId);
     });

@@ -5,7 +5,7 @@ import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
-import { IAssetAgentBotContext, IChallengerContext, ILiquidatorContext } from "../../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../../src/fasset-bots/IAssetBotContext";
 import { AgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent } from "../../../src/fasset/Agent";
 import { Minter } from "../../../src/mock/Minter";
@@ -19,19 +19,19 @@ import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/help
 import { cleanUp } from "../test-helpers";
 import { testNotifierTransports } from "../testNotifierTransports";
 
-export async function createTestMinter(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
+export async function createTestMinter(ctx: IAssetAgentContext, address: string, useExistingUnderlyingAddress?: string) {
     if (!(ctx.chainInfo.chainId === SourceId.testXRP)) fail("only for XRP testnet for now");
     const underlyingAddress = useExistingUnderlyingAddress ? useExistingUnderlyingAddress : await ctx.wallet.createAccount();
     return Minter.create(ctx, address, underlyingAddress, ctx.wallet);
 }
 
-export async function createTestRedeemer(ctx: IAssetAgentBotContext, address: string, useExistingUnderlyingAddress?: string) {
+export async function createTestRedeemer(ctx: IAssetAgentContext, address: string, useExistingUnderlyingAddress?: string) {
     const underlyingAddress = useExistingUnderlyingAddress ? useExistingUnderlyingAddress : await ctx.wallet.createAccount();
     return new Redeemer(ctx, address, underlyingAddress);
 }
 
 export async function createTestAgentBot(
-    context: IAssetAgentBotContext,
+    context: IAssetAgentContext,
     orm: ORM,
     ownerManagementAddress: string,
     defaultAgentConfigPath: string,
@@ -60,7 +60,7 @@ export async function createTestSystemKeeper(address: string, state: TrackedStat
     return new SystemKeeper(new ScopedRunner(), address, state);
 }
 
-export async function destroyAllAgents(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string) {
+export async function destroyAllAgents(context: IAssetAgentContext, orm: ORM, ownerAddress: string) {
     const list = await context.assetManager.getAllAgents(0, 100);
     const listOfAgents = list[0];
     await cleanUp(context, orm, ownerAddress, listOfAgents);

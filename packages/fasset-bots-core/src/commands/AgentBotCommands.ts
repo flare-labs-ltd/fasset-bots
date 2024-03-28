@@ -12,7 +12,7 @@ import { createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -37,7 +37,7 @@ type CleanupRegistration = (handler: () => Promise<void>) => void;
 export class AgentBotCommands {
     static deepCopyWithObjectCreate = true;
 
-    context!: IAssetAgentBotContext;
+    context!: IAssetAgentContext;
     owner!: OwnerAddressPair;
     botConfig!: BotConfig;
     BotFAssetInfo!: ChainInfo;

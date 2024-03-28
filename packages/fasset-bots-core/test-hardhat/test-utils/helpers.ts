@@ -11,7 +11,7 @@ import { loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
 import { createAgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../src/config/orm";
 import { requireSecret } from "../../src/config/secrets";
-import { IAssetAgentBotContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
@@ -117,13 +117,13 @@ export function createTestAgentBotRunner(
     return new AgentBotRunner(contexts, orm, ownerManagementAddress, loopDelay, notifiers);
 }
 
-export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
+export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
     const minter = await Minter.createTest(context, minterAddress, underlyingAddress, amount);
     chain.mine(chain.finalizationBlocks + 1);
     return minter;
 }
 
-export async function createTestRedeemer(context: IAssetAgentBotContext, redeemerAddress: string, underlyingAddress: string = redeemerUnderlyingAddress) {
+export async function createTestRedeemer(context: IAssetAgentContext, redeemerAddress: string, underlyingAddress: string = redeemerUnderlyingAddress) {
     const redeemer = await Redeemer.create(context, redeemerAddress, underlyingAddress);
     return redeemer;
 }
@@ -160,7 +160,7 @@ export async function createTestAgentBotAndMakeAvailable(
 }
 
 export async function mintAndDepositVaultCollateralToOwner( //TODO
-    context: IAssetAgentBotContext,
+    context: IAssetAgentContext,
     agent: Agent,
     depositAmount: BNish,
     ownerAddress: string
