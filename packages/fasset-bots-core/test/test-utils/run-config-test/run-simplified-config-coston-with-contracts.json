@@ -1,6 +1,7 @@
 {
     "loopDelay": 10000,
     "contractsJsonFile": "../../../fasset-deployment/coston.json",
+    "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -10,9 +11,6 @@
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         },
@@ -20,9 +18,6 @@
             "chainId": "testXRP",
             "name": "Fake XRP",
             "symbol": "fakeXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
             "fAssetSymbol": "FfakeXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "priceChangeEmitter": "FakePriceReader"

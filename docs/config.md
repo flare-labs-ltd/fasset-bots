@@ -128,23 +128,16 @@ interface OrmConfigOptions {
     [key: string]: any;
 }
 
-interface BotFAssetInfo extends ChainInfo {
+interface BotFAssetInfo {
+    chainId: string;
+    name: string;
+    symbol: string; // Underlying chain's ftso symbol.
     walletUrl?: string; // Underlying chain's url. Only for agent bot and user.
     indexerUrl?: string; // Underlying chain's indexer url. Only for agent bot, user, challenger and timeKeeper
     // either one must be set.
     assetManager?: string; // AssetManager contract address on native chain.
     fAssetSymbol?: string; // Symbol for the fasset.
     priceChangeEmitter?: string; // The name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'.
-}
-
-interface ChainInfo {
-    // Underlying chain info.
-    chainId: string;
-    name: string;
-    symbol: string; // Underlying chain's ftso symbol.
-    decimals: number;
-    amgDecimals: number;
-    requireEOAProof: boolean;
 }
 
 interface NativeChainInfo {
@@ -165,6 +158,7 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
 {
     "loopDelay": 5000,
     "contractsJsonFile": "../fasset-deployment/coston.json",
+    "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -174,9 +168,6 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"

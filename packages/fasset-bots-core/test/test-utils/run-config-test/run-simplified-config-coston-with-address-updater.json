@@ -1,6 +1,7 @@
 {
     "loopDelay": 10000,
     "addressUpdater": "0xb006c0cb0b2b8ae48E5B12883Cd5a13654cc6e20",
+    "prioritizeAddressUpdater": true,
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -10,9 +11,6 @@
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
             "assetManager": "0x58cCe8be3E84150BBeAb6F56b96Fd4f4Bf4ab7Fc",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         }

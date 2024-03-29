@@ -1,9 +1,16 @@
 import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
 import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { SourceId } from "../underlying-chain/SourceId";
+import { CommandLineError } from "../utils";
 import { getSecrets } from "./secrets";
 
 const supportedSourceIds = [SourceId.XRP, SourceId.BTC, SourceId.DOGE, SourceId.testXRP, SourceId.testBTC, SourceId.testDOGE];
+
+export function requireSupportedSourceId(sourceId: SourceId) {
+    if (!supportedSourceId(sourceId)) {
+        throw new CommandLineError(`SourceId ${decodedChainId(sourceId)} not supported.`);
+    }
+}
 
 export function supportedSourceId(sourceId: SourceId) {
     return supportedSourceIds.includes(encodedChainId(sourceId));
@@ -29,9 +36,7 @@ export function createWalletClient(
     walletUrl: string,
     options: StuckTransaction = {}
 ): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
-    if (!supportedSourceId(sourceId)) {
-        throw new Error(`SourceId ${decodedChainId(sourceId)} not supported.`);
-    }
+    requireSupportedSourceId(sourceId);
     if (sourceId === SourceId.BTC || sourceId === SourceId.testBTC) {
         return new WALLET.BTC({
             url: walletUrl,

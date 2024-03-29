@@ -1,4 +1,4 @@
-import { ChainInfo, NativeChainInfo } from "../../fasset/ChainInfo";
+import { NativeChainInfo } from "../../fasset/ChainInfo";
 import { DatabaseType, SchemaUpdate } from "../orm";
 
 export interface OrmConfigOptions {
@@ -17,8 +17,11 @@ export interface OrmConfigOptions {
     [key: string]: any;
 }
 
-export interface BotFAssetInfo extends ChainInfo {
+export interface BotFAssetInfo {
     fAssetSymbol: string;
+    chainId: string;
+    name: string;
+    symbol: string; // only used as database id
     walletUrl?: string; // for agent bot and user
     inTestnet?: boolean; // for agent bot and user (optional)
     indexerUrl?: string; // for agent bot, user, challenger and timeKeeper

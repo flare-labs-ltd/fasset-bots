@@ -1,5 +1,6 @@
 {
     "loopDelay": 5000,
+    "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
@@ -9,9 +10,6 @@
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
-            "decimals": 6,
-            "amgDecimals": 0,
-            "requireEOAProof": false,
             "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"
