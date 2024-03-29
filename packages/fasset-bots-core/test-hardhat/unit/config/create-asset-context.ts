@@ -6,9 +6,6 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 use(chaiAsPromised);
-const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
-const findAssetManager = createAssetContextInternal.__get__("findAssetManager");
-const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
 
 const StateConnector = artifacts.require("StateConnectorMock");
 
@@ -23,10 +20,5 @@ describe("Create asset context unit tests", () => {
         collateralTypes = await context.assetManager.getCollateralTypes();
     });
 
-    it("Should not find asset manager - fasset symbol not found", async () => {
-        const noSymbol = "NO_SYMBOL";
-        await expect(findAssetManager(context.assetManagerController, noSymbol))
-            .to.eventually.be.rejectedWith(`FAsset symbol ${noSymbol} not found`)
-            .and.be.an.instanceOf(Error);
-    });
+    // TODO
 });

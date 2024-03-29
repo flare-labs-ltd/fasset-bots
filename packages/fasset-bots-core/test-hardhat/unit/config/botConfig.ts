@@ -51,6 +51,6 @@ describe("Config unit tests", () => {
         const fn = () => {
             return loadConfigFile(runConfigFile1);
         };
-        expect(fn).to.throw("Missing either contractsJsonFile or addressUpdater in config");
+        expect(fn).to.throw("At least one of contractsJsonFile or assetManagerController is required config");
     });
 });
