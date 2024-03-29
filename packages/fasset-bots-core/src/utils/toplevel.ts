@@ -10,6 +10,24 @@ export class CommandLineError extends Error {
     }
 }
 
+/**
+ * Check if value is non-null and throw otherwise.
+ * Returns guaranteed non-null value.
+ */
+export function requireNotNullCmd<T>(x: T, errorMessage: string): NonNullable<T> {
+    if (x != null) return x as NonNullable<T>;
+    throw new CommandLineError(errorMessage);
+}
+
+/**
+ * Check if value is non-null and throw otherwise.
+ */
+export function assertNotNullCmd<T>(x: T, errorMessage: string): asserts x is NonNullable<T> {
+    if (x == null) {
+        throw new CommandLineError(errorMessage);
+    }
+}
+
 const toplevelRunFinalizers: Array<() => Promise<void>> = [];
 
 export function registerToplevelFinalizer(finalizer: () => Promise<void>) {
