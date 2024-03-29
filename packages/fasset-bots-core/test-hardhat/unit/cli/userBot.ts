@@ -23,7 +23,7 @@ import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
+import { createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -98,7 +98,7 @@ describe("UserBot cli commands unit tests", () => {
             blockchainIndexerClient: new MockIndexer("", chainId, chain),
             stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
             verificationClient: new MockVerificationApiClient(),
-            assetManager: "",
+            assetManager: context.assetManager,
             fAssetSymbol: "TESTHHSYM",
         };
         userBot.botConfig = {
@@ -108,7 +108,7 @@ describe("UserBot cli commands unit tests", () => {
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifiers: testNotifierTransports,
-            addressUpdater: "",
+            contractRetriever: await createTestContractRetriever(context),
         };
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain, userUnderlyingAddress);

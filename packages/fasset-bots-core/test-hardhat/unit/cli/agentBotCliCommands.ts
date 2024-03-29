@@ -5,9 +5,9 @@ import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
+import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
-import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { MockIndexer } from "../../../src/mock/MockIndexer";
@@ -21,8 +21,7 @@ import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
-import { AssetContractRetriever } from "../../../src/config/AssetContractRetriever";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestContractRetriever, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -90,7 +89,7 @@ describe("AgentBot cli commands unit tests", () => {
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifiers: testNotifierTransports,
-            contractRetriever: await AssetContractRetriever.create(true, undefined, context.assetManagerController.address),
+            contractRetriever: await createTestContractRetriever(context),
         };
         return { orm, context, chain, botCliCommands };
     }

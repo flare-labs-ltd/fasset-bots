@@ -1,11 +1,11 @@
 import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { network } from "hardhat";
-import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
+import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
 import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
@@ -24,7 +24,7 @@ import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
-import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
+import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
 import { FuzzingCustomer } from "./FuzzingCustomer";
 import { FuzzingNotifierTransport } from "./FuzzingNotifierTransport";
@@ -109,18 +109,19 @@ describe("Fuzzing tests", () => {
                 loopDelay: 0,
                 fAssets: [
                     {
+                        fAssetSymbol: "F" + chainInfo.symbol,
                         chainInfo: chainInfo,
                         wallet: new MockChainWallet(chain),
                         blockchainIndexerClient: new MockIndexer("", chainId, chain),
                         stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
                         verificationClient: new MockVerificationApiClient(),
-                        assetManager: "",
+                        assetManager: context.assetManager,
                     },
                 ],
                 nativeChainInfo: testNativeChainInfo,
                 orm: orm,
                 notifiers: notifiers,
-                addressUpdater: "",
+                contractRetriever: await createTestContractRetriever(context),
             };
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
             agentBots.push(fuzzingAgentBot);

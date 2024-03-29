@@ -6,13 +6,12 @@ import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
+import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
+import { AssetContractRetriever } from "../../src/config/AssetContractRetriever";
 import { decodedChainId } from "../../src/config/create-wallet-client";
-import { loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
-import { createAgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../src/config/orm";
 import { requireSecret } from "../../src/config/secrets";
 import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
-import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
@@ -65,6 +64,10 @@ export async function createTestAgentBot(
     const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
+}
+
+export async function createTestContractRetriever(context: TestAssetBotContext) {
+    return await AssetContractRetriever.create(false, undefined, context.assetManagerController.address);
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
