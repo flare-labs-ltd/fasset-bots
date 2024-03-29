@@ -18,7 +18,7 @@ import { requiredEventArgs } from "../utils/events/truffle";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
 import { BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
+import { CommandLineError, assertNotNullCmd } from "../utils/toplevel";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
@@ -113,13 +113,10 @@ export class UserBotCommands {
         this.botConfig = await createBotConfig(this.configFile, this.nativeAddress);
         registerCleanup?.(() => closeBotConfig(this.botConfig));
         // verify fasset config
-        const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-        if (chainConfig == null) {
-            logger.error(`User ${this.nativeAddress} has invalid FAsset symbol.`);
-            throw new CommandLineError("Invalid FAsset symbol");
-        }
-        this.context = await createAgentBotContext(this.botConfig, chainConfig);
+        const chainConfig = this.botConfig.fAssets.get(fAssetSymbol);
+        assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
         this.fassetConfig = chainConfig;
+        this.context = await createAgentBotContext(this.botConfig, chainConfig);
         // create underlying wallet key
         if (requireWallet) {
             const chainName = decodedChainId(this.fassetConfig.chainInfo.chainId);

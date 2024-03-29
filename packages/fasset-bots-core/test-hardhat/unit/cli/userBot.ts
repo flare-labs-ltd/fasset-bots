@@ -23,7 +23,7 @@ import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
+import { createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter, createTestRedeemer, makeBotFAssetConfigMap } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -104,7 +104,7 @@ describe("UserBot cli commands unit tests", () => {
         userBot.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            fAssets: [userBot.fassetConfig],
+            fAssets: makeBotFAssetConfigMap([userBot.fassetConfig]),
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifiers: testNotifierTransports,

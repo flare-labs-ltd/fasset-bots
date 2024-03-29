@@ -15,7 +15,8 @@ program.action(async () => {
     const challengerPrivateKey: string = requireSecret("challenger.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [challengerPrivateKey], null);
     const config = await createBotConfig(runConfig, challengerAddress);
-    const runners = await Promise.all(config.fAssets.map(
+    const fassetList = Array.from(config.fAssets.values());
+    const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, challengerAddress, ActorBaseKind.CHALLENGER, chainConfig)
     ));
     // run

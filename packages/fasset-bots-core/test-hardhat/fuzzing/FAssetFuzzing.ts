@@ -24,7 +24,7 @@ import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
-import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter } from "../test-utils/helpers";
+import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter, makeBotFAssetConfigMap } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
 import { FuzzingCustomer } from "./FuzzingCustomer";
 import { FuzzingNotifierTransport } from "./FuzzingNotifierTransport";
@@ -107,7 +107,7 @@ describe("Fuzzing tests", () => {
             botCliCommands.botConfig = {
                 rpcUrl: "",
                 loopDelay: 0,
-                fAssets: [
+                fAssets: makeBotFAssetConfigMap([
                     {
                         fAssetSymbol: "F" + chainInfo.symbol,
                         chainInfo: chainInfo,
@@ -117,7 +117,7 @@ describe("Fuzzing tests", () => {
                         verificationClient: new MockVerificationApiClient(),
                         assetManager: context.assetManager,
                     },
-                ],
+                ]),
                 nativeChainInfo: testNativeChainInfo,
                 orm: orm,
                 notifiers: notifiers,

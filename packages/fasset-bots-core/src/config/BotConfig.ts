@@ -29,7 +29,7 @@ export interface BotConfig {
     notifiers: NotifierTransport[];
     loopDelay: number;
     rpcUrl: string;
-    fAssets: BotFAssetConfig[];
+    fAssets: Map<string, BotFAssetConfig>;
     nativeChainInfo: NativeChainInfo;
     contractRetriever: AssetContractRetriever;
     // liquidation strategies for liquidator and challenger
@@ -57,10 +57,10 @@ export interface BotFAssetConfig {
 export async function createBotConfig(runConfig: BotConfigFile, submitter?: string): Promise<BotConfig> {
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const retriever = await AssetContractRetriever.create(runConfig.prioritizeAddressUpdater, runConfig.contractsJsonFile, runConfig.assetManagerController);
-    const fAssets: BotFAssetConfig[] = [];
+    const fAssets: Map<string, BotFAssetConfig> = new Map();
     for (const fassetInfo of runConfig.fAssetInfos) {
         const fassetConfig = await createBotFAssetConfig(retriever, fassetInfo, orm?.em, runConfig.attestationProviderUrls, submitter, runConfig.walletOptions);
-        fAssets.push(fassetConfig);
+        fAssets.set(fassetInfo.fAssetSymbol, fassetConfig);
     }
     return {
         rpcUrl: runConfig.rpcUrl,

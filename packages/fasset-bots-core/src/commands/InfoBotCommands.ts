@@ -1,15 +1,15 @@
 import BN from "bn.js";
 import chalk from "chalk";
+import { createBotConfig } from "../config";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createNativeContext } from "../config/create-asset-context";
 import { getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
-import { MAX_BIPS, toBN } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
+import { MAX_BIPS, firstValue, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
+import { CommandLineError, assertNotNullCmd } from "../utils/toplevel";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
-import { createBotConfig } from "../config";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
@@ -39,11 +39,8 @@ export class InfoBotCommands {
         await initWeb3(authenticatedHttpProvider(config.rpcUrl, getSecrets().apiKey.native_rpc), [INFO_ACCOUNT_KEY], null);
         const botConfig = await createBotConfig(config);
         // create config
-        const chainConfig = fAssetSymbol ? botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol) : botConfig.fAssets[0];
-        if (chainConfig == null) {
-            logger.error(`InfoBot: FAsset does not exist.`);
-            throw new CommandLineError("FAsset does not exist");
-        }
+        const chainConfig = fAssetSymbol ? botConfig.fAssets.get(fAssetSymbol) : firstValue(botConfig.fAssets);
+        assertNotNullCmd(chainConfig, "FAsset does not exist");
         const context = await createNativeContext(botConfig, chainConfig);
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);

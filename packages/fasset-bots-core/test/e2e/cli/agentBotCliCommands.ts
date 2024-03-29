@@ -27,7 +27,7 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should create commands", async () => {
         const commands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
-        const chainConfig = commands.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+        const chainConfig = commands.botConfig.fAssets.get(fAssetSymbol);
         expect(chainConfig!.chainInfo.chainId).to.eq(SourceId.testXRP);
     });
 

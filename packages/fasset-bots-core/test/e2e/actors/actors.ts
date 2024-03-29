@@ -67,9 +67,9 @@ describe("Actor tests - coston", () => {
         orm = botConfig.orm!;
         actorConfig = await createBotConfig(runSimplifiedConfig, ownerAddress);
         // contexts
-        chainConfig1 = requireNotNull(botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol));
+        chainConfig1 = requireNotNull(botConfig.fAssets.get(fAssetSymbol));
         context = await createAgentBotContext(botConfig, chainConfig1!);
-        chainConfig2 = requireNotNull(actorConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol));
+        chainConfig2 = requireNotNull(actorConfig.fAssets.get(fAssetSymbol));
         // tracked state
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedStateContext = await createNativeContext(actorConfig, chainConfig2!);
@@ -137,17 +137,18 @@ describe("Actor tests - coston", () => {
     });
 
     it("Should create actor bot runner from config", async () => {
-        const actorBaseRunner1 = await ActorBaseRunner.create(actorConfig, challengerAddress, ActorBaseKind.CHALLENGER, actorConfig.fAssets[0]);
+        const fassetList = Array.from(actorConfig.fAssets.values());
+        const actorBaseRunner1 = await ActorBaseRunner.create(actorConfig, challengerAddress, ActorBaseKind.CHALLENGER, fassetList[0]);
         expect(actorBaseRunner1.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner1.actor.address).to.eq(challengerAddress);
         expect(actorBaseRunner1.actor instanceof Challenger).to.be.true;
 
-        const actorBaseRunner2 = await ActorBaseRunner.create(actorConfig, liquidatorAddress, ActorBaseKind.LIQUIDATOR, actorConfig.fAssets[0]);
+        const actorBaseRunner2 = await ActorBaseRunner.create(actorConfig, liquidatorAddress, ActorBaseKind.LIQUIDATOR, fassetList[0]);
         expect(actorBaseRunner2.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner2.actor.address).to.eq(liquidatorAddress);
         expect(actorBaseRunner2.actor instanceof Liquidator).to.be.true;
 
-        const actorBaseRunner3 = await ActorBaseRunner.create(actorConfig, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, actorConfig.fAssets[1]);
+        const actorBaseRunner3 = await ActorBaseRunner.create(actorConfig, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, fassetList[1]);
         expect(actorBaseRunner3.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner3.actor.address).to.eq(systemKeeperAddress);
         expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;

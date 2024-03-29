@@ -15,7 +15,8 @@ program.action(async () => {
     const systemKeeperPrivateKey: string = requireSecret("systemKeeper.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [systemKeeperPrivateKey], null);
     const config = await createBotConfig(runConfig, systemKeeperAddress);
-    const runners = await Promise.all(config.fAssets.map(
+    const fassetList = Array.from(config.fAssets.values());
+    const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, chainConfig)
     ));
     // run

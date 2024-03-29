@@ -75,7 +75,7 @@ export class AgentBotRunner {
         const ownerAddress = requireSecret("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
         const contexts: Map<string, IAssetAgentContext> = new Map();
-        for (const chainConfig of botConfig.fAssets) {
+        for (const chainConfig of botConfig.fAssets.values()) {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.symbol, assetContext);
             logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}

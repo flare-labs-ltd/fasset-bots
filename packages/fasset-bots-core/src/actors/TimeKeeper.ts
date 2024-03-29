@@ -24,7 +24,7 @@ export class TimeKeeper {
 
     static async startTimekeepers(config: BotConfig, timekeeperAddress: string, interval: number) {
         const timekeepers: TimeKeeper[] = [];
-        for (const chain of config.fAssets) {
+        for (const chain of config.fAssets.values()) {
             const assetContext = await createTimekeeperContext(config, chain);
             const timekeeper = new TimeKeeper(timekeeperAddress, assetContext, interval);
             timekeeper.loopDelay = config.loopDelay;

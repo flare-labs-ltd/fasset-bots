@@ -15,7 +15,8 @@ program.action(async () => {
     const liquidatorPrivateKey: string = requireSecret("liquidator.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [liquidatorPrivateKey], null);
     const config = await createBotConfig(runConfig, liquidatorAddress);
-    const runners = await Promise.all(config.fAssets.map(
+    const fassetList = Array.from(config.fAssets.values());
+    const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, liquidatorAddress, ActorBaseKind.LIQUIDATOR, chainConfig)
     ));
     // run

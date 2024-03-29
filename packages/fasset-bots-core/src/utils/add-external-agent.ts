@@ -1,10 +1,11 @@
 import "dotenv/config";
-import { web3, initWeb3, authenticatedHttpProvider } from "../utils/web3";
-import { createAgentBotContext } from "../config/create-asset-context";
+import { assertNotNullCmd } from ".";
 import { createBotConfig } from "../config/BotConfig";
 import { loadConfigFile } from "../config/config-file-loader";
-import { AgentEntity, DailyProofState } from "../entities/agent";
+import { createAgentBotContext } from "../config/create-asset-context";
 import { getSecrets } from "../config/secrets";
+import { AgentEntity, DailyProofState } from "../entities/agent";
+import { authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 import { ZERO_ADDRESS } from "./helpers";
 
 /**
@@ -27,8 +28,9 @@ export async function addExternalAgentVault(
     const runConfig = loadConfigFile(runConfigFile);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), null, null);
     const botConfig = await createBotConfig(runConfig, "0x");
-    const chainConfig = botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-    const assetContext = await createAgentBotContext(botConfig, chainConfig!);
+    const chainConfig = botConfig.fAssets.get(fAssetSymbol);
+    assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
+    const assetContext = await createAgentBotContext(botConfig, chainConfig);
     const agentInfo = await assetContext.assetManager.getAgentInfo(agentVaultAddress);
     // check if agent exists
     const agent = await botConfig.orm!.em.findOne(AgentEntity, { vaultAddress: agentVaultAddress });

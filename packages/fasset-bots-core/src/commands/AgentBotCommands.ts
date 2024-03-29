@@ -6,15 +6,16 @@ import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
 import { InfoBot } from "..";
+import { AgentBot } from "../actors/AgentBot";
+import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { BotConfig, closeBotConfig, createBotConfig } from "../config/BotConfig";
-import { decodedChainId } from "../config/create-wallet-client";
 import { loadAgentConfigFile } from "../config/config-file-loader";
-import { createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
+import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
+import { decodedChainId } from "../config/create-wallet-client";
 import { getSecrets, requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { ChainInfo } from "../fasset/ChainInfo";
@@ -22,13 +23,11 @@ import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { resolveInFassetBotsCore, squashSpace } from "../utils";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, toBN } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { CommandLineError, assertNotNullCmd } from "../utils/toplevel";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { AgentBot } from "../actors/AgentBot";
-import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -79,18 +78,14 @@ export class AgentBotCommands {
         this.botConfig = await createBotConfig(runConfig, this.owner.workAddress);
         registerCleanup?.(() => closeBotConfig(this.botConfig));
         // create context
-        const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-        if (chainConfig == null) {
-            logger.error(`Owner ${this.owner.managementAddress} has invalid FAsset symbol ${fAssetSymbol}.`);
-            throw new CommandLineError(`Invalid FAsset symbol ${fAssetSymbol}`);
-        }
-        this.BotFAssetInfo = chainConfig.chainInfo;
+        const chainConfig = this.botConfig.fAssets.get(fAssetSymbol);
+        assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
         this.context = await createAgentBotContext(this.botConfig, chainConfig);
         // verify keys
         await this.verifyWorkAddress(this.owner);
         // create underlying wallet key
-        const underlyingAddress = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.address`);
-        const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.private_key`);
+        const underlyingAddress = requireSecret(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.address`);
+        const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.private_key`);
         await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${this.owner.managementAddress} successfully finished initializing cli environment.`);

@@ -21,7 +21,7 @@ import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestContractRetriever, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestContractRetriever, createTestMinter, makeBotFAssetConfigMap, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -68,7 +68,7 @@ describe("AgentBot cli commands unit tests", () => {
         botCliCommands.botConfig = {
             rpcUrl: "",
             loopDelay: 0,
-            fAssets: [
+            fAssets: makeBotFAssetConfigMap([
                 {
                     chainInfo: {
                         chainId: chainId,
@@ -85,7 +85,7 @@ describe("AgentBot cli commands unit tests", () => {
                     verificationClient: new MockVerificationApiClient(),
                     assetManager: context.assetManager,
                 },
-            ],
+            ]),
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifiers: testNotifierTransports,

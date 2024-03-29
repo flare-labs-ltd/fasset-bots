@@ -202,6 +202,17 @@ export function maxBN(first: BN, ...rest: BN[]) {
     return result;
 }
 
+/**
+ * Return the minimum of two or more BN values.
+ */
+export function minBN(first: BN, ...rest: BN[]) {
+    let result = first;
+    for (const x of rest) {
+        if (x.lt(result)) result = x;
+    }
+    return result;
+}
+
 export function fail(messageOrError: string | Error): never {
     if (typeof messageOrError === "string") {
         throw new Error(messageOrError);
@@ -370,13 +381,8 @@ export function findOneSubstring(message: string, substrings: string[]) {
     return false;
 }
 
-/**
- * Return the minimum of two or more BN values.
- */
-export function minBN(first: BN, ...rest: BN[]) {
-    let result = first;
-    for (const x of rest) {
-        if (x.lt(result)) result = x;
+export function firstValue<K, V>(map: Map<K, V>): V | undefined {
+    for (const v of map.values()) {
+        return v;
     }
-    return result;
 }
