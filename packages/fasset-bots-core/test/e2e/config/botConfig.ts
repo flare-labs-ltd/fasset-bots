@@ -161,9 +161,10 @@ describe("Bot config tests", () => {
 
     it("Should create agent bot config chain", async () => {
         const botConfig = await createBotConfig(runConfig, accounts[0]);
-        const chainInfo = runConfig.fAssetInfos[0];
+        const [symbol, chainInfo] = Object.entries(runConfig.fAssets)[0];
         const agentBotConfigChain = await createBotFAssetConfig(
             botConfig.contractRetriever,
+            symbol,
             chainInfo,
             botConfig.orm!.em,
             ATTESTATION_PROVIDER_URLS,
@@ -184,11 +185,11 @@ describe("Bot config tests", () => {
 
     it("Should not validate config - walletUrl must be defined", async () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        runConfig.fAssetInfos[0].walletUrl = undefined;
+        Object.values(runConfig.fAssets)[0].walletUrl = undefined;
         const fn = () => {
             return validateAgentConfigFile(runConfig);
         };
-        expect(fn).to.throw(`Missing walletUrl in FAsset type ${runConfig.fAssetInfos[0].fAssetSymbol}`);
+        expect(fn).to.throw(`Missing walletUrl in FAsset type ${Object.keys(runConfig.fAssets)[0]}`);
     });
 
     it("Should return supported source id", () => {

@@ -8,9 +8,6 @@
                 "chainId": {
                     "type": "string"
                 },
-                "fAssetSymbol": {
-                    "type": "string"
-                },
                 "inTestnet": {
                     "type": "boolean"
                 },
@@ -32,7 +29,6 @@
             },
             "required": [
                 "chainId",
-                "fAssetSymbol",
                 "name",
                 "symbol"
             ],
@@ -143,11 +139,11 @@
         "contractsJsonFile": {
             "type": "string"
         },
-        "fAssetInfos": {
-            "items": {
+        "fAssets": {
+            "additionalProperties": {
                 "$ref": "#/definitions/BotFAssetInfo"
             },
-            "type": "array"
+            "type": "object"
         },
         "liquidationStrategy": {
             "$ref": "#/definitions/BotStrategyDefinition"
@@ -184,7 +180,7 @@
         }
     },
     "required": [
-        "fAssetInfos",
+        "fAssets",
         "loopDelay",
         "nativeChainInfo",
         "prioritizeAddressUpdater",

@@ -18,7 +18,6 @@ export interface OrmConfigOptions {
 }
 
 export interface BotFAssetInfo {
-    fAssetSymbol: string;
     chainId: string;
     name: string;
     symbol: string; // only used as database id
@@ -40,7 +39,7 @@ export interface BotConfigFile {
         retries?: number; // How many times should transaction retry to successfully submit
         feeIncrease?: number; // Factor to increase fee in resubmitting process
     }; // optional wallet options, only for agent
-    fAssetInfos: BotFAssetInfo[];
+    fAssets: { [fAssetSymbol: string]: BotFAssetInfo };
     // notifierFile: string;
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;

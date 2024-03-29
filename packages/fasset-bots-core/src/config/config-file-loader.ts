@@ -89,9 +89,9 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBo
  */
 function validateAgentConfigFile(config: BotConfigFile): void {
     validateConfigFile(config);
-    for (const fc of config.fAssetInfos) {
+    for (const [symbol, fc] of Object.entries(config.fAssets)) {
         if (fc.walletUrl == null) {
-            throw new Error(`Missing walletUrl in FAsset type ${fc.fAssetSymbol}`);
+            throw new Error(`Missing walletUrl in FAsset type ${symbol}`);
         }
     }
 }

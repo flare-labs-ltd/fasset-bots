@@ -37,7 +37,7 @@ async function setupContext(fAssetSymbol: string) {
         throw new CommandLineError("Missing ormOptions in runConfig");
     }
     const orm = await overrideAndCreateOrm(runConfig.ormOptions);
-    const chainConfig = runConfig.fAssetInfos.find((cc) => cc.fAssetSymbol === fAssetSymbol);
+    const chainConfig = runConfig.fAssets[fAssetSymbol];
     if (chainConfig == null) {
         throw new CommandLineError("Invalid FAsset symbol");
     }

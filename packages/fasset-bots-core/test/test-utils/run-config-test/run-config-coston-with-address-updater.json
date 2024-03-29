@@ -6,8 +6,8 @@
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },
-    "fAssetInfos": [
-        {
+    "fAssets": {
+        "FtestXRP": {
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
@@ -15,7 +15,7 @@
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"
         }
-    ],
+    },
     "ormOptions": {
         "dbName": "fasset-bots-coston.db",
         "debug": false,

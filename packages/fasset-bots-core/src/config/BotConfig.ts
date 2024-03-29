@@ -58,9 +58,9 @@ export async function createBotConfig(runConfig: BotConfigFile, submitter?: stri
     const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const retriever = await AssetContractRetriever.create(runConfig.prioritizeAddressUpdater, runConfig.contractsJsonFile, runConfig.assetManagerController);
     const fAssets: Map<string, BotFAssetConfig> = new Map();
-    for (const fassetInfo of runConfig.fAssetInfos) {
-        const fassetConfig = await createBotFAssetConfig(retriever, fassetInfo, orm?.em, runConfig.attestationProviderUrls, submitter, runConfig.walletOptions);
-        fAssets.set(fassetInfo.fAssetSymbol, fassetConfig);
+    for (const [symbol, fassetInfo] of Object.entries(runConfig.fAssets)) {
+        const fassetConfig = await createBotFAssetConfig(retriever, symbol, fassetInfo, orm?.em, runConfig.attestationProviderUrls, submitter, runConfig.walletOptions);
+        fAssets.set(symbol, fassetConfig);
     }
     return {
         rpcUrl: runConfig.rpcUrl,
@@ -87,13 +87,14 @@ export async function createBotConfig(runConfig: BotConfigFile, submitter?: stri
  */
 export async function createBotFAssetConfig(
     retriever: AssetContractRetriever,
+    fAssetSymbol: string,
     fassetInfo: BotFAssetInfo,
     em: EM | undefined,
     attestationProviderUrls: string[] | undefined,
     submitter: string | undefined,
     walletOptions?: StuckTransaction
 ): Promise<BotFAssetConfig> {
-    const assetManager = retriever.getAssetManager(fassetInfo.fAssetSymbol);
+    const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
     const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
     const sourceId = encodedChainId(fassetInfo.chainId);
@@ -110,7 +111,7 @@ export async function createBotFAssetConfig(
         ? await createVerificationApiClient(fassetInfo.indexerUrl)
         : undefined;
     return {
-        fAssetSymbol: fassetInfo.fAssetSymbol,
+        fAssetSymbol: fAssetSymbol,
         chainInfo: createChainInfo(sourceId, fassetInfo, settings),
         wallet: wallet,
         blockchainIndexerClient: blockchainIndexerClient,

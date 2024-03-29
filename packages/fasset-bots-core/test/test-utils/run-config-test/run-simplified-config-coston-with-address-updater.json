@@ -6,15 +6,15 @@
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },
-    "fAssetInfos": [
-        {
+    "fAssets": {
+        "FtestXRP": {
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
             "assetManager": "0x58cCe8be3E84150BBeAb6F56b96Fd4f4Bf4ab7Fc",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         }
-    ],
+    },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"

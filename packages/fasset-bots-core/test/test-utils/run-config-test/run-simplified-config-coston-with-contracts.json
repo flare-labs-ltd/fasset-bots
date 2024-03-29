@@ -6,23 +6,21 @@
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },
-    "fAssetInfos": [
-        {
+    "fAssets": {
+        "FtestXRP": {
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
-            "fAssetSymbol": "FtestXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         },
-        {
+        "FfakeXRP": {
             "chainId": "testXRP",
             "name": "Fake XRP",
             "symbol": "fakeXRP",
-            "fAssetSymbol": "FfakeXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "priceChangeEmitter": "FakePriceReader"
         }
-    ],
+    },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
