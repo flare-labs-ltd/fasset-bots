@@ -18,14 +18,11 @@ export interface OrmConfigOptions {
 }
 
 export interface BotFAssetInfo extends ChainInfo {
-    walletUrl?: string; // only for agent bot
-    inTestnet?: boolean; // only for agent bot, optional also for agent bot
-    indexerUrl?: string; // only for agent bot, challenger and timeKeeper
-    // either one must be set
-    assetManager?: string;
-    fAssetSymbol?: string;
-    // optional settings
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event; default is 'FtsoManager'
+    fAssetSymbol: string;
+    walletUrl?: string; // for agent bot and user
+    inTestnet?: boolean; // for agent bot and user (optional)
+    indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
+    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
 }
 
 export interface BotStrategyDefinition {
@@ -47,8 +44,9 @@ export interface BotConfigFile {
     rpcUrl: string;
     alertsUrl?: string;
     attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
-    // either one must be set
-    addressUpdater?: string;
+    prioritizeAddressUpdater: boolean;
+    // at least one must be set
+    assetManagerController?: string;
     contractsJsonFile?: string;
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Secrets, getSecrets, requireEncryptionPassword, requireSecret, resetSecrets } from "../../../src/config/secrets";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../../../src/utils/helpers";
-import { decodedChainId } from "../../../src/config/BotConfig";
+import { decodedChainId } from "../../../src/config/create-wallet-client";
 
 const chainId = "testXRP";
 describe("Secrets unit tests", () => {

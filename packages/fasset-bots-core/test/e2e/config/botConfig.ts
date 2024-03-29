@@ -1,4 +1,5 @@
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotFAssetConfig, createBotConfig, createStateConnectorClient, createWalletClient } from "../../../src/config/BotConfig";
+import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotFAssetConfig, createBotConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
+import { createWalletClient } from "../../../src/config/create-wallet-client";
 import { updateConfigFilePaths } from "../../../src/config/config-file-loader";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
@@ -46,13 +47,13 @@ describe("Bot config tests", () => {
     it("Should create bot config", async () => {
         const botConfig = await createBotConfig(runConfig, accounts[0]);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
-        expect(botConfig.contractsJsonFile).to.not.be.null;
+        expect(botConfig.contractRetriever.contracts).to.not.be.null;
         expect(botConfig.orm).to.not.be.null;
     });
 
     it("Should create tracked state config", async () => {
         const trackedStateConfig = await createBotConfig(actorRunConfig, accounts[0]);
-        expect(trackedStateConfig.contractsJsonFile).to.not.be.null;
+        expect(trackedStateConfig.contractRetriever.contracts).to.not.be.null;
     });
 
     it("Should create wallet clients", async () => {
@@ -162,11 +163,10 @@ describe("Bot config tests", () => {
         const botConfig = await createBotConfig(runConfig, accounts[0]);
         const chainInfo = runConfig.fAssetInfos[0];
         const agentBotConfigChain = await createBotFAssetConfig(
+            botConfig.contractRetriever,
             chainInfo,
             botConfig.orm!.em,
             ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS
         );
         expect(agentBotConfigChain.stateConnector).not.be.null;
@@ -175,21 +175,11 @@ describe("Bot config tests", () => {
     it("Should not validate config - contractsJsonFile or addressUpdater must be defined", async () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = undefined;
-        runConfig.addressUpdater = undefined;
+        runConfig.assetManagerController = undefined;
         const fn = () => {
             return validateConfigFile(runConfig);
         };
         expect(fn).to.throw(`Missing either contractsJsonFile or addressUpdater in config`);
-    });
-
-    it("Should not validate config - assetManager or fAssetSymbol must be defined", async () => {
-        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        runConfig.fAssetInfos[0].assetManager = undefined;
-        runConfig.fAssetInfos[0].fAssetSymbol = undefined;
-        const fn = () => {
-            return validateConfigFile(runConfig);
-        };
-        expect(fn).to.throw(`Missing either assetManager or fAssetSymbol in FAsset type undefined`);
     });
 
     it("Should not validate config - walletUrl must be defined", async () => {

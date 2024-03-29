@@ -3,7 +3,7 @@ import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { decodedChainId } from "../../../src/config/BotConfig";
+import { decodedChainId } from "../../../src/config/create-wallet-client";
 import { ORM } from "../../../src/config/orm";
 import { requireSecret } from "../../../src/config/secrets";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";

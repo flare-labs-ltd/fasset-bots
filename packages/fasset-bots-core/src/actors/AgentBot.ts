@@ -2,7 +2,7 @@ import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { decodedChainId } from "../config/BotConfig";
+import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
 import { requireSecret } from "../config/secrets";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";

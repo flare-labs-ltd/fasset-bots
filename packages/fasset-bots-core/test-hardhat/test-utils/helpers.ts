@@ -6,7 +6,7 @@ import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
-import { decodedChainId } from "../../src/config/BotConfig";
+import { decodedChainId } from "../../src/config/create-wallet-client";
 import { loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
 import { createAgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../src/config/orm";

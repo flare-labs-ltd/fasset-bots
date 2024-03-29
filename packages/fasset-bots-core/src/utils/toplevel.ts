@@ -69,6 +69,7 @@ async function runWithFinalizers(main: () => Promise<void>) {
     } finally {
         // run registered finalizers
         while (toplevelRunFinalizers.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const finalizer = toplevelRunFinalizers.pop()!;
             try {
                 await finalizer();

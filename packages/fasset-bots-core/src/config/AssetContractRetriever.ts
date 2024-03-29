@@ -9,12 +9,20 @@ const AddressUpdater = artifacts.require("AddressUpdater");
 const FAsset = artifacts.require("FAsset");
 
 export class AssetContractRetriever {
+    prioritizeAddressUpdater!: boolean;
     assetManagerController!: AssetManagerControllerInstance;
     addressUpdater!: AddressUpdaterInstance;
     assetManagers!: Map<string, AssetManagerInstance>;
     contracts?: ChainContracts;
 
-    async initialize(contractsJsonFile: string | undefined, assetManagerControllerAddress: string | undefined) {
+    static async create(prioritizeAddressUpdater: boolean, contractsJsonFile?: string, assetManagerControllerAddress?: string) {
+        const result = new AssetContractRetriever();
+        await result.initialize(prioritizeAddressUpdater, contractsJsonFile, assetManagerControllerAddress);
+        return result;
+    }
+
+    async initialize(prioritizeAddressUpdater: boolean, contractsJsonFile?: string, assetManagerControllerAddress?: string) {
+        this.prioritizeAddressUpdater = prioritizeAddressUpdater;
         if (contractsJsonFile) {
             this.contracts = loadContracts(contractsJsonFile);
         }
@@ -27,6 +35,10 @@ export class AssetContractRetriever {
             this.assetManagerController = await this.getContract(AssetManagerController);
         }
         this.assetManagers = await AssetContractRetriever.createAssetManagerMap(this.assetManagerController);
+    }
+
+    getAssetManager(symbol: string) {
+        return requireNotNullCmd(this.assetManagers.get(symbol), `No asset manager for FAsset with symbol ${symbol}`);
     }
 
     async getContractAddress(name: string, addressUpdaterName: string = name) {

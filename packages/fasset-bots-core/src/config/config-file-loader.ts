@@ -42,13 +42,8 @@ export function loadConfigFile(fPath: string, configInfo?: string, validate: boo
  */
 
 export function validateConfigFile(config: BotConfigFile): void {
-    if (config.addressUpdater == null && config.contractsJsonFile == null) {
-        throw new Error("Missing either contractsJsonFile or addressUpdater in config");
-    }
-    for (const fc of config.fAssetInfos) {
-        if (fc.assetManager == null && fc.fAssetSymbol == null) {
-            throw new Error(`Missing either assetManager or fAssetSymbol in FAsset type ${fc.fAssetSymbol}`);
-        }
+    if (config.assetManagerController == null && config.contractsJsonFile == null) {
+        throw new Error("At least one of contractsJsonFile or assetManagerController is required config");
     }
 }
 

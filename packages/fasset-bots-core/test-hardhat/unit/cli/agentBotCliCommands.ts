@@ -22,6 +22,7 @@ import { testNotifierTransports } from "../../../test/test-utils/testNotifierTra
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { AssetContractRetriever } from "../../../src/config/AssetContractRetriever";
 use(chaiAsPromised);
 use(spies);
 
@@ -78,17 +79,18 @@ describe("AgentBot cli commands unit tests", () => {
                         amgDecimals: 0,
                         requireEOAProof: false,
                     },
+                    fAssetSymbol: "FXRP",
                     wallet: new MockChainWallet(chain),
                     blockchainIndexerClient: new MockIndexer("", chainId, chain),
                     stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
                     verificationClient: new MockVerificationApiClient(),
-                    assetManager: "",
+                    assetManager: context.assetManager,
                 },
             ],
             nativeChainInfo: testNativeChainInfo,
             orm: orm,
             notifiers: testNotifierTransports,
-            addressUpdater: "",
+            contractRetriever: await AssetContractRetriever.create(true, undefined, context.assetManagerController.address),
         };
         return { orm, context, chain, botCliCommands };
     }
