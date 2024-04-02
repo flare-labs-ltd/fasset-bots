@@ -50,6 +50,6 @@ describe("Config unit tests", () => {
         const fn = () => {
             return loadConfigFile(runConfigFile1);
         };
-        expect(fn).to.throw("At least one of contractsJsonFile or assetManagerController is required config");
+        expect(fn).to.throw("At least one of contractsJsonFile or assetManagerController must be defined");
     });
 });

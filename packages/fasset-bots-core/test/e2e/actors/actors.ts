@@ -24,7 +24,7 @@ import { TrackedState } from "../../../src/state/TrackedState";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
-import { cleanUp, getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { cleanUp, enableSlowTests, getNativeAccountsFromEnv, itIf } from "../../test-utils/test-helpers";
 import { testNotifierTransports } from "../../test-utils/testNotifierTransports";
 import { requireNotNull } from "../../../src/utils";
 use(chaiAsPromised);
@@ -81,7 +81,7 @@ describe("Actor tests - coston", () => {
         await cleanUp(context, orm, ownerAddress, destroyAgentsAfterTests);
     });
 
-    it("Should create agent bot and announce destroy", async () => {
+    itIf(enableSlowTests())("Should create agent bot and announce destroy", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, COSTON_TEST_AGENT_SETTINGS);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
@@ -154,7 +154,7 @@ describe("Actor tests - coston", () => {
         expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;
     });
 
-    it("Should not create agent - unknown address", async () => {
+    itIf(enableSlowTests())("Should not create agent - unknown address", async () => {
         const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, loadAgentSettings(COSTON_TEST_AGENT_SETTINGS));
         const underlyingAddress = "underlying";
         const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);

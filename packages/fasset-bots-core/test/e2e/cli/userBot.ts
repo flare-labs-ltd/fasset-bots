@@ -1,7 +1,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { UserBotCommands } from "../../../src/commands/UserBotCommands";
-import { requireEnv } from "../../../src/utils/helpers";
+import { ZERO_ADDRESS, requireEnv } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { COSTON_RPC } from "../../test-utils/test-bot-config";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
@@ -22,10 +22,10 @@ describe("UserBot cli commands unit tests", () => {
     it("Should create UserBot", async () => {
         const userBot1 = await UserBotCommands.create(FASSET_BOT_CONFIG, "FtestXRP", false);
         expect(userBot1.nativeAddress).to.eq(userAddress);
-        expect(userBot1.underlyingAddress).to.eq(undefined);
+        expect(userBot1.underlyingAddress).to.eq(ZERO_ADDRESS);
         const userBot2 = await UserBotCommands.create(FASSET_BOT_CONFIG, "FfakeXRP", true);
         expect(userBot2.nativeAddress).to.eq(userAddress);
-        expect(userBot2.underlyingAddress).to.not.eq(undefined);
+        expect(userBot2.underlyingAddress).to.not.eq(ZERO_ADDRESS);
     });
 
     it("Should create UserBot - invalid 'fAssetSymbol'", async () => {

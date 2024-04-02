@@ -1,19 +1,16 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
-import rewire from "rewire";
 import { BotConfig, createBotConfig } from "../../../src/config/BotConfig";
 import { updateConfigFilePaths } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createAgentBotContext, createChallengerContext, createLiquidatorContext, createTimekeeperContext } from "../../../src/config/create-asset-context";
 import { IAssetAgentContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { firstValue } from "../../../src/utils";
+import { CommandLineError, firstValue } from "../../../src/utils";
 import { initWeb3 } from "../../../src/utils/web3";
 import { COSTON_RPC, COSTON_RUN_CONFIG_ADDRESS_UPDATER, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
-const createAssetContextInternal = rewire("../../../src/config/create-asset-context");
-const getAssetManagerAndController = createAssetContextInternal.__get__("getAssetManagerAndController");
 
 function simpleLoadConfigFile(fpath: string) {
     const config = JSON.parse(readFileSync(fpath).toString()) as BotConfigFile;
@@ -41,7 +38,7 @@ describe("Create asset context tests", () => {
     });
 
     // with addressUpdater and stateConnectorProofVerifierAddress - cannot use only addressUpdater until SCProofVerifier gets verified in explorer
-    it("Should create asset context from address updater", async () => {
+    it("Should create asset context given asset manager controller", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as BotConfigFile;
         botConfig = await createBotConfig(runConfig, accounts[0]);
         const context: IAssetAgentContext = await createAgentBotContext(botConfig, firstValue(botConfig.fAssets)!);
@@ -122,14 +119,6 @@ describe("Create asset context tests", () => {
             .and.be.an.instanceOf(Error);
         await expect(createTimekeeperContext(botConfig, firstValue(botConfig.fAssets)!))
             .to.eventually.be.rejectedWith(`Missing state connector configuration`)
-            .and.be.an.instanceOf(Error);
-    });
-
-    it("Should not create asset context - either addressUpdater or contracts must be defined", async () => {
-        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        botConfig = await createBotConfig(runConfig, accounts[0]);
-        await expect(getAssetManagerAndController(firstValue(botConfig.fAssets)!, null, null))
-            .to.eventually.be.rejectedWith(`Either addressUpdater or contracts must be defined`)
             .and.be.an.instanceOf(Error);
     });
 });

@@ -1,21 +1,15 @@
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotFAssetConfig, createBotConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
-import { createWalletClient } from "../../../src/config/create-wallet-client";
-import { updateConfigFilePaths } from "../../../src/config/config-file-loader";
-import { loadConfigFile } from "../../../src/config/config-file-loader";
+import { expect, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { readFileSync } from "fs";
+import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
+import { loadConfigFile, updateConfigFilePaths, validateAgentConfigFile, validateConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
+import { createWalletClient, decodedChainId, supportedSourceId } from "../../../src/config/create-wallet-client";
+import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { initWeb3 } from "../../../src/utils/web3";
 import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_CONTRACTS_MISSING_VERIFIER, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
-import chaiAsPromised from "chai-as-promised";
-import { expect, use } from "chai";
 import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
-import rewire from "rewire";
-import { readFileSync } from "fs";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
-const botConfigInternal = rewire("../../../src/config/BotConfig.ts");
-const validateConfigFile = botConfigInternal.__get__("validateConfigFile");
-const validateAgentConfigFile = botConfigInternal.__get__("validateAgentConfigFile");
-const supportedSourceIdInt = botConfigInternal.__get__("supportedSourceId");
 
 const indexerTestBTCUrl = "https://attestation-coston.aflabs.net/verifier/btc/";
 const indexerTestDOGEUrl = "https://attestation-coston.aflabs.net/verifier/doge/";
@@ -73,7 +67,7 @@ describe("Bot config tests", () => {
         const fn = () => {
             return createWalletClient(invalidSourceId, "");
         };
-        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
+        expect(fn).to.throw(`SourceId ${decodedChainId(invalidSourceId)} not supported.`);
     });
 
     it("Should create block chain indexer", async () => {
@@ -87,7 +81,7 @@ describe("Bot config tests", () => {
         const fn = () => {
             return createBlockchainIndexerHelper(sourceId, "");
         };
-        expect(fn).to.throw(`SourceId ${sourceId} not supported.`);
+        expect(fn).to.throw(`SourceId ${decodedChainId(sourceId)} not supported.`);
     });
 
     it("Should create block chain wallet helper", async () => {
@@ -102,7 +96,7 @@ describe("Bot config tests", () => {
         const fn = () => {
             return createBlockchainWalletHelper(invalidSourceId, botConfig.orm!.em, "");
         };
-        expect(fn).to.throw(`SourceId ${invalidSourceId} not supported.`);
+        expect(fn).to.throw(`SourceId ${decodedChainId(invalidSourceId)} not supported.`);
     });
 
     it("Should create attestation helper", async () => {
@@ -180,7 +174,7 @@ describe("Bot config tests", () => {
         const fn = () => {
             return validateConfigFile(runConfig);
         };
-        expect(fn).to.throw(`Missing either contractsJsonFile or addressUpdater in config`);
+        expect(fn).to.throw(`At least one of contractsJsonFile or assetManagerController must be defined`);
     });
 
     it("Should not validate config - walletUrl must be defined", async () => {
@@ -193,21 +187,21 @@ describe("Bot config tests", () => {
     });
 
     it("Should return supported source id", () => {
-        expect(supportedSourceIdInt(SourceId.ALGO)).to.be.false;
-        expect(supportedSourceIdInt(SourceId.LTC)).to.be.false;
-        expect(supportedSourceIdInt(SourceId.XRP)).to.be.true;
-        expect(supportedSourceIdInt(SourceId.DOGE)).to.be.true;
-        expect(supportedSourceIdInt(SourceId.BTC)).to.be.true;
-        expect(supportedSourceIdInt(SourceId.testXRP)).to.be.true;
-        expect(supportedSourceIdInt(SourceId.testDOGE)).to.be.true;
-        expect(supportedSourceIdInt(SourceId.testBTC)).to.be.true;
+        expect(supportedSourceId(SourceId.ALGO)).to.be.false;
+        expect(supportedSourceId(SourceId.LTC)).to.be.false;
+        expect(supportedSourceId(SourceId.XRP)).to.be.true;
+        expect(supportedSourceId(SourceId.DOGE)).to.be.true;
+        expect(supportedSourceId(SourceId.BTC)).to.be.true;
+        expect(supportedSourceId(SourceId.testXRP)).to.be.true;
+        expect(supportedSourceId(SourceId.testDOGE)).to.be.true;
+        expect(supportedSourceId(SourceId.testBTC)).to.be.true;
     });
 
     it("Should not create config - assetManager or fAssetSymbol must be defined", async () => {
         const runConfigFile1 = "./test-hardhat/test-utils/run-config-tests/run-config-missing-contracts-and-addressUpdater.json";
         runConfig = JSON.parse(readFileSync(runConfigFile1).toString()) as BotConfigFile;
         await expect(createBotConfig(runConfig, accounts[0]))
-            .to.eventually.be.rejectedWith("Either contractsJsonFile or addressUpdater must be defined")
+            .to.eventually.be.rejectedWith("At least one of contractsJsonFile or assetManagerController must be defined")
             .and.be.an.instanceOf(Error);
     });
 
@@ -215,15 +209,7 @@ describe("Bot config tests", () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_SC;
         await expect(createBotConfig(runConfig, accounts[0]))
-            .to.eventually.be.rejectedWith("Cannot find address for StateConnector")
-            .and.be.an.instanceOf(Error);
-    });
-
-    it("Should not create config missing SCProofVerifier contract", async () => {
-        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_VERIFIER;
-        await expect(createBotConfig(runConfig, accounts[0]))
-            .to.eventually.be.rejectedWith("Cannot find address for SCProofVerifier")
+            .to.eventually.be.rejectedWith("Cannot find address for contract StateConnector")
             .and.be.an.instanceOf(Error);
     });
 });

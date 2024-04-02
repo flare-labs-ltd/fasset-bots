@@ -146,3 +146,17 @@ export async function findAgentBotFromDB(agentVaultAddress: string, context: IAs
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVaultAddress, active: true } as FilterQuery<AgentEntity>);
     return await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
 }
+
+export function itIf(condition: boolean | (() => boolean)) {
+    if (typeof condition === 'function') condition = condition();
+    return condition ? it : it.skip;
+}
+
+export function itUnless(condition: boolean | (() => boolean)) {
+    if (typeof condition === 'function') condition = condition();
+    return condition ? it.skip : it;
+}
+
+export function enableSlowTests() {
+    return process.env.ENABLE_SLOW_TESTS === 'true';
+}

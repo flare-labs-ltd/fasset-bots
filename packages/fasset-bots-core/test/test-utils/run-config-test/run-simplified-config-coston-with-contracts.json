@@ -1,4 +1,5 @@
 {
+    "$schema": "../../../run-config/schema/bot-config.schema.json",
     "loopDelay": 10000,
     "contractsJsonFile": "../../../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,

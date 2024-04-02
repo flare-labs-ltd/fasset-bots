@@ -7,7 +7,7 @@ import { requireEnv } from "../../../src/utils";
 import { initWeb3 } from "../../../src/utils/web3";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
 import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
+import { enableSlowTests, getNativeAccountsFromEnv, itIf } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -31,7 +31,7 @@ describe("AgentBot cli commands unit tests", () => {
         expect(botCliCommands.owner).to.not.be.null;
     });
 
-    it.skip("Should create agent bot via bot cli commands", async () => {
+    itIf(enableSlowTests())("Should create agent bot via bot cli commands", async () => {
         const botCliCommands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
         const agentSettings = loadAgentSettings(COSTON_TEST_AGENT_SETTINGS);
         agentSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();

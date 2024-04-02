@@ -42,7 +42,7 @@ export function loadConfigFile(fPath: string, configInfo?: string, validate: boo
 
 export function validateConfigFile(config: BotConfigFile): void {
     if (config.assetManagerController == null && config.contractsJsonFile == null) {
-        throw new Error("At least one of contractsJsonFile or assetManagerController is required config");
+        throw new CommandLineError("At least one of contractsJsonFile or assetManagerController must be defined");
     }
 }
 
@@ -83,7 +83,7 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): BotConf
  * Validates agent configuration.
  * @param config instance BotConfigFile
  */
-function validateAgentConfigFile(config: BotConfigFile): void {
+export function validateAgentConfigFile(config: BotConfigFile): void {
     validateConfigFile(config);
     if (config.attestationProviderUrls == null || config.attestationProviderUrls.length === 0) {
         throw new CommandLineError(`At least one attestation provider url is required`);
