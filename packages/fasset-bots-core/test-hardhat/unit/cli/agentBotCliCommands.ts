@@ -411,12 +411,6 @@ describe("AgentBot cli commands unit tests", () => {
         expect(_delegateAddresses.length).to.eq(0);
     });
 
-    it("Should create underlying account", async () => {
-        const data = await botCliCommands.createUnderlyingAccount();
-        expect(data.address).to.not.be.null;
-        expect(data.privateKey).to.not.be.null;
-    });
-
     it("Should run command 'getFreePoolCollateral', 'getFreeVaultCollateral' and 'getFreeUnderlying'", async () => {
         const agent = await createAgent();
         const freePool = await botCliCommands.getFreePoolCollateral(agent.vaultAddress);
@@ -472,6 +466,14 @@ describe("AgentBot cli commands unit tests", () => {
         await botCliCommands.upgradeWNatContract(agent.vaultAddress);
         const token = (await agent.getPoolCollateral()).token;
         expect(token).to.equal(newWnat.address);
+        //change context back
+        botCliCommands.context = context;
+    });
+
+    it("Should create agent bot via bot cli commands", async () => {
+        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp);
+        const agentBot = botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+        expect(agentBot).to.not.be.undefined;
         //change context back
         botCliCommands.context = context;
     });

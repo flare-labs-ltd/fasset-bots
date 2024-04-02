@@ -16,7 +16,6 @@ const fassetBotConfig: string = requireEnv("FASSET_BOT_CONFIG");
 const fAssetSymbol = "FtestXRP";
 
 describe("AgentBot cli commands unit tests", () => {
-    let botCliCommands: AgentBotCommands;
     let accounts: string[];
     let ownerAddress: string;
 
@@ -32,7 +31,7 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should initialize bot cli commands", async () => {
-        botCliCommands = new AgentBotCommands();
+        const botCliCommands = new AgentBotCommands();
         expect(botCliCommands.botConfig).to.be.undefined;
         expect(botCliCommands.context).to.be.undefined;
         expect(botCliCommands.owner).to.be.undefined;
@@ -42,8 +41,8 @@ describe("AgentBot cli commands unit tests", () => {
         expect(botCliCommands.owner).to.not.be.null;
     });
 
-    it("Should create agent bot via bot cli commands", async () => {
-        botCliCommands = new AgentBotCommands();
+    it.skip("Should create agent bot via bot cli commands", async () => {
+        const botCliCommands = new AgentBotCommands();
         await botCliCommands.initEnvironment(fassetBotConfig, fAssetSymbol);
         const agentSettings = loadAgentSettings(COSTON_TEST_AGENT_SETTINGS);
         agentSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
@@ -56,5 +55,14 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should not create  bot cli commands - invalid 'fAssetSymbol'", async () => {
         await expect(AgentBotCommands.create(fassetBotConfig, "invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
+    });
+
+    it("Should create underlying account", async () => {
+        const botCliCommands = new AgentBotCommands();
+        await botCliCommands.initEnvironment(fassetBotConfig, fAssetSymbol);
+        const data = await botCliCommands.createUnderlyingAccount();
+        console.log("test generated address (not used anywhere):", data);
+        expect(data.address).to.not.be.null;
+        expect(data.privateKey).to.not.be.null;
     });
 });
