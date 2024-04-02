@@ -10,21 +10,18 @@ import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings"
 import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
-import { MockIndexer } from "../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
-import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
 import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
 import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
-import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
+import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/test-bot-config";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
-import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter, makeBotFAssetConfigMap } from "../test-utils/helpers";
+import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
 import { FuzzingCustomer } from "./FuzzingCustomer";
 import { FuzzingNotifierTransport } from "./FuzzingNotifierTransport";
@@ -100,29 +97,8 @@ describe("Fuzzing tests", () => {
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
-            const botCliCommands = new AgentBotCommands();
-            botCliCommands.context = context;
-            botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-            const chainId = chainInfo.chainId;
-            botCliCommands.botConfig = {
-                rpcUrl: "",
-                loopDelay: 0,
-                fAssets: makeBotFAssetConfigMap([
-                    {
-                        fAssetSymbol: "F" + chainInfo.symbol,
-                        chainInfo: chainInfo,
-                        wallet: new MockChainWallet(chain),
-                        blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                        stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
-                        verificationClient: new MockVerificationApiClient(),
-                        assetManager: context.assetManager,
-                    },
-                ]),
-                nativeChainInfo: testNativeChainInfo,
-                orm: orm,
-                notifiers: notifiers,
-                contractRetriever: await createTestContractRetriever(context),
-            };
+            const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
+            const botCliCommands = new AgentBotCommands(context, owner, orm, notifiers);
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
             agentBots.push(fuzzingAgentBot);
             eventFormatter.addAddress(`BOT_${i}`, fuzzingAgentBot.agentBot.agent.vaultAddress);

@@ -91,7 +91,7 @@ program
     .description("List all open mintings")
     .action(async () => {
         const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, false, registerToplevelFinalizer);
+        const minterBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
         await minterBot.listMintings();
     });
 

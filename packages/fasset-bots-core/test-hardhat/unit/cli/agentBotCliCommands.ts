@@ -8,19 +8,15 @@ import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
-import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
-import { MockIndexer } from "../../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { MockChain } from "../../../src/mock/MockChain";
 import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
-import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/test-bot-config";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestContractRetriever, createTestMinter, makeBotFAssetConfigMap, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -43,7 +39,7 @@ describe("AgentBot cli commands unit tests", () => {
     let governance: string;
 
     async function createAgent(contextToUse: TestAssetBotContext = context): Promise<Agent> {
-        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.botConfig.orm!, botCliCommands.owner.managementAddress);
+        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.orm, botCliCommands.owner.managementAddress);
         return agentBot.agent;
     }
 
@@ -60,36 +56,8 @@ describe("AgentBot cli commands unit tests", () => {
         context = await createTestAssetContext(governance, testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
-        botCliCommands = new AgentBotCommands();
-        botCliCommands.context = context;
-        botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-        const chainId = SourceId.testXRP;
-        botCliCommands.botConfig = {
-            rpcUrl: "",
-            loopDelay: 0,
-            fAssets: makeBotFAssetConfigMap([
-                {
-                    chainInfo: {
-                        chainId: chainId,
-                        name: "Ripple",
-                        symbol: "XRP",
-                        decimals: 6,
-                        amgDecimals: 0,
-                        requireEOAProof: false,
-                    },
-                    fAssetSymbol: "FXRP",
-                    wallet: new MockChainWallet(chain),
-                    blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                    stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
-                    verificationClient: new MockVerificationApiClient(),
-                    assetManager: context.assetManager,
-                },
-            ]),
-            nativeChainInfo: testNativeChainInfo,
-            orm: orm,
-            notifiers: testNotifierTransports,
-            contractRetriever: await createTestContractRetriever(context),
-        };
+        const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
+        botCliCommands = new AgentBotCommands(context, owner, orm, testNotifierTransports);
         return { orm, context, chain, botCliCommands };
     }
 

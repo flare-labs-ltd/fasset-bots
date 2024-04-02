@@ -3,7 +3,6 @@ import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { requireEnv } from "../../../src/utils";
 import { initWeb3 } from "../../../src/utils/web3";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
@@ -24,26 +23,16 @@ describe("AgentBot cli commands unit tests", () => {
         ownerAddress = accounts[0];
     });
 
-    it("Should create commands", async () => {
-        const commands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
-        const chainConfig = commands.botConfig.fAssets.get(fAssetSymbol);
-        expect(chainConfig!.chainInfo.chainId).to.eq(SourceId.testXRP);
-    });
-
     it("Should initialize bot cli commands", async () => {
-        const botCliCommands = new AgentBotCommands();
-        expect(botCliCommands.botConfig).to.be.undefined;
-        expect(botCliCommands.context).to.be.undefined;
-        expect(botCliCommands.owner).to.be.undefined;
-        await botCliCommands.initEnvironment(fassetBotConfig, fAssetSymbol);
-        expect(botCliCommands.botConfig.orm).to.not.be.null;
+        const botCliCommands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
+        expect(botCliCommands.notifiers).to.not.be.null;
+        expect(botCliCommands.orm).to.not.be.null;
         expect(botCliCommands.context).to.not.be.null;
         expect(botCliCommands.owner).to.not.be.null;
     });
 
     it.skip("Should create agent bot via bot cli commands", async () => {
-        const botCliCommands = new AgentBotCommands();
-        await botCliCommands.initEnvironment(fassetBotConfig, fAssetSymbol);
+        const botCliCommands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
         const agentSettings = loadAgentSettings(COSTON_TEST_AGENT_SETTINGS);
         agentSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
         const agent = await botCliCommands.createAgentVault(agentSettings);
@@ -58,8 +47,7 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should create underlying account", async () => {
-        const botCliCommands = new AgentBotCommands();
-        await botCliCommands.initEnvironment(fassetBotConfig, fAssetSymbol);
+        const botCliCommands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
         const data = await botCliCommands.createUnderlyingAccount();
         console.log("test generated address (not used anywhere):", data);
         expect(data.address).to.not.be.null;

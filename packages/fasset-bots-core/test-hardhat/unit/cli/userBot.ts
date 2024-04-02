@@ -80,36 +80,8 @@ describe("UserBot cli commands unit tests", () => {
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
         // user bot
-        userBot = new UserBotCommands();
-        userBot.context = context;
-        userBot.nativeAddress = minterAddress;
-        userBot.underlyingAddress = userUnderlyingAddress;
-        const chainId = SourceId.testXRP;
-        userBot.fassetConfig = {
-            chainInfo: {
-                chainId: chainId,
-                name: "Ripple",
-                symbol: "XRP",
-                decimals: 6,
-                amgDecimals: 0,
-                requireEOAProof: false,
-            },
-            wallet: new MockChainWallet(chain),
-            blockchainIndexerClient: new MockIndexer("", chainId, chain),
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
-            verificationClient: new MockVerificationApiClient(),
-            assetManager: context.assetManager,
-            fAssetSymbol: "TESTHHSYM",
-        };
-        userBot.botConfig = {
-            rpcUrl: "",
-            loopDelay: 0,
-            fAssets: makeBotFAssetConfigMap([userBot.fassetConfig]),
-            nativeChainInfo: testNativeChainInfo,
-            orm: orm,
-            notifiers: testNotifierTransports,
-            contractRetriever: await createTestContractRetriever(context),
-        };
+        const fAssetSymbol = "TESTHHSYM";
+        userBot = new UserBotCommands(context, fAssetSymbol, minterAddress, userUnderlyingAddress);
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain, userUnderlyingAddress);
         redeemer = await createTestRedeemer(context, minterAddress, userUnderlyingAddress);
@@ -127,7 +99,7 @@ describe("UserBot cli commands unit tests", () => {
     after(function () {
         // clean up -  delete residual redeem files
         const fileList: string[] = [];
-        const dir = `./${UserBotCommands.userDataDir}/${userBot.fassetConfig.fAssetSymbol}-redeem/`;
+        const dir = `./${UserBotCommands.userDataDir}/${userBot.fAssetSymbol}-redeem/`;
         fs.readdirSync(dir).forEach((file) => {
             const fullPath = path.join(dir, file);
             fileList.push(fullPath);
@@ -324,7 +296,7 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `./${UserBotCommands.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = `./${UserBotCommands.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();
