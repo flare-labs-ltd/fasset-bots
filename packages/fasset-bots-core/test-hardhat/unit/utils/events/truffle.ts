@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { findRequiredEvent, eventArgs } from "../../../../src/utils/events/truffle";
+import { findRequiredEvent, eventArgs, requiredEventArgs } from "../../../../src/utils/events/truffle";
 
 describe("Truffle unit tests", () => {
     const response = {
@@ -49,6 +49,6 @@ describe("Truffle unit tests", () => {
 
     it("Should get event arguments", async () => {
         expect(eventArgs(response, eventName)).to.be.undefined;
-        expect(eventArgs(response, "AgentVaultCreated").length).to.eq(0);
+        expect(requiredEventArgs(response, "AgentVaultCreated").length).to.eq(0);
     });
 });

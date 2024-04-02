@@ -55,8 +55,8 @@ export interface BotFAssetConfig {
  * @returns instance BotConfig
  */
 export async function createBotConfig(runConfig: BotConfigFile, submitter?: string): Promise<BotConfig> {
-    const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const retriever = await AssetContractRetriever.create(runConfig.prioritizeAddressUpdater, runConfig.contractsJsonFile, runConfig.assetManagerController);
+    const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions) : undefined;
     const fAssets: Map<string, BotFAssetConfig> = new Map();
     for (const [symbol, fassetInfo] of Object.entries(runConfig.fAssets)) {
         const fassetConfig = await createBotFAssetConfig(retriever, symbol, fassetInfo, orm?.em, runConfig.attestationProviderUrls, submitter, runConfig.walletOptions);

@@ -75,6 +75,7 @@ function checkFilePermissions(fpath: string) {
     }
     // file must only be accessible by the process user
     const stat = statSync(fpath);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const processUid = process.getuid!();
     if (!(stat.uid === processUid && (stat.mode & 0o077) === 0)) {
         throw new CommandLineError(`File ${fpath} must only be readable by the process user. Set permission bits to 600.`);

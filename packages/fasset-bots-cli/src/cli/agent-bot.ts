@@ -295,7 +295,8 @@ program
     .action(async () => {
         const options: { config: string; fasset: string } = program.opts();
         const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
-        await cli.createUnderlyingAccount();
+        const { address, privateKey } = await cli.createUnderlyingAccount();
+        console.log({ address, privateKey });
     });
 
 program

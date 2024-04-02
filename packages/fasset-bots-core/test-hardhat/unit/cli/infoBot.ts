@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";

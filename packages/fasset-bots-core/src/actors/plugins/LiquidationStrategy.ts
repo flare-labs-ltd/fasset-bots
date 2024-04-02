@@ -32,6 +32,7 @@ export class DexLiquidationStrategy extends LiquidationStrategy {
     }
 
     public async liquidate(agent: TrackedAgentState): Promise<void> {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const liquidator = await Liquidator.at(this.context.liquidationStrategy!.config.address);
         const oraclePrices = await this.dexMinPriceOracle(liquidator, agent);
         await liquidator.runArbitrage(agent.vaultAddress, this.address, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address });

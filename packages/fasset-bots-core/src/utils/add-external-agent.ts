@@ -30,10 +30,11 @@ export async function addExternalAgentVault(
     const botConfig = await createBotConfig(runConfig, "0x");
     const chainConfig = botConfig.fAssets.get(fAssetSymbol);
     assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
+    assertNotNullCmd(botConfig.orm, `Missing orm definition in config`);
     const assetContext = await createAgentBotContext(botConfig, chainConfig);
     const agentInfo = await assetContext.assetManager.getAgentInfo(agentVaultAddress);
     // check if agent exists
-    const agent = await botConfig.orm!.em.findOne(AgentEntity, { vaultAddress: agentVaultAddress });
+    const agent = await botConfig.orm.em.findOne(AgentEntity, { vaultAddress: agentVaultAddress });
     if (agent) {
         return console.log("agent already in the database");
     }
@@ -43,7 +44,7 @@ export async function addExternalAgentVault(
         ownerAddress = agentInfo.ownerManagementAddress;
     }
     // create new agent
-    await botConfig.orm!.em.transactional(async (em) => {
+    await botConfig.orm.em.transactional(async (em) => {
         const lastBlock = await web3.eth.getBlockNumber();
         const newAgent = new AgentEntity();
         newAgent.vaultAddress = agentVaultAddress;

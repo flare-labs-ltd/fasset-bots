@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect, spy, use } from "chai";

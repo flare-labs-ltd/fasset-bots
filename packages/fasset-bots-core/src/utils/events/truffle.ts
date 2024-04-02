@@ -37,10 +37,8 @@ export function findRequiredEvent<E extends EventSelector, N extends E["name"]>(
     return event;
 }
 
-export function eventArgs<E extends EventSelector, N extends E["name"]>(response: Truffle.TransactionResponse<E>, name: N): ExtractedEventArgs<E, N> {
-    // TODO: the '!' shouldn't be here, but somehow worked before silently passing undefined and now too much code relies on this
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-non-null-asserted-optional-chain
-    return findEvent(response, name)?.args!;
+export function eventArgs<E extends EventSelector, N extends E["name"]>(response: Truffle.TransactionResponse<E>, name: N): ExtractedEventArgs<E, N> | undefined {
+    return findEvent(response, name)?.args;
 }
 
 export function requiredEventArgs<E extends EventSelector, N extends E["name"]>(response: Truffle.TransactionResponse<E>, name: N): ExtractedEventArgs<E, N> {

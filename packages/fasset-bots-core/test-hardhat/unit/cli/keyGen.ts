@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect } from "chai";
 import { generateSecrets } from "../../../src";
 import { requireEnv } from "../../../src/utils";

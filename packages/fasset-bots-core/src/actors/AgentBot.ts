@@ -2,12 +2,12 @@ import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
 import { requireSecret } from "../config/secrets";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -21,10 +21,13 @@ import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR, VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, findOneSubstring, toBN } from "../utils/helpers";
+import {
+    BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
+    VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, findOneSubstring, toBN
+} from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { AgentNotifier } from "../utils/notifier/AgentNotifier";
-import { NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { AgentNotificationKey, AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { NotificationLevel, NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -217,8 +220,13 @@ export class AgentBot {
                 if (this.stopRequested()) return;
                 await rootEm
                     .transactional(async (em) => {
-                        const fullEvent = await this.getEventFromEntity(event)!;
-                        await this.handleEvent(em, fullEvent!);
+                        const fullEvent = await this.getEventFromEntity(event);
+                        if (fullEvent != null) {
+                            await this.handleEvent(em, fullEvent);
+                        } else {
+                            await this.notifier.send(NotificationLevel.DANGER, AgentNotificationKey.UNRESOLVED_EVENT,
+                                `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; ir will be skipped.`);
+                        }
                         agentEnt.events.remove(event);
                     })
                     .catch(async (error) => {
@@ -433,9 +441,10 @@ export class AgentBot {
                 }
             } else {
                 // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
+                assertNotNull(agentEnt.dailyProofRequestRound);
+                assertNotNull(agentEnt.dailyProofRequestData);
                 logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(agentEnt.dailyProofRequestRound!, agentEnt.dailyProofRequestData!);
+                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
                 if (proof === AttestationNotProved.NOT_FINALIZED) {
                     logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
                     return;
@@ -450,7 +459,7 @@ export class AgentBot {
                     agentEnt.dailyTasksTimestamp = toBN(latestBlock.timestamp);
                     await rootEm.persistAndFlush(agentEnt);
                 } else {
-                    await this.notifier.sendDailyTaskNoProofObtained(agentEnt.dailyProofRequestRound!, agentEnt.dailyProofRequestData!);
+                    await this.notifier.sendDailyTaskNoProofObtained(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
                     // request new block height proof
                     agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
                     await rootEm.persistAndFlush(agentEnt);
@@ -1095,8 +1104,9 @@ export class AgentBot {
      */
     async checkNonPayment(minting: AgentMinting): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
+        assertNotNull(minting.proofRequestRound);
+        assertNotNull(minting.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound, minting.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             return;
@@ -1110,8 +1120,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(nonPaymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
+            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
         }
     }
 
@@ -1122,8 +1131,9 @@ export class AgentBot {
      */
     async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
+        assertNotNull(minting.proofRequestRound);
+        assertNotNull(minting.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound, minting.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             return;
@@ -1136,8 +1146,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} executed minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for minting ${minting.requestId} with in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
+            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
         }
     }
 
@@ -1321,7 +1330,6 @@ export class AgentBot {
     async startRejectRedemption(redemption: AgentRedemption) {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment address invalidity
             for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const request = await this.context.attestationProvider.requestAddressValidityProof(redemption.paymentAddress);
         if (request) {
             redemption.state = AgentRedemptionState.REQUESTED_REJECTION_PROOF;
@@ -1341,8 +1349,9 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to obtain proof for payment address invalidity
             for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}
             in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        assertNotNull(redemption.proofRequestRound);
+        assertNotNull(redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound, redemption.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for address validation for redemption
                 ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
@@ -1360,15 +1369,13 @@ export class AgentBot {
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained conflicting address validation proof
                     for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
                 await this.notifier.sendRedemptionAddressValidationProofConflict(redemption.requestId,
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    redemption.proofRequestRound!, redemption.proofRequestData!, redemption.paymentAddress);
+                    redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
             }
         } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain address validation proof for redemption ${redemption.requestId}
                 in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                redemption.proofRequestRound!, redemption.proofRequestData!, redemption.paymentAddress);
+                redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
         }
     }
 
@@ -1399,8 +1406,8 @@ export class AgentBot {
      */
     async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash!);
+        assertNotNull(redemption.txHash);
+        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
             await this.requestPaymentProof(redemption);
@@ -1415,8 +1422,8 @@ export class AgentBot {
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment proof transaction ${redemption.txHash}
             and redemption ${redemption.requestId.toString()}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
+        assertNotNull(redemption.txHash);
+        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash, this.agent.underlyingAddress, redemption.paymentAddress);
         if (request) {
             redemption.state = AgentRedemptionState.REQUESTED_PROOF;
             redemption.proofRequestRound = request.round;
@@ -1439,8 +1446,9 @@ export class AgentBot {
      */
     async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        assertNotNull(redemption.proofRequestRound);
+        assertNotNull(redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound, redemption.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             return;
@@ -1453,8 +1461,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound!, redemption.proofRequestData!);
+            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
         }
     }
 

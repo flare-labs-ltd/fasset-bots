@@ -2,13 +2,12 @@ import "dotenv/config";
 
 import path from "path";
 import { getSecrets } from ".";
-import { logger } from "../utils";
+import { CommandLineError, logger } from "../utils";
 import { requireNotNull } from "../utils/helpers";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
-import { BotConfigFile, BotFAssetInfo } from "./config-files/BotConfigFile";
+import { BotConfigFile } from "./config-files/BotConfigFile";
 import { loadContracts } from "./contracts";
 import { IJsonLoader, JsonLoader } from "./json-loader";
-import { CreateOrmOptions } from "./orm";
 
 
 export const botConfigLoader: IJsonLoader<BotConfigFile> =
@@ -60,23 +59,20 @@ export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
     }
 }
 
-export type AgentBotFAssetInfo = BotFAssetInfo & { walletUrl: string; };
-export type AgentBotConfigFile = BotConfigFile & { ormOptions: CreateOrmOptions; fAssetInfos: AgentBotFAssetInfo[]; };
-
 /**
  * Loads agent configuration file and checks it.
  * @param fPath configuration file path
  * @param configInfo
  * @returns instance AgentBotConfigFile
  */
-export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBotConfigFile {
+export function loadAgentConfigFile(fPath: string, configInfo?: string): BotConfigFile {
     try {
         const config = botConfigLoader.load(fPath);
         updateConfigFilePaths(fPath, config);
         validateAgentConfigFile(config);
         // check secrets.json file permission
         getSecrets();
-        return config as AgentBotConfigFile;
+        return config;
     } /* istanbul ignore next */ catch (e) {
         logger.error(configInfo ?? "", e);
         throw e;
@@ -89,9 +85,12 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): AgentBo
  */
 function validateAgentConfigFile(config: BotConfigFile): void {
     validateConfigFile(config);
+    if (config.attestationProviderUrls == null || config.attestationProviderUrls.length === 0) {
+        throw new CommandLineError(`At least one attestation provider url is required`);
+    }
     for (const [symbol, fc] of Object.entries(config.fAssets)) {
         if (fc.walletUrl == null) {
-            throw new Error(`Missing walletUrl in FAsset type ${symbol}`);
+            throw new CommandLineError(`Missing walletUrl in FAsset type ${symbol}`);
         }
     }
 }

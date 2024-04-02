@@ -12,6 +12,8 @@ export type Dict<T> = { [key: string]: T };
 
 export type Modify<T, R> = Omit<T, keyof R> & R;
 
+export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
 export const BN_ZERO = new BN(0);
 export const BN_ONE: BN = Web3.utils.toBN(1);
 export const BN_TEN: BN = Web3.utils.toBN(10);
