@@ -1,3 +1,4 @@
+import assert from "assert";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { FormatSettings, formatFixed } from "./formatting";
@@ -36,7 +37,7 @@ export class AgentTokenConverter {
 
     async getCollateral(): Promise<CollateralType> {
         if (this._collateral == null) {
-            if (this.type === "fasset") throw new Error("Invalid collateral type");
+            assert(this.type !== "fasset", "Invalid collateral type");
             this._collateral = await this._getCollateral(this.type);
         }
         return this._collateral;
@@ -63,6 +64,6 @@ export class AgentTokenConverter {
     }
 
     async formatAsTokensWithUnit(amount: BNish, format?: FormatSettings) {
-        return `${this.formatAsTokens(amount, format)} ${this.tokenSymbol()}`;
+        return `${await this.formatAsTokens(amount, format)} ${await this.tokenSymbol()}`;
     }
 }
