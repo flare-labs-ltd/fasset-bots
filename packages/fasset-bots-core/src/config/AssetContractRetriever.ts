@@ -1,6 +1,6 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance, Truffle } from "../../typechain-truffle";
 import { ZERO_ADDRESS } from "../utils/helpers";
-import { CommandLineError, requireNotNullCmd } from "../utils/toplevel";
+import { CommandLineError, requireNotNullCmd } from "../utils/command-line-errors";
 import { artifacts } from "../utils/web3";
 import { ChainContracts, loadContracts } from "./contracts";
 

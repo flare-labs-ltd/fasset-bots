@@ -4,9 +4,10 @@ import "source-map-support/register";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync } from "fs";
 import { programWithCommonOptions } from "../utils/program";
+import { toplevelRun } from "../utils/toplevel";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");

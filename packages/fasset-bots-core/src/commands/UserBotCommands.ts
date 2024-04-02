@@ -19,7 +19,7 @@ import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
 import { BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { CommandLineError, assertNotNullCmd } from "../utils/toplevel";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";

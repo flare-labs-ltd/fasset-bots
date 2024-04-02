@@ -3,9 +3,10 @@ import "source-map-support/register";
 
 import { InfoBot, UserBot } from "@flarelabs/fasset-bots-core";
 import { requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, minBN, registerToplevelFinalizer, toBN, toBNExp, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, minBN, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import Web3 from "web3";
 import { programWithCommonOptions } from "../utils/program";
+import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 
 const program = programWithCommonOptions("user", "single_fasset");
 

@@ -3,8 +3,9 @@ import "source-map-support/register";
 
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
+import { toplevelRun } from "../utils/toplevel";
 
 const program = programWithCommonOptions("bot", "all_fassets");
 

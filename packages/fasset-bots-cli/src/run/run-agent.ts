@@ -3,8 +3,9 @@ import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeper } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, decodedChainId, getSecrets, loadAgentConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
+import { toplevelRun } from "../utils/toplevel";
 
 const TIMEKEEPER_INTERVAL = 300_000;
 

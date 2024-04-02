@@ -25,7 +25,7 @@ import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, requireNotNull, toB
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { CommandLineError, assertNotNullCmd } from "../utils/toplevel";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 

@@ -3,9 +3,10 @@ import "source-map-support/register";
 
 import { AgentTokenConverter, BotCliCommands } from "@flarelabs/fasset-bots-core";
 import { loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, errorIncluded, registerToplevelFinalizer, squashSpace, toBIPS, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
+import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 
 const program = programWithCommonOptions("bot", "single_fasset");
 

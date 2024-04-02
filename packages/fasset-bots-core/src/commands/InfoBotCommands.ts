@@ -8,7 +8,7 @@ import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { MAX_BIPS, firstValue, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { CommandLineError, assertNotNullCmd } from "../utils/toplevel";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
