@@ -1,5 +1,6 @@
 import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance, Truffle } from "../../typechain-truffle";
-import { assertNotNullCmd, requireNotNullCmd } from "../utils/toplevel";
+import { ZERO_ADDRESS } from "../utils/helpers";
+import { CommandLineError, requireNotNullCmd } from "../utils/toplevel";
 import { artifacts } from "../utils/web3";
 import { ChainContracts, loadContracts } from "./contracts";
 
@@ -8,54 +9,66 @@ const AssetManagerController = artifacts.require("AssetManagerController");
 const AddressUpdater = artifacts.require("AddressUpdater");
 const FAsset = artifacts.require("FAsset");
 
-export class AssetContractRetriever {
-    prioritizeAddressUpdater!: boolean;
-    assetManagerController!: AssetManagerControllerInstance;
-    addressUpdater!: AddressUpdaterInstance;
-    assetManagers!: Map<string, AssetManagerInstance>;
-    contracts?: ChainContracts;
-
-    static async create(prioritizeAddressUpdater: boolean, contractsJsonFile?: string, assetManagerControllerAddress?: string) {
-        const result = new AssetContractRetriever();
-        await result.initialize(prioritizeAddressUpdater, contractsJsonFile, assetManagerControllerAddress);
-        return result;
-    }
-
-    async initialize(prioritizeAddressUpdater: boolean, contractsJsonFile?: string, assetManagerControllerAddress?: string) {
-        this.prioritizeAddressUpdater = prioritizeAddressUpdater;
-        if (contractsJsonFile) {
-            this.contracts = loadContracts(contractsJsonFile);
-        }
-        if (assetManagerControllerAddress) {
-            this.assetManagerController = await AssetManagerController.at(assetManagerControllerAddress);
-            this.addressUpdater = await AddressUpdater.at(await this.assetManagerController.getAddressUpdater());
-        } else {
-            assertNotNullCmd(this.contracts, "At least one of contractsJsonFile or assetManagerController must be defined");
-            this.addressUpdater = await AddressUpdater.at(this.contracts.AddressUpdater.address);
-            this.assetManagerController = await this.getContract(AssetManagerController);
-        }
-        this.assetManagers = await AssetContractRetriever.createAssetManagerMap(this.assetManagerController);
-    }
-
-    getAssetManager(symbol: string) {
-        return requireNotNullCmd(this.assetManagers.get(symbol), `No asset manager for FAsset with symbol ${symbol}`);
-    }
+export class ContractRetriever {
+    constructor(
+        public prioritizeAddressUpdater: boolean,
+        public addressUpdater: AddressUpdaterInstance,
+        public contracts?: ChainContracts,
+    ) {}
 
     async getContractAddress(name: string, addressUpdaterName: string = name) {
-        if (this.contracts) {
-            return requireNotNullCmd(this.contracts[name]?.address, `Cannot find address for ${name}`);
-        } else {
-            try {
-                return await this.addressUpdater.getContractAddress(addressUpdaterName);
-            } catch (e) {
-                throw new Error(`Cannot find address for ${name}`);
+        if (this.contracts == null || this.prioritizeAddressUpdater) {
+            const address = await this.addressUpdater.getContractAddress(addressUpdaterName);
+            if (address !== ZERO_ADDRESS) {
+                return address;
             }
         }
+        if (this.contracts != null) {
+            const address = this.contracts[name]?.address;
+            if (address) {
+                return address;
+            }
+        }
+        throw new Error(`Cannot find address for contract ${name}`);
     }
 
     async getContract<T>(factory: Truffle.Contract<T>, name: string = factory.contractName, addressUpdaterName: string = name) {
         const address = await this.getContractAddress(name, addressUpdaterName);
         return await factory.at(address);
+    }
+}
+
+export class AssetContractRetriever extends ContractRetriever {
+    constructor(
+        prioritizeAddressUpdater: boolean,
+        addressUpdater: AddressUpdaterInstance,
+        contracts: ChainContracts | undefined,
+        public assetManagerController: AssetManagerControllerInstance,
+        public assetManagers: Map<string, AssetManagerInstance>,
+    ) {
+        super(prioritizeAddressUpdater, addressUpdater, contracts);
+    }
+
+    static async create(prioritizeAddressUpdater: boolean, contractsJsonFile?: string, assetManagerControllerAddress?: string) {
+        const contracts = contractsJsonFile ? loadContracts(contractsJsonFile) : undefined;
+        let assetManagerController: AssetManagerControllerInstance;
+        let addressUpdater: AddressUpdaterInstance;
+        if (assetManagerControllerAddress) {
+            assetManagerController = await AssetManagerController.at(assetManagerControllerAddress);
+            addressUpdater = await AddressUpdater.at(await assetManagerController.getAddressUpdater());
+        } else if (contracts != null) {
+            addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
+            const contractRetriever = new ContractRetriever(prioritizeAddressUpdater, addressUpdater, contracts);
+            assetManagerController = await contractRetriever.getContract(AssetManagerController);
+        } else {
+            throw new CommandLineError("At least one of contractsJsonFile or assetManagerController must be defined");
+        }
+        const assetManagers = await AssetContractRetriever.createAssetManagerMap(assetManagerController);
+        return new AssetContractRetriever(prioritizeAddressUpdater, addressUpdater, contracts, assetManagerController, assetManagers);
+    }
+
+    getAssetManager(symbol: string) {
+        return requireNotNullCmd(this.assetManagers.get(symbol), `No asset manager for FAsset with symbol ${symbol}`);
     }
 
     static async createAssetManagerMap(assetManagerController: AssetManagerControllerInstance) {
