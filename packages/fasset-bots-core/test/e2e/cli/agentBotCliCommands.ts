@@ -3,15 +3,14 @@ import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
-import { requireEnv } from "../../../src/utils";
 import { initWeb3 } from "../../../src/utils/web3";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
-import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
+import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS, TEST_FASSET_BOT_CONFIG } from "../../test-utils/test-bot-config";
 import { enableSlowTests, getNativeAccountsFromEnv, itIf } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 use(spies);
 
-const fassetBotConfig: string = requireEnv("FASSET_BOT_CONFIG");
+const fassetBotConfig = TEST_FASSET_BOT_CONFIG;
 const fAssetSymbol = "FtestXRP";
 
 describe("AgentBot cli commands unit tests", () => {

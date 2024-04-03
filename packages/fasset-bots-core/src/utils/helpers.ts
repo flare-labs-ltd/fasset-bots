@@ -228,13 +228,6 @@ export function requireEnv(name: string) {
     throw new Error(`Environment value ${name} not defined`);
 }
 
-// return text, converting "${ENV_VAR}" argument to `process.env[ENV_VAR]`
-/* istanbul ignore next */
-export function autoReadEnvVar(text: string) {
-    const m = text.match(/^\s*\$\{(\w+)\}\s*$/);
-    return m ? requireEnv(m[1]) : text;
-}
-
 // Error handling
 
 export function filterStackTrace(error: any) {

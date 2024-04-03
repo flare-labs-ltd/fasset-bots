@@ -3,6 +3,9 @@ import { CreateOrmOptions, ORM } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, Event } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
+import { resolveInFassetBotsCore } from "../../src/utils/package-paths";
+
+export const TEST_FASSET_BOT_CONFIG = process.env.TEST_FASSET_BOT_CONFIG ?? resolveInFassetBotsCore("run-config/coston-bot.json");
 
 export const OWNER_ADDRESS: string = "0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073";
 export const COSTON_RPC: string = "https://coston-api.flare.network/ext/C/rpc";
