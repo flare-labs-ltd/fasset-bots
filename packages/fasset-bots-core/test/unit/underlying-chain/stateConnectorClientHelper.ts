@@ -15,7 +15,6 @@ const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const accountPrivateKey = requireSecret("user.native.private_key");
 const sourceId = SourceId.testXRP;
 const finalizationBlocks: number = 6;
 
@@ -24,6 +23,7 @@ describe("testXRP attestation/state connector tests", () => {
     let account: string;
 
     before(async () => {
+        const accountPrivateKey = requireSecret("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         account = accounts[0];
         stateConnectorClient = await createStateConnectorClient(
@@ -129,7 +129,9 @@ describe("State connector tests - decoding", () => {
         spentAmount: "0x2540be40c",
         paymentReference: "0xe530837535d367bc130ee181801f91e1a654a054b9b014cf0aeb79ecc7e6d8d2",
     };
+
     before(async () => {
+        const accountPrivateKey = requireSecret("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,

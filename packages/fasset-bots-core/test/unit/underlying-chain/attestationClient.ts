@@ -15,7 +15,6 @@ import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_A
 import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 use(chaiAsPromised);
 
-const accountPrivateKey = requireSecret("owner.native.private_key");
 const sourceId = SourceId.testXRP;
 const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";
@@ -33,6 +32,7 @@ describe("Attestation client unit tests", () => {
 
     before(async () => {
         orm = await createTestOrm();
+        const accountPrivateKey = requireSecret("owner.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         attestationHelper = await createAttestationHelper(
             sourceId,

@@ -22,18 +22,17 @@ import { testNotifierTransports } from "./testNotifierTransports";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
-const ownerAccountPrivateKey = requireSecret("owner.native.private_key");
-const account1PrivateKey = requireSecret("challenger.private_key");
-const userPrivateKey = requireSecret("user.native.private_key");
-const account3PrivateKey = requireSecret("timeKeeper.private_key");
-const account4PrivateKey = requireSecret("systemKeeper.private_key");
-
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 6);
 
 export function getNativeAccountsFromEnv() {
+    const ownerAccountPrivateKey = requireSecret("owner.native.private_key");
+    const account1PrivateKey = requireSecret("challenger.private_key");
+    const userPrivateKey = requireSecret("user.native.private_key");
+    const timeKeeperPrivateKey = requireSecret("timeKeeper.private_key");
+    const systemKeeperPrivateKey = requireSecret("systemKeeper.private_key");
     // owner is always first in array
     // deployer account / current coston governance in always last in array
-    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, account4PrivateKey];
+    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, timeKeeperPrivateKey, systemKeeperPrivateKey];
 }
 
 export async function removeWalletAddressFromDB(walletKeys: IWalletKeys | BlockchainWalletHelper, address: string) {
