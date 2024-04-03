@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { Secrets, getSecrets, requireEncryptionPassword, requireSecret, resetSecrets } from "../../../src/config/secrets";
+import { getSecrets, requireEncryptionPassword, requireSecret, resetSecrets } from "../../../src/config/secrets";
+import { SecretsFile } from "../../../src/config/config-files/SecretsFile";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../../../src/utils/helpers";
 import { decodedChainId } from "../../../src/config/create-wallet-client";
 
@@ -23,7 +24,7 @@ describe("Secrets unit tests", () => {
     });
 
     it("Should throw error if encryption password too short", async () => {
-        const secrets: Secrets = {
+        const secrets: SecretsFile = {
             apiKey: {
                 apiKey: "",
             },

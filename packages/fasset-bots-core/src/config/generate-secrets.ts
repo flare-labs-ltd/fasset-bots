@@ -3,7 +3,8 @@ import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import crypto from "node:crypto";
 import Web3 from "web3";
 import { SourceId } from "../underlying-chain/SourceId";
-import { ChainAccount, Secrets } from "./secrets";
+import { ChainAccount } from "./config-files/SecretsFile";
+import { SecretsFile } from "./config-files/SecretsFile";
 import { loadConfigFile } from "./config-file-loader";
 import { requireNotNull } from "../utils";
 
@@ -34,7 +35,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     }
     const config = loadConfigFile(configFile, undefined, false);
     const chainIds = new Set(Object.values(config.fAssets).map(fi => fi.chainId));
-    const secrets: Secrets = { apiKey: {} };
+    const secrets: SecretsFile = { apiKey: {} };
     secrets.apiKey.native_rpc = "";
     if (users.includes("agent") || users.includes("user")) {
         secrets.apiKey.xrp_rpc = "";

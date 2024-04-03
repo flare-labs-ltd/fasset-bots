@@ -1,39 +1,9 @@
 import { readFileSync, statSync } from "fs";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../utils/helpers";
 import { CommandLineError } from "../utils/command-line-errors";
+import { SecretsFile } from "./config-files/SecretsFile";
 
-export type Secrets = {
-    wallet?: {
-        encryption_password: string;
-    };
-    apiKey: {
-        [key: string]: string;
-    };
-    owner?: {
-        [key: string]: ChainAccount;
-    };
-    user?: {
-        [key: string]: ChainAccount;
-    };
-    challenger?: ChainAccount;
-    liquidator?: ChainAccount;
-    timeKeeper?: ChainAccount;
-    systemKeeper?: ChainAccount;
-    deployer?: ChainAccount;
-    database?: DatabaseAccount;
-};
-
-export interface ChainAccount {
-    address: string;
-    private_key: string;
-}
-
-export interface DatabaseAccount {
-    user: string;
-    password: string;
-}
-
-export function getSecrets(): Secrets {
+export function getSecrets(): SecretsFile {
     if (loadedSecrets == undefined) {
         loadedSecrets = loadSecrets(defaultSecretsPath());
     }
@@ -44,9 +14,9 @@ export function resetSecrets(secretsPath: string) {
     loadedSecrets = loadSecrets(secretsPath);
 }
 
-let loadedSecrets: Secrets | undefined;
+let loadedSecrets: SecretsFile | undefined;
 
-function loadSecrets(secretsPath: string): Secrets {
+function loadSecrets(secretsPath: string): SecretsFile {
     checkFilePermissions(secretsPath);
     const secrets = JSON.parse(readFileSync(secretsPath).toString());
     return secrets;
@@ -56,7 +26,7 @@ function defaultSecretsPath(): string {
     return requireEnv("FASSET_BOT_SECRETS");
 }
 
-export function requireEncryptionPassword(name: string, secrets?: Secrets): string {
+export function requireEncryptionPassword(name: string, secrets?: SecretsFile): string {
     const value = requireSecret(name, secrets);
     if (value.length < ENCRYPTION_PASSWORD_MIN_LENGTH) {
         throw new Error(`'${name}' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
@@ -82,7 +52,7 @@ function checkFilePermissions(fpath: string) {
     }
 }
 
-export function requireSecret(name: string, secrets?: Secrets): string {
+export function requireSecret(name: string, secrets?: SecretsFile): string {
     const value = valueForKeyPath(secrets ?? getSecrets(), name);
     if (typeof value === "string") return value;
     throw new Error(`Secret variable ${name} not defined or not typeof string`);
