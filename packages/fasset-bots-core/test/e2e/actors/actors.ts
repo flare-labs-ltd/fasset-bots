@@ -1,16 +1,17 @@
 import { FilterQuery } from "@mikro-orm/core";
-import { expect, use } from "chai";
+import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import spies from "chai-spies";
+import { TimeKeeper } from "../../../src";
 import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { BotConfig, BotFAssetConfig, createBotConfig } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
-import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
-import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createAgentBotContext, createChallengerContext, createNativeContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
@@ -18,16 +19,16 @@ import { getSecrets, requireSecret } from "../../../src/config/secrets";
 import { AgentEntity } from "../../../src/entities/agent";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { IAssetAgentContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { AgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { TrackedState } from "../../../src/state/TrackedState";
+import { requireNotNull, sleep } from "../../../src/utils";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
 import { cleanUp, enableSlowTests, getNativeAccountsFromEnv, itIf } from "../../test-utils/test-helpers";
 import { testNotifierTransports } from "../../test-utils/testNotifierTransports";
-import { requireNotNull } from "../../../src/utils";
 use(chaiAsPromised);
+use(spies);
 
 const fAssetSymbol = "FtestXRP";
 
@@ -152,6 +153,19 @@ describe("Actor tests - coston", () => {
         expect(actorBaseRunner3.loopDelay).to.eq(actorConfig.loopDelay);
         expect(actorBaseRunner3.actor.address).to.eq(systemKeeperAddress);
         expect(actorBaseRunner3.actor instanceof SystemKeeper).to.be.true;
+    });
+
+    it("should start and stop timekeepers", async () => {
+        const spyUpdate = spy.on(TimeKeeper.prototype, "updateUnderlyingBlock");
+        try {
+            const timekeepers = await TimeKeeper.startTimekeepers(actorConfig, ownerAddress, 300_000);
+            expect(timekeepers.length).to.be.eq(2);
+            await sleep(2000);
+            await TimeKeeper.stopTimekeepers(timekeepers);
+            expect(spyUpdate).to.be.called.twice;
+        } finally {
+            spy.restore(TimeKeeper.prototype);
+        }
     });
 
     itIf(enableSlowTests())("Should not create agent - unknown address", async () => {
