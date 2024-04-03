@@ -5,7 +5,7 @@ import { ORM } from "../../../src/config/orm";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { createTestOrm } from "../../test-utils/test-bot-config";
+import { createTestOrm } from "../../test-utils/create-test-orm";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 

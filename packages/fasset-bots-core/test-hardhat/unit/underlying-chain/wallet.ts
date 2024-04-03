@@ -2,7 +2,7 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { ORM } from "../../../src/config/orm";
 import { DBWalletKeys, MemoryWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 use(chaiAsPromised);
 
 let orm: ORM;

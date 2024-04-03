@@ -5,7 +5,7 @@ import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIn
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
 import { SourceId } from "../../src/underlying-chain/SourceId";
 import { prefix0x } from "../../src/utils/helpers";
-import { createTestOrm } from "../test-utils/test-bot-config";
+import { createTestOrm } from "../test-utils/create-test-orm";
 import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
 
 let orm: ORM;

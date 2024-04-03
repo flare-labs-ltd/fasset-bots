@@ -16,7 +16,7 @@ import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
 import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
