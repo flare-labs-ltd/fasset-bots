@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { BotConfig, BotFAssetConfig, createChallengerContext } from "../config";
+import { BotFAssetConfigWithIndexer, KeeperBotConfig, createChallengerContext } from "../config";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { IChallengerContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
@@ -61,7 +61,7 @@ export class Challenger extends ActorBase {
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>(); // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
 
-    static async create(config: BotConfig, address: string, fAsset: BotFAssetConfig): Promise<Challenger> {
+    static async create(config: KeeperBotConfig, address: string, fAsset: BotFAssetConfigWithIndexer): Promise<Challenger> {
         logger.info(`Challenger ${address} started to create asset context.`);
         const context = await createChallengerContext(config, fAsset);
         logger.info(`Challenger ${address} initialized asset context.`);

@@ -16,7 +16,7 @@ program.action(async () => {
     const liquidatorAddress: string = secrets.required("liquidator.address");
     const liquidatorPrivateKey: string = secrets.required("liquidator.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [liquidatorPrivateKey], null);
-    const config = await createBotConfig(secrets, runConfig, liquidatorAddress);
+    const config = await createBotConfig("common", secrets, runConfig, liquidatorAddress);
     const fassetList = Array.from(config.fAssets.values());
     const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, liquidatorAddress, ActorBaseKind.LIQUIDATOR, chainConfig)

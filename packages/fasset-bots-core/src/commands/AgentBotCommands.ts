@@ -68,7 +68,7 @@ export class AgentBotCommands {
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        const botConfig = await createBotConfig(secrets, runConfig, owner.workAddress);
+        const botConfig = await createBotConfig("agent", secrets, runConfig, owner.workAddress);
         registerCleanup?.(() => closeBotConfig(botConfig));
         // create context
         const chainConfig = botConfig.fAssets.get(fAssetSymbol);

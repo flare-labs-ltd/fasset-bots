@@ -1,4 +1,4 @@
-import { BotConfig, BotFAssetConfig } from "../config/BotConfig";
+import { BotConfig, BotFAssetConfig, BotFAssetConfigWithIndexer, KeeperBotConfig } from "../config/BotConfig";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -54,6 +54,8 @@ export class ActorBaseRunner {
      * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
      * @returns instance of ActorBaseRunner
      */
+    static async create(config: KeeperBotConfig, address: string, kind: ActorBaseKind.CHALLENGER, fAsset: BotFAssetConfigWithIndexer): Promise<ActorBaseRunner>;
+    static async create(config: BotConfig, address: string, kind: ActorBaseKind.LIQUIDATOR | ActorBaseKind.SYSTEM_KEEPER, fAsset: BotFAssetConfig): Promise<ActorBaseRunner>;
     static async create(config: BotConfig, address: string, kind: ActorBaseKind, fAsset: BotFAssetConfig): Promise<ActorBaseRunner> {
         const actor = await ActorBaseRunner.createActor(config, address, kind, fAsset);
         logger.info(`${ActorBaseKind[kind]} ${address} created ActorBaseRunner.`);
@@ -63,7 +65,7 @@ export class ActorBaseRunner {
     private static async createActor(config: BotConfig, address: string, kind: ActorBaseKind, fAsset: BotFAssetConfig) {
         switch (kind) {
             case ActorBaseKind.CHALLENGER:
-                return await Challenger.create(config, address, fAsset);
+                return await Challenger.create(config as KeeperBotConfig, address, fAsset as BotFAssetConfigWithIndexer);
             case ActorBaseKind.LIQUIDATOR:
                 return await Liquidator.create(config, address, fAsset);
             case ActorBaseKind.SYSTEM_KEEPER:

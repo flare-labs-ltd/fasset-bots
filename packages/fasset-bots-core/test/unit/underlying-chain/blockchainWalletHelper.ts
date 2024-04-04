@@ -1,14 +1,14 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { Secrets } from "../../../src/config";
 import { createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { createTestOrm } from "../../test-utils/create-test-orm";
-import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
-import { Secrets } from "../../../src/config";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
 let orm: ORM;
@@ -30,7 +30,7 @@ describe("testXRP wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper(secrets, sourceId, orm.em, walletUrl, { retries: 2 });
+        walletHelper = createBlockchainWalletHelper("agent", secrets, sourceId, orm.em, walletUrl, { retries: 2 });
     });
 
     it("Should create account", async () => {
@@ -91,7 +91,7 @@ describe("testBTC wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper(secrets, sourceId, orm.em, walletUrl);
+        walletHelper = createBlockchainWalletHelper("agent", secrets, sourceId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
@@ -126,7 +126,7 @@ describe("testDOGE wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper(secrets, sourceId, orm.em, walletUrl);
+        walletHelper = createBlockchainWalletHelper("agent", secrets, sourceId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {

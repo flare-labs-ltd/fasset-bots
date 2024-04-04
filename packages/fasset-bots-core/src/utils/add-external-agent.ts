@@ -28,7 +28,7 @@ export async function addExternalAgentVault(
 ): Promise<void> {
     const runConfig = loadConfigFile(runConfigFile);
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), null, null);
-    const botConfig = await createBotConfig(secrets, runConfig, "0x");
+    const botConfig = await createBotConfig("agent", secrets, runConfig, "0x");
     const chainConfig = botConfig.fAssets.get(fAssetSymbol);
     assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
     assertNotNullCmd(botConfig.orm, `Missing orm definition in config`);

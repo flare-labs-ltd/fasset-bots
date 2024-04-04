@@ -1,5 +1,4 @@
-import { createTimekeeperContext } from "../config";
-import { BotConfig } from "../config/BotConfig";
+import { KeeperBotConfig, createTimekeeperContext } from "../config";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { requireNotNull, sleep, web3DeepNormalize } from "../utils";
@@ -22,7 +21,7 @@ export class TimeKeeper {
 
     interval?: NodeJS.Timeout;
 
-    static async startTimekeepers(config: BotConfig, timekeeperAddress: string, interval: number) {
+    static async startTimekeepers(config: KeeperBotConfig, timekeeperAddress: string, interval: number) {
         const timekeepers: TimeKeeper[] = [];
         for (const chain of config.fAssets.values()) {
             const assetContext = await createTimekeeperContext(config, chain);

@@ -5,9 +5,9 @@ import { loadConfigFile } from "../config/config-file-loader";
 import { createNativeContext } from "../config/create-asset-context";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { MAX_BIPS, firstValue, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
@@ -38,7 +38,7 @@ export class InfoBotCommands {
         // init web3 and accounts
         const apiKey = secrets.optional("apiKey.native_rpc");
         await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), [INFO_ACCOUNT_KEY], null);
-        const botConfig = await createBotConfig(secrets, config);
+        const botConfig = await createBotConfig("common", secrets, config);
         // create config
         const chainConfig = fAssetSymbol ? botConfig.fAssets.get(fAssetSymbol) : firstValue(botConfig.fAssets);
         assertNotNullCmd(chainConfig, "FAsset does not exist");

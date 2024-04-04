@@ -13,8 +13,8 @@ import { toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../test-utils/create-test-orm";
 import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
-import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 import { enableSlowTests, itIf } from "../../test-utils/test-helpers";
+import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 use(chaiAsPromised);
 
 const sourceId = SourceId.testXRP;
@@ -48,7 +48,7 @@ describe("Attestation client unit tests", () => {
             indexerApiKey(secrets)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper(secrets, sourceId, orm.em, walletUrl);
+        walletHelper = createBlockchainWalletHelper("agent", secrets, sourceId, orm.em, walletUrl);
         blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey(secrets));
     });
 

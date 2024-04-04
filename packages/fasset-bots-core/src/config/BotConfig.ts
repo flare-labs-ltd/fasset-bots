@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { StuckTransaction } from "@flarelabs/simple-wallet";
 import { EntityManager } from "@mikro-orm/core";
+import { Secrets } from ".";
 import { AssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
@@ -16,25 +17,26 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
+import { RequireFields, assertNotNull, assertNotNullCmd, requireNotNull } from "../utils";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { BotConfigFile, BotFAssetInfo, BotStrategyDefinition } from "./config-files/BotConfigFile";
+import { BotConfigFile, BotFAssetInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, encodedChainId, requireSupportedSourceId, supportedSourceId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
-import { Secrets } from ".";
 
-export interface BotConfig {
+export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     orm?: ORM; // only for agent bot
     notifiers: NotifierTransport[];
     loopDelay: number;
     rpcUrl: string;
-    fAssets: Map<string, BotFAssetConfig>;
+    fAssets: Map<string, T>;
     nativeChainInfo: NativeChainInfo;
     contractRetriever: AssetContractRetriever;
     // liquidation strategies for liquidator and challenger
-    liquidationStrategy?: BotStrategyDefinition; // only for liquidator
-    challengeStrategy?: BotStrategyDefinition; // only for challenger
+    liquidationStrategy?: BotStrategyDefinition; // only for liquidator (optional)
+    challengeStrategy?: BotStrategyDefinition; // only for challenger (optional)
 }
 
 export interface BotFAssetConfig {
@@ -45,34 +47,61 @@ export interface BotFAssetConfig {
     stateConnector?: IStateConnectorClient; // for agent bot, user, challenger and timeKeeper
     verificationClient?: IVerificationApiClient; // only for agent bot and user
     assetManager: AssetManagerInstance;
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optiona, default is 'FtsoManager')
+    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
 }
+
+export type BotFAssetConfigWithWallet = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient">;
+export type BotFAssetConfigWithIndexer = RequireFields<BotFAssetConfig, "blockchainIndexerClient" | "stateConnector" | "verificationClient">;
+
+export type AgentBotConfig = RequireFields<BotConfig<BotFAssetConfigWithWallet>, "orm">;    // for agent
+export type UserBotConfig = BotConfig<BotFAssetConfigWithWallet>;                           // for minter and redeemer
+export type KeeperBotConfig = BotConfig<BotFAssetConfigWithIndexer>;                        // for challenger and timekeeper
+
+export type BotConfigType = "agent" | "user" | "keeper" | "common";
 
 /**
  * Creates bot configuration from initial run config file.
- * @param runConfig instance of BotConfigFile
+ * @param type bot
+ * @param secrets loaded agent bot secrets file (for api keys and db credentials)
+ * @param configFile instance of BotConfigFile
  * @param submitter native owner address
  * @returns instance BotConfig
  */
-export async function createBotConfig(secrets: Secrets, runConfig: BotConfigFile, submitter?: string): Promise<BotConfig> {
-    const retriever = await AssetContractRetriever.create(runConfig.prioritizeAddressUpdater, runConfig.contractsJsonFile, runConfig.assetManagerController);
-    const orm = runConfig.ormOptions ? await overrideAndCreateOrm(runConfig.ormOptions, secrets.data.database) : undefined;
-    const fAssets: Map<string, BotFAssetConfig> = new Map();
-    for (const [symbol, fassetInfo] of Object.entries(runConfig.fAssets)) {
-        const fassetConfig = await createBotFAssetConfig(secrets, retriever, symbol, fassetInfo, orm?.em, runConfig.attestationProviderUrls, submitter, runConfig.walletOptions);
-        fAssets.set(symbol, fassetConfig);
+export async function createBotConfig(type: "agent", secrets: Secrets, configFile: BotConfigFile, submitter?: string): Promise<AgentBotConfig>;
+export async function createBotConfig(type: "user", secrets: Secrets, configFile: BotConfigFile, submitter?: string): Promise<UserBotConfig>;
+export async function createBotConfig(type: "keeper", secrets: Secrets, configFile: BotConfigFile, submitter?: string): Promise<KeeperBotConfig>;
+export async function createBotConfig(type: "common", secrets: Secrets, configFile: BotConfigFile, submitter?: string): Promise<BotConfig>;
+export async function createBotConfig(type: BotConfigType, secrets: Secrets, configFile: BotConfigFile, submitter?: string) {
+    const orm = await createBotOrm(type, configFile.ormOptions, secrets.data.database);
+    try {
+        const retriever = await AssetContractRetriever.create(configFile.prioritizeAddressUpdater, configFile.contractsJsonFile, configFile.assetManagerController);
+        const fAssets: Map<string, BotFAssetConfig> = new Map();
+        for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
+            const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
+            fAssets.set(symbol, fassetConfig);
+        }
+        return {
+            rpcUrl: configFile.rpcUrl,
+            loopDelay: configFile.loopDelay,
+            fAssets: fAssets,
+            nativeChainInfo: configFile.nativeChainInfo,
+            orm: orm,
+            notifiers: standardNotifierTransports(configFile.alertsUrl),
+            contractRetriever: retriever,
+            liquidationStrategy: configFile.liquidationStrategy,
+            challengeStrategy: configFile.challengeStrategy,
+        } as AgentBotConfig;
+    } catch (error) {
+        await orm?.close();
+        throw error;
     }
-    return {
-        rpcUrl: runConfig.rpcUrl,
-        loopDelay: runConfig.loopDelay,
-        fAssets: fAssets,
-        nativeChainInfo: runConfig.nativeChainInfo,
-        orm: orm,
-        notifiers: standardNotifierTransports(runConfig.alertsUrl),
-        contractRetriever: retriever,
-        liquidationStrategy: runConfig.liquidationStrategy,
-        challengeStrategy: runConfig.challengeStrategy,
-    };
+}
+
+export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOptions, databaseAccount?: DatabaseAccount) {
+    if (type === "agent") {
+        assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
+        return await overrideAndCreateOrm(ormOptions, databaseAccount);
+    }
 }
 
 /**
@@ -86,6 +115,7 @@ export async function createBotConfig(secrets: Secrets, runConfig: BotConfigFile
  * @returns instance of BotFAssetConfig
  */
 export async function createBotFAssetConfig(
+    type: BotConfigType,
     secrets: Secrets,
     retriever: AssetContractRetriever,
     fAssetSymbol: string,
@@ -99,28 +129,26 @@ export async function createBotFAssetConfig(
     const settings = await assetManager.getSettings();
     const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
     const sourceId = encodedChainId(fassetInfo.chainId);
-    const wallet = fassetInfo.walletUrl
-        ? createBlockchainWalletHelper(secrets, sourceId, em, fassetInfo.walletUrl, walletOptions)
-        : undefined;
-    const blockchainIndexerClient = fassetInfo.indexerUrl
-        ? createBlockchainIndexerHelper(sourceId, fassetInfo.indexerUrl, indexerApiKey(secrets))
-        : undefined;
-    const stateConnector = attestationProviderUrls && fassetInfo.indexerUrl && submitter
-        ? await createStateConnectorClient(fassetInfo.indexerUrl, indexerApiKey(secrets), attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter)
-        : undefined;
-    const verificationClient = fassetInfo.indexerUrl
-        ? await createVerificationApiClient(fassetInfo.indexerUrl, indexerApiKey(secrets))
-        : undefined;
-    return {
+    const result: BotFAssetConfig = {
         fAssetSymbol: fAssetSymbol,
         chainInfo: createChainInfo(sourceId, fassetInfo, settings),
-        wallet: wallet,
-        blockchainIndexerClient: blockchainIndexerClient,
-        stateConnector: stateConnector,
-        verificationClient: verificationClient,
         assetManager: assetManager,
         priceChangeEmitter: fassetInfo.priceChangeEmitter,
     };
+    if (type === "agent" || type === "user") {
+        assertNotNullCmd(fassetInfo.walletUrl, "Setting 'walletUrl' is required in config");
+        result.wallet = createBlockchainWalletHelper(type, secrets, sourceId, em, fassetInfo.walletUrl, walletOptions);
+    }
+    if (type === "agent" || type === "user" || type === "keeper") {
+        assertNotNullCmd(fassetInfo.indexerUrl, "Setting 'indexerUrl' is required in config");
+        assertNotNullCmd(attestationProviderUrls, "Setting 'attestationProviderUrls' is required in config");
+        assertNotNull(submitter);   // if this is missing, it is program error
+        const apiKey = indexerApiKey(secrets);
+        result.blockchainIndexerClient = createBlockchainIndexerHelper(sourceId, fassetInfo.indexerUrl, apiKey);
+        result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrl, apiKey);
+        result.stateConnector = await createStateConnectorClient(fassetInfo.indexerUrl, apiKey, attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter);
+    }
+    return result;
 }
 
 export function createChainInfo(sourceId: string, fassetInfo: BotFAssetInfo, settings: AssetManagerSettings): ChainInfo {
@@ -154,15 +182,16 @@ export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: st
  * @returns instance of BlockchainWalletHelper
  */
 export function createBlockchainWalletHelper(
+    type: "agent" | "user",
     secrets: Secrets,
     sourceId: SourceId,
-    em: EntityManager | null | undefined,
+    em: EntityManager | undefined,
     walletUrl: string,
     options?: StuckTransaction
 ): BlockchainWalletHelper {
     requireSupportedSourceId(sourceId);
     const walletClient = createWalletClient(secrets, sourceId, walletUrl, options);
-    const walletKeys = em ? DBWalletKeys.from(em, secrets) : new MemoryWalletKeys();
+    const walletKeys = type === "agent" ? DBWalletKeys.from(requireNotNull(em), secrets) : new MemoryWalletKeys();
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }
 

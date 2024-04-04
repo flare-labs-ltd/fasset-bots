@@ -42,14 +42,14 @@ describe("Bot config tests", () => {
     });
 
     it("Should create bot config", async () => {
-        const botConfig = await createBotConfig(secrets, runConfig, accounts[0]);
+        const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
         expect(botConfig.loopDelay).to.eq(runConfig.loopDelay);
         expect(botConfig.contractRetriever.contracts).to.not.be.null;
         expect(botConfig.orm).to.not.be.null;
     });
 
     it("Should create tracked state config", async () => {
-        const trackedStateConfig = await createBotConfig(secrets, actorRunConfig, accounts[0]);
+        const trackedStateConfig = await createBotConfig("keeper", secrets, actorRunConfig, accounts[0]);
         expect(trackedStateConfig.contractRetriever.contracts).to.not.be.null;
     });
 
@@ -88,16 +88,16 @@ describe("Bot config tests", () => {
     });
 
     it("Should create block chain wallet helper", async () => {
-        const botConfig = await createBotConfig(secrets, runConfig, accounts[0]);
-        const btc = createBlockchainWalletHelper(secrets, SourceId.testBTC, botConfig.orm!.em, walletTestBTCUrl);
+        const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
+        const btc = createBlockchainWalletHelper("agent", secrets, SourceId.testBTC, botConfig.orm.em, walletTestBTCUrl);
         expect(btc.walletClient.chainType).to.eq(SourceId.testBTC);
-        const doge = createBlockchainWalletHelper(secrets, SourceId.testDOGE, botConfig.orm!.em, walletTestDOGEUrl);
+        const doge = createBlockchainWalletHelper("agent", secrets, SourceId.testDOGE, botConfig.orm.em, walletTestDOGEUrl);
         expect(doge.walletClient.chainType).to.eq(SourceId.testDOGE);
-        const xrp = createBlockchainWalletHelper(secrets, SourceId.testXRP, null, walletTestXRPUrl);
+        const xrp = createBlockchainWalletHelper("user", secrets, SourceId.testXRP, undefined, walletTestXRPUrl);
         expect(xrp.walletClient.chainType).to.eq(SourceId.testXRP);
         const invalidSourceId = SourceId.ALGO;
         const fn = () => {
-            return createBlockchainWalletHelper(secrets, invalidSourceId, botConfig.orm!.em, "");
+            return createBlockchainWalletHelper("agent", secrets, invalidSourceId, botConfig.orm.em, "");
         };
         expect(fn).to.throw(`SourceId ${decodedChainId(invalidSourceId)} not supported.`);
     });
@@ -162,9 +162,10 @@ describe("Bot config tests", () => {
     });
 
     it("Should create agent bot config chain", async () => {
-        const botConfig = await createBotConfig(secrets, runConfig, accounts[0]);
+        const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
         const [symbol, chainInfo] = Object.entries(runConfig.fAssets)[0];
         const agentBotConfigChain = await createBotFAssetConfig(
+            "agent",
             secrets,
             botConfig.contractRetriever,
             symbol,
@@ -209,7 +210,7 @@ describe("Bot config tests", () => {
     it("Should not create config - assetManager or fAssetSymbol must be defined", async () => {
         const runConfigFile1 = "./test-hardhat/test-utils/run-config-tests/run-config-missing-contracts-and-addressUpdater.json";
         runConfig = JSON.parse(readFileSync(runConfigFile1).toString()) as BotConfigFile;
-        await expect(createBotConfig(secrets, runConfig, accounts[0]))
+        await expect(createBotConfig("common", secrets, runConfig, accounts[0]))
             .to.eventually.be.rejectedWith("At least one of contractsJsonFile or assetManagerController must be defined")
             .and.be.an.instanceOf(Error);
     });
@@ -217,8 +218,10 @@ describe("Bot config tests", () => {
     it("Should not create config missing StateConnector contract", async () => {
         runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_SC;
-        await expect(createBotConfig(secrets, runConfig, accounts[0]))
+        await expect(createBotConfig("keeper", secrets, runConfig, accounts[0]))
             .to.eventually.be.rejectedWith("Cannot find address for contract StateConnector")
             .and.be.an.instanceOf(Error);
+        // should be fine for common
+        await createBotConfig("common", secrets, runConfig, accounts[0]);
     });
 });

@@ -9,9 +9,9 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { Secrets } from "../../../src/config";
+import { AgentBotConfig, BotFAssetConfigWithIndexer, BotFAssetConfigWithWallet, KeeperBotConfig, Secrets } from "../../../src/config";
 import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
-import { BotConfig, BotFAssetConfig, createBotConfig } from "../../../src/config/BotConfig";
+import { createBotConfig } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createAgentBotContext, createChallengerContext, createNativeContext } from "../../../src/config/create-asset-context";
@@ -36,7 +36,7 @@ describe("Actor tests - coston", () => {
     let accounts: string[];
     // for agent
     let secrets: Secrets;
-    let botConfig: BotConfig;
+    let botConfig: AgentBotConfig;
     let runConfig: BotConfigFile;
     let context: IAssetAgentContext;
     let orm: ORM;
@@ -44,14 +44,14 @@ describe("Actor tests - coston", () => {
     let ownerAddress: string;
     let ownerUnderlyingAddress: string;
     // for challenger, liquidator, systemKeeper
-    let actorConfig: BotConfig;
+    let actorConfig: KeeperBotConfig;
     let state: TrackedState;
     let runSimplifiedConfig: BotConfigFile;
     let challengerAddress: string;
     let liquidatorAddress: string;
     let systemKeeperAddress: string;
-    let chainConfigAgent: BotFAssetConfig;
-    let chainConfigActor: BotFAssetConfig;
+    let chainConfigAgent: BotFAssetConfigWithWallet;
+    let chainConfigActor: BotFAssetConfigWithIndexer;
     // newly create agents that are destroyed after these tests
     const destroyAgentsAfterTests: string[] = [];
 
@@ -68,9 +68,9 @@ describe("Actor tests - coston", () => {
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];
         // configs
-        botConfig = await createBotConfig(secrets, runConfig, ownerAddress);
+        botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
         orm = botConfig.orm!;
-        actorConfig = await createBotConfig(secrets, runSimplifiedConfig, ownerAddress);
+        actorConfig = await createBotConfig("keeper", secrets, runSimplifiedConfig, ownerAddress);
         // contexts
         chainConfigAgent = requireNotNull(botConfig.fAssets.get(fAssetSymbol));
         context = await createAgentBotContext(botConfig, chainConfigAgent!);
@@ -112,14 +112,6 @@ describe("Actor tests - coston", () => {
         const agentBotRunner = await AgentBotRunner.create(secrets, botConfig);
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
-    });
-
-    it("Should not create agent bot runner - missing arguments", async () => {
-        const config1 = Object.assign({}, botConfig);
-        config1.orm = undefined;
-        await expect(AgentBotRunner.create(secrets, config1))
-            .to.eventually.be.rejectedWith(`Missing orm in config for owner ${ownerManagementAddress}.`)
-            .and.be.an.instanceOf(Error);
     });
 
     it("Should create challenger", async () => {

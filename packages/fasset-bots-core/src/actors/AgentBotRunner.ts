@@ -1,5 +1,5 @@
 import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
-import { BotConfig } from "../config/BotConfig";
+import { AgentBotConfig, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
@@ -9,7 +9,6 @@ import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot } from "./AgentBot";
-import { Secrets } from "../config";
 
 export class AgentBotRunner {
     static deepCopyWithObjectCreate = true;
@@ -72,7 +71,7 @@ export class AgentBotRunner {
      * @param botConfig - configs to run bot
      * @returns instance of AgentBotRunner
      */
-    static async create(secrets: Secrets, botConfig: BotConfig): Promise<AgentBotRunner> {
+    static async create(secrets: Secrets, botConfig: AgentBotConfig): Promise<AgentBotRunner> {
         const ownerAddress = secrets.required("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
         const contexts: Map<string, IAssetAgentContext> = new Map();
@@ -83,10 +82,6 @@ export class AgentBotRunner {
                 with symbol ${chainConfig.chainInfo.symbol}.`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        if (!botConfig.orm) {
-            logger.info(`Owner ${ownerAddress} cannot create AgentBotRunner. Missing orm in config.`);
-            throw new Error(`Missing orm in config for owner ${ownerAddress}.`);
-        }
         return new AgentBotRunner(secrets, contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifiers);
     }
 }

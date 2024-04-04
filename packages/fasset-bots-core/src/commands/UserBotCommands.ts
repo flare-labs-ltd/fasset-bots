@@ -100,7 +100,7 @@ export class UserBotCommands {
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        const botConfig = await createBotConfig(secrets, configFile, nativeAddress);
+        const botConfig = await createBotConfig("user", secrets, configFile, nativeAddress);
         registerCleanup?.(() => closeBotConfig(botConfig));
         // verify fasset config
         const fassetConfig = botConfig.fAssets.get(fAssetSymbol);

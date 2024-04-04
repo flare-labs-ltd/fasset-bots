@@ -18,7 +18,7 @@ program.action(async () => {
     const ownerAddress: string = secrets.required("owner.native.address");
     const ownerPrivateKey: string = secrets.required("owner.native.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [ownerPrivateKey], null);
-    const botConfig = await createBotConfig(secrets, runConfig, ownerAddress);
+    const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
     // create runner and agents
     const runner = await AgentBotRunner.create(secrets, botConfig);
     // store owner's underlying address

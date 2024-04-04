@@ -1,8 +1,7 @@
 import { IAssetAgentContext, IAssetNativeChainContext, IChallengerContext, ILiquidatorContext, ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { assertNotNull } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
-import { BotConfig, BotFAssetConfig } from "./BotConfig";
+import { AgentBotConfig, BotConfig, BotFAssetConfig, BotFAssetConfigWithIndexer, BotFAssetConfigWithWallet, KeeperBotConfig, UserBotConfig } from "./BotConfig";
 
 const WNat = artifacts.require("WNat");
 const IPriceChangeEmitter = artifacts.require("IPriceChangeEmitter");
@@ -12,11 +11,7 @@ const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 /**
  * Creates asset context needed for AgentBot.
  */
-export async function createAgentBotContext(botConfig: BotConfig, chainConfig: BotFAssetConfig): Promise<IAssetAgentContext> {
-    assertNotNull(chainConfig.wallet, "Missing wallet configuration");
-    assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
-    assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
-    assertNotNull(chainConfig.verificationClient, "Missing verification client configuration");
+export async function createAgentBotContext(botConfig: AgentBotConfig | UserBotConfig, chainConfig: BotFAssetConfigWithWallet): Promise<IAssetAgentContext> {
     const nativeContext = await createNativeContext(botConfig, chainConfig);
     return {
         ...nativeContext,
@@ -32,14 +27,12 @@ export async function createAgentBotContext(botConfig: BotConfig, chainConfig: B
 /**
  * Creates asset context for timekeeper.
  */
-export async function createTimekeeperContext(config: BotConfig, chainConfig: BotFAssetConfig): Promise<ITimekeeperContext> {
-    assertNotNull(chainConfig.blockchainIndexerClient, "Missing blockchain indexer configuration");
-    assertNotNull(chainConfig.stateConnector, "Missing state connector configuration");
-    const nativeContext = await createNativeContext(config, chainConfig);
+export async function createTimekeeperContext(botConfig: KeeperBotConfig, chainConfig: BotFAssetConfigWithIndexer): Promise<ITimekeeperContext> {
+    const nativeContext = await createNativeContext(botConfig, chainConfig);
     const attestationProvider = new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId);
     return {
         ...nativeContext,
-        nativeChainInfo: config.nativeChainInfo,
+        nativeChainInfo: botConfig.nativeChainInfo,
         blockchainIndexer: chainConfig.blockchainIndexerClient,
         attestationProvider: attestationProvider,
     };
@@ -48,7 +41,7 @@ export async function createTimekeeperContext(config: BotConfig, chainConfig: Bo
 /**
  * Creates asset context for challenger.
  */
-export async function createChallengerContext(config: BotConfig, chainConfig: BotFAssetConfig): Promise<IChallengerContext> {
+export async function createChallengerContext(config: KeeperBotConfig, chainConfig: BotFAssetConfigWithIndexer): Promise<IChallengerContext> {
     const contextWithUnderlyingChain = await createTimekeeperContext(config, chainConfig);
     return {
         ...contextWithUnderlyingChain,

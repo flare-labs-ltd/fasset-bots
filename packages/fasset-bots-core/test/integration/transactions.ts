@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { Secrets, indexerApiKey } from "../../src/config";
 import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
@@ -6,9 +7,8 @@ import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWal
 import { SourceId } from "../../src/underlying-chain/SourceId";
 import { prefix0x } from "../../src/utils/helpers";
 import { createTestOrm } from "../test-utils/create-test-orm";
-import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
-import { Secrets, indexerApiKey } from "../../src/config";
 import { TEST_SECRETS } from "../test-utils/test-bot-config";
+import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
 
 let orm: ORM;
 let walletHelper: BlockchainWalletHelper;
@@ -30,7 +30,7 @@ describe("XRP transaction integration tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey(secrets));
-        walletHelper = createBlockchainWalletHelper(secrets, sourceId, orm.em, walletUrl);
+        walletHelper = createBlockchainWalletHelper("agent", secrets, sourceId, orm.em, walletUrl);
     });
 
     it("Should send funds and retrieve transaction", async () => {

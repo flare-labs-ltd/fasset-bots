@@ -18,7 +18,7 @@ program.action(async () => {
     const timekeeperAddress: string = secrets.required("timeKeeper.address");
     const timekeeperPrivateKey: string = secrets.required("timeKeeper.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [timekeeperPrivateKey], null);
-    const config = await createBotConfig(secrets, runConfig, timekeeperAddress);
+    const config = await createBotConfig("keeper", secrets, runConfig, timekeeperAddress);
     const timekeepers = await TimeKeeper.startTimekeepers(config, timekeeperAddress, INTERVAL);
     // run
     try {
