@@ -127,7 +127,6 @@ export async function createBotFAssetConfig(
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
-    const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
     const sourceId = encodedChainId(fassetInfo.chainId);
     const result: BotFAssetConfig = {
         fAssetSymbol: fAssetSymbol,
@@ -143,6 +142,7 @@ export async function createBotFAssetConfig(
         assertNotNullCmd(fassetInfo.indexerUrl, "Setting 'indexerUrl' is required in config");
         assertNotNullCmd(attestationProviderUrls, "Setting 'attestationProviderUrls' is required in config");
         assertNotNull(submitter);   // if this is missing, it is program error
+        const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
         const apiKey = indexerApiKey(secrets);
         result.blockchainIndexerClient = createBlockchainIndexerHelper(sourceId, fassetInfo.indexerUrl, apiKey);
         result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrl, apiKey);
