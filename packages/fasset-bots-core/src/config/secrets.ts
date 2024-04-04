@@ -1,20 +1,38 @@
 import { readFileSync, statSync } from "fs";
-import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../utils/helpers";
 import { CommandLineError } from "../utils/command-line-errors";
 import { SecretsFile } from "./config-files/SecretsFile";
 
-export function getSecrets(): SecretsFile {
-    if (loadedSecrets == undefined) {
-        loadedSecrets = loadSecrets(defaultSecretsPath());
+export const ENCRYPTION_PASSWORD_MIN_LENGTH = 16;
+
+export class Secrets {
+    constructor(
+        public data: SecretsFile,
+    ) {}
+
+    static load(secretsPath: string) {
+        const data = loadSecrets(secretsPath);
+        return new Secrets(data);
     }
-    return loadedSecrets;
-}
 
-export function resetSecrets(secretsPath: string) {
-    loadedSecrets = loadSecrets(secretsPath);
-}
+    required(key: string): string {
+        const value = valueForKeyPath(this.data, key);
+        if (typeof value === "string") return value;
+        throw new Error(`Secret variable ${key} not defined or not typeof string`);
+    }
 
-let loadedSecrets: SecretsFile | undefined;
+    optional(key: string): string | undefined {
+        const value = valueForKeyPath(this.data, key);
+        if (value == undefined) return undefined;
+        if (typeof value === "string") return value;
+        throw new Error(`Secret variable ${key} not typeof string`);
+    }
+
+    requiredEncryptionPassword(key: string): string {
+        const value = this.required(key);
+        validateEncryptionPassword(value, key);
+        return value;
+    }
+}
 
 function loadSecrets(secretsPath: string): SecretsFile {
     checkFilePermissions(secretsPath);
@@ -22,16 +40,10 @@ function loadSecrets(secretsPath: string): SecretsFile {
     return secrets;
 }
 
-function defaultSecretsPath(): string {
-    return requireEnv("FASSET_BOT_SECRETS");
-}
-
-export function requireEncryptionPassword(name: string, secrets?: SecretsFile): string {
-    const value = requireSecret(name, secrets);
+function validateEncryptionPassword(value: string, key: string) {
     if (value.length < ENCRYPTION_PASSWORD_MIN_LENGTH) {
-        throw new Error(`'${name}' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
+        throw new Error(`'${key}' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     }
-    return value;
 }
 
 /* istanbul ignore next */
@@ -52,16 +64,10 @@ function checkFilePermissions(fpath: string) {
     }
 }
 
-export function requireSecret(name: string, secrets?: SecretsFile): string {
-    const value = valueForKeyPath(secrets ?? getSecrets(), name);
-    if (typeof value === "string") return value;
-    throw new Error(`Secret variable ${name} not defined or not typeof string`);
-}
-
-function valueForKeyPath(obj: any, path: string) {
+function valueForKeyPath(object: any, path: string) {
     const keys = path.split(".");
     keys.forEach((key) => {
-        return (obj = obj?.[key]);
+        return (object = object?.[key]);
     });
-    return obj;
+    return object;
 }

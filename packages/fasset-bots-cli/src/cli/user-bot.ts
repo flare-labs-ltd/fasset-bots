@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { InfoBot, UserBot } from "@flarelabs/fasset-bots-core";
-import { requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { Secrets } from "@flarelabs/fasset-bots-core/config";
 import { CommandLineError, minBN, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import Web3 from "web3";
 import { programWithCommonOptions } from "../utils/program";
@@ -16,8 +16,8 @@ program
     .command("info")
     .description("info about the system")
     .action(async () => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await InfoBot.create(options.config, options.fasset);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.secrets, options.config, options.fasset);
         await bot.printSystemInfo();
     });
 
@@ -26,8 +26,8 @@ program
     .description("Lists the available agents")
     .option("-a, --all", "print all agents, including non-public")
     .action(async (opts: { all: boolean }) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await InfoBot.create(options.config, options.fasset);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.secrets, options.config, options.fasset);
         if (opts.all) {
             await bot.printAllAgents();
         } else {
@@ -40,8 +40,8 @@ program
     .description("info about an agent")
     .argument("<agentVaultAddress>", "the address of the agent vault")
     .action(async (agentVaultAddress: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await InfoBot.create(options.config, options.fasset);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.secrets, options.config, options.fasset);
         await bot.printAgentInfo(agentVaultAddress);
     });
 
@@ -55,8 +55,8 @@ program
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .option("--noWait", "only reserve and pay for the minting, don't wait for payment finalization and proof; you have to execute the minting later")
     .action(async (amountLots: string, cmdOptions: { agent?: string, updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean }) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const minterBot = await UserBot.create(options.secrets, options.config, options.fasset, true, registerToplevelFinalizer);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(amountLots)));
         if (agentVault == null) {
             throw new CommandLineError("No agent with enough free lots available");
@@ -82,8 +82,8 @@ program
     .description("Tries to execute the minting that was paid but the execution failed")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const minterBot = await UserBot.create(options.secrets, options.config, options.fasset, true, registerToplevelFinalizer);
         await minterBot.proveAndExecuteSavedMinting(requestId);
     });
 
@@ -91,8 +91,8 @@ program
     .command("mintStatus")
     .description("List all open mintings")
     .action(async () => {
-        const options: { config: string; fasset: string } = program.opts();
-        const minterBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const minterBot = await UserBot.create(options.secrets, options.config, options.fasset, true, registerToplevelFinalizer);
         await minterBot.listMintings();
     });
 
@@ -103,8 +103,8 @@ program
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .action(async (amountLots: string, cmdOptions: { executorAddress?: string, executorFee?: string }) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const redeemerBot = await UserBot.create(options.secrets, options.config, options.fasset, true, registerToplevelFinalizer);
         if (cmdOptions.executorAddress && !cmdOptions.executorFee) {
             throw new CommandLineError("Missing executorFee");
         }
@@ -123,8 +123,8 @@ program
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const redeemerBot = await UserBot.create(options.secrets, options.config, options.fasset, true, registerToplevelFinalizer);
         await redeemerBot.savedRedemptionDefault(requestId);
     });
 
@@ -132,8 +132,8 @@ program
     .command("redemptionStatus")
     .description("List all open redemptions")
     .action(async () => {
-        const options: { config: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBot.create(options.config, options.fasset, true, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const redeemerBot = await UserBot.create(options.secrets, options.config, options.fasset, true, registerToplevelFinalizer);
         await redeemerBot.listRedemptions();
     });
 
@@ -141,8 +141,8 @@ program
     .command("pools")
     .description("Print the list of pools of public agents")
     .action(async () => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await InfoBot.create(options.config, options.fasset);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.secrets, options.config, options.fasset);
         await bot.printPools();
     });
 
@@ -150,9 +150,10 @@ program
     .command("poolHoldings")
     .description("Print the amount of tokens the user owns per pool")
     .action(async () => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await InfoBot.create(options.config, options.fasset);
-        const address = requireSecret("user.native.address");
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const bot = await InfoBot.create(options.secrets, options.config, options.fasset);
+        const secrets = Secrets.load(options.secrets);
+        const address = secrets.required("user.native.address");
         await bot.printPoolTokenBalance(address);
     });
 
@@ -162,8 +163,8 @@ program
     .argument("<poolAddressOrTokenSymbol>")
     .argument("<collateralAmount>", "amount of collateral (FLR or SGB) to add to the pool")
     .action(async (poolAddressOrTokenSymbol: string, collateralAmount: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await UserBot.create(options.config, options.fasset, false, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const bot = await UserBot.create(options.secrets, options.config, options.fasset, false, registerToplevelFinalizer);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
         const collateralAmountWei = toBNExp(collateralAmount, 18);
         const entered = await bot.enterPool(poolAddress, collateralAmountWei);
@@ -177,8 +178,8 @@ program
     .argument("<poolAddressOrTokenSymbol>")
     .argument("<amount>", 'the amount of tokens to burn, can be a number or "all"')
     .action(async (poolAddressOrTokenSymbol: string, tokenAmountOrAll: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const bot = await UserBot.create(options.config, options.fasset, false, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const bot = await UserBot.create(options.secrets, options.config, options.fasset, false, registerToplevelFinalizer);
         const poolAddress = await getPoolAddress(bot, poolAddressOrTokenSymbol);
         const balance = await bot.infoBot().getPoolTokenBalance(poolAddress, bot.nativeAddress);
         const tokenAmountWei = tokenAmountOrAll === "all" ? balance : minBN(toBNExp(tokenAmountOrAll, 18), balance);

@@ -1,7 +1,6 @@
 import "dotenv/config";
 
 import path from "path";
-import { getSecrets } from ".";
 import { CommandLineError, logger } from "../utils";
 import { requireNotNull } from "../utils/helpers";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
@@ -25,8 +24,6 @@ export function loadConfigFile(fPath: string, configInfo?: string, validate: boo
         updateConfigFilePaths(fPath, config);
         if (validate) {
             validateConfigFile(config);
-            // check secrets.json file permission
-            getSecrets();
         }
         return config;
     } /* istanbul ignore next */ catch (e) {
@@ -70,8 +67,6 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): BotConf
         const config = botConfigLoader.load(fPath);
         updateConfigFilePaths(fPath, config);
         validateAgentConfigFile(config);
-        // check secrets.json file permission
-        getSecrets();
         return config;
     } /* istanbul ignore next */ catch (e) {
         logger.error(configInfo ?? "", e);

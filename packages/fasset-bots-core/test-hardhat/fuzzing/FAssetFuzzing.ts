@@ -19,7 +19,7 @@ import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInf
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
-import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
@@ -96,9 +96,10 @@ describe("Fuzzing tests", () => {
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
+            const secrets = createTestSecrets(chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
             const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-            const botCliCommands = new AgentBotCommands(context, owner, orm, notifiers);
+            const botCliCommands = new AgentBotCommands(secrets, context, owner, orm, notifiers);
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
             agentBots.push(fuzzingAgentBot);
             eventFormatter.addAddress(`BOT_${i}`, fuzzingAgentBot.agentBot.agent.vaultAddress);

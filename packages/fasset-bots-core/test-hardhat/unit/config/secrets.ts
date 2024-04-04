@@ -1,65 +1,62 @@
 import { expect } from "chai";
-import { getSecrets, requireEncryptionPassword, requireSecret, resetSecrets } from "../../../src/config/secrets";
-import { SecretsFile } from "../../../src/config/config-files/SecretsFile";
-import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../../../src/utils/helpers";
 import { decodedChainId } from "../../../src/config/create-wallet-client";
+import { ENCRYPTION_PASSWORD_MIN_LENGTH, Secrets } from "../../../src/config/secrets";
+import { requireEnv } from "../../../src/utils/helpers";
 
 const chainId = "testXRP";
 describe("Secrets unit tests", () => {
     it("Should not return secret", async () => {
+        const secrets = new Secrets({ apiKey: {} });
         const secretName = "wallet";
         const fn = () => {
-            return requireSecret(secretName);
+            return secrets.required(secretName);
         };
         expect(fn).to.throw(`Secret variable ${secretName} not defined or not typeof string`);
     });
 
     it("Should not return secret 2", async () => {
-        const address = requireSecret(`owner.${decodedChainId(chainId)}.address`);
+        const secrets = new Secrets({ apiKey: {}, owner: { testXRP: { address: "0xabcd", private_key: "0xabcd" }} });
+        const address = secrets.required(`owner.${decodedChainId(chainId)}.address`);
         const secretName = `owner.${chainId}.address.` + address + "." + address;
         const fn = () => {
-            return requireSecret(secretName);
+            return secrets.required(secretName);
         };
         expect(fn).to.throw(`Secret variable ${secretName} not defined or not typeof string`);
     });
 
     it("Should throw error if encryption password too short", async () => {
-        const secrets: SecretsFile = {
-            apiKey: {
-                apiKey: "",
-            },
-        };
+        const walletPassword = "wallet.encryption_password";
+        const secrets = new Secrets({ apiKey: {} });
         const fn1 = () => {
-            return requireEncryptionPassword("wallet.encryption_password", secrets);
+            return secrets.requiredEncryptionPassword(walletPassword);
         };
         expect(fn1).to.throw("Secret variable wallet.encryption_password not defined or not typeof string");
 
-        secrets.wallet = undefined;
+        secrets.data.wallet = undefined;
         const fn2 = () => {
-            return requireEncryptionPassword("wallet.encryption_password", secrets);
+            return secrets.requiredEncryptionPassword(walletPassword);
         };
         expect(fn2).to.throw("Secret variable wallet.encryption_password not defined or not typeof string");
 
-        secrets.wallet = {
+        secrets.data.wallet = {
             encryption_password: "",
         };
         const fn3 = () => {
-            return requireEncryptionPassword("wallet.encryption_password", secrets);
+            return secrets.requiredEncryptionPassword(walletPassword);
         };
         expect(fn3).to.throw(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
 
-        secrets.wallet = {
+        secrets.data.wallet = {
             encryption_password: "123456789012345",
         };
         const fn4 = () => {
-            return requireEncryptionPassword("wallet.encryption_password", secrets);
+            return secrets.requiredEncryptionPassword(walletPassword);
         };
         expect(fn4).to.throw(`'wallet.encryption_password' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     });
 
-    it("Should reset secrets", async () => {
-        resetSecrets(requireEnv("FASSET_BOT_SECRETS"));
-        const secrets2 = getSecrets();
-        expect(secrets2.apiKey).to.not.be.empty;
+    it("Should load secrets", async () => {
+        const secrets2 = Secrets.load(requireEnv("FASSET_BOT_SECRETS"));
+        expect(secrets2.data.apiKey).to.not.be.empty;
     });
 });

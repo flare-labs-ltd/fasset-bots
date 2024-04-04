@@ -10,7 +10,6 @@ import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings
 import { AssetContractRetriever } from "../../src/config/AssetContractRetriever";
 import { decodedChainId } from "../../src/config/create-wallet-client";
 import { ORM } from "../../src/config/orm";
-import { requireSecret } from "../../src/config/secrets";
 import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
@@ -29,7 +28,7 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
-import { BotFAssetConfig } from "../../src/config";
+import { BotFAssetConfig, Secrets } from "../../src/config";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -58,13 +57,13 @@ export async function createTestAgentBot(
 ): Promise<AgentBot> {
     await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
-    ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
+    ownerUnderlyingAddress ??= `underlying_${ownerManagementAddress}`;
     context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
-    const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
-    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, underlyingAddress);
+    const vaultUnderlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
+    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
     const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
+    return await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
 }
 
 export async function createTestContractRetriever(context: TestAssetBotContext) {
@@ -116,13 +115,13 @@ async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSet
 }
 
 export function createTestAgentBotRunner(
+    secrets: Secrets,
     contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
-    ownerManagementAddress: string,
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
-    return new AgentBotRunner(contexts, orm, ownerManagementAddress, loopDelay, notifiers);
+    return new AgentBotRunner(secrets, contexts, orm, loopDelay, notifiers);
 }
 
 export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {

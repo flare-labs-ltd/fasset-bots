@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
-import { ChainContracts, getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
 import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync } from "fs";
@@ -25,8 +25,8 @@ program
     .argument("description", "owner's description")
     .argument("[iconUrl]", "owner's icon url")
     .action(async (address: string, name: string, description: string, iconUrl?: string) => {
-        const options: { config: string } = program.opts();
-        await whitelistAndDescribeAgent(options.config, address, name, description, iconUrl ?? "");
+        const options: { config: string; secrets: string } = program.opts();
+        await whitelistAndDescribeAgent(options.secrets, options.config, address, name, description, iconUrl ?? "");
     });
 
 program
@@ -34,8 +34,8 @@ program
     .description("check if agent owner address is whitelisted")
     .argument("address", "owner's address")
     .action(async (address: string) => {
-        const options: { config: string } = program.opts();
-        const isWhitelisted = await isAgentWhitelisted(options.config, address);
+        const options: { config: string; secrets: string } = program.opts();
+        const isWhitelisted = await isAgentWhitelisted(options.secrets, options.config, address);
         console.log(isWhitelisted);
     });
 
@@ -46,8 +46,8 @@ program
     .argument("address", "recipient's address")
     .argument("amount", "amount (token)")
     .action(async (symbol: string, address: string, amount: string) => {
-        const options: { config: string } = program.opts();
-        await mintFakeTokens(options.config, symbol, address, amount);
+        const options: { config: string; secrets: string } = program.opts();
+        await mintFakeTokens(options.secrets, options.config, symbol, address, amount);
     });
 
 program
@@ -55,8 +55,8 @@ program
     .description("add new collateral token to all asset managers")
     .argument("paramFile", "parameter file in JSON format")
     .action(async (paramFile: string) => {
-        const options: { config: string } = program.opts();
-        await addCollateralToken(options.config, paramFile);
+        const options: { config: string; secrets: string } = program.opts();
+        await addCollateralToken(options.secrets, options.config, paramFile);
     });
 
 program
@@ -64,9 +64,10 @@ program
     .description("deprecate collateral token (on all asset managers)")
     .argument("tokenAddress", "token address")
     .action(async (tokenAddress: string) => {
-        const options: { config: string } = program.opts();
-        const deployerAddress = requireSecret("deployer.address");
-        await runOnAssetManagerController(options.config, async (controller, managers) => {
+        const options: { config: string; secrets: string } = program.opts();
+        const secrets = Secrets.load(options.secrets);
+        const deployerAddress = secrets.required("deployer.address");
+        await runOnAssetManagerController(options.secrets, options.config, async (controller, managers) => {
             await controller.deprecateCollateralType(managers, CollateralClass.VAULT, tokenAddress, 86400, { from: deployerAddress });
         });
     });
@@ -75,25 +76,25 @@ toplevelRun(async () => {
     await program.parseAsync();
 });
 
-async function whitelistAndDescribeAgent(configFileName: string, ownerAddress: string, name: string, description: string, iconUrl: string) {
-    const config = await initEnvironment(configFileName);
+async function whitelistAndDescribeAgent(secretsFile: string, configFileName: string, ownerAddress: string, name: string, description: string, iconUrl: string) {
+    const [secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const deployerAddress = requireSecret("deployer.address");
+    const deployerAddress = secrets.required("deployer.address");
     const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
     await agentOwnerRegistry.whitelistAndDescribeAgent(ownerAddress, name, description, iconUrl, { from: deployerAddress });
 }
 
-async function isAgentWhitelisted(configFileName: string, ownerAddress: string): Promise<boolean> {
-    const config = await initEnvironment(configFileName);
+async function isAgentWhitelisted(secretsFile: string, configFileName: string, ownerAddress: string): Promise<boolean> {
+    const [_secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
     return agentOwnerRegistry.isWhitelisted(ownerAddress);
 }
 
-async function mintFakeTokens(configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
-    const config = await initEnvironment(configFileName);
+async function mintFakeTokens(secretsFile: string, configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
+    const [secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const deployerAddress = requireSecret("deployer.address");
+    const deployerAddress = secrets.required("deployer.address");
     const tokenAddres = requireNotNull(contracts[tokenSymbol]).address;
     const token = await FakeERC20.at(tokenAddres);
     const decimals = Number(await token.decimals());
@@ -101,18 +102,18 @@ async function mintFakeTokens(configFileName: string, tokenSymbol: string, recip
     await token.mintAmount(recipientAddress, amountBN, { from: deployerAddress });
 }
 
-async function runOnAssetManagerController(configFileName: string, method: (controller: AssetManagerControllerInstance, assetManagers: string[]) => Promise<void>) {
-    const config = await initEnvironment(configFileName);
+async function runOnAssetManagerController(secretsFile: string, configFileName: string, method: (controller: AssetManagerControllerInstance, assetManagers: string[]) => Promise<void>) {
+    const [_secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const controller = await AssetManagerController.at(contracts.AssetManagerController.address);
     const assetManagers = await controller.getAssetManagers();
     return await method(controller, assetManagers);
 }
 
-async function addCollateralToken(configFileName: string, paramFile: string) {
-    const config = await initEnvironment(configFileName);
+async function addCollateralToken(secretsFile: string, configFileName: string, paramFile: string) {
+    const [secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
-    const deployerAddress = requireSecret("deployer.address");
+    const deployerAddress = secrets.required("deployer.address");
     const parameters = JSON.parse(readFileSync(paramFile).toString());
     const collateralType: CollateralType = {
         collateralClass: CollateralClass.VAULT,
@@ -138,13 +139,14 @@ function addressFromParameter(contracts: ChainContracts, addressOrName: string) 
     throw new Error(`Missing contract ${addressOrName}`);
 }
 
-async function initEnvironment(configFile: string) {
+async function initEnvironment(secretsFile: string, configFile: string) {
+    const secrets = Secrets.load(secretsFile);
     const config = loadConfigFile(configFile);
-    const deployerAddress = requireSecret("deployer.address");
-    const nativePrivateKey = requireSecret("deployer.private_key");
-    const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
+    const deployerAddress = secrets.required("deployer.address");
+    const nativePrivateKey = secrets.required("deployer.private_key");
+    const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, secrets.optional("apiKey.native_rpc")), [nativePrivateKey], null);
     if (deployerAddress !== accounts[0]) {
         throw new Error("Invalid address/private key pair");
     }
-    return config;
+    return [secrets, config] as const;
 }

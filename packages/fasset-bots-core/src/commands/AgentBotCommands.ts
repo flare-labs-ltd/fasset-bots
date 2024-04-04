@@ -13,19 +13,19 @@ import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/confi
 import { createAgentBotContext } from "../config/create-asset-context";
 import { decodedChainId } from "../config/create-wallet-client";
 import { ORM } from "../config/orm";
-import { getSecrets, requireSecret } from "../config/secrets";
+import { Secrets } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { resolveInFassetBotsCore, squashSpace } from "../utils";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 
@@ -38,6 +38,7 @@ export class AgentBotCommands {
     static deepCopyWithObjectCreate = true;
 
     constructor(
+        public secrets: Secrets,
         public context: IAssetAgentContext,
         public owner: OwnerAddressPair,
         public orm: ORM,
@@ -50,22 +51,24 @@ export class AgentBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of BotCliCommands class
      */
-    static async create(runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
-        const owner = new OwnerAddressPair(requireSecret("owner.management.address"), requireSecret("owner.native.address"));
+    static async create(secretsFile: string, runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
+        const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         // load config
         logger.info(`Owner ${owner.managementAddress} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
         const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${owner.managementAddress}`);
         // init web3 and accounts
-        const nativePrivateKey = requireSecret("owner.native.private_key");
-        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
+        const nativePrivateKey = secrets.required("owner.native.private_key");
+        const apiKey = secrets.optional("apiKey.native_rpc");
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, apiKey), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (owner.workAddress !== accounts[0]) {
             logger.error(`Owner ${owner.managementAddress} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        const botConfig = await createBotConfig(runConfig, owner.workAddress);
+        const botConfig = await createBotConfig(secrets, runConfig, owner.workAddress);
         registerCleanup?.(() => closeBotConfig(botConfig));
         // create context
         const chainConfig = botConfig.fAssets.get(fAssetSymbol);
@@ -74,12 +77,12 @@ export class AgentBotCommands {
         // verify keys
         await this.verifyWorkAddress(context, owner);
         // create underlying wallet key
-        const underlyingAddress = requireSecret(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.address`);
-        const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.private_key`);
+        const underlyingAddress = secrets.required(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.address`);
+        const underlyingPrivateKey = secrets.required(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.private_key`);
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
-        return new AgentBotCommands(context, owner, requireNotNull(botConfig.orm), botConfig.notifiers);
+        return new AgentBotCommands(secrets, context, owner, requireNotNull(botConfig.orm), botConfig.notifiers);
     }
 
     static async verifyWorkAddress(context: IAssetAgentContext, owner: OwnerAddressPair) {
@@ -127,14 +130,15 @@ export class AgentBotCommands {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.orm.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
-            // const addressValidityProof = await AgentBot.initializeUnderlyingAddress(this.context, this.owner, underlyingAddress);
+            const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, this.context.chainInfo.chainId);
             const [addressValidityProof, _] = await Promise.all([
-                AgentBot.initializeUnderlyingAddress(this.context, this.owner, underlyingAddress),
+
+                AgentBot.initializeUnderlyingAddress(this.context, this.owner, ownerUnderlyingAddress, underlyingAddress),
                 proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
             ]);
             console.log(`Creating agent bot...`);
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
-            const agentBot = await AgentBot.create(this.orm.em, this.context, this.owner, addressValidityProof, agentBotSettings, this.notifiers);
+            const agentBot = await AgentBot.create(this.orm.em, this.context, this.owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, this.notifiers);
             await this.notifierFor(agentBot.agent.vaultAddress).sendAgentCreated();
             console.log(`Agent bot created.`);
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
@@ -521,7 +525,8 @@ export class AgentBotCommands {
      */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; agentEnt: AgentEntity }> {
         const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.notifiers);
+        const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, this.context.chainInfo.chainId);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, ownerUnderlyingAddress, this.notifiers);
         return { agentBot, agentEnt };
     }
 
@@ -557,7 +562,7 @@ export class AgentBotCommands {
      */
     async createUnderlyingAccount(): Promise<{ address: string; privateKey: string }> {
         const address = await this.context.wallet.createAccount();
-        const walletKeys = new DBWalletKeys(this.orm.em);
+        const walletKeys = DBWalletKeys.from(this.orm.em, this.secrets);
         const privateKey = requireNotNull(await walletKeys.getKey(address));
         return { address, privateKey };
     }

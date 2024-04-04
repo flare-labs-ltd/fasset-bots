@@ -9,13 +9,13 @@ import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { Secrets } from "../../../src/config";
 import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { BotConfig, BotFAssetConfig, createBotConfig } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createAgentBotContext, createChallengerContext, createNativeContext } from "../../../src/config/create-asset-context";
 import { ORM } from "../../../src/config/orm";
-import { getSecrets, requireSecret } from "../../../src/config/secrets";
 import { AgentEntity } from "../../../src/entities/agent";
 import { ActorBaseKind } from "../../../src/fasset-bots/ActorBase";
 import { IAssetAgentContext } from "../../../src/fasset-bots/IAssetBotContext";
@@ -24,8 +24,8 @@ import { TrackedState } from "../../../src/state/TrackedState";
 import { requireNotNull, sleep } from "../../../src/utils";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
-import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS } from "../../test-utils/test-bot-config";
-import { cleanUp, enableSlowTests, getNativeAccountsFromEnv, itIf } from "../../test-utils/test-helpers";
+import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS, TEST_SECRETS } from "../../test-utils/test-bot-config";
+import { cleanUp, enableSlowTests, getNativeAccounts, itIf } from "../../test-utils/test-helpers";
 import { testNotifierTransports } from "../../test-utils/testNotifierTransports";
 use(chaiAsPromised);
 use(spies);
@@ -35,12 +35,14 @@ const fAssetSymbol = "FtestXRP";
 describe("Actor tests - coston", () => {
     let accounts: string[];
     // for agent
+    let secrets: Secrets;
     let botConfig: BotConfig;
     let runConfig: BotConfigFile;
     let context: IAssetAgentContext;
     let orm: ORM;
     let ownerManagementAddress: string;
     let ownerAddress: string;
+    let ownerUnderlyingAddress: string;
     // for challenger, liquidator, systemKeeper
     let actorConfig: BotConfig;
     let state: TrackedState;
@@ -48,47 +50,49 @@ describe("Actor tests - coston", () => {
     let challengerAddress: string;
     let liquidatorAddress: string;
     let systemKeeperAddress: string;
-    let chainConfig1: BotFAssetConfig;
-    let chainConfig2: BotFAssetConfig;
+    let chainConfigAgent: BotFAssetConfig;
+    let chainConfigActor: BotFAssetConfig;
     // newly create agents that are destroyed after these tests
     const destroyAgentsAfterTests: string[] = [];
 
     before(async () => {
+        secrets = Secrets.load(TEST_SECRETS);
         runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts
-        accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), getNativeAccountsFromEnv(), null);
-        ownerManagementAddress = requireSecret("owner.management.address");
-        ownerAddress = requireSecret("owner.native.address");
+        accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), getNativeAccounts(secrets), null);
+        ownerManagementAddress = secrets.required("owner.management.address");
+        ownerAddress = secrets.required("owner.native.address");
+        ownerUnderlyingAddress = AgentBot.underlyingAddress(secrets, runConfig.fAssets[fAssetSymbol].chainId);
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];
         // configs
-        botConfig = await createBotConfig(runConfig, ownerAddress);
+        botConfig = await createBotConfig(secrets, runConfig, ownerAddress);
         orm = botConfig.orm!;
-        actorConfig = await createBotConfig(runSimplifiedConfig, ownerAddress);
+        actorConfig = await createBotConfig(secrets, runSimplifiedConfig, ownerAddress);
         // contexts
-        chainConfig1 = requireNotNull(botConfig.fAssets.get(fAssetSymbol));
-        context = await createAgentBotContext(botConfig, chainConfig1!);
-        chainConfig2 = requireNotNull(actorConfig.fAssets.get(fAssetSymbol));
+        chainConfigAgent = requireNotNull(botConfig.fAssets.get(fAssetSymbol));
+        context = await createAgentBotContext(botConfig, chainConfigAgent!);
+        chainConfigActor = requireNotNull(actorConfig.fAssets.get(fAssetSymbol));
         // tracked state
         const lastBlock = await web3.eth.getBlockNumber();
-        const trackedStateContext = await createNativeContext(actorConfig, chainConfig2!);
+        const trackedStateContext = await createNativeContext(actorConfig, chainConfigActor!);
         state = new TrackedState(trackedStateContext, lastBlock);
         await state.initialize();
     });
 
     after(async () => {
-        await cleanUp(context, orm, ownerAddress, destroyAgentsAfterTests);
+        await cleanUp(context, orm, ownerAddress, ownerUnderlyingAddress, destroyAgentsAfterTests);
     });
 
     itIf(enableSlowTests())("Should create agent bot and announce destroy", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, COSTON_TEST_AGENT_SETTINGS);
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, COSTON_TEST_AGENT_SETTINGS);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
         // read from entity
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
+        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.owner.managementAddress).to.eq(ownerAddress);
         // sort of clean up
@@ -99,13 +103,13 @@ describe("Actor tests - coston", () => {
     it("Should create agent bot runner", async () => {
         const contexts: Map<string, IAssetAgentContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
-        const agentBotRunner = new AgentBotRunner(contexts, orm, ownerAddress, 5, testNotifierTransports);
+        const agentBotRunner = new AgentBotRunner(secrets, contexts, orm, 5, testNotifierTransports);
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should create agent bot runner from bot config", async () => {
-        const agentBotRunner = await AgentBotRunner.create(botConfig);
+        const agentBotRunner = await AgentBotRunner.create(secrets, botConfig);
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
@@ -113,13 +117,13 @@ describe("Actor tests - coston", () => {
     it("Should not create agent bot runner - missing arguments", async () => {
         const config1 = Object.assign({}, botConfig);
         config1.orm = undefined;
-        await expect(AgentBotRunner.create(config1))
+        await expect(AgentBotRunner.create(secrets, config1))
             .to.eventually.be.rejectedWith(`Missing orm in config for owner ${ownerManagementAddress}.`)
             .and.be.an.instanceOf(Error);
     });
 
     it("Should create challenger", async () => {
-        const challengerContext = await createChallengerContext(actorConfig, chainConfig2);
+        const challengerContext = await createChallengerContext(actorConfig, chainConfigActor);
         const challenger = await createTestChallenger(challengerContext, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
         const blockHeight = await context.blockchainIndexer.getBlockHeight();
@@ -127,7 +131,7 @@ describe("Actor tests - coston", () => {
     });
 
     it("Should create liquidator", async () => {
-        const liquidatorContext = await createChallengerContext(actorConfig, chainConfig2);
+        const liquidatorContext = await createChallengerContext(actorConfig, chainConfigActor);
         const liquidator = await createTestLiquidator(liquidatorContext, liquidatorAddress, state);
         expect(liquidator.address).to.eq(liquidatorAddress);
     });

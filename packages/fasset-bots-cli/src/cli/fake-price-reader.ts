@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { getSecrets, loadConfigFile, loadContracts, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { FakePriceReaderInstance } from "@flarelabs/fasset-bots-core/types";
 import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
@@ -22,9 +22,10 @@ program
     .argument("<price>", "price")
     .argument("[decimals]", "decimals - required only when price not yet initialized")
     .action(async (symbol: string, price: string, decimals: string | null) => {
-        await initEnvironment(true);
+        const secrets = Secrets.load(program.opts().secrets);
+        await initEnvironment(secrets, true);
         const priceReader = (await getPriceReader(true)) as FakePriceReaderInstance;
-        const deployerAddress = requireSecret("deployer.address");
+        const deployerAddress = secrets.required("deployer.address");
         if (decimals) await priceReader.setDecimals(symbol, decimals, { from: deployerAddress });
         await priceReader.setPrice(symbol, price, { from: deployerAddress });
         await priceReader.setPriceFromTrustedProviders(symbol, price, { from: deployerAddress });
@@ -34,9 +35,10 @@ program
     .command("sendEvent")
     .description("send 'PriceEcpochFinalized' event for FakePriceReader")
     .action(async () => {
-        await initEnvironment(true);
+        const secrets = Secrets.load(program.opts().secrets);
+        await initEnvironment(secrets, true);
         const priceReader = (await getPriceReader(true)) as FakePriceReaderInstance;
-        const deployerAddress = requireSecret("deployer.address");
+        const deployerAddress = secrets.required("deployer.address");
         await priceReader.finalizePrices({ from: deployerAddress });
     });
 
@@ -46,7 +48,8 @@ program
     .argument("symbol")
     .option("-t, --trusted", "get price from trusted providers")
     .action(async (symbol: string, option) => {
-        await initEnvironment(false);
+        const secrets = Secrets.load(program.opts().secrets);
+        await initEnvironment(secrets, false);
         const priceReader = await getPriceReader(true);
         if (option.trusted) {
             const { 0: price, 1: timestamp, 2: decimals } = await priceReader.getPriceFromTrustedProviders(symbol);
@@ -63,7 +66,8 @@ program
     .argument("symbol")
     .option("-t, --trusted", "get price from trusted providers")
     .action(async (symbol: string, option) => {
-        await initEnvironment(false);
+        const secrets = Secrets.load(program.opts().secrets);
+        await initEnvironment(secrets, false);
         const priceReader = await getPriceReader(false);
         if (option.trusted) {
             const { 0: price, 1: timestamp, 2: decimals } = await priceReader.getPriceFromTrustedProviders(symbol);
@@ -78,19 +82,19 @@ toplevelRun(async () => {
     await program.parseAsync();
 });
 
-async function initEnvironment(requireDeployer: boolean) {
+async function initEnvironment(secrets: Secrets, requireDeployer: boolean) {
     console.log(chalk.cyan("Initializing environment..."));
     const options: { config: string } = program.opts();
     const runConfig = loadConfigFile(options.config);
     if (requireDeployer) {
-        const deployerAddress = requireSecret("deployer.address");
-        const deployerPrivateKey = requireSecret("deployer.private_key");
-        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [deployerPrivateKey], null);
+        const deployerAddress = secrets.required("deployer.address");
+        const deployerPrivateKey = secrets.required("deployer.private_key");
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [deployerPrivateKey], null);
         if (deployerAddress !== accounts[0]) {
             throw new Error("Invalid address/private key pair");
         }
     } else {
-        await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [], null);
+        await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [], null);
     }
     console.log(chalk.cyan("Environment initialized."));
 }

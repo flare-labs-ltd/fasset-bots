@@ -3,23 +3,23 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { Secrets } from "../config";
 import { closeBotConfig, createBotConfig } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { decodedChainId } from "../config/create-wallet-client";
-import { getSecrets, requireSecret } from "../config/secrets";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, TokenExitType } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
 import { BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -85,21 +85,22 @@ export class UserBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of UserBot
      */
-    static async create(configFileName: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<UserBotCommands> {
-        const nativeAddress = requireSecret("user.native.address");
+    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<UserBotCommands> {
+        const secrets = Secrets.load(secretsFile);
+        const nativeAddress = secrets.required("user.native.address");
         logger.info(`User ${nativeAddress} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
         const configFile = loadAgentConfigFile(configFileName, `User ${nativeAddress}`);
         // init web3 and accounts
-        const nativePrivateKey = requireSecret("user.native.private_key");
-        const accounts = await initWeb3(authenticatedHttpProvider(configFile.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
+        const nativePrivateKey = secrets.required("user.native.private_key");
+        const accounts = await initWeb3(authenticatedHttpProvider(configFile.rpcUrl, secrets.optional("apiKey.native_rpc")), [nativePrivateKey], null);
         /* istanbul ignore next */
         if (!accounts.includes(nativeAddress)) {
             logger.error(`User ${nativeAddress} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        const botConfig = await createBotConfig(configFile, nativeAddress);
+        const botConfig = await createBotConfig(secrets, configFile, nativeAddress);
         registerCleanup?.(() => closeBotConfig(botConfig));
         // verify fasset config
         const fassetConfig = botConfig.fAssets.get(fAssetSymbol);
@@ -107,7 +108,7 @@ export class UserBotCommands {
         const context = await createAgentBotContext(botConfig, fassetConfig);
         // create underlying wallet key
         const underlyingAddress = requireWallet
-            ? await this.loadUnderlyingAddress(context, requireNotNull(fassetConfig.verificationClient))
+            ? await this.loadUnderlyingAddress(secrets, context, requireNotNull(fassetConfig.verificationClient))
             : ZERO_ADDRESS;
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
@@ -116,12 +117,12 @@ export class UserBotCommands {
 
     // User must make sure that underlying address is valid and normalized.
     // Otherwise the agent will reject the redemption and the user will lose the fasset value.
-    static async loadUnderlyingAddress(context: IAssetAgentContext, verificationClient: IVerificationApiClient) {
+    static async loadUnderlyingAddress(secrets: Secrets, context: IAssetAgentContext, verificationClient: IVerificationApiClient) {
         const chainId = context.chainInfo.chainId;
         const chainName = decodedChainId(chainId);
         // read address and private key from secrets
-        const underlyingAddress = requireSecret(`user.${chainName}.address`);
-        const underlyingPrivateKey = requireSecret(`user.${chainName}.private_key`);
+        const underlyingAddress = secrets.required(`user.${chainName}.address`);
+        const underlyingPrivateKey = secrets.required(`user.${chainName}.private_key`);
         // validate
         const res = await verificationClient.checkAddressValidity(chainId, underlyingAddress);
         if (!res.isValid) {

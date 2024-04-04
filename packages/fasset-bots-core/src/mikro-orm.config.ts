@@ -1,8 +1,7 @@
 import { Options } from "@mikro-orm/core";
 import { AbstractSqlDriver } from "@mikro-orm/knex";
+import { DatabaseAccount } from "./config/config-files/SecretsFile";
 import { CreateOrmOptions, ORM, createOrm } from "./config/orm";
-import { getSecrets } from "./config/secrets";
-import { SecretsFile } from "./config/config-files/SecretsFile";
 import { AgentEntity, AgentMinting, AgentRedemption, Event } from "./entities/agent";
 import { WalletAddress } from "./entities/wallet";
 
@@ -13,10 +12,8 @@ const options: Options<AbstractSqlDriver> = {
     debug: false
 };
 
-export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions): Promise<ORM> {
-    let secrets = { database: {} } as SecretsFile;
-    try { secrets = getSecrets(); } catch (e) { /* do nothing */ }
-    const createOptions: CreateOrmOptions = { ...options, ...secrets.database, ...optionsOverride };
+export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions, databaseAccount: DatabaseAccount | undefined): Promise<ORM> {
+    const createOptions: CreateOrmOptions = { ...options, ...databaseAccount, ...optionsOverride };
     return createOrm(createOptions);
 }
 

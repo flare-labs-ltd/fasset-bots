@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { TimeKeeper } from "@flarelabs/fasset-bots-core";
-import { closeBotConfig, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { Secrets, closeBotConfig, createBotConfig, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -12,12 +12,13 @@ const INTERVAL: number = 120_000; // in ms
 const program = programWithCommonOptions("bot", "all_fassets");
 
 program.action(async () => {
-    const options: { config: string } = program.opts();
+    const options: { config: string; secrets: string } = program.opts();
+    const secrets = Secrets.load(options.secrets);
     const runConfig = loadConfigFile(options.config);
-    const timekeeperAddress: string = requireSecret("timeKeeper.address");
-    const timekeeperPrivateKey: string = requireSecret("timeKeeper.private_key");
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [timekeeperPrivateKey], null);
-    const config = await createBotConfig(runConfig, timekeeperAddress);
+    const timekeeperAddress: string = secrets.required("timeKeeper.address");
+    const timekeeperPrivateKey: string = secrets.required("timeKeeper.private_key");
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [timekeeperPrivateKey], null);
+    const config = await createBotConfig(secrets, runConfig, timekeeperAddress);
     const timekeepers = await TimeKeeper.startTimekeepers(config, timekeeperAddress, INTERVAL);
     // run
     try {

@@ -2,7 +2,7 @@ import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
 import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { SourceId } from "../underlying-chain/SourceId";
 import { CommandLineError } from "../utils";
-import { getSecrets } from "./secrets";
+import { Secrets } from "./secrets";
 
 const supportedSourceIds = [SourceId.XRP, SourceId.BTC, SourceId.DOGE, SourceId.testXRP, SourceId.testBTC, SourceId.testDOGE];
 
@@ -32,6 +32,7 @@ export function decodedChainId(chainId: string) {
  * @returns instance of Wallet implementation according to sourceId
  */
 export function createWalletClient(
+    secrets: Secrets,
     sourceId: SourceId,
     walletUrl: string,
     options: StuckTransaction = {}
@@ -43,7 +44,7 @@ export function createWalletClient(
             username: "",
             password: "",
             inTestnet: sourceId === SourceId.testBTC ? true : false,
-            apiTokenKey: getSecrets().apiKey.btc_rpc,
+            apiTokenKey: secrets.optional("apiKey.btc_rpc"),
             stuckTransactionOptions: options,
         }); // UtxoMccCreate
     } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
@@ -52,7 +53,7 @@ export function createWalletClient(
             username: "",
             password: "",
             inTestnet: sourceId === SourceId.testDOGE ? true : false,
-            apiTokenKey: getSecrets().apiKey.doge_rpc,
+            apiTokenKey: secrets.optional("apiKey.doge_rpc"),
             stuckTransactionOptions: options,
         }); // UtxoMccCreate
     } else {
@@ -60,7 +61,7 @@ export function createWalletClient(
             url: walletUrl,
             username: "",
             password: "",
-            apiTokenKey: getSecrets().apiKey.xrp_rpc,
+            apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
             inTestnet: sourceId === SourceId.testXRP ? true : false,
             stuckTransactionOptions: options,
         }); // XrpMccCreate

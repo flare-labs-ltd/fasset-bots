@@ -43,8 +43,6 @@ export const DEFAULT_RETRIES = 3;
 
 export const XRP_ACTIVATE_BALANCE = toBNExp(10, 6);
 
-export const ENCRYPTION_PASSWORD_MIN_LENGTH = 16;
-
 /**
  * Asynchronously wait `ms` milliseconds.
  */

@@ -1,6 +1,5 @@
-import { resolveInFassetBotsCore } from "../../src/utils/package-paths";
-
-export const TEST_FASSET_BOT_CONFIG = process.env.TEST_FASSET_BOT_CONFIG ?? resolveInFassetBotsCore("run-config/coston-bot.json");
+export const TEST_FASSET_BOT_CONFIG = process.env.TEST_FASSET_BOT_CONFIG ?? "./run-config/coston-bot.json";
+export const TEST_SECRETS = process.env.TEST_FASSET_SECRETS ?? "./secrets.json";
 
 export const OWNER_ADDRESS: string = "0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073";
 export const COSTON_RPC: string = "https://coston-api.flare.network/ext/C/rpc";

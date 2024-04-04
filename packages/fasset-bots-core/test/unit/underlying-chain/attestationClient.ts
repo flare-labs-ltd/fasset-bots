@@ -1,8 +1,8 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { Secrets, indexerApiKey } from "../../../src/config";
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
-import { requireSecret } from "../../../src/config/secrets";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
@@ -11,9 +11,10 @@ import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 import { toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
 import { createTestOrm } from "../../test-utils/create-test-orm";
+import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
+import { enableSlowTests, itIf } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
 const sourceId = SourceId.testXRP;
@@ -25,6 +26,7 @@ const finalizationBlocks: number = 6;
 // Working tests but skipped from coverage because they take quite some time.
 // Feel free to run them any time separately.
 describe("Attestation client unit tests", () => {
+    let secrets: Secrets;
     let attestationHelper: AttestationHelper;
     let walletHelper: BlockchainWalletHelper;
     let orm: ORM;
@@ -32,8 +34,9 @@ describe("Attestation client unit tests", () => {
     let dbWallet: DBWalletKeys;
 
     before(async () => {
+        secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
-        const accountPrivateKey = requireSecret("owner.native.private_key");
+        const accountPrivateKey = secrets.required("owner.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         attestationHelper = await createAttestationHelper(
             sourceId,
@@ -41,11 +44,12 @@ describe("Attestation client unit tests", () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             accounts[0],
-            indexerUrl
+            indexerUrl,
+            indexerApiKey(secrets)
         );
-        dbWallet = new DBWalletKeys(orm.em);
-        walletHelper = createBlockchainWalletHelper(sourceId, orm.em, walletUrl);
-        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl);
+        dbWallet = DBWalletKeys.from(orm.em, secrets);
+        walletHelper = createBlockchainWalletHelper(secrets, sourceId, orm.em, walletUrl);
+        blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey(secrets));
     });
 
     it("Should not obtain proofs - no attestation providers", async () => {
@@ -55,14 +59,15 @@ describe("Attestation client unit tests", () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
-            indexerUrl
+            indexerUrl,
+            indexerApiKey(secrets)
         );
         await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
             .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should obtain proofs", async () => {
+    itIf(enableSlowTests())("Should obtain proofs", async () => {
         // request confirmed block height
         const windowSeconds = 100;
         const requestBlock = await attestationHelper.requestConfirmedBlockHeightExistsProof(windowSeconds);

@@ -5,7 +5,6 @@ import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
-import { requireSecret } from "../config/secrets";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
@@ -31,6 +30,7 @@ import { NotificationLevel, NotifierTransport } from "../utils/notifier/BaseNoti
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { Secrets } from "../config";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -53,7 +53,9 @@ export class AgentBot {
 
     constructor(
         public agent: Agent,
-        public notifier: AgentNotifier
+        public notifier: AgentNotifier,
+        public owner: OwnerAddressPair,
+        public ownerUnderlyingAddress: string,
     ) {}
 
     context = this.agent.context;
@@ -66,9 +68,9 @@ export class AgentBot {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
     }
 
-    static async initializeUnderlyingAddress(context: IAssetAgentContext, owner: OwnerAddressPair, underlyingAddress: string) {
+    static async initializeUnderlyingAddress(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, underlyingAddress: string) {
         // on XRP chain, send 10 XRP from owners account to activate agent's account
-        await this.activateUnderlyingAccount(context, owner, underlyingAddress);
+        await this.activateUnderlyingAccount(context, owner, ownerUnderlyingAddress, underlyingAddress);
         // validate address
         const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
         // prove EOA if necessary
@@ -93,6 +95,7 @@ export class AgentBot {
         rootEm: EM,
         context: IAssetAgentContext,
         owner: OwnerAddressPair,
+        ownerUnderlyingAddress: string,
         addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentVaultInitSettings,
         notifierTransports: NotifierTransport[]
@@ -121,7 +124,7 @@ export class AgentBot {
             logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
                 underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
             const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-            return new AgentBot(agent, notifier);
+            return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
         });
     }
 
@@ -147,7 +150,12 @@ export class AgentBot {
      * @param notifier
      * @returns instance of AgentBot class
      */
-    static async fromEntity(context: IAssetAgentContext, agentEntity: AgentEntity, notifierTransports: NotifierTransport[]): Promise<AgentBot> {
+    static async fromEntity(
+        context: IAssetAgentContext,
+        agentEntity: AgentEntity,
+        ownerUnderlyingAddress: string,
+        notifierTransports: NotifierTransport[]
+    ): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         // get collateral pool
@@ -166,30 +174,33 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, notifier);
+        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
+    }
+
+    static underlyingAddress(secrets: Secrets, sourceId: SourceId) {
+        return secrets.required(`owner.${decodedChainId(sourceId)}.address`);
     }
 
     /**
      * Activates agent's underlying XRP account by depositing 10 XRP from owner's underlying.
      * @param context fasset agent bot context
-     * @param agentUnderlyingAddress agent's underlying address
+     * @param vaultUnderlyingAddress agent's underlying address
      */
-    static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, agentUnderlyingAddress: string): Promise<void> {
+    static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
         try {
             if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
-            const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
             const reference = owner.managementAddress;
-            const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
+            const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
             if (!transaction || transaction?.status != TX_SUCCESS) {
                 throw new Error(`Could not activate or verify new XRP account with transaction ${txHash}`);
             }
-            logger.info(`Owner ${owner} activated underlying address ${agentUnderlyingAddress} with transaction ${txHash}.`);
+            logger.info(`Owner ${owner} activated underlying address ${vaultUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
-            logger.error(`Owner ${owner} couldn't activate underlying address ${agentUnderlyingAddress}:`, error);
-            throw new Error(`Could not activate or verify new XRP account ${agentUnderlyingAddress}`);
+            logger.error(`Owner ${owner} couldn't activate underlying address ${vaultUnderlyingAddress}:`, error);
+            throw new Error(`Could not activate or verify new XRP account ${vaultUnderlyingAddress}`);
         }
     }
 
@@ -1523,27 +1534,26 @@ export class AgentBot {
      * @param freeUnderlyingBalance agent's gree underlying balance
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
-        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(this.context.chainInfo.chainId)}.address`);
         try {
-            logger.info(`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${ownerUnderlyingAddress}.`);
-            const txHash = await this.agent.performTopupPayment(amount, ownerUnderlyingAddress);
+            logger.info(`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+            const txHash = await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
             await this.agent.confirmTopupPayment(txHash);
             await this.notifier.sendLowUnderlyingAgentBalance(amount);
-            logger.info(`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount ${amount.toString()} from owner's underlying address ${ownerUnderlyingAddress} with txHash ${txHash}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount ${amount.toString()} from owner's underlying address ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
         } catch (error) {
             await this.notifier.sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalance);
-            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance.toString()} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${ownerUnderlyingAddress}:`, error);
+            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance.toString()} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${this.ownerUnderlyingAddress}:`, error);
         }
-        const ownerUnderlyingBalance = await this.context.wallet.getBalance(ownerUnderlyingAddress);
+        const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         const expectedBalance = toBN(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
         if (ownerUnderlyingBalance.lte(expectedBalance)) {
-            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress, ownerUnderlyingBalance);
+            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, ownerUnderlyingBalance);
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
-                ${ownerUnderlyingBalance.toString()} on underlying address ${ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`);
+                ${ownerUnderlyingBalance.toString()} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`);
         } else {
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${ownerUnderlyingBalance.toString()}
-                on underlying address ${ownerUnderlyingAddress}.`);
+                on underlying address ${this.ownerUnderlyingAddress}.`);
         }
     }
 

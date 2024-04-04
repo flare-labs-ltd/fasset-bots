@@ -1,7 +1,7 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { requireEncryptionPassword } from "../config/secrets";
 import { WalletAddress } from "../entities/wallet";
 import { decryptText, encryptText } from "../utils/encryption";
+import { Secrets } from "../config";
 
 export interface IWalletKeys {
     getKey(address: string): Promise<string | undefined>;
@@ -21,11 +21,20 @@ export class MemoryWalletKeys implements IWalletKeys {
 }
 
 export class DBWalletKeys implements IWalletKeys {
-    private password = requireEncryptionPassword("wallet.encryption_password");
-
     private privateKeyCache = new Map<string, string>();
 
-    constructor(private em: EntityManager) {}
+    constructor(
+        private em: EntityManager,
+        private password: string,
+    ) {}
+
+    static from(em: EntityManager, secrets: Secrets) {
+        return new DBWalletKeys(em, this.encryptionPassword(secrets));
+    }
+
+    static encryptionPassword(secrets: Secrets) {
+        return secrets.requiredEncryptionPassword("wallet.encryption_password");
+    }
 
     async getKey(address: string): Promise<string | undefined> {
         if (!this.privateKeyCache.has(address)) {

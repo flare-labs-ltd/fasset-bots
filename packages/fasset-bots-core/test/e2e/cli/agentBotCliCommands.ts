@@ -2,11 +2,12 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
+import { Secrets } from "../../../src/config";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { initWeb3 } from "../../../src/utils/web3";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
-import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS, TEST_FASSET_BOT_CONFIG } from "../../test-utils/test-bot-config";
-import { enableSlowTests, getNativeAccountsFromEnv, itIf } from "../../test-utils/test-helpers";
+import { COSTON_RPC, COSTON_TEST_AGENT_SETTINGS, TEST_FASSET_BOT_CONFIG, TEST_SECRETS } from "../../test-utils/test-bot-config";
+import { enableSlowTests, getNativeAccounts, itIf } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -14,16 +15,18 @@ const fassetBotConfig = TEST_FASSET_BOT_CONFIG;
 const fAssetSymbol = "FtestXRP";
 
 describe("AgentBot cli commands unit tests", () => {
+    let secrets: Secrets;
     let accounts: string[];
     let ownerAddress: string;
 
     before(async () => {
-        accounts = await initWeb3(COSTON_RPC, getNativeAccountsFromEnv(), null);
+        secrets = Secrets.load(TEST_SECRETS);
+        accounts = await initWeb3(COSTON_RPC, getNativeAccounts(secrets), null);
         ownerAddress = accounts[0];
     });
 
     it("Should initialize bot cli commands", async () => {
-        const botCliCommands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
+        const botCliCommands = await AgentBotCommands.create(TEST_SECRETS, fassetBotConfig, fAssetSymbol);
         expect(botCliCommands.notifiers).to.not.be.null;
         expect(botCliCommands.orm).to.not.be.null;
         expect(botCliCommands.context).to.not.be.null;
@@ -31,7 +34,7 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     itIf(enableSlowTests())("Should create agent bot via bot cli commands", async () => {
-        const botCliCommands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
+        const botCliCommands = await AgentBotCommands.create(TEST_SECRETS, fassetBotConfig, fAssetSymbol);
         const agentSettings = loadAgentSettings(COSTON_TEST_AGENT_SETTINGS);
         agentSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
         const agent = await botCliCommands.createAgentVault(agentSettings);
@@ -42,11 +45,13 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should not create  bot cli commands - invalid 'fAssetSymbol'", async () => {
-        await expect(AgentBotCommands.create(fassetBotConfig, "invalidSymbol")).to.eventually.be.rejectedWith(`Invalid FAsset symbol`).and.be.an.instanceOf(Error);
+        await expect(AgentBotCommands.create(TEST_SECRETS, fassetBotConfig, "invalidSymbol"))
+            .to.eventually.be.rejectedWith(`Invalid FAsset symbol`)
+            .and.be.an.instanceOf(Error);
     });
 
     it("Should create underlying account", async () => {
-        const botCliCommands = await AgentBotCommands.create(fassetBotConfig, fAssetSymbol);
+        const botCliCommands = await AgentBotCommands.create(TEST_SECRETS, fassetBotConfig, fAssetSymbol);
         const data = await botCliCommands.createUnderlyingAccount();
         console.log("test generated address (not used anywhere):", data);
         expect(data.address).to.not.be.null;

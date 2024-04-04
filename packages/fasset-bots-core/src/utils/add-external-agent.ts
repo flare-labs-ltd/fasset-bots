@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { assertNotNullCmd } from ".";
+import { Secrets } from "../config";
 import { createBotConfig } from "../config/BotConfig";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext } from "../config/create-asset-context";
-import { getSecrets } from "../config/secrets";
 import { AgentEntity, DailyProofState } from "../entities/agent";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 import { ZERO_ADDRESS } from "./helpers";
@@ -19,6 +19,7 @@ import { ZERO_ADDRESS } from "./helpers";
  * @param active - whether the agent was not destroyed (defaults to true)
  */
 export async function addExternalAgentVault(
+    secrets: Secrets,
     agentVaultAddress: string,
     fAssetSymbol: string,
     runConfigFile: string,
@@ -26,8 +27,8 @@ export async function addExternalAgentVault(
     active = true
 ): Promise<void> {
     const runConfig = loadConfigFile(runConfigFile);
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), null, null);
-    const botConfig = await createBotConfig(runConfig, "0x");
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), null, null);
+    const botConfig = await createBotConfig(secrets, runConfig, "0x");
     const chainConfig = botConfig.fAssets.get(fAssetSymbol);
     assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
     assertNotNullCmd(botConfig.orm, `Missing orm definition in config`);

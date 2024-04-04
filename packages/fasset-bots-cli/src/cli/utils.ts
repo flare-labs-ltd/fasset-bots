@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
+import { Secrets, createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
 import { CommandLineError } from "@flarelabs/fasset-bots-core/utils";
 import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import chalk from "chalk";
@@ -32,12 +32,13 @@ toplevelRun(async () => {
 
 async function setupContext(fAssetSymbol: string) {
     console.log(chalk.cyan("Initializing wallet..."));
-    const options: { config: string } = program.opts();
+    const options: { config: string; secrets: string } = program.opts();
+    const secrets = Secrets.load(options.secrets);
     const runConfig = loadAgentConfigFile(options.config);
     if (!runConfig.ormOptions) {
         throw new CommandLineError("Missing ormOptions in runConfig");
     }
-    const orm = await overrideAndCreateOrm(runConfig.ormOptions);
+    const orm = await overrideAndCreateOrm(runConfig.ormOptions, secrets.data.database);
     const chainConfig = runConfig.fAssets[fAssetSymbol];
     if (chainConfig == null) {
         throw new CommandLineError("Invalid FAsset symbol");
@@ -45,7 +46,7 @@ async function setupContext(fAssetSymbol: string) {
     if (!chainConfig.walletUrl) {
         throw new CommandLineError("Missing wallet url");
     }
-    const walletHelper = createBlockchainWalletHelper(encodeAttestationName(chainConfig.chainId), orm.em, chainConfig.walletUrl, runConfig.walletOptions);
+    const walletHelper = createBlockchainWalletHelper(secrets, encodeAttestationName(chainConfig.chainId), orm.em, chainConfig.walletUrl, runConfig.walletOptions);
     console.log(chalk.cyan("Wallet initialized."));
     return walletHelper;
 }

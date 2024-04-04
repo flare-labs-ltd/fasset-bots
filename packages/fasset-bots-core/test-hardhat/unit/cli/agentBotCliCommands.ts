@@ -14,7 +14,7 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
@@ -57,7 +57,8 @@ describe("AgentBot cli commands unit tests", () => {
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
         const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-        botCliCommands = new AgentBotCommands(context, owner, orm, testNotifierTransports);
+        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, "ownyr_underlying_1");
+        botCliCommands = new AgentBotCommands(secrets, context, owner, orm, testNotifierTransports);
         return { orm, context, chain, botCliCommands };
     }
 

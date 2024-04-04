@@ -22,7 +22,7 @@ export function createTestOrmOptions(testOptionsOverride: Partial<CreateOrmOptio
 
 export async function createTestOrm(testOptionsOverride: Partial<CreateOrmOptions> = {}) {
     const options = createTestOrmOptions(testOptionsOverride);
-    const orm = await overrideAndCreateOrm(options);
+    const orm = await overrideAndCreateOrm(options, undefined);
     ormInitOptions.set(orm, options);
     return orm;
 }
@@ -44,5 +44,5 @@ export async function copyORM(orm: ORM) {
     // copy sqlite db file
     const dbName = options.dbName.replace(/\.db$/, `.copy.db`);
     await copyFile(options.dbName, dbName);
-    return await overrideAndCreateOrm({ ...options, dbName, schemaUpdate: "none" });
+    return await overrideAndCreateOrm({ ...options, dbName, schemaUpdate: "none" }, undefined);
 }

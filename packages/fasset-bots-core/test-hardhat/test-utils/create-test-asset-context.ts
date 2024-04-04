@@ -22,6 +22,9 @@ import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 import { FaultyWallet } from "./FaultyWallet";
 import { newAssetManager, waitForTimelock } from "./new-asset-manager";
+import { Secrets, decodedChainId } from "../../src/config";
+import { ChainAccount } from "../../src/config/config-files/SecretsFile";
+import { SourceId } from "../../src";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");
@@ -197,6 +200,25 @@ export async function createTestAssetContext(
         verificationClient,
         agentOwnerRegistry,
     };
+}
+
+export function createTestSecrets(chain: SourceId, ownerManagementAddress: string, ownerWorkAddress: string, ownerUnderlyingAddress: string) {
+    return new Secrets({
+        apiKey: {},
+        owner: {
+            management: {
+                address: ownerManagementAddress,
+            } as ChainAccount,
+            native: {
+                address: ownerWorkAddress,
+                private_key: "not_needed",
+            },
+            [decodedChainId(chain)]: {
+                address: ownerUnderlyingAddress,
+                private_key: "not_needed",
+            }
+        }
+    });
 }
 
 export function getTestAssetTrackedStateContext(context: TestAssetBotContext, useCustomStrategy: boolean = false): TestAssetTrackedStateContext {

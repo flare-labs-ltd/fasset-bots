@@ -34,18 +34,19 @@ export async function createTestAgentBot(
     context: IAssetAgentContext,
     orm: ORM,
     ownerManagementAddress: string,
+    ownerUnderlyingAddress: string,
     defaultAgentConfigPath: string,
     notifiers: NotifierTransport[] = testNotifierTransports
 ): Promise<AgentBot> {
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     console.log(`Validating new underlying address ${underlyingAddress}...`);
-    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, underlyingAddress);
+    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, underlyingAddress);
     console.log(`Creating agent bot...`);
     const settings = loadAgentSettings(defaultAgentConfigPath);
     settings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, settings);
-    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
+    return await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
 }
 
 export async function createTestChallenger(context: IChallengerContext, address: string, state: TrackedState): Promise<Challenger> {
@@ -58,10 +59,4 @@ export async function createTestLiquidator(context: ILiquidatorContext, address:
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
     return new SystemKeeper(new ScopedRunner(), address, state);
-}
-
-export async function destroyAllAgents(context: IAssetAgentContext, orm: ORM, ownerAddress: string) {
-    const list = await context.assetManager.getAllAgents(0, 100);
-    const listOfAgents = list[0];
-    await cleanUp(context, orm, ownerAddress, listOfAgents);
 }
