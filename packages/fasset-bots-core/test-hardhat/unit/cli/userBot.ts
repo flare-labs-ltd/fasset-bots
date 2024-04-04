@@ -6,30 +6,25 @@ import fs, { existsSync } from "fs";
 import path from "path";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { UserBotCommands } from "../../../src/commands/UserBotCommands";
+import { PoolUserBotCommands } from "../../../src/commands/PoolUserBotCommands";
 import { ORM } from "../../../src/config/orm";
 import { AgentRedemptionState } from "../../../src/entities/agent";
 import { Minter } from "../../../src/mock/Minter";
-import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
-import { MockIndexer } from "../../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
+import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
-import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
-import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createTestAgentBotAndMakeAvailable, createTestContractRetriever, createTestMinter, createTestRedeemer, makeBotFAssetConfigMap } from "../../test-utils/helpers";
+import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
 
-const StateConnector = artifacts.require("StateConnectorMock");
 const userUnderlyingAddress = "userUnderlyingAddress";
 
 interface MintData {
@@ -40,6 +35,7 @@ interface MintData {
     executorAddress: string;
     createdAt: string;
 }
+
 interface RedeemData {
     type: "redeem";
     requestId: string;
@@ -59,6 +55,7 @@ describe("UserBot cli commands unit tests", () => {
     let ownerAddress: string;
     let minterAddress: string;
     let userBot: UserBotCommands;
+    let poolUserBot: PoolUserBotCommands;
     let chain: MockChain;
     let agentBot: AgentBot;
     let minter: Minter;
@@ -82,6 +79,7 @@ describe("UserBot cli commands unit tests", () => {
         // user bot
         const fAssetSymbol = "TESTHHSYM";
         userBot = new UserBotCommands(context, fAssetSymbol, minterAddress, userUnderlyingAddress);
+        poolUserBot = new PoolUserBotCommands(context, fAssetSymbol, minterAddress);
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain, userUnderlyingAddress);
         redeemer = await createTestRedeemer(context, minterAddress, userUnderlyingAddress);
@@ -231,11 +229,11 @@ describe("UserBot cli commands unit tests", () => {
     it("Should enter and exit pool", async () => {
         const poolAddress = agentBot.agent.collateralPool.address;
         const amount = toBN(10000000000000000000);
-        const enter = await userBot.enterPool(poolAddress, amount);
+        const enter = await poolUserBot.enterPool(poolAddress, amount);
         expect(enter.tokenHolder).to.eq(userBot.nativeAddress);
         expect(enter.amountNatWei.eq(amount)).to.be.true;
         await time.increase(time.duration.days(1));
-        const exit = await userBot.exitPool(poolAddress, amount);
+        const exit = await poolUserBot.exitPool(poolAddress, amount);
         expect(exit.tokenHolder).to.eq(userBot.nativeAddress);
         expect(exit.receivedNatWei.eq(amount)).to.be.true;
     });

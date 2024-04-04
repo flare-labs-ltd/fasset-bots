@@ -1,6 +1,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { UserBotCommands } from "../../../src/commands/UserBotCommands";
+import { PoolUserBotCommands } from "../../../src/commands/PoolUserBotCommands";
 import { ZERO_ADDRESS } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { COSTON_RPC, TEST_FASSET_BOT_CONFIG, TEST_SECRETS } from "../../test-utils/test-bot-config";
@@ -21,22 +22,27 @@ describe("UserBot cli commands unit tests", () => {
     });
 
     it("Should create UserBot", async () => {
-        const userBot1 = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP", false);
+        const userBot1 = await PoolUserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP");
         expect(userBot1.nativeAddress).to.eq(userAddress);
-        expect(userBot1.underlyingAddress).to.eq(ZERO_ADDRESS);
-        const userBot2 = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FfakeXRP", true);
+        const userBot2 = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FfakeXRP");
         expect(userBot2.nativeAddress).to.eq(userAddress);
         expect(userBot2.underlyingAddress).to.not.eq(ZERO_ADDRESS);
     });
 
     it("Should create UserBot - invalid 'fAssetSymbol'", async () => {
-        await expect(UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "invalidSymbol", true))
+        await expect(UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "invalidSymbol"))
             .to.eventually.be.rejectedWith(`Invalid FAsset symbol`)
             .and.be.an.instanceOf(Error);
     });
 
     it("Should get infoBot", async () => {
-        const userBot = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP", false);
+        const userBot = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP");
+        const infoBot = userBot.infoBot();
+        expect(await infoBot.context.fAsset.symbol()).to.eq("FtestXRP");
+    });
+
+    it("Should get infoBot - pool user", async () => {
+        const userBot = await PoolUserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP");
         const infoBot = userBot.infoBot();
         expect(await infoBot.context.fAsset.symbol()).to.eq("FtestXRP");
     });

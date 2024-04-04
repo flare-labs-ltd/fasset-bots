@@ -1,7 +1,7 @@
 import { KeeperBotConfig, createTimekeeperContext } from "../config";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
-import { requireNotNull, sleep, web3DeepNormalize } from "../utils";
+import { sleep, web3DeepNormalize } from "../utils";
 import { logger } from "../utils/logger";
 
 export class TimeKeeper {
@@ -67,18 +67,17 @@ export class TimeKeeper {
 
     // like AttestationHelper.proveConfirmedBlockHeightExists, but allows stopping while waiting for proof
     private async proveConfirmedBlockHeightExists(queryWindow: number) {
-        const attestationProvider = requireNotNull(this.context.attestationProvider, "missing attestation provider");
         logger.info(`Updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}...`);
-        const request = await attestationProvider.requestConfirmedBlockHeightExistsProof(queryWindow);
+        const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(queryWindow);
         if (request == null) {
             throw new Error("Timekeeper: balanceDecreasingTransaction: not proved");
         }
-        while (!(await attestationProvider.stateConnector.roundFinalized(request.round))) {
+        while (!(await this.context.attestationProvider.stateConnector.roundFinalized(request.round))) {
             if (this.stopRequested) return "STOP REQUESTED";
             await sleep(this.loopDelay);
         }
         logger.info(`Obtained underlying block proof for asset manager ${this.context.assetManager.address}, updating with user ${this.address}...`);
-        const proof = await attestationProvider.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
+        const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
         if (!attestationProved(proof)) {
             throw new Error("Timekeeper: balanceDecreasingTransaction: not proved");
         }

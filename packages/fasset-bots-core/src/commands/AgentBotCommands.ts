@@ -4,7 +4,7 @@ import { AddressValidity, decodeAttestationName } from "@flarenetwork/state-conn
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
-import { InfoBot } from "..";
+import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { closeBotConfig, createBotConfig } from "../config/BotConfig";
@@ -82,7 +82,7 @@ export class AgentBotCommands {
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
-        return new AgentBotCommands(secrets, context, owner, requireNotNull(botConfig.orm), botConfig.notifiers);
+        return new AgentBotCommands(secrets, context, owner, botConfig.orm, botConfig.notifiers);
     }
 
     static async verifyWorkAddress(context: IAssetAgentContext, owner: OwnerAddressPair) {
@@ -491,7 +491,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async printAgentInfo(agentVault: string): Promise<void> {
-        const infoBot = new InfoBot(this.context);
+        const infoBot = new InfoBotCommands(this.context);
         await infoBot.printAgentInfo(agentVault);
     }
 

@@ -9,13 +9,12 @@ import { loadAgentConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { decodedChainId } from "../config/create-wallet-client";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { AssetManagerSettings, TokenExitType } from "../fasset/AssetManagerTypes";
+import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
-import { requiredEventArgs } from "../utils/events/truffle";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
 import { BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
@@ -28,7 +27,7 @@ import { InfoBotCommands } from "./InfoBotCommands";
 /* istanbul ignore next */
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
 
-const CollateralPool = artifacts.require("CollateralPool");
+export const CollateralPool = artifacts.require("CollateralPool");
 
 interface MintData {
     type: "mint";
@@ -65,7 +64,7 @@ enum MintingStatus {
     PENDING = "PENDING",
 }
 
-type CleanupRegistration = (handler: () => Promise<void>) => void;
+export type CleanupRegistration = (handler: () => Promise<void>) => void;
 
 export class UserBotCommands {
     static deepCopyWithObjectCreate = true;
@@ -85,7 +84,7 @@ export class UserBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of UserBot
      */
-    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<UserBotCommands> {
+    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
         const secrets = Secrets.load(secretsFile);
         const nativeAddress = secrets.required("user.native.address");
         logger.info(`User ${nativeAddress} started to initialize cli environment.`);
@@ -107,9 +106,7 @@ export class UserBotCommands {
         assertNotNullCmd(fassetConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
         const context = await createAgentBotContext(botConfig, fassetConfig);
         // create underlying wallet key
-        const underlyingAddress = requireWallet
-            ? await this.loadUnderlyingAddress(secrets, context, requireNotNull(fassetConfig.verificationClient))
-            : ZERO_ADDRESS;
+        const underlyingAddress = await this.loadUnderlyingAddress(secrets, context, fassetConfig.verificationClient);
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
         return new UserBotCommands(context, fAssetSymbol, nativeAddress, underlyingAddress);
@@ -367,18 +364,6 @@ export class UserBotCommands {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = requireNotNull(await this.context.blockchainIndexer.getBlockAt(blockHeight));
         return blockHeight > Number(state.lastUnderlyingBlock) && lastBlock.timestamp > Number(state.lastUnderlyingTimestamp);
-    }
-
-    async enterPool(poolAddress: string, collateralAmountWei: BNish) {
-        const pool = await CollateralPool.at(poolAddress);
-        const res = await pool.enter(0, false, { from: this.nativeAddress, value: collateralAmountWei.toString() });
-        return requiredEventArgs(res, "Entered");
-    }
-
-    async exitPool(poolAddress: string, tokenAmountWei: BNish) {
-        const pool = await CollateralPool.at(poolAddress);
-        const res = await pool.exit(tokenAmountWei, TokenExitType.KEEP_RATIO, { from: this.nativeAddress });
-        return requiredEventArgs(res, "Exited");
     }
 
     stateFileDir(type: StateData["type"]) {

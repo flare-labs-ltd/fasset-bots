@@ -57,6 +57,8 @@ export function systemTimestamp() {
     return Math.round(new Date().getTime() / 1000);
 }
 
+export type NullableToNonNullable<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : unknown;
+export type NullableToNonNullable2<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : never;
 /**
  * Check if value is non-null.
  * Useful in array.filter, to return array of non-nullable types.
@@ -69,15 +71,15 @@ export function isNotNull<T>(x: T): x is NonNullable<T> {
  * Check if value is non-null and throw otherwise.
  * Returns guaranteed non-null value.
  */
-export function requireNotNull<T>(x: T, errorMessage?: string): NonNullable<T> {
-    if (x != null) return x as NonNullable<T>;
+export function requireNotNull<T>(x: T, errorMessage?: string): NullableToNonNullable<T> {
+    if (x != null) return x as any;
     throw new Error(errorMessage ?? "Value is null or undefined");
 }
 
 /**
  * Check if value is non-null and throw otherwise.
  */
-export function assertNotNull<T>(x: T, errorMessage?: string): asserts x is NonNullable<T> {
+export function assertNotNull<T>(x: T, errorMessage?: string): asserts x is NullableToNonNullable2<T> {
     if (x == null) {
         throw new Error(errorMessage ?? "Value is null or undefined");
     }
