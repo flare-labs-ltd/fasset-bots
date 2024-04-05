@@ -379,6 +379,16 @@ export class UserBotCommands {
         }
     }
 
+    validateStateFilePath(fullpath: string, type: StateData["type"], requestIdOrPath: BNish | string) {
+        if (fs.existsSync(fullpath)) return;
+        const typeStr = type === "mint" ? "minting" : "redemption";
+        if (typeof requestIdOrPath !== "string" || /^\d+$/.test(requestIdOrPath)) {
+            throw new CommandLineError(`There is no active ${typeStr} with id ${requestIdOrPath}`);
+        } else {
+            throw new CommandLineError(`Missing ${typeStr} state file ${fullpath}`);
+        }
+    }
+
     writeState(data: StateData): void {
         const dir = this.stateFileDir(data.type);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -388,6 +398,7 @@ export class UserBotCommands {
 
     readState<T extends StateData["type"]>(type: T, requestIdOrPath: BNish | string): Extract<StateData, { type: T }> {
         const fname = this.stateFilePath(type, requestIdOrPath);
+        this.validateStateFilePath(fname, type, requestIdOrPath);
         const json = fs.readFileSync(fname).toString();
         return JSON.parse(json);
     }
