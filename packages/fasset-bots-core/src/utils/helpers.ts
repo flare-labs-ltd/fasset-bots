@@ -14,6 +14,8 @@ export type Modify<T, R> = Omit<T, keyof R> & R;
 
 export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
+export type NullableToNonNullable<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : unknown;
+
 export const BN_ZERO = new BN(0);
 export const BN_ONE: BN = Web3.utils.toBN(1);
 export const BN_TEN: BN = Web3.utils.toBN(10);
@@ -57,8 +59,6 @@ export function systemTimestamp() {
     return Math.round(new Date().getTime() / 1000);
 }
 
-export type NullableToNonNullable<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : unknown;
-export type NullableToNonNullable2<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : never;
 /**
  * Check if value is non-null.
  * Useful in array.filter, to return array of non-nullable types.
@@ -79,7 +79,7 @@ export function requireNotNull<T>(x: T, errorMessage?: string): NullableToNonNul
 /**
  * Check if value is non-null and throw otherwise.
  */
-export function assertNotNull<T>(x: T, errorMessage?: string): asserts x is NullableToNonNullable2<T> {
+export function assertNotNull<T>(x: T, errorMessage?: string): asserts x is NonNullable<T> {
     if (x == null) {
         throw new Error(errorMessage ?? "Value is null or undefined");
     }

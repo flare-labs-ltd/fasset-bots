@@ -31,7 +31,6 @@ export async function addExternalAgentVault(
     const botConfig = await createBotConfig("agent", secrets, runConfig, "0x");
     const chainConfig = botConfig.fAssets.get(fAssetSymbol);
     assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
-    assertNotNullCmd(botConfig.orm, `Missing orm definition in config`);
     const assetContext = await createAgentBotContext(botConfig, chainConfig);
     const agentInfo = await assetContext.assetManager.getAgentInfo(agentVaultAddress);
     // check if agent exists

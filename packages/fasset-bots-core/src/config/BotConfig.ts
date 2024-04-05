@@ -17,7 +17,7 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
-import { RequireFields, assertNotNull, assertNotNullCmd, requireNotNull } from "../utils";
+import { RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull } from "../utils";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
@@ -140,7 +140,7 @@ export async function createBotFAssetConfig(
     }
     if (type === "agent" || type === "user" || type === "keeper") {
         assertNotNullCmd(fassetInfo.indexerUrl, "Setting 'indexerUrl' is required in config");
-        assertNotNullCmd(attestationProviderUrls, "Setting 'attestationProviderUrls' is required in config");
+        assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
         assertNotNull(submitter);   // if this is missing, it is program error
         const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
         const apiKey = indexerApiKey(secrets);
