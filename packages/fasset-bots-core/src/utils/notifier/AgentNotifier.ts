@@ -327,11 +327,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendBuyCollateralPoolTokens(amount: BNish | BN) {
-        await this.info(AgentNotificationKey.BUY_POOL_TOKENS, `Agent ${this.address} bought ${amount} of pool tokens successfully.`);
+        await this.info(AgentNotificationKey.BUY_POOL_TOKENS, `Agent ${this.address} bought ${amount} NAT worth of pool tokens successfully.`);
     }
 
     async sendVaultCollateralDeposit(amount: BNish | BN) {
-        await this.info(AgentNotificationKey.VAULT_COLLATERAL_DEPOSIT, `Deposit of ${amount} to agent ${this.address} was successful.`);
+        await this.info(AgentNotificationKey.VAULT_COLLATERAL_DEPOSIT, `Deposit of ${amount} vault collateral tokens to agent ${this.address} was successful.`);
     }
 
     async sendWithdrawPoolFees(amount: BNish | BN) {
