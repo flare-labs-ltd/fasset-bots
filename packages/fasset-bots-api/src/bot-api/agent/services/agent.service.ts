@@ -1,16 +1,11 @@
-import { AgentBotCommands } from "@flarelabs/fasset-bots-core";
-import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
-import { artifacts, requireEnv } from "@flarelabs/fasset-bots-core/utils";
-import { Injectable } from "@nestjs/common";
-import { AgentBalance, AgentCreateResponse, AgentSettings, AgentUnderlying } from "../../common/AgentResponse";
-import { Inject, Injectable } from "@nestjs/common";
-import { CACHE_MANAGER } from "@nestjs/cache-manager";
-import { BotCliCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
-import { AgentSettingsConfig, decodedChainId, requireSecret } from "@flarelabs/fasset-bots-core/config";
+import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
+import { AgentSettingsConfig, Secrets, decodedChainId } from "@flarelabs/fasset-bots-core/config";
 import { artifacts, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
-import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
-import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
+import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
+import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -193,7 +188,7 @@ export class AgentService {
     }
 
     async getAgentInfo(fAssetSymbol: string): Promise<AgentData>  {
-        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         // get collateral data
         const collateralTypes = await cli.context.assetManager.getCollateralTypes();
         const collaterals = [];
@@ -210,9 +205,9 @@ export class AgentService {
     }
 
     async getAgentVaultsInfo(fAssetSymbol: string): Promise<AgentVaultStatus[]> {
-        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         // get agent infos
-        const query = cli.botConfig.orm!.em.createQueryBuilder(AgentEntity);
+        const query = cli.orm.em.createQueryBuilder(AgentEntity);
         const agentVaults = await query.where({ active: true }).getResultList();
         const agentInfos: AgentVaultStatus[] = [];
         for (const agent of agentVaults) {
@@ -235,7 +230,7 @@ export class AgentService {
     }
 
     async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentVaultInfo> {
-        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const agentVaultInfo: any = {};
         for (const key of Object.keys(info)) {
@@ -248,8 +243,8 @@ export class AgentService {
     }
 
     async getAgentUnderlyingBalance(fAssetSymbol: string): Promise<AgentBalance> {
-        const cli = await BotCliCommands.create(FASSET_BOT_CONFIG, fAssetSymbol);
-        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(cli.context.chainInfo.chainId)}.address`);
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const ownerUnderlyingAddress = cli.secrets.required(`owner.${decodedChainId(cli.context.chainInfo.chainId)}.address`);
         const balance = await cli.context.wallet.getBalance(ownerUnderlyingAddress);
         return { balance: balance.toString() };
     }
@@ -275,6 +270,7 @@ export class AgentService {
     }
 
     async getAgentWorkAddress(): Promise<string> {
-        return requireSecret("owner.native.address", undefined, true);
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        return secrets.required("owner.native.address");
     }
 }

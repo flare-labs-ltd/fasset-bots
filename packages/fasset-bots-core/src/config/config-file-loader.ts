@@ -52,7 +52,7 @@ export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
     if (config.ormOptions?.type === "sqlite" && config.contractsJsonFile) {
         const contracts = loadContracts(config.contractsJsonFile);
         const controllerAddress = contracts.AssetManagerController.address.slice(2, 10);
-        config.ormOptions.dbName = requireNotNull(config.ormOptions.dbName).replace(/CONTROLLER/g, controllerAddress);
+        config.ormOptions.dbName = requireNotNull(process.env.FASSET_BOT_SQLITE_DB ?? config.ormOptions.dbName).replace(/CONTROLLER/g, controllerAddress);
     }
 }
 

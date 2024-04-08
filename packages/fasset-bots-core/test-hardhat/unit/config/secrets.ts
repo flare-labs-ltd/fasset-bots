@@ -6,7 +6,7 @@ import { requireEnv } from "../../../src/utils/helpers";
 const chainId = "testXRP";
 describe("Secrets unit tests", () => {
     it("Should not return secret", async () => {
-        const secrets = new Secrets({ apiKey: {} });
+        const secrets = new Secrets("no_file.json", { apiKey: {} });
         const secretName = "wallet";
         const fn = () => {
             return secrets.required(secretName);
@@ -15,7 +15,7 @@ describe("Secrets unit tests", () => {
     });
 
     it("Should not return secret 2", async () => {
-        const secrets = new Secrets({ apiKey: {}, owner: { testXRP: { address: "0xabcd", private_key: "0xabcd" }} });
+        const secrets = new Secrets("no_file.json", { apiKey: {}, owner: { testXRP: { address: "0xabcd", private_key: "0xabcd" }} });
         const address = secrets.required(`owner.${decodedChainId(chainId)}.address`);
         const secretName = `owner.${chainId}.address.` + address + "." + address;
         const fn = () => {
@@ -26,7 +26,7 @@ describe("Secrets unit tests", () => {
 
     it("Should throw error if encryption password too short", async () => {
         const walletPassword = "wallet.encryption_password";
-        const secrets = new Secrets({ apiKey: {} });
+        const secrets = new Secrets("no_file.json", { apiKey: {} });
         const fn1 = () => {
             return secrets.requiredEncryptionPassword(walletPassword);
         };

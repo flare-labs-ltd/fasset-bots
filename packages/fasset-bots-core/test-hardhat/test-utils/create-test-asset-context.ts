@@ -203,7 +203,7 @@ export async function createTestAssetContext(
 }
 
 export function createTestSecrets(chain: SourceId, ownerManagementAddress: string, ownerWorkAddress: string, ownerUnderlyingAddress: string) {
-    return new Secrets({
+    return new Secrets("non_exisiting_secrets_file.json", {
         apiKey: {},
         owner: {
             management: {

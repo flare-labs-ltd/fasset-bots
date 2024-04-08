@@ -6,19 +6,20 @@ export const ENCRYPTION_PASSWORD_MIN_LENGTH = 16;
 
 export class Secrets {
     constructor(
+        public filePath: string,
         public data: SecretsFile,
     ) {}
 
     static load(secretsPath: string) {
         const data = loadSecrets(secretsPath);
-        return new Secrets(data);
-}
+        return new Secrets(secretsPath, data);
+    }
 
     required(key: string): string {
         const value = valueForKeyPath(this.data, key);
         if (typeof value === "string") return value;
         throw new Error(`Secret variable ${key} not defined or not typeof string`);
-}
+    }
 
     optional(key: string): string | undefined {
         const value = valueForKeyPath(this.data, key);
@@ -31,7 +32,7 @@ export class Secrets {
         const value = this.required(key);
         validateEncryptionPassword(value, key);
         return value;
-}
+    }
 }
 
 function loadSecrets(secretsPath: string): SecretsFile {

@@ -64,8 +64,10 @@ export class AgentBotRunner {
                     console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
                     logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
                     continue;
-                } else if (web3.eth.defaultAccount !== requireSecret(`owner.native.address`, undefined, true)) {
-                    const ownerAddress = requireSecret(`owner.native.address`);
+                }
+                const newSecrets = Secrets.load(this.secrets.filePath);
+                if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
+                    const ownerAddress = newSecrets.required(`owner.native.address`);
                     this.requestRestart();
                     console.warn(`Owner's native address from secrets file, does not match their used account`);
                     logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);

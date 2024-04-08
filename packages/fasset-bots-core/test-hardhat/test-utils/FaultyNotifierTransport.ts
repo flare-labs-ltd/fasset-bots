@@ -6,7 +6,7 @@ export class FaultyNotifierTransport extends ApiNotifierTransport {
     mock: MockAdapter | undefined;
 
     constructor() {
-        super("FaultyNotifier");
+        super("FaultyNotifier", "MockApiKey");
         if (this.mock) {
             this.mock.onPost("/api/0/bot_alert").reply(500, "Internal Server Error");
         }

@@ -4,17 +4,6 @@ import { formatArgs } from "../formatting";
 import { DEFAULT_TIMEOUT } from "../helpers";
 import { logger } from "../logger";
 import { BotType, NotificationLevel, NotifierTransport } from "./BaseNotifier";
-import { requireSecret } from "../../config";
-
-export function standardNotifierTransports(alertsUrl: string | undefined) {
-    const transports: NotifierTransport[] = [];
-    transports.push(new ConsoleNotifierTransport());
-    transports.push(new LoggerNotifierTransport());
-    if (alertsUrl) {
-        transports.push(new ApiNotifierTransport(alertsUrl));
-    }
-    return transports;
-}
 
 export class ConsoleNotifierTransport implements NotifierTransport {
     async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {
@@ -47,8 +36,7 @@ export class ApiNotifierTransport implements NotifierTransport {
 
     client: AxiosInstance;
 
-    constructor(public alertsUrl: string) {
-        const apiKey = requireSecret("apiKey.agent_bot");
+    constructor(public alertsUrl: string, public apiKey: string) {
         const createAxiosConfig: AxiosRequestConfig = {
             baseURL: alertsUrl,
             timeout: DEFAULT_TIMEOUT,

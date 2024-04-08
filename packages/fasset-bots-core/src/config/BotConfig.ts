@@ -19,7 +19,7 @@ import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConn
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull } from "../utils";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { standardNotifierTransports } from "../utils/notifier/NotifierTransports";
+import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
 import { BotConfigFile, BotFAssetInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
@@ -79,14 +79,14 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
             const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
             fAssets.set(symbol, fassetConfig);
-    }
-    return {
+        }
+        return {
             rpcUrl: configFile.rpcUrl,
             loopDelay: configFile.loopDelay,
-        fAssets: fAssets,
+            fAssets: fAssets,
             nativeChainInfo: configFile.nativeChainInfo,
-        orm: orm,
-            notifiers: standardNotifierTransports(configFile.alertsUrl),
+            orm: orm,
+            notifiers: standardNotifierTransports(secrets, configFile.alertsUrl),
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
@@ -94,14 +94,24 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
     } catch (error) {
         await orm?.close();
         throw error;
-}
+    }
 }
 
 export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOptions, databaseAccount?: DatabaseAccount) {
     if (type === "agent") {
         assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
         return await overrideAndCreateOrm(ormOptions, databaseAccount);
+    }
 }
+
+export function standardNotifierTransports(secrets: Secrets, alertsUrl: string | undefined) {
+    const transports: NotifierTransport[] = [];
+    transports.push(new ConsoleNotifierTransport());
+    transports.push(new LoggerNotifierTransport());
+    if (alertsUrl) {
+        transports.push(new ApiNotifierTransport(alertsUrl, secrets.required("apiKey.agent_bot")));
+    }
+    return transports;
 }
 
 /**
@@ -137,7 +147,7 @@ export async function createBotFAssetConfig(
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, "Setting 'walletUrl' is required in config");
         result.wallet = createBlockchainWalletHelper(type, secrets, sourceId, em, fassetInfo.walletUrl, walletOptions);
-}
+    }
     if (type === "agent" || type === "user" || type === "keeper") {
         assertNotNullCmd(fassetInfo.indexerUrl, "Setting 'indexerUrl' is required in config");
         assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
@@ -147,9 +157,9 @@ export async function createBotFAssetConfig(
         result.blockchainIndexerClient = createBlockchainIndexerHelper(sourceId, fassetInfo.indexerUrl, apiKey);
         result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrl, apiKey);
         result.stateConnector = await createStateConnectorClient(fassetInfo.indexerUrl, apiKey, attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter);
-}
-    return result;
     }
+    return result;
+}
 
 export function createChainInfo(sourceId: string, fassetInfo: BotFAssetInfo, settings: AssetManagerSettings): ChainInfo {
     return {
@@ -216,7 +226,7 @@ export async function createAttestationHelper(
 ): Promise<AttestationHelper> {
     if (!supportedSourceId(sourceId)) {
         throw new Error(`SourceId ${sourceId} not supported.`);
-}
+    }
     const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
     const indexer = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey);
     return new AttestationHelper(stateConnector, indexer, sourceId);

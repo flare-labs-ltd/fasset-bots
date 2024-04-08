@@ -5,7 +5,7 @@ export class MockNotifierTransport extends ApiNotifierTransport {
     mock: MockAdapter | undefined;
 
     constructor() {
-        super("Mock");
+        super("Mock", "MockApiKey");
         this.mock = new MockAdapter(this.client);
         this.mock.onPost('/api/0/bot_alert').reply(config => {
             console.log('POST request made to /api/0/bot_alert', config.data);
