@@ -73,7 +73,7 @@
         "cover:testHH": "yarn coverage --silent yarn testHH_all; yarn coverage merge .nyc_output coverage/merge/testHH.json",
         "cover:report": "yarn coverage report -t coverage/merge --reporter html --reporter text",
         "---------GENERATE---SCRIPTS": "",
-        "generate-config-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files/BotConfigFile.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json",
+        "generate-config-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files/BotConfigFile.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json && yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files/BotConfigFile.ts Schema_BotConfigFileOverride -o run-config/schema/bot-config-override.schema.json",
         "generate-agent-settings-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files/AgentSettingsConfig.ts Schema_AgentSettingsConfig -o run-config/schema/agent-settings.schema.json",
         "---------INTERACTIVE---SCRIPTS": "",
         "console": "yarn hardhat console --no-compile",
