@@ -1,14 +1,5 @@
+import { CommandLineError, logger } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
-import { logger } from "./logger";
-
-/**
- * A type of error that prints nice message instead of stack trace in command line tools.
- */
-export class CommandLineError extends Error {
-    static wrap(error: any) {
-        return error?.message ? new CommandLineError(error.message) : error;
-    }
-}
 
 const toplevelRunFinalizers: Array<() => Promise<void>> = [];
 
@@ -51,6 +42,7 @@ async function runWithFinalizers(main: () => Promise<void>) {
     } finally {
         // run registered finalizers
         while (toplevelRunFinalizers.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const finalizer = toplevelRunFinalizers.pop()!;
             try {
                 await finalizer();

@@ -3,11 +3,12 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import rewire from "rewire";
-import { getNativeAccountsFromEnv } from "../../test-utils/test-helpers";
-import { COSTON_RPC } from "../../test-utils/test-bot-config";
+import { getNativeAccounts } from "../../test-utils/test-helpers";
+import { COSTON_RPC, TEST_SECRETS } from "../../test-utils/test-bot-config";
 const web3Internal = rewire("../../../src/utils/web3");
 const createProvider = web3Internal.__get__("createProvider");
 import { HttpProvider } from "web3-core";
+import { Secrets } from "../../../src/config";
 
 describe("web3 unit tests", () => {
     it("Should create provider", async () => {
@@ -25,7 +26,8 @@ describe("web3 unit tests", () => {
     });
 
     it("Should create wallet accounts", async () => {
-        const envPrivateKeys = getNativeAccountsFromEnv();
+        const secrets = Secrets.load(TEST_SECRETS);
+        const envPrivateKeys = getNativeAccounts(secrets);
         const accounts = await initWeb3(COSTON_RPC, envPrivateKeys, 0);
         const uniqueEnvAccounts = new Set(envPrivateKeys);
         expect(accounts.length).to.eq(uniqueEnvAccounts.size);

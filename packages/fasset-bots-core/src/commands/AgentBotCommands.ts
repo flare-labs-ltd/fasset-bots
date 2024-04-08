@@ -1,105 +1,93 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import "dotenv/config";
 
 import { AddressValidity, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
-import { InfoBot } from "..";
-import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config";
-import { BotConfig, closeBotConfig, createAgentBotDefaultSettings, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
-import { createAssetContext } from "../config/create-asset-context";
-import { getSecrets, requireSecret } from "../config/secrets";
+import { InfoBotCommands } from "..";
+import { AgentBot } from "../actors/AgentBot";
+import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
+import { closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { loadAgentConfigFile } from "../config/config-file-loader";
+import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
+import { createAgentBotContext } from "../config/create-asset-context";
+import { decodedChainId } from "../config/create-wallet-client";
+import { ORM } from "../config/orm";
+import { Secrets } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
-import { ChainInfo } from "../fasset/ChainInfo";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { resolveInFassetBotsCore, squashSpace } from "../utils";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, toBN } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
+import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
-import { AgentBot } from "./AgentBot";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
 
 type CleanupRegistration = (handler: () => Promise<void>) => void;
 
-export class BotCliCommands {
+export class AgentBotCommands {
     static deepCopyWithObjectCreate = true;
 
-    context!: IAssetAgentBotContext;
-    owner!: OwnerAddressPair;
-    botConfig!: BotConfig;
-    BotFAssetInfo!: ChainInfo;
+    constructor(
+        public secrets: Secrets,
+        public context: IAssetAgentContext,
+        public owner: OwnerAddressPair,
+        public orm: ORM,
+        public notifiers: NotifierTransport[],
+    ) {}
 
     /**
-     *
      * Creates instance of BotCliCommands.
      * @param runConfigFile path to configuration file
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of BotCliCommands class
      */
-    static async create(runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
-        const bot = new BotCliCommands();
-        await bot.initEnvironment(runConfigFile, fAssetSymbol, registerCleanup);
-        return bot;
-    }
-
-    /**
-     * Initializes asset context from AgentBotRunConfig
-     * @param runConfigFile path to configuration file
-     * @param fAssetSymbol symbol for the fasset
-     */
-    async initEnvironment(runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration): Promise<void> {
-        const ownerWorkAddress = requireSecret("owner.native.address", undefined, true); // force secrets.json reload
-        this.owner = new OwnerAddressPair(requireSecret("owner.management.address"), ownerWorkAddress);
+    static async create(secretsFile: string, runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
+        const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         // load config
-        logger.info(`Owner ${this.owner.managementAddress} started to initialize cli environment.`);
+        logger.info(`Owner ${owner.managementAddress} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
-        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${this.owner.managementAddress}`);
+        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${owner.managementAddress}`);
         // init web3 and accounts
-        const nativePrivateKey = requireSecret("owner.native.private_key");
-        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
+        const nativePrivateKey = secrets.required("owner.native.private_key");
+        const apiKey = secrets.optional("apiKey.native_rpc");
+        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, apiKey), [nativePrivateKey], null);
         /* istanbul ignore next */
-        if (this.owner.workAddress !== accounts[0]) {
-            logger.error(`Owner ${this.owner.managementAddress} has invalid address/private key pair.`);
+        if (owner.workAddress !== accounts[0]) {
+            logger.error(`Owner ${owner.managementAddress} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        this.botConfig = await createBotConfig(runConfig, this.owner.workAddress);
-        registerCleanup?.(() => closeBotConfig(this.botConfig));
+        const botConfig = await createBotConfig("agent", secrets, runConfig, owner.workAddress);
+        registerCleanup?.(() => closeBotConfig(botConfig));
         // create context
-        const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-        if (chainConfig == null) {
-            logger.error(`Owner ${this.owner.managementAddress} has invalid FAsset symbol ${fAssetSymbol}.`);
-            throw new CommandLineError(`Invalid FAsset symbol ${fAssetSymbol}`);
-        }
-        this.BotFAssetInfo = chainConfig.chainInfo;
-        this.context = await createAssetContext(this.botConfig, chainConfig);
+        const chainConfig = botConfig.fAssets.get(fAssetSymbol);
+        assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
+        const context = await createAgentBotContext(botConfig, chainConfig);
         // verify keys
-        await this.verifyWorkAddress(this.owner);
+        await this.verifyWorkAddress(context, owner);
         // create underlying wallet key
-        const underlyingAddress = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.address`);
-        const underlyingPrivateKey = requireSecret(`owner.${decodedChainId(this.BotFAssetInfo.chainId)}.private_key`);
-        await this.context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
+        const underlyingAddress = secrets.required(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.address`);
+        const underlyingPrivateKey = secrets.required(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.private_key`);
+        await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
-        logger.info(`Owner ${this.owner.managementAddress} successfully finished initializing cli environment.`);
+        logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
+        return new AgentBotCommands(secrets, context, owner, botConfig.orm, botConfig.notifiers);
     }
 
-    notifierFor(agentVault: string) {
-        return new AgentNotifier(agentVault, this.botConfig.notifiers);
-    }
-
-    async verifyWorkAddress(owner: OwnerAddressPair) {
+    static async verifyWorkAddress(context: IAssetAgentContext, owner: OwnerAddressPair) {
         // get work address
-        const chainWorkAddress = await Agent.getOwnerWorkAddress(this.context, owner.managementAddress);
+        const chainWorkAddress = await Agent.getOwnerWorkAddress(context, owner.managementAddress);
         // ensure that work address is defined and matches the one from secrets.json
         if (chainWorkAddress === ZERO_ADDRESS) {
             throw new CommandLineError(`Management address ${owner.managementAddress} has no registered work address.`);
@@ -107,6 +95,10 @@ export class BotCliCommands {
             throw new CommandLineError(squashSpace`Work address ${chainWorkAddress} registered by management address ${owner.managementAddress}
                 does not match the owner.native address ${owner.workAddress} from your secrets file.`);
         }
+    }
+
+    notifierFor(agentVault: string) {
+        return new AgentNotifier(agentVault, this.notifiers);
     }
 
     async prepareCreateAgentSettings(): Promise<Schema_AgentSettingsConfig> {
@@ -135,17 +127,18 @@ export class BotCliCommands {
     async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent | null> {
         await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix);
         try {
-            const underlyingAddress = await AgentBot.createUnderlyingAddress(this.botConfig.orm!.em, this.context);
+            const underlyingAddress = await AgentBot.createUnderlyingAddress(this.orm.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
-            // const addressValidityProof = await AgentBot.initializeUnderlyingAddress(this.context, this.owner, underlyingAddress);
+            const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, this.context.chainInfo.chainId);
             const [addressValidityProof, _] = await Promise.all([
-                AgentBot.initializeUnderlyingAddress(this.context, this.owner, underlyingAddress),
+
+                AgentBot.initializeUnderlyingAddress(this.context, this.owner, ownerUnderlyingAddress, underlyingAddress),
                 proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
             ]);
             console.log(`Creating agent bot...`);
-            const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(this.context, agentSettings);
-            const agentBot = await AgentBot.create(this.botConfig.orm!.em, this.context, this.owner, addressValidityProof, agentBotSettings, this.botConfig.notifiers);
+            const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
+            const agentBot = await AgentBot.create(this.orm.em, this.context, this.owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, this.notifiers);
             await this.notifierFor(agentBot.agent.vaultAddress).sendAgentCreated();
             console.log(`Agent bot created.`);
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
@@ -202,7 +195,7 @@ export class BotCliCommands {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
         agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         await this.notifierFor(agentVault).sendAgentAnnouncedExitAvailable();
         logger.info(`Agent ${agentVault} announced exit available list at ${exitAllowedAt.toString()}.`);
     }
@@ -233,7 +226,7 @@ export class BotCliCommands {
         await this.notifierFor(agentVault).sendWithdrawVaultCollateralAnnouncement(amount);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = String(amount);
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
 
@@ -247,7 +240,7 @@ export class BotCliCommands {
         await this.notifierFor(agentVault).sendCancelVaultCollateralAnnouncement();
         agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
         agentEnt.withdrawalAllowedAtAmount = "";
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} cancelled vault collateral withdrawal announcement.`);
     }
 
@@ -263,7 +256,7 @@ export class BotCliCommands {
         await this.notifierFor(agentVault).sendRedeemCollateralPoolTokensAnnouncement(amount);
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = String(amount);
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced pool token redemption of ${amount} at ${withdrawalAllowedAt.toString()}.`);
     }
 
@@ -277,7 +270,7 @@ export class BotCliCommands {
         await this.notifierFor(agentVault).sendCancelRedeemCollateralPoolTokensAnnouncement();
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} cancelled pool token redemption announcement.`);
     }
 
@@ -361,7 +354,7 @@ export class BotCliCommands {
                 break;
             }
         }
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
         console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
     }
@@ -373,13 +366,13 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      */
     async closeVault(agentVault: string): Promise<void> {
-        const agentEnt = await this.botConfig.orm!.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentEnt = await this.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
         if (agentInfo.publiclyAvailable) {
             await this.announceExitAvailableList(agentVault);
         }
         agentEnt.waitingForDestructionCleanUp = true;
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
         console.log(`Agent ${agentVault} is waiting for destruction clean up before destroying.`);
     }
@@ -396,7 +389,7 @@ export class BotCliCommands {
             const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
             const announce = await agentBot.agent.announceUnderlyingWithdrawal();
             agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-            await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+            await this.orm.em.persistAndFlush(agentEnt);
             await this.notifierFor(agentVault).sendAnnounceUnderlyingWithdrawal(announce.paymentReference);
             logger.info(`Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${announce.paymentReference}.`);
             return announce.paymentReference;
@@ -418,7 +411,7 @@ export class BotCliCommands {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
         agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
-        await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+        await this.orm.em.persistAndFlush(agentEnt);
         await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash);
         logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`);
         return txHash;
@@ -441,7 +434,7 @@ export class BotCliCommands {
                 logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                 agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+                await this.orm.em.persistAndFlush(agentEnt);
                 await this.notifierFor(agentVault).sendConfirmWithdrawUnderlying();
             } else {
                 logger.info(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
@@ -468,11 +461,11 @@ export class BotCliCommands {
                 await agentBot.agent.cancelUnderlyingWithdrawal();
                 logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+                await this.orm.em.persistAndFlush(agentEnt);
                 await this.notifierFor(agentVault).sendCancelWithdrawUnderlying();
             } else {
                 agentEnt.underlyingWithdrawalWaitingForCancelation = true;
-                await this.botConfig.orm!.em.persistAndFlush(agentEnt);
+                await this.orm.em.persistAndFlush(agentEnt);
                 logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
                 console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
             }
@@ -486,7 +479,7 @@ export class BotCliCommands {
      * Lists active agents in owner's local db.
      */
     async listActiveAgents(): Promise<void> {
-        const query = this.botConfig.orm!.em.createQueryBuilder(AgentEntity);
+        const query = this.orm.em.createQueryBuilder(AgentEntity);
         const listOfAgents = await query.where({ active: true }).getResultList();
         for (const agent of listOfAgents) {
             console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, ChainSymbol: ${agent.chainSymbol}, Current event block: ${agent.currentEventBlock} `);
@@ -498,7 +491,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      */
     async printAgentInfo(agentVault: string): Promise<void> {
-        const infoBot = new InfoBot(this.context);
+        const infoBot = new InfoBotCommands(this.context);
         await infoBot.printAgentInfo(agentVault);
     }
 
@@ -531,8 +524,9 @@ export class BotCliCommands {
      * @returns object containing instances of AgentBot and AgentEntity respectively
      */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; agentEnt: AgentEntity }> {
-        const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.botConfig.notifiers);
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, this.context.chainInfo.chainId);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, ownerUnderlyingAddress, this.notifiers);
         return { agentBot, agentEnt };
     }
 
@@ -543,7 +537,7 @@ export class BotCliCommands {
      * @param bips percentage of voting power to be delegated in bips
      */
     async delegatePoolCollateral(agentVault: string, recipient: string, bips: string | BN): Promise<void> {
-        const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
         await collateralPool.delegate(recipient, bips, { from: agentEnt.ownerAddress });
         await this.notifierFor(agentVault).sendDelegatePoolCollateral(collateralPool.address, recipient, bips);
@@ -555,7 +549,7 @@ export class BotCliCommands {
      * @param agentVault agent's vault address
      */
     async undelegatePoolCollateral(agentVault: string): Promise<void> {
-        const agentEnt = await this.botConfig.orm!.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
         await collateralPool.undelegateAll({ from: agentEnt.ownerAddress });
         await this.notifierFor(agentVault).sendUndelegatePoolCollateral(collateralPool.address);
@@ -568,9 +562,8 @@ export class BotCliCommands {
      */
     async createUnderlyingAccount(): Promise<{ address: string; privateKey: string }> {
         const address = await this.context.wallet.createAccount();
-        const walletKeys = new DBWalletKeys(this.botConfig.orm!.em);
-        const privateKey = (await walletKeys.getKey(address))!;
-        console.log(address, privateKey);
+        const walletKeys = DBWalletKeys.from(this.orm.em, this.secrets);
+        const privateKey = requireNotNull(await walletKeys.getKey(address));
         return { address, privateKey };
     }
 

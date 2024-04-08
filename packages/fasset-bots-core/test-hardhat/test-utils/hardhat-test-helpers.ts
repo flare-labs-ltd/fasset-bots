@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { deepCopy } from "./deepCopy";
-import { copyORM, isRegisteredORM } from "../../test/test-utils/test-bot-config";
+import { copyORM, isRegisteredORM } from "../../test/test-utils/create-test-orm";
 
 /**
  * Like Hardhat's `loadFixture`, but copies the returned variables, with special handling for ORM.

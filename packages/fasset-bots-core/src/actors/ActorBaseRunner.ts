@@ -1,11 +1,7 @@
-import { BotConfig, BotFAssetConfig } from "../config/BotConfig";
-import { createActorAssetContext } from "../config/create-asset-context";
+import { BotConfig, BotFAssetConfig, BotFAssetConfigWithIndexer, KeeperBotConfig } from "../config/BotConfig";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
-import { TrackedState } from "../state/TrackedState";
-import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { web3 } from "../utils/web3";
 import { Challenger } from "./Challenger";
 import { Liquidator } from "./Liquidator";
 import { SystemKeeper } from "./SystemKeeper";
@@ -58,25 +54,24 @@ export class ActorBaseRunner {
      * @param kind - actor's kind (Challenger, Liquidator or SystemKeeper)
      * @returns instance of ActorBaseRunner
      */
+    static async create(config: KeeperBotConfig, address: string, kind: ActorBaseKind.CHALLENGER, fAsset: BotFAssetConfigWithIndexer): Promise<ActorBaseRunner>;
+    static async create(config: BotConfig, address: string, kind: ActorBaseKind.LIQUIDATOR | ActorBaseKind.SYSTEM_KEEPER, fAsset: BotFAssetConfig): Promise<ActorBaseRunner>;
     static async create(config: BotConfig, address: string, kind: ActorBaseKind, fAsset: BotFAssetConfig): Promise<ActorBaseRunner> {
-        logger.info(`${ActorBaseKind[kind]} ${address} started to create ActorBaseRunner.`);
-        const assetContext = await createActorAssetContext(config, fAsset, kind);
-        logger.info(`${ActorBaseKind[kind]} ${address} initialized asset context for ActorBaseRunner.`);
-        const lastBlock = await web3.eth.getBlockNumber();
-        const trackedState = new TrackedState(assetContext, lastBlock);
-        await trackedState.initialize();
-        logger.info(`${ActorBaseKind[kind]} ${address} initialized tracked state for ActorBaseRunner.`);
-        let actor: ActorBase;
-        if (kind === ActorBaseKind.CHALLENGER) {
-            const blockHeight = await assetContext.blockchainIndexer!.getBlockHeight();
-            actor = new Challenger(new ScopedRunner(), address, trackedState, blockHeight, config.notifiers);
-        } else if (kind === ActorBaseKind.LIQUIDATOR) {
-            actor = new Liquidator(new ScopedRunner(), address, trackedState, config.notifiers);
-        } else {
-            actor = new SystemKeeper(new ScopedRunner(), address, trackedState);
-        }
-        logger.info(`${ActorBaseKind[kind]} ${address} was created.`);
+        const actor = await ActorBaseRunner.createActor(config, address, kind, fAsset);
         logger.info(`${ActorBaseKind[kind]} ${address} created ActorBaseRunner.`);
         return new ActorBaseRunner(config.loopDelay, actor);
+    }
+
+    private static async createActor(config: BotConfig, address: string, kind: ActorBaseKind, fAsset: BotFAssetConfig) {
+        switch (kind) {
+            case ActorBaseKind.CHALLENGER:
+                return await Challenger.create(config as KeeperBotConfig, address, fAsset as BotFAssetConfigWithIndexer);
+            case ActorBaseKind.LIQUIDATOR:
+                return await Liquidator.create(config, address, fAsset);
+            case ActorBaseKind.SYSTEM_KEEPER:
+                return await SystemKeeper.create(config, address, fAsset);
+            case ActorBaseKind.TIME_KEEPER:
+                throw new Error("Not supported by ActorBaseRunner");
+        }
     }
 }

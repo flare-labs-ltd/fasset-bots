@@ -9,7 +9,7 @@ import { TrackedState } from "../../src/state/TrackedState";
 import { checkedCast, toBNExp } from "../../src/utils/helpers";
 import { web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMinting, createTestAgentBot, createTestAgentBotAndMakeAvailable, createTestMinter, createTestSystemKeeper, getAgentStatus } from "../test-utils/helpers";
@@ -120,7 +120,7 @@ describe("System keeper tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
-        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
+        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status
@@ -154,7 +154,7 @@ describe("System keeper tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
-        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
+        const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         // create collateral reservation and perform minting
         await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
         // check agent status

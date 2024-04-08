@@ -11,7 +11,7 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { getAgentSettings } from "../utils/fasset-helpers";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { CollateralDataFactory } from "./CollateralData";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { artifacts } from "../utils/web3";
 import BN from "bn.js";
 import { AddressValidity } from "@flarenetwork/state-connector-protocol";
@@ -36,7 +36,7 @@ export class Agent {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public context: IAssetAgentBotContext,
+        public context: IAssetAgentContext,
         public owner: OwnerAddressPair,
         public agentVault: AgentVaultInstance,
         public collateralPool: CollateralPoolInstance,
@@ -98,7 +98,7 @@ export class Agent {
      * @returns instance of Agent
      */
 
-    static async create(ctx: IAssetAgentBotContext, owner: OwnerAddressPair, addressValidityProof: AddressValidity.Proof, agentSettings: AgentSettings): Promise<Agent> {
+    static async create(ctx: IAssetAgentContext, owner: OwnerAddressPair, addressValidityProof: AddressValidity.Proof, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
         const response = await ctx.assetManager.createAgentVault(
             web3DeepNormalize(addressValidityProof), web3DeepNormalize(agentSettings), { from: owner.workAddress });
@@ -115,11 +115,11 @@ export class Agent {
         return new Agent(ctx, owner, agentVault, collateralPool, collateralPoolToken, addressValidityProof.data.responseBody.standardAddress);
     }
 
-    static async getOwnerWorkAddress(ctx: IAssetAgentBotContext, ownerManagementAddress: string) {
+    static async getOwnerWorkAddress(ctx: IAssetAgentContext, ownerManagementAddress: string) {
         return await ctx.agentOwnerRegistry.getWorkAddress(ownerManagementAddress);
     }
 
-    static async getOwnerAddressPair(ctx: IAssetAgentBotContext, ownerManagementAddress: string): Promise<OwnerAddressPair> {
+    static async getOwnerAddressPair(ctx: IAssetAgentContext, ownerManagementAddress: string): Promise<OwnerAddressPair> {
         const ownerWorkAddress = await Agent.getOwnerWorkAddress(ctx, ownerManagementAddress);
         return new OwnerAddressPair(ownerManagementAddress, ownerWorkAddress);
     }

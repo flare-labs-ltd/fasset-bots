@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { ORM } from "../../src/config/orm";
-import { AgentEntity, DailyProofState, Event } from "../../src/entities/agent";
-import { EvmEvent } from "../../src/utils/events/common";
-import { createTestOrm } from "./test-bot-config";
+import { ORM } from "../../../src/config/orm";
+import { AgentEntity, DailyProofState, Event } from "../../../src/entities/agent";
+import { EvmEvent } from "../../../src/utils/events/common";
+import { createTestOrm } from "../../test-utils/create-test-orm";
 
 describe("AgentBot", () => {
     let orm: ORM;

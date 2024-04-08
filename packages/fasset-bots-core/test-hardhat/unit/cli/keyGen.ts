@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect } from "chai";
 import { generateSecrets } from "../../../src";
-import { requireEnv } from "../../../src/utils";
+import { resolveInFassetBotsCore } from "../../../src/utils";
 
-const FASSET_BOT_CONFIG = requireEnv("FASSET_BOT_CONFIG");
+const FASSET_BOT_CONFIG = resolveInFassetBotsCore("run-config/coston-bot.json");
 
 describe("Key gen cli commands unit tests", () => {
     it("Should generate secrets", async () => {

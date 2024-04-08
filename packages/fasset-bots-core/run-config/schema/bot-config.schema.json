@@ -5,19 +5,7 @@
         "BotFAssetInfo": {
             "additionalProperties": false,
             "properties": {
-                "amgDecimals": {
-                    "type": "number"
-                },
-                "assetManager": {
-                    "type": "string"
-                },
                 "chainId": {
-                    "type": "string"
-                },
-                "decimals": {
-                    "type": "number"
-                },
-                "fAssetSymbol": {
                     "type": "string"
                 },
                 "inTestnet": {
@@ -32,9 +20,6 @@
                 "priceChangeEmitter": {
                     "type": "string"
                 },
-                "requireEOAProof": {
-                    "type": "boolean"
-                },
                 "symbol": {
                     "type": "string"
                 },
@@ -43,12 +28,22 @@
                 }
             },
             "required": [
-                "amgDecimals",
                 "chainId",
-                "decimals",
                 "name",
-                "requireEOAProof",
                 "symbol"
+            ],
+            "type": "object"
+        },
+        "BotStrategyDefinition": {
+            "additionalProperties": false,
+            "properties": {
+                "className": {
+                    "type": "string"
+                },
+                "config": {}
+            },
+            "required": [
+                "className"
             ],
             "type": "object"
         },
@@ -103,6 +98,7 @@
                 "schemaUpdate": {
                     "enum": [
                         "full",
+                        "none",
                         "recreate",
                         "safe"
                     ],
@@ -125,10 +121,10 @@
         "$schema": {
             "type": "string"
         },
-        "addressUpdater": {
+        "alertsUrl": {
             "type": "string"
         },
-        "alertsUrl": {
+        "assetManagerController": {
             "type": "string"
         },
         "attestationProviderUrls": {
@@ -138,39 +134,19 @@
             "type": "array"
         },
         "challengeStrategy": {
-            "additionalProperties": false,
-            "properties": {
-                "className": {
-                    "type": "string"
-                },
-                "config": {}
-            },
-            "required": [
-                "className"
-            ],
-            "type": "object"
+            "$ref": "#/definitions/BotStrategyDefinition"
         },
         "contractsJsonFile": {
             "type": "string"
         },
-        "fAssetInfos": {
-            "items": {
+        "fAssets": {
+            "additionalProperties": {
                 "$ref": "#/definitions/BotFAssetInfo"
             },
-            "type": "array"
+            "type": "object"
         },
         "liquidationStrategy": {
-            "additionalProperties": false,
-            "properties": {
-                "className": {
-                    "type": "string"
-                },
-                "config": {}
-            },
-            "required": [
-                "className"
-            ],
-            "type": "object"
+            "$ref": "#/definitions/BotStrategyDefinition"
         },
         "loopDelay": {
             "type": "number"
@@ -181,13 +157,10 @@
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
         },
+        "prioritizeAddressUpdater": {
+            "type": "boolean"
+        },
         "rpcUrl": {
-            "type": "string"
-        },
-        "stateConnectorAddress": {
-            "type": "string"
-        },
-        "stateConnectorProofVerifierAddress": {
             "type": "string"
         },
         "walletOptions": {
@@ -207,9 +180,10 @@
         }
     },
     "required": [
-        "fAssetInfos",
+        "fAssets",
         "loopDelay",
         "nativeChainInfo",
+        "prioritizeAddressUpdater",
         "rpcUrl"
     ],
     "type": "object"

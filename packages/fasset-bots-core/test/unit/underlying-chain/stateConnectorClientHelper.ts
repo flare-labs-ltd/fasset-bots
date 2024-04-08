@@ -3,31 +3,34 @@ import chaiAsPromised from "chai-as-promised";
 import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { ZERO_BYTES32 } from "../../../src/utils/helpers";
-import { requireSecret } from "../../../src/config/secrets";
 import { initWeb3 } from "../../../src/utils/web3";
 import rewire from "rewire";
 use(chaiAsPromised);
 import { testChainInfo } from "../../test-utils/TestChainInfo";
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS } from "../../test-utils/test-bot-config";
+import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { ConfirmedBlockHeightExists, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import { Secrets, indexerApiKey } from "../../../src/config";
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const accountPrivateKey = requireSecret("user.native.private_key");
 const sourceId = SourceId.testXRP;
 const finalizationBlocks: number = 6;
 
 describe("testXRP attestation/state connector tests", () => {
+    let secrets: Secrets;
     const roundId = 571512;
     let account: string;
 
     before(async () => {
+        secrets = Secrets.load(TEST_SECRETS);
+        const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         account = accounts[0];
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,
+            indexerApiKey(secrets),
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
@@ -51,7 +54,7 @@ describe("testXRP attestation/state connector tests", () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP);
+        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP, indexerApiKey(secrets));
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
@@ -129,10 +132,14 @@ describe("State connector tests - decoding", () => {
         spentAmount: "0x2540be40c",
         paymentReference: "0xe530837535d367bc130ee181801f91e1a654a054b9b014cf0aeb79ecc7e6d8d2",
     };
+
     before(async () => {
+        const secrets = Secrets.load(TEST_SECRETS);
+        const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,
+            indexerApiKey(secrets),
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,

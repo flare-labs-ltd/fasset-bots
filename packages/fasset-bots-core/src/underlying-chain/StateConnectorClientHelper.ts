@@ -1,9 +1,9 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ARBase, ARESBase, AddressValidity, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ISCProofVerifierInstance, IStateConnectorInstance } from "../../typechain-truffle";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
-import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, retry, sleep, toNumber } from "../utils/helpers";
+import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, requireNotNull, retry, sleep, toNumber } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -200,7 +200,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             return AttestationNotProved.DISPROVED;
         }
         // obtained valid proof
-        const data = response.data.data!;
+        const data = requireNotNull(response.data.data);
         const proof: AttestationProof = {
             data: data.response,
             merkleProof: data.merkleProof,
@@ -247,8 +247,8 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             },
         };
         if (apiKey) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            createAxiosConfig.headers!["X-API-KEY"] = apiKey;
+            createAxiosConfig.headers ??= {};
+            createAxiosConfig.headers["X-API-KEY"] = apiKey;
         }
         return createAxiosConfig;
     }

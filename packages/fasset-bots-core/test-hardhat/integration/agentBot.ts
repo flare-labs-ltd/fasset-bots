@@ -14,7 +14,7 @@ import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../s
 import { BN_ZERO, MAX_BIPS, POOL_COLLATERAL_RESERVE_FACTOR, QUERY_WINDOW_SECONDS, checkedCast, maxBN, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
@@ -628,9 +628,10 @@ describe("Agent bot tests", () => {
 
     it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerManagementAddress, undefined, false);
-        const spyTopUpFailed = spy.on(agentBot.notifier, "sendCollateralTopUpFailedAlert");
+        const spyTopUpFailed = spy.on(agentBot.notifier, "sendVaultCollateralTopUpFailedAlert");
         const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
-        const spyTopUp = spy.on(agentBot.notifier, "sendCollateralTopUpAlert");
+        const spyVaultTopUp = spy.on(agentBot.notifier, "sendVaultCollateralTopUpAlert");
+        const spyPoolTopUp = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
@@ -650,7 +651,8 @@ describe("Agent bot tests", () => {
         await context.ftsoManager.mockFinalizePriceEpoch();
         // send notifications: top up successful
         await agentBot.runStep(orm.em);
-        expect(spyTopUp).to.have.been.called.twice;
+        expect(spyVaultTopUp).to.have.been.called.once;
+        expect(spyPoolTopUp).to.have.been.called.once;
     });
 
     it("Should not top up collateral - fails on owner side due to no NAT", async () => {
@@ -658,7 +660,8 @@ describe("Agent bot tests", () => {
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const agentB = await createTestAgent(context, ownerManagementAddress, undefined, false);
         // calculate minuimum amount of native currency to hold by agent owner
-        const spyTopUpFailed = spy.on(agentBot.notifier, "sendCollateralTopUpFailedAlert");
+        const spyVaultTopUpFailed = spy.on(agentBot.notifier, "sendVaultCollateralTopUpFailedAlert");
+        const spyPoolTopUpFailed = spy.on(agentBot.notifier, "sendPoolCollateralTopUpFailedAlert");
         const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
@@ -677,7 +680,8 @@ describe("Agent bot tests", () => {
         await agentB.buyCollateralPoolTokens(deposit);
         // send notifications: top up failed and low balance on ownerAddress
         await agentBot.runStep(orm.em);
-        expect(spyTopUpFailed).to.have.been.called.twice;
+        expect(spyVaultTopUpFailed).to.have.been.called.once;
+        expect(spyPoolTopUpFailed).to.have.been.called.once;
         expect(spyLowOwnerBalance).to.have.been.called.twice;
         // redeem pool tokens
         const redeemAt = await agentB.announcePoolTokenRedemption(deposit);

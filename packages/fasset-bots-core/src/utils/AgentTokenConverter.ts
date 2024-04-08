@@ -1,4 +1,5 @@
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import assert from "assert";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { FormatSettings, formatFixed } from "./formatting";
 import { BNish, toBN, toBNExp } from "./helpers";
@@ -10,7 +11,7 @@ const IERC20 = artifacts.require("IERC20Metadata");
 
 export class AgentTokenConverter {
     constructor(
-        public context: IAssetAgentBotContext,
+        public context: IAssetAgentContext,
         public agentVaultAddress: string,
         public type: AgentTokenType
     ) {}
@@ -36,7 +37,7 @@ export class AgentTokenConverter {
 
     async getCollateral(): Promise<CollateralType> {
         if (this._collateral == null) {
-            if (this.type === "fasset") throw new Error("Invalid collateral type");
+            assert(this.type !== "fasset", "Invalid collateral type");
             this._collateral = await this._getCollateral(this.type);
         }
         return this._collateral;
@@ -63,6 +64,6 @@ export class AgentTokenConverter {
     }
 
     async formatAsTokensWithUnit(amount: BNish, format?: FormatSettings) {
-        return `${this.formatAsTokens(amount, format)} ${this.tokenSymbol()}`;
+        return `${await this.formatAsTokens(amount, format)} ${await this.tokenSymbol()}`;
     }
 }

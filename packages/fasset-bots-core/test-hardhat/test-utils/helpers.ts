@@ -6,10 +6,11 @@ import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
-import { createAgentBotDefaultSettings, decodedChainId, loadAgentSettings } from "../../src/config/BotConfig";
+import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
+import { AssetContractRetriever } from "../../src/config/AssetContractRetriever";
+import { decodedChainId } from "../../src/config/create-wallet-client";
 import { ORM } from "../../src/config/orm";
-import { requireSecret } from "../../src/config/secrets";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { AgentStatus, AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
@@ -27,6 +28,7 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
+import { BotFAssetConfig, Secrets } from "../../src/config";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -51,17 +53,25 @@ export async function createTestAgentBot(
     ownerUnderlyingAddress?: string,
     autoSetWorkAddress: boolean = true,
     notifiers: NotifierTransport[] = testNotifierTransports,
-    options?: AgentBotDefaultSettings,
+    options?: AgentVaultInitSettings,
 ): Promise<AgentBot> {
     await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
-    ownerUnderlyingAddress ??= requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
+    ownerUnderlyingAddress ??= `underlying_${ownerManagementAddress}`;
     context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
-    const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
-    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, underlyingAddress);
-    const agentBotSettings = options ?? await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+    const vaultUnderlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
+    const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
+    const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    return await AgentBot.create(orm.em, context, owner, addressValidityProof, agentBotSettings, notifiers);
+    return await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
+}
+
+export async function createTestContractRetriever(context: TestAssetBotContext) {
+    return await AssetContractRetriever.create(false, undefined, context.assetManagerController.address);
+}
+
+export function makeBotFAssetConfigMap(fassets: BotFAssetConfig[]) {
+    return new Map(fassets.map(it => [it.fAssetSymbol, it]));
 }
 
 export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
@@ -69,12 +79,12 @@ export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralT
     await vaultCollateralToken.mintAmount(ownerAddress, amount);
 }
 
-export async function createTestChallenger(address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(new ScopedRunner(), address, state, await state.context.blockchainIndexer!.getBlockHeight(), testNotifierTransports);
+export async function createTestChallenger(context: IChallengerContext, address: string, state: TrackedState): Promise<Challenger> {
+    return new Challenger(context, new ScopedRunner(), address, state, await context.blockchainIndexer.getBlockHeight(), testNotifierTransports);
 }
 
-export async function createTestLiquidator(address: string, state: TrackedState): Promise<Liquidator> {
-    return new Liquidator(new ScopedRunner(), address, state, testNotifierTransports);
+export async function createTestLiquidator(context: ILiquidatorContext, address: string, state: TrackedState): Promise<Liquidator> {
+    return new Liquidator(context, new ScopedRunner(), address, state, testNotifierTransports);
 }
 
 export async function createTestSystemKeeper(address: string, state: TrackedState): Promise<SystemKeeper> {
@@ -89,7 +99,7 @@ export async function createTestAgent(
 ): Promise<Agent> {
     await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
-    const agentBotSettings: AgentBotDefaultSettings = await createAgentBotDefaultSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+    const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
     return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
@@ -105,22 +115,22 @@ async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSet
 }
 
 export function createTestAgentBotRunner(
+    secrets: Secrets,
     contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
-    ownerManagementAddress: string,
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
-    return new AgentBotRunner(contexts, orm, ownerManagementAddress, loopDelay, notifiers);
+    return new AgentBotRunner(secrets, contexts, orm, loopDelay, notifiers);
 }
 
-export async function createTestMinter(context: IAssetAgentBotContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
+export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
     const minter = await Minter.createTest(context, minterAddress, underlyingAddress, amount);
     chain.mine(chain.finalizationBlocks + 1);
     return minter;
 }
 
-export async function createTestRedeemer(context: IAssetAgentBotContext, redeemerAddress: string, underlyingAddress: string = redeemerUnderlyingAddress) {
+export async function createTestRedeemer(context: IAssetAgentContext, redeemerAddress: string, underlyingAddress: string = redeemerUnderlyingAddress) {
     const redeemer = await Redeemer.create(context, redeemerAddress, underlyingAddress);
     return redeemer;
 }
@@ -146,7 +156,7 @@ export async function createTestAgentBotAndMakeAvailable(
     ownerUnderlyingAddress?: string,
     autoSetWorkAddress: boolean = true,
     notifier: NotifierTransport[] = [],
-    options?: AgentBotDefaultSettings,
+    options?: AgentVaultInitSettings,
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, autoSetWorkAddress, notifier, options);
     await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, agentBot.agent.owner.workAddress);
@@ -157,7 +167,7 @@ export async function createTestAgentBotAndMakeAvailable(
 }
 
 export async function mintAndDepositVaultCollateralToOwner( //TODO
-    context: IAssetAgentBotContext,
+    context: IAssetAgentContext,
     agent: Agent,
     depositAmount: BNish,
     ownerAddress: string

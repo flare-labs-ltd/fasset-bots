@@ -2,26 +2,29 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { ChainContracts, newContract } from "../../src/config/contracts";
-import { IAssetAgentBotContext, IAssetActorContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
-import { AssetManagerSettings, CollateralType, CollateralClass } from "../../src/fasset/AssetManagerTypes";
+import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
+import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
-import { encodeLiquidationStrategyImplSettings, LiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
+import { LiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
-import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, toBIPS, toBNExp, ZERO_ADDRESS } from "../../src/utils/helpers";
+import { ContractWithEvents } from "../../src/utils/events/truffle";
+import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, ZERO_ADDRESS, toBIPS, toBNExp } from "../../src/utils/helpers";
+import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { newAssetManager, waitForTimelock } from "./new-asset-manager";
-import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
-import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
-import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
-import { ContractWithEvents } from "../../src/utils/events/truffle";
 import { AssetManagerControllerInstance, IERC20Instance } from "../../typechain-truffle";
-import { artifacts } from "../../src/utils/web3";
+import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
+import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
+import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 import { FaultyWallet } from "./FaultyWallet";
-import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
+import { newAssetManager, waitForTimelock } from "./new-asset-manager";
+import { Secrets, decodedChainId } from "../../src/config";
+import { ChainAccount } from "../../src/config/config-files/SecretsFile";
+import { SourceId } from "../../src";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");
@@ -51,7 +54,7 @@ export const ftsoUsdcInitialPrice = 1.01;
 export const ftsoUsdtInitialPrice = 0.99;
 
 export type TestAssetBotContext = Modify<
-    IAssetAgentBotContext,
+    IAssetAgentContext,
     {
         natFtso: FtsoMockInstance;
         assetFtso: FtsoMockInstance;
@@ -65,13 +68,16 @@ export type TestAssetBotContext = Modify<
 >;
 
 export type TestAssetTrackedStateContext = Modify<
-    IAssetActorContext,
+    IAssetNativeChainContext,
     {
+        attestationProvider: AttestationHelper;
         assetFtso: FtsoMockInstance;
         ftsoManager: FtsoManagerMockInstance;
         blockchainIndexer: MockIndexer;
         stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
         collaterals: CollateralType[];
+        liquidationStrategy?: { className: string; config?: any; };
+        challengeStrategy?: { className: string; config?: any; };
     }
 >;
 
@@ -194,6 +200,25 @@ export async function createTestAssetContext(
         verificationClient,
         agentOwnerRegistry,
     };
+}
+
+export function createTestSecrets(chain: SourceId, ownerManagementAddress: string, ownerWorkAddress: string, ownerUnderlyingAddress: string) {
+    return new Secrets({
+        apiKey: {},
+        owner: {
+            management: {
+                address: ownerManagementAddress,
+            } as ChainAccount,
+            native: {
+                address: ownerWorkAddress,
+                private_key: "not_needed",
+            },
+            [decodedChainId(chain)]: {
+                address: ownerUnderlyingAddress,
+                private_key: "not_needed",
+            }
+        }
+    });
 }
 
 export function getTestAssetTrackedStateContext(context: TestAssetBotContext, useCustomStrategy: boolean = false): TestAssetTrackedStateContext {

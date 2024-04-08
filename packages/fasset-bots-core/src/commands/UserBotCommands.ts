@@ -3,30 +3,31 @@ import chalk from "chalk";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { BotConfig, BotFAssetConfig, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "../config/BotConfig";
-import { BotConfigFile } from "../config/config-files";
-import { createAssetContext } from "../config/create-asset-context";
-import { getSecrets, requireSecret } from "../config/secrets";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
-import { AssetManagerSettings, TokenExitType } from "../fasset/AssetManagerTypes";
+import { Secrets } from "../config";
+import { closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { loadAgentConfigFile } from "../config/config-file-loader";
+import { createAgentBotContext } from "../config/create-asset-context";
+import { decodedChainId } from "../config/create-wallet-client";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
+import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
-import { requiredEventArgs } from "../utils/events/truffle";
+import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
 import { BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { InfoBot } from "./InfoBot";
+import { InfoBotCommands } from "./InfoBotCommands";
 
 /* istanbul ignore next */
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
 
-const CollateralPool = artifacts.require("CollateralPool");
+export const CollateralPool = artifacts.require("CollateralPool");
 
 interface MintData {
     type: "mint";
@@ -63,86 +64,75 @@ enum MintingStatus {
     PENDING = "PENDING",
 }
 
-type CleanupRegistration = (handler: () => Promise<void>) => void;
+export type CleanupRegistration = (handler: () => Promise<void>) => void;
 
-export class UserBot {
+export class UserBotCommands {
     static deepCopyWithObjectCreate = true;
 
-    context!: IAssetAgentBotContext;
-    configFile!: BotConfigFile;
-    botConfig!: BotConfig;
-    fassetConfig!: BotFAssetConfig;
-    nativeAddress!: string;
-    underlyingAddress!: string;
+    constructor(
+        public context: IAssetAgentContext,
+        public fAssetSymbol: string,
+        public nativeAddress: string,
+        public underlyingAddress: string,
+    ) {}
 
     static userDataDir: string = USER_DATA_DIR;
 
     /**
      * Creates instance of UserBot.
-     * @param config path to configuration file
+     * @param configFileName path to configuration file
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of UserBot
      */
-    static async create(configFile: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<UserBot> {
-        const bot = new UserBot();
-        await bot.initialize(configFile, fAssetSymbol, requireWallet, registerCleanup);
-        return bot;
-    }
-
-    /**
-     * Initializes asset context from AgentBotRunConfig.
-     * @param configFile path to configuration file
-     * @param fAssetSymbol symbol for the fasset
-     */
-    async initialize(configFile: string, fAssetSymbol: string, requireWallet: boolean, registerCleanup?: CleanupRegistration): Promise<void> {
-        this.nativeAddress = requireSecret("user.native.address");
-        logger.info(`User ${this.nativeAddress} started to initialize cli environment.`);
+    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
+        const secrets = Secrets.load(secretsFile);
+        const nativeAddress = secrets.required("user.native.address");
+        logger.info(`User ${nativeAddress} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
-        this.configFile = loadAgentConfigFile(configFile, `User ${this.nativeAddress}`);
+        const configFile = loadAgentConfigFile(configFileName, `User ${nativeAddress}`);
         // init web3 and accounts
-        const nativePrivateKey = requireSecret("user.native.private_key");
-        const accounts = await initWeb3(authenticatedHttpProvider(this.configFile.rpcUrl, getSecrets().apiKey.native_rpc), [nativePrivateKey], null);
+        const nativePrivateKey = secrets.required("user.native.private_key");
+        const accounts = await initWeb3(authenticatedHttpProvider(configFile.rpcUrl, secrets.optional("apiKey.native_rpc")), [nativePrivateKey], null);
         /* istanbul ignore next */
-        if (!accounts.includes(this.nativeAddress)) {
-            logger.error(`User ${this.nativeAddress} has invalid address/private key pair.`);
+        if (!accounts.includes(nativeAddress)) {
+            logger.error(`User ${nativeAddress} has invalid address/private key pair.`);
             throw new Error("Invalid address/private key pair");
         }
         // create config
-        this.botConfig = await createBotConfig(this.configFile, this.nativeAddress);
-        registerCleanup?.(() => closeBotConfig(this.botConfig));
+        const botConfig = await createBotConfig("user", secrets, configFile, nativeAddress);
+        registerCleanup?.(() => closeBotConfig(botConfig));
         // verify fasset config
-        const chainConfig = this.botConfig.fAssets.find((cc) => cc.fAssetSymbol === fAssetSymbol);
-        if (chainConfig == null) {
-            logger.error(`User ${this.nativeAddress} has invalid FAsset symbol.`);
-            throw new CommandLineError("Invalid FAsset symbol");
-        }
-        this.context = await createAssetContext(this.botConfig, chainConfig);
-        this.fassetConfig = chainConfig;
+        const fassetConfig = botConfig.fAssets.get(fAssetSymbol);
+        assertNotNullCmd(fassetConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
+        const context = await createAgentBotContext(botConfig, fassetConfig);
         // create underlying wallet key
-        if (requireWallet) {
-            const chainName = decodedChainId(this.fassetConfig.chainInfo.chainId);
-            const underlyingAddress = requireSecret(`user.${chainName}.address`);
-            this.underlyingAddress = await this.validateUnderlyingAddress(underlyingAddress);
-            const underlyingPrivateKey = requireSecret(`user.${chainName}.private_key`);
-            await this.context.wallet.addExistingAccount(this.underlyingAddress, underlyingPrivateKey);
-        }
+        const underlyingAddress = await this.loadUnderlyingAddress(secrets, context, fassetConfig.verificationClient);
         console.error(chalk.cyan("Environment successfully initialized."));
-        logger.info(`User ${this.nativeAddress} successfully finished initializing cli environment.`);
+        logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
+        return new UserBotCommands(context, fAssetSymbol, nativeAddress, underlyingAddress);
     }
 
     // User must make sure that underlying address is valid and normalized.
     // Otherwise the agent will reject the redemption and the user will lose the fasset value.
-    async validateUnderlyingAddress(underlyingAddress: string) {
-        const res = await this.fassetConfig.verificationClient!.checkAddressValidity(this.fassetConfig.chainInfo.chainId, underlyingAddress);
+    static async loadUnderlyingAddress(secrets: Secrets, context: IAssetAgentContext, verificationClient: IVerificationApiClient) {
+        const chainId = context.chainInfo.chainId;
+        const chainName = decodedChainId(chainId);
+        // read address and private key from secrets
+        const underlyingAddress = secrets.required(`user.${chainName}.address`);
+        const underlyingPrivateKey = secrets.required(`user.${chainName}.private_key`);
+        // validate
+        const res = await verificationClient.checkAddressValidity(chainId, underlyingAddress);
         if (!res.isValid) {
-            logger.error(`User ${this.nativeAddress} has invalid underlying address.`);
+            logger.error(`User's underlying address ${underlyingAddress} is invalid.`);
             throw new CommandLineError("Invalid underlying address");
         }
+        // store in wallet
+        await context.wallet.addExistingAccount(res.standardAddress, underlyingPrivateKey);
         return res.standardAddress;
     }
 
-    infoBot(): InfoBot {
-        return new InfoBot(this.context);
+    infoBot(): InfoBotCommands {
+        return new InfoBotCommands(this.context);
     }
 
     /**
@@ -376,21 +366,9 @@ export class UserBot {
         return blockHeight > Number(state.lastUnderlyingBlock) && lastBlock.timestamp > Number(state.lastUnderlyingTimestamp);
     }
 
-    async enterPool(poolAddress: string, collateralAmountWei: BNish) {
-        const pool = await CollateralPool.at(poolAddress);
-        const res = await pool.enter(0, false, { from: this.nativeAddress, value: collateralAmountWei.toString() });
-        return requiredEventArgs(res, "Entered");
-    }
-
-    async exitPool(poolAddress: string, tokenAmountWei: BNish) {
-        const pool = await CollateralPool.at(poolAddress);
-        const res = await pool.exit(tokenAmountWei, TokenExitType.KEEP_RATIO, { from: this.nativeAddress });
-        return requiredEventArgs(res, "Exited");
-    }
-
     stateFileDir(type: StateData["type"]) {
         const controllerAddress = this.context.assetManagerController.address.slice(2, 10);
-        return path.resolve(UserBot.userDataDir, `${controllerAddress}-${this.fassetConfig.fAssetSymbol}-${type}`);
+        return path.resolve(UserBotCommands.userDataDir, `${controllerAddress}-${this.fAssetSymbol}-${type}`);
     }
 
     stateFilePath(type: StateData["type"], requestIdOrPath: BNish | string) {
@@ -398,6 +376,16 @@ export class UserBot {
             return path.resolve(this.stateFileDir(type), `${requestIdOrPath}.json`);
         } else {
             return path.resolve(requestIdOrPath); // full path passed
+        }
+    }
+
+    validateStateFilePath(fullpath: string, type: StateData["type"], requestIdOrPath: BNish | string) {
+        if (fs.existsSync(fullpath)) return;
+        const typeStr = type === "mint" ? "minting" : "redemption";
+        if (typeof requestIdOrPath !== "string" || /^\d+$/.test(requestIdOrPath)) {
+            throw new CommandLineError(`There is no active ${typeStr} with id ${requestIdOrPath}`);
+        } else {
+            throw new CommandLineError(`Missing ${typeStr} state file ${fullpath}`);
         }
     }
 
@@ -410,6 +398,7 @@ export class UserBot {
 
     readState<T extends StateData["type"]>(type: T, requestIdOrPath: BNish | string): Extract<StateData, { type: T }> {
         const fname = this.stateFilePath(type, requestIdOrPath);
+        this.validateStateFilePath(fname, type, requestIdOrPath);
         const json = fs.readFileSync(fname).toString();
         return JSON.parse(json);
     }

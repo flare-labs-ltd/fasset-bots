@@ -64,8 +64,8 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
             },
         };
         if (apiKey) {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            createAxiosConfig.headers!["X-API-KEY"] = apiKey;
+            createAxiosConfig.headers ??= {};
+            createAxiosConfig.headers["X-API-KEY"] = apiKey;
         }
         return createAxiosConfig;
     }

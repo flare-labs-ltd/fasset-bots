@@ -1,10 +1,9 @@
 import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
-import { BotConfig } from "../config/BotConfig";
-import { createAssetContext } from "../config/create-asset-context";
+import { AgentBotConfig, Secrets } from "../config";
+import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
-import { requireSecret } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { squashSpace } from "../utils/formatting";
 import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -17,9 +16,9 @@ export class AgentBotRunner {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public contexts: Map<string, IAssetAgentBotContext>,
+        public secrets: Secrets,
+        public contexts: Map<string, IAssetAgentContext>,
         public orm: ORM,
-        public ownerManagementAddress: string,
         public loopDelay: number,
         public notifierTransports: NotifierTransport[]
     ) {}
@@ -72,7 +71,8 @@ export class AgentBotRunner {
                     logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
                     break;
                 }
-                const agentBot = await AgentBot.fromEntity(context, agentEntity, this.notifierTransports);
+                const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
+                const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
@@ -89,21 +89,17 @@ export class AgentBotRunner {
      * @param botConfig - configs to run bot
      * @returns instance of AgentBotRunner
      */
-    static async create(botConfig: BotConfig): Promise<AgentBotRunner> {
-        const ownerAddress = requireSecret("owner.management.address");
+    static async create(secrets: Secrets, botConfig: AgentBotConfig): Promise<AgentBotRunner> {
+        const ownerAddress = secrets.required("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
-        const contexts: Map<string, IAssetAgentBotContext> = new Map();
-        for (const chainConfig of botConfig.fAssets) {
-            const assetContext = await createAssetContext(botConfig, chainConfig);
+        const contexts: Map<string, IAssetAgentContext> = new Map();
+        for (const chainConfig of botConfig.fAssets.values()) {
+            const assetContext = await createAgentBotContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.symbol, assetContext);
             logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}
                 with symbol ${chainConfig.chainInfo.symbol}.`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        if (!botConfig.orm) {
-            logger.info(`Owner ${ownerAddress} cannot create AgentBotRunner. Missing orm in config.`);
-            throw new Error(`Missing orm in config for owner ${ownerAddress}.`);
-        }
-        return new AgentBotRunner(contexts, botConfig.orm, ownerAddress, botConfig.loopDelay, botConfig.notifiers);
+        return new AgentBotRunner(secrets, contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifiers);
     }
 }

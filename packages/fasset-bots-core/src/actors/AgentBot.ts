@@ -2,11 +2,11 @@ import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
-import { decodedChainId } from "../config/BotConfig";
+import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
+import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
-import { requireSecret } from "../config/secrets";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
-import { AgentBotDefaultSettings, IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -20,13 +20,17 @@ import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR, VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, findOneSubstring, toBN } from "../utils/helpers";
+import {
+    BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
+    VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, findOneSubstring, toBN
+} from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { AgentNotifier } from "../utils/notifier/AgentNotifier";
-import { NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { AgentNotificationKey, AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { NotificationLevel, NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { Secrets } from "../config";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -49,7 +53,9 @@ export class AgentBot {
 
     constructor(
         public agent: Agent,
-        public notifier: AgentNotifier
+        public notifier: AgentNotifier,
+        public owner: OwnerAddressPair,
+        public ownerUnderlyingAddress: string,
     ) {}
 
     context = this.agent.context;
@@ -58,13 +64,13 @@ export class AgentBot {
     runner?: IRunner;
     maxHandleEventBlocks = 1000;
 
-    static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentBotContext) {
+    static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
     }
 
-    static async initializeUnderlyingAddress(context: IAssetAgentBotContext, owner: OwnerAddressPair, underlyingAddress: string) {
+    static async initializeUnderlyingAddress(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, underlyingAddress: string) {
         // on XRP chain, send 10 XRP from owners account to activate agent's account
-        await this.activateUnderlyingAccount(context, owner, underlyingAddress);
+        await this.activateUnderlyingAccount(context, owner, ownerUnderlyingAddress, underlyingAddress);
         // validate address
         const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
         // prove EOA if necessary
@@ -87,10 +93,11 @@ export class AgentBot {
      */
     static async create(
         rootEm: EM,
-        context: IAssetAgentBotContext,
+        context: IAssetAgentContext,
         owner: OwnerAddressPair,
+        ownerUnderlyingAddress: string,
         addressValidityProof: AddressValidity.Proof,
-        agentSettingsConfig: AgentBotDefaultSettings,
+        agentSettingsConfig: AgentVaultInitSettings,
         notifierTransports: NotifierTransport[]
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
@@ -117,7 +124,7 @@ export class AgentBot {
             logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
                 underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
             const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-            return new AgentBot(agent, notifier);
+            return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
         });
     }
 
@@ -127,7 +134,7 @@ export class AgentBot {
      * @param underlyingAddress agent's underlying address
      * @param ownerAddress agent's owner native address
      */
-    static async proveEOAaddress(context: IAssetAgentBotContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
+    static async proveEOAaddress(context: IAssetAgentContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, reference);
@@ -143,7 +150,12 @@ export class AgentBot {
      * @param notifier
      * @returns instance of AgentBot class
      */
-    static async fromEntity(context: IAssetAgentBotContext, agentEntity: AgentEntity, notifierTransports: NotifierTransport[]): Promise<AgentBot> {
+    static async fromEntity(
+        context: IAssetAgentContext,
+        agentEntity: AgentEntity,
+        ownerUnderlyingAddress: string,
+        notifierTransports: NotifierTransport[]
+    ): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
         // get collateral pool
@@ -162,30 +174,33 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, notifier);
+        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
+    }
+
+    static underlyingAddress(secrets: Secrets, sourceId: SourceId) {
+        return secrets.required(`owner.${decodedChainId(sourceId)}.address`);
     }
 
     /**
      * Activates agent's underlying XRP account by depositing 10 XRP from owner's underlying.
      * @param context fasset agent bot context
-     * @param agentUnderlyingAddress agent's underlying address
+     * @param vaultUnderlyingAddress agent's underlying address
      */
-    static async activateUnderlyingAccount(context: IAssetAgentBotContext, owner: OwnerAddressPair, agentUnderlyingAddress: string): Promise<void> {
+    static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
         try {
             if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
-            const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(context.chainInfo.chainId)}.address`);
             const reference = owner.managementAddress;
-            const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, agentUnderlyingAddress, starterAmount, reference);
+            const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
             if (!transaction || transaction?.status != TX_SUCCESS) {
                 throw new Error(`Could not activate or verify new XRP account with transaction ${txHash}`);
             }
-            logger.info(`Owner ${owner} activated underlying address ${agentUnderlyingAddress} with transaction ${txHash}.`);
+            logger.info(`Owner ${owner} activated underlying address ${vaultUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
-            logger.error(`Owner ${owner} couldn't activate underlying address ${agentUnderlyingAddress}:`, error);
-            throw new Error(`Could not activate or verify new XRP account ${agentUnderlyingAddress}`);
+            logger.error(`Owner ${owner} couldn't activate underlying address ${vaultUnderlyingAddress}:`, error);
+            throw new Error(`Could not activate or verify new XRP account ${vaultUnderlyingAddress}`);
         }
     }
 
@@ -216,8 +231,13 @@ export class AgentBot {
                 if (this.stopRequested()) return;
                 await rootEm
                     .transactional(async (em) => {
-                        const fullEvent = await this.getEventFromEntity(event)!;
-                        await this.handleEvent(em, fullEvent!);
+                        const fullEvent = await this.getEventFromEntity(event);
+                        if (fullEvent != null) {
+                            await this.handleEvent(em, fullEvent);
+                        } else {
+                            await this.notifier.send(NotificationLevel.DANGER, AgentNotificationKey.UNRESOLVED_EVENT,
+                                `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; ir will be skipped.`);
+                        }
                         agentEnt.events.remove(event);
                     })
                     .catch(async (error) => {
@@ -432,9 +452,10 @@ export class AgentBot {
                 }
             } else {
                 // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
+                assertNotNull(agentEnt.dailyProofRequestRound);
+                assertNotNull(agentEnt.dailyProofRequestData);
                 logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(agentEnt.dailyProofRequestRound!, agentEnt.dailyProofRequestData!);
+                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
                 if (proof === AttestationNotProved.NOT_FINALIZED) {
                     logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
                     return;
@@ -449,7 +470,7 @@ export class AgentBot {
                     agentEnt.dailyTasksTimestamp = toBN(latestBlock.timestamp);
                     await rootEm.persistAndFlush(agentEnt);
                 } else {
-                    await this.notifier.sendDailyTaskNoProofObtained(agentEnt.dailyProofRequestRound!, agentEnt.dailyProofRequestData!);
+                    await this.notifier.sendDailyTaskNoProofObtained(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
                     // request new block height proof
                     agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
                     await rootEm.persistAndFlush(agentEnt);
@@ -1094,8 +1115,9 @@ export class AgentBot {
      */
     async checkNonPayment(minting: AgentMinting): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound!, minting.proofRequestData!);
+        assertNotNull(minting.proofRequestRound);
+        assertNotNull(minting.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound, minting.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             return;
@@ -1109,8 +1131,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(nonPaymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
+            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
         }
     }
 
@@ -1121,8 +1142,9 @@ export class AgentBot {
      */
     async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound!, minting.proofRequestData!);
+        assertNotNull(minting.proofRequestRound);
+        assertNotNull(minting.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound, minting.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             return;
@@ -1135,8 +1157,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} executed minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for minting ${minting.requestId} with in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound!, minting.proofRequestData!);
+            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
         }
     }
 
@@ -1320,7 +1341,6 @@ export class AgentBot {
     async startRejectRedemption(redemption: AgentRedemption) {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment address invalidity
             for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const request = await this.context.attestationProvider.requestAddressValidityProof(redemption.paymentAddress);
         if (request) {
             redemption.state = AgentRedemptionState.REQUESTED_REJECTION_PROOF;
@@ -1340,8 +1360,9 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to obtain proof for payment address invalidity
             for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}
             in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        assertNotNull(redemption.proofRequestRound);
+        assertNotNull(redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound, redemption.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for address validation for redemption
                 ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
@@ -1359,15 +1380,13 @@ export class AgentBot {
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained conflicting address validation proof
                     for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
                 await this.notifier.sendRedemptionAddressValidationProofConflict(redemption.requestId,
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    redemption.proofRequestRound!, redemption.proofRequestData!, redemption.paymentAddress);
+                    redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
             }
         } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain address validation proof for redemption ${redemption.requestId}
                 in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                redemption.proofRequestRound!, redemption.proofRequestData!, redemption.paymentAddress);
+                redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
         }
     }
 
@@ -1398,8 +1417,8 @@ export class AgentBot {
      */
     async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash!);
+        assertNotNull(redemption.txHash);
+        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
             await this.requestPaymentProof(redemption);
@@ -1414,8 +1433,8 @@ export class AgentBot {
     async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment proof transaction ${redemption.txHash}
             and redemption ${redemption.requestId.toString()}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash!, this.agent.underlyingAddress, redemption.paymentAddress);
+        assertNotNull(redemption.txHash);
+        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash, this.agent.underlyingAddress, redemption.paymentAddress);
         if (request) {
             redemption.state = AgentRedemptionState.REQUESTED_PROOF;
             redemption.proofRequestRound = request.round;
@@ -1438,8 +1457,9 @@ export class AgentBot {
      */
     async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound!, redemption.proofRequestData!);
+        assertNotNull(redemption.proofRequestRound);
+        assertNotNull(redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound, redemption.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             return;
@@ -1452,8 +1472,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound!, redemption.proofRequestData!);
+            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
         }
     }
 
@@ -1515,27 +1534,26 @@ export class AgentBot {
      * @param freeUnderlyingBalance agent's gree underlying balance
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
-        const ownerUnderlyingAddress = requireSecret(`owner.${decodedChainId(this.context.chainInfo.chainId)}.address`);
         try {
-            logger.info(`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${ownerUnderlyingAddress}.`);
-            const txHash = await this.agent.performTopupPayment(amount, ownerUnderlyingAddress);
+            logger.info(`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+            const txHash = await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
             await this.agent.confirmTopupPayment(txHash);
             await this.notifier.sendLowUnderlyingAgentBalance(amount);
-            logger.info(`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount ${amount.toString()} from owner's underlying address ${ownerUnderlyingAddress} with txHash ${txHash}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount ${amount.toString()} from owner's underlying address ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
         } catch (error) {
             await this.notifier.sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalance);
-            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance.toString()} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${ownerUnderlyingAddress}:`, error);
+            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance.toString()} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${this.ownerUnderlyingAddress}:`, error);
         }
-        const ownerUnderlyingBalance = await this.context.wallet.getBalance(ownerUnderlyingAddress);
+        const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         const expectedBalance = toBN(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
         if (ownerUnderlyingBalance.lte(expectedBalance)) {
-            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress, ownerUnderlyingBalance);
+            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, ownerUnderlyingBalance);
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
-                ${ownerUnderlyingBalance.toString()} on underlying address ${ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`);
+                ${ownerUnderlyingBalance.toString()} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`);
         } else {
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${ownerUnderlyingBalance.toString()}
-                on underlying address ${ownerUnderlyingAddress}.`);
+                on underlying address ${this.ownerUnderlyingAddress}.`);
         }
     }
 

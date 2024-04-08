@@ -49,7 +49,7 @@ describe("Liquidator unit tests", () => {
     });
 
     it("Should create liquidator", async () => {
-        const liquidator = new Liquidator(runner, liquidatorAddress, state, testNotifierTransports);
+        const liquidator = new Liquidator(context, runner, liquidatorAddress, state, testNotifierTransports);
         expect(liquidator.address).to.eq(liquidatorAddress);
     });
 
@@ -58,7 +58,7 @@ describe("Liquidator unit tests", () => {
         const lastBlock = await web3.eth.getBlockNumber();
         const mockState = new MockTrackedState(trackedStateContext, lastBlock, null);
         await mockState.initialize();
-        const liquidator = new Liquidator(runner, liquidatorAddress, mockState, testNotifierTransports);
+        const liquidator = new Liquidator(trackedStateContext, runner, liquidatorAddress, mockState, testNotifierTransports);
         expect(liquidator.address).to.eq(liquidatorAddress);
         await liquidator.runStep();
         expect(spyConsole).to.be.called.once;
@@ -67,7 +67,7 @@ describe("Liquidator unit tests", () => {
     it("Should not handle full liquidation - error", async () => {
         const spyConsole = spy.on(console, "error");
         const agent = await createTestAgent(context, ownerAddress);
-        const liquidator = new Liquidator(runner, liquidatorAddress, state, testNotifierTransports);
+        const liquidator = new Liquidator(context, runner, liquidatorAddress, state, testNotifierTransports);
         // change address to invoke error later
         expect(liquidator.address).to.eq(liquidatorAddress);
         await liquidator.handleFullLiquidationStarted(agent.vaultAddress);

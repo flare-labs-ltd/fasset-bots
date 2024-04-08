@@ -1,12 +1,12 @@
 import BN from "bn.js";
 import chalk from "chalk";
-import { loadConfigFile } from "../config/BotConfig";
+import { Secrets, createBotConfig } from "../config";
+import { loadConfigFile } from "../config/config-file-loader";
 import { createNativeContext } from "../config/create-asset-context";
-import { getSecrets } from "../config/secrets";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
-import { MAX_BIPS, toBN } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
+import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
+import { MAX_BIPS, firstValue, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 
@@ -17,7 +17,7 @@ const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20Metadata = artifacts.require("IERC20Metadata");
 
-export class InfoBot {
+export class InfoBotCommands {
     static deepCopyWithObjectCreate = true;
 
     constructor(
@@ -30,23 +30,23 @@ export class InfoBot {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of InfoBot
      */
-    static async create(configFile: string, fAssetSymbol?: string): Promise<InfoBot> {
+    static async create(secretsFile: string, configFile: string, fAssetSymbol: string | undefined): Promise<InfoBotCommands> {
         logger.info(`InfoBot started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
+        const secrets = Secrets.load(secretsFile);
         const config = loadConfigFile(configFile, `InfoBot`);
         // init web3 and accounts
-        await initWeb3(authenticatedHttpProvider(config.rpcUrl, getSecrets().apiKey.native_rpc), [INFO_ACCOUNT_KEY], null);
+        const apiKey = secrets.optional("apiKey.native_rpc");
+        await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), [INFO_ACCOUNT_KEY], null);
+        const botConfig = await createBotConfig("common", secrets, config);
         // create config
-        const chainConfig = fAssetSymbol ? config.fAssetInfos.find((cc) => cc.fAssetSymbol === fAssetSymbol) : config.fAssetInfos[0];
-        if (chainConfig == null) {
-            logger.error(`InfoBot: FAsset does not exist.`);
-            throw new CommandLineError("FAsset does not exist");
-        }
-        const context = await createNativeContext(config, chainConfig);
+        const chainConfig = fAssetSymbol ? botConfig.fAssets.get(fAssetSymbol) : firstValue(botConfig.fAssets);
+        assertNotNullCmd(chainConfig, "FAsset does not exist");
+        const context = await createNativeContext(botConfig, chainConfig);
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);
         console.error(chalk.cyan("Environment successfully initialized."));
-        return new InfoBot(context);
+        return new InfoBotCommands(context);
     }
 
     /**

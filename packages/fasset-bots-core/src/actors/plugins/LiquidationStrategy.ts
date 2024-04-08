@@ -1,14 +1,16 @@
 import BN from "bn.js";
 import { LiquidatorInstance } from "../../../typechain-truffle";
+import { ILiquidatorContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
-import { TrackedState } from "../../state/TrackedState";
-import { artifacts } from "../../utils/web3";
 import { ZERO_ADDRESS } from "../../utils";
+import { artifacts } from "../../utils/web3";
+import { TrackedState } from "../../state/TrackedState";
 
 const Liquidator = artifacts.require("Liquidator");
 
 export abstract class LiquidationStrategy {
     constructor(
+        public context: ILiquidatorContext,
         public state: TrackedState,
         public address: string
     ) {}
@@ -17,8 +19,8 @@ export abstract class LiquidationStrategy {
 
 export class DefaultLiquidationStrategy extends LiquidationStrategy {
     public async liquidate(agent: TrackedAgentState): Promise<void> {
-        const fBalance = await this.state.context.fAsset.balanceOf(this.address);
-        await this.state.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
+        const fBalance = await this.context.fAsset.balanceOf(this.address);
+        await this.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
     }
 }
 
@@ -30,7 +32,8 @@ export class DexLiquidationStrategy extends LiquidationStrategy {
     }
 
     public async liquidate(agent: TrackedAgentState): Promise<void> {
-        const liquidator = await Liquidator.at(this.state.context.liquidationStrategy!.config.address);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const liquidator = await Liquidator.at(this.context.liquidationStrategy!.config.address);
         const oraclePrices = await this.dexMinPriceOracle(liquidator, agent);
         await liquidator.runArbitrage(agent.vaultAddress, this.address, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address });
     }

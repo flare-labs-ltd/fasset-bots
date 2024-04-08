@@ -2,20 +2,23 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
-import { closeBotConfig, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { Secrets, closeBotConfig, createBotConfig, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
+import { toplevelRun } from "../utils/toplevel";
 
 const program = programWithCommonOptions("bot", "all_fassets");
 
 program.action(async () => {
-    const options: { config: string } = program.opts();
+    const options: { config: string; secrets: string } = program.opts();
+    const secrets = Secrets.load(options.secrets);
     const runConfig = loadConfigFile(options.config);
-    const challengerAddress: string = requireSecret("challenger.address");
-    const challengerPrivateKey: string = requireSecret("challenger.private_key");
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [challengerPrivateKey], null);
-    const config = await createBotConfig(runConfig, challengerAddress);
-    const runners = await Promise.all(config.fAssets.map(
+    const challengerAddress: string = secrets.required("challenger.address");
+    const challengerPrivateKey: string = secrets.required("challenger.private_key");
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [challengerPrivateKey], null);
+    const config = await createBotConfig("keeper", secrets, runConfig, challengerAddress);
+    const fassetList = Array.from(config.fAssets.values());
+    const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, challengerAddress, ActorBaseKind.CHALLENGER, chainConfig)
     ));
     // run

@@ -1,9 +1,7 @@
-import { BotConfig } from "../config/BotConfig";
-import { createActorAssetContext } from "../config/create-asset-context";
-import { ActorBaseKind } from "../fasset-bots/ActorBase";
-import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
+import { KeeperBotConfig, createTimekeeperContext } from "../config";
+import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
-import { requireNotNull, sleep, web3DeepNormalize } from "../utils";
+import { sleep, web3DeepNormalize } from "../utils";
 import { logger } from "../utils/logger";
 
 export class TimeKeeper {
@@ -11,7 +9,7 @@ export class TimeKeeper {
 
     constructor(
         public address: string,
-        public context: IAssetActorContext,
+        public context: ITimekeeperContext,
         public intervalInMs: number
     ) {}
 
@@ -23,10 +21,10 @@ export class TimeKeeper {
 
     interval?: NodeJS.Timeout;
 
-    static async startTimekeepers(config: BotConfig, timekeeperAddress: string, interval: number) {
+    static async startTimekeepers(config: KeeperBotConfig, timekeeperAddress: string, interval: number) {
         const timekeepers: TimeKeeper[] = [];
-        for (const chain of config.fAssets) {
-            const assetContext = await createActorAssetContext(config, chain, ActorBaseKind.TIME_KEEPER);
+        for (const chain of config.fAssets.values()) {
+            const assetContext = await createTimekeeperContext(config, chain);
             const timekeeper = new TimeKeeper(timekeeperAddress, assetContext, interval);
             timekeeper.loopDelay = config.loopDelay;
             timekeepers.push(timekeeper);
@@ -69,18 +67,17 @@ export class TimeKeeper {
 
     // like AttestationHelper.proveConfirmedBlockHeightExists, but allows stopping while waiting for proof
     private async proveConfirmedBlockHeightExists(queryWindow: number) {
-        const attestationProvider = requireNotNull(this.context.attestationProvider, "missing attestation provider");
         logger.info(`Updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}...`);
-        const request = await attestationProvider.requestConfirmedBlockHeightExistsProof(queryWindow);
+        const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(queryWindow);
         if (request == null) {
             throw new Error("Timekeeper: balanceDecreasingTransaction: not proved");
         }
-        while (!(await attestationProvider.stateConnector.roundFinalized(request.round))) {
+        while (!(await this.context.attestationProvider.stateConnector.roundFinalized(request.round))) {
             if (this.stopRequested) return "STOP REQUESTED";
             await sleep(this.loopDelay);
         }
         logger.info(`Obtained underlying block proof for asset manager ${this.context.assetManager.address}, updating with user ${this.address}...`);
-        const proof = await attestationProvider.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
+        const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
         if (!attestationProved(proof)) {
             throw new Error("Timekeeper: balanceDecreasingTransaction: not proved");
         }

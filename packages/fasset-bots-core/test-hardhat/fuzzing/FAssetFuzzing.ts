@@ -1,28 +1,25 @@
 import { time } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
 import { network } from "hardhat";
-import { BotCliCommands } from "../../src/actors/AgentBotCliCommands";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
-import { AgentBotDefaultSettings } from "../../src/fasset-bots/IAssetBotContext";
+import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
+import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
-import { MockIndexer } from "../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
-import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
 import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
 import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
-import { TestChainInfo, testChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { createTestOrm } from "../../test/test-utils/test-bot-config";
+import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
-import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
@@ -99,29 +96,10 @@ describe("Fuzzing tests", () => {
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
+            const secrets = createTestSecrets(chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
-            const botCliCommands = new BotCliCommands();
-            botCliCommands.context = context;
-            botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-            const chainId = chainInfo.chainId;
-            botCliCommands.botConfig = {
-                rpcUrl: "",
-                loopDelay: 0,
-                fAssets: [
-                    {
-                        chainInfo: chainInfo,
-                        wallet: new MockChainWallet(chain),
-                        blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                        stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainInfo.chainId]: chain }, "auto"),
-                        verificationClient: new MockVerificationApiClient(),
-                        assetManager: "",
-                    },
-                ],
-                nativeChainInfo: testNativeChainInfo,
-                orm: orm,
-                notifiers: notifiers,
-                addressUpdater: "",
-            };
+            const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
+            const botCliCommands = new AgentBotCommands(secrets, context, owner, orm, notifiers);
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
             agentBots.push(fuzzingAgentBot);
             eventFormatter.addAddress(`BOT_${i}`, fuzzingAgentBot.agentBot.agent.vaultAddress);
@@ -145,7 +123,7 @@ describe("Fuzzing tests", () => {
         // create liquidators
         const firstLiquidatorAddress = firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS;
         for (let i = 0; i < N_LIQUIDATORS; i++) {
-            const liquidator = new Liquidator(runner, accounts[firstLiquidatorAddress + i], commonTrackedState, notifiers);
+            const liquidator = new Liquidator(context, runner, accounts[firstLiquidatorAddress + i], commonTrackedState, notifiers);
             liquidators.push(liquidator);
             // await context.fAsset.mint(accounts[1], 100);
             eventFormatter.addAddress(`LIQUIDATOR_${i}`, liquidator.address);
@@ -153,7 +131,7 @@ describe("Fuzzing tests", () => {
         }
         // create challenger
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
-        challenger = new Challenger(runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), notifiers);
+        challenger = new Challenger(context, runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), notifiers);
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];
@@ -257,7 +235,7 @@ describe("Fuzzing tests", () => {
         // assert.isTrue(commonTrackedState.failedExpectations.length === 0, "fuzzing state has expectation failures");
     });
 
-    function createAgentOptions(): AgentBotDefaultSettings {
+    function createAgentOptions(): AgentVaultInitSettings {
         const vaultCollateral = randomChoice(context.collaterals.filter(isVaultCollateral));
         const poolCollateral = context.collaterals.filter(isPoolCollateral)[0];
         const mintingVaultCollateralRatioBIPS = mulDecimal(toBN(vaultCollateral.minCollateralRatioBIPS), randomNum(1, 1.5));

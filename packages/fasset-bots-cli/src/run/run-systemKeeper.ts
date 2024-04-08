@@ -2,20 +2,23 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
-import { closeBotConfig, createBotConfig, getSecrets, loadConfigFile, requireSecret } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { Secrets, closeBotConfig, createBotConfig, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
+import { toplevelRun } from "../utils/toplevel";
 
 const program = programWithCommonOptions("bot", "all_fassets");
 
 program.action(async () => {
-    const options: { config: string } = program.opts();
+    const options: { config: string; secrets: string } = program.opts();
+    const secrets = Secrets.load(options.secrets);
     const runConfig = loadConfigFile(options.config);
-    const systemKeeperAddress: string = requireSecret("systemKeeper.address");
-    const systemKeeperPrivateKey: string = requireSecret("systemKeeper.private_key");
-    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, getSecrets().apiKey.native_rpc), [systemKeeperPrivateKey], null);
-    const config = await createBotConfig(runConfig, systemKeeperAddress);
-    const runners = await Promise.all(config.fAssets.map(
+    const systemKeeperAddress: string = secrets.required("systemKeeper.address");
+    const systemKeeperPrivateKey: string = secrets.required("systemKeeper.private_key");
+    await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [systemKeeperPrivateKey], null);
+    const config = await createBotConfig("common", secrets, runConfig, systemKeeperAddress);
+    const fassetList = Array.from(config.fAssets.values());
+    const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, chainConfig)
     ));
     // run

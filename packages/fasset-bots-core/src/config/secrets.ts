@@ -1,67 +1,49 @@
 import { readFileSync, statSync } from "fs";
-import { ENCRYPTION_PASSWORD_MIN_LENGTH, requireEnv } from "../utils/helpers";
-import { CommandLineError } from "../utils/toplevel";
+import { CommandLineError } from "../utils/command-line-errors";
+import { SecretsFile } from "./config-files/SecretsFile";
 
-export type Secrets = {
-    wallet?: {
-        encryption_password: string;
-    };
-    apiKey: {
-        [key: string]: string;
-    };
-    owner?: {
-        [key: string]: ChainAccount;
-    };
-    user?: {
-        [key: string]: ChainAccount;
-    };
-    challenger?: ChainAccount;
-    liquidator?: ChainAccount;
-    timeKeeper?: ChainAccount;
-    systemKeeper?: ChainAccount;
-    deployer?: ChainAccount;
-    database?: DatabaseAccount;
-};
+export const ENCRYPTION_PASSWORD_MIN_LENGTH = 16;
 
-export interface ChainAccount {
-    address: string;
-    private_key: string;
+export class Secrets {
+    constructor(
+        public data: SecretsFile,
+    ) {}
+
+    static load(secretsPath: string) {
+        const data = loadSecrets(secretsPath);
+        return new Secrets(data);
 }
 
-export interface DatabaseAccount {
-    user: string;
-    password: string;
+    required(key: string): string {
+        const value = valueForKeyPath(this.data, key);
+        if (typeof value === "string") return value;
+        throw new Error(`Secret variable ${key} not defined or not typeof string`);
 }
 
-export function getSecrets(reload = false): Secrets {
-    if (loadedSecrets == undefined || reload) {
-        loadedSecrets = loadSecrets(defaultSecretsPath());
+    optional(key: string): string | undefined {
+        const value = valueForKeyPath(this.data, key);
+        if (value == undefined) return undefined;
+        if (typeof value === "string") return value;
+        throw new Error(`Secret variable ${key} not typeof string`);
     }
-    return loadedSecrets;
+
+    requiredEncryptionPassword(key: string): string {
+        const value = this.required(key);
+        validateEncryptionPassword(value, key);
+        return value;
+}
 }
 
-export function resetSecrets(secretsPath: string) {
-    loadedSecrets = loadSecrets(secretsPath);
-}
-
-let loadedSecrets: Secrets | undefined;
-
-function loadSecrets(secretsPath: string): Secrets {
+function loadSecrets(secretsPath: string): SecretsFile {
     checkFilePermissions(secretsPath);
     const secrets = JSON.parse(readFileSync(secretsPath).toString());
     return secrets;
 }
 
-function defaultSecretsPath(): string {
-    return requireEnv("FASSET_BOT_SECRETS");
-}
-
-export function requireEncryptionPassword(name: string, secrets?: Secrets): string {
-    const value = requireSecret(name, secrets);
+function validateEncryptionPassword(value: string, key: string) {
     if (value.length < ENCRYPTION_PASSWORD_MIN_LENGTH) {
-        throw new Error(`'${name}' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
+        throw new Error(`'${key}' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     }
-    return value;
 }
 
 /* istanbul ignore next */
@@ -75,22 +57,17 @@ function checkFilePermissions(fpath: string) {
     }
     // file must only be accessible by the process user
     const stat = statSync(fpath);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const processUid = process.getuid!();
     if (!(stat.uid === processUid && (stat.mode & 0o077) === 0)) {
         throw new CommandLineError(`File ${fpath} must only be readable by the process user. Set permission bits to 600.`);
     }
 }
 
-export function requireSecret(name: string, secrets?: Secrets, reload = false): string {
-    const value = valueForKeyPath(secrets ?? getSecrets(reload), name);
-    if (typeof value === "string") return value;
-    throw new Error(`Secret variable ${name} not defined or not typeof string`);
-}
-
-function valueForKeyPath(obj: any, path: string) {
+function valueForKeyPath(object: any, path: string) {
     const keys = path.split(".");
     keys.forEach((key) => {
-        return (obj = obj?.[key]);
+        return (object = object?.[key]);
     });
-    return obj;
+    return object;
 }

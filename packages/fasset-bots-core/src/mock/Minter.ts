@@ -1,7 +1,7 @@
 import { Payment } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import { CollateralReserved } from "../../typechain-truffle/AssetManager";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
@@ -14,7 +14,7 @@ export class Minter {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public context: IAssetAgentBotContext,
+        public context: IAssetAgentContext,
         public address: string,
         public underlyingAddress: string,
         public wallet: IBlockChainWallet
@@ -29,14 +29,14 @@ export class Minter {
         return this.context.attestationProvider;
     }
 
-    static async createTest(ctx: IAssetAgentBotContext, address: string, underlyingAddress: string, underlyingBalance: BN): Promise<Minter> {
+    static async createTest(ctx: IAssetAgentContext, address: string, underlyingAddress: string, underlyingBalance: BN): Promise<Minter> {
         if (!(ctx.blockchainIndexer instanceof MockIndexer)) fail("only for mock chains");
         ctx.blockchainIndexer.chain.mint(underlyingAddress, underlyingBalance);
         const wallet = new MockChainWallet(ctx.blockchainIndexer.chain);
         return Minter.create(ctx, address, underlyingAddress, wallet);
     }
 
-    static async create(ctx: IAssetAgentBotContext, address: string, underlyingAddress: string, wallet: IBlockChainWallet): Promise<Minter> {
+    static async create(ctx: IAssetAgentContext, address: string, underlyingAddress: string, wallet: IBlockChainWallet): Promise<Minter> {
         return new Minter(ctx, address, underlyingAddress, wallet);
     }
 

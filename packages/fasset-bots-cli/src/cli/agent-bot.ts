@@ -1,11 +1,12 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentTokenConverter, BotCliCommands } from "@flarelabs/fasset-bots-core";
+import { AgentTokenConverter, AgentBotCommands } from "@flarelabs/fasset-bots-core";
 import { loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, errorIncluded, registerToplevelFinalizer, squashSpace, toBIPS, toplevelRun } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
+import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 
 const program = programWithCommonOptions("bot", "single_fasset");
 
@@ -17,15 +18,15 @@ program
     .option("--prepare")
     .argument("[agentSettingsPath]")
     .action(async (agentSettingsPath: string | undefined, opts: { prepare?: string }) => {
-        const options: { config: string; fasset: string } = program.opts();
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
         if (opts.prepare) {
-            const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+            const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
             const template = await cli.prepareCreateAgentSettings();
             const fname = "tmp.agent-settings.json";
             fs.writeFileSync(fname, JSON.stringify(template, null, 4));
             console.log(`Initial settings have been written to ${fname}. Please edit this file and then execute "yarn agent-bot create ${fname}"`);
         } else if (agentSettingsPath != null && fs.existsSync(agentSettingsPath)) {
-            const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+            const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
             await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
         } else {
             if (agentSettingsPath != null) {
@@ -45,8 +46,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
         await cli.depositToVault(agentVault, await converter.parseToWei(amount));
     });
@@ -57,8 +58,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
         await cli.buyCollateralPoolTokens(agentVault, await converter.parseToWei(amount));
     });
@@ -68,8 +69,8 @@ program
     .description("enter available agent's list")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.enterAvailableList(agentVault);
     });
 
@@ -78,8 +79,8 @@ program
     .description("begin the process of exiting from available agent's list; exit will later be executed automatically by running agent bot")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.announceExitAvailableList(agentVault);
     });
 
@@ -88,8 +89,8 @@ program
     .description("execute previously announced exit from available agent's list (only needed in special cases, since running bot does it automatically)")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.exitAvailableList(agentVault);
     });
 
@@ -98,8 +99,8 @@ program
     .description("print agent info")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.printAgentInfo(agentVault);
     });
 
@@ -108,8 +109,8 @@ program
     .description("print agent settings")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.printAgentSettings(agentVault);
     });
 
@@ -120,8 +121,8 @@ program
     .argument("<agentSettingName>")
     .argument("<agentSettingValue>")
     .action(async (agentVault: string, settingName: string, settingValue: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.updateAgentSetting(agentVault, settingName, settingValue);
     });
 
@@ -131,8 +132,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
         await cli.announceWithdrawFromVault(agentVault, await converter.parseToWei(amount));
     });
@@ -142,8 +143,8 @@ program
     .description("cancel vault collateral withdrawal process")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.cancelWithdrawFromVaultAnnouncement(agentVault);
     });
 
@@ -153,8 +154,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
         await cli.announceRedeemCollateralPoolTokens(agentVault, await converter.parseToWei(amount));
     });
@@ -164,8 +165,8 @@ program
     .description("cancel collateral pool tokens redemption process")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.cancelCollateralPoolTokensAnnouncement(agentVault);
     });
 
@@ -175,8 +176,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
         await cli.withdrawPoolFees(agentVault, await converter.parseToWei(amount));
     });
@@ -186,8 +187,8 @@ program
     .description("get pool fees balance of agent")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.poolFeesBalance(agentVault);
     });
 
@@ -197,8 +198,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
         await cli.selfClose(agentVault, await converter.parseToWei(amount));
     });
@@ -208,8 +209,8 @@ program
     .description("begin the process of closing agent vault; all the steps required will later be performed automatically by running agent bot")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.closeVault(agentVault);
     });
 
@@ -218,8 +219,8 @@ program
     .description("announce underlying withdrawal and get needed payment reference")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.announceUnderlyingWithdrawal(agentVault);
     });
 
@@ -231,8 +232,8 @@ program
     .argument("<destinationAddress>")
     .argument("<paymentReference>")
     .action(async (agentVault: string, amount: string, destinationAddress: string, paymentReference: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
         await cli.performUnderlyingWithdrawal(agentVault, await converter.parseToWei(amount), destinationAddress, paymentReference);
     });
@@ -243,8 +244,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<txHash>")
     .action(async (agentVault: string, txHash: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.confirmUnderlyingWithdrawal(agentVault, txHash);
     });
 
@@ -253,8 +254,8 @@ program
     .description("cancel underlying withdrawal announcement")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.cancelUnderlyingWithdrawal(agentVault);
     });
 
@@ -262,8 +263,8 @@ program
     .command("listAgents")
     .description("list active agent from persistent state")
     .action(async () => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.listActiveAgents();
     });
 
@@ -274,8 +275,8 @@ program
     .argument("<recipient>")
     .argument("<share>", "vote power share as decimal number (e.g. 0.3) or percentage (e.g. 30%)")
     .action(async (agentVault: string, recipient: string, share: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
     });
 
@@ -284,8 +285,8 @@ program
     .description("undelegate pool collateral")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.undelegatePoolCollateral(agentVault);
     });
 
@@ -293,9 +294,10 @@ program
     .command("createUnderlyingAccount")
     .description("create underlying account")
     .action(async () => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
-        await cli.createUnderlyingAccount();
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const { address, privateKey } = await cli.createUnderlyingAccount();
+        console.log({ address, privateKey });
     });
 
 program
@@ -303,8 +305,8 @@ program
     .description("get free vault collateral")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const freeCollateral = await cli.getFreeVaultCollateral(agentVault);
         const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
         console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeCollateral)} free vault collateral.`);
@@ -315,8 +317,8 @@ program
     .description("get free pool collateral")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const freeCollateral = await cli.getFreePoolCollateral(agentVault);
         const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
         console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeCollateral)} free pool collateral.`);
@@ -327,8 +329,8 @@ program
     .description("get free underlying balance")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const freeUnderlying = await cli.getFreeUnderlying(agentVault);
         const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
         console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeUnderlying)} free underlying.`);
@@ -340,8 +342,8 @@ program
     .argument("<agentVaultAddress>")
     .argument("<token>")
     .action(async (agentVault: string, token: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.switchVaultCollateral(agentVault, token);
     });
 
@@ -350,8 +352,8 @@ program
     .description("upgrade WNat contract")
     .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
-        const options: { config: string; fasset: string } = program.opts();
-        const cli = await BotCliCommands.create(options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.upgradeWNatContract(agentVault);
     });
 
@@ -359,7 +361,7 @@ toplevelRun(async () => {
     try {
         await program.parseAsync();
     } catch (error: any) {
-        if (errorIncluded(error, ["invalid agent vault address"])) {
+        if (errorIncluded(error, ["invalid agent vault address", "AgentEntity not found"])) {
             const fAsset = program.opts().fasset;
             throw new CommandLineError(squashSpace`Invalid agent vault address: specified agent vault address has to be one of the agent vaults created by you.
                 To see them run \`yarn agent-bot listAgents -f ${fAsset}\`.`);

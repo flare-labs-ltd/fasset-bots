@@ -1,19 +1,19 @@
-import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
-import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
-import { IAssetActorContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
-import { BN_ZERO, sleep, toBN } from "../utils/helpers";
-import { Prices } from "./Prices";
-import { eventIs } from "../utils/events/truffle";
-import { web3DeepNormalize, web3Normalize } from "../utils/web3normalize";
-import { web3 } from "../utils/web3";
-import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
-import { CollateralList, isPoolCollateral } from "./CollateralIndexedList";
-import { tokenContract } from "./TokenPrice";
-import { logger } from "../utils/logger";
+import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
+import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
+import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
+import { BN_ZERO, sleep, toBN } from "../utils/helpers";
+import { logger } from "../utils/logger";
+import { web3 } from "../utils/web3";
+import { web3DeepNormalize, web3Normalize } from "../utils/web3normalize";
+import { CollateralList, isPoolCollateral } from "./CollateralIndexedList";
+import { Prices } from "./Prices";
+import { tokenContract } from "./TokenPrice";
+import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
 
 export const MAX_EVENT_HANDLE_RETRY = 10;
 export const SLEEP_MS_BEFORE_RETRY = 1000;
@@ -22,7 +22,7 @@ export class TrackedState {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public context: IAssetActorContext,
+        public context: IAssetNativeChainContext,
         private currentEventBlock: number
     ) {}
 
@@ -46,6 +46,15 @@ export class TrackedState {
 
     // event decoder
     eventDecoder = new Web3ContractEventDecoder({ priceChangeEmitter: this.context.priceChangeEmitter, assetManager: this.context.assetManager });
+
+    /**
+     * Create and initialize TrackedState
+     */
+    static async create(context: IAssetNativeChainContext, currentEventBlock: number) {
+        const trackedState = new TrackedState(context, currentEventBlock);
+        await trackedState.initialize();
+        return trackedState;
+    }
 
     // async initialization part
     async initialize(): Promise<void> {

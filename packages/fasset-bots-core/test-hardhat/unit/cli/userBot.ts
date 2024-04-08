@@ -5,22 +5,18 @@ import spies from "chai-spies";
 import fs, { existsSync } from "fs";
 import path from "path";
 import { AgentBot } from "../../../src/actors/AgentBot";
-import { UserBot } from "../../../src/actors/UserBot";
+import { UserBotCommands } from "../../../src/commands/UserBotCommands";
+import { PoolUserBotCommands } from "../../../src/commands/PoolUserBotCommands";
 import { ORM } from "../../../src/config/orm";
 import { AgentRedemptionState } from "../../../src/entities/agent";
 import { Minter } from "../../../src/mock/Minter";
-import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
-import { MockIndexer } from "../../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
+import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
-import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestOrm } from "../../../test/test-utils/test-bot-config";
-import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
@@ -29,7 +25,6 @@ use(spies);
 
 const IERC20 = artifacts.require("IERC20");
 
-const StateConnector = artifacts.require("StateConnectorMock");
 const userUnderlyingAddress = "userUnderlyingAddress";
 
 interface MintData {
@@ -40,6 +35,7 @@ interface MintData {
     executorAddress: string;
     createdAt: string;
 }
+
 interface RedeemData {
     type: "redeem";
     requestId: string;
@@ -58,14 +54,15 @@ describe("UserBot cli commands unit tests", () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
-    let userBot: UserBot;
+    let userBot: UserBotCommands;
+    let poolUserBot: PoolUserBotCommands;
     let chain: MockChain;
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
 
     before(async () => {
-        UserBot.userDataDir = "./test-data";
+        UserBotCommands.userDataDir = "./test-data";
         accounts = await web3.eth.getAccounts();
         // accounts
         ownerAddress = accounts[3];
@@ -80,36 +77,9 @@ describe("UserBot cli commands unit tests", () => {
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
         // user bot
-        userBot = new UserBot();
-        userBot.context = context;
-        userBot.nativeAddress = minterAddress;
-        userBot.underlyingAddress = userUnderlyingAddress;
-        const chainId = SourceId.testXRP;
-        userBot.fassetConfig = {
-            chainInfo: {
-                chainId: chainId,
-                name: "Ripple",
-                symbol: "XRP",
-                decimals: 6,
-                amgDecimals: 0,
-                requireEOAProof: false,
-            },
-            wallet: new MockChainWallet(chain),
-            blockchainIndexerClient: new MockIndexer("", chainId, chain),
-            stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
-            verificationClient: new MockVerificationApiClient(),
-            assetManager: "",
-            fAssetSymbol: "TESTHHSYM",
-        };
-        userBot.botConfig = {
-            rpcUrl: "",
-            loopDelay: 0,
-            fAssets: [userBot.fassetConfig],
-            nativeChainInfo: testNativeChainInfo,
-            orm: orm,
-            notifiers: testNotifierTransports,
-            addressUpdater: "",
-        };
+        const fAssetSymbol = "TESTHHSYM";
+        userBot = new UserBotCommands(context, fAssetSymbol, minterAddress, userUnderlyingAddress);
+        poolUserBot = new PoolUserBotCommands(context, fAssetSymbol, minterAddress);
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain, userUnderlyingAddress);
         redeemer = await createTestRedeemer(context, minterAddress, userUnderlyingAddress);
@@ -127,7 +97,7 @@ describe("UserBot cli commands unit tests", () => {
     after(function () {
         // clean up -  delete residual redeem files
         const fileList: string[] = [];
-        const dir = `./${UserBot.userDataDir}/${userBot.fassetConfig.fAssetSymbol}-redeem/`;
+        const dir = `./${UserBotCommands.userDataDir}/${userBot.fAssetSymbol}-redeem/`;
         fs.readdirSync(dir).forEach((file) => {
             const fullPath = path.join(dir, file);
             fileList.push(fullPath);
@@ -259,11 +229,11 @@ describe("UserBot cli commands unit tests", () => {
     it("Should enter and exit pool", async () => {
         const poolAddress = agentBot.agent.collateralPool.address;
         const amount = toBN(10000000000000000000);
-        const enter = await userBot.enterPool(poolAddress, amount);
+        const enter = await poolUserBot.enterPool(poolAddress, amount);
         expect(enter.tokenHolder).to.eq(userBot.nativeAddress);
         expect(enter.amountNatWei.eq(amount)).to.be.true;
         await time.increase(time.duration.days(1));
-        const exit = await userBot.exitPool(poolAddress, amount);
+        const exit = await poolUserBot.exitPool(poolAddress, amount);
         expect(exit.tokenHolder).to.eq(userBot.nativeAddress);
         expect(exit.receivedNatWei.eq(amount)).to.be.true;
     });
@@ -324,7 +294,7 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `./${UserBot.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fassetConfig.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = `./${UserBotCommands.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();

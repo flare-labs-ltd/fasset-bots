@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { time } from "@openzeppelin/test-helpers";
 import { MockChain } from "../../../src/mock/MockChain";
 import { TrackedState, MAX_EVENT_HANDLE_RETRY } from "../../../src/state/TrackedState";

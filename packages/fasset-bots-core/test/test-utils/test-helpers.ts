@@ -3,10 +3,10 @@ import BN from "bn.js";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { createBlockchainIndexerHelper } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
-import { requireSecret } from "../../src/config/secrets";
+import { Secrets } from "../../src/config/secrets";
 import { AgentEntity } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
-import { IAssetAgentBotContext } from "../../src/fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
@@ -22,18 +22,17 @@ import { testNotifierTransports } from "./testNotifierTransports";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
-const ownerAccountPrivateKey = requireSecret("owner.native.private_key");
-const account1PrivateKey = requireSecret("challenger.private_key");
-const userPrivateKey = requireSecret("user.native.private_key");
-const account3PrivateKey = requireSecret("timeKeeper.private_key");
-const account4PrivateKey = requireSecret("systemKeeper.private_key");
-
 export const depositVaultCollateralAmount = toBNExp(1_000_000, 6);
 
-export function getNativeAccountsFromEnv() {
+export function getNativeAccounts(secrets: Secrets) {
+    const ownerAccountPrivateKey = secrets.required("owner.native.private_key");
+    const account1PrivateKey = secrets.required("challenger.private_key");
+    const userPrivateKey = secrets.required("user.native.private_key");
+    const timeKeeperPrivateKey = secrets.required("timeKeeper.private_key");
+    const systemKeeperPrivateKey = secrets.required("systemKeeper.private_key");
     // owner is always first in array
     // deployer account / current coston governance in always last in array
-    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, account3PrivateKey, account4PrivateKey];
+    return [ownerAccountPrivateKey, account1PrivateKey, userPrivateKey, timeKeeperPrivateKey, systemKeeperPrivateKey];
 }
 
 export async function removeWalletAddressFromDB(walletKeys: IWalletKeys | BlockchainWalletHelper, address: string) {
@@ -59,8 +58,9 @@ export async function receiveBlockAndTransaction(
     sourceId: SourceId,
     blockChainIndexerClient: BlockchainIndexerHelper,
     indexerUrl: string,
+    indexerApiKey: string,
 ): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
-    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl);
+    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
     if (resp.status === "OK") {
         const blockNumber = resp.data.last;
@@ -84,22 +84,22 @@ export async function balanceOfVaultCollateral(vaultCollateralTokenAddress: stri
     return await vaultCollateralToken.balanceOf(address);
 }
 
-export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAddress: string, destroyAgentsAfterTests: string[]) {
+export async function cleanUp(context: IAssetAgentContext, orm: ORM, ownerAddress: string, ownerUnderlyingAddress: string, destroyAgentsAfterTests: string[]) {
     const destroyAgents = destroyAgentsAfterTests;
     const waitingTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
     for (const agentAddress of destroyAgents) {
         try {
-            await destroyAgent(context, orm, agentAddress, ownerAddress);
+            await destroyAgent(context, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
         } catch (e) {
             if (e instanceof Error) {
                 if (e.message.includes("destroy: not allowed yet")) {
                     await sleep(Number(toBN(waitingTime).muln(1000)));
-                    await destroyAgent(context, orm, agentAddress, ownerAddress);
+                    await destroyAgent(context, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
                 }
                 if (e.message.includes("destroy not announced")) {
                     await context.assetManager.announceDestroyAgent(agentAddress, { from: ownerAddress });
                     await sleep(Number(toBN(waitingTime).muln(1000)));
-                    await destroyAgent(context, orm, agentAddress, ownerAddress);
+                    await destroyAgent(context, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
                 }
                 if (e.message.includes("AgentEntity not found")) {
                     continue;
@@ -110,9 +110,9 @@ export async function cleanUp(context: IAssetAgentBotContext, orm: ORM, ownerAdd
     }
 }
 
-export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, agentAddress: string, ownerAddress: string) {
+export async function destroyAgent(context: IAssetAgentContext, orm: ORM, agentAddress: string, ownerAddress: string, ownerUnderlyingAddress: string) {
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentAddress, active: true } as FilterQuery<AgentEntity>);
-    const agentBot = await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
+    const agentBot = await AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
     const agentInfoForAnnounce = await context.assetManager.getAgentInfo(agentAddress);
     const freeVaultCollateralBalance = toBN(agentInfoForAnnounce.freeVaultCollateralWei);
     const freePoolTokenBalance = toBN(agentInfoForAnnounce.freePoolCollateralNATWei);
@@ -142,7 +142,16 @@ export async function destroyAgent(context: IAssetAgentBotContext, orm: ORM, age
     }
 }
 
-export async function findAgentBotFromDB(agentVaultAddress: string, context: IAssetAgentBotContext, orm: ORM): Promise<AgentBot> {
-    const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVaultAddress, active: true } as FilterQuery<AgentEntity>);
-    return await AgentBot.fromEntity(context, agentEnt, testNotifierTransports);
+export function itIf(condition: boolean | (() => boolean)) {
+    if (typeof condition === 'function') condition = condition();
+    return condition ? it : it.skip;
+}
+
+export function itUnless(condition: boolean | (() => boolean)) {
+    if (typeof condition === 'function') condition = condition();
+    return condition ? it.skip : it;
+}
+
+export function enableSlowTests() {
+    return process.env.ENABLE_SLOW_TESTS === 'true';
 }

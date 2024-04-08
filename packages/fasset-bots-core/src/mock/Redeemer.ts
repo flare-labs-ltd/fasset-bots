@@ -5,7 +5,7 @@ import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, ZERO_ADDRESS, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { IAssetAgentBotContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 
@@ -13,7 +13,7 @@ export class Redeemer {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public context: IAssetAgentBotContext,
+        public context: IAssetAgentContext,
         public address: string,
         public underlyingAddress: string
     ) {
@@ -27,7 +27,7 @@ export class Redeemer {
         return this.context.attestationProvider;
     }
 
-    static async create(ctx: IAssetAgentBotContext, address: string, underlyingAddress: string): Promise<Redeemer> {
+    static async create(ctx: IAssetAgentContext, address: string, underlyingAddress: string): Promise<Redeemer> {
         return new Redeemer(ctx, address, underlyingAddress);
     }
 

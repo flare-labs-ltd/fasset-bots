@@ -5,9 +5,9 @@ import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { FaultyNotifierTransport } from "../../test-utils/FaultyNotifierTransport";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/helpers";
 use(spies);
@@ -18,11 +18,13 @@ describe("Agent bot runner tests", () => {
     let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
+    let ownerUnderlyingAddress: string;
     let contexts: Map<string, TestAssetBotContext> = new Map();
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
         ownerAddress = accounts[1];
+        ownerUnderlyingAddress = "underlying_owner_1";
     });
 
     async function initialize() {
@@ -38,13 +40,15 @@ describe("Agent bot runner tests", () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay);
+        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should run agent bot runner until its stopped", async () => {
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay);
+        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
         const spyStep = spy.on(agentBotRunner, "runStep");
         agentBotRunner.requestStop();
         void agentBotRunner.run();
@@ -61,7 +65,8 @@ describe("Agent bot runner tests", () => {
         await createTestAgentBot(otherContext, orm, ownerAddress, "UNDERLYING");
         await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         // create runner
-        const agentBotRunner = createTestAgentBotRunner(contexts, orm, ownerAddress, loopDelay, [new FaultyNotifierTransport()]);
+        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay, [new FaultyNotifierTransport()]);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
         const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);

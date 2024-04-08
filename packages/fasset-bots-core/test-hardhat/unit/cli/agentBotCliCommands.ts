@@ -1,25 +1,20 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
-import { BotCliCommands } from "../../../src/actors/AgentBotCliCommands";
-import { loadAgentSettings } from "../../../src/config";
+import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
+import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
-import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
-import { MockIndexer } from "../../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
-import { MockVerificationApiClient } from "../../../src/mock/MockVerificationApiClient";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { MockChain } from "../../../src/mock/MockChain";
 import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
-import { testChainInfo, testNativeChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestOrm } from "../../../test/test-utils/test-bot-config";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
@@ -39,12 +34,12 @@ describe("AgentBot cli commands unit tests", () => {
     let orm: ORM;
     let ownerAddress: string;
     let minterAddress: string;
-    let botCliCommands: BotCliCommands;
+    let botCliCommands: AgentBotCommands;
     let chain: MockChain;
     let governance: string;
 
     async function createAgent(contextToUse: TestAssetBotContext = context): Promise<Agent> {
-        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.botConfig.orm!, botCliCommands.owner.managementAddress);
+        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.orm, botCliCommands.owner.managementAddress);
         return agentBot.agent;
     }
 
@@ -61,35 +56,9 @@ describe("AgentBot cli commands unit tests", () => {
         context = await createTestAssetContext(governance, testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
-        botCliCommands = new BotCliCommands();
-        botCliCommands.context = context;
-        botCliCommands.owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-        const chainId = SourceId.testXRP;
-        botCliCommands.botConfig = {
-            rpcUrl: "",
-            loopDelay: 0,
-            fAssets: [
-                {
-                    chainInfo: {
-                        chainId: chainId,
-                        name: "Ripple",
-                        symbol: "XRP",
-                        decimals: 6,
-                        amgDecimals: 0,
-                        requireEOAProof: false,
-                    },
-                    wallet: new MockChainWallet(chain),
-                    blockchainIndexerClient: new MockIndexer("", chainId, chain),
-                    stateConnector: new MockStateConnectorClient(await StateConnector.new(), { [chainId]: chain }, "auto"),
-                    verificationClient: new MockVerificationApiClient(),
-                    assetManager: "",
-                },
-            ],
-            nativeChainInfo: testNativeChainInfo,
-            orm: orm,
-            notifiers: testNotifierTransports,
-            addressUpdater: "",
-        };
+        const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
+        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, "ownyr_underlying_1");
+        botCliCommands = new AgentBotCommands(secrets, context, owner, orm, testNotifierTransports);
         return { orm, context, chain, botCliCommands };
     }
 
@@ -411,12 +380,6 @@ describe("AgentBot cli commands unit tests", () => {
         expect(_delegateAddresses.length).to.eq(0);
     });
 
-    it("Should create underlying account", async () => {
-        const data = await botCliCommands.createUnderlyingAccount();
-        expect(data.address).to.not.be.null;
-        expect(data.privateKey).to.not.be.null;
-    });
-
     it("Should run command 'getFreePoolCollateral', 'getFreeVaultCollateral' and 'getFreeUnderlying'", async () => {
         const agent = await createAgent();
         const freePool = await botCliCommands.getFreePoolCollateral(agent.vaultAddress);
@@ -472,6 +435,14 @@ describe("AgentBot cli commands unit tests", () => {
         await botCliCommands.upgradeWNatContract(agent.vaultAddress);
         const token = (await agent.getPoolCollateral()).token;
         expect(token).to.equal(newWnat.address);
+        //change context back
+        botCliCommands.context = context;
+    });
+
+    it("Should create agent bot via bot cli commands", async () => {
+        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp);
+        const agentBot = botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+        expect(agentBot).to.not.be.undefined;
         //change context back
         botCliCommands.context = context;
     });

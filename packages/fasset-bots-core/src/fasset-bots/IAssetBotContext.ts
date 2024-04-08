@@ -1,11 +1,10 @@
-import BN from "bn.js";
 import { AddressUpdaterInstance, AgentOwnerRegistryInstance, AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { ContractWithEvents } from "../utils/events/truffle";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
+import { ContractWithEvents } from "../utils/events/truffle";
 
 export type AddressUpdaterEvents = import("../../typechain-truffle/AddressUpdater").AllEvents;
 export type WNatEvents = import("../../typechain-truffle/WNat").AllEvents;
@@ -27,7 +26,7 @@ export interface IAssetNativeChainContext {
     agentOwnerRegistry: ContractWithEvents<AgentOwnerRegistryInstance, AgentOwnerRegistryEvents>;
 }
 
-export interface IAssetAgentBotContext extends IAssetNativeChainContext {
+export interface IAssetAgentContext extends IAssetNativeChainContext {
     chainInfo: ChainInfo;
     blockchainIndexer: BlockchainIndexerHelper;
     wallet: IBlockChainWallet;
@@ -35,29 +34,22 @@ export interface IAssetAgentBotContext extends IAssetNativeChainContext {
     verificationClient: IVerificationApiClient;
 }
 
-export interface AgentBotDefaultSettings {
-    vaultCollateralToken: string;
-    poolTokenSuffix: string;
-    feeBIPS: BN;
-    poolFeeShareBIPS: BN;
-    mintingVaultCollateralRatioBIPS: BN;
-    mintingPoolCollateralRatioBIPS: BN;
-    poolExitCollateralRatioBIPS: BN;
-    buyFAssetByAgentFactorBIPS: BN;
-    poolTopupCollateralRatioBIPS: BN;
-    poolTopupTokenPriceFactorBIPS: BN;
+export interface ITimekeeperContext extends IAssetNativeChainContext {
+    blockchainIndexer: BlockchainIndexerHelper;
+    attestationProvider: AttestationHelper;
 }
 
-// lightweight context
-export interface IAssetActorContext extends IAssetNativeChainContext {
-    blockchainIndexer?: BlockchainIndexerHelper; // only for challenger
-    attestationProvider?: AttestationHelper; // only for challenger
-    // liquidation / challenger strategies
+export interface ILiquidatorContext extends IAssetNativeChainContext {
     liquidationStrategy?: {
         // only for liquidator
         className: string;
         config?: any;
     };
+}
+
+export interface IChallengerContext extends IAssetNativeChainContext {
+    blockchainIndexer: BlockchainIndexerHelper;
+    attestationProvider: AttestationHelper;
     challengeStrategy?: {
         // only for challenger
         className: string;

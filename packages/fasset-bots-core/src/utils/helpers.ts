@@ -12,6 +12,10 @@ export type Dict<T> = { [key: string]: T };
 
 export type Modify<T, R> = Omit<T, keyof R> & R;
 
+export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
+export type NullableToNonNullable<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : unknown;
+
 export const BN_ZERO = new BN(0);
 export const BN_ONE: BN = Web3.utils.toBN(1);
 export const BN_TEN: BN = Web3.utils.toBN(10);
@@ -41,8 +45,6 @@ export const DEFAULT_RETRIES = 3;
 
 export const XRP_ACTIVATE_BALANCE = toBNExp(10, 6);
 
-export const ENCRYPTION_PASSWORD_MIN_LENGTH = 16;
-
 /**
  * Asynchronously wait `ms` milliseconds.
  */
@@ -69,9 +71,18 @@ export function isNotNull<T>(x: T): x is NonNullable<T> {
  * Check if value is non-null and throw otherwise.
  * Returns guaranteed non-null value.
  */
-export function requireNotNull<T>(x: T, errorMessage?: string): NonNullable<T> {
-    if (x != null) return x as NonNullable<T>;
+export function requireNotNull<T>(x: T, errorMessage?: string): NullableToNonNullable<T> {
+    if (x != null) return x as any;
     throw new Error(errorMessage ?? "Value is null or undefined");
+}
+
+/**
+ * Check if value is non-null and throw otherwise.
+ */
+export function assertNotNull<T>(x: T, errorMessage?: string): asserts x is NonNullable<T> {
+    if (x == null) {
+        throw new Error(errorMessage ?? "Value is null or undefined");
+    }
 }
 
 /**
@@ -193,6 +204,17 @@ export function maxBN(first: BN, ...rest: BN[]) {
     return result;
 }
 
+/**
+ * Return the minimum of two or more BN values.
+ */
+export function minBN(first: BN, ...rest: BN[]) {
+    let result = first;
+    for (const x of rest) {
+        if (x.lt(result)) result = x;
+    }
+    return result;
+}
+
 export function fail(messageOrError: string | Error): never {
     if (typeof messageOrError === "string") {
         throw new Error(messageOrError);
@@ -204,13 +226,6 @@ export function requireEnv(name: string) {
     const value = process.env[name];
     if (value != null) return value;
     throw new Error(`Environment value ${name} not defined`);
-}
-
-// return text, converting "${ENV_VAR}" argument to `process.env[ENV_VAR]`
-/* istanbul ignore next */
-export function autoReadEnvVar(text: string) {
-    const m = text.match(/^\s*\$\{(\w+)\}\s*$/);
-    return m ? requireEnv(m[1]) : text;
 }
 
 // Error handling
@@ -361,13 +376,8 @@ export function findOneSubstring(message: string, substrings: string[]) {
     return false;
 }
 
-/**
- * Return the minimum of two or more BN values.
- */
-export function minBN(first: BN, ...rest: BN[]) {
-    let result = first;
-    for (const x of rest) {
-        if (x.lt(result)) result = x;
+export function firstValue<K, V>(map: Map<K, V>): V | undefined {
+    for (const v of map.values()) {
+        return v;
     }
-    return result;
 }

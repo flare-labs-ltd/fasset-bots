@@ -1,4 +1,6 @@
+import { BotConfig, BotFAssetConfig, createLiquidatorContext } from "../config";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
+import { ILiquidatorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
@@ -8,6 +10,7 @@ import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { LiquidatorNotifier } from "../utils/notifier/LiquidatorNotifier";
+import { web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { DefaultLiquidationStrategy, LiquidationStrategy } from "./plugins/LiquidationStrategy";
 
@@ -18,6 +21,7 @@ export class Liquidator extends ActorBase {
     liquidationStrategy: LiquidationStrategy;
 
     constructor(
+        public context: ILiquidatorContext,
         public runner: ScopedRunner,
         public address: string,
         public state: TrackedState,
@@ -25,13 +29,24 @@ export class Liquidator extends ActorBase {
     ) {
         super(runner, address, state);
         this.notifier = new LiquidatorNotifier(this.address, notifierTransports);
-        if (state.context.liquidationStrategy === undefined) {
-            this.liquidationStrategy = new DefaultLiquidationStrategy(state, address);
+        if (context.liquidationStrategy === undefined) {
+            this.liquidationStrategy = new DefaultLiquidationStrategy(context, state, address);
         } else {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const strategies = require("./plugins/LiquidationStrategy");
-            this.liquidationStrategy = new strategies[state.context.liquidationStrategy.className](state, address);
+            this.liquidationStrategy = new strategies[context.liquidationStrategy.className](context, state, address);
         }
+    }
+
+    static async create(config: BotConfig, address: string, fAsset: BotFAssetConfig): Promise<Liquidator> {
+        logger.info(`Liquidator ${address} started to create asset context.`);
+        const context = await createLiquidatorContext(config, fAsset);
+        logger.info(`Liquidator ${address} initialized asset context.`);
+        const lastBlock = await web3.eth.getBlockNumber();
+        const trackedState = new TrackedState(context, lastBlock);
+        await trackedState.initialize();
+        logger.info(`Liquidator ${address} initialized tracked state.`);
+        return new Liquidator(context, new ScopedRunner(), address, trackedState, config.notifiers);
     }
 
     /**
@@ -52,13 +67,13 @@ export class Liquidator extends ActorBase {
             const events = await this.state.readUnhandledEvents();
             logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
-                if (eventIs(event, this.state.context.priceChangeEmitter, "PriceEpochFinalized")) {
+                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
                     logger.info(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();
-                } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
+                } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
                     logger.info(`Liquidator ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                     await this.handleMintingExecuted(event.args.agentVault);
-                } else if (eventIs(event, this.state.context.assetManager, "FullLiquidationStarted")) {
+                } else if (eventIs(event, this.context.assetManager, "FullLiquidationStarted")) {
                     logger.info(`Liquidator ${this.address} received event 'FullLiquidationStarted' with data ${formatArgs(event.args)}.`);
                     await this.handleFullLiquidationStarted(event.args.agentVault);
                 }

@@ -1,10 +1,11 @@
 export * from "./fasset/AssetManagerTypes";
 export { ActorBaseRunner } from "./actors/ActorBaseRunner";
-export { BotCliCommands } from "./actors/AgentBotCliCommands";
+export { AgentBotCommands } from "./commands/AgentBotCommands";
 export { AgentBotRunner } from "./actors/AgentBotRunner";
 export { TimeKeeper } from "./actors/TimeKeeper";
-export { UserBot } from "./actors/UserBot";
-export { InfoBot } from "./actors/InfoBot";
+export { UserBotCommands } from "./commands/UserBotCommands";
+export { PoolUserBotCommands } from "./commands/PoolUserBotCommands";
+export { InfoBotCommands } from "./commands/InfoBotCommands";
 export { generateSecrets, SecretsUser } from "./config/generate-secrets";
 export { ActorBaseKind } from "./fasset-bots/ActorBase";
 export { SourceId } from "./underlying-chain/SourceId";

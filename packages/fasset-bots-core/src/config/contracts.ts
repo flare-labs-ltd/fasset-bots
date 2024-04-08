@@ -1,4 +1,3 @@
-import { writeFileSync } from "fs";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { JsonLoader } from "./json-loader";
 
@@ -44,12 +43,4 @@ export function loadContracts(filename: string): ChainContracts {
         result[contract.name] = contract;
     }
     return result as ChainContracts;
-}
-
-export function saveContracts(filename: string, contracts: ChainContracts) {
-    const contractList: Contract[] = [];
-    for (const contract of Object.values(contracts)) {
-        if (contract) contractList.push(contract);
-    }
-    writeFileSync(filename, JSON.stringify(contractList, null, 2));
 }
