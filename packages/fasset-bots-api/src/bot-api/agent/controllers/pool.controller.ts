@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
-import { ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentBalance } from "../../common/AgentResponse";
 
@@ -12,6 +12,15 @@ import { AgentBalance } from "../../common/AgentResponse";
 export class PoolController {
     constructor(private readonly agentService: AgentService) {}
 
+    @ApiOkResponse({
+        description: 'Example of successful response.',
+        schema: {
+            type: 'object',
+            properties: {
+                status: { type: 'string', example: 'OK' }
+            }
+        }
+    })
     @Post("collateral/buy/:fAssetSymbol/:agentVaultAddress/:amount")
     @HttpCode(200)
     public async buyPoolCollateral(
