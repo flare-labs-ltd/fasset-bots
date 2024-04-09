@@ -882,16 +882,27 @@ export class AgentBot {
      * @param agentEnt agent entity
      */
     async exitAvailable(agentEnt: AgentEntity) {
-        logger.info(`Agent ${this.agent.vaultAddress} is waiting to exit available list.`);
+        logger.info(`Agent ${this.agent.vaultAddress} is trying to exit available list.`);
         const latestTimestamp = await latestBlockTimestampBN();
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).lte(latestTimestamp)) {
+        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(BN_ZERO)) {
+            logger.info(`Agent ${this.agent.vaultAddress} cannot exit available list - exit not announced.`);
+        } else if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(latestTimestamp)) {
+            logger.info(`Agent ${this.agent.vaultAddress} cannot exit available list. Allowed at ${agentEnt.exitAvailableAllowedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`);
+        } else {
             await this.agent.exitAvailable();
             agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
             await this.notifier.sendAgentExitedAvailable();
             logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot exit available list. Allowed at ${agentEnt.exitAvailableAllowedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`);
         }
+    }
+
+    async exitAvailableProcessStatus(agentEnt: AgentEntity) {
+        const agentInfo = await this.agent.getAgentInfo();
+        if (!agentInfo.publiclyAvailable) return "exited";
+        if (agentEnt.exitAvailableAllowedAtTimestamp.eq(BN_ZERO)) return "not_announced";
+        const timestamp = await latestBlockTimestampBN();
+        if (agentEnt.exitAvailableAllowedAtTimestamp.lte(timestamp)) return "can_exit";
+        return "announced";
     }
 
     /**
