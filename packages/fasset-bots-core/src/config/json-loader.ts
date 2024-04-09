@@ -5,7 +5,7 @@ const ajv = new Ajv({ allowUnionTypes: true });
 
 export interface IJsonLoader<T> {
     load(filename: string): T;
-    validate(data: unknown): T;
+    validate(data: unknown, filename: string): T;
 }
 
 export class JsonLoaderError extends Error {
@@ -34,17 +34,25 @@ export class JsonLoader<T> {
     }
 
     load(filename: string): T {
-        const data = JSON.parse(readFileSync(filename).toString());
-        return this.validate(data);
+        const data = JsonLoader.loadSimple(filename);
+        return this.validate(data, filename);
     }
 
-    validate(data: unknown): T {
+    static loadSimple(filename: string): unknown {
+        try {
+            return JSON.parse(readFileSync(filename).toString());
+        } catch (error: any) {
+            throw new JsonLoaderError(`Invalid JSON file ${filename}: ${error?.message ?? error}`, []);
+        }
+    }
+
+    validate(data: unknown, filename: string): T {
         const validator = this.getValidator();
         if (validator(data)) {
             delete (data as any)["$schema"]; // $schema field is only needed for validation, might interfere otherwise
             return data;
         }
-        throw new JsonLoaderError(`Invalid ${this.formatName} format: ${this.formatErrors(validator.errors ?? [])}`, validator.errors ?? []);
+        throw new JsonLoaderError(`Invalid ${this.formatName} format: ${this.formatErrors(validator.errors ?? [])} in ${filename}`, validator.errors ?? []);
     }
 
     private formatErrors(errors: ErrorObject[]) {

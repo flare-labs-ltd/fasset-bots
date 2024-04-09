@@ -1,6 +1,5 @@
 import "dotenv/config";
 
-import { readFileSync } from "fs";
 import path from "path";
 import { CommandLineError, assertCmd, logger } from "../utils";
 import { requireNotNull } from "../utils/helpers";
@@ -64,11 +63,11 @@ function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override:
 
 function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
     try {
-        const json = JSON.parse(readFileSync(fPath).toString());
-        if ("extends" in json) {
-            return botConfigOverrideLoader.validate(json);
+        const json = JsonLoader.loadSimple(fPath);
+        if ("extends" in (json as any)) {
+            return botConfigOverrideLoader.validate(json, fPath);
         } else {
-            return botConfigLoader.validate(json);
+            return botConfigLoader.validate(json, fPath);
         }
     } catch (e) {
         logger.error(`${configInfo ?? ""} Error reading config file ${fPath}:`, e);
