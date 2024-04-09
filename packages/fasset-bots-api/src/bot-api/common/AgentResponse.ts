@@ -37,6 +37,7 @@ export interface AgentData {
     collaterals: {
         symbol: string;
         balance: string;
+        wrapped?: string;
     }[]
     whitelisted: boolean;
 }

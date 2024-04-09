@@ -237,10 +237,11 @@ export class UserBotCommands {
         const stateList = this.readStateList("mint");
         const timestamp = await latestBlockTimestamp();
         const settings = await this.context.assetManager.getSettings();
+        console.log('Minting requests (id and status):')
         for (const state of stateList) {
             const stateTs = this.dateStringToTimestamp(state.createdAt);
             const expired = timestamp - stateTs >= Number(settings.attestationWindowSeconds);
-            console.log(`${state.requestId}  ${expired ? MintingStatus.EXPIRED : MintingStatus.PENDING}`);
+            console.log(`- ${state.requestId}  ${expired ? MintingStatus.EXPIRED : MintingStatus.PENDING}`);
         }
     }
 

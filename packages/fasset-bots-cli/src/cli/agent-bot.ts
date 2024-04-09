@@ -7,6 +7,7 @@ import { CommandLineError, errorIncluded, squashSpace, toBIPS } from "@flarelabs
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
+import { validate, validateDecimal } from "../utils/validation";
 
 const program = programWithCommonOptions("bot", "single_fasset");
 
@@ -46,6 +47,7 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
+        validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
@@ -58,6 +60,7 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
+        validateDecimal(amount, "amount", { min: 1 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
@@ -132,6 +135,7 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
+        validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
@@ -154,6 +158,7 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
+        validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
@@ -176,6 +181,7 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
+        validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
@@ -198,6 +204,7 @@ program
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
+        validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
@@ -232,6 +239,7 @@ program
     .argument("<destinationAddress>")
     .argument("<paymentReference>")
     .action(async (agentVault: string, amount: string, destinationAddress: string, paymentReference: string) => {
+        validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");

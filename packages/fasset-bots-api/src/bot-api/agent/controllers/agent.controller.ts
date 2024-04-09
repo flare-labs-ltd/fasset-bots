@@ -136,11 +136,10 @@ export class AgentController {
                         collaterals: {
                             type: 'array',
                             example: [
-                                { symbol: 'CFLR', balance: '0' },
+                                { symbol: 'CFLR', balance: '8852854861132833335327742', wrapped: '0' },
                                 { symbol: 'testUSDC', balance: '92524025246' },
                                 { symbol: 'testUSDT', balance: '0' },
-                                { symbol: 'testETH', balance: '0' },
-                                { symbol: 'NAT', balance: '8852854861132833335327742' }
+                                { symbol: 'testETH', balance: '0' }
                             ],
                             items: {
                                 type: 'object',

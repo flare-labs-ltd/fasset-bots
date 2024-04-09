@@ -193,12 +193,17 @@ export class AgentService {
         const collateralTypes = await cli.context.assetManager.getCollateralTypes();
         const collaterals = [];
         for (const collateralType of collateralTypes) {
+            const symbol = collateralType.tokenFtsoSymbol;
             const token = await IERC20.at(collateralType.token);
             const balance = await token.balanceOf(cli.owner.workAddress);
-            collaterals.push({ symbol: collateralType.tokenFtsoSymbol, balance: balance.toString() });
+            const collateral = { symbol, balance: balance.toString() } as any;
+            if (symbol === "CFLR" || symbol === "C2FLR" || symbol === "SGB" || symbol == "FLR") {
+                const nonWrappedBalance = await web3.eth.getBalance(cli.owner.workAddress);
+                collateral.wrapped = collateral.balance;
+                collateral.balance = nonWrappedBalance.toString();
+            }
+            collaterals.push(collateral);
         }
-        const natBalance = await web3.eth.getBalance(cli.owner.workAddress);
-        collaterals.push({ symbol: "NAT (non-wrapped)", balance: natBalance.toString() });
         // get is whitelisted
         const whitelisted = await cli.context.agentOwnerRegistry.isWhitelisted(cli.owner.managementAddress);
         return { collaterals, whitelisted };
