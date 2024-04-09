@@ -4,6 +4,8 @@
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
+        "chainName": "Coston",
+        "tokenSymbol": "CFLR",
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },

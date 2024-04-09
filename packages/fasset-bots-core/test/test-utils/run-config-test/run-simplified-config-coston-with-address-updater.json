@@ -3,6 +3,8 @@
     "loopDelay": 10000,
     "prioritizeAddressUpdater": true,
     "nativeChainInfo": {
+        "chainName": "Coston",
+        "tokenSymbol": "CFLR",
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },

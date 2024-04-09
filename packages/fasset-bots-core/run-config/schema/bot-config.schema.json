@@ -58,16 +58,24 @@
         "NativeChainInfo": {
             "additionalProperties": false,
             "properties": {
+                "chainName": {
+                    "type": "string"
+                },
                 "finalizationBlocks": {
                     "type": "number"
                 },
                 "readLogsChunkSize": {
                     "type": "number"
+                },
+                "tokenSymbol": {
+                    "type": "string"
                 }
             },
             "required": [
+                "chainName",
                 "finalizationBlocks",
-                "readLogsChunkSize"
+                "readLogsChunkSize",
+                "tokenSymbol"
             ],
             "type": "object"
         },
