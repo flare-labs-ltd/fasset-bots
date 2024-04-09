@@ -56,6 +56,7 @@
         "lint": "eslint \"src/**/*ts\"",
         "---------TEST---SCRIPTS": "",
         "test": "yarn run -T mocha",
+        "nyc": "yarn run -T nyc",
         "coverage": "yarn run -T nyc",
         "test_all:e2e": "yarn test --recursive -t 500000 \"test/e2e/**/*.ts\"",
         "test_all:unit": "yarn test --recursive -t 500000 \"test/unit/**/*.ts\"",

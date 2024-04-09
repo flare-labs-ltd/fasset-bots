@@ -9,7 +9,6 @@ import { BotConfigFile, BotConfigFileOverride } from "./config-files/BotConfigFi
 import { loadContracts } from "./contracts";
 import { IJsonLoader, JsonLoader } from "./json-loader";
 
-
 const botConfigLoader: IJsonLoader<BotConfigFile> =
     new JsonLoader(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON");
 
@@ -24,15 +23,15 @@ const botConfigOverrideLoader: IJsonLoader<BotConfigFileOverride> =
  */
 export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFile {
     const config = loadConfigFileRecursive(fPath, configInfo);
-    updateConfigFilePaths(fPath, config);
+    namespaceOrmPath(config);
     validateConfigFile(config);
     return config;
 }
 
 function loadConfigFileRecursive(fPath: string, configInfo?: string, visitedFiles: Set<string> = new Set()): BotConfigFile {
     const config = loadConfigFileOrOverride(fPath, configInfo);
+    updateConfigFilePaths(fPath, config);
     if ("extends" in config) {
-        config.extends = resolveExtendsPath(fPath, config.extends);
         visitedFiles.add(fPath);
         assertCmd(!visitedFiles.has(config.extends), `Circular config file dependency in ${config.extends}`);
         const base = loadConfigFileRecursive(config.extends, configInfo, visitedFiles);
@@ -42,13 +41,7 @@ function loadConfigFileRecursive(fPath: string, configInfo?: string, visitedFile
     }
 }
 
-function resolveExtendsPath(fPath: string, extendsPath: string) {
-    const isExplicitlyRelative = /^\.\.?[/\\]/.test(extendsPath);
-    const basePath = isExplicitlyRelative ? path.dirname(fPath) : resolveInFassetBotsCore("run-config");
-    return path.resolve(basePath, extendsPath);
-}
-
-export function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override: BotConfigFileOverride) {
+function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override: BotConfigFileOverride) {
     const result: any = { ...config };
     for (const [key, value] of Object.entries(override)) {
         if (key === "extends" || key === "fAssets") continue;
@@ -62,14 +55,14 @@ export function mergeConfigFiles(config: BotConfigFile, overrideFile: string, ov
         if (symbol in config.fAssets) {
             result.fAssets[symbol] = { ...config.fAssets[symbol], ...info };
         } else {
-            console.warn(`Invalid fAsset symbol ${symbol} in config file ${overrideFile}, ignored.`)
-            logger.warn(`Invalid fAsset symbol ${symbol} in config file ${overrideFile}, ignored.`)
+            console.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
+            logger.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
         }
     }
     return result;
 }
 
-export function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
+function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
     try {
         const json = JSON.parse(readFileSync(fPath).toString());
         if ("extends" in json) {
@@ -77,7 +70,7 @@ export function loadConfigFileOrOverride(fPath: string, configInfo?: string): Bo
         } else {
             return botConfigLoader.validate(json);
         }
-    } /* istanbul ignore next */ catch (e) {
+    } catch (e) {
         logger.error(`${configInfo ?? ""} Error reading config file ${fPath}:`, e);
         throw e;
     }
@@ -93,11 +86,27 @@ export function validateConfigFile(config: BotConfigFile): void {
     }
 }
 
-export function updateConfigFilePaths(cfPath: string, config: BotConfigFile) {
+// resolve relative file paths
+export function updateConfigFilePaths(cfPath: string, config: BotConfigFile | BotConfigFileOverride) {
     const cfDir = path.dirname(cfPath);
+    if ("extends" in config) {
+        config.extends = resolveExtendsPath(cfDir, config.extends);
+    }
     if (config.contractsJsonFile) {
         config.contractsJsonFile = path.resolve(cfDir, config.contractsJsonFile);
     }
+    // if (config.ormOptions?.type === "sqlite" && config.ormOptions.dbName) {
+    //     config.ormOptions.dbName = path.resolve(cfDir, config.ormOptions.dbName);
+    // }
+}
+
+function resolveExtendsPath(cfDir: string, extendsPath: string) {
+    const isExplicitlyRelative = /^\.\.?[/\\]/.test(extendsPath);
+    const basePath = isExplicitlyRelative ? cfDir : resolveInFassetBotsCore("run-config");
+    return path.resolve(basePath, extendsPath);
+}
+
+function namespaceOrmPath(config: BotConfigFile) {
     // namespace SQLite db by asset manager controller address (only needed for beta testing)
     if (config.ormOptions?.type === "sqlite") {
         const contracts = config.contractsJsonFile ? loadContracts(config.contractsJsonFile) : null;

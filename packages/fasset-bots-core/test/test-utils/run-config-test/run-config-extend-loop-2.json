@@ -1,0 +1,5 @@
+{
+    "$schema": "../../../run-config/schema/bot-config-override.schema.json",
+    "extends": "./run-config-extend-loop-1.json",
+    "assetManagerController": "0x82Ddf05b6e530260866E619a59d41D358412C466"
+}

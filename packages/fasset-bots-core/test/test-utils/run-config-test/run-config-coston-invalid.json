@@ -1,0 +1,13 @@
+{
+    "$schema": "../../../run-config/schema/bot-config.schema.json",
+    "loopDelay": 0,
+    "prioritizeAddressUpdater": true,
+    "nativeChainInfo": {
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 10
+    },
+    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+    "attestationProviderUrls": [
+        "https://attestation-coston.aflabs.net/attestation-client"
+    ]
+}
