@@ -1,13 +1,13 @@
+import { ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import BN from "bn.js";
 import { assert } from "chai";
-import { DustChanged, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { DustChanged, RedemptionDefault, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent } from "../fasset/Agent";
 import { EventArgs } from "../utils/events/common";
 import { eventArgs, filterEvents, requiredEventArgs } from "../utils/events/truffle";
 import { BN_ZERO, BNish, ZERO_ADDRESS, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
-import BN from "bn.js";
 
 export class Redeemer {
     static deepCopyWithObjectCreate = true;

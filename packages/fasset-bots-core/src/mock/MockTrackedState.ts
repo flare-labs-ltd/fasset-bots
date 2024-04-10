@@ -1,4 +1,4 @@
-import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
+import { AgentDestroyed } from "../../typechain-truffle/IIAssetManager";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { InitialAgentData } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";

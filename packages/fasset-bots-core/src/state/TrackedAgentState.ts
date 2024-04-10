@@ -1,15 +1,15 @@
 import BN from "bn.js";
-import { AgentInfo, AgentStatus, CollateralType, CollateralClass } from "../fasset/AssetManagerTypes";
-import { BN_ONE, BN_ZERO, BNish, MAX_BIPS, MAX_UINT256, maxBN, toBN } from "../utils/helpers";
-import { TrackedState } from "./TrackedState";
-import { EventArgs } from "../utils/events/common";
 import { AgentAvailable, AgentCollateralTypeChanged, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
+import { AgentVaultCreated, RedeemedInCollateral } from "../../typechain-truffle/IIAssetManager";
+import { AgentInfo, AgentStatus, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
+import { roundUBAToAmg } from "../fasset/Conversions";
+import { EventArgs } from "../utils/events/common";
+import { formatArgs } from "../utils/formatting";
+import { BN_ONE, BN_ZERO, BNish, MAX_BIPS, MAX_UINT256, maxBN, toBN } from "../utils/helpers";
+import { logger } from "../utils/logger";
 import { web3Normalize } from "../utils/web3normalize";
 import { Prices } from "./Prices";
-import { AgentVaultCreated, RedeemedInCollateral } from "../../typechain-truffle/AssetManager";
-import { roundUBAToAmg } from "../fasset/Conversions";
-import { logger } from "../utils/logger";
-import { formatArgs } from "../utils/formatting";
+import { TrackedState } from "./TrackedState";
 
 export type InitialAgentData = EventArgs<AgentVaultCreated>;
 

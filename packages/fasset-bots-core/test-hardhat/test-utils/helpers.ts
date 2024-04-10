@@ -6,9 +6,9 @@ import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
+import { BotFAssetConfig, Secrets } from "../../src/config";
 import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
 import { AssetContractRetriever } from "../../src/config/AssetContractRetriever";
-import { decodedChainId } from "../../src/config/create-wallet-client";
 import { ORM } from "../../src/config/orm";
 import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
@@ -26,9 +26,8 @@ import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
-import { IERC20Instance } from "../../typechain-truffle";
+import { IERC20Instance, Truffle } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
-import { BotFAssetConfig, Secrets } from "../../src/config";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -232,4 +231,11 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
         poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
     };
     return initialAgentData;
+}
+
+/**
+ * ABI encode method call, typesafe when used with typechain.
+ */
+export function abiEncodeCall<I extends Truffle.ContractInstance>(instance: I, call: (inst: I) => any) {
+    return call(instance.contract.methods).encodeABI();
 }

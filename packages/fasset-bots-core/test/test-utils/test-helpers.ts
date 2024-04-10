@@ -17,7 +17,7 @@ import { EventArgs } from "../../src/utils/events/common";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
 import { BN_ZERO, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
-import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { testNotifierTransports } from "./testNotifierTransports";
 
 const FakeERC20 = artifacts.require("FakeERC20");

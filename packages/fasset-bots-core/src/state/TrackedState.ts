@@ -1,7 +1,7 @@
-import { AgentDestroyed } from "../../typechain-truffle/AssetManager";
+import { AgentDestroyed } from "../../typechain-truffle/IIAssetManager";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
-import { LiquidationStrategyImplSettings, decodeLiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
+import { LiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
@@ -67,9 +67,6 @@ export class TrackedState {
         // settings
         this.settings = Object.assign({}, await this.context.assetManager.getSettings());
         logger.info(`Tracked State set settings ${formatArgs(this.settings)}`);
-        const encodedSettings = await this.context.assetManager.getLiquidationSettings();
-        this.liquidationStrategySettings = decodeLiquidationStrategyImplSettings(encodedSettings);
-        logger.info(`Tracked State set liquidationStrategySettings ${formatArgs(this.liquidationStrategySettings)}`);
         // collateral tokens
         const collateralTokens = await this.context.assetManager.getCollateralTypes();
         for (const collateralToken of collateralTokens) {
