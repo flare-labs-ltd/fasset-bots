@@ -4,6 +4,8 @@
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
+        "chainName": "Coston",
+        "tokenSymbol": "CFLR",
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },
@@ -25,5 +27,7 @@
         }
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"]
+    "attestationProviderUrls": [
+        "https://attestation-coston.aflabs.net/attestation-client"
+    ]
 }

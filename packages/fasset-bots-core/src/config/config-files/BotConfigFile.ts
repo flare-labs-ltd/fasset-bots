@@ -10,8 +10,6 @@ export interface OrmConfigOptions {
     dbName?: string;
     host?: string;
     port?: number;
-    user?: string;
-    password?: string;
     charset?: string;
     // allow other options
     [key: string]: any;
@@ -55,4 +53,12 @@ export interface BotConfigFile {
     challengeStrategy?: BotStrategyDefinition; // only for challenger
 }
 
+export type BotConfigFileOverride =
+    Partial<Omit<BotConfigFile, "fAssets" | "nativeChainInfo">> & {
+        extends: string;
+        fAssets?: { [fAssetSymbol: string]: Partial<BotFAssetInfo> };
+        nativeChainInfo?: Partial<NativeChainInfo>;
+    };
+
 export type Schema_BotConfigFile = BotConfigFile & { $schema?: string };
+export type Schema_BotConfigFileOverride = BotConfigFileOverride & { $schema?: string };

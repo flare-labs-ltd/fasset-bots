@@ -9,5 +9,4 @@ export { InfoBotCommands } from "./commands/InfoBotCommands";
 export { generateSecrets, SecretsUser } from "./config/generate-secrets";
 export { ActorBaseKind } from "./fasset-bots/ActorBase";
 export { SourceId } from "./underlying-chain/SourceId";
-export { AgentTokenConverter, AgentTokenType } from "./utils/AgentTokenConverter";
 export { AgentEntity } from "./entities/agent";

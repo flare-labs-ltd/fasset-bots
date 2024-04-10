@@ -197,11 +197,16 @@ export class AgentBotCommands {
      */
     async announceExitAvailableList(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
-        agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
-        await this.orm.em.persistAndFlush(agentEnt);
-        await this.notifierFor(agentVault).sendAgentAnnouncedExitAvailable();
-        logger.info(`Agent ${agentVault} announced exit available list at ${exitAllowedAt.toString()}.`);
+        const status = await agentBot.exitAvailableProcessStatus(agentEnt);
+        if (status === "not_announced") {
+            const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+            agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
+            await this.orm.em.persistAndFlush(agentEnt);
+            await this.notifierFor(agentVault).sendAgentAnnouncedExitAvailable();
+            logger.info(`Agent ${agentVault} announced exit available list at ${exitAllowedAt.toString()}.`);
+        } else {
+            logger.info(`Agent ${agentVault} has already announced available list exit.`);
+        }
     }
 
     /**

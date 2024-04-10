@@ -2,38 +2,6 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "additionalProperties": false,
     "definitions": {
-        "BotFAssetInfo": {
-            "additionalProperties": false,
-            "properties": {
-                "chainId": {
-                    "type": "string"
-                },
-                "inTestnet": {
-                    "type": "boolean"
-                },
-                "indexerUrl": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "priceChangeEmitter": {
-                    "type": "string"
-                },
-                "symbol": {
-                    "type": "string"
-                },
-                "walletUrl": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "chainId",
-                "name",
-                "symbol"
-            ],
-            "type": "object"
-        },
         "BotStrategyDefinition": {
             "additionalProperties": false,
             "properties": {
@@ -54,30 +22,6 @@
                 "sqlite"
             ],
             "type": "string"
-        },
-        "NativeChainInfo": {
-            "additionalProperties": false,
-            "properties": {
-                "chainName": {
-                    "type": "string"
-                },
-                "finalizationBlocks": {
-                    "type": "number"
-                },
-                "readLogsChunkSize": {
-                    "type": "number"
-                },
-                "tokenSymbol": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "chainName",
-                "finalizationBlocks",
-                "readLogsChunkSize",
-                "tokenSymbol"
-            ],
-            "type": "object"
         },
         "OrmConfigOptions": {
             "additionalProperties": {},
@@ -117,6 +61,51 @@
                 "type"
             ],
             "type": "object"
+        },
+        "Partial<BotFAssetInfo>": {
+            "additionalProperties": false,
+            "properties": {
+                "chainId": {
+                    "type": "string"
+                },
+                "inTestnet": {
+                    "type": "boolean"
+                },
+                "indexerUrl": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "priceChangeEmitter": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "walletUrl": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "Partial<NativeChainInfo>": {
+            "additionalProperties": false,
+            "properties": {
+                "chainName": {
+                    "type": "string"
+                },
+                "finalizationBlocks": {
+                    "type": "number"
+                },
+                "readLogsChunkSize": {
+                    "type": "number"
+                },
+                "tokenSymbol": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
         }
     },
     "properties": {
@@ -141,9 +130,12 @@
         "contractsJsonFile": {
             "type": "string"
         },
+        "extends": {
+            "type": "string"
+        },
         "fAssets": {
             "additionalProperties": {
-                "$ref": "#/definitions/BotFAssetInfo"
+                "$ref": "#/definitions/Partial<BotFAssetInfo>"
             },
             "type": "object"
         },
@@ -154,7 +146,7 @@
             "type": "number"
         },
         "nativeChainInfo": {
-            "$ref": "#/definitions/NativeChainInfo"
+            "$ref": "#/definitions/Partial<NativeChainInfo>"
         },
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
@@ -182,11 +174,7 @@
         }
     },
     "required": [
-        "fAssets",
-        "loopDelay",
-        "nativeChainInfo",
-        "prioritizeAddressUpdater",
-        "rpcUrl"
+        "extends"
     ],
     "type": "object"
 }

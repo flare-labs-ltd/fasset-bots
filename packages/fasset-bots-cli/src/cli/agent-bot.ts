@@ -1,9 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentTokenConverter, AgentBotCommands } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands } from "@flarelabs/fasset-bots-core";
 import { loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, Currencies, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
@@ -50,8 +50,8 @@ program
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
-        await cli.depositToVault(agentVault, await converter.parseToWei(amount));
+        const currency = await Currencies.agentVaultCollateral(cli.context, agentVault);
+        await cli.depositToVault(agentVault, await currency.parse(amount));
     });
 
 program
@@ -63,8 +63,8 @@ program
         validateDecimal(amount, "amount", { min: 1 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
-        await cli.buyCollateralPoolTokens(agentVault, await converter.parseToWei(amount));
+        const currency = await Currencies.agentPoolCollateral(cli.context, agentVault);
+        await cli.buyCollateralPoolTokens(agentVault, await currency.parse(amount));
     });
 
 program
@@ -138,8 +138,8 @@ program
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
-        await cli.announceWithdrawFromVault(agentVault, await converter.parseToWei(amount));
+        const currency = await Currencies.agentVaultCollateral(cli.context, agentVault);
+        await cli.announceWithdrawFromVault(agentVault, await currency.parse(amount));
     });
 
 program
@@ -161,8 +161,8 @@ program
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
-        await cli.announceRedeemCollateralPoolTokens(agentVault, await converter.parseToWei(amount));
+        const currency = await Currencies.agentPoolCollateral(cli.context, agentVault);
+        await cli.announceRedeemCollateralPoolTokens(agentVault, await currency.parse(amount));
     });
 
 program
@@ -184,8 +184,8 @@ program
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
-        await cli.withdrawPoolFees(agentVault, await converter.parseToWei(amount));
+        const currency = await Currencies.fasset(cli.context);
+        await cli.withdrawPoolFees(agentVault, await currency.parse(amount));
     });
 
 program
@@ -207,8 +207,8 @@ program
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
-        await cli.selfClose(agentVault, await converter.parseToWei(amount));
+        const currency = await Currencies.fasset(cli.context);
+        await cli.selfClose(agentVault, await currency.parse(amount));
     });
 
 program
@@ -242,8 +242,8 @@ program
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
-        await cli.performUnderlyingWithdrawal(agentVault, await converter.parseToWei(amount), destinationAddress, paymentReference);
+        const currency = await Currencies.fasset(cli.context);
+        await cli.performUnderlyingWithdrawal(agentVault, await currency.parse(amount), destinationAddress, paymentReference);
     });
 
 program
@@ -316,8 +316,8 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const freeCollateral = await cli.getFreeVaultCollateral(agentVault);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "vault");
-        console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeCollateral)} free vault collateral.`);
+        const currency = await Currencies.agentVaultCollateral(cli.context, agentVault);
+        console.log(`Agent ${agentVault} has ${currency.format(freeCollateral)} free vault collateral.`);
     });
 
 program
@@ -328,8 +328,8 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const freeCollateral = await cli.getFreePoolCollateral(agentVault);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "pool");
-        console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeCollateral)} free pool collateral.`);
+        const currency = await Currencies.agentPoolCollateral(cli.context, agentVault);
+        console.log(`Agent ${agentVault} has ${currency.format(freeCollateral)} free pool collateral.`);
     });
 
 program
@@ -340,8 +340,8 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const freeUnderlying = await cli.getFreeUnderlying(agentVault);
-        const converter = new AgentTokenConverter(cli.context, agentVault, "fasset");
-        console.log(`Agent ${agentVault} has ${converter.formatAsTokensWithUnit(freeUnderlying)} free underlying.`);
+        const currency = await Currencies.fasset(cli.context);
+        console.log(`Agent ${agentVault} has ${currency.format(freeUnderlying)} free underlying.`);
     });
 
 program

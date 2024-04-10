@@ -1,6 +1,6 @@
 {
     "$schema": "../../../run-config/schema/bot-config.schema.json",
-    "loopDelay": 10000,
+    "loopDelay": 0,
     "prioritizeAddressUpdater": true,
     "nativeChainInfo": {
         "chainName": "Coston",
@@ -8,17 +8,8 @@
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },
-    "fAssets": {
-        "FtestXRP": {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
-        }
-    },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "attestationProviderUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
-    ],
-    "assetManagerController": "0x2bB006d03E0B6Db787B3e8F75A52A63E2FfBf621"
+    ]
 }
