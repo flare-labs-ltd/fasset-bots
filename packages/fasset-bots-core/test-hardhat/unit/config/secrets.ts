@@ -15,7 +15,7 @@ describe("Secrets unit tests", () => {
     });
 
     it("Should not return secret 2", async () => {
-        const secrets = new Secrets("no_file.json", { apiKey: {}, owner: { testXRP: { address: "0xabcd", private_key: "0xabcd" }} });
+        const secrets = new Secrets("no_file.json", { apiKey: {}, owner: { testXRP: { address: "0xabcd", private_key: "0xabcd" } } });
         const address = secrets.required(`owner.${decodedChainId(chainId)}.address`);
         const secretName = `owner.${chainId}.address.` + address + "." + address;
         const fn = () => {

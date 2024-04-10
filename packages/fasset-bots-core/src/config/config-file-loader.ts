@@ -23,9 +23,9 @@ const botConfigOverrideLoader: IJsonLoader<BotConfigFileOverride> =
 export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFile {
     const config = loadConfigFileRecursive(fPath, configInfo);
     namespaceOrmPath(config);
-            validateConfigFile(config);
+    validateConfigFile(config);
     return config;
-        }
+}
 
 function loadConfigFileRecursive(fPath: string, configInfo?: string, visitedFiles: Set<string> = new Set()): BotConfigFile {
     const config = loadConfigFileOrOverride(fPath, configInfo);
@@ -123,9 +123,9 @@ function namespaceOrmPath(config: BotConfigFile) {
  */
 export function loadAgentConfigFile(fPath: string, configInfo?: string): BotConfigFile {
     const config = loadConfigFile(fPath, configInfo);
-        validateAgentConfigFile(config);
-        return config;
-    }
+    validateAgentConfigFile(config);
+    return config;
+}
 
 /**
  * Validates agent configuration.

@@ -12,7 +12,7 @@ import { ContractSettings } from "./types";
  * Constructor for instances of given contract.
  */
 export interface ContractInstanceConstructor {
-    new (contractFactory: MiniTruffleContract, settings: ContractSettings, address: string): MiniTruffleContractInstance;
+    new(contractFactory: MiniTruffleContract, settings: ContractSettings, address: string): MiniTruffleContractInstance;
 }
 
 /**
