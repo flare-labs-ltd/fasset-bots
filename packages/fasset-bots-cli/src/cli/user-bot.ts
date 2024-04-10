@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { InfoBotCommands, PoolUserBotCommands, UserBotCommands } from "@flarelabs/fasset-bots-core";
 import { Secrets } from "@flarelabs/fasset-bots-core/config";
-import { TokenBalance, formatFixed, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { TokenBalances, formatFixed, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import Web3 from "web3";
 import { programWithCommonOptions } from "../utils/program";
@@ -167,15 +167,15 @@ program
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const bot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const fasset = await TokenBalance.fasset(bot.context);
+        const fasset = await TokenBalances.fasset(bot.context);
         console.log("FAsset: ", await fasset.formatBalance(bot.nativeAddress));
-        const underlying = await TokenBalance.fassetUnderlyingToken(bot.context);
+        const underlying = await TokenBalances.fassetUnderlyingToken(bot.context);
         console.log(`Underlying (${bot.context.chainInfo.name}): `, await underlying.formatBalance(bot.underlyingAddress));
-        const native = await TokenBalance.evmNative(bot.context.nativeChainInfo.tokenSymbol);
+        const native = await TokenBalances.evmNative(bot.context.nativeChainInfo.tokenSymbol);
         console.log(`Native (${bot.context.nativeChainInfo.chainName}): `, await native.formatBalance(bot.nativeAddress));
         for (const collateral of await bot.context.assetManager.getCollateralTypes()) {
             if (!toBN(collateral.validUntil).eqn(0)) continue;
-            const reader = await TokenBalance.collateralType(collateral);
+            const reader = await TokenBalances.collateralType(collateral);
             const name = await reader.token.name().catch(() => "ERC20");
             console.log(`${name}: `, await reader.formatBalance(bot.nativeAddress));
         }
