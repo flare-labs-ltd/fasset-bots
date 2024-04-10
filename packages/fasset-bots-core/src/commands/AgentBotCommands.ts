@@ -4,7 +4,7 @@ import { AddressValidity, decodeAttestationName } from "@flarenetwork/state-conn
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
-import { AgentTokenConverter, InfoBotCommands } from "..";
+import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { closeBotConfig, createBotConfig } from "../config/BotConfig";
@@ -19,7 +19,7 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { resolveInFassetBotsCore, squashSpace } from "../utils";
+import { Currencies, resolveInFassetBotsCore, squashSpace } from "../utils";
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, requireNotNull, toBN } from "../utils/helpers";
@@ -155,8 +155,8 @@ export class AgentBotCommands {
      * @param amount amount to be deposited
      */
     async depositToVault(agentVault: string, amount: string | BN): Promise<void> {
-        const converter = new AgentTokenConverter(this.context, agentVault, "vault");
-        const amountf = await converter.formatAsTokens(amount);
+        const currency = await Currencies.agentVaultCollateral(this.context, agentVault);
+        const amountf = currency.format(amount);
         logger.info(`Agent's ${agentVault} owner ${this.owner} is starting vault collateral deposit ${amountf} tokens.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.depositVaultCollateral(amount);
@@ -170,8 +170,8 @@ export class AgentBotCommands {
      * @param amount add pool tokens in that correspond to amount of nat
      */
     async buyCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
-        const converter = new AgentTokenConverter(this.context, agentVault, "pool");
-        const amountf = await converter.formatAsTokens(amount);
+        const currency = await Currencies.agentPoolCollateral(this.context, agentVault);
+        const amountf = currency.format(amount);
         logger.info(`Agent's ${agentVault} owner ${this.owner} is starting to buy ${amountf} NAT worth of collateral pool tokens.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);
