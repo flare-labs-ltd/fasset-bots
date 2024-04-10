@@ -145,6 +145,9 @@ import { IUniswapV2PairContract } from "./IUniswapV2Pair";
 import { IUniswapV2RouterContract } from "./IUniswapV2Router";
 import { IEnosysDexRouterContract } from "./IEnosysDexRouter";
 import { LiquidatorContract } from "./Liquidator";
+import { MockLibraryDepContract } from "./MockLibraryDep";
+import { MockLibraryLinkContract } from "./MockLibraryLink";
+import { MockLibraryNonDepContract } from "./MockLibraryNonDep";
 
 export type * from "./types";
 
@@ -314,6 +317,9 @@ export type * from "./types";
       require(name: "IUniswapV2Router"): IUniswapV2RouterContract;
       require(name: "IEnosysDexRouter"): IEnosysDexRouterContract;
       require(name: "Liquidator"): LiquidatorContract;
+      require(name: "MockLibraryDep"): MockLibraryDepContract;
+      require(name: "MockLibraryLink"): MockLibraryLinkContract;
+      require(name: "MockLibraryNonDep"): MockLibraryNonDepContract;
     }
 
 
@@ -708,3 +714,15 @@ export {
   IEnosysDexRouterInstance,
 } from "./IEnosysDexRouter";
 export { LiquidatorContract, LiquidatorInstance } from "./Liquidator";
+export {
+  MockLibraryDepContract,
+  MockLibraryDepInstance,
+} from "./MockLibraryDep";
+export {
+  MockLibraryLinkContract,
+  MockLibraryLinkInstance,
+} from "./MockLibraryLink";
+export {
+  MockLibraryNonDepContract,
+  MockLibraryNonDepInstance,
+} from "./MockLibraryNonDep";

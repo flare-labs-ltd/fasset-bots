@@ -47,6 +47,9 @@ mv artifacts/flare-sc artifacts/flattened/FlareSmartContracts.sol
 # fix source paths in liquidator jsons
 find -name '*.json' -path './artifacts/liquidator/*' | xargs sed -i -e 's/"sourceName": "contracts\//"sourceName": "liquidator\/contracts\//'
 
+# copy some fixed mocks
+cd scripts && cp -r test-mocks/ ../artifacts && cd ..
+
 # # generate typechain
 echo "***** Building typechain... *************************************"
 yarn typechain --target=truffle-v5 --out-dir typechain-truffle "artifacts/**/+([a-zA-Z0-9_]).json"
