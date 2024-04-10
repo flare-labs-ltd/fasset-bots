@@ -13,6 +13,37 @@ import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
+import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
+import { GovernedFacetContract } from "./GovernedFacet";
+import { DiamondContract } from "./Diamond";
+import { IDiamondContract } from "./IDiamond";
+import { IDiamondCutContract } from "./IDiamondCut";
+import { IDiamondLoupeContract } from "./IDiamondLoupe";
+import { DiamondCutFacetContract } from "./DiamondCutFacet";
+import { DiamondInitContract } from "./DiamondInit";
+import { MockDiamondContract } from "./MockDiamond";
+import { Test1FacetContract } from "./Test1Facet";
+import { Test2FacetContract } from "./Test2Facet";
+import { AgentCollateralFacetContract } from "./AgentCollateralFacet";
+import { AgentInfoFacetContract } from "./AgentInfoFacet";
+import { AgentSettingsFacetContract } from "./AgentSettingsFacet";
+import { AgentVaultAndPoolSupportFacetContract } from "./AgentVaultAndPoolSupportFacet";
+import { AgentVaultManagementFacetContract } from "./AgentVaultManagementFacet";
+import { AssetManagerDiamondCutFacetContract } from "./AssetManagerDiamondCutFacet";
+import { AssetManagerInitContract } from "./AssetManagerInit";
+import { AvailableAgentsFacetContract } from "./AvailableAgentsFacet";
+import { ChallengesFacetContract } from "./ChallengesFacet";
+import { CollateralTypesFacetContract } from "./CollateralTypesFacet";
+import { LiquidationFacetContract } from "./LiquidationFacet";
+import { MintingFacetContract } from "./MintingFacet";
+import { RedemptionConfirmationsFacetContract } from "./RedemptionConfirmationsFacet";
+import { RedemptionDefaultsFacetContract } from "./RedemptionDefaultsFacet";
+import { RedemptionRequestsFacetContract } from "./RedemptionRequestsFacet";
+import { SettingsManagementFacetContract } from "./SettingsManagementFacet";
+import { SettingsReaderFacetContract } from "./SettingsReaderFacet";
+import { SystemStateManagementFacetContract } from "./SystemStateManagementFacet";
+import { UnderlyingBalanceFacetContract } from "./UnderlyingBalanceFacet";
+import { UnderlyingTimekeepingFacetContract } from "./UnderlyingTimekeepingFacet";
 import { AgentOwnerRegistryContract } from "./AgentOwnerRegistry";
 import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
@@ -34,31 +65,12 @@ import { IIAssetManagerContract } from "./IIAssetManager";
 import { IIAssetManagerControllerContract } from "./IIAssetManagerController";
 import { IICollateralPoolContract } from "./IICollateralPool";
 import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
-import { ILiquidationStrategyContract } from "./ILiquidationStrategy";
 import { IPriceChangeEmitterContract } from "./IPriceChangeEmitter";
 import { IPriceReaderContract } from "./IPriceReader";
 import { IWNatContract } from "./IWNat";
-import { AgentsCreateDestroyContract } from "./AgentsCreateDestroy";
-import { AgentSettingsUpdaterContract } from "./AgentSettingsUpdater";
-import { AgentsExternalContract } from "./AgentsExternal";
 import { AMEventsContract } from "./AMEvents";
-import { AvailableAgentsContract } from "./AvailableAgents";
-import { ChallengesContract } from "./Challenges";
-import { CollateralReservationsContract } from "./CollateralReservations";
-import { CollateralTypesContract } from "./CollateralTypes";
-import { FullAgentInfoContract } from "./FullAgentInfo";
-import { LiquidationContract } from "./Liquidation";
-import { LiquidationStrategyImplContract } from "./LiquidationStrategyImpl";
-import { MintingContract } from "./Minting";
 import { ConversionMockContract } from "./ConversionMock";
 import { RedemptionQueueMockContract } from "./RedemptionQueueMock";
-import { RedemptionConfirmationsContract } from "./RedemptionConfirmations";
-import { RedemptionFailuresContract } from "./RedemptionFailures";
-import { RedemptionRequestsContract } from "./RedemptionRequests";
-import { SettingsUpdaterContract } from "./SettingsUpdater";
-import { StateUpdaterContract } from "./StateUpdater";
-import { UnderlyingBalanceContract } from "./UnderlyingBalance";
-import { UnderlyingWithdrawalAnnouncementsContract } from "./UnderlyingWithdrawalAnnouncements";
 import { AgentVaultMockContract } from "./AgentVaultMock";
 import { AssetManagerMockContract } from "./AssetManagerMock";
 import { DistributionToDelegatorsContract } from "./DistributionToDelegators";
@@ -73,9 +85,12 @@ import { WhitelistMockContract } from "./WhitelistMock";
 import { AddressUpdatableContract } from "./AddressUpdatable";
 import { GovernedContract } from "./Governed";
 import { GovernedBaseContract } from "./GovernedBase";
+import { IGovernedContract } from "./IGoverned";
 import { AddressUpdatableMockContract } from "./AddressUpdatableMock";
 import { GovernedMockContract } from "./GovernedMock";
 import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
+import { ReentrancyAttackMockContract } from "./ReentrancyAttackMock";
+import { ReentrancyMockContract } from "./ReentrancyMock";
 import { SCProofVerifierContract } from "./SCProofVerifier";
 import { ISCProofVerifierContract } from "./ISCProofVerifier";
 import { StateConnectorMockContract } from "./StateConnectorMock";
@@ -124,7 +139,6 @@ import { VPContractContract } from "./VPContract";
 import { VPTokenContract } from "./VPToken";
 import { WNatContract } from "./WNat";
 import { ChallengerContract } from "./Challenger";
-import { FlashLenderContract } from "./FlashLender";
 import { IChallengerContract } from "./IChallenger";
 import { ILiquidatorContract } from "./ILiquidator";
 import { IUniswapV2PairContract } from "./IUniswapV2Pair";
@@ -144,6 +158,49 @@ export type * from "./types";
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "IERC165"): IERC165Contract;
+      require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
+      require(name: "GovernedFacet"): GovernedFacetContract;
+      require(name: "Diamond"): DiamondContract;
+      require(name: "IDiamond"): IDiamondContract;
+      require(name: "IDiamondCut"): IDiamondCutContract;
+      require(name: "IDiamondLoupe"): IDiamondLoupeContract;
+      require(name: "DiamondCutFacet"): DiamondCutFacetContract;
+      require(name: "DiamondInit"): DiamondInitContract;
+      require(name: "MockDiamond"): MockDiamondContract;
+      require(name: "Test1Facet"): Test1FacetContract;
+      require(name: "Test2Facet"): Test2FacetContract;
+      require(name: "AgentCollateralFacet"): AgentCollateralFacetContract;
+      require(name: "AgentInfoFacet"): AgentInfoFacetContract;
+      require(name: "AgentSettingsFacet"): AgentSettingsFacetContract;
+      require(
+        name: "AgentVaultAndPoolSupportFacet"
+      ): AgentVaultAndPoolSupportFacetContract;
+      require(
+        name: "AgentVaultManagementFacet"
+      ): AgentVaultManagementFacetContract;
+      require(
+        name: "AssetManagerDiamondCutFacet"
+      ): AssetManagerDiamondCutFacetContract;
+      require(name: "AssetManagerInit"): AssetManagerInitContract;
+      require(name: "AvailableAgentsFacet"): AvailableAgentsFacetContract;
+      require(name: "ChallengesFacet"): ChallengesFacetContract;
+      require(name: "CollateralTypesFacet"): CollateralTypesFacetContract;
+      require(name: "LiquidationFacet"): LiquidationFacetContract;
+      require(name: "MintingFacet"): MintingFacetContract;
+      require(
+        name: "RedemptionConfirmationsFacet"
+      ): RedemptionConfirmationsFacetContract;
+      require(name: "RedemptionDefaultsFacet"): RedemptionDefaultsFacetContract;
+      require(name: "RedemptionRequestsFacet"): RedemptionRequestsFacetContract;
+      require(name: "SettingsManagementFacet"): SettingsManagementFacetContract;
+      require(name: "SettingsReaderFacet"): SettingsReaderFacetContract;
+      require(
+        name: "SystemStateManagementFacet"
+      ): SystemStateManagementFacetContract;
+      require(name: "UnderlyingBalanceFacet"): UnderlyingBalanceFacetContract;
+      require(
+        name: "UnderlyingTimekeepingFacet"
+      ): UnderlyingTimekeepingFacetContract;
       require(name: "AgentOwnerRegistry"): AgentOwnerRegistryContract;
       require(name: "AgentVault"): AgentVaultContract;
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
@@ -171,33 +228,12 @@ export type * from "./types";
       ): IIAssetManagerControllerContract;
       require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "IICollateralPoolToken"): IICollateralPoolTokenContract;
-      require(name: "ILiquidationStrategy"): ILiquidationStrategyContract;
       require(name: "IPriceChangeEmitter"): IPriceChangeEmitterContract;
       require(name: "IPriceReader"): IPriceReaderContract;
       require(name: "IWNat"): IWNatContract;
-      require(name: "AgentsCreateDestroy"): AgentsCreateDestroyContract;
-      require(name: "AgentSettingsUpdater"): AgentSettingsUpdaterContract;
-      require(name: "AgentsExternal"): AgentsExternalContract;
       require(name: "AMEvents"): AMEventsContract;
-      require(name: "AvailableAgents"): AvailableAgentsContract;
-      require(name: "Challenges"): ChallengesContract;
-      require(name: "CollateralReservations"): CollateralReservationsContract;
-      require(name: "CollateralTypes"): CollateralTypesContract;
-      require(name: "FullAgentInfo"): FullAgentInfoContract;
-      require(name: "Liquidation"): LiquidationContract;
-      require(name: "LiquidationStrategyImpl"): LiquidationStrategyImplContract;
-      require(name: "Minting"): MintingContract;
       require(name: "ConversionMock"): ConversionMockContract;
       require(name: "RedemptionQueueMock"): RedemptionQueueMockContract;
-      require(name: "RedemptionConfirmations"): RedemptionConfirmationsContract;
-      require(name: "RedemptionFailures"): RedemptionFailuresContract;
-      require(name: "RedemptionRequests"): RedemptionRequestsContract;
-      require(name: "SettingsUpdater"): SettingsUpdaterContract;
-      require(name: "StateUpdater"): StateUpdaterContract;
-      require(name: "UnderlyingBalance"): UnderlyingBalanceContract;
-      require(
-        name: "UnderlyingWithdrawalAnnouncements"
-      ): UnderlyingWithdrawalAnnouncementsContract;
       require(name: "AgentVaultMock"): AgentVaultMockContract;
       require(name: "AssetManagerMock"): AssetManagerMockContract;
       require(
@@ -214,11 +250,14 @@ export type * from "./types";
       require(name: "AddressUpdatable"): AddressUpdatableContract;
       require(name: "Governed"): GovernedContract;
       require(name: "GovernedBase"): GovernedBaseContract;
+      require(name: "IGoverned"): IGovernedContract;
       require(name: "AddressUpdatableMock"): AddressUpdatableMockContract;
       require(name: "GovernedMock"): GovernedMockContract;
       require(
         name: "GovernedWithTimelockMock"
       ): GovernedWithTimelockMockContract;
+      require(name: "ReentrancyAttackMock"): ReentrancyAttackMockContract;
+      require(name: "ReentrancyMock"): ReentrancyMockContract;
       require(name: "SCProofVerifier"): SCProofVerifierContract;
       require(name: "ISCProofVerifier"): ISCProofVerifierContract;
       require(name: "StateConnectorMock"): StateConnectorMockContract;
@@ -269,7 +308,6 @@ export type * from "./types";
       require(name: "VPToken"): VPTokenContract;
       require(name: "WNat"): WNatContract;
       require(name: "Challenger"): ChallengerContract;
-      require(name: "FlashLender"): FlashLenderContract;
       require(name: "IChallenger"): IChallengerContract;
       require(name: "ILiquidator"): ILiquidatorContract;
       require(name: "IUniswapV2Pair"): IUniswapV2PairContract;
@@ -298,6 +336,100 @@ export {
 export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
+export {
+  DiamondLoupeFacetContract,
+  DiamondLoupeFacetInstance,
+} from "./DiamondLoupeFacet";
+export { GovernedFacetContract, GovernedFacetInstance } from "./GovernedFacet";
+export { DiamondContract, DiamondInstance } from "./Diamond";
+export { IDiamondContract, IDiamondInstance } from "./IDiamond";
+export { IDiamondCutContract, IDiamondCutInstance } from "./IDiamondCut";
+export { IDiamondLoupeContract, IDiamondLoupeInstance } from "./IDiamondLoupe";
+export {
+  DiamondCutFacetContract,
+  DiamondCutFacetInstance,
+} from "./DiamondCutFacet";
+export { DiamondInitContract, DiamondInitInstance } from "./DiamondInit";
+export { MockDiamondContract, MockDiamondInstance } from "./MockDiamond";
+export { Test1FacetContract, Test1FacetInstance } from "./Test1Facet";
+export { Test2FacetContract, Test2FacetInstance } from "./Test2Facet";
+export {
+  AgentCollateralFacetContract,
+  AgentCollateralFacetInstance,
+} from "./AgentCollateralFacet";
+export {
+  AgentInfoFacetContract,
+  AgentInfoFacetInstance,
+} from "./AgentInfoFacet";
+export {
+  AgentSettingsFacetContract,
+  AgentSettingsFacetInstance,
+} from "./AgentSettingsFacet";
+export {
+  AgentVaultAndPoolSupportFacetContract,
+  AgentVaultAndPoolSupportFacetInstance,
+} from "./AgentVaultAndPoolSupportFacet";
+export {
+  AgentVaultManagementFacetContract,
+  AgentVaultManagementFacetInstance,
+} from "./AgentVaultManagementFacet";
+export {
+  AssetManagerDiamondCutFacetContract,
+  AssetManagerDiamondCutFacetInstance,
+} from "./AssetManagerDiamondCutFacet";
+export {
+  AssetManagerInitContract,
+  AssetManagerInitInstance,
+} from "./AssetManagerInit";
+export {
+  AvailableAgentsFacetContract,
+  AvailableAgentsFacetInstance,
+} from "./AvailableAgentsFacet";
+export {
+  ChallengesFacetContract,
+  ChallengesFacetInstance,
+} from "./ChallengesFacet";
+export {
+  CollateralTypesFacetContract,
+  CollateralTypesFacetInstance,
+} from "./CollateralTypesFacet";
+export {
+  LiquidationFacetContract,
+  LiquidationFacetInstance,
+} from "./LiquidationFacet";
+export { MintingFacetContract, MintingFacetInstance } from "./MintingFacet";
+export {
+  RedemptionConfirmationsFacetContract,
+  RedemptionConfirmationsFacetInstance,
+} from "./RedemptionConfirmationsFacet";
+export {
+  RedemptionDefaultsFacetContract,
+  RedemptionDefaultsFacetInstance,
+} from "./RedemptionDefaultsFacet";
+export {
+  RedemptionRequestsFacetContract,
+  RedemptionRequestsFacetInstance,
+} from "./RedemptionRequestsFacet";
+export {
+  SettingsManagementFacetContract,
+  SettingsManagementFacetInstance,
+} from "./SettingsManagementFacet";
+export {
+  SettingsReaderFacetContract,
+  SettingsReaderFacetInstance,
+} from "./SettingsReaderFacet";
+export {
+  SystemStateManagementFacetContract,
+  SystemStateManagementFacetInstance,
+} from "./SystemStateManagementFacet";
+export {
+  UnderlyingBalanceFacetContract,
+  UnderlyingBalanceFacetInstance,
+} from "./UnderlyingBalanceFacet";
+export {
+  UnderlyingTimekeepingFacetContract,
+  UnderlyingTimekeepingFacetInstance,
+} from "./UnderlyingTimekeepingFacet";
 export {
   AgentOwnerRegistryContract,
   AgentOwnerRegistryInstance,
@@ -365,48 +497,12 @@ export {
   IICollateralPoolTokenInstance,
 } from "./IICollateralPoolToken";
 export {
-  ILiquidationStrategyContract,
-  ILiquidationStrategyInstance,
-} from "./ILiquidationStrategy";
-export {
   IPriceChangeEmitterContract,
   IPriceChangeEmitterInstance,
 } from "./IPriceChangeEmitter";
 export { IPriceReaderContract, IPriceReaderInstance } from "./IPriceReader";
 export { IWNatContract, IWNatInstance } from "./IWNat";
-export {
-  AgentsCreateDestroyContract,
-  AgentsCreateDestroyInstance,
-} from "./AgentsCreateDestroy";
-export {
-  AgentSettingsUpdaterContract,
-  AgentSettingsUpdaterInstance,
-} from "./AgentSettingsUpdater";
-export {
-  AgentsExternalContract,
-  AgentsExternalInstance,
-} from "./AgentsExternal";
 export { AMEventsContract, AMEventsInstance } from "./AMEvents";
-export {
-  AvailableAgentsContract,
-  AvailableAgentsInstance,
-} from "./AvailableAgents";
-export { ChallengesContract, ChallengesInstance } from "./Challenges";
-export {
-  CollateralReservationsContract,
-  CollateralReservationsInstance,
-} from "./CollateralReservations";
-export {
-  CollateralTypesContract,
-  CollateralTypesInstance,
-} from "./CollateralTypes";
-export { FullAgentInfoContract, FullAgentInfoInstance } from "./FullAgentInfo";
-export { LiquidationContract, LiquidationInstance } from "./Liquidation";
-export {
-  LiquidationStrategyImplContract,
-  LiquidationStrategyImplInstance,
-} from "./LiquidationStrategyImpl";
-export { MintingContract, MintingInstance } from "./Minting";
 export {
   ConversionMockContract,
   ConversionMockInstance,
@@ -415,31 +511,6 @@ export {
   RedemptionQueueMockContract,
   RedemptionQueueMockInstance,
 } from "./RedemptionQueueMock";
-export {
-  RedemptionConfirmationsContract,
-  RedemptionConfirmationsInstance,
-} from "./RedemptionConfirmations";
-export {
-  RedemptionFailuresContract,
-  RedemptionFailuresInstance,
-} from "./RedemptionFailures";
-export {
-  RedemptionRequestsContract,
-  RedemptionRequestsInstance,
-} from "./RedemptionRequests";
-export {
-  SettingsUpdaterContract,
-  SettingsUpdaterInstance,
-} from "./SettingsUpdater";
-export { StateUpdaterContract, StateUpdaterInstance } from "./StateUpdater";
-export {
-  UnderlyingBalanceContract,
-  UnderlyingBalanceInstance,
-} from "./UnderlyingBalance";
-export {
-  UnderlyingWithdrawalAnnouncementsContract,
-  UnderlyingWithdrawalAnnouncementsInstance,
-} from "./UnderlyingWithdrawalAnnouncements";
 export {
   AgentVaultMockContract,
   AgentVaultMockInstance,
@@ -475,6 +546,7 @@ export {
 } from "./AddressUpdatable";
 export { GovernedContract, GovernedInstance } from "./Governed";
 export { GovernedBaseContract, GovernedBaseInstance } from "./GovernedBase";
+export { IGovernedContract, IGovernedInstance } from "./IGoverned";
 export {
   AddressUpdatableMockContract,
   AddressUpdatableMockInstance,
@@ -484,6 +556,14 @@ export {
   GovernedWithTimelockMockContract,
   GovernedWithTimelockMockInstance,
 } from "./GovernedWithTimelockMock";
+export {
+  ReentrancyAttackMockContract,
+  ReentrancyAttackMockInstance,
+} from "./ReentrancyAttackMock";
+export {
+  ReentrancyMockContract,
+  ReentrancyMockInstance,
+} from "./ReentrancyMock";
 export {
   SCProofVerifierContract,
   SCProofVerifierInstance,
@@ -613,7 +693,6 @@ export { VPContractContract, VPContractInstance } from "./VPContract";
 export { VPTokenContract, VPTokenInstance } from "./VPToken";
 export { WNatContract, WNatInstance } from "./WNat";
 export { ChallengerContract, ChallengerInstance } from "./Challenger";
-export { FlashLenderContract, FlashLenderInstance } from "./FlashLender";
 export { IChallengerContract, IChallengerInstance } from "./IChallenger";
 export { ILiquidatorContract, ILiquidatorInstance } from "./ILiquidator";
 export {

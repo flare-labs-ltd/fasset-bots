@@ -70,8 +70,6 @@ export interface IUniswapV2RouterInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  factory(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
   getReserves(
     tokenA: string,
     tokenB: string,
@@ -219,8 +217,6 @@ export interface IUniswapV2RouterInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    factory(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     getReserves(
       tokenA: string,

@@ -262,6 +262,22 @@ export interface CurrentUnderlyingBlockUpdated {
   };
 }
 
+export interface DiamondCut {
+  name: "DiamondCut";
+  args: {
+    _diamondCut: {
+      facetAddress: string;
+      action: BN;
+      functionSelectors: string[];
+    }[];
+    _init: string;
+    _calldata: string;
+    0: { facetAddress: string; action: BN; functionSelectors: string[] }[];
+    1: string;
+    2: string;
+  };
+}
+
 export interface DuplicatePaymentConfirmed {
   name: "DuplicatePaymentConfirmed";
   args: {
@@ -291,6 +307,34 @@ export interface FullLiquidationStarted {
     timestamp: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface GovernanceCallTimelocked {
+  name: "GovernanceCallTimelocked";
+  args: {
+    encodedCall: string;
+    encodedCallHash: string;
+    allowedAfterTimestamp: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface GovernanceInitialised {
+  name: "GovernanceInitialised";
+  args: {
+    initialGovernance: string;
+    0: string;
+  };
+}
+
+export interface GovernedProductionModeEntered {
+  name: "GovernedProductionModeEntered";
+  args: {
+    governanceSettings: string;
+    0: string;
   };
 }
 
@@ -580,6 +624,22 @@ export interface SettingChanged {
   };
 }
 
+export interface TimelockedGovernanceCallCanceled {
+  name: "TimelockedGovernanceCallCanceled";
+  args: {
+    encodedCallHash: string;
+    0: string;
+  };
+}
+
+export interface TimelockedGovernanceCallExecuted {
+  name: "TimelockedGovernanceCallExecuted";
+  args: {
+    encodedCallHash: string;
+    0: string;
+  };
+}
+
 export interface UnderlyingBalanceChanged {
   name: "UnderlyingBalanceChanged";
   args: {
@@ -680,9 +740,13 @@ export type AllEvents =
   | CollateralTypeDeprecated
   | ContractChanged
   | CurrentUnderlyingBlockUpdated
+  | DiamondCut
   | DuplicatePaymentConfirmed
   | DustChanged
   | FullLiquidationStarted
+  | GovernanceCallTimelocked
+  | GovernanceInitialised
+  | GovernedProductionModeEntered
   | IllegalPaymentConfirmed
   | LiquidationEnded
   | LiquidationPerformed
@@ -704,6 +768,8 @@ export type AllEvents =
   | SelfClose
   | SettingArrayChanged
   | SettingChanged
+  | TimelockedGovernanceCallCanceled
+  | TimelockedGovernanceCallExecuted
   | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow
   | UnderlyingBalanceToppedUp
@@ -907,6 +973,12 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
+  assetMintingDecimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+  assetMintingGranularityUBA(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   assetPriceNatWei(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN }>;
@@ -966,6 +1038,24 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  cancelGovernanceCall: {
+    (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _encodedCall: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1583,6 +1673,49 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  diamondCut: {
+    (
+      _diamondCut: {
+        facetAddress: string;
+        action: number | BN | string;
+        functionSelectors: string[];
+      }[],
+      _init: string,
+      _calldata: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _diamondCut: {
+        facetAddress: string;
+        action: number | BN | string;
+        functionSelectors: string[];
+      }[],
+      _init: string,
+      _calldata: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _diamondCut: {
+        facetAddress: string;
+        action: number | BN | string;
+        functionSelectors: string[];
+      }[],
+      _init: string,
+      _calldata: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _diamondCut: {
+        facetAddress: string;
+        action: number | BN | string;
+        functionSelectors: string[];
+      }[],
+      _init: string,
+      _calldata: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   doublePaymentChallenge: {
     (
       _payment1: {
@@ -1803,6 +1936,24 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  executeGovernanceCall: {
+    (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   executeMinting: {
     (
       _payment: {
@@ -1953,6 +2104,22 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
   };
 
   fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  facetAddress(
+    _functionSelector: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  facetAddresses(txDetails?: Truffle.TransactionDetails): Promise<string[]>;
+
+  facetFunctionSelectors(
+    _facet: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string[]>;
+
+  facets(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ facetAddress: string; functionSelectors: string[] }[]>;
 
   finishRedemptionWithoutPayment: {
     (
@@ -2148,6 +2315,16 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  getAgentFullPoolCollateral(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  getAgentFullVaultCollateral(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   getAgentInfo(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -2193,6 +2370,16 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     poolTopupCollateralRatioBIPS: BN;
     poolTopupTokenPriceFactorBIPS: BN;
   }>;
+
+  getAgentLiquidationFactorsAndMaxAmount(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+  getAgentVaultCollateralToken(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
 
   getAgentVaultOwner(
     _agentVault: string,
@@ -2274,10 +2461,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  getLiquidationSettings(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string>;
-
   getSettings(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{
@@ -2290,7 +2473,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     whitelist: string;
     agentOwnerRegistry: string;
     scProofVerifier: string;
-    liquidationStrategy: string;
     burnAddress: string;
     priceReader: string;
     assetDecimals: BN;
@@ -2330,9 +2512,17 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     poolExitAndTopupChangeTimelockSeconds: BN;
     agentTimelockedOperationWindowSeconds: BN;
     collateralPoolTokenTimelockSeconds: BN;
+    liquidationStepSeconds: BN;
+    liquidationCollateralFactorBIPS: BN[];
+    liquidationFactorVaultCollateralBIPS: BN[];
+    diamondCutMinTimelockSeconds: BN;
   }>;
 
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   illegalPaymentChallenge: {
     (
@@ -2435,6 +2625,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
 
   isAgentVaultOwner(
     _agentVault: string,
+    _address: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  isExecutor(
     _address: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
@@ -2610,6 +2805,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
   };
 
   paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   proveUnderlyingAddressEOA: {
     (
@@ -3255,6 +3454,20 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  supportsInterface(
+    interfaceId: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  switchToProductionMode: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   switchVaultCollateral: {
     (
       _agentVault: string,
@@ -3743,6 +3956,12 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
 
+    assetMintingDecimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    assetMintingGranularityUBA(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     assetPriceNatWei(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN }>;
@@ -3802,6 +4021,24 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    cancelGovernanceCall: {
+      (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _encodedCall: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -4421,6 +4658,49 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    diamondCut: {
+      (
+        _diamondCut: {
+          facetAddress: string;
+          action: number | BN | string;
+          functionSelectors: string[];
+        }[],
+        _init: string,
+        _calldata: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _diamondCut: {
+          facetAddress: string;
+          action: number | BN | string;
+          functionSelectors: string[];
+        }[],
+        _init: string,
+        _calldata: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _diamondCut: {
+          facetAddress: string;
+          action: number | BN | string;
+          functionSelectors: string[];
+        }[],
+        _init: string,
+        _calldata: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _diamondCut: {
+          facetAddress: string;
+          action: number | BN | string;
+          functionSelectors: string[];
+        }[],
+        _init: string,
+        _calldata: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     doublePaymentChallenge: {
       (
         _payment1: {
@@ -4641,6 +4921,24 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    executeGovernanceCall: {
+      (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     executeMinting: {
       (
         _payment: {
@@ -4791,6 +5089,22 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     };
 
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    facetAddress(
+      _functionSelector: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    facetAddresses(txDetails?: Truffle.TransactionDetails): Promise<string[]>;
+
+    facetFunctionSelectors(
+      _facet: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string[]>;
+
+    facets(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ facetAddress: string; functionSelectors: string[] }[]>;
 
     finishRedemptionWithoutPayment: {
       (
@@ -4986,6 +5300,16 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    getAgentFullPoolCollateral(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getAgentFullVaultCollateral(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     getAgentInfo(
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
@@ -5031,6 +5355,16 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
     }>;
+
+    getAgentLiquidationFactorsAndMaxAmount(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    getAgentVaultCollateralToken(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
 
     getAgentVaultOwner(
       _agentVault: string,
@@ -5112,10 +5446,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    getLiquidationSettings(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-
     getSettings(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{
@@ -5128,7 +5458,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       whitelist: string;
       agentOwnerRegistry: string;
       scProofVerifier: string;
-      liquidationStrategy: string;
       burnAddress: string;
       priceReader: string;
       assetDecimals: BN;
@@ -5168,9 +5497,17 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       poolExitAndTopupChangeTimelockSeconds: BN;
       agentTimelockedOperationWindowSeconds: BN;
       collateralPoolTokenTimelockSeconds: BN;
+      liquidationStepSeconds: BN;
+      liquidationCollateralFactorBIPS: BN[];
+      liquidationFactorVaultCollateralBIPS: BN[];
+      diamondCutMinTimelockSeconds: BN;
     }>;
 
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     illegalPaymentChallenge: {
       (
@@ -5273,6 +5610,11 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
 
     isAgentVaultOwner(
       _agentVault: string,
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
+    isExecutor(
       _address: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
@@ -5448,6 +5790,10 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     };
 
     paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     proveUnderlyingAddressEOA: {
       (
@@ -6091,6 +6437,20 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
         _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
+    };
+
+    supportsInterface(
+      interfaceId: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
+    switchToProductionMode: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
     switchVaultCollateral: {
