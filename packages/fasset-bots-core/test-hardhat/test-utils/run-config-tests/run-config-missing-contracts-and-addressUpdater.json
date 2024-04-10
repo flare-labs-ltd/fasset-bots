@@ -1,7 +1,10 @@
 {
+    "$schema": "../../../run-config/schema/bot-config.schema.json",
     "loopDelay": 5000,
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
+        "chainName": "Coston",
+        "tokenSymbol": "CFLR",
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },

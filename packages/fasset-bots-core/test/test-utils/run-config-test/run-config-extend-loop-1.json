@@ -1,0 +1,4 @@
+{
+    "$schema": "../../../run-config/schema/bot-config-override.schema.json",
+    "extends": "./run-config-extend-loop-2.json"
+}

@@ -1,50 +1,11 @@
 {
-    "$schema": "./schema/bot-config.schema.json",
-    "loopDelay": 5000,
-    "contractsJsonFile": "../fasset-deployment/coston.json",
-    "prioritizeAddressUpdater": false,
-    "nativeChainInfo": {
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
-    },
-    "fAssets": {
-        "FtestXRP": {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234"
-        },
-        "FfakeXRP": {
-            "chainId": "testXRP",
-            "name": "Fake XRP",
-            "symbol": "fakeXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
-            "priceChangeEmitter": "FakePriceReader"
-        }
-    },
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
-    ],
+    "$schema": "./schema/bot-config-override.schema.json",
+    "extends": "coston-bot.json",
     "ormOptions": {
         "type": "mysql",
         "dbName": "fasset_bots",
         "host": "localhost",
         "port": 3306,
         "allowGlobalContext": true
-    },
-    "liquidationStrategy": {
-        "className": "DexLiquidationStrategy",
-        "config": {
-            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
-        }
-    },
-    "challengeStrategy": {
-        "className": "DexChallengeStrategy",
-        "config": {
-            "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
-        }
     }
 }

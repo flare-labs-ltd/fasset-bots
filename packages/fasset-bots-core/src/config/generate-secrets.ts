@@ -33,7 +33,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
             private_key: account.privateKey,
         };
     }
-    const config = loadConfigFile(configFile, undefined, false);
+    const config = loadConfigFile(configFile);
     const chainIds = new Set(Object.values(config.fAssets).map(fi => fi.chainId));
     const secrets: SecretsFile = { apiKey: {} };
     secrets.apiKey.native_rpc = "";

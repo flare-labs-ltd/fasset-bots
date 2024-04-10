@@ -6,3 +6,6 @@ export * from "./command-line-errors";
 export * from "./web3";
 export * from "./web3helpers";
 export * from "./web3normalize";
+export * from "./token-balances";
+export * from "./TokenBalance";
+export * from "./Currency";
