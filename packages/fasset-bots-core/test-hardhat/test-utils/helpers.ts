@@ -26,7 +26,7 @@ import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
-import { IERC20Instance, Truffle } from "../../typechain-truffle";
+import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
 
 const FakeERC20 = artifacts.require("FakeERC20");
@@ -231,11 +231,4 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
         poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
     };
     return initialAgentData;
-}
-
-/**
- * ABI encode method call, typesafe when used with typechain.
- */
-export function abiEncodeCall<I extends Truffle.ContractInstance>(instance: I, call: (inst: I) => any) {
-    return call(instance.contract.methods).encodeABI();
 }

@@ -8,7 +8,6 @@ import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
-import { LiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
@@ -372,18 +371,6 @@ export async function createTestFtsos(ftsoRegistry: FtsoRegistryMockInstance, as
         usdt: await createFtsoMock(ftsoRegistry, "testUSDT", ftsoUsdtInitialPrice),
         asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice),
     };
-}
-
-export function createTestLiquidationSettings(): LiquidationStrategyImplSettings {
-    return {
-        liquidationStepSeconds: 90,
-        liquidationCollateralFactorBIPS: [toBIPS(1.2), toBIPS(1.6), toBIPS(2.0)],
-        liquidationFactorVaultCollateralBIPS: [toBIPS(1), toBIPS(1), toBIPS(1)],
-    };
-}
-
-export function createEncodedTestLiquidationSettings() {
-    return encodeLiquidationStrategyImplSettings(createTestLiquidationSettings());
 }
 
 export async function setLotSizeAmg(newLotSizeAMG: BNish, context: TestAssetBotContext, governance: string) {

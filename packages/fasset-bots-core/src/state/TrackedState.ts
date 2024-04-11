@@ -1,7 +1,6 @@
 import { AgentDestroyed } from "../../typechain-truffle/IIAssetManager";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
-import { LiquidationStrategyImplSettings } from "../fasset/LiquidationStrategyImpl";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
@@ -35,7 +34,6 @@ export class TrackedState {
 
     // settings
     settings!: AssetManagerSettings;
-    liquidationStrategySettings!: LiquidationStrategyImplSettings;
     collaterals = new CollateralList();
     poolWNatCollateral!: CollateralType;
 
@@ -116,20 +114,17 @@ export class TrackedState {
             [this.prices, this.trustedPrices] = await this.getPrices();
         } else if (eventIs(event, this.context.assetManager, "SettingChanged")) {
             logger.info(`Tracked State received event 'SettingChanged' with data ${formatArgs(event.args)}.`);
-            if (event.args.name === "liquidationStepSeconds") {
-                (this.liquidationStrategySettings as any)[event.args.name] = web3Normalize(event.args.value);
-                logger.info(`Tracked State set liquidationStrategySettings ${formatArgs(this.liquidationStrategySettings)}.`);
-            } else if (!(event.args.name in this.settings)) {
-                throw new Error(`Invalid setting change ${event.args.name}`);
-            } else {
+            if (event.args.name in this.settings) {
                 (this.settings as any)[event.args.name] = web3Normalize(event.args.value);
                 logger.info(`Tracked State set settings ${formatArgs(this.settings)}.`);
+            } else {
+                throw new Error(`Invalid setting change ${event.args.name}`);
             }
         } else if (eventIs(event, this.context.assetManager, "SettingArrayChanged")) {
             logger.info(`Tracked State received event 'SettingArrayChanged' with data ${formatArgs(event.args)}.`);
-            if (!(event.args.name in this.liquidationStrategySettings)) throw new Error(`Invalid setting array change ${event.args.name}`);
-            (this.liquidationStrategySettings as any)[event.args.name] = web3DeepNormalize(event.args.value);
-            logger.info(`Tracked State set liquidationStrategySettings ${formatArgs(this.liquidationStrategySettings)}.`);
+            if (!(event.args.name in this.settings)) throw new Error(`Invalid setting array change ${event.args.name}`);
+            (this.settings as any)[event.args.name] = web3DeepNormalize(event.args.value);
+            logger.info(`Tracked State set liquidationStrategySettings ${formatArgs(this.settings)}.`);
         } else if (eventIs(event, this.context.assetManager, "AgentSettingChanged")) {
             logger.info(`Tracked State received event 'AgentSettingChanged' with data ${formatArgs(event.args)}.`);
             (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentSettingChanged(event.args.name, event.args.value);

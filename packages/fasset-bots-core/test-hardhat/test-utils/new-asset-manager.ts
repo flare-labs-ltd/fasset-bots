@@ -1,12 +1,13 @@
 import { time } from "@openzeppelin/test-helpers";
+import coder from "web3-eth-abi";
 import { AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { findEvent } from "../../src/utils/events/truffle";
+import { requireNotNull } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { AssetManagerControllerInstance, AssetManagerInitInstance, FAssetInstance, GovernanceSettingsInstance, IIAssetManagerInstance, Truffle } from "../../typechain-truffle";
 import { GovernanceCallTimelocked } from "../../typechain-truffle/AssetManagerController";
 import { DiamondCut, FacetCutAction } from "./diamond";
-import { abiEncodeCall } from "./helpers";
 
 const IIAssetManager = artifacts.require('IIAssetManager');
 const AssetManager = artifacts.require('AssetManager');
@@ -55,8 +56,8 @@ export async function newAssetManager(
 export async function newAssetManagerDiamond(diamondCuts: DiamondCut[], assetManagerInit: AssetManagerInitInstance, governanceSettings: string | GovernanceSettingsInstance,
     governanceAddress: string, assetManagerSettings: AssetManagerSettings, collateralTokens: CollateralType[]) {
     const governanceSettingsAddress = typeof governanceSettings === 'string' ? governanceSettings : governanceSettings.address;
-    const initParameters = abiEncodeCall(assetManagerInit,
-        c => c.init(governanceSettingsAddress, governanceAddress, assetManagerSettings, collateralTokens));
+    const initParameters = abiEncodeCall(assetManagerInit, "init",
+        [governanceSettingsAddress, governanceAddress, assetManagerSettings, collateralTokens]);
     const assetManagerDiamond = await AssetManager.new(diamondCuts, assetManagerInit.address, initParameters);
     return await IIAssetManager.at(assetManagerDiamond.address);
 }
@@ -129,4 +130,9 @@ export async function deployFacet(facetName: string, filterSelectors: Set<string
         facetAddress: instance.address,
         functionSelectors: [...exposedSelectors]
     };
+}
+
+export function abiEncodeCall<I extends Truffle.ContractInstance>(instance: I, method: string, args: any[]): string {
+    const abiItem = requireNotNull(instance.abi.find(it => it.name === method && it.type === 'function'));
+    return coder.encodeFunctionCall(abiItem, args);
 }
