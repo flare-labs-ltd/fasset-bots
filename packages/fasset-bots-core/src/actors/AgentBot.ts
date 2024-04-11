@@ -3,6 +3,7 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { Secrets } from "../config";
+import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
@@ -16,7 +17,6 @@ import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { SourceId } from "../underlying-chain/SourceId";
 import { IBlock, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
@@ -26,11 +26,12 @@ import {
     VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, findOneSubstring, toBN
 } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { AgentNotificationKey, AgentNotifier } from "../utils/notifier/AgentNotifier";
-import { NotificationLevel, NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { AgentBotEventReader } from "./AgentBotEventReader";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -46,8 +47,6 @@ enum ClaimType {
     VAULT = "VAULT",
 }
 
-const MAX_EVENT_RETRY = 5;
-
 export class AgentBot {
     static deepCopyWithObjectCreate = true;
 
@@ -59,7 +58,7 @@ export class AgentBot {
     ) {}
 
     context = this.agent.context;
-    eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
+    eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
     latestProof: ConfirmedBlockHeightExists.Proof | null = null;
     runner?: IRunner;
     maxHandleEventBlocks = 1000;
@@ -216,68 +215,11 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async runStep(rootEm: EM): Promise<void> {
-        await this.troubleshootEvents(rootEm);
+        await this.eventReader.troubleshootEvents(rootEm);
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
         await this.handleAgentsWaitingsAndCleanUp(rootEm);
         await this.handleDailyTasks(rootEm);
-    }
-
-    async troubleshootEvents(rootEm: EM): Promise<void> {
-        try {
-            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            await agentEnt.events.init();
-            for (const event of agentEnt.unhandledEvents().sort(eventOrder)) {
-                if (this.stopRequested()) return;
-                await rootEm
-                    .transactional(async (em) => {
-                        const fullEvent = await this.getEventFromEntity(event);
-                        if (fullEvent != null) {
-                            await this.handleEvent(em, fullEvent);
-                        } else {
-                            await this.notifier.send(NotificationLevel.DANGER, AgentNotificationKey.UNRESOLVED_EVENT,
-                                `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; ir will be skipped.`);
-                        }
-                        agentEnt.events.remove(event);
-                    })
-                    .catch(async (error) => {
-                        event.retries += 1;
-                        if (event.retries > MAX_EVENT_RETRY) {
-                            agentEnt.events.remove(event);
-                        }
-                        await rootEm.persist(agentEnt).flush();
-                        console.error(`Error troubleshooting handling of event with id ${event.id} for agent ${this.agent.vaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event:`, error);
-                    });
-            }
-        } catch (error) {
-            console.error(`Error troubleshooting events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while troubleshooting events:`, error);
-        }
-    }
-
-    async getEventFromEntity(event: Event): Promise<EvmEvent | undefined> {
-        const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
-        const events = [];
-        const logsAssetManager = await web3.eth.getPastLogs({
-            address: this.agent.assetManager.address,
-            fromBlock: event.blockNumber,
-            toBlock: event.blockNumber,
-            topics: [null, encodedVaultAddress],
-        });
-        const logsFtsoManager = await web3.eth.getPastLogs({
-            address: this.context.priceChangeEmitter.address,
-            fromBlock: event.blockNumber,
-            toBlock: event.blockNumber,
-            topics: [null],
-        });
-        events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
-        events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
-        for (const _event of events) {
-            if (_event.transactionIndex === event.transactionIndex && _event.logIndex === event.logIndex) {
-                return _event;
-            }
-        }
     }
 
     /**
@@ -291,7 +233,7 @@ export class AgentBot {
             await agentEnt.events.init();
             const lastEventRead = agentEnt.lastEventRead();
             // eslint-disable-next-line prefer-const
-            let [events, lastBlock] = await this.readNewEvents(rootEm, this.maxHandleEventBlocks);
+            let [events, lastBlock] = await this.eventReader.readNewEvents(rootEm, this.maxHandleEventBlocks);
             if (lastEventRead !== undefined) {
                 events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
             }
@@ -377,51 +319,6 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash);
         }
-    }
-
-    /**
-     * Checks is there are any new events from assetManager.
-     * @param em entity manager
-     * @returns list of EvmEvents
-     */
-    async readNewEvents(em: EM, maximumBlocks: number): Promise<[EvmEvent[], number]> {
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        logger.info(`Agent ${this.agent.vaultAddress} started reading native events FROM block ${agentEnt.currentEventBlock}`);
-        // get all logs for this agent
-        const nci = this.context.nativeChainInfo;
-        const lastChainBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
-        const lastBlock = Math.min(agentEnt.currentEventBlock + maximumBlocks, lastChainBlock);
-        const events: EvmEvent[] = [];
-        const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
-        let lastPriceChangedEvent: EvmEvent | undefined;
-        for (let lastBlockRead = agentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
-            if (this.stopRequested()) break;
-            const logsAssetManager = await web3.eth.getPastLogs({
-                address: this.agent.assetManager.address,
-                fromBlock: lastBlockRead,
-                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
-                topics: [null, encodedVaultAddress],
-            });
-            events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
-            const logsFtsoManager = await web3.eth.getPastLogs({
-                address: this.context.priceChangeEmitter.address,
-                fromBlock: lastBlockRead,
-                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
-                topics: [null],
-            });
-            for (const event of this.eventDecoder.decodeEvents(logsFtsoManager)) {
-                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
-                    lastPriceChangedEvent = event;
-                }
-            }
-        }
-        if (lastPriceChangedEvent) {
-            events.push(lastPriceChangedEvent);
-        }
-        logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
-        // sort events first by their block numbers, then internally by their event index
-        events.sort(eventOrder);
-        return [events, lastBlock];
     }
 
     /**

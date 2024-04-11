@@ -88,7 +88,7 @@ describe("Agent bot unit tests", () => {
 
     it("Should run readUnhandledEvents", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const [events, lastBlock] = await agentBot.readNewEvents(orm.em, 10);
+        const [events, lastBlock] = await agentBot.eventReader.readNewEvents(orm.em, 10);
         expect(events.length).to.eq(0);
     });
 
