@@ -927,7 +927,7 @@ export class AgentBot {
             } as RequiredEntityData<AgentMinting>,
             { persist: true }
         );
-        await this.notifier.sendMintingStared(request.collateralReservationId);
+        await this.notifier.sendMintingStarted(request.collateralReservationId);
         logger.info(`Agent ${this.agent.vaultAddress} started minting ${request.collateralReservationId.toString()}.`);
     }
 
@@ -1049,6 +1049,7 @@ export class AgentBot {
             // proof did not expire
             const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
             const latestBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
+            console.log(`latestBlock  number=${latestBlock?.number} timestamp=${latestBlock?.timestamp}`);
             // wait times expires on underlying + finalizationBlock
             if (latestBlock && Number(minting.lastUnderlyingBlock) + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
                 // time for payment expired on underlying
@@ -1140,9 +1141,10 @@ export class AgentBot {
             minting.state = AgentMintingState.DONE;
             await this.mintingExecuted(minting, true);
             logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(nonPaymentProof))}.`);
+            await this.notifier.sendMintingDefaultSuccess(minting.requestId);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
+            await this.notifier.sendMintingDefaultFailure(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
         }
     }
 
