@@ -292,7 +292,7 @@ describe("Agent bot unit tests", () => {
     it("Should not receive proof 1 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyProof = spy.on(agentBot.notifier, "sendMintingNoProofObtained");
+        const spyProof = spy.on(agentBot.notifier, "sendMintingDefaultFailure");
         // create minting
         const mt = orm.em.create(AgentMinting, {
             state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,

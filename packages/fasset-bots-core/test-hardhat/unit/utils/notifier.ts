@@ -258,7 +258,7 @@ describe("Notifier tests", () => {
     });
 
     it("Should send minting was started", async () => {
-        const spySend = spy.on(notifier, "sendMintingStared");
+        const spySend = spy.on(notifier, "sendMintingStarted");
         await notifier.sendMintingStarted("requestId");
         expect(spySend).to.have.been.called.once;
     });
