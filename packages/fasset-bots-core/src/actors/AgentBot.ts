@@ -393,6 +393,7 @@ export class AgentBot {
         const lastBlock = Math.min(agentEnt.currentEventBlock + maximumBlocks, lastChainBlock);
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
+        let lastPriceChangedEvent: EvmEvent | undefined;
         for (let lastBlockRead = agentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
             if (this.stopRequested()) break;
             const logsAssetManager = await web3.eth.getPastLogs({
@@ -408,7 +409,14 @@ export class AgentBot {
                 toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
                 topics: [null],
             });
-            events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
+            for (const event of this.eventDecoder.decodeEvents(logsFtsoManager)) {
+                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
+                    lastPriceChangedEvent = event;
+                }
+            }
+        }
+        if (lastPriceChangedEvent) {
+            events.push(lastPriceChangedEvent);
         }
         logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
         // sort events first by their block numbers, then internally by their event index
