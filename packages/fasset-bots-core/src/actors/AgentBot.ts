@@ -899,9 +899,9 @@ export class AgentBot {
     async exitAvailableProcessStatus(agentEnt: AgentEntity) {
         const agentInfo = await this.agent.getAgentInfo();
         if (!agentInfo.publiclyAvailable) return "exited";
-        if (agentEnt.exitAvailableAllowedAtTimestamp.eq(BN_ZERO)) return "not_announced";
+        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(BN_ZERO)) return "not_announced";
         const timestamp = await latestBlockTimestampBN();
-        if (agentEnt.exitAvailableAllowedAtTimestamp.lte(timestamp)) return "can_exit";
+        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).lte(timestamp)) return "can_exit";
         return "announced";
     }
 
