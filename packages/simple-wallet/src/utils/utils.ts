@@ -150,8 +150,9 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testBTC:
          return {
             blockOffset: 1,
-            retries: 1,
-            feeIncrease: 2,
+            retries: 2,
+            feeIncrease: 3,
+            maxFeeInDrops: 1e6,
          };
       case ChainType.LTC:
       case ChainType.testLTC:

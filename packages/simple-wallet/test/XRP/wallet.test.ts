@@ -1,5 +1,5 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletRpcInterface";
+import { ICreateWalletResponse, RippleRpcConfig } from "../../src/interfaces/WriteWalletRpcInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
@@ -10,13 +10,14 @@ import { toBN } from "../../src/utils/utils";
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
-const XRPMccConnectionTest = {
+const XRPMccConnectionTest: RippleRpcConfig = {
    url: process.env.XRP_URL ?? "",
    username: "",
    password: "",
    stuckTransactionOptions: {
-      blockOffset: 5
-   }
+      blockOffset: 5,
+      maxFeeInDrops: 1e5
+   },
 };
 
 const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
@@ -26,8 +27,8 @@ const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const entropyBase = "my_xrp_test_wallet";
 const entropyBasedAddress = "rMeXpc8eokNRCTVtCMjFqTKdyRezkYJAi1";
 
-const amountToSendDropsFirst = toBN(10000000);
-const amountToSendDropsSecond = toBN(5000000);
+const amountToSendDropsFirst = toBN(100000);
+const amountToSendDropsSecond = toBN(50000);
 const feeInDrops = toBN(15);
 const maxFeeInDrops = toBN(12);
 const sequence = 54321;
@@ -171,4 +172,21 @@ describe("Xrp wallet tests", () => {
          .to.eventually.be.rejectedWith(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`)
          .and.be.an.instanceOf(Error);
    });
+
+   /* describe("congested network tests", () => {
+      const ntx = 1;
+      it.only("Should create sign and send transactions in a congested network", async () => {
+         await Promise.all(Array(ntx).fill(0).map(async (_, i) => {
+            console.log(`i: ` + (await wClient.getCurrentTransactionFee()).toString())
+            fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+            const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+            const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsFirst, undefined, note);
+            const blob = await wClient.signTransaction(tr, fundedWallet.privateKey as string);
+            const submit = await wClient.submitTransaction(blob);
+            expect(typeof submit).to.equal("object");
+            console.log(submit)
+         }))
+      })
+   }) */
+
 });

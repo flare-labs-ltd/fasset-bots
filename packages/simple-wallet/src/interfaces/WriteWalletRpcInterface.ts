@@ -65,6 +65,7 @@ export interface StuckTransaction {
    blockOffset?: number; // How many block to wait for transaction to be validated
    retries?: number; // How many times should transaction retry to successfully submit
    feeIncrease?: number; // Factor to increase fee in resubmitting process
+   maxFeeInDrops?: number; // fee to use when all retries fail
 }
 
 export interface BaseRpcConfig {
