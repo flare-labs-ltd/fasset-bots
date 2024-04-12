@@ -1,11 +1,12 @@
 import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
-import { AgentSettingsConfig, Secrets, decodedChainId } from "@flarelabs/fasset-bots-core/config";
+import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { artifacts, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
+import * as fs from 'fs';
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -277,5 +278,39 @@ export class AgentService {
     async getAgentWorkAddress(): Promise<string> {
         const secrets = Secrets.load(FASSET_BOT_SECRETS);
         return secrets.required("owner.native.address");
+    }
+
+    async getFassetSymbols(): Promise<string[]> {
+        const config = loadConfigFile(FASSET_BOT_CONFIG)
+        const fassets: string[] = [];
+        Object.entries(config.fAssets).forEach(([key, asset]) => {
+            fassets.push(key);
+        });
+        return fassets;
+    }
+
+    async checkWhitelisted(): Promise<boolean> {
+        const fassets = await this.getFassetSymbols();
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fassets[0]);
+        const whitelisted = await cli.context.agentOwnerRegistry.isWhitelisted(cli.owner.managementAddress);
+        return whitelisted;
+    }
+
+    async saveSecretsFile(secrets: string): Promise<void> {
+        const jsonSecrets = JSON.stringify(secrets, null, 4);
+        fs.writeFileSync(FASSET_BOT_SECRETS, jsonSecrets);
+    }
+
+    async checkSecretsFile(): Promise<boolean> {
+        try {
+            await fs.promises.access(FASSET_BOT_SECRETS, fs.constants.F_OK);
+            return true;
+          } catch (err: any) {
+            if (err.code === 'ENOENT') {
+              return false;
+            } else {
+              throw err;
+            }
+        }
     }
 }
