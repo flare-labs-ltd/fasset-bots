@@ -508,11 +508,17 @@ describe("Agent bot tests", () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const spyTop = spy.on(agentBot, "checkAgentForCollateralRatiosAndTopUp");
+        // one inital price check must happen
+        await agentBot.runStep(orm.em);
+        expect(spyTop).to.have.been.called.exactly(1);
+        // afterwards, price change shouldn't happen until next price finalization event
+        await agentBot.runStep(orm.em);
+        expect(spyTop).to.have.been.called.exactly(1);
         // mock price changes
         await context.ftsoManager.mockFinalizePriceEpoch();
-        // check collateral ratio after price changes
+        // now the collateral ratio check must happen again
         await agentBot.runStep(orm.em);
-        expect(spyTop).to.have.been.called.once;
+        expect(spyTop).to.have.been.called.exactly(2);
     });
 
     it("Should announce agent destruction, change status from NORMAL via DESTROYING, destruct agent and set active to false", async () => {

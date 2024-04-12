@@ -62,6 +62,7 @@ export class AgentBot {
     latestProof: ConfirmedBlockHeightExists.Proof | null = null;
     runner?: IRunner;
     maxHandleEventBlocks = 1000;
+    lastPriceReaderEventBlock = -1;
 
     static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
@@ -216,6 +217,7 @@ export class AgentBot {
      */
     async runStep(rootEm: EM): Promise<void> {
         await this.eventReader.troubleshootEvents(rootEm);
+        await this.checkForPriceChangeEvents();
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
         await this.handleAgentsWaitingsAndCleanUp(rootEm);
@@ -297,9 +299,6 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
             await this.handleAgentDestruction(em, event.args.agentVault);
-        } else if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
-            logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
-            await this.checkAgentForCollateralRatiosAndTopUp();
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendCCBAlert(event.args.timestamp);
@@ -1490,6 +1489,23 @@ export class AgentBot {
         } else {
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${ownerUnderlyingBalance}
                 on underlying address ${this.ownerUnderlyingAddress}.`);
+        }
+    }
+
+    /**
+     * Check if any new PriceEpochFinalized events happened, which means that it may be necessary to topup collateral.
+     */
+    async checkForPriceChangeEvents() {
+        let needToCheckPrices: boolean;
+        if (this.lastPriceReaderEventBlock >= 0) {
+            [needToCheckPrices, this.lastPriceReaderEventBlock] = await this.eventReader.priceChangeEventHappened(this.lastPriceReaderEventBlock + 1);
+        } else {
+            needToCheckPrices = true;   // this is first time in this method, so check is necessary
+            this.lastPriceReaderEventBlock = await this.eventReader.lastFinalizedBlock() + 1;
+        }
+        if (needToCheckPrices) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized'.`);
+            await this.checkAgentForCollateralRatiosAndTopUp();
         }
     }
 

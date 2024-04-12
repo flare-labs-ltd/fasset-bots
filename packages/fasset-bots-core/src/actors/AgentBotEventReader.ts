@@ -22,6 +22,11 @@ export class AgentBotEventReader {
 
     eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
 
+    async lastFinalizedBlock() {
+        const blockHeight = await web3.eth.getBlockNumber();
+        return blockHeight - this.context.nativeChainInfo.finalizationBlocks;
+    }
+
     /**
      * Checks is there are any new events from assetManager.
      * @param em entity manager
@@ -32,11 +37,9 @@ export class AgentBotEventReader {
         logger.info(`Agent ${this.agentVaultAddress} started reading native events FROM block ${agentEnt.currentEventBlock}`);
         // get all logs for this agent
         const nci = this.context.nativeChainInfo;
-        const lastChainBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
-        const lastBlock = Math.min(agentEnt.currentEventBlock + maximumBlocks, lastChainBlock);
+        const lastBlock = Math.min(agentEnt.currentEventBlock + maximumBlocks, await this.lastFinalizedBlock());
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
-        let lastPriceChangedEvent: EvmEvent | undefined;
         for (let lastBlockRead = agentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
             if (this.bot.stopRequested()) break;
             // asset manager events
@@ -47,21 +50,6 @@ export class AgentBotEventReader {
                 topics: [null, encodedVaultAddress],
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
-            // price change emitter events - only handle the last one, if there are more
-            const logsFtsoManager = await web3.eth.getPastLogs({
-                address: this.context.priceChangeEmitter.address,
-                fromBlock: lastBlockRead,
-                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
-                topics: [null],
-            });
-            for (const event of this.eventDecoder.decodeEvents(logsFtsoManager)) {
-                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
-                    lastPriceChangedEvent = event;
-                }
-            }
-        }
-        if (lastPriceChangedEvent) {
-            events.push(lastPriceChangedEvent);
         }
         logger.info(`Agent ${this.agentVaultAddress} finished reading native events TO block ${lastBlock}`);
         // sort events first by their block numbers, then internally by their event index
@@ -111,14 +99,7 @@ export class AgentBotEventReader {
             toBlock: event.blockNumber,
             topics: [null, encodedVaultAddress],
         });
-        const logsFtsoManager = await web3.eth.getPastLogs({
-            address: this.context.priceChangeEmitter.address,
-            fromBlock: event.blockNumber,
-            toBlock: event.blockNumber,
-            topics: [null],
-        });
         events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
-        events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
         for (const _event of events) {
             if (_event.transactionIndex === event.transactionIndex && _event.logIndex === event.logIndex) {
                 return _event;
@@ -126,4 +107,23 @@ export class AgentBotEventReader {
         }
     }
 
+    // AgentBot doesn't need the log of all price change events, it just has to react when a price change event happened recently.
+    async priceChangeEventHappened(fromBlock: number): Promise<[boolean, number]> {
+        const nci = this.context.nativeChainInfo;
+        const lastBlock = await this.lastFinalizedBlock();
+        for (let lastBlockRead = fromBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
+            const logsPriceChangeEmitter = await web3.eth.getPastLogs({
+                address: this.context.priceChangeEmitter.address,
+                fromBlock: lastBlockRead,
+                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
+                topics: [null],
+            });
+            for (const event of this.eventDecoder.decodeEvents(logsPriceChangeEmitter)) {
+                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
+                    return [true, lastBlock];
+                }
+            }
+        }
+        return [false, lastBlock];
+    }
 }
