@@ -11,6 +11,7 @@ export async function runAgentServer() {
 
     app.use(helmet());
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    app.enableCors();
 
     const config = new DocumentBuilder()
         .setTitle("FAsset agent bot REST APIs")
