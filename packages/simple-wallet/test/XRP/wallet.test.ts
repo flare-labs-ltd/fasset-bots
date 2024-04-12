@@ -16,7 +16,7 @@ const XRPMccConnectionTest: RippleRpcConfig = {
    password: "",
    stuckTransactionOptions: {
       blockOffset: 5,
-      maxFeeInDrops: 1e5
+      lastResortFee: 1e5
    },
 };
 

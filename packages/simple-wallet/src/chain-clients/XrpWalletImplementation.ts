@@ -30,7 +30,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    timeoutAddressLock: number;
    maxRetries: number;
    feeIncrease: number;
-   maxFeeInDrops: number;
+   lastResortFeeInDrops: number;
 
    constructor(createConfig: RippleRpcConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
@@ -68,7 +68,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       this.maxRetries = createConfig.stuckTransactionOptions?.retries ?? resubmit.retries!;
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
-      this.maxFeeInDrops = createConfig.stuckTransactionOptions?.maxFeeInDrops ?? resubmit.maxFeeInDrops!;
+      this.lastResortFeeInDrops = createConfig.stuckTransactionOptions?.lastResortFee ?? resubmit.lastResortFee!;
       this.timeoutAddressLock = getTimeLockForAddress(this.chainType, this.blockOffset, this.maxRetries);
    }
 
@@ -418,7 +418,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const newFee = (retry < this.maxRetries)
                ? toBN(newTransaction.Fee!).muln(this.feeIncrease)
-               : toBN(this.maxFeeInDrops);
+               : toBN(this.lastResortFeeInDrops);
             newTransaction.LastLedgerSequence = currentValidLedger + this.blockOffset;
             this.checkFeeRestriction(toBN(newFee), res.maxFee);
             newTransaction.Fee = newFee.toString();
