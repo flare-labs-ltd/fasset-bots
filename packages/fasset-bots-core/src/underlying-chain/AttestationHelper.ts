@@ -94,11 +94,9 @@ export class AttestationHelper {
         endTimestamp: number
     ): Promise<AttestationRequestId | null> {
         logger.info(`Attestation helper: requesting referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`);
-        let overflowBlock = await this.chain.getBlockAt(endBlock + 1);
-        while (overflowBlock != null && overflowBlock.timestamp <= endTimestamp) {
-            overflowBlock = await this.chain.getBlockAt(overflowBlock.number + 1);
-        }
-        if (overflowBlock == null) {
+        const overflowBlockNum = Math.max(endBlock + 1, await this.chain.getBlockHeight() - this.chain.finalizationBlocks);
+        const overflowBlock = await this.chain.getBlockAt(overflowBlockNum);
+        if (overflowBlock == null || overflowBlock.timestamp <= endTimestamp) {
             const info = `overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${endTimestamp}, height ${await this.chain.getBlockHeight()})`;
             logger.error(`Attestation helper error: ${info}`);
             throw new AttestationHelperError(info);

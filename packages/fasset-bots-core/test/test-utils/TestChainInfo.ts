@@ -22,6 +22,8 @@ export interface TestChainInfo extends ChainInfo {
 }
 
 export const testNativeChainInfo: NativeChainInfo = {
+    chainName: "Native",
+    tokenSymbol: "NAT",
     finalizationBlocks: 0,
     readLogsChunkSize: 10,
 };

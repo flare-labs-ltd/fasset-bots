@@ -187,7 +187,7 @@ export class AgentService {
         await cli.upgradeWNatContract(agentVaultAddress);
     }
 
-    async getAgentInfo(fAssetSymbol: string): Promise<AgentData>  {
+    async getAgentInfo(fAssetSymbol: string): Promise<AgentData> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         // get collateral data
         const collateralTypes = await cli.context.assetManager.getCollateralTypes();
@@ -255,7 +255,7 @@ export class AgentService {
     }
 
     async saveNotification(notification: PostAlert): Promise<void> {
-        let notifications: PostAlert[] | undefined  = await this.cacheManager.get<PostAlert[]>("notifications");
+        let notifications: PostAlert[] | undefined = await this.cacheManager.get<PostAlert[]>("notifications");
         if (notifications == undefined) {
             notifications = [];
         }
@@ -270,7 +270,7 @@ export class AgentService {
     }
 
     async getNotifications(): Promise<PostAlert[]> {
-        const notifications: PostAlert[]  = (await this.cacheManager.get<PostAlert[]>("notifications")) ?? [];
+        const notifications: PostAlert[] = (await this.cacheManager.get<PostAlert[]>("notifications")) ?? [];
         return notifications;
     }
 

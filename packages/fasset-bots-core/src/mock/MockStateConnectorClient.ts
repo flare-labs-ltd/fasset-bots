@@ -53,7 +53,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
 
     setTimedFinalization(timedRoundSeconds: number) {
         this.finalizationType = 'timed';
-        setInterval(() => this.finalizeRound(), timedRoundSeconds * 1000);
+        setInterval(() => void this.finalizeRound(), timedRoundSeconds * 1000);
     }
 
     addChain(id: SourceId, chain: MockChain) {

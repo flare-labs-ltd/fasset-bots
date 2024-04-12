@@ -5,7 +5,7 @@ import { Secrets, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
+import { IBlockChain, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { BN_ZERO, toBN } from "../../../src/utils/helpers";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { receiveBlockAndTransaction } from "../../test-utils/test-helpers";
@@ -197,6 +197,17 @@ describe("testXRP blockchain tests via indexer", () => {
         const transactionHash = "236DDA439C92DE126B549F5DFD1B813C8F1E68A94B27BFBD3B830B16B26C83DA";
         const transactionBlock = await blockchainIndexerClient.getTransactionBlock(transactionHash);
         expect(transactionBlock).to.be.null;
+    });
+
+    it("Should find last block in indexer", async () => {
+        const chain: IBlockChain = blockchainIndexerClient;
+        let overflowBlockNum = await chain.getBlockHeight();
+        while (true) {
+            const overflowBlock = await chain.getBlockAt(overflowBlockNum);
+            console.log("Overflow block:", overflowBlock);
+            if (overflowBlock != null) break;
+            --overflowBlockNum;
+        }
     });
 
     it("Should return appropriate status", async () => {

@@ -242,7 +242,7 @@ export function reportError(error: any) {
 }
 
 // either (part of) error message or an error constructor
-export type ErrorFilter = string | { new (...args: any[]): Error };
+export type ErrorFilter = string | { new(...args: any[]): Error };
 
 export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
     const message = String(error?.message ?? "");

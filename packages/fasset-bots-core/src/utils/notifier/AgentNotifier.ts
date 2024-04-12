@@ -23,6 +23,9 @@ export enum AgentNotificationKey {
     MINTING_EXECUTED = "MINTING EXECUTED",
     MINTING_DELETED = "MINTING DELETED",
     MINTING_STARTED = "MINTING STARTED",
+    MINTING_DEFAULT_STARTED = "MINTING DEFAULT STARTED",
+    MINTING_DEFAULT_SUCCESS = "MINTING DEFAULT SUCCESS",
+    MINTING_DEFAULT_FAILED = "MINTING DEFAULT FAILED",
     // redemption
     REDEMPTION_CORNER_CASE = "REDEMPTION",
     REDEMPTION_FAILED = "REDEMPTION FAILED",
@@ -104,27 +107,6 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendLiquidationWasPerformed(value: string) {
         await this.info(AgentNotificationKey.LIQUIDATION_WAS_PERFORMED, `Liquidation was performed for agent ${this.address} with value of ${value}`);
-    }
-
-    async sendMintingIndexerExpired(requestId: BNish) {
-        await this.danger(
-            AgentNotificationKey.MINTING_CORNER_CASE,
-            `Minting ${requestId} expired in indexer. Unstick minting was executed for agent ${this.address}.`
-        );
-    }
-
-    async sendMintingPaymentProofRequested(requestId: BNish) {
-        await this.info(
-            AgentNotificationKey.MINTING_CORNER_CASE,
-            `Agent ${this.address} requested payment proof for minting ${requestId}.`
-        );
-    }
-
-    async sendMintingNonPaymentProofRequested(requestId: BNish) {
-        await this.info(
-            AgentNotificationKey.MINTING_CORNER_CASE,
-            `Agent ${this.address} requested non payment proof for minting ${requestId}.`
-        );
     }
 
     async sendRedemptionExpiredInIndexer(requestId: BNish) {
@@ -373,8 +355,37 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.MINTING_DELETED, `Minting ${requestId} deleted for ${this.address}.`);
     }
 
-    async sendMintingStared(requestId: BNish) {
+    async sendMintingStarted(requestId: BNish) {
         await this.info(AgentNotificationKey.MINTING_STARTED, `Minting ${requestId} started for ${this.address}.`);
+    }
+
+    async sendMintingIndexerExpired(requestId: BNish) {
+        await this.danger(
+            AgentNotificationKey.MINTING_CORNER_CASE,
+            `Minting ${requestId} expired in indexer. Unstick minting was executed for agent ${this.address}.`
+        );
+    }
+
+    async sendMintingNonPaymentProofRequested(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_DEFAULT_STARTED,
+            `Agent ${this.address} requested non payment proof for minting ${requestId}.`);
+    }
+
+    async sendMintingDefaultSuccess(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_DEFAULT_SUCCESS,
+            `Agent ${this.address} proved non-payment for minting ${requestId} and executed default.`);
+    }
+
+    async sendMintingDefaultFailure(requestId: BNish, roundId: number, requestData: string) {
+        await this.danger(
+            AgentNotificationKey.MINTING_DEFAULT_FAILED,
+            `Agent ${this.address} could obtain non-payment proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
+        );
+    }
+
+    async sendMintingPaymentProofRequested(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_CORNER_CASE,
+            `Agent ${this.address} requested payment proof for minting ${requestId}.`);
     }
 
     async sendRedemptionStarted(requestId: BNish) {

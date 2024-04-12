@@ -160,6 +160,8 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
+        "chainName": "Coston",
+        "tokenSymbol": "CFLR",
         "finalizationBlocks": 6,
         "readLogsChunkSize": 10
     },

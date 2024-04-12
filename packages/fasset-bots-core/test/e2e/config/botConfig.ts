@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
 import { Secrets, indexerApiKey } from "../../../src/config";
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
-import { loadConfigFile, updateConfigFilePaths, validateAgentConfigFile, validateConfigFile } from "../../../src/config/config-file-loader";
+import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createWalletClient, decodedChainId, supportedSourceId } from "../../../src/config/create-wallet-client";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
@@ -21,12 +21,6 @@ const walletBTCUrl = "https://api.bitcore.io/api/BTC/mainnet/";
 const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/mainnet/";
 const walletTestXRPUrl = "https://s.altnet.rippletest.net:51234";
 const walletXRPUrl = "https://s1.ripple.com:51234/";
-
-function simpleLoadConfigFile(fpath: string) {
-    const config = JSON.parse(readFileSync(fpath).toString()) as BotConfigFile;
-    updateConfigFilePaths(fpath, config);
-    return config;
-}
 
 describe("Bot config tests", () => {
     let secrets: Secrets;
@@ -177,25 +171,6 @@ describe("Bot config tests", () => {
         expect(agentBotConfigChain.stateConnector).not.be.null;
     });
 
-    it("Should not validate config - contractsJsonFile or addressUpdater must be defined", async () => {
-        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        runConfig.contractsJsonFile = undefined;
-        runConfig.assetManagerController = undefined;
-        const fn = () => {
-            return validateConfigFile(runConfig);
-        };
-        expect(fn).to.throw(`At least one of contractsJsonFile or assetManagerController must be defined`);
-    });
-
-    it("Should not validate config - walletUrl must be defined", async () => {
-        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        Object.values(runConfig.fAssets)[0].walletUrl = undefined;
-        const fn = () => {
-            return validateAgentConfigFile(runConfig);
-        };
-        expect(fn).to.throw(`Missing walletUrl in FAsset type ${Object.keys(runConfig.fAssets)[0]}`);
-    });
-
     it("Should return supported source id", () => {
         expect(supportedSourceId(SourceId.ALGO)).to.be.false;
         expect(supportedSourceId(SourceId.LTC)).to.be.false;
@@ -216,7 +191,7 @@ describe("Bot config tests", () => {
     });
 
     it("Should not create config missing StateConnector contract", async () => {
-        runConfig = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
+        runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_SC;
         await expect(createBotConfig("keeper", secrets, runConfig, accounts[0]))
             .to.eventually.be.rejectedWith("Cannot find address for contract StateConnector")

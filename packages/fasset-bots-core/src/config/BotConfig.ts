@@ -145,11 +145,11 @@ export async function createBotFAssetConfig(
         priceChangeEmitter: fassetInfo.priceChangeEmitter,
     };
     if (type === "agent" || type === "user") {
-        assertNotNullCmd(fassetInfo.walletUrl, "Setting 'walletUrl' is required in config");
+        assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
         result.wallet = createBlockchainWalletHelper(type, secrets, sourceId, em, fassetInfo.walletUrl, walletOptions);
     }
     if (type === "agent" || type === "user" || type === "keeper") {
-        assertNotNullCmd(fassetInfo.indexerUrl, "Setting 'indexerUrl' is required in config");
+        assertNotNullCmd(fassetInfo.indexerUrl, "Missing indexerUrl in FAsset type ${fAssetSymbol}");
         assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
         assertNotNull(submitter);   // if this is missing, it is program error
         const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
