@@ -16,8 +16,12 @@ const XRPMccConnectionTest: RippleRpcConfig = {
    password: "",
    stuckTransactionOptions: {
       blockOffset: 5,
+      retries: 2,
       lastResortFee: 1e5
    },
+   rateLimitOptions: {
+      timeoutMs: 60000,
+   }
 };
 
 const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
@@ -147,15 +151,27 @@ describe("Xrp wallet tests", () => {
    });
 
    it("Should replace transactions with low fee", async () => {
-      const lowFee = toBN(5);
+      const lowFee = toBN(5); // if changing this then change the second to last `expect`
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const balanceBefore = await wClient.getAccountBalance(targetAddress);
-      const balanceBefore1 = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
       await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
-      const balanceAfter = await wClient.getAccountBalance(targetAddress);
-      const balanceAfter1 = await wClient.getAccountBalance(fundedWallet.address);
-      expect(balanceBefore.lt(balanceAfter)).to.be.true;
-      expect(balanceBefore1.gt(balanceAfter1)).to.be.true;
+      const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
+      expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).subn(10)));
+      expect(balanceTargetAfter.eq(balanceTargetBefore.add(amountToSendDropsSecond)));
+   });
+
+   it("Should replace transactions with last resort fee", async () => {
+      const lowFee = toBN(1);
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
+      const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
+      expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).subn(wClient.lastResortFeeInDrops!)));
+      expect(balanceTargetAfter.eq(balanceTargetBefore.add(amountToSendDropsSecond)));
    });
 
    it("Should not replace transactions with low fee - no retries left", async () => {
