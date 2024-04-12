@@ -13,6 +13,8 @@ import { AgentBot } from "./AgentBot";
 const MAX_EVENT_RETRY = 5;
 
 export class AgentBotEventReader {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public bot: AgentBot,
         public context: IAssetAgentContext,
