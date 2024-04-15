@@ -42,6 +42,15 @@ export interface AgentData {
     whitelisted: boolean;
 }
 
+export interface AllCollaterals {
+    fassetSymbol: string,
+    collaterals: {
+        symbol: string;
+        balance: string;
+        wrapped?: string;
+    }[]
+}
+
 export interface AgentVaultStatus {
     vaultAddress: string;
     poolCollateralRatioBIPS: string;

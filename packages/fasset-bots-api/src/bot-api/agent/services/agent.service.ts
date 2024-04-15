@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
+import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals } from "../../common/AgentResponse";
 import * as fs from 'fs';
 
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -312,5 +312,16 @@ export class AgentService {
               throw err;
             }
         }
+    }
+
+    async getAllCollaterals(): Promise<AllCollaterals[]> {
+        const fassets = await this.getFassetSymbols();
+        const collaterals: AllCollaterals[] = [];
+        for (const fasset of fassets) {
+            const agentInfo = await this.getAgentInfo(fasset);
+            const collateral: AllCollaterals = { fassetSymbol: fasset, collaterals: agentInfo.collaterals };
+            collaterals.push(collateral);
+        }
+        return collaterals;
     }
 }
