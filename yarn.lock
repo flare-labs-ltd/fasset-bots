@@ -1277,6 +1277,11 @@ __metadata:
     rxjs: ^7.8.1
     source-map-support: 0.5.21
     typescript: 5.2.2
+    web3: 1.10.2
+    web3-core: 1.10.2
+    web3-eth: 1.10.2
+    web3-eth-abi: 1.10.2
+    web3-utils: 1.10.2
   languageName: unknown
   linkType: soft
 

@@ -42,6 +42,11 @@ export interface AgentData {
     whitelisted: boolean;
 }
 
+export interface WorkAddress {
+    address: string;
+    private_key: string;
+}
+
 export interface AllCollaterals {
     fassetSymbol: string,
     collaterals: {
@@ -69,3 +74,8 @@ type BNsToStrings<T> = {
     [P in keyof T]: T[P] extends BNish ? string : T[P] extends boolean ? boolean : T[P]
 }
 export type AgentVaultInfo = BNsToStrings<AgentInfo>
+
+export const requiredKeysForSecrets = ["wallet.encryption_password",
+                                        "apiKey.indexer", "apiKey.xrp_rpc", "apiKey.native_rpc", "apiKey.agent_bot",
+                                    "owner.management.address", "owner.native.address", "owner.native.private_key",
+                                    "owner.testXRP.address", "owner.testXRP.private_key", "timeKeeper.native_address", "timeKeeper.native_private_key"];

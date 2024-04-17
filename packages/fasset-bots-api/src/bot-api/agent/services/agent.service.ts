@@ -5,8 +5,9 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals } from "../../common/AgentResponse";
+import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
+import Web3 from "web3";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -297,8 +298,28 @@ export class AgentService {
     }
 
     async saveSecretsFile(secrets: string): Promise<void> {
-        const jsonSecrets = JSON.stringify(secrets, null, 4);
-        fs.writeFileSync(FASSET_BOT_SECRETS, jsonSecrets);
+        const missingKeys: string[] = [];
+        // Validate json object to include necessary keys
+        function checkNested(obj: any, ...levels: string[]): boolean {
+            if (obj === undefined) return false;
+            if (levels.length === 0) return true;
+            const [level, ...rest] = levels;
+            if (Object.prototype.hasOwnProperty.call(obj, level)) {
+                return checkNested(obj[level], ...rest);
+            }
+            return false;
+        }
+        requiredKeysForSecrets.forEach((attr) => {
+            const props = attr.split(".");
+            if (!checkNested(secrets, ...props)) {
+              missingKeys.push(attr);
+            }
+        });
+        if (missingKeys.length > 0) {
+            throw new Error(`Missing keys: ${missingKeys.join(', ')}`);
+        }
+        const jsonToSave = JSON.stringify(secrets, null, 4);
+        fs.writeFileSync(FASSET_BOT_SECRETS, jsonToSave);
     }
 
     async checkSecretsFile(): Promise<boolean> {
@@ -323,5 +344,25 @@ export class AgentService {
             collaterals.push(collateral);
         }
         return collaterals;
+    }
+
+    async generateWorkAddress(): Promise<any> {
+        const web3 = new Web3();
+        const account = web3.eth.accounts.create();
+        return account;
+    }
+
+    async saveWorkAddress(address: string, privateKey: string): Promise<void> {
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        if(secrets.data.owner){
+            secrets.data.owner.native.address = address;
+            secrets.data.owner.native.private_key = privateKey;
+            console.log(secrets);
+            const json = JSON.stringify(secrets.data, null, 4);
+            fs.writeFileSync(FASSET_BOT_SECRETS, json);
+        }
+        else {
+            throw new Error(`Owner field does not exist in secrets.`);
+        }
     }
 }

@@ -411,4 +411,20 @@ export class AgentController {
     ): Promise<ApiResponseWrapper<AllCollaterals[]>> {
         return handleApiResponse(this.agentService.getAllCollaterals());
     }
+
+    @Post("workAddress/:publicAddress/:privateKey")
+    @HttpCode(200)
+    public async changeWorkAddress(
+        @Param("publicAddress") publicAddress: string,
+        @Param("privateKey") privateKey: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.saveWorkAddress(publicAddress, privateKey));
+    }
+
+    @Get("generateWorkAddress")
+    @HttpCode(200)
+    public async generateWorkAddress(
+    ): Promise<ApiResponseWrapper<any>> {
+        return handleApiResponse(this.agentService.generateWorkAddress());
+    }
 }
