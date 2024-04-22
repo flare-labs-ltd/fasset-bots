@@ -366,16 +366,6 @@ export function compareHexValues(hex1: string, hex2: string) {
     return upperHex1 === upperHex2;
 }
 
-// find at least one substring from array in message
-export function findOneSubstring(message: string, substrings: string[]) {
-    for (const substring of substrings) {
-        if (message.includes(substring)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 export function firstValue<K, V>(map: Map<K, V>): V | undefined {
     for (const v of map.values()) {
         return v;

@@ -2,7 +2,6 @@ import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import { Secrets } from "../config";
-import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
@@ -22,7 +21,7 @@ import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset
 import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
 import {
     BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
-    VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, findOneSubstring, toBN
+    VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN
 } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -762,7 +761,6 @@ export class AgentBot {
      * @returns true if withdraw successful or time expired
      */
     async withdrawCollateral(withdrawValidAt: BN, withdrawAmount: BN, latestTimestamp: BN, type: ClaimType): Promise<boolean> {
-        const desiredErrorIncludes = ["withdrawal: too late", "withdrawal: CR too low"];
         logger.info(`Agent ${this.agent.vaultAddress} is waiting to withdraw ${type} collateral.`);
         // agent waiting for pool token redemption
         if (toBN(withdrawValidAt).lte(latestTimestamp)) {
@@ -778,7 +776,7 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} withdrew ${type} collateral ${withdrawAmount}.`);
                 return true;
             } catch (error) {
-                if (error instanceof Error && findOneSubstring(error.message, desiredErrorIncludes)) {
+                if (errorIncluded(error, ["withdrawal: too late", "withdrawal: CR too low"])) {
                     await this.notifier.sendAgentCannotWithdrawCollateral(withdrawAmount, type);
                     return true;
                 }
@@ -844,7 +842,7 @@ export class AgentBot {
      * @param agentEnt agent entity
      * @returns current status: not_announced -> announced -> can_exit -> exited
      */
-    async exitAvailableProcessStatus(agentEnt: AgentEntity) {
+    async getExitAvailableProcessStatus(agentEnt: AgentEntity) {
         const agentInfo = await this.agent.getAgentInfo();
         if (!agentInfo.publiclyAvailable) return "exited";
         if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(BN_ZERO)) return "not_announced";

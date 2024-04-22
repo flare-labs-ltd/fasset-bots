@@ -1,6 +1,6 @@
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { AgentRedemption, AgentRedemptionState } from "../entities/agent";
 import { Agent } from "../fasset/Agent";
@@ -82,6 +82,7 @@ export class AgentBotRedemption {
         const openRedemptions = await this.openRedemptions(rootEm, false);
         logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length} for CORNER CASE.`);
         for (const rd of openRedemptions) {
+            // TODO: write expired proof service based on timekeepers!
             const proof = await this.bot.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
             if (proof) {
                 logger.info(`Agent ${this.agent.vaultAddress} found corner case for redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);

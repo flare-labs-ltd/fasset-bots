@@ -197,7 +197,7 @@ export class AgentBotCommands {
      */
     async announceExitAvailableList(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        const status = await agentBot.exitAvailableProcessStatus(agentEnt);
+        const status = await agentBot.getExitAvailableProcessStatus(agentEnt);
         if (status === "not_announced") {
             const exitAllowedAt = await agentBot.agent.announceExitAvailable();
             agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;

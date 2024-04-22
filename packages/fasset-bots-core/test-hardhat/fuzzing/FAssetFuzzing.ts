@@ -218,7 +218,7 @@ describe("Fuzzing tests", () => {
                 await commonTrackedState.readUnhandledEvents();
             }
         }
-        timeKeeper.clear();
+        timeKeeper.stop();
         // wait for all threads to finish
         runner.comment(`Remaining threads: ${runner.runningThreads}`);
         while (runner.runningThreads > 0) {

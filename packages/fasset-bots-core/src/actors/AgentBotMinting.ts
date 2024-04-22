@@ -1,7 +1,7 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { CollateralReserved } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { AgentMinting, AgentMintingState } from "../entities/agent";
 import { Agent } from "../fasset/Agent";
@@ -130,7 +130,7 @@ export class AgentBotMinting {
      * @param minting AgentMinting entity
      */
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
-        const proof: ConfirmedBlockHeightExists.Proof | null = await this.bot.checkProofExpiredInIndexer(toBN(minting.lastUnderlyingBlock), toBN(minting.lastUnderlyingTimestamp));
+        const proof = await this.bot.checkProofExpiredInIndexer(toBN(minting.lastUnderlyingBlock), toBN(minting.lastUnderlyingTimestamp));
         if (proof) {
             // corner case: proof expires in indexer
             await this.handleExpiredMinting(minting, proof);
