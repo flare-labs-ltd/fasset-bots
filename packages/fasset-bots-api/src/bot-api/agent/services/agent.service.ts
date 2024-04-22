@@ -1,13 +1,14 @@
 import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { artifacts, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { artifacts, createSha256Hash, generateRandomHexString, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
+import { exec } from "child_process";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -364,5 +365,25 @@ export class AgentService {
         else {
             throw new Error(`Owner field does not exist in secrets.`);
         }
+    }
+
+    async checkBotStatus(): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            exec("ps -aux", (err, stdout, stderr) => {
+                if (err) {
+                    console.error(`Error executing command: ${err}`);
+                    reject('Internal server error');
+                }
+                else{
+                    resolve(stdout.toLowerCase().indexOf("yarn run-agent") > -1);
+                }
+            });
+        });
+    }
+
+    async generateAPIKey(): Promise<APIKey> {
+        const apiKey = generateRandomHexString(32);
+        const hash = createSha256Hash(apiKey);
+        return {key: apiKey, hash: hash};
     }
 }

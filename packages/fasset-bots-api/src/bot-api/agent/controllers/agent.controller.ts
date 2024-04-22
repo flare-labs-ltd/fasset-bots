@@ -3,7 +3,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus, AllCollaterals } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus, AllCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
@@ -413,6 +413,7 @@ export class AgentController {
     }
 
     @Post("workAddress/:publicAddress/:privateKey")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async changeWorkAddress(
         @Param("publicAddress") publicAddress: string,
@@ -422,9 +423,25 @@ export class AgentController {
     }
 
     @Get("generateWorkAddress")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async generateWorkAddress(
     ): Promise<ApiResponseWrapper<any>> {
         return handleApiResponse(this.agentService.generateWorkAddress());
+    }
+
+    @Get("botStatus")
+    @UseGuards(AuthGuard("api-key"))
+    @HttpCode(200)
+    public async getBotStatus(
+    ): Promise<ApiResponseWrapper<boolean>> {
+        return handleApiResponse(this.agentService.checkBotStatus());
+    }
+
+    @Get("APIKey")
+    @HttpCode(200)
+    public async generateAPIKey(
+    ): Promise<ApiResponseWrapper<APIKey>> {
+        return handleApiResponse(this.agentService.generateAPIKey());
     }
 }
