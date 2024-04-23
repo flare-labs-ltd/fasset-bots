@@ -1,6 +1,6 @@
 import { Payment } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
-import { CollateralReserved } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved } from "../../typechain-truffle/IIAssetManager";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";

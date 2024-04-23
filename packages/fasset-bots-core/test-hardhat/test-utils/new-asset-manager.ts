@@ -1,10 +1,18 @@
 import { time } from "@openzeppelin/test-helpers";
+import coder from "web3-eth-abi";
 import { AssetManagerSettings, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { findEvent } from "../../src/utils/events/truffle";
-import { AssetManagerControllerInstance, AssetManagerInstance, FAssetInstance, Truffle } from "../../typechain-truffle";
-import { GovernanceCallTimelocked } from "../../typechain-truffle/AssetManagerController";
+import { requireNotNull } from "../../src/utils/helpers";
+import { artifacts, web3 } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { artifacts } from "../../src/utils/web3";
+import { AssetManagerControllerInstance, AssetManagerInitInstance, FAssetInstance, GovernanceSettingsInstance, IIAssetManagerInstance, Truffle } from "../../typechain-truffle";
+import { GovernanceCallTimelocked } from "../../typechain-truffle/AssetManagerController";
+import { DiamondCut, FacetCutAction } from "./diamond";
+
+const IIAssetManager = artifacts.require('IIAssetManager');
+const AssetManager = artifacts.require('AssetManager');
+const AssetManagerInit = artifacts.require('AssetManagerInit');
+const FAsset = artifacts.require('FAsset');
 
 export async function newAssetManager(
     governanceAddress: string,
@@ -16,21 +24,25 @@ export async function newAssetManager(
     decimals: number,
     assetManagerSettings: AssetManagerSettings,
     collateralTokens: CollateralType[],
-    encodedLiquidationStrategySettings: string,
-    updateExecutor: string = governanceAddress
-): Promise<[AssetManagerInstance, FAssetInstance]> {
-    const AssetManager = await linkAssetManager();
-    const FAsset = artifacts.require("FAsset");
+    options?: {
+        governanceSettings?: string | GovernanceSettingsInstance,
+        updateExecutor?: string,
+    }
+): Promise<[IIAssetManagerInstance, FAssetInstance]> {
+    // 0x8... is not a contract, but it is valid non-zero address so it will work in tests where we don't switch to production mode
+    const governanceSettings = options?.governanceSettings ?? "0x8000000000000000000000000000000000000000";
+    const updateExecutor = options?.updateExecutor ?? governanceAddress;
+    const [diamondCuts, assetManagerInit] = await deployAssetManagerFacets();
     const fAsset = await FAsset.new(governanceAddress, name, symbol, assetName, assetSymbol, decimals);
-    const assetManagerControllerAddress = typeof assetManagerController === "string" ? assetManagerController : assetManagerController.address;
+    const assetManagerControllerAddress = typeof assetManagerController === 'string' ? assetManagerController : assetManagerController.address;
     assetManagerSettings = web3DeepNormalize({
         ...assetManagerSettings,
         assetManagerController: assetManagerControllerAddress,
-        fAsset: fAsset.address,
+        fAsset: fAsset.address
     });
     collateralTokens = web3DeepNormalize(collateralTokens);
-    const assetManager = await AssetManager.new(assetManagerSettings, collateralTokens, encodedLiquidationStrategySettings);
-    if (typeof assetManagerController !== "string") {
+    const assetManager = await newAssetManagerDiamond(diamondCuts, assetManagerInit, governanceSettings, governanceAddress, assetManagerSettings, collateralTokens);
+    if (typeof assetManagerController !== 'string') {
         const res = await assetManagerController.addAssetManager(assetManager.address, { from: governanceAddress });
         await waitForTimelock(res, assetManagerController, updateExecutor);
     } else {
@@ -41,75 +53,86 @@ export async function newAssetManager(
     return [assetManager, fAsset];
 }
 
+export async function newAssetManagerDiamond(diamondCuts: DiamondCut[], assetManagerInit: AssetManagerInitInstance, governanceSettings: string | GovernanceSettingsInstance,
+    governanceAddress: string, assetManagerSettings: AssetManagerSettings, collateralTokens: CollateralType[]) {
+    const governanceSettingsAddress = typeof governanceSettings === 'string' ? governanceSettings : governanceSettings.address;
+    const initParameters = abiEncodeCall(assetManagerInit, "init",
+        [governanceSettingsAddress, governanceAddress, assetManagerSettings, collateralTokens]);
+    const assetManagerDiamond = await AssetManager.new(diamondCuts, assetManagerInit.address, initParameters);
+    return await IIAssetManager.at(assetManagerDiamond.address);
+}
+
 // simulate waiting for governance timelock
-export async function waitForTimelock<C extends Truffle.ContractInstance>(
-    response: Truffle.TransactionResponse<any> | Promise<Truffle.TransactionResponse<any>>,
-    contract: C,
-    executorAddress: string
-) {
-    const res = (await response) as Truffle.TransactionResponse<GovernanceCallTimelocked>;
-    const timelockEvent = findEvent(res, "GovernanceCallTimelocked");
+export async function waitForTimelock<C extends Truffle.ContractInstance>(response: Truffle.TransactionResponse<any> | Promise<Truffle.TransactionResponse<any>>, contract: C, executorAddress: string) {
+    const res = await response as Truffle.TransactionResponse<GovernanceCallTimelocked>;
+    const timelockEvent = findEvent(res, 'GovernanceCallTimelocked');
     if (timelockEvent) {
         const timelock = timelockEvent.args;
         await time.increaseTo(Number(timelock.allowedAfterTimestamp) + 1);
-        return await (contract as any).executeGovernanceCall(timelock.selector, { from: executorAddress });
+        return await (contract as any).executeGovernanceCall(timelock.encodedCall, { from: executorAddress });
     }
 }
 
-export async function linkAssetManager() {
-    // deploy all libraries
-    const CollateralTypes = await deployLibrary("CollateralTypes");
-    const SettingsUpdater = await deployLibrary("SettingsUpdater", { CollateralTypes });
-    const StateUpdater = await deployLibrary("StateUpdater");
-    const AgentsExternal = await deployLibrary("AgentsExternal");
-    const AgentsCreateDestroy = await deployLibrary("AgentsCreateDestroy");
-    const AgentSettingsUpdater = await deployLibrary("AgentSettingsUpdater");
-    const AvailableAgents = await deployLibrary("AvailableAgents");
-    const CollateralReservations = await deployLibrary("CollateralReservations");
-    const Liquidation = await deployLibrary("Liquidation");
-    const Minting = await deployLibrary("Minting");
-    const UnderlyingBalance = await deployLibrary("UnderlyingBalance");
-    const RedemptionRequests = await deployLibrary("RedemptionRequests");
-    const RedemptionConfirmations = await deployLibrary("RedemptionConfirmations");
-    const RedemptionFailures = await deployLibrary("RedemptionFailures");
-    const UnderlyingWithdrawalAnnouncements = await deployLibrary("UnderlyingWithdrawalAnnouncements");
-    const Challenges = await deployLibrary("Challenges");
-    const FullAgentInfo = await deployLibrary("FullAgentInfo");
-    // link AssetManagerContract
-    return linkDependencies(artifacts.require("AssetManager"), {
-        SettingsUpdater,
-        StateUpdater,
-        CollateralTypes,
-        AgentsExternal,
-        AgentsCreateDestroy,
-        AgentSettingsUpdater,
-        AvailableAgents,
-        CollateralReservations,
-        Liquidation,
-        Minting,
-        UnderlyingBalance,
-        RedemptionRequests,
-        RedemptionConfirmations,
-        RedemptionFailures,
-        UnderlyingWithdrawalAnnouncements,
-        Challenges,
-        FullAgentInfo,
-    });
-}
-
-export async function deployLibrary(name: string, dependencies: { [key: string]: Truffle.ContractInstance } = {}): Promise<Truffle.ContractInstance> {
-    // libraries don't have typechain info generated, so we have to import as 'any' (but it's no problem, since we only use them for linking)
-    const contract = artifacts.require(name as any) as Truffle.Contract<any>;
-    const linkedContract = await linkDependencies(contract, dependencies);
-    return linkedContract.new();
-}
-
-export async function linkDependencies<T extends Truffle.Contract<any>>(
-    contract: T,
-    dependencies: { [key: string]: Truffle.ContractInstance } = {}
-): Promise<T> {
-    for (const dependencyName of Object.keys(dependencies)) {
-        contract.link(dependencies[dependencyName] as any);
+export async function deployAssetManagerFacets(): Promise<[DiamondCut[], AssetManagerInitInstance]> {
+    const assetManagerInit = await AssetManagerInit.new();
+    // create filters
+    const iiAssetManager = await IIAssetManager.at(assetManagerInit.address);
+    const interfaceSelectorMap = new Map(iiAssetManager.abi
+        .filter(it => it.type === 'function')
+        .map(it => [web3.eth.abi.encodeFunctionSignature(it), it]));
+    const interfaceSelectors = new Set(interfaceSelectorMap.keys());
+    // create cuts
+    const diamondCuts = [
+        await deployFacet('AssetManagerDiamondCutFacet', interfaceSelectors),
+        await deployFacet('DiamondLoupeFacet', interfaceSelectors),
+        await deployFacet('AgentInfoFacet', interfaceSelectors),
+        await deployFacet('AvailableAgentsFacet', interfaceSelectors),
+        await deployFacet('MintingFacet', interfaceSelectors),
+        await deployFacet('RedemptionRequestsFacet', interfaceSelectors),
+        await deployFacet('RedemptionConfirmationsFacet', interfaceSelectors),
+        await deployFacet('RedemptionDefaultsFacet', interfaceSelectors),
+        await deployFacet('LiquidationFacet', interfaceSelectors),
+        await deployFacet('ChallengesFacet', interfaceSelectors),
+        await deployFacet('UnderlyingBalanceFacet', interfaceSelectors),
+        await deployFacet('UnderlyingTimekeepingFacet', interfaceSelectors),
+        await deployFacet('AgentVaultManagementFacet', interfaceSelectors),
+        await deployFacet('AgentSettingsFacet', interfaceSelectors),
+        await deployFacet('CollateralTypesFacet', interfaceSelectors),
+        await deployFacet('AgentCollateralFacet', interfaceSelectors),
+        await deployFacet('SettingsReaderFacet', interfaceSelectors),
+        await deployFacet('SettingsManagementFacet', interfaceSelectors),
+        await deployFacet('AgentVaultAndPoolSupportFacet', interfaceSelectors),
+        await deployFacet('SystemStateManagementFacet', interfaceSelectors),
+    ];
+    // verify every required selector is included in some cut
+    for (const cut of diamondCuts) {
+        for (const selector of cut.functionSelectors) {
+            interfaceSelectors.delete(selector);
+        }
     }
-    return contract;
+    if (interfaceSelectors.size > 0) {
+        const missing = Array.from(interfaceSelectors).map(sel => interfaceSelectorMap.get(sel)?.name);
+        throw new Error(`Deployed facets are missing methods ${missing.join(", ")}`);
+    }
+    return [diamondCuts, assetManagerInit];
+}
+
+export async function deployFacet(facetName: string, filterSelectors: Set<string>): Promise<DiamondCut> {
+    const contract = artifacts.require(facetName as any) as Truffle.ContractNew<any>;
+    const instance = await contract.new() as Truffle.ContractInstance;
+    const instanceSelectors = instance.abi.map(it => web3.eth.abi.encodeFunctionSignature(it));
+    const exposedSelectors = instanceSelectors.filter(sel => filterSelectors.has(sel));
+    if (exposedSelectors.length === 0) {
+        throw new Error(`No exposed methods in ${facetName}`);
+    }
+    return {
+        action: FacetCutAction.Add,
+        facetAddress: instance.address,
+        functionSelectors: [...exposedSelectors]
+    };
+}
+
+export function abiEncodeCall<I extends Truffle.ContractInstance>(instance: I, method: string, args: any[]): string {
+    const abiItem = requireNotNull(instance.abi.find(it => it.name === method && it.type === 'function'));
+    return coder.encodeFunctionCall(abiItem, args);
 }

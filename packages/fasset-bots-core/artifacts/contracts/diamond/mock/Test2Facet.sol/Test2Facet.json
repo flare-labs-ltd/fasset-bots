@@ -1,0 +1,151 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Test2Facet",
+  "sourceName": "contracts/diamond/mock/Test2Facet.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "test2Func1",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func10",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func11",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func12",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func13",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func14",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func15",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func16",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func17",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func18",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func19",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func2",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func20",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func3",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func4",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func5",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func6",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func7",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func8",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "test2Func9",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b50610169806100206000396000f3fe608060405234801561001057600080fd5b506004361061012c5760003560e01c80638ee8be30116100ad578063d2f0c73e11610071578063d2f0c73e14610131578063e5f687b214610131578063e7de23a414610131578063ea36b55814610131578063ef3f4d781461013157600080fd5b80638ee8be301461013157806391d0396b14610131578063c670641d14610131578063ca5fa5c014610131578063caae8f231461013157600080fd5b80632e463958116100f45780632e463958146101315780635fd6312b146101315780636dc16b0114610131578063792a8e2e14610131578063884280a61461013157600080fd5b806303feeeae146101315780630c103a93146101315780630e4cd7fc14610131578063148843091461013157806317fd06e714610131575b600080fd5b00fea26469706673582212206c23ad1bf6d7bccfdbab14706e63df6f892cf0605151b3e4380fa3e528d5823864736f6c63430008170033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061012c5760003560e01c80638ee8be30116100ad578063d2f0c73e11610071578063d2f0c73e14610131578063e5f687b214610131578063e7de23a414610131578063ea36b55814610131578063ef3f4d781461013157600080fd5b80638ee8be301461013157806391d0396b14610131578063c670641d14610131578063ca5fa5c014610131578063caae8f231461013157600080fd5b80632e463958116100f45780632e463958146101315780635fd6312b146101315780636dc16b0114610131578063792a8e2e14610131578063884280a61461013157600080fd5b806303feeeae146101315780630c103a93146101315780630e4cd7fc14610131578063148843091461013157806317fd06e714610131575b600080fd5b00fea26469706673582212206c23ad1bf6d7bccfdbab14706e63df6f892cf0605151b3e4380fa3e528d5823864736f6c63430008170033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

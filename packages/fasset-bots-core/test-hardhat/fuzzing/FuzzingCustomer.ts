@@ -1,16 +1,16 @@
+import BN from "bn.js";
 import { assert } from "chai";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { IBlockChainWallet } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
-import { FuzzingRunner } from "./FuzzingRunner";
 import { EventScope } from "../../src/utils/events/ScopedEvents";
-import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { coinFlip, getLotSize, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
 import { EventArgs } from "../../src/utils/events/common";
-import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
 import { expectErrors } from "../../src/utils/helpers";
-import BN from "bn.js";
+import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
+import { coinFlip, getLotSize, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
+import { FuzzingRunner } from "./FuzzingRunner";
 
 // debug state
 let mintedLots = 0;

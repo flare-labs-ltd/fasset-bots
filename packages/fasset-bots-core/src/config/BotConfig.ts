@@ -3,7 +3,7 @@ import "dotenv/config";
 import { StuckTransaction } from "@flarelabs/simple-wallet";
 import { EntityManager } from "@mikro-orm/core";
 import { Secrets } from ".";
-import { AssetManagerInstance } from "../../typechain-truffle";
+import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
@@ -46,7 +46,7 @@ export interface BotFAssetConfig {
     blockchainIndexerClient?: BlockchainIndexerHelper; // for agent bot, user and challenger
     stateConnector?: IStateConnectorClient; // for agent bot, user, challenger and timeKeeper
     verificationClient?: IVerificationApiClient; // only for agent bot and user
-    assetManager: AssetManagerInstance;
+    assetManager: IIAssetManagerInstance;
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
 }
 

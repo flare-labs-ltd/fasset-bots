@@ -8,21 +8,21 @@
       "inputs": [
         {
           "indexed": false,
-          "internalType": "bytes4",
-          "name": "selector",
-          "type": "bytes4"
+          "internalType": "bytes",
+          "name": "encodedCall",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "encodedCallHash",
+          "type": "bytes32"
         },
         {
           "indexed": false,
           "internalType": "uint256",
           "name": "allowedAfterTimestamp",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes",
-          "name": "encodedCall",
-          "type": "bytes"
         }
       ],
       "name": "GovernanceCallTimelocked",
@@ -59,15 +59,9 @@
       "inputs": [
         {
           "indexed": false,
-          "internalType": "bytes4",
-          "name": "selector",
-          "type": "bytes4"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "timestamp",
-          "type": "uint256"
+          "internalType": "bytes32",
+          "name": "encodedCallHash",
+          "type": "bytes32"
         }
       ],
       "name": "TimelockedGovernanceCallCanceled",
@@ -78,15 +72,9 @@
       "inputs": [
         {
           "indexed": false,
-          "internalType": "bytes4",
-          "name": "selector",
-          "type": "bytes4"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "timestamp",
-          "type": "uint256"
+          "internalType": "bytes32",
+          "name": "encodedCallHash",
+          "type": "bytes32"
         }
       ],
       "name": "TimelockedGovernanceCallExecuted",
@@ -95,9 +83,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes4",
-          "name": "_selector",
-          "type": "bytes4"
+          "internalType": "bytes",
+          "name": "_encodedCall",
+          "type": "bytes"
         }
       ],
       "name": "cancelGovernanceCall",
@@ -108,9 +96,9 @@
     {
       "inputs": [
         {
-          "internalType": "bytes4",
-          "name": "_selector",
-          "type": "bytes4"
+          "internalType": "bytes",
+          "name": "_encodedCall",
+          "type": "bytes"
         }
       ],
       "name": "executeGovernanceCall",
@@ -199,30 +187,6 @@
       "name": "switchToProductionMode",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes4",
-          "name": "",
-          "type": "bytes4"
-        }
-      ],
-      "name": "timelockedCalls",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "allowedAfterTimestamp",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bytes",
-          "name": "encodedCall",
-          "type": "bytes"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     }
   ],

@@ -6,9 +6,9 @@ import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
+import { BotFAssetConfig, Secrets } from "../../src/config";
 import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../src/config/AgentVaultInitSettings";
 import { AssetContractRetriever } from "../../src/config/AssetContractRetriever";
-import { decodedChainId } from "../../src/config/create-wallet-client";
 import { ORM } from "../../src/config/orm";
 import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
@@ -28,7 +28,6 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
-import { BotFAssetConfig, Secrets } from "../../src/config";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");

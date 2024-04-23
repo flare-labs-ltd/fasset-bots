@@ -337,46 +337,46 @@ describe("mini truffle and artifacts tests", () => {
 
     describe("contract linking", () => {
         it("linking should work", async () => {
-            const CollateralTypes = artifacts.require("CollateralTypes");
-            const collateralTypes = await CollateralTypes.new();
-            const SettingsUpdater = artifacts.require("SettingsUpdater");
+            const MockLibraryDep = artifacts.require("MockLibraryDep");
+            const mockLibraryDep = await MockLibraryDep.new();
+            const MockLibraryLink = artifacts.require("MockLibraryLink");
             // both link variants in typechain don't work
-            expect(() => SettingsUpdater.link(CollateralTypes))
-                .to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
-            expect(() => SettingsUpdater.link("CollateralTypes", collateralTypes.address))
-                .to.throw("Only supported variant is 'SettingsUpdater.link(instance)'");
+            expect(() => MockLibraryLink.link(MockLibraryDep))
+                .to.throw("Only supported variant is 'MockLibraryLink.link(instance)'");
+            expect(() => MockLibraryLink.link("MockLibraryDep", mockLibraryDep.address))
+                .to.throw("Only supported variant is 'MockLibraryLink.link(instance)'");
             // typechain info is wrong on hardhat, so we have to cast to any
-            SettingsUpdater.link(collateralTypes as any);
-            const settingsUpdater = await SettingsUpdater.new();
+            MockLibraryLink.link(mockLibraryDep as any);
+            const mockLibrary = await MockLibraryLink.new();
         });
 
         it("should not link abstract contracts", async () => {
-            const CollateralTypes = artifacts.require("CollateralTypes");
-            const collateralTypes = await CollateralTypes.new();
+            const MockLibraryDep = artifacts.require("MockLibraryDep");
+            const mockLibraryDep = await MockLibraryDep.new();
             const IFtsoRegistry = artifacts.require("IFtsoRegistry");
-            expect(() => IFtsoRegistry.link(collateralTypes as any))
+            expect(() => IFtsoRegistry.link(mockLibraryDep as any))
                 .to.throw("Contract IFtsoRegistry is abstract; cannot link");
         });
 
         it("should not link if contract has no link references or wrong library is linked", async () => {
-            const AgentsExternal = artifacts.require("AgentsExternal");
-            const agentsExternal = await AgentsExternal.new();
-            const CollateralTypes = artifacts.require("CollateralTypes");
-            const collateralTypes = await CollateralTypes.new();
-            const SettingsUpdater = artifacts.require("SettingsUpdater") as MiniTruffleContract;
-            const origBytecode = SettingsUpdater._bytecode;
+            const MockLibraryNonDep = artifacts.require("MockLibraryNonDep");
+            const mockLibraryNonDep = await MockLibraryNonDep.new();
+            const MockLibraryDep = artifacts.require("MockLibraryDep");
+            const mockLibraryDep = await MockLibraryDep.new();
+            const MockLibraryLink = artifacts.require("MockLibraryLink") as MiniTruffleContract;
+            const origBytecode = MockLibraryLink._bytecode;
             // try to link with non-dependency
-            SettingsUpdater.link(agentsExternal);
-            expect(SettingsUpdater._bytecode).equals(origBytecode);
+            MockLibraryLink.link(mockLibraryNonDep);
+            expect(MockLibraryLink._bytecode).equals(origBytecode);
             // try to link without dependencies
-            SettingsUpdater._contractJson = { ...SettingsUpdater._contractJson, linkReferences: undefined };
-            SettingsUpdater.link(collateralTypes);
-            expect(SettingsUpdater._bytecode).equals(origBytecode);
+            MockLibraryLink._contractJson = { ...MockLibraryLink._contractJson, linkReferences: undefined };
+            MockLibraryLink.link(mockLibraryDep);
+            expect(MockLibraryLink._bytecode).equals(origBytecode);
         });
 
         it("unlinked contracts shouldn't deploy", async () => {
-            const SettingsUpdater = artifacts.require("SettingsUpdater");
-            await expectRevertWithCorrectStack(SettingsUpdater.new(), "Contract SettingsUpdater must be linked before deploy");
+            const MockLibraryLink = artifacts.require("MockLibraryLink");
+            await expectRevertWithCorrectStack(MockLibraryLink.new(), "Contract MockLibraryLink must be linked before deploy");
         });
     });
 

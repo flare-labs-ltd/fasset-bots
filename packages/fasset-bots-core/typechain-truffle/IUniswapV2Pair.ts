@@ -24,60 +24,6 @@ export interface Approval {
   };
 }
 
-export interface Burn {
-  name: "Burn";
-  args: {
-    sender: string;
-    amount0: BN;
-    amount1: BN;
-    to: string;
-    0: string;
-    1: BN;
-    2: BN;
-    3: string;
-  };
-}
-
-export interface Mint {
-  name: "Mint";
-  args: {
-    sender: string;
-    amount0: BN;
-    amount1: BN;
-    0: string;
-    1: BN;
-    2: BN;
-  };
-}
-
-export interface Swap {
-  name: "Swap";
-  args: {
-    sender: string;
-    amount0In: BN;
-    amount1In: BN;
-    amount0Out: BN;
-    amount1Out: BN;
-    to: string;
-    0: string;
-    1: BN;
-    2: BN;
-    3: BN;
-    4: BN;
-    5: string;
-  };
-}
-
-export interface Sync {
-  name: "Sync";
-  args: {
-    reserve0: BN;
-    reserve1: BN;
-    0: BN;
-    1: BN;
-  };
-}
-
 export interface Transfer {
   name: "Transfer";
   args: {
@@ -90,11 +36,9 @@ export interface Transfer {
   };
 }
 
-export type AllEvents = Approval | Burn | Mint | Swap | Sync | Transfer;
+export type AllEvents = Approval | Transfer;
 
 export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
-  MINIMUM_LIQUIDITY(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
   allowance(
     owner: string,
     spender: string,
@@ -149,15 +93,9 @@ export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
 
   decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  factory(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
   getReserves(
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN }>;
-
-  kLast(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  manager(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   mint: {
     (to: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -174,20 +112,7 @@ export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  mintFee: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
   name(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  price0CumulativeLast(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  price1CumulativeLast(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   skim: {
     (to: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -200,37 +125,6 @@ export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       to: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  splitFeeSwap: {
-    (
-      amount0Out: number | BN | string,
-      amount1Out: number | BN | string,
-      to: string,
-      data: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      amount0Out: number | BN | string,
-      amount1Out: number | BN | string,
-      to: string,
-      data: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      amount0Out: number | BN | string,
-      amount1Out: number | BN | string,
-      to: string,
-      data: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      amount0Out: number | BN | string,
-      amount1Out: number | BN | string,
-      to: string,
-      data: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -334,8 +228,6 @@ export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
   };
 
   methods: {
-    MINIMUM_LIQUIDITY(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
     allowance(
       owner: string,
       spender: string,
@@ -390,15 +282,9 @@ export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
 
     decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-    factory(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
     getReserves(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: BN }>;
-
-    kLast(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    manager(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     mint: {
       (to: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -415,20 +301,7 @@ export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    mintFee: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    price0CumulativeLast(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    price1CumulativeLast(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     skim: {
       (to: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -441,37 +314,6 @@ export interface IUniswapV2PairInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         to: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    splitFeeSwap: {
-      (
-        amount0Out: number | BN | string,
-        amount1Out: number | BN | string,
-        to: string,
-        data: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        amount0Out: number | BN | string,
-        amount1Out: number | BN | string,
-        to: string,
-        data: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        amount0Out: number | BN | string,
-        amount1Out: number | BN | string,
-        to: string,
-        data: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        amount0Out: number | BN | string,
-        amount1Out: number | BN | string,
-        to: string,
-        data: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

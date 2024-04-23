@@ -1,4 +1,4 @@
-import { MintingExecuted } from "../../typechain-truffle/AssetManager";
+import { MintingExecuted } from "../../typechain-truffle/IIAssetManager";
 import { BotConfig, BotFAssetConfig, createNativeContext } from "../config";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";

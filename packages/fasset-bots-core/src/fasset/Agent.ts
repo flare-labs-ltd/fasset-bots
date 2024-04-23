@@ -1,20 +1,20 @@
-import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
-import { AgentAvailable, AgentDestroyed, AllEvents, AssetManagerInstance, AvailableAgentExited, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManager";
-import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, toBN } from "../utils/helpers";
-import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
-import { PaymentReference } from "./PaymentReference";
-import { web3DeepNormalize } from "../utils/web3normalize";
-import { EventArgs } from "../utils/events/common";
-import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { AttestationHelper } from "../underlying-chain/AttestationHelper";
-import { getAgentSettings } from "../utils/fasset-helpers";
-import { CollateralPrice } from "../state/CollateralPrice";
-import { CollateralDataFactory } from "./CollateralData";
-import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { artifacts } from "../utils/web3";
-import BN from "bn.js";
 import { AddressValidity } from "@flarenetwork/state-connector-protocol";
+import BN from "bn.js";
+import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
+import { AgentAvailable, AgentDestroyed, AllEvents, AvailableAgentExited, IIAssetManagerInstance, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/IIAssetManager";
+import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
+import { CollateralPrice } from "../state/CollateralPrice";
+import { AttestationHelper } from "../underlying-chain/AttestationHelper";
+import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { EventArgs } from "../utils/events/common";
+import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
+import { getAgentSettings } from "../utils/fasset-helpers";
+import { BNish, toBN } from "../utils/helpers";
+import { artifacts } from "../utils/web3";
+import { web3DeepNormalize } from "../utils/web3normalize";
+import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
+import { CollateralDataFactory } from "./CollateralData";
+import { PaymentReference } from "./PaymentReference";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -44,7 +44,7 @@ export class Agent {
         public underlyingAddress: string
     ) {}
 
-    get assetManager(): ContractWithEvents<AssetManagerInstance, AllEvents> {
+    get assetManager(): ContractWithEvents<IIAssetManagerInstance, AllEvents> {
         return this.context.assetManager;
     }
 

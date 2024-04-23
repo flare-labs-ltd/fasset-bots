@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { BotFAssetConfigWithIndexer, KeeperBotConfig, createChallengerContext } from "../config";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { IChallengerContext } from "../fasset-bots/IAssetBotContext";

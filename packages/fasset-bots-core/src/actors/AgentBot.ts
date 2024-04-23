@@ -1,7 +1,8 @@
 import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/AssetManager";
+import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
+import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
@@ -30,7 +31,6 @@ import { NotificationLevel, NotifierTransport } from "../utils/notifier/BaseNoti
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { Secrets } from "../config";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");

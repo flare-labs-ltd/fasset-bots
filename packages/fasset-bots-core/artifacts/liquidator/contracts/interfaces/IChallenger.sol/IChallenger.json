@@ -1,0 +1,522 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IChallenger",
+  "sourceName": "liquidator/contracts/interfaces/IChallenger.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionId",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressIndicator",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "spentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct BalanceDecreasingTransaction.Proof",
+          "name": "_payment1",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionId",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressIndicator",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "spentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct BalanceDecreasingTransaction.Proof",
+          "name": "_payment2",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_flashLender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_dex",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_vaultToFAssetDexPath",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_poolToVaultDexPath",
+          "type": "address[]"
+        }
+      ],
+      "name": "doublePaymentChallenge",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionId",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressIndicator",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "spentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct BalanceDecreasingTransaction.Proof[]",
+          "name": "_payments",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_flashLender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_dex",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_vaultToFAssetDexPath",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_poolToVaultDexPath",
+          "type": "address[]"
+        }
+      ],
+      "name": "freeBalanceNegativeChallenge",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionId",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressIndicator",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "blockTimestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "int256",
+                      "name": "spentAmount",
+                      "type": "int256"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "standardPaymentReference",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct BalanceDecreasingTransaction.Proof",
+          "name": "_transaction",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_vaultToFAssetMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceMul",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolToVaultMinDexPriceDiv",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_flashLender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_dex",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_vaultToFAssetDexPath",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_poolToVaultDexPath",
+          "type": "address[]"
+        }
+      ],
+      "name": "illegalPaymentChallenge",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

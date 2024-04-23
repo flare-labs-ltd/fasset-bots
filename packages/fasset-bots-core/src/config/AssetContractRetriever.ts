@@ -1,10 +1,10 @@
-import { AddressUpdaterInstance, AssetManagerControllerInstance, AssetManagerInstance, Truffle } from "../../typechain-truffle";
-import { ZERO_ADDRESS } from "../utils/helpers";
+import { AddressUpdaterInstance, AssetManagerControllerInstance, IIAssetManagerInstance, Truffle } from "../../typechain-truffle";
 import { CommandLineError, requireNotNullCmd } from "../utils/command-line-errors";
+import { ZERO_ADDRESS } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { ChainContracts, loadContracts } from "./contracts";
 
-const AssetManager = artifacts.require("AssetManager");
+const IIAssetManager = artifacts.require("IIAssetManager");
 const AssetManagerController = artifacts.require("AssetManagerController");
 const AddressUpdater = artifacts.require("AddressUpdater");
 const FAsset = artifacts.require("FAsset");
@@ -44,7 +44,7 @@ export class AssetContractRetriever extends ContractRetriever {
         addressUpdater: AddressUpdaterInstance,
         contracts: ChainContracts | undefined,
         public assetManagerController: AssetManagerControllerInstance,
-        public assetManagers: Map<string, AssetManagerInstance>,
+        public assetManagers: Map<string, IIAssetManagerInstance>,
     ) {
         super(prioritizeAddressUpdater, addressUpdater, contracts);
     }
@@ -72,9 +72,9 @@ export class AssetContractRetriever extends ContractRetriever {
     }
 
     static async createAssetManagerMap(assetManagerController: AssetManagerControllerInstance) {
-        const map = new Map<string, AssetManagerInstance>();
+        const map = new Map<string, IIAssetManagerInstance>();
         for (const assetManagerAddress of await assetManagerController.getAssetManagers()) {
-            const assetManager = await AssetManager.at(assetManagerAddress);
+            const assetManager = await IIAssetManager.at(assetManagerAddress);
             const fasset = await FAsset.at(await assetManager.fAsset());
             const symbol = await fasset.symbol();
             map.set(symbol, assetManager);

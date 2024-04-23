@@ -1,26 +1,25 @@
 import { time } from "@openzeppelin/test-helpers";
-import { MockChain } from "../../../src/mock/MockChain";
-import { TrackedState, MAX_EVENT_HANDLE_RETRY } from "../../../src/state/TrackedState";
-import { EventArgs } from "../../../src/utils/events/common";
-import { BN_ZERO, checkedCast, MAX_BIPS, QUERY_WINDOW_SECONDS, toBN, toBNExp, ZERO_ADDRESS } from "../../../src/utils/helpers";
-import { artifacts, web3 } from "../../../src/utils/web3";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { AgentVaultCreated, AgentDestroyed } from "../../../typechain-truffle/AssetManager";
-import { createTestAssetContext, getTestAssetTrackedStateContext, TestAssetBotContext, TestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
-import { lotSize } from "../../../src/fasset/Conversions";
-import spies from "chai-spies";
-import chaiAsPromised from "chai-as-promised";
 import { expect, spy, use } from "chai";
-import { createTestAgent, createTestAgentAndMakeAvailable, createCRAndPerformMinting, createTestMinter, mintAndDepositVaultCollateralToOwner, createTestRedeemer, fromAgentInfoToInitialAgentData } from "../../test-utils/helpers";
-import { decodeLiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../../src/fasset/LiquidationStrategyImpl";
-import { waitForTimelock } from "../../test-utils/new-asset-manager";
+import chaiAsPromised from "chai-as-promised";
+import spies from "chai-spies";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
-import { tokenBalance } from "../../../src/state/TokenPrice";
-import { performRedemptionPayment } from "../../../test/test-utils/test-helpers";
+import { lotSize } from "../../../src/fasset/Conversions";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
+import { MockChain } from "../../../src/mock/MockChain";
+import { tokenBalance } from "../../../src/state/TokenPrice";
+import { MAX_EVENT_HANDLE_RETRY, TrackedState } from "../../../src/state/TrackedState";
+import { EventArgs } from "../../../src/utils/events/common";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
+import { BN_ZERO, MAX_BIPS, QUERY_WINDOW_SECONDS, ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
+import { artifacts, web3 } from "../../../src/utils/web3";
+import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { performRedemptionPayment } from "../../../test/test-utils/test-helpers";
+import { AgentDestroyed, AgentVaultCreated } from "../../../typechain-truffle/IIAssetManager";
+import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
+import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, fromAgentInfoToInitialAgentData, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { waitForTimelock } from "../../test-utils/new-asset-manager";
 use(chaiAsPromised);
 use(spies);
 
@@ -504,26 +503,17 @@ describe("Tracked state tests", () => {
     });
 
     it("Should handle event 'SettingArrayChanged'", async () => {
-        const encodedSettings = await context.assetManager.getLiquidationSettings();
-        const liquidationStrategySettings = decodeLiquidationStrategyImplSettings(encodedSettings);
-        const newLiquidationStrategySettings = {
-            ...liquidationStrategySettings,
-            liquidationFactorVaultCollateralBIPS: liquidationStrategySettings.liquidationFactorVaultCollateralBIPS.slice(0, 2),
-            liquidationCollateralFactorBIPS: [2_0000, 2_5000],
-        };
-        const settingsBefore = trackedState.liquidationStrategySettings;
-        expect(settingsBefore.liquidationCollateralFactorBIPS[0].toString()).to.eq(liquidationStrategySettings.liquidationCollateralFactorBIPS[0].toString());
-        expect(settingsBefore.liquidationCollateralFactorBIPS[1].toString()).to.eq(liquidationStrategySettings.liquidationCollateralFactorBIPS[1].toString());
-        const resp = await context.assetManagerController.updateLiquidationStrategySettings(
-            [context.assetManager.address],
-            encodeLiquidationStrategyImplSettings(newLiquidationStrategySettings),
-            { from: governance }
-        );
+        const liquidationCollateralFactorBIPS = trackedState.settings.liquidationCollateralFactorBIPS.map(toBN);
+        const liquidationFactorVaultCollateralBIPS = trackedState.settings.liquidationFactorVaultCollateralBIPS.map(toBN);
+        const newLiquidationCollateralFactorBIPS = [2_0000, 2_5000];
+        const newLiquidationFactorVaultCollateralBIPS = liquidationFactorVaultCollateralBIPS.slice(0, 2);
+        const resp = await context.assetManagerController.setLiquidationPaymentFactors([context.assetManager.address],
+            newLiquidationCollateralFactorBIPS, newLiquidationFactorVaultCollateralBIPS, { from: governance });
         await waitForTimelock(resp, context.assetManagerController, updateExecutor);
         await trackedState.readUnhandledEvents();
-        const settingsAfter = trackedState.liquidationStrategySettings;
-        expect(settingsAfter.liquidationCollateralFactorBIPS[0].toString()).to.eq(newLiquidationStrategySettings.liquidationCollateralFactorBIPS[0].toString());
-        expect(settingsAfter.liquidationCollateralFactorBIPS[1].toString()).to.eq(newLiquidationStrategySettings.liquidationCollateralFactorBIPS[1].toString());
+        const settingsAfter = trackedState.settings;
+        expect(settingsAfter.liquidationCollateralFactorBIPS[0].toString()).to.eq(newLiquidationCollateralFactorBIPS[0].toString());
+        expect(settingsAfter.liquidationCollateralFactorBIPS[1].toString()).to.eq(newLiquidationCollateralFactorBIPS[1].toString());
     });
 
     it("Should handle events 'SettingChanged' and 'SettingArrayChanged' - invalid setting", async () => {

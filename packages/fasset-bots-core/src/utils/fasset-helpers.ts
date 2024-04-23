@@ -1,4 +1,4 @@
-import { AssetManagerInstance } from "../../typechain-truffle/AssetManager";
+import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerEvents } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
@@ -31,7 +31,7 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
  */
 export async function proveAndUpdateUnderlyingBlock(
     attestationProvider: AttestationHelper,
-    assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>,
+    assetManager: ContractWithEvents<IIAssetManagerInstance, AssetManagerEvents>,
     caller: string,
     queryWindow: number = 7200 // don't need 1 day long query to prove last block
 ): Promise<number> {
@@ -40,7 +40,7 @@ export async function proveAndUpdateUnderlyingBlock(
     return toNumber(proof.data.requestBody.blockNumber) + toNumber(proof.data.responseBody.numberOfConfirmations);
 }
 
-export async function attestationWindowSeconds(assetManager: ContractWithEvents<AssetManagerInstance, AssetManagerEvents>): Promise<number> {
+export async function attestationWindowSeconds(assetManager: IIAssetManagerInstance): Promise<number> {
     const settings = await assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }

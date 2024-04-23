@@ -1,11 +1,13 @@
 import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
+import { SourceId } from "../../src";
+import { Secrets, decodedChainId } from "../../src/config";
+import { ChainAccount } from "../../src/config/config-files/SecretsFile";
 import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
-import { LiquidationStrategyImplSettings, encodeLiquidationStrategyImplSettings } from "../../src/fasset/LiquidationStrategyImpl";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
@@ -22,9 +24,6 @@ import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 import { FaultyWallet } from "./FaultyWallet";
 import { newAssetManager, waitForTimelock } from "./new-asset-manager";
-import { Secrets, decodedChainId } from "../../src/config";
-import { ChainAccount } from "../../src/config/config-files/SecretsFile";
-import { SourceId } from "../../src";
 
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");
@@ -122,9 +121,6 @@ export async function createTestAssetContext(
     // create collateral pool factory
     const collateralPoolFactory = await CollateralPoolFactory.new();
     const collateralPoolTokenFactory = await CollateralPoolTokenFactory.new();
-    // create liquidation strategy
-    const liquidationStrategyLib = await artifacts.require("LiquidationStrategyImpl").new();
-    const liquidationStrategy = liquidationStrategyLib.address;
     // create allow-all agent owner registry
     const agentOwnerRegistry = await AgentOwnerRegistry.new(governanceSettings.address, governance, true);
     await agentOwnerRegistry.setAllowAll(true, { from: governance });
@@ -165,11 +161,11 @@ export async function createTestAssetContext(
     // create asset manager
     const parameterFilename = `./fasset-config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
-    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, liquidationStrategy, chainInfo, requireEOAAddressProof);
+    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, chainInfo, requireEOAAddressProof);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, assetManagerControllerAddress ? assetManagerControllerAddress : assetManagerController,
         chainInfo.name, chainInfo.symbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals,
-        web3DeepNormalize(settings), collaterals, createEncodedTestLiquidationSettings());
+        web3DeepNormalize(settings), collaterals);
     // indexer
     const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
     //
@@ -252,7 +248,6 @@ function bnToString(x: BN | number | string) {
 function createTestAssetManagerSettings(
     contracts: ChainContracts,
     parameters: any,
-    liquidationStrategy: string,
     chainInfo: TestChainInfo,
     requireEOAAddressProof?: boolean
 ): AssetManagerSettings {
@@ -269,7 +264,6 @@ function createTestAssetManagerSettings(
         priceReader: contracts.PriceReader.address,
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
         agentOwnerRegistry: contracts.AgentOwnerRegistry.address ?? ZERO_ADDRESS,
-        liquidationStrategy: liquidationStrategy,
         burnAddress: parameters.burnAddress,
         chainId: chainInfo.chainId,
         poolTokenSuffix: parameters.poolTokenSuffix,
@@ -310,6 +304,10 @@ function createTestAssetManagerSettings(
         poolExitAndTopupChangeTimelockSeconds: bnToString(parameters.poolExitAndTopupChangeTimelockSeconds),
         agentTimelockedOperationWindowSeconds: bnToString(parameters.agentTimelockedOperationWindowSeconds),
         collateralPoolTokenTimelockSeconds: bnToString(parameters.collateralPoolTokenTimelockSeconds),
+        liquidationStepSeconds: bnToString(parameters.liquidationStepSeconds),
+        liquidationCollateralFactorBIPS: parameters.liquidationCollateralFactorBIPS.map(bnToString),
+        liquidationFactorVaultCollateralBIPS: parameters.liquidationFactorVaultCollateralBIPS.map(bnToString),
+        diamondCutMinTimelockSeconds: bnToString(parameters.diamondCutMinTimelockSeconds),
     };
 }
 
@@ -373,18 +371,6 @@ export async function createTestFtsos(ftsoRegistry: FtsoRegistryMockInstance, as
         usdt: await createFtsoMock(ftsoRegistry, "testUSDT", ftsoUsdtInitialPrice),
         asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice),
     };
-}
-
-export function createTestLiquidationSettings(): LiquidationStrategyImplSettings {
-    return {
-        liquidationStepSeconds: 90,
-        liquidationCollateralFactorBIPS: [toBIPS(1.2), toBIPS(1.6), toBIPS(2.0)],
-        liquidationFactorVaultCollateralBIPS: [toBIPS(1), toBIPS(1), toBIPS(1)],
-    };
-}
-
-export function createEncodedTestLiquidationSettings() {
-    return encodeLiquidationStrategyImplSettings(createTestLiquidationSettings());
 }
 
 export async function setLotSizeAmg(newLotSizeAMG: BNish, context: TestAssetBotContext, governance: string) {

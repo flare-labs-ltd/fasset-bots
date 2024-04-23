@@ -27,5 +27,5 @@
     "attestationProviderUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
     ],
-    "assetManagerController": "0x2bB006d03E0B6Db787B3e8F75A52A63E2FfBf621"
+    "assetManagerController": "0x7D0B090aBc24fb29Ef5a783EECb9a6c6f81D68B1"
 }
