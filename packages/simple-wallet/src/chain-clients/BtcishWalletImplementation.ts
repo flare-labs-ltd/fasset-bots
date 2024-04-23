@@ -278,7 +278,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    /**
     * @param {string} txHash
     * @param {Object} source
-    *  @param {string} privateKey
+    * @param {string} privateKey
     * @param {number} submittedBlockHeight
     * @param {number} retry
     * @returns {Object} - containing transaction id tx_id and optional result

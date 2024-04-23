@@ -19,6 +19,8 @@ import BN from "bn.js";
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
 
+const DROPS_PER_XRP = 1000000.0
+
 export class XrpWalletImplementation implements WriteWalletRpcInterface {
    chainType: ChainType;
    inTestnet: boolean;
@@ -28,6 +30,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    timeoutAddressLock: number;
    maxRetries: number;
    feeIncrease: number;
+   lastResortFeeInDrops?: number;
 
    constructor(createConfig: RippleRpcConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
@@ -65,6 +68,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       this.maxRetries = createConfig.stuckTransactionOptions?.retries ?? resubmit.retries!;
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
+      this.lastResortFeeInDrops = createConfig.stuckTransactionOptions?.lastResortFee ?? resubmit.lastResortFee;
       this.timeoutAddressLock = getTimeLockForAddress(this.chainType, this.blockOffset, this.maxRetries);
    }
 
@@ -112,13 +116,16 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       //https://xrpl.org/transaction-cost.html#server_info
       const serverInfo = (await this.getServerInfo()).result.info;
       /* istanbul ignore next */
-      const baseFee = serverInfo.validated_ledger?.base_fee_xrp;
+      let baseFee = serverInfo.validated_ledger?.base_fee_xrp;
       /* istanbul ignore if */
       if (!baseFee) {
          throw Error("Could not get base_fee_xrp from server_info");
       }
       /* istanbul ignore next */
-      return serverInfo.load_factor ? toBN(xrpl__typeless.xrpToDrops(baseFee * serverInfo.load_factor)) : toBN(xrpl__typeless.xrpToDrops(baseFee));
+      if (serverInfo.load_factor) {
+         baseFee *= serverInfo.load_factor;
+      }
+      return toBN(xrpl__typeless.xrpToDrops(this.roundUpXrpToDrops(baseFee)));
    }
 
    /**
@@ -409,7 +416,9 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
          if (retry <= this.maxRetries) {
             const newTransaction = transaction;
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const newFee = toBN(newTransaction.Fee!).muln(this.feeIncrease);
+            const newFee = (retry < this.maxRetries || this.lastResortFeeInDrops === undefined)
+               ? toBN(newTransaction.Fee!).muln(this.feeIncrease)
+               : toBN(this.lastResortFeeInDrops);
             newTransaction.LastLedgerSequence = currentValidLedger + this.blockOffset;
             this.checkFeeRestriction(toBN(newFee), res.maxFee);
             newTransaction.Fee = newFee.toString();
@@ -431,5 +440,9 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       if (maxFee && fee.gt(maxFee)) {
          throw Error(`Transaction is not prepared: fee ${fee} is higher than maxFee ${maxFee.toString()}`);
       }
+   }
+
+   private roundUpXrpToDrops(amount: number): number {
+      return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
    }
 }

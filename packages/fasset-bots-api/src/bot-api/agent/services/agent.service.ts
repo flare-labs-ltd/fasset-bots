@@ -1,11 +1,13 @@
 import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
-import { AgentSettingsConfig, Secrets, decodedChainId } from "@flarelabs/fasset-bots-core/config";
+import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { artifacts, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
+import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, requiredKeysForSecrets } from "../../common/AgentResponse";
+import * as fs from 'fs';
+import Web3 from "web3";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -277,5 +279,90 @@ export class AgentService {
     async getAgentWorkAddress(): Promise<string> {
         const secrets = Secrets.load(FASSET_BOT_SECRETS);
         return secrets.required("owner.native.address");
+    }
+
+    async getFassetSymbols(): Promise<string[]> {
+        const config = loadConfigFile(FASSET_BOT_CONFIG)
+        const fassets: string[] = [];
+        Object.entries(config.fAssets).forEach(([key, asset]) => {
+            fassets.push(key);
+        });
+        return fassets;
+    }
+
+    async checkWhitelisted(): Promise<boolean> {
+        const fassets = await this.getFassetSymbols();
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fassets[0]);
+        const whitelisted = await cli.context.agentOwnerRegistry.isWhitelisted(cli.owner.managementAddress);
+        return whitelisted;
+    }
+
+    async saveSecretsFile(secrets: string): Promise<void> {
+        const missingKeys: string[] = [];
+        // Validate json object to include necessary keys
+        function checkNested(obj: any, ...levels: string[]): boolean {
+            if (obj === undefined) return false;
+            if (levels.length === 0) return true;
+            const [level, ...rest] = levels;
+            if (Object.prototype.hasOwnProperty.call(obj, level)) {
+                return checkNested(obj[level], ...rest);
+            }
+            return false;
+        }
+        requiredKeysForSecrets.forEach((attr) => {
+            const props = attr.split(".");
+            if (!checkNested(secrets, ...props)) {
+              missingKeys.push(attr);
+            }
+        });
+        if (missingKeys.length > 0) {
+            throw new Error(`Missing keys: ${missingKeys.join(', ')}`);
+        }
+        const jsonToSave = JSON.stringify(secrets, null, 4);
+        fs.writeFileSync(FASSET_BOT_SECRETS, jsonToSave);
+    }
+
+    async checkSecretsFile(): Promise<boolean> {
+        try {
+            await fs.promises.access(FASSET_BOT_SECRETS, fs.constants.F_OK);
+            return true;
+          } catch (err: any) {
+            if (err.code === 'ENOENT') {
+              return false;
+            } else {
+              throw err;
+            }
+        }
+    }
+
+    async getAllCollaterals(): Promise<AllCollaterals[]> {
+        const fassets = await this.getFassetSymbols();
+        const collaterals: AllCollaterals[] = [];
+        for (const fasset of fassets) {
+            const agentInfo = await this.getAgentInfo(fasset);
+            const collateral: AllCollaterals = { fassetSymbol: fasset, collaterals: agentInfo.collaterals };
+            collaterals.push(collateral);
+        }
+        return collaterals;
+    }
+
+    async generateWorkAddress(): Promise<any> {
+        const web3 = new Web3();
+        const account = web3.eth.accounts.create();
+        return account;
+    }
+
+    async saveWorkAddress(address: string, privateKey: string): Promise<void> {
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        if(secrets.data.owner){
+            secrets.data.owner.native.address = address;
+            secrets.data.owner.native.private_key = privateKey;
+            console.log(secrets);
+            const json = JSON.stringify(secrets.data, null, 4);
+            fs.writeFileSync(FASSET_BOT_SECRETS, json);
+        }
+        else {
+            throw new Error(`Owner field does not exist in secrets.`);
+        }
     }
 }

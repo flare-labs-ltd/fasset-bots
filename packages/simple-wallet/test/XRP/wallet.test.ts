@@ -1,5 +1,5 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletRpcInterface";
+import { ICreateWalletResponse, RippleRpcConfig } from "../../src/interfaces/WriteWalletRpcInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
@@ -10,12 +10,17 @@ import { toBN } from "../../src/utils/utils";
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
-const XRPMccConnectionTest = {
+const XRPMccConnectionTest: RippleRpcConfig = {
    url: process.env.XRP_URL ?? "",
    username: "",
    password: "",
    stuckTransactionOptions: {
-      blockOffset: 5
+      blockOffset: 5,
+      retries: 2,
+      lastResortFee: 1e5
+   },
+   rateLimitOptions: {
+      timeoutMs: 60000,
    }
 };
 
@@ -26,8 +31,8 @@ const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const entropyBase = "my_xrp_test_wallet";
 const entropyBasedAddress = "rMeXpc8eokNRCTVtCMjFqTKdyRezkYJAi1";
 
-const amountToSendDropsFirst = toBN(10000000);
-const amountToSendDropsSecond = toBN(5000000);
+const amountToSendDropsFirst = toBN(100000);
+const amountToSendDropsSecond = toBN(50000);
 const feeInDrops = toBN(15);
 const maxFeeInDrops = toBN(12);
 const sequence = 54321;
@@ -146,15 +151,27 @@ describe("Xrp wallet tests", () => {
    });
 
    it("Should replace transactions with low fee", async () => {
-      const lowFee = toBN(5);
+      const lowFee = toBN(5); // if changing this then change the second to last `expect`
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const balanceBefore = await wClient.getAccountBalance(targetAddress);
-      const balanceBefore1 = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
       await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
-      const balanceAfter = await wClient.getAccountBalance(targetAddress);
-      const balanceAfter1 = await wClient.getAccountBalance(fundedWallet.address);
-      expect(balanceBefore.lt(balanceAfter)).to.be.true;
-      expect(balanceBefore1.gt(balanceAfter1)).to.be.true;
+      const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
+      expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).subn(10)));
+      expect(balanceTargetAfter.eq(balanceTargetBefore.add(amountToSendDropsSecond)));
+   });
+
+   it("Should replace transactions with last resort fee", async () => {
+      const lowFee = toBN(1);
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
+      const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
+      const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
+      expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).subn(wClient.lastResortFeeInDrops!)));
+      expect(balanceTargetAfter.eq(balanceTargetBefore.add(amountToSendDropsSecond)));
    });
 
    it("Should not replace transactions with low fee - no retries left", async () => {
@@ -171,4 +188,21 @@ describe("Xrp wallet tests", () => {
          .to.eventually.be.rejectedWith(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`)
          .and.be.an.instanceOf(Error);
    });
+
+   /* describe("congested network tests", () => {
+      const ntx = 1;
+      it.only("Should create sign and send transactions in a congested network", async () => {
+         await Promise.all(Array(ntx).fill(0).map(async (_, i) => {
+            console.log(`i: ` + (await wClient.getCurrentTransactionFee()).toString())
+            fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+            const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+            const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsFirst, undefined, note);
+            const blob = await wClient.signTransaction(tr, fundedWallet.privateKey as string);
+            const submit = await wClient.submitTransaction(blob);
+            expect(typeof submit).to.equal("object");
+            console.log(submit)
+         }))
+      })
+   }) */
+
 });

@@ -90,15 +90,14 @@ export const DOGE_TESTNET = {
 
 export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
    maxRPS: 5,
-   perMilliseconds: 1,
-   maxRequests: 1,
+   maxRequests: 10,
    timeoutMs: 60000,
    retries: 10,
 };
 
 export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
    ...DEFAULT_RATE_LIMIT_OPTIONS,
-   timeoutMs: 15000,
+   timeoutMs: 20000,
 };
 
 // Approximate times between blocks, in milliseconds

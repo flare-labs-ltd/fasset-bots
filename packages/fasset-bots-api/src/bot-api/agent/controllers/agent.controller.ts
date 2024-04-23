@@ -3,7 +3,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus } from "../../common/AgentResponse";
+import { AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus, AllCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
@@ -11,7 +11,6 @@ import { AgentSettingsConfigDTO } from "../../common/AgentettingsConfigDTO";
 
 @ApiTags("Agent")
 @Controller("api/agent")
-@UseGuards(AuthGuard("api-key"))
 @ApiSecurity("X-API-KEY")
 export class AgentController {
     constructor(
@@ -20,6 +19,7 @@ export class AgentController {
     ) {}
 
     @Post("create/:fAssetSymbol")
+    @UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -57,6 +57,7 @@ export class AgentController {
         }
     })
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async enter(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -75,6 +76,7 @@ export class AgentController {
         }
     })
     @Post("available/exit/:fAssetSymbol/:agentVaultAddress")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async exit(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -84,6 +86,7 @@ export class AgentController {
     }
 
     @Post("selfClose/:fAssetSymbol/:agentVaultAddress/:amountUBA")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async selfClose(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -94,6 +97,7 @@ export class AgentController {
     }
 
     @Get("settings/list/:fAssetSymbol/:agentVaultAddress")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async getAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -112,6 +116,7 @@ export class AgentController {
         }
     })
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress/:settingName/:settingValue")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async updateAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -123,6 +128,7 @@ export class AgentController {
     }
 
     @Get("info/data/:fAssetSymbol")
+    @UseGuards(AuthGuard("api-key"))
     @ApiOperation({ summary: 'Get agent info' })
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -163,6 +169,7 @@ export class AgentController {
     }
 
     @Get("info/vaults/:fAssetSymbol")
+    @UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -199,6 +206,7 @@ export class AgentController {
     }
 
     @Get("info/vault/:fAssetSymbol/:agentVaultAddress")
+    @UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -262,6 +270,7 @@ export class AgentController {
     }
 
     @Get("info/underlying/balance/:fAssetSymbol")
+    @UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -285,6 +294,7 @@ export class AgentController {
     }
 
     @Post("botAlert")
+    @UseGuards(AuthGuard("api-key"))
     @HttpCode(200)
     public async sendNotification(
         @Body() notification: PostAlert
@@ -293,6 +303,7 @@ export class AgentController {
     }
 
     @Get("botAlert")
+    @UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -322,6 +333,7 @@ export class AgentController {
     }
 
     @Get("workAddress")
+    @UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -336,5 +348,83 @@ export class AgentController {
     public async getAgentWorkAddress(
     ): Promise<ApiResponseWrapper<string>> {
         return handleApiResponse(this.agentService.getAgentWorkAddress());
+    }
+
+    @Get("fassetSymbols")
+    @UseGuards(AuthGuard("api-key"))
+    @ApiOkResponse({
+        description: 'Example of successful response.',
+        schema: {
+            type: 'object',
+            properties: {
+                status: { type: 'string', example: 'OK' },
+                data: {
+                    type: 'array',
+                    example: ["FtestXRP", "FfakeXRP"]
+                }
+            }
+        }
+    })
+    @HttpCode(200)
+    public async getFassetSymbols(
+    ): Promise<ApiResponseWrapper<string[]>> {
+        return handleApiResponse(this.agentService.getFassetSymbols());
+    }
+
+    @Get("whitelisted")
+    @UseGuards(AuthGuard("api-key"))
+    @ApiOkResponse({
+        description: 'Example of successful response.',
+        schema: {
+            type: 'object',
+            properties: {
+                status: { type: 'string', example: 'OK' },
+                data: { type: 'boolean', example: 'true' }
+            }
+        }
+    })
+    @HttpCode(200)
+    public async getWhitelistedStatus(
+    ): Promise<ApiResponseWrapper<boolean>> {
+        return handleApiResponse(this.agentService.checkWhitelisted());
+    }
+
+    @Post("secrets")
+    @HttpCode(200)
+    public async saveSecrets(
+        @Body() secrets: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.saveSecretsFile(secrets));
+    }
+
+    @Get("secretsExist")
+    @HttpCode(200)
+    public async getSecretsExist(
+    ): Promise<ApiResponseWrapper<boolean>> {
+        return handleApiResponse(this.agentService.checkSecretsFile());
+    }
+
+    @Get("collaterals")
+    @UseGuards(AuthGuard("api-key"))
+    @HttpCode(200)
+    public async getCollaterals(
+    ): Promise<ApiResponseWrapper<AllCollaterals[]>> {
+        return handleApiResponse(this.agentService.getAllCollaterals());
+    }
+
+    @Post("workAddress/:publicAddress/:privateKey")
+    @HttpCode(200)
+    public async changeWorkAddress(
+        @Param("publicAddress") publicAddress: string,
+        @Param("privateKey") privateKey: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.saveWorkAddress(publicAddress, privateKey));
+    }
+
+    @Get("generateWorkAddress")
+    @HttpCode(200)
+    public async generateWorkAddress(
+    ): Promise<ApiResponseWrapper<any>> {
+        return handleApiResponse(this.agentService.generateWorkAddress());
     }
 }

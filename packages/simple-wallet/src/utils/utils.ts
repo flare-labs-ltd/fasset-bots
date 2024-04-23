@@ -150,8 +150,8 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testBTC:
          return {
             blockOffset: 1,
-            retries: 1,
-            feeIncrease: 2,
+            retries: 2,
+            feeIncrease: 3,
          };
       case ChainType.LTC:
       case ChainType.testLTC:
@@ -173,6 +173,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
             blockOffset: 10,
             retries: 1,
             feeIncrease: 2,
+            lastResortFee: 1e6,
          };
       default:
          throw new Error(`Constants not defined for chain type ${chainType}`);
