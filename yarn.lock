@@ -8649,7 +8649,7 @@ __metadata:
     cross-env: ^7.0.3
     dotenv: ^16.3.1
     ethers: ^6.7.1
-    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.5"
+    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.6"
     hardhat: 2.20.1
     hardhat-gas-reporter: ^1.0.9
     mocha: ^10.3.0
@@ -8662,14 +8662,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"fasset@git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.5":
-  version: 1.0.0-beta.5
-  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=24b8e9c1de03385004103000515a744f691cd0ca"
+"fasset@git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.6":
+  version: 1.0.0-beta.6
+  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=45807b3eae4c31836bcad14490da432192acf59b"
   dependencies:
     "@flarenetwork/state-connector-protocol": 1.0.0-beta.3
     "@openzeppelin/contracts": 4.9.2
     flare-smart-contracts: "git+https://gitlab.com/flarenetwork/flare-smart-contracts.git#flare-distribution-to-delegators"
-  checksum: 3e198dc1c2697a78abc1313d1e4ca3d144e60541988cfd5359b49f325d26ba69cdf4e134bb1651b6d81997bf61ad0138d0412cac1281680ccdfc65fb80b4a5b7
+  checksum: af3a6002bb237f79b3b91fe5fd501c0b4ac7e77739a7fb3085fe9f03fa32d36178e2459754b1d3ce40e50f20b5220464f3291442b77023522ed72b4e9a315b39
   languageName: node
   linkType: hard
 
