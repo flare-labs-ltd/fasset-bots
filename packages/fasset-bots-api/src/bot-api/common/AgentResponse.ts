@@ -56,6 +56,11 @@ export interface AllCollaterals {
     }[]
 }
 
+export interface VaultCollaterals {
+    fassetSymbol: string;
+    collaterals: string[];
+}
+
 export interface AgentVaultStatus {
     vaultAddress: string;
     poolCollateralRatioBIPS: string;

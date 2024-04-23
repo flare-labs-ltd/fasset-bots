@@ -3,7 +3,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus, AllCollaterals } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus, AllCollaterals, VaultCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
@@ -443,5 +443,13 @@ export class AgentController {
     public async generateAPIKey(
     ): Promise<ApiResponseWrapper<APIKey>> {
         return handleApiResponse(this.agentService.generateAPIKey());
+    }
+
+    @Get("vaultCollaterals")
+    @UseGuards(AuthGuard("api-key"))
+    @HttpCode(200)
+    public async getVaultCollaterals(
+    ): Promise<ApiResponseWrapper<VaultCollaterals[]>> {
+        return handleApiResponse(this.agentService.getVaultCollateralTokens());
     }
 }

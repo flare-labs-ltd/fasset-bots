@@ -1,11 +1,11 @@
 import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { artifacts, createSha256Hash, generateRandomHexString, requireEnv, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { artifacts, createSha256Hash, generateRandomHexString, requireEnv, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, VaultCollaterals, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { exec } from "child_process";
@@ -385,5 +385,26 @@ export class AgentService {
         const apiKey = generateRandomHexString(32);
         const hash = createSha256Hash(apiKey);
         return {key: apiKey, hash: hash};
+    }
+
+    async getVaultCollateralTokens(): Promise<VaultCollaterals[]> {
+        const fassets = await this.getFassetSymbols();
+        const collaterals: VaultCollaterals[] = [];
+        for (const fasset of fassets) {
+            const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
+            // get collateral data
+            const collateralTypes = await cli.context.assetManager.getCollateralTypes();
+            const collateralTokens: string[] = [];
+            for (const collateralType of collateralTypes) {
+                const symbol = collateralType.tokenFtsoSymbol;
+                const collateralClass = collateralType.collateralClass;
+                if (collateralClass == toBN(2)) {
+                    collateralTokens.push(symbol);
+                }
+            }
+            const collateral: VaultCollaterals = { fassetSymbol: fasset, collaterals: collateralTokens };
+            collaterals.push(collateral);
+        }
+        return collaterals;
     }
 }
