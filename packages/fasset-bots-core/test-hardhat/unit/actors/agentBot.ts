@@ -7,7 +7,6 @@ import { ORM } from "../../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
-import { MockAgentBot } from "../../../src/mock/MockAgentBot";
 import { MockChain } from "../../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
@@ -680,14 +679,6 @@ describe("Agent bot unit tests", () => {
         expect(agentBot.latestProof).to.be.null;
         await agentBot.handleDailyTasks(orm.em);
         expect(agentBot.latestProof).to.be.null;
-    });
-
-    it("Should not handle corner cases - mock agent bot", async () => {
-        const spyError = spy.on(console, "error");
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const mockAgentBot = new MockAgentBot(agentBot.agent, agentBot.notifier, agentBot.owner, agentBot.ownerUnderlyingAddress);
-        await mockAgentBot.handleCornerCases(orm.em);
-        expect(spyError).to.be.called.once;
     });
 
     it("Should not handle claims - no contracts", async () => {
