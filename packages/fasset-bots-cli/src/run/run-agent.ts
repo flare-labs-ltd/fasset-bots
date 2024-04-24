@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotRunner, TimeKeeper } from "@flarelabs/fasset-bots-core";
+import { AgentBotRunner, TimeKeeperService } from "@flarelabs/fasset-bots-core";
 import { Secrets, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
@@ -31,7 +31,8 @@ program.action(async () => {
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
         }
         // create timekeepers
-        const timekeepers = await TimeKeeper.startTimekeepers(botConfig, ownerAddress, TIMEKEEPER_INTERVAL);
+        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, "auto", TIMEKEEPER_INTERVAL, 5000);
+        timekeeperService.startAll();
         // run
         try {
             console.log("Agent bot started, press CTRL+C to end");
@@ -41,7 +42,7 @@ program.action(async () => {
             });
             await runner.run();
         } finally {
-            await TimeKeeper.stopTimekeepers(timekeepers);
+            await timekeeperService.stopAll();
             await closeBotConfig(botConfig);
         }
         if (runner.stopRequested) {
