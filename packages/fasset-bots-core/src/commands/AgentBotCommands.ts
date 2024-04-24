@@ -198,7 +198,7 @@ export class AgentBotCommands {
     async announceExitAvailableList(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const status = await agentBot.getExitAvailableProcessStatus(agentEnt);
-        if (status === "not_announced") {
+        if (status === "NOT_ANNOUNCED") {
             const exitAllowedAt = await agentBot.agent.announceExitAvailable();
             agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
             await this.orm.em.persistAndFlush(agentEnt);
@@ -215,11 +215,17 @@ export class AgentBotCommands {
      */
     async exitAvailableList(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)) {
-            // agent can exit available
+        try {
             await agentBot.exitAvailable(agentEnt);
-        } else {
-            logger.info(`Agent ${agentVault} cannot yet exit available list, allowed at ${toBN(agentEnt.exitAvailableAllowedAtTimestamp).toString()}.`);
+        } catch (error) {
+            if (errorIncluded(error, ["exit not announced"])) {
+                throw new CommandLineError(`Agent ${agentEnt.vaultAddress} cannot exit available list - exit not announced.`);
+            }
+            if (errorIncluded(error, ["exit too soon"])) {
+                throw new CommandLineError(squashSpace`Agent ${agentEnt.vaultAddress} cannot exit available list.
+                    Allowed at ${agentEnt.exitAvailableAllowedAtTimestamp}, current timestamp is ${await latestBlockTimestampBN()}.`);
+            }
+            throw error;
         }
     }
 
@@ -361,6 +367,9 @@ export class AgentBotCommands {
             case "poolTopupTokenPriceFactorBIPS": {
                 agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt;
                 break;
+            }
+            default: {
+                throw new CommandLineError(`Invalid setting name ${settingName}`);
             }
         }
         await this.orm.em.persistAndFlush(agentEnt);

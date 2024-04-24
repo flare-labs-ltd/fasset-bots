@@ -20,7 +20,7 @@ import { eventIs } from "../utils/events/truffle";
 import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
 import {
-    BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
+    BN_ZERO, BNish, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
     VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN
 } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -498,6 +498,7 @@ export class AgentBot {
             await this.handleWaitForCollateralWithdrawal(agentEnt, latestTimestamp);
             await this.handleWaitForPoolTokenRedemption(agentEnt, latestTimestamp);
             await this.handleWaitForAgentSettingUpdate(agentEnt, latestTimestamp);
+            await this.handleWaitAgentExitAvailable(agentEnt, latestTimestamp);
             await this.handleAgentCloseProcess(agentEnt, latestTimestamp);
             await this.handleUnderlyingWithdrawal(agentEnt, latestTimestamp);
             em.persist(agentEnt);
@@ -534,105 +535,71 @@ export class AgentBot {
         }
         //Agent update poolFeeShareBIPS
         if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS),
-                "poolFeeShareBIPS",
-                latestTimestamp
-            );
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS), "poolFeeShareBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
         }
         //Agent update mintingVaultCollateralRatioBIPS
         if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS),
-                "mintingVaultCollateralRatioBIPS",
-                latestTimestamp
-            );
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
         }
         //Agent update mintingPoolCollateralRatioBIPS
         if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS),
-                "mintingPoolCollateralRatioBIPS",
-                latestTimestamp
-            );
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
         }
         //Agent update buyFAssetByAgentFactorBIPS
         if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS),
-                "buyFAssetByAgentFactorBIPS",
-                latestTimestamp
-            );
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS), "buyFAssetByAgentFactorBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
         }
         //Agent update poolExitCollateralRatioBIPS
         if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS),
-                "poolExitCollateralRatioBIPS",
-                latestTimestamp
-            );
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
         }
         //Agent update poolTopupCollateralRatioBIPS
         if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS),
-                "poolTopupCollateralRatioBIPS",
-                latestTimestamp
-            );
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
         }
         //Agent update poolTopupTokenPriceFactorBIPS
         if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS),
-                "poolTopupTokenPriceFactorBIPS",
-                latestTimestamp
-            );
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS), "poolTopupTokenPriceFactorBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
         }
     }
 
     private async handleAgentCloseProcess(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO) ||
-            (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp)) {
-            // agent can exit available
-            await this.exitAvailable(agentEnt);
-        } else if (agentEnt.waitingForDestructionCleanUp &&
-            (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) ||
-                toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))) {
-            logger.info(`Agent ${this.agent.vaultAddress} is waiting for clean up before destruction.`);
+        if (!agentEnt.waitingForDestructionCleanUp) return;
+        const agentInfo = await this.agent.getAgentInfo();
+        if (agentInfo.publiclyAvailable) return;
+        const waitingCollateralWithdrawal = toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO);
+        const waitingPoolTokenRedemption = toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO);
+        if (waitingCollateralWithdrawal || waitingPoolTokenRedemption) {
             // vault collateral withdrawal
-            if (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-                const successOrExpired = await this.withdrawCollateral(
-                    toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp),
-                    toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount),
-                    latestTimestamp,
-                    ClaimType.VAULT
-                );
+            if (waitingCollateralWithdrawal) {
+                logger.debug(`Agent ${this.agent.vaultAddress} is waiting for collateral withdrawal before destruction.`);
+                const withdrawAllowedAt = toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp);
+                const withdrawAmount = toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount);
+                const successOrExpired = await this.withdrawCollateral(withdrawAllowedAt, withdrawAmount, latestTimestamp, ClaimType.VAULT);
                 if (successOrExpired) {
                     agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = BN_ZERO;
                     agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = "";
                 }
             }
             // pool token redemption
-            if (toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-                const successOrExpired = await this.withdrawCollateral(
-                    toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp),
-                    toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount),
-                    latestTimestamp,
-                    ClaimType.POOL
-                );
+            if (waitingPoolTokenRedemption) {
+                logger.debug(`Agent ${this.agent.vaultAddress} is waiting for pool token redemption before destruction.`);
+                const withdrawAllowedAt = toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp);
+                const withdrawAmount = toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount);
+                const successOrExpired = await this.withdrawCollateral(withdrawAllowedAt, withdrawAmount, latestTimestamp, ClaimType.POOL);
                 if (successOrExpired) {
                     agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
                     agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = "";
                 }
             }
-        } else if (agentEnt.waitingForDestructionCleanUp) {
+        } else {
             logger.info(`Agent ${this.agent.vaultAddress} is checking if clean up before destruction is complete.`);
             // agent checks if clean up is complete
             // withdraw and self close pool fees
@@ -643,23 +610,18 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${poolFeeBalance}.`);
             }
             // check poolTokens and vaultCollateralBalance
-            const agentInfoForAnnounce = await this.agent.getAgentInfo();
-            const freeVaultCollateralBalance = toBN(agentInfoForAnnounce.freeVaultCollateralWei);
+            const agentInfoForCollateral = await this.agent.getAgentInfo();
+            const freeVaultCollateralBalance = toBN(agentInfoForCollateral.freeVaultCollateralWei);
             if (freeVaultCollateralBalance.gt(BN_ZERO)) {
                 // announce withdraw class 1
-                agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp =
-                    await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance);
+                agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance);
                 agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
                 logger.info(`Agent ${this.agent.vaultAddress} announced vault collateral withdrawal ${freeVaultCollateralBalance} at ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
             }
             // check poolTokens
             const poolTokenBalance = toBN(await this.agent.collateralPoolToken.balanceOf(this.agent.vaultAddress));
-            const agentInfo = await this.agent.getAgentInfo();
-            if (poolTokenBalance.gt(BN_ZERO) &&
-                toBN(agentInfo.mintedUBA).eq(BN_ZERO) &&
-                toBN(agentInfo.redeemingUBA).eq(BN_ZERO) &&
-                toBN(agentInfo.reservedUBA).eq(BN_ZERO) &&
-                toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)) {
+            const agentInfoForPoolTokens = await this.agent.getAgentInfo();
+            if (poolTokenBalance.gt(BN_ZERO) && this.hasNoBackedFAssets(agentInfoForPoolTokens)) {
                 // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
                 agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
                 agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
@@ -667,12 +629,8 @@ export class AgentBot {
             }
             const agentInfoForDestroy = await this.agent.getAgentInfo();
             const totalPoolTokens = toBN(await this.agent.collateralPoolToken.totalSupply());
-            //and wait for others to redeem
-            if (totalPoolTokens.eq(BN_ZERO) &&
-                toBN(agentInfoForDestroy.mintedUBA).eq(BN_ZERO) &&
-                toBN(agentInfoForDestroy.redeemingUBA).eq(BN_ZERO) &&
-                toBN(agentInfoForDestroy.reservedUBA).eq(BN_ZERO) &&
-                toBN(agentInfoForDestroy.poolRedeemingUBA).eq(BN_ZERO)) {
+            // and wait for others to redeem
+            if (totalPoolTokens.eq(BN_ZERO) && this.hasNoBackedFAssets(agentInfoForDestroy)) {
                 // agent checks if clean is complete, agent can announce destroy
                 const destroyAllowedAt = await this.agent.announceDestroy();
                 agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
@@ -695,6 +653,11 @@ export class AgentBot {
                 }
             }
         }
+    }
+
+    private hasNoBackedFAssets(agentInfo: AgentInfo) {
+        return toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) &&
+            toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO);
     }
 
     private async handleWaitForAgentDestruction(agentEnt: AgentEntity, latestTimestamp: BN, em: EM) {
@@ -796,7 +759,6 @@ export class AgentBot {
      * @returns true if settings was updated or valid time expired
      */
     async updateAgentSettings(settingValidAt: BN, settingsName: string, latestTimestamp: BN): Promise<boolean> {
-        const updateNotValidMsg = "update not valid anymore";
         logger.info(`Agent ${this.agent.vaultAddress} is waiting for ${settingsName} agent setting update.`);
         // agent waiting for setting update
         if (toBN(settingValidAt).lte(latestTimestamp)) {
@@ -806,7 +768,7 @@ export class AgentBot {
                 await this.notifier.sendAgentSettingsUpdate(settingsName);
                 return true;
             } catch (error) {
-                if (error instanceof Error && error.message.includes(updateNotValidMsg)) {
+                if (errorIncluded(error, ["update not valid anymore"])) {
                     await this.notifier.sendAgentCannotUpdateSettingExpired(settingsName);
                     return true;
                 }
@@ -822,35 +784,41 @@ export class AgentBot {
      * AgentBot exits available if already allowed
      * @param agentEnt agent entity
      */
+    async handleWaitAgentExitAvailable(agentEnt: AgentEntity, latestTimestamp: BN) {
+        if (this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
+        await this.exitAvailable(agentEnt);
+    }
+
     async exitAvailable(agentEnt: AgentEntity) {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to exit available list.`);
-        const latestTimestamp = await latestBlockTimestampBN();
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(BN_ZERO)) {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot exit available list - exit not announced.`);
-        } else if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(latestTimestamp)) {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot exit available list. Allowed at ${agentEnt.exitAvailableAllowedAtTimestamp}. Current ${latestTimestamp}.`);
-        } else {
-            await this.agent.exitAvailable();
-            agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
-            await this.notifier.sendAgentExitedAvailable();
-            logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
-        }
+        await this.agent.exitAvailable();
+        agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+        await this.notifier.sendAgentExitedAvailable();
+        logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
     }
 
     /**
      * Return the status of "exit available" process
      * @param agentEnt agent entity
-     * @returns current status: not_announced -> announced -> can_exit -> exited
+     * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED -> EXITED
      */
     async getExitAvailableProcessStatus(agentEnt: AgentEntity) {
         const agentInfo = await this.agent.getAgentInfo();
-        if (!agentInfo.publiclyAvailable) return "exited";
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(BN_ZERO)) return "not_announced";
-        const timestamp = await latestBlockTimestampBN();
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).lte(timestamp)) return "can_exit";
-        return "announced";
+        if (!agentInfo.publiclyAvailable) return "EXITED";
+        return this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
     }
 
+    /**
+     * Return status of any action requiring announcement (wwthdrawal, exit, etc.)
+     * @param actionAllowedAt the saved timestamp of ehen the action is allowed
+     * @param currentTimestamp the current timestamp
+     * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED
+     */
+    anouncementStatus(actionAllowedAt: BNish, currentTimestamp: BN) {
+        actionAllowedAt = toBN(actionAllowedAt);
+        if (actionAllowedAt.eq(BN_ZERO)) return "NOT_ANNOUNCED";
+        if (actionAllowedAt.gt(currentTimestamp)) return "WAITING";
+        return "ALLOWED";
+    }
 
     /**
      * Checks if proof has expired in indexer.
