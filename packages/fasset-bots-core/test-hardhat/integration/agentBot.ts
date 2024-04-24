@@ -88,7 +88,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        const mintings = await agentBot.openMintings(orm.em, false);
+        const mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const minting = mintings[0];
         assert.equal(minting.state, AgentMintingState.STARTED);
@@ -99,9 +99,9 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // the minting status should now be 'done'
         orm.em.clear();
-        const openMintingsAfter = await agentBot.openMintings(orm.em, false);
+        const openMintingsAfter = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintingsAfter.length, 0);
-        const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
+        const mintingAfter = await agentBot.minting.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
     });
 
@@ -129,7 +129,7 @@ describe("Agent bot tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
@@ -144,7 +144,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        let mintings = await agentBot.openMintings(orm.em, false);
+        let mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, "started");
@@ -157,14 +157,14 @@ describe("Agent bot tests", () => {
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedNonPaymentProof'
-        mintings = await agentBot.openMintings(orm.em, false);
+        mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingRequestedNonPaymentProof = mintings[0];
         assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_NON_PAYMENT_PROOF);
         // check if minting is done
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, "done");
         // check that executing minting after calling mintingPaymentDefault will revert
         const txHash = await minter.performMintingPayment(crt);
@@ -178,7 +178,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        let mintings = await agentBot.openMintings(orm.em, false);
+        let mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingStarted = mintings[0];
         assert.equal(mintingStarted.state, AgentMintingState.STARTED);
@@ -191,14 +191,14 @@ describe("Agent bot tests", () => {
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedPaymentProof'
-        mintings = await agentBot.openMintings(orm.em, false);
+        mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const mintingRequestedNonPaymentProof = mintings[0];
         assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // check if minting is done
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
@@ -222,7 +222,7 @@ describe("Agent bot tests", () => {
             if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) break;
         }
         // check if minting is done
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
@@ -250,7 +250,7 @@ describe("Agent bot tests", () => {
         }
         // check if minting is done
         orm.em.clear();
-        const mintingDone = await agentBot.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
         // check that executing minting after calling unstickMinting will revert
         await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
@@ -262,7 +262,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        const openMintings = await agentBot.openMintings(orm.em, false);
+        const openMintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintings.length, 1);
         const mintingStarted = openMintings[0];
         assert.equal(mintingStarted.state, AgentMintingState.STARTED);
@@ -281,7 +281,7 @@ describe("Agent bot tests", () => {
         await agentBot.agent.assetManager.unstickMinting(proof, crt.collateralReservationId, { from: agentBot.agent.owner.workAddress, value: burnNats ?? BN_ZERO });
         await agentBot.runStep(orm.em);
         // should have an closed minting
-        const openMintings2 = await agentBot.openMintings(orm.em, false);
+        const openMintings2 = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintings2.length, 0);
     });
 
@@ -303,11 +303,11 @@ describe("Agent bot tests", () => {
         chain.mine(Number(rdReq.lastUnderlyingBlock));
         // agentBot stores redemption
         await agentBot.runStep(orm.em);
-        const redemptionStarted = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemptionStarted = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionStarted.state, AgentRedemptionState.STARTED);
         // agentBot doesn't pay for redemption - expired on underlying
         await agentBot.runStep(orm.em);
-        const redemptionNotPaid = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemptionNotPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionNotPaid.state, AgentRedemptionState.STARTED);
     });
 
@@ -344,7 +344,7 @@ describe("Agent bot tests", () => {
         }
         // check redemption
         orm.em.clear();
-        const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemptionDone = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
@@ -367,7 +367,7 @@ describe("Agent bot tests", () => {
         const rdReq = rdReqs[0];
         // agent pays
         await agentBot.runStep(orm.em);
-        const redemptionPaid = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
@@ -381,11 +381,11 @@ describe("Agent bot tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
-        const redemptionDone = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemptionDone = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
@@ -412,7 +412,7 @@ describe("Agent bot tests", () => {
         // redemption has started and is paid
         await agentBot.runStep(orm.em);
         orm.em.clear();
-        const redemptionPaid = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
         // agent does not confirm payment
         // others can confirm redemption payment after some time
@@ -435,7 +435,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        const mintings = await agentBot.openMintings(orm.em, false);
+        const mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const minting = mintings[0];
         assert.equal(minting.state, AgentMintingState.STARTED);
@@ -446,9 +446,9 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // the minting status should now be 'done'
         orm.em.clear();
-        const openMintingsAfter = await agentBot.openMintings(orm.em, false);
+        const openMintingsAfter = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintingsAfter.length, 0);
-        const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
+        const mintingAfter = await agentBot.minting.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
         const status1 = Number((await agentBot.agent.getAgentInfo()).status);
@@ -468,7 +468,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
-        const mintings = await agentBot.openMintings(orm.em, false);
+        const mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         const minting = mintings[0];
         assert.equal(minting.state, AgentMintingState.STARTED);
@@ -479,9 +479,9 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // the minting status should now be 'done'
         orm.em.clear();
-        const openMintingsAfter = await agentBot.openMintings(orm.em, false);
+        const openMintingsAfter = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintingsAfter.length, 0);
-        const mintingAfter = await agentBot.findMinting(orm.em, minting.requestId);
+        const mintingAfter = await agentBot.minting.findMinting(orm.em, minting.requestId);
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
         const status1 = Number((await agentBot.agent.getAgentInfo()).status);
@@ -583,7 +583,7 @@ describe("Agent bot tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }

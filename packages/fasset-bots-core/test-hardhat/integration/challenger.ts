@@ -147,7 +147,7 @@ describe("Challenger tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
@@ -230,7 +230,7 @@ describe("Challenger tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
@@ -306,14 +306,14 @@ describe("Challenger tests", () => {
         const rdReq = reqs[0];
         // create redemption entity
         await agentBot.handleEvents(orm.em);
-        const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - wrong underlying address, also tweak redemption to trigger low underlying balance alert
         redemption.paymentAddress = minter.underlyingAddress;
         const agentBalance = await context.blockchainIndexer.chain.getBalance(agentBot.agent.underlyingAddress);
         redemption.valueUBA = toBN(agentBalance);
         chain.requiredFee = toBN(redemption.feeUBA);
-        await agentBot.checkBeforeRedemptionPayment(redemption);
+        await agentBot.redemption.checkBeforeRedemptionPayment(redemption);
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available
         for (let i = 0; ; i++) {
@@ -322,7 +322,7 @@ describe("Challenger tests", () => {
             await agentBot.runStep(orm.em);
             // check if payment proof available
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
         }
@@ -330,7 +330,7 @@ describe("Challenger tests", () => {
         const startBalanceRedeemer = await context.wNat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
         // confirm payment proof is available
-        const fetchedRedemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const fetchedRedemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         const proof = await context.attestationProvider.obtainPaymentProof(fetchedRedemption.proofRequestRound!, fetchedRedemption.proofRequestData!);
         if (!attestationProved(proof)) assert.fail("not proved");
         const res = await context.assetManager.confirmRedemptionPayment(proof, fetchedRedemption.requestId, { from: agentBot.agent.owner.workAddress });
@@ -377,7 +377,7 @@ describe("Challenger tests", () => {
         const rdReq = reqs[0];
         // create redemption entity
         await agentBot.handleEvents(orm.em);
-        const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+        const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - payment blocked
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
@@ -571,7 +571,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em); // check if redemption is done orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }

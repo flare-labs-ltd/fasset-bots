@@ -27,6 +27,7 @@ import { createTestAgentBot, createTestChallenger, createTestLiquidator, createT
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { cleanUp, enableSlowTests, getNativeAccounts, itIf } from "../../test-utils/test-helpers";
 import { testNotifierTransports } from "../../test-utils/testNotifierTransports";
+import { TimeKeeperService } from "../../../src/actors/TimeKeeperService";
 use(chaiAsPromised);
 use(spies);
 
@@ -154,10 +155,12 @@ describe("Actor tests - coston", () => {
     it("should start and stop timekeepers", async () => {
         const spyUpdate = spy.on(TimeKeeper.prototype, "updateUnderlyingBlock");
         try {
-            const timekeepers = await TimeKeeper.startTimekeepers(actorConfig, ownerAddress, 300_000);
+            const timekeeperService = await TimeKeeperService.create(actorConfig, ownerAddress, 7200, 300_000, 5000)
+            timekeeperService.startAll();
+            const timekeepers = Array.from(timekeeperService.timekeepers.values());
             expect(timekeepers.length).to.be.eq(2);
             await sleep(2000);
-            await TimeKeeper.stopTimekeepers(timekeepers);
+            await timekeeperService.stopAll();
             expect(spyUpdate).to.be.called.twice;
         } finally {
             spy.restore(TimeKeeper.prototype);

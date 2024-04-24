@@ -141,14 +141,14 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
         });
         await orm.em.persistAndFlush(rd);
-        await agentBot.nextRedemptionStep(orm.em, rd.id);
+        await agentBot.redemption.nextRedemptionStep(orm.em, rd.id);
         expect(spyLog).to.have.been.called.once;
     });
 
     it("Should not do next redemption step due to redemption not found in db", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyLog = spy.on(console, "error");
-        await agentBot.nextRedemptionStep(orm.em, 1000);
+        await agentBot.redemption.nextRedemptionStep(orm.em, 1000);
         expect(spyLog).to.have.been.called.once;
     });
 
@@ -169,14 +169,14 @@ describe("Agent bot unit tests", () => {
             paymentReference: "",
         });
         await orm.em.persistAndFlush(mt);
-        await agentBot.nextMintingStep(orm.em, mt.id);
+        await agentBot.minting.nextMintingStep(orm.em, mt.id);
         expect(spyLog).to.have.been.called.once;
     });
 
     it("Should not do next minting step due to minting not found in db", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyLog = spy.on(console, "error");
-        await agentBot.nextMintingStep(orm.em, 1000);
+        await agentBot.minting.nextMintingStep(orm.em, 1000);
         expect(spyLog).to.have.been.called.once;
     });
 
@@ -206,8 +206,8 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
         });
         await orm.em.persistAndFlush([rd1, rd2]);
-        const ids = await agentBot.openRedemptions(orm.em, true);
-        const rds = await agentBot.openRedemptions(orm.em, false);
+        const ids = await agentBot.redemption.openRedemptions(orm.em, true);
+        const rds = await agentBot.redemption.openRedemptions(orm.em, false);
         expect(ids.length).to.eq(1);
         expect(rds.length).to.eq(1);
     });
@@ -230,7 +230,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.checkNonPayment(mt);
+        await agentBot.minting.checkNonPayment(mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -252,7 +252,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.checkPaymentAndExecuteMinting(mt);
+        await agentBot.minting.checkPaymentAndExecuteMinting(mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -273,7 +273,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.checkConfirmPayment(rd);
+        await agentBot.redemption.checkConfirmPayment(rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -307,7 +307,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.checkNonPayment(mt);
+        await agentBot.minting.checkNonPayment(mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -330,7 +330,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.checkPaymentAndExecuteMinting(mt);
+        await agentBot.minting.checkPaymentAndExecuteMinting(mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -352,7 +352,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.checkConfirmPayment(rd);
+        await agentBot.redemption.checkConfirmPayment(rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -643,7 +643,7 @@ describe("Agent bot unit tests", () => {
         // switch attestation prover to always fail mode
         checkedCast(agentBot.agent.attestationProvider.stateConnector, MockStateConnectorClient).useAlwaysFailsProver = true;
         //
-        await agentBot.requestNonPaymentProofForMinting(minting);
+        await agentBot.minting.requestNonPaymentProofForMinting(minting);
         expect(minting.state).to.eq("started");
         const transactionHash = await agentBot.agent.wallet.addTransaction(
             randomUnderlyingAddress,
@@ -651,7 +651,7 @@ describe("Agent bot unit tests", () => {
             1,
             PaymentReference.selfMint(agentBot.agent.vaultAddress)
         );
-        await agentBot.requestPaymentProofForMinting(minting, transactionHash, randomUnderlyingAddress);
+        await agentBot.minting.requestPaymentProofForMinting(minting, transactionHash, randomUnderlyingAddress);
         expect(minting.state).to.eq("started");
         const transactionHash1 = await agentBot.agent.wallet.addTransaction(
             agentBot.agent.underlyingAddress,
@@ -673,7 +673,7 @@ describe("Agent bot unit tests", () => {
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
             txHash: transactionHash1,
         };
-        await agentBot.requestPaymentProof(redemption);
+        await agentBot.redemption.requestPaymentProof(redemption);
         expect(redemption.state).to.eq("paid");
         // handleDailyTasks
         expect(agentBot.latestProof).to.be.null;

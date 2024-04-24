@@ -16,7 +16,7 @@ export class TimeKeeperService {
 
     timekeepers = new Map<string, TimeKeeper>();
 
-    async create(config: KeeperBotConfig, timekeeperAddress: string, queryWindow: TimeKeeperQueryWindow, updateIntervalMs: number, loopDelayMs: number) {
+    static async create(config: KeeperBotConfig, timekeeperAddress: string, queryWindow: TimeKeeperQueryWindow, updateIntervalMs: number, loopDelayMs: number) {
         const contexts: Map<string, ITimekeeperContext> = new Map();
         for (const chain of config.fAssets.values()) {
             const chainId = chain.chainInfo.chainId;

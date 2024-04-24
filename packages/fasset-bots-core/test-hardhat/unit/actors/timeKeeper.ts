@@ -32,7 +32,7 @@ describe("Time keeper unit tests", () => {
     });
 
     it("Should create time keeper", async () => {
-        const timeKeeper = new TimeKeeper(timeKeeperAddress, context, 60000);
+        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, "auto", 60000, 5000);
         expect(timeKeeper.context.nativeChainInfo.finalizationBlocks).to.eq(context.nativeChainInfo.finalizationBlocks);
     });
 
@@ -41,7 +41,7 @@ describe("Time keeper unit tests", () => {
         expect(Number(currentBlock[0])).to.eq(0);
         const blocksToMine = 2;
         context.blockchainIndexer.chain.mine(blocksToMine);
-        const timeKeeper = new TimeKeeper(timeKeeperAddress, context, 60000);
+        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, "auto", 60000, 5000);
         await timeKeeper.updateUnderlyingBlock();
         const currentBlock2 = await context.assetManager.currentUnderlyingBlock();
         expect(Number(currentBlock2[0])).to.eq(blocksToMine);
@@ -49,7 +49,7 @@ describe("Time keeper unit tests", () => {
 
     it("Should not update underlying block - invalid timeKeeper's address", async () => {
         const spyConsole = spy.on(console, "error");
-        const timeKeeper = new TimeKeeper("timeKeeperAddress", context, 60000);
+        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, "auto", 60000, 5000);
         await timeKeeper.updateUnderlyingBlock();
         expect(spyConsole).to.be.called.once;
     });
