@@ -158,10 +158,10 @@ describe("Actor tests - coston", () => {
             const timekeeperService = await TimeKeeperService.create(actorConfig, ownerAddress, 7200, 300_000, 5000)
             timekeeperService.startAll();
             const timekeepers = Array.from(timekeeperService.timekeepers.values());
-            expect(timekeepers.length).to.be.eq(2);
+            expect(timekeepers.length).to.be.eq(1);
             await sleep(2000);
             await timekeeperService.stopAll();
-            expect(spyUpdate).to.be.called.twice;
+            expect(spyUpdate).to.be.called.once;
         } finally {
             spy.restore(TimeKeeper.prototype);
         }

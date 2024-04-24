@@ -49,7 +49,7 @@ describe("Time keeper unit tests", () => {
 
     it("Should not update underlying block - invalid timeKeeper's address", async () => {
         const spyConsole = spy.on(console, "error");
-        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, "auto", 60000, 5000);
+        const timeKeeper = new TimeKeeper(context, "timeKeeperAddress", "auto", 60000, 5000);
         await timeKeeper.updateUnderlyingBlock();
         expect(spyConsole).to.be.called.once;
     });

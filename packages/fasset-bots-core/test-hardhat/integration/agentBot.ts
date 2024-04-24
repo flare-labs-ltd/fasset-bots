@@ -628,6 +628,7 @@ describe("Agent bot tests", () => {
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.CCB);
         // run bot
+        await agentBot.checkForPriceChangeEvents();
         await agentBot.handleEvents(orm.em);
         expect(spyConsole).to.have.been.called.exactly(5);
     });
@@ -649,7 +650,7 @@ describe("Agent bot tests", () => {
         // send notifications: top up failed and low balance on ownerAddress
         await agentBot.runStep(orm.em);
         expect(spyTopUpFailed).to.have.been.called.once;
-        expect(spyLowOwnerBalance).to.have.been.called.once;
+        expect(spyLowOwnerBalance).to.have.been.called.exactly(2);
         // top up ownerAddress
         const deposit = toBNExp(5_000_000, 6).toString();
         await mintVaultCollateralToOwner(deposit, (await agentBot.agent.getAgentInfo()).vaultCollateralToken, ownerAddress);
@@ -688,7 +689,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         expect(spyVaultTopUpFailed).to.have.been.called.once;
         expect(spyPoolTopUpFailed).to.have.been.called.once;
-        expect(spyLowOwnerBalance).to.have.been.called.twice;
+        expect(spyLowOwnerBalance).to.have.been.called.exactly(3);
         // redeem pool tokens
         const redeemAt = await agentB.announcePoolTokenRedemption(deposit);
         await time.increaseTo(redeemAt);

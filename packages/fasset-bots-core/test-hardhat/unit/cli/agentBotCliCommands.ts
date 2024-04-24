@@ -99,7 +99,7 @@ describe("AgentBot cli commands unit tests", () => {
         // buy collateral pool tokens
         await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
         // try to exit - not in available list yet
-        await botCliCommands.exitAvailableList(vaultAddress);
+        await expectRevert(botCliCommands.exitAvailableList(vaultAddress), "agent not available");
         const agentInfoBefore2 = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoBefore2.publiclyAvailable).to.be.false;
         // enter available
@@ -111,7 +111,7 @@ describe("AgentBot cli commands unit tests", () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
         // try to exit - not yet allowed
-        await botCliCommands.exitAvailableList(vaultAddress);
+        await expectRevert(botCliCommands.exitAvailableList(vaultAddress), "cannot exit available list. Allowed at");
         const agentInfoMiddle2 = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoMiddle2.publiclyAvailable).to.be.true;
         // skip time

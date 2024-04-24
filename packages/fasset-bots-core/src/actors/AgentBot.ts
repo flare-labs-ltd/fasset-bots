@@ -925,7 +925,8 @@ export class AgentBot {
      */
     async checkAgentForCollateralRatiosAndTopUp(): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking collateral ratios.`);
-        const agentInfo = await this.agent.getAgentInfo();
+        const agentInfo = await this.agent.getAgentInfoIfExists();
+        if (agentInfo == null) return;
         const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
         const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
 
