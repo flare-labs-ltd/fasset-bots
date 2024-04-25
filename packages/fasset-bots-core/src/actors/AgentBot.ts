@@ -32,6 +32,7 @@ import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBotEventReader } from "./AgentBotEventReader";
 import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
+import { CommandLineError } from "../utils";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -202,7 +203,8 @@ export class AgentBot {
             logger.info(`Owner ${owner} activated underlying address ${vaultUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
             logger.error(`Owner ${owner} couldn't activate underlying address ${vaultUnderlyingAddress}:`, error);
-            throw new Error(`Could not activate or verify new XRP account ${vaultUnderlyingAddress}`);
+            throw new CommandLineError(squashSpace`Could not activate or verify new agent vault's XRP account.
+                Note that the owner's XRP account ${ownerUnderlyingAddress} requires at least ${2 * Number(XRP_ACTIVATE_BALANCE) * 1e-6} XRP to activate the new account.`);
         }
     }
 
