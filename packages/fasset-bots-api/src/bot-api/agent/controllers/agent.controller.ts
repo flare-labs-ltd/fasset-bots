@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
@@ -8,9 +8,12 @@ import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
 import { AgentSettingsConfigDTO } from "../../common/AgentettingsConfigDTO";
+import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
+import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
 
 @ApiTags("Agent")
 @Controller("api/agent")
+@UseInterceptors(ErrorStatusInterceptor)
 @ApiSecurity("X-API-KEY")
 export class AgentController {
     constructor(
@@ -58,7 +61,6 @@ export class AgentController {
     })
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async enter(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -77,7 +79,6 @@ export class AgentController {
     })
     @Post("available/exit/:fAssetSymbol/:agentVaultAddress")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async exit(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -87,7 +88,6 @@ export class AgentController {
 
     @Post("selfClose/:fAssetSymbol/:agentVaultAddress/:amountUBA")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async selfClose(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -98,7 +98,6 @@ export class AgentController {
 
     @Get("settings/list/:fAssetSymbol/:agentVaultAddress")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async getAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -117,7 +116,6 @@ export class AgentController {
     })
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress/:settingName/:settingValue")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async updateAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -125,6 +123,25 @@ export class AgentController {
         @Param("settingValue") settingValue: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.updateAgentSetting(fAssetSymbol, agentVaultAddress, settingName, settingValue));
+    }
+
+    @ApiOkResponse({
+        description: 'Example of successful response.',
+        schema: {
+            type: 'object',
+            properties: {
+                status: { type: 'string', example: 'OK' }
+            }
+        }
+    })
+    @Post("settings/update/:fAssetSymbol/:agentVaultAddress")
+    @UseGuards(AuthGuard("api-key"))
+    public async updateAgentSettings(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Body() settingsDTO: AgentSettingsDTO[]
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.updateAgentSettings(fAssetSymbol, agentVaultAddress, settingsDTO));
     }
 
     @Get("info/data/:fAssetSymbol")
@@ -161,7 +178,6 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getAgentData(
         @Param("fAssetSymbol") fAssetSymbol: string
     ): Promise<ApiResponseWrapper<AgentData>> {
@@ -198,7 +214,6 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getAgentStatus(
         @Param("fAssetSymbol") fAssetSymbol: string
     ): Promise<ApiResponseWrapper<AgentVaultStatus[]>> {
@@ -261,7 +276,6 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getAgentVaultInfo(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -286,7 +300,6 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getAgentUnderlyingBalance(
         @Param("fAssetSymbol") fAssetSymbol: string
     ): Promise<ApiResponseWrapper<AgentBalance>> {
@@ -295,7 +308,6 @@ export class AgentController {
 
     @Post("botAlert")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async sendNotification(
         @Body() notification: PostAlert
     ): Promise<ApiResponseWrapper<void>> {
@@ -326,7 +338,6 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getNotifications(
     ): Promise<ApiResponseWrapper<PostAlert[]>> {
         return handleApiResponse(this.agentService.getNotifications());
@@ -344,7 +355,6 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getAgentWorkAddress(
     ): Promise<ApiResponseWrapper<string>> {
         return handleApiResponse(this.agentService.getAgentWorkAddress());
@@ -365,7 +375,6 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getFassetSymbols(
     ): Promise<ApiResponseWrapper<string[]>> {
         return handleApiResponse(this.agentService.getFassetSymbols());
@@ -383,14 +392,12 @@ export class AgentController {
             }
         }
     })
-    @HttpCode(200)
     public async getWhitelistedStatus(
     ): Promise<ApiResponseWrapper<boolean>> {
         return handleApiResponse(this.agentService.checkWhitelisted());
     }
 
     @Post("secrets")
-    @HttpCode(200)
     public async saveSecrets(
         @Body() secrets: string
     ): Promise<ApiResponseWrapper<void>> {
@@ -398,7 +405,6 @@ export class AgentController {
     }
 
     @Get("secretsExist")
-    @HttpCode(200)
     public async getSecretsExist(
     ): Promise<ApiResponseWrapper<boolean>> {
         return handleApiResponse(this.agentService.checkSecretsFile());
@@ -406,7 +412,6 @@ export class AgentController {
 
     @Get("collaterals")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async getCollaterals(
     ): Promise<ApiResponseWrapper<AllCollaterals[]>> {
         return handleApiResponse(this.agentService.getAllCollaterals());
@@ -414,7 +419,6 @@ export class AgentController {
 
     @Post("workAddress/:publicAddress/:privateKey")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async changeWorkAddress(
         @Param("publicAddress") publicAddress: string,
         @Param("privateKey") privateKey: string
@@ -424,7 +428,6 @@ export class AgentController {
 
     @Get("generateWorkAddress")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async generateWorkAddress(
     ): Promise<ApiResponseWrapper<any>> {
         return handleApiResponse(this.agentService.generateWorkAddress());
@@ -432,14 +435,12 @@ export class AgentController {
 
     @Get("botStatus")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async getBotStatus(
     ): Promise<ApiResponseWrapper<boolean>> {
         return handleApiResponse(this.agentService.checkBotStatus());
     }
 
     @Get("APIKey")
-    @HttpCode(200)
     public async generateAPIKey(
     ): Promise<ApiResponseWrapper<APIKey>> {
         return handleApiResponse(this.agentService.generateAPIKey());
@@ -447,9 +448,15 @@ export class AgentController {
 
     @Get("vaultCollaterals")
     @UseGuards(AuthGuard("api-key"))
-    @HttpCode(200)
     public async getVaultCollaterals(
     ): Promise<ApiResponseWrapper<VaultCollaterals[]>> {
         return handleApiResponse(this.agentService.getVaultCollateralTokens());
+    }
+
+    @Get("vaults")
+    @UseGuards(AuthGuard("api-key"))
+    public async getAllVaults(
+    ): Promise<ApiResponseWrapper<any>> {
+        return handleApiResponse(this.agentService.getAgentVaults());
     }
 }

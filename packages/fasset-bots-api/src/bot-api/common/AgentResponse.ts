@@ -56,6 +56,23 @@ export interface AllCollaterals {
     }[]
 }
 
+export interface VaultInfo {
+    address: string;
+    status: boolean;
+    mintedlots: string;
+    freeLots: string;
+    vaultCR: string;
+    poolCR: string;
+    mintedAmount: string;
+    vaultAmount: string;
+    poolAmount: string;
+}
+
+export interface AllVaults {
+    fassetSymbol: string,
+    vaults: VaultInfo[]
+}
+
 export interface VaultCollaterals {
     fassetSymbol: string;
     collaterals: string[];

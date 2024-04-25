@@ -1,14 +1,15 @@
 import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { artifacts, createSha256Hash, generateRandomHexString, requireEnv, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { MAX_BIPS, artifacts, createSha256Hash, generateRandomHexString, requireEnv, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, VaultCollaterals, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, AllVaults, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { exec } from "child_process";
+import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -172,6 +173,13 @@ export class AgentService {
     async updateAgentSetting(fAssetSymbol: string, agentVaultAddress: string, settingName: string, settingValue: string): Promise<void> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.updateAgentSetting(agentVaultAddress, settingName, settingValue);
+    }
+
+    async updateAgentSettings(fAssetSymbol: string, agentVaultAddress: string, settings: AgentSettingsDTO[]): Promise<void> {
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        for (const setting of settings) {
+            await cli.updateAgentSetting(agentVaultAddress, setting.name, setting.value);
+        }
     }
 
     async createUnderlying(fAssetSymbol: string): Promise<AgentUnderlying> {
@@ -406,5 +414,40 @@ export class AgentService {
             collaterals.push(collateral);
         }
         return collaterals;
+    }
+
+    /*
+    *  Get info for all vaults for all fassets.
+    */
+    async getAgentVaults(): Promise<any> {
+        const config = loadConfigFile(FASSET_BOT_CONFIG)
+        const allVaults: AllVaults[] = [];
+        // eslint-disable-next-line guard-for-in
+        for (const fasset in config.fAssets) {
+            const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
+            const query = cli.orm.em.createQueryBuilder(AgentEntity);
+            // Get agent vaults for fasset from database
+            const agentVaults = await query.where({ chainSymbol: config.fAssets[fasset].symbol }).getResultList();
+            if (agentVaults.length == 0){
+                break;
+            }
+            const settings = await cli.context.assetManager.getSettings();
+            const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
+            const vaultsForFasset: VaultInfo[] = [];
+            // For each vault calculate needed info
+            for (const vault of agentVaults) {
+                const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
+                const mintedLots = Number(info.mintedUBA) / lotSize;
+                const vaultCR = Number(info.mintingVaultCollateralRatioBIPS) / MAX_BIPS;
+                const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
+                const vaultInfo: VaultInfo = { address: vault.vaultAddress, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
+                    freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: info.mintedUBA, vaultAmount: info.totalVaultCollateralWei,
+                    poolAmount: info.totalPoolCollateralNATWei};
+                vaultsForFasset.push(vaultInfo);
+            }
+            if (vaultsForFasset.length != 0)
+                allVaults.push({fassetSymbol: fasset, vaults: vaultsForFasset});
+        }
+        return allVaults;
     }
 }
