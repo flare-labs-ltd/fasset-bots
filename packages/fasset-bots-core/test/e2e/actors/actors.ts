@@ -28,6 +28,7 @@ import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, CO
 import { cleanUp, enableSlowTests, getNativeAccounts, itIf } from "../../test-utils/test-helpers";
 import { testNotifierTransports } from "../../test-utils/testNotifierTransports";
 import { TimeKeeperService } from "../../../src/actors/TimeKeeperService";
+import { testTimekeeperService } from "../../../test-hardhat/test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -104,13 +105,13 @@ describe("Actor tests - coston", () => {
     it("Should create agent bot runner", async () => {
         const contexts: Map<string, IAssetAgentContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
-        const agentBotRunner = new AgentBotRunner(secrets, contexts, orm, 5, testNotifierTransports);
+        const agentBotRunner = new AgentBotRunner(secrets, contexts, orm, 5, testNotifierTransports, testTimekeeperService);
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should create agent bot runner from bot config", async () => {
-        const agentBotRunner = await AgentBotRunner.create(secrets, botConfig);
+        const agentBotRunner = await AgentBotRunner.create(secrets, botConfig, testTimekeeperService);
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });

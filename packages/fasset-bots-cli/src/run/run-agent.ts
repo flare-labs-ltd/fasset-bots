@@ -21,8 +21,11 @@ program.action(async () => {
         const ownerPrivateKey: string = secrets.required("owner.native.private_key");
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [ownerPrivateKey], ownerAddress);
         const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
+        // create timekeepers
+        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, "auto", TIMEKEEPER_INTERVAL, 5000);
+        timekeeperService.startAll();
         // create runner and agents
-        const runner = await AgentBotRunner.create(secrets, botConfig);
+        const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         // store owner's underlying address
         for (const ctx of runner.contexts.values()) {
             const chainName = decodedChainId(ctx.chainInfo.chainId);
@@ -30,9 +33,6 @@ program.action(async () => {
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
         }
-        // create timekeepers
-        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, "auto", TIMEKEEPER_INTERVAL, 5000);
-        timekeeperService.startAll();
         // run
         try {
             console.log("Agent bot started, press CTRL+C to end");

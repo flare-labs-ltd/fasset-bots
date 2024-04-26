@@ -5,7 +5,7 @@ import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
-import { AgentEntity, DailyProofState, Event } from "../entities/agent";
+import { AgentEntity, Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -14,13 +14,13 @@ import { CollateralPrice } from "../state/CollateralPrice";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { SourceId } from "../underlying-chain/SourceId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { CommandLineError } from "../utils";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
-import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
 import {
-    BN_ZERO, BNish, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
+    BN_ZERO, BNish, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS,
+    MAX_BIPS, MINUTES, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
     VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN
 } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -32,7 +32,6 @@ import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBotEventReader } from "./AgentBotEventReader";
 import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
-import { CommandLineError } from "../utils";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -41,6 +40,10 @@ const IERC20 = artifacts.require("IERC20");
 
 export interface IRunner {
     stopRequested: boolean;
+}
+
+export interface ITimeKeeper {
+    latestProof?: ConfirmedBlockHeightExists.Proof;
 }
 
 enum ClaimType {
@@ -60,12 +63,16 @@ export class AgentBot {
 
     context = this.agent.context;
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
-    latestProof: ConfirmedBlockHeightExists.Proof | null = null;
-    runner?: IRunner;
-    maxHandleEventBlocks = 1000;
-    lastPriceReaderEventBlock = -1;
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
+
+    // only set when created by an AgentBotRunner
+    runner?: IRunner;
+    timekeeper?: ITimeKeeper;
+
+    maxHandleEventBlocks = 1000;
+    lastPriceReaderEventBlock = -1;
+    waitingForLatestBlockProofSince = BN_ZERO;
 
     static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
@@ -122,7 +129,6 @@ export class AgentBot {
             agentEntity.active = true;
             agentEntity.currentEventBlock = lastBlock + 1;
             agentEntity.collateralPoolAddress = agent.collateralPool.address;
-            agentEntity.dailyProofState = DailyProofState.OBTAINED_PROOF;
             em.persist(agentEntity);
             logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
                 underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
@@ -224,6 +230,7 @@ export class AgentBot {
         await this.checkForPriceChangeEvents();
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
+        await this.handleOpenMintings(rootEm);
         await this.handleAgentsWaitingsAndCleanUp(rootEm);
         await this.handleDailyTasks(rootEm);
     }
@@ -350,6 +357,7 @@ export class AgentBot {
         logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
     }
 
+
     /**
      * Once a day checks corner cases and claims.
      * @param rootEm entity manager
@@ -357,56 +365,15 @@ export class AgentBot {
     async handleDailyTasks(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const latestBlock = await latestUnderlyingBlock(this.context.blockchainIndexer);
-        /* istanbul ignore else */
-        if (latestBlock) {
-            logger.info(`Agent ${this.agent.vaultAddress} checks if daily task need to be handled. List time checked: ${agentEnt.dailyTasksTimestamp}. Latest block: ${latestBlock.number}, ${latestBlock.timestamp}.`);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve latest block in handleDailyTasks.`);
-            return;
-        }
-        if (latestBlock && toBN(latestBlock.timestamp).sub(toBN(agentEnt.dailyTasksTimestamp)).gtn(1 * DAYS)) {
-            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to request confirmed block heigh exists proof daily tasks.`);
-                const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(this.context.assetManager));
-                if (request) {
-                    agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
-                    agentEnt.dailyProofRequestRound = request.round;
-                    agentEnt.dailyProofRequestData = request.data;
-                    logger.info(`Agent ${this.agent.vaultAddress} requested confirmed block heigh exists proof for daily tasks: dailyProofRequestRound ${request.round} and dailyProofRequestData ${request.data}`);
-                    await rootEm.persistAndFlush(agentEnt);
-                } else {
-                    // else cannot prove request yet
-                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet request confirmed block heigh exists for proof daily tasks`);
-                }
-            } else {
-                // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
-                assertNotNull(agentEnt.dailyProofRequestRound);
-                assertNotNull(agentEnt.dailyProofRequestData);
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
-                if (proof === AttestationNotProved.NOT_FINALIZED) {
-                    logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                    return;
-                }
-                if (attestationProved(proof)) {
-                    logger.info(`Agent ${this.agent.vaultAddress} obtained confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                    this.latestProof = proof;
-
-                    agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
-                    await this.handleCornerCases(rootEm);
-                    await this.checkForClaims();
-                    agentEnt.dailyTasksTimestamp = toBN(latestBlock.timestamp);
-                    await rootEm.persistAndFlush(agentEnt);
-                } else {
-                    await this.notifier.sendDailyTaskNoProofObtained(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
-                    // request new block height proof
-                    agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
-                    await rootEm.persistAndFlush(agentEnt);
-                }
-            }
-        }
-        logger.info(`Agent ${this.agent.vaultAddress} finished checking if daily task need to be handled.`);
+        const timestamp = await latestBlockTimestampBN();
+        if (timestamp.sub(agentEnt.dailyTasksTimestamp).ltn(1 * DAYS)) return;
+        const blockHeightProof = await this.getUnderlyingBlockHeightProof();
+        if (blockHeightProof == null) return;
+        logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
+        await this.handleCornerCases(rootEm);
+        await this.checkForClaims();
+        agentEnt.dailyTasksTimestamp = toBN(timestamp);
+        await rootEm.persistAndFlush(agentEnt);
     }
 
     /**
@@ -477,8 +444,7 @@ export class AgentBot {
     async handleCornerCases(rootEm: EM): Promise<void> {
         try {
             logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
-            await this.handleOpenMintings(rootEm);
-            await this.redemption.handleOpenRedemptionsForCornerCase(rootEm);
+            await this.redemption.checkOpenRedemptionsForExpiration(rootEm);
             logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
         } catch (error) {
             console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
@@ -828,19 +794,46 @@ export class AgentBot {
      * @param lastUnderlyingTimestamp last underlying timestamp to perform payment
      * @returns proved attestation provider data
      */
-    async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ConfirmedBlockHeightExists.Proof | null> {
+    async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ConfirmedBlockHeightExists.Proof | "NOT_EXPIRED" | "WAITING_PROOF"> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
-        const proof = this.latestProof;
+        // try to get proof whether payment/non-payment proofs have expired
+        const proof = await this.getUnderlyingBlockHeightProof();
         if (proof) {
             const lqwBlock = toBN(proof.data.responseBody.lowestQueryWindowBlockNumber);
             const lqwBTimestamp = toBN(proof.data.responseBody.lowestQueryWindowBlockTimestamp);
             if (lqwBlock.gt(lastUnderlyingBlock) && lqwBTimestamp.gt(lastUnderlyingTimestamp)) {
                 logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CANNOT be obtained from indexer.`);
                 return proof;
+            } else {
+                logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
+                return "NOT_EXPIRED";
             }
         }
-        logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
-        return null;
+        return "WAITING_PROOF";
+    }
+
+    /**
+     * Get the latest underlying block height exists proof from the timekeeper or
+     * @returns
+     */
+    async getUnderlyingBlockHeightProof() {
+        assertNotNull(this.timekeeper, "Cannot obtain underlying block height - timekeeper not set.");
+        // obtain the proof
+        const proof = this.timekeeper.latestProof;
+        if (attestationProved(proof)) {
+            this.waitingForLatestBlockProofSince = BN_ZERO;
+            return proof;
+        }
+        // if waiting for proof for more than expected time, notify agent and restart wait
+        const timestamp = await latestBlockTimestampBN();
+        if (this.waitingForLatestBlockProofSince.gt(BN_ZERO) && timestamp.sub(this.waitingForLatestBlockProofSince).gtn(10 * MINUTES)) {
+            await this.notifier.sendDailyTaskNoProofObtained(10);
+            this.waitingForLatestBlockProofSince = timestamp;
+        }
+        // start waiting for proof
+        if (this.waitingForLatestBlockProofSince.eq(BN_ZERO)) {
+            this.waitingForLatestBlockProofSince = timestamp;
+        }
     }
 
     /**

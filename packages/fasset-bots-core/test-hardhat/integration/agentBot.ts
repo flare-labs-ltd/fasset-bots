@@ -5,7 +5,7 @@ import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
-import { AgentEntity, AgentMintingState, AgentRedemptionState, DailyProofState } from "../../src/entities/agent";
+import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
 import { AgentStatus, AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
@@ -146,21 +146,25 @@ describe("Agent bot tests", () => {
         orm.em.clear();
         let mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
-        const mintingStarted = mintings[0];
-        assert.equal(mintingStarted.state, "started");
+        assert.equal(mintings[0].state, "started");
         // run it also now to cover else
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
+        mintings = await agentBot.minting.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        assert.equal(mintings[0].state, "started");
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));
+        // get time proof
+        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        // handle again
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedNonPaymentProof'
         mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
-        const mintingRequestedNonPaymentProof = mintings[0];
-        assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_NON_PAYMENT_PROOF);
+        assert.equal(mintings[0].state, AgentMintingState.REQUEST_NON_PAYMENT_PROOF);
         // check if minting is done
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
@@ -188,6 +192,9 @@ describe("Agent bot tests", () => {
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));
+        // get time proof
+        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        // handle again
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedPaymentProof'
@@ -210,18 +217,12 @@ describe("Agent bot tests", () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
+        // get time proof
+        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
         // run step
-        for (let i = 0; ; i++) {
-            await time.advanceBlock();
-            chain.mine();
-            await agentBot.runStep(orm.em);
-            // check if redemption is done
-            orm.em.clear();
-            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            console.log(`Agent step ${i}, state = ${agentEnt.dailyProofState}`);
-            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) break;
-        }
+        await agentBot.runStep(orm.em);
         // check if minting is done
+        orm.em.clear();
         const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
@@ -237,17 +238,10 @@ describe("Agent bot tests", () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
+        // get time proof
+        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
         // run step
-        for (let i = 0; ; i++) {
-            await time.advanceBlock();
-            chain.mine();
-            await agentBot.runStep(orm.em);
-            // check if redemption is done
-            orm.em.clear();
-            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            console.log(`Agent step ${i}, state = ${agentEnt.dailyProofState}`);
-            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) break;
-        }
+        await agentBot.runStep(orm.em);
         // check if minting is done
         orm.em.clear();
         const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
@@ -331,17 +325,10 @@ describe("Agent bot tests", () => {
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        // run steps
-        for (let i = 0; ; i++) {
-            await time.advanceBlock();
-            chain.mine();
-            await agentBot.runStep(orm.em);
-            // check if redemption is done
-            orm.em.clear();
-            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            console.log(`Agent step ${i}, state = ${agentEnt.dailyProofState}`);
-            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) break;
-        }
+        // get time proof
+        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        // run step
+        await agentBot.runStep(orm.em);
         // check redemption
         orm.em.clear();
         const redemptionDone = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);

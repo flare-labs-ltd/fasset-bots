@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity, DailyProofState, Event } from "../../../src/entities/agent";
+import { AgentEntity, Event } from "../../../src/entities/agent";
 import { EvmEvent } from "../../../src/utils/events/common";
 import { createTestOrm } from "../../test-utils/create-test-orm";
 
@@ -17,7 +17,6 @@ describe("AgentBot", () => {
         agent.active = true;
         agent.currentEventBlock = 0;
         agent.collateralPoolAddress = "0x";
-        agent.dailyProofState = DailyProofState.OBTAINED_PROOF;
         return agent;
     }
 

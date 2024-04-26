@@ -23,7 +23,7 @@ export class TimeKeeper {
     private cancelUpdate?: CancelToken;
 
     // last proof, to be used by other services (e.g. agent bot)
-    lastProof?: ConfirmedBlockHeightExists.Proof;
+    latestProof?: ConfirmedBlockHeightExists.Proof;
 
     /**
      * Prove that a block with given number and timestamp exists and
@@ -41,8 +41,8 @@ export class TimeKeeper {
             const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
             logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`);
             // update last proof (make sure that block number is increasing, if something weird happens)
-            if (this.lastProof == undefined || Number(this.lastProof.data.requestBody.blockNumber) < Number(proof.data.requestBody.blockNumber)) {
-                this.lastProof = proof;
+            if (this.latestProof == undefined || Number(this.latestProof.data.requestBody.blockNumber) < Number(proof.data.requestBody.blockNumber)) {
+                this.latestProof = proof;
             }
         } catch (error) {
             if (error instanceof PromiseCancelled) return;

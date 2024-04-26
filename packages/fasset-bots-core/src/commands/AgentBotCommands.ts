@@ -132,7 +132,6 @@ export class AgentBotCommands {
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
             const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, this.context.chainInfo.chainId);
             const [addressValidityProof, _] = await Promise.all([
-
                 AgentBot.initializeUnderlyingAddress(this.context, this.owner, ownerUnderlyingAddress, underlyingAddress),
                 proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
             ]);

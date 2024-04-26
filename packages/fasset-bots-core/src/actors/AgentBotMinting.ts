@@ -131,12 +131,12 @@ export class AgentBotMinting {
      */
     async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
         const proof = await this.bot.checkProofExpiredInIndexer(toBN(minting.lastUnderlyingBlock), toBN(minting.lastUnderlyingTimestamp));
-        if (proof) {
+        if (proof === "NOT_EXPIRED") {
+            // payment/non-payment proof can be obtained
+            await this.handleOpenMinting(minting);
+        } else if (typeof proof === "object") {
             // corner case: proof expires in indexer
             await this.handleExpiredMinting(minting, proof);
-        } else {
-            // proof did not expire
-            await this.handleOpenMinting(minting);
         }
     }
 
@@ -150,7 +150,6 @@ export class AgentBotMinting {
     async handleOpenMinting(minting: AgentMinting) {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const latestBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
-        console.log(`latestBlock  number=${latestBlock?.number} timestamp=${latestBlock?.timestamp}`);
         // wait times expires on underlying + finalizationBlock
         if (latestBlock && Number(minting.lastUnderlyingBlock) + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
             // time for payment expired on underlying

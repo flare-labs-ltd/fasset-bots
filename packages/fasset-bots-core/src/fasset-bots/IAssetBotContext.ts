@@ -41,7 +41,6 @@ export interface ITimekeeperContext extends IAssetNativeChainContext {
 
 export interface ILiquidatorContext extends IAssetNativeChainContext {
     liquidationStrategy?: {
-        // only for liquidator
         className: string;
         config?: any;
     };
@@ -51,7 +50,6 @@ export interface IChallengerContext extends IAssetNativeChainContext {
     blockchainIndexer: BlockchainIndexerHelper;
     attestationProvider: AttestationHelper;
     challengeStrategy?: {
-        // only for challenger
         className: string;
         config?: any;
     };

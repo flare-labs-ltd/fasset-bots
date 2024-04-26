@@ -2,7 +2,7 @@ import BN from "bn.js";
 import { assert } from "chai";
 import fs from "fs";
 import { AgentBot } from "../../src/actors/AgentBot";
-import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
+import { AgentBotRunner, ITimeKeeperService } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
@@ -62,7 +62,9 @@ export async function createTestAgentBot(
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
     const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    return await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
+    const agentBot = await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
+    agentBot.timekeeper = { latestProof: undefined };
+    return agentBot;
 }
 
 export async function createTestContractRetriever(context: TestAssetBotContext) {
@@ -113,6 +115,12 @@ async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSet
     }
 }
 
+export const testTimekeeperService: ITimeKeeperService = {
+    get(chainId: string) {
+        return { latestProof: undefined };
+    },
+};
+
 export function createTestAgentBotRunner(
     secrets: Secrets,
     contexts: Map<string, TestAssetBotContext>,
@@ -120,7 +128,7 @@ export function createTestAgentBotRunner(
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
-    return new AgentBotRunner(secrets, contexts, orm, loopDelay, notifiers);
+    return new AgentBotRunner(secrets, contexts, orm, loopDelay, notifiers, testTimekeeperService);
 }
 
 export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {

@@ -4,14 +4,14 @@ import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState } from "../../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockChain } from "../../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
-import { ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
+import { MINUTES, ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -277,17 +277,6 @@ describe("Agent bot unit tests", () => {
         expect(spyProof).to.have.been.called.once;
     });
 
-    it("Should not receive proof 4 - not finalized", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyProof = spy.on(agentBot.context.attestationProvider, "obtainConfirmedBlockHeightExistsProof");
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        agentEnt.dailyProofRequestData = "";
-        agentEnt.dailyProofRequestRound = 1;
-        agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
-        await agentBot.handleDailyTasks(orm.em);
-        expect(spyProof).to.have.been.called.once;
-    });
-
     it("Should not receive proof 1 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
@@ -360,10 +349,8 @@ describe("Agent bot unit tests", () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.notifier, "sendDailyTaskNoProofObtained");
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        agentEnt.dailyProofRequestData = "";
-        agentEnt.dailyProofRequestRound = 0;
-        agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
+        await agentBot.handleDailyTasks(orm.em);
+        await time.increase(15 * MINUTES);
         await agentBot.handleDailyTasks(orm.em);
         expect(spyProof).to.have.been.called.once;
     });
@@ -676,9 +663,14 @@ describe("Agent bot unit tests", () => {
         await agentBot.redemption.requestPaymentProof(redemption);
         expect(redemption.state).to.eq("paid");
         // handleDailyTasks
-        expect(agentBot.latestProof).to.be.null;
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const lastHandledTimestamp = Number(agentEnt.dailyTasksTimestamp);
+        expect(Number(agentBot.waitingForLatestBlockProofSince)).to.be.equal(0);
         await agentBot.handleDailyTasks(orm.em);
-        expect(agentBot.latestProof).to.be.null;
+        expect(Number(agentBot.waitingForLatestBlockProofSince)).not.to.be.equal(0);
+        orm.em.clear();
+        const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        expect(Number(agentEnt2.dailyTasksTimestamp)).to.be.equal(lastHandledTimestamp);
     });
 
     it("Should not handle claims - no contracts", async () => {
@@ -744,17 +736,6 @@ describe("Agent bot unit tests", () => {
         // clean up
         await agentBot.context.addressUpdater.removeContracts(["FtsoRewardManager"]);
         await agentBot.context.addressUpdater.removeContracts(["DistributionToDelegators"]);
-    });
-
-    it("Should catch error in handleEvents", async () => {
-        const spyError = spy.on(console, "error");
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        // change vault address to force catching error
-        agentEnt.vaultAddress = ownerAddress;
-        await orm.em.persist(agentEnt).flush();
-        await agentBot.handleEvents(orm.em);
-        expect(spyError).to.have.been.called.once;
     });
 
     it("Should redeem pool tokens", async () => {

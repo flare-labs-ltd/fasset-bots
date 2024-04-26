@@ -133,7 +133,7 @@ describe("Notifier tests", () => {
         const spySend = spy.on(transport, "send");
         await notifier.sendRedemptionNoProofObtained("reqId", 1, "data");
         await notifier.sendMintingNoProofObtained("reqId", 1, "data");
-        await notifier.sendDailyTaskNoProofObtained(1, "data");
+        await notifier.sendDailyTaskNoProofObtained(10);
         expect(spySend).to.have.been.called.exactly(3);
     });
 

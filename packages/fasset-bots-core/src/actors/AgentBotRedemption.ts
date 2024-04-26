@@ -14,6 +14,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
+import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 
 export class AgentBotRedemption {
     static deepCopyWithObjectCreate = true;
@@ -78,23 +79,27 @@ export class AgentBotRedemption {
     /**
      * @param rootEm entity manager
      */
-    async handleOpenRedemptionsForCornerCase(rootEm: EM): Promise<void> {
+    async checkOpenRedemptionsForExpiration(rootEm: EM): Promise<void> {
         const openRedemptions = await this.openRedemptions(rootEm, false);
         logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length} for CORNER CASE.`);
         for (const rd of openRedemptions) {
             // TODO: write expired proof service based on timekeepers!
             const proof = await this.bot.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
-            if (proof) {
-                logger.info(`Agent ${this.agent.vaultAddress} found corner case for redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-                // corner case - agent did not pay
-                await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
-                rd.state = AgentRedemptionState.DONE;
-                await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
+            if (typeof proof === "object") {
+                await this.handleExpiredRedemption(rd, proof);
                 await rootEm.persistAndFlush(rd);
-                logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
             }
         }
         logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions for CORNER CASE.`);
+    }
+
+    async handleExpiredRedemption(rd: AgentRedemption, proof: ConfirmedBlockHeightExists.Proof) {
+        logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
+        // corner case - agent did not pay
+        await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
+        rd.state = AgentRedemptionState.DONE;
+        await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
+        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
     }
 
     /**

@@ -1,16 +1,19 @@
 import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
-import { AgentBotConfig, Secrets } from "../config";
+import { AgentBotConfig, Secrets, decodedChainId } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
+import { web3 } from "../utils";
 import { squashSpace } from "../utils/formatting";
 import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { AgentBot } from "./AgentBot";
-import { web3 } from "../utils";
+import { AgentBot, ITimeKeeper } from "./AgentBot";
 
+export interface ITimeKeeperService {
+    get(chainId: string): ITimeKeeper;
+}
 
 export class AgentBotRunner {
     static deepCopyWithObjectCreate = true;
@@ -20,7 +23,8 @@ export class AgentBotRunner {
         public contexts: Map<string, IAssetAgentContext>,
         public orm: ORM,
         public loopDelay: number,
-        public notifierTransports: NotifierTransport[]
+        public notifierTransports: NotifierTransport[],
+        public timekeeperService: ITimeKeeperService,
     ) {}
 
     public stopRequested = false;
@@ -76,6 +80,7 @@ export class AgentBotRunner {
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
+                agentBot.timekeeper = this.timekeeperService.get(decodedChainId(context.chainInfo.chainId));
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
@@ -91,7 +96,7 @@ export class AgentBotRunner {
      * @param botConfig - configs to run bot
      * @returns instance of AgentBotRunner
      */
-    static async create(secrets: Secrets, botConfig: AgentBotConfig): Promise<AgentBotRunner> {
+    static async create(secrets: Secrets, botConfig: AgentBotConfig, timekeeperService: ITimeKeeperService): Promise<AgentBotRunner> {
         const ownerAddress = secrets.required("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
         const contexts: Map<string, IAssetAgentContext> = new Map();
@@ -102,6 +107,6 @@ export class AgentBotRunner {
                 with symbol ${chainConfig.chainInfo.symbol}.`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        return new AgentBotRunner(secrets, contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifiers);
+        return new AgentBotRunner(secrets, contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
     }
 }

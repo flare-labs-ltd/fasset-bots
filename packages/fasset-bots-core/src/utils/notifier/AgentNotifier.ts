@@ -225,10 +225,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendDailyTaskNoProofObtained(roundId: number, requestData: string) {
+    async sendDailyTaskNoProofObtained(minutes: number) {
         await this.danger(
             AgentNotificationKey.DAILY_TASK_NO_PROOF_OBTAINED,
-            `Agent ${this.address} cannot obtain proof confirmed block height existence in round ${roundId} with requested data ${requestData}.`
+            `Agent ${this.address} cannot obtain proof confirmed block height existence, waiting for more than ${minutes} minutes.`
         );
     }
 

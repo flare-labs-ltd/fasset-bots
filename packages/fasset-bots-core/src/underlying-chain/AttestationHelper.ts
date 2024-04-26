@@ -14,7 +14,7 @@ export class AttestationHelperError extends Error {
     }
 }
 
-export function attestationProved(result: OptionalAttestationProof): result is AttestationProof {
+export function attestationProved(result: OptionalAttestationProof | null | undefined): result is AttestationProof {
     return typeof result === "object" && result != null;
 }
 
