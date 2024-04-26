@@ -1,6 +1,6 @@
 import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { MAX_BIPS, artifacts, createSha256Hash, generateRandomHexString, requireEnv, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, MAX_BIPS, artifacts, createSha256Hash, generateRandomHexString, requireEnv, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -436,11 +436,18 @@ export class AgentService {
             const vaultsForFasset: VaultInfo[] = [];
             // For each vault calculate needed info
             for (const vault of agentVaults) {
+                let updating = false;
+                if (toBN(vault.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO) ||
+                toBN(vault.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO) ||
+                toBN(vault.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO) ||
+                toBN(vault.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
+                    updating = true;
+                }
                 const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
                 const mintedLots = Number(info.mintedUBA) / lotSize;
                 const vaultCR = Number(info.mintingVaultCollateralRatioBIPS) / MAX_BIPS;
                 const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
-                const vaultInfo: VaultInfo = { address: vault.vaultAddress, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
+                const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: info.mintedUBA, vaultAmount: info.totalVaultCollateralWei,
                     poolAmount: info.totalPoolCollateralNATWei};
                 vaultsForFasset.push(vaultInfo);

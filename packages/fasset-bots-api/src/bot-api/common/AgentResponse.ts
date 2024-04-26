@@ -58,6 +58,7 @@ export interface AllCollaterals {
 
 export interface VaultInfo {
     address: string;
+    updating: boolean;
     status: boolean;
     mintedlots: string;
     freeLots: string;
