@@ -59,7 +59,7 @@
         "fast-safe-stringify": "^2.1.1",
         "ripple-address-codec": "4.2.4",
         "ripple-binary-codec": "1.4.2",
-        "ripple-keypairs": "^1.1.5",
+        "ripple-keypairs": "^2.0.0",
         "source-map-support": "0.5.21",
         "tiny-secp256k1": "^2.2.1",
         "web3-utils": "1.10.2",

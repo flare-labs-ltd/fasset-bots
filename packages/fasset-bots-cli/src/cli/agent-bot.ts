@@ -7,7 +7,7 @@ import { CommandLineError, Currencies, errorIncluded, squashSpace, toBIPS } from
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
-import { validate, validateDecimal } from "../utils/validation";
+import { validateDecimal } from "../utils/validation";
 
 const program = programWithCommonOptions("bot", "single_fasset");
 
