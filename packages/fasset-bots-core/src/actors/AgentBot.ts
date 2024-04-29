@@ -210,7 +210,7 @@ export class AgentBot {
         } catch (error) {
             logger.error(`Owner ${owner} couldn't activate underlying address ${vaultUnderlyingAddress}:`, error);
             throw new CommandLineError(squashSpace`Could not activate or verify new agent vault's XRP account.
-                Note that the owner's XRP account ${ownerUnderlyingAddress} requires at least ${2 * Number(XRP_ACTIVATE_BALANCE) * 1e-6} XRP to activate the new account.`);
+                Note that the owner's XRP account ${ownerUnderlyingAddress} requires at least ${2 * Number(XRP_ACTIVATE_BALANCE) * 1e-6 + 1} XRP to activate the new account.`);
         }
     }
 

@@ -100,6 +100,22 @@ export class MockChain implements IBlockChain {
         }
     }
 
+    miningTimer: NodeJS.Timeout | null = null;
+
+    timedMining() {
+        return this.miningTimer != null;
+    }
+
+    enableTimedMining(intervalMS: number) {
+        if (this.miningTimer != null) this.disableTimedMining();
+        setInterval(() => this.mine(), intervalMS);
+    }
+
+    disableTimedMining() {
+        if (this.miningTimer != null) clearInterval(this.miningTimer);
+        this.miningTimer = null;
+    }
+
     createTransactionHash(inputs: TxInputOutput[], outputs: TxInputOutput[], reference: string | null): string {
         // build data structure to hash
         const data = {

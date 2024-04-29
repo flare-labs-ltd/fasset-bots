@@ -418,7 +418,7 @@ describe("Agent bot tests", () => {
 
     it("Should perform minting and change status from NORMAL to LIQUIDATION", async () => {
         // create collateral reservation
-        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2000);
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
@@ -451,7 +451,7 @@ describe("Agent bot tests", () => {
 
     it("Should perform minting and change status from NORMAL via LIQUIDATION to NORMAL", async () => {
         // create collateral reservation
-        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2000);
         await agentBot.runStep(orm.em);
         // should have an open minting
         orm.em.clear();
@@ -601,7 +601,7 @@ describe("Agent bot tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerManagementAddress, undefined, false, [new FaultyNotifierTransport()]);
         const spyConsole = spy.on(console, "error");
         // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
+        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2000, chain);
         // check agent status
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
@@ -628,7 +628,7 @@ describe("Agent bot tests", () => {
         const spyPoolTopUp = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
-        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
         // change prices
         await context.assetFtso.setCurrentPrice(toBNExp(14, 6), 0);
         await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(14, 6), 0);
@@ -659,7 +659,7 @@ describe("Agent bot tests", () => {
         const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
-        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
         // change prices
         await context.assetFtso.setCurrentPrice(toBNExp(14, 6), 0);
         await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(14, 6), 0);

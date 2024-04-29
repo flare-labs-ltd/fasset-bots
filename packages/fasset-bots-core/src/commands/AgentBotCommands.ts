@@ -124,7 +124,7 @@ export class AgentBotCommands {
      * Creates instance of Agent.
      * @param agentSettings
      */
-    async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent | null> {
+    async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent> {
         await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix);
         try {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.orm.em, this.context);
@@ -169,7 +169,7 @@ export class AgentBotCommands {
      */
     async buyCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
         const currency = await Currencies.agentPoolCollateral(this.context, agentVault);
-        const amountf = currency.format(amount);
+        const amountf = currency.formatValue(amount);
         logger.info(`Agent's ${agentVault} owner ${this.owner} is starting to buy ${amountf} NAT worth of collateral pool tokens.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);

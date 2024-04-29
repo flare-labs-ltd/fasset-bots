@@ -378,11 +378,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number): Promise<ITransaction | null> {
         logger.info(`Block chain indexer helper: waiting for underlying transaction ${txHash} finalization for ${maxBlocksToWaitForTx} blocks`);
         const transaction = await this.waitForUnderlyingTransaction(txHash, maxBlocksToWaitForTx);
-        logger.info(
-            `Block chain indexer helper: finished waiting for underlying transaction ${txHash} finalization for ${maxBlocksToWaitForTx} blocks and retrieved ${formatArgs(
-                transaction
-            )}`
-        );
+        logger.info(`Block chain indexer helper: finished waiting for underlying transaction ${txHash} finalization for ${maxBlocksToWaitForTx} blocks and retrieved ${formatArgs(transaction)}`);
         if (transaction == null) return null;
         return transaction;
     }

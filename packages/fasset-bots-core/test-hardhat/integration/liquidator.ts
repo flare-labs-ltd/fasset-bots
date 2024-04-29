@@ -72,7 +72,7 @@ describe("Liquidator tests", () => {
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyLiquidation = spy.on(agentBot.notifier, "sendLiquidationStartAlert");
         // create collateral reservation, perform minting and run liquidation trigger
-        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
         await liquidator.runStep();
         // check agent status
         const status1 = await getAgentStatus(agentBot);
@@ -121,7 +121,7 @@ describe("Liquidator tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // perform minting
-        const lots = 3;
+        const lots = 3000;
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
         await agentBot.runStep(orm.em);
         const txHash0 = await minter.performMintingPayment(crt);

@@ -69,7 +69,7 @@ describe("System keeper tests", () => {
         const minter = await createTestMinter(context, minterAddress, chain);
         const spyLiquidation = spy.on(agentBot.notifier, "sendLiquidationStartAlert");
         // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
+        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2000, chain);
         // check agent status
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
@@ -122,7 +122,7 @@ describe("System keeper tests", () => {
         const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
         const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
+        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2000, chain);
         // check agent status
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
@@ -156,7 +156,7 @@ describe("System keeper tests", () => {
         const spyCCBAlert = spy.on(agentBot.notifier, "sendCCBAlert");
         const spyPoolTopUpAlert = spy.on(agentBot.notifier, "sendPoolCollateralTopUpAlert");
         // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
+        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2000, chain);
         // check agent status
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
@@ -190,7 +190,7 @@ describe("System keeper tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation and perform minting
-        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2, chain);
+        await createCRAndPerformMinting(minter, agentBot.agent.vaultAddress, 2000, chain);
         // check agent status
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);

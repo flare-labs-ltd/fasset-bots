@@ -120,18 +120,20 @@ export class AttestationHelper {
     async requestConfirmedBlockHeightExistsProof(queryWindow: number): Promise<AttestationRequestId | null> {
         logger.info(`Attestation helper: requesting confirmed block height exists proof with queryWindow ${queryWindow}`);
         const blockHeight = await this.chain.getBlockHeight();
-        const finalizationBlock = await this.chain.getBlockAt(blockHeight);
+        const blockNumber = Math.max(blockHeight - this.chain.finalizationBlocks, 0);
+        const finalizationBlockNumber = blockNumber + this.chain.finalizationBlocks;
+        const finalizationBlock = await this.chain.getBlockAt(finalizationBlockNumber);
         /* istanbul ignore if */
         if (finalizationBlock == null) {
-            logger.error(`Attestation helper error: finalization block not found (block ${blockHeight}, height ${await this.chain.getBlockHeight()})`);
-            throw new AttestationHelperError(`finalization block not found (block ${blockHeight}, height ${await this.chain.getBlockHeight()})`);
+            logger.error(`Attestation helper error: finalization block not found (finalization block ${finalizationBlockNumber}, height ${blockHeight})`);
+            throw new AttestationHelperError(`finalization block not found (finalization block ${finalizationBlockNumber}, height ${blockHeight})`);
         }
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
             sourceId: this.chainId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
-                blockNumber: String(blockHeight - this.chain.finalizationBlocks),
+                blockNumber: String(blockNumber),
                 queryWindow: String(queryWindow),
             },
         };

@@ -1,6 +1,7 @@
 import { IERC20MetadataInstance } from "../../typechain-truffle";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
+import { ChainInfo } from "../fasset/ChainInfo";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { Currency } from "./Currency";
 import { ERC20TokenBalance, EVMNativeTokenBalance, WalletTokenBalance } from "./TokenBalance";
@@ -63,6 +64,10 @@ export namespace TokenBalances {
 }
 
 export namespace Currencies {
+    export function chain(chainInfo: ChainInfo) {
+        return new Currency(chainInfo.symbol, chainInfo.decimals);
+    }
+
     export function evmNative(symbol: string) {
         return TokenBalances.evmNative(symbol).then(tb => tb.currency);
     }

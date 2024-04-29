@@ -27,16 +27,22 @@ export class AgentBotRunner {
         public timekeeperService: ITimeKeeperService,
     ) {}
 
+    public running = false;
     public stopRequested = false;
     public restartRequested = false;
 
     async run(): Promise<void> {
         this.stopRequested = false;
         this.restartRequested = false;
-        while (!this.stopLoop()) {
-            await this.runStep();
-            if (this.stopLoop()) break;
-            await sleep(this.loopDelay);
+        this.running = true;
+        try {
+            while (!this.stopLoop()) {
+                await this.runStep();
+                if (this.stopLoop()) break;
+                await sleep(this.loopDelay);
+            }
+        } finally {
+            this.running = false;
         }
     }
 
@@ -64,10 +70,11 @@ export class AgentBotRunner {
             this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
-                const context = this.contexts.get(agentEntity.chainSymbol);
+                const chainId = decodedChainId(agentEntity.chainId);
+                const context = this.contexts.get(chainId);
                 if (context == null) {
-                    console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
-                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
+                    console.warn(`Invalid chain symbol ${chainId}`);
+                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${chainId}.`);
                     continue;
                 }
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);

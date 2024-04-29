@@ -65,7 +65,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         blockTime: 4,
         finalizationBlocks: 3,
         underlyingBlocksForPayment: 10,
-        lotSize: 10_000,
+        lotSize: 10,
         requireEOAProof: false,
     },
 };
