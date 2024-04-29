@@ -71,7 +71,7 @@ export async function createTestContractRetriever(context: TestAssetBotContext) 
     return await AssetContractRetriever.create(false, undefined, context.assetManagerController.address);
 }
 
-export function makeBotFAssetConfigMap(fassets: BotFAssetConfig[]) {
+export function makeBotFAssetConfigMap<T extends BotFAssetConfig>(fassets: T[]) {
     return new Map(fassets.map(it => [it.fAssetSymbol, it]));
 }
 

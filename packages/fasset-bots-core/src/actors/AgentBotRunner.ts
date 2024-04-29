@@ -61,6 +61,7 @@ export class AgentBotRunner {
     async runStep(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
+            this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
                 const context = this.contexts.get(agentEntity.chainSymbol);
@@ -68,14 +69,6 @@ export class AgentBotRunner {
                     console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
                     logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
                     continue;
-                }
-                const newSecrets = Secrets.load(this.secrets.filePath);
-                if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
-                    const ownerAddress = newSecrets.required(`owner.native.address`);
-                    this.requestRestart();
-                    console.warn(`Owner's native address from secrets file, does not match their used account`);
-                    logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
-                    break;
                 }
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
@@ -88,6 +81,17 @@ export class AgentBotRunner {
                 console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
                 logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error with agent ${agentEntity.vaultAddress}:`, error);
             }
+        }
+    }
+
+    checkForWorkAddressChange() {
+        if (this.secrets.filePath === "MEMORY") return;     // memory secrets (for tests)
+        const newSecrets = Secrets.load(this.secrets.filePath);
+        if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
+            const ownerAddress = newSecrets.required(`owner.native.address`);
+            this.requestRestart();
+            console.warn(`Owner's native address from secrets file, does not match their used account`);
+            logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
         }
     }
 

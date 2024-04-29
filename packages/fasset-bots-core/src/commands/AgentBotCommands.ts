@@ -38,9 +38,9 @@ export class AgentBotCommands {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public secrets: Secrets,
         public context: IAssetAgentContext,
         public owner: OwnerAddressPair,
+        public ownerUnderlyingAddress: string,
         public orm: ORM,
         public notifiers: NotifierTransport[],
     ) {}
@@ -82,7 +82,7 @@ export class AgentBotCommands {
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
-        return new AgentBotCommands(secrets, context, owner, botConfig.orm, botConfig.notifiers);
+        return new AgentBotCommands(context, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
     }
 
     static async verifyWorkAddress(context: IAssetAgentContext, owner: OwnerAddressPair) {
@@ -130,14 +130,13 @@ export class AgentBotCommands {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.orm.em, this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
-            const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, this.context.chainInfo.chainId);
             const [addressValidityProof, _] = await Promise.all([
-                AgentBot.initializeUnderlyingAddress(this.context, this.owner, ownerUnderlyingAddress, underlyingAddress),
+                AgentBot.initializeUnderlyingAddress(this.context, this.owner, this.ownerUnderlyingAddress, underlyingAddress),
                 proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
             ]);
             console.log(`Creating agent bot...`);
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
-            const agentBot = await AgentBot.create(this.orm.em, this.context, this.owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, this.notifiers);
+            const agentBot = await AgentBot.create(this.orm.em, this.context, this.owner, this.ownerUnderlyingAddress, addressValidityProof, agentBotSettings, this.notifiers);
             await this.notifierFor(agentBot.agent.vaultAddress).sendAgentCreated();
             console.log(`Agent bot created.`);
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
@@ -542,8 +541,7 @@ export class AgentBotCommands {
      */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; agentEnt: AgentEntity }> {
         const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, this.context.chainInfo.chainId);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, ownerUnderlyingAddress, this.notifiers);
+        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.ownerUnderlyingAddress, this.notifiers);
         return { agentBot, agentEnt };
     }
 
@@ -577,9 +575,9 @@ export class AgentBotCommands {
      * Creates underlying account
      * @returns object containing underlying address and its private key respectively
      */
-    async createUnderlyingAccount(): Promise<{ address: string; privateKey: string }> {
+    async createUnderlyingAccount(secrets: Secrets): Promise<{ address: string; privateKey: string }> {
         const address = await this.context.wallet.createAccount();
-        const walletKeys = DBWalletKeys.from(this.orm.em, this.secrets);
+        const walletKeys = DBWalletKeys.from(this.orm.em, secrets);
         const privateKey = requireNotNull(await walletKeys.getKey(address));
         return { address, privateKey };
     }

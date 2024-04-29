@@ -30,7 +30,6 @@ export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     orm?: ORM; // only for agent bot
     notifiers: NotifierTransport[];
     loopDelay: number;
-    rpcUrl: string;
     fAssets: Map<string, T>;
     nativeChainInfo: NativeChainInfo;
     contractRetriever: AssetContractRetriever;
@@ -81,7 +80,6 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             fAssets.set(symbol, fassetConfig);
         }
         return {
-            rpcUrl: configFile.rpcUrl,
             loopDelay: configFile.loopDelay,
             fAssets: fAssets,
             nativeChainInfo: configFile.nativeChainInfo,

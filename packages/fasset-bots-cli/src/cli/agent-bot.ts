@@ -2,12 +2,12 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotCommands } from "@flarelabs/fasset-bots-core";
-import { loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
+import { Secrets, loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
 import { CommandLineError, Currencies, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
-import { validate, validateDecimal } from "../utils/validation";
+import { validateDecimal } from "../utils/validation";
 
 const program = programWithCommonOptions("bot", "single_fasset");
 
@@ -51,7 +51,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.agentVaultCollateral(cli.context, agentVault);
-        await cli.depositToVault(agentVault, await currency.parse(amount));
+        await cli.depositToVault(agentVault, currency.parse(amount));
     });
 
 program
@@ -64,7 +64,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.agentPoolCollateral(cli.context, agentVault);
-        await cli.buyCollateralPoolTokens(agentVault, await currency.parse(amount));
+        await cli.buyCollateralPoolTokens(agentVault, currency.parse(amount));
     });
 
 program
@@ -139,7 +139,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.agentVaultCollateral(cli.context, agentVault);
-        await cli.announceWithdrawFromVault(agentVault, await currency.parse(amount));
+        await cli.announceWithdrawFromVault(agentVault, currency.parse(amount));
     });
 
 program
@@ -162,7 +162,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.agentPoolCollateral(cli.context, agentVault);
-        await cli.announceRedeemCollateralPoolTokens(agentVault, await currency.parse(amount));
+        await cli.announceRedeemCollateralPoolTokens(agentVault, currency.parse(amount));
     });
 
 program
@@ -185,7 +185,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.fasset(cli.context);
-        await cli.withdrawPoolFees(agentVault, await currency.parse(amount));
+        await cli.withdrawPoolFees(agentVault, currency.parse(amount));
     });
 
 program
@@ -208,7 +208,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.fasset(cli.context);
-        await cli.selfClose(agentVault, await currency.parse(amount));
+        await cli.selfClose(agentVault, currency.parse(amount));
     });
 
 program
@@ -243,7 +243,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.fasset(cli.context);
-        await cli.performUnderlyingWithdrawal(agentVault, await currency.parse(amount), destinationAddress, paymentReference);
+        await cli.performUnderlyingWithdrawal(agentVault, currency.parse(amount), destinationAddress, paymentReference);
     });
 
 program
@@ -304,7 +304,8 @@ program
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const { address, privateKey } = await cli.createUnderlyingAccount();
+        const secrets = Secrets.load(options.secrets);
+        const { address, privateKey } = await cli.createUnderlyingAccount(secrets);
         console.log({ address, privateKey });
     });
 

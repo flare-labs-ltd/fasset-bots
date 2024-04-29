@@ -52,7 +52,8 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should create underlying account", async () => {
         const botCliCommands = await AgentBotCommands.create(TEST_SECRETS, fassetBotConfig, fAssetSymbol);
-        const data = await botCliCommands.createUnderlyingAccount();
+        const secrets = Secrets.load(TEST_SECRETS);
+        const data = await botCliCommands.createUnderlyingAccount(secrets);
         console.log("test generated address (not used anywhere):", data);
         expect(data.address).to.not.be.null;
         expect(data.privateKey).to.not.be.null;
