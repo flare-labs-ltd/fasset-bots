@@ -427,9 +427,11 @@ export class AgentBot {
         await closingHandler.handleAgentCloseProcess();
     }
 
-    private async handleWaitForCollateralWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
+    async handleWaitForCollateralWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
         if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const successOrExpired = await this.withdrawCollateral(toBN(agentEnt.withdrawalAllowedAtTimestamp), toBN(agentEnt.withdrawalAllowedAtAmount), latestTimestamp, ClaimType.VAULT);
+            const allowedAt = toBN(agentEnt.withdrawalAllowedAtTimestamp);
+            const amount = toBN(agentEnt.withdrawalAllowedAtAmount);
+            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
             if (successOrExpired) {
                 agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
                 agentEnt.withdrawalAllowedAtAmount = "";
@@ -437,9 +439,11 @@ export class AgentBot {
         }
     }
 
-    private async handleWaitForPoolTokenRedemption(agentEnt: AgentEntity, latestTimestamp: BN) {
+    async handleWaitForPoolTokenRedemption(agentEnt: AgentEntity, latestTimestamp: BN) {
         if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const successOrExpired = await this.withdrawCollateral(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp), toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount), latestTimestamp, ClaimType.POOL);
+            const allowedAt = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
+            const amount = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
             if (successOrExpired) {
                 agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
                 agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
