@@ -1,3 +1,4 @@
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { AgentBotCommands, AgentBotRunner, SourceId, TimeKeeperService, UserBotCommands } from "../../src";
 import { AgentSettingsConfig, Secrets, decodedChainId } from "../../src/config";
 import { ORM } from "../../src/config/orm";
@@ -145,7 +146,7 @@ describe("Toplevel runner and commands integration test", () => {
         await timekeeperService.stopAll();
     });
 
-    it("create agent vault, mint, and redeem", async () => {
+    it("create agent vault, mint, redeem, and close", async () => {
         const agent = await agentCommands.createAgentVault(newAgentSettings);
         const agentVault = agent.vaultAddress;
         await agentCommands.depositToVault(agentVault, usdcCurrency.parse("100"));
@@ -155,9 +156,19 @@ describe("Toplevel runner and commands integration test", () => {
         // mint
         await userCommands.mint(agentVault, 10, false);
         // redeem
-        const lastEvmBlock = await web3.eth.getBlockNumber();
+        const lastBlock = await web3.eth.getBlockNumber();
         await userCommands.redeem(10);
-        await waitForEvent(lastEvmBlock, 5000, (ev) => eventIs(ev, context.assetManager, "RedemptionPerformed") && ev.args.agentVault === agentVault);
+        await waitForEvent(lastBlock, 5000, (ev) => eventIs(ev, context.assetManager, "RedemptionPerformed") && ev.args.agentVault === agentVault);
+        // close
+        const lastBlock2 = await web3.eth.getBlockNumber();
+        await agentCommands.closeVault(agentVault);
+        // wait for close process to finish (speed up time to rush through all the timelocks)
+        const tm1 = setInterval(() => void time.increase(100), 200);
+        try {
+            await waitForEvent(lastBlock2, 20000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
+        } finally {
+            clearInterval(tm1);
+        }
     });
 
     it("create agent vault, mint, and agent executes mint", async () => {
