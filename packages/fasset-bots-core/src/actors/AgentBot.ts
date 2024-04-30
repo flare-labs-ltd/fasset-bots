@@ -277,6 +277,8 @@ export class AgentBot {
     }
 
     async handleEvent(em: EM, event: EvmEvent): Promise<void> {
+        // only events for this agent should be handled (this should already be the case due to filter in readNewEvents, but just to be sure)
+        if (event.args.agentVault && event.args.agentVault.toLowerCase() !== this.agent.vaultAddress.toLowerCase()) return;
         if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
             await this.minting.mintingStarted(em, event.args);
@@ -298,19 +300,19 @@ export class AgentBot {
             await this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            await this.redemption.redemptionFinished(em, event.args.requestId);
             await this.notifier.sendRedemptionWasPerformed(event.args.requestId, event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            await this.redemption.redemptionFinished(em, event.args.requestId);
             await this.notifier.sendRedemptionFailed(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            await this.redemption.redemptionFinished(em, event.args.requestId);
             await this.notifier.sendRedemptionBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
-            await this.handleAgentDestruction(em, event.args.agentVault);
+            await this.handleAgentDestruction(em);
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendCCBAlert(event.args.timestamp);
@@ -637,7 +639,7 @@ export class AgentBot {
                 // agent can be destroyed
                 await this.agent.destroy();
                 agentEnt.waitingForDestructionTimestamp = BN_ZERO;
-                await this.handleAgentDestruction(em, agentEnt.vaultAddress);
+                await this.handleAgentDestruction(em);
             } else {
                 logger.info(`Agent ${this.agent.vaultAddress} cannot be destroyed. Allowed at ${agentEnt.waitingForDestructionTimestamp}. Current ${latestTimestamp}.`);
             }
@@ -843,9 +845,9 @@ export class AgentBot {
      * @param em entity manager
      * @param vaultAddress agent's vault address
      */
-    async handleAgentDestruction(em: EM, vaultAddress: string): Promise<void> {
-        const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
-        agentBotEnt.active = false;
+    async handleAgentDestruction(em: EM): Promise<void> {
+        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        agentEnt.active = false;
         await this.notifier.sendAgentDestroyed();
         logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
     }
@@ -854,14 +856,14 @@ export class AgentBot {
      * Checks AgentBot's and owner's underlying balance after redemption is finished. If AgentBot's balance is too low, it tries to top it up from owner's account. See 'underlyingTopUp(...)'.
      * @param agentVault agent's vault address
      */
-    async checkUnderlyingBalance(agentVault: string): Promise<void> {
+    async checkUnderlyingBalance(): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking free underlying balance.`);
         const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
         logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee}.`);
         if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
-            await this.underlyingTopUp(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR), agentVault, freeUnderlyingBalance);
+            await this.underlyingTopUp(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR), freeUnderlyingBalance);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
         }
@@ -872,9 +874,9 @@ export class AgentBot {
      * It also checks owner's underlying balance and notifies when it is too low.
      * @param amount amount to transfer from owner's underlying address to agent's underlying address
      * @param agentVault agent's vault address
-     * @param freeUnderlyingBalance agent's gree underlying balance
+     * @param freeUnderlyingBalance agent's free underlying balance
      */
-    async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
+    async underlyingTopUp(amount: BN, freeUnderlyingBalance: BN): Promise<void> {
         try {
             const amountF = await this.tokens.underlying.format(amount);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
@@ -935,17 +937,17 @@ export class AgentBot {
         logger.info(`Agent ${this.agent.vaultAddress} is checking collateral ratios.`);
         const agentInfo = await this.agent.getAgentInfoIfExists();
         if (agentInfo == null) return;
-        const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
-        const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
+        await this.checkForVaultCollateralTopup(agentInfo);
+        await this.checkForPoolCollateralTopup(agentInfo);
+        logger.info(`Agent ${this.agent.vaultAddress} finished checking for collateral topups.`);
+        await this.checkOwnerVaultCollateralBalance(agentInfo);
+        await this.checkOwnerNativeBalance(agentInfo);
+    }
 
+    async checkForVaultCollateralTopup(agentInfo: AgentInfo) {
+        const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
         const requiredCrVaultCollateralBIPS = toBN(vaultCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
         const requiredTopUpVaultCollateral = await this.requiredTopUp(requiredCrVaultCollateralBIPS, agentInfo, vaultCollateralPrice);
-        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
-        if (requiredTopUpVaultCollateral.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
-            // no need for top up
-            logger.info(`Agent ${this.agent.vaultAddress} does NOT need to top up any collateral.`);
-        }
         if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
             const requiredTopUpF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
             try {
@@ -958,6 +960,12 @@ export class AgentBot {
                 logger.error(`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
             }
         }
+    }
+
+    async checkForPoolCollateralTopup(agentInfo: AgentInfo) {
+        const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
+        const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
         if (requiredTopUpPool.gt(BN_ZERO)) {
             const requiredTopUpF = await this.tokens.poolCollateral.format(requiredTopUpPool);
             try {
@@ -970,6 +978,9 @@ export class AgentBot {
                 logger.error(`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
             }
         }
+    }
+
+    async checkOwnerVaultCollateralBalance(agentInfo: AgentInfo) {
         const ownerBalanceVaultCollateral = await this.tokens.vaultCollateral.balance(this.agent.owner.workAddress);
         const vaultCollateralLowBalance = this.ownerVaultCollateralLowBalance(agentInfo);
         if (ownerBalanceVaultCollateral.lte(vaultCollateralLowBalance)) {
@@ -977,6 +988,9 @@ export class AgentBot {
             await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, vaultBalanceF);
             logger.info(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low vault collateral balance ${vaultBalanceF}.`);
         }
+    }
+
+    async checkOwnerNativeBalance(agentInfo: AgentInfo) {
         const ownerBalanceNative = await this.tokens.native.balance(this.agent.owner.workAddress);
         const nativeLowBalance = this.ownerNativeLowBalance(agentInfo);
         if (ownerBalanceNative.lte(nativeLowBalance)) {

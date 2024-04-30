@@ -58,11 +58,11 @@ export class AgentBotRedemption {
      * @param requestId redemption request id
      * @param agentVault agent's vault address
      */
-    async redemptionFinished(em: EM, requestId: BN, agentVault: string): Promise<void> {
+    async redemptionFinished(em: EM, requestId: BN): Promise<void> {
         const redemption = await this.findRedemption(em, requestId);
         redemption.state = AgentRedemptionState.DONE;
         logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${requestId}.`);
-        await this.bot.checkUnderlyingBalance(agentVault);
+        await this.bot.checkUnderlyingBalance();
     }
 
     /**

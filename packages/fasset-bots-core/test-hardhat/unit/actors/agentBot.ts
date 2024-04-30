@@ -103,7 +103,7 @@ describe("Agent bot unit tests", () => {
         const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
         const spyBalance = spy.on(agentBot.notifier, "sendLowUnderlyingAgentBalanceFailed");
         const topUpAmount = balance.addn(1);
-        await agentBot.underlyingTopUp(toBN(topUpAmount), agentBot.agent.vaultAddress, toBN(1));
+        await agentBot.underlyingTopUp(toBN(topUpAmount), toBN(1));
         expect(spyBalance).to.have.been.called.once;
     });
 
@@ -112,7 +112,7 @@ describe("Agent bot unit tests", () => {
         const spyBalance0 = spy.on(agentBot.notifier, "sendLowUnderlyingAgentBalance");
         const spyBalance1 = spy.on(agentBot.notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
         const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
-        await agentBot.underlyingTopUp(toBN(balance), agentBot.agent.vaultAddress, toBN(1));
+        await agentBot.underlyingTopUp(toBN(balance), toBN(1));
         expect(spyBalance0).to.have.been.called.once;
         expect(spyBalance1).to.have.been.called.once;
     });
