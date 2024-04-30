@@ -52,6 +52,8 @@ export enum ClaimType {
     VAULT = "VAULT",
 }
 
+export const PERFORM_DAILY_TASKS_EVERY = 1 * DAYS;
+
 export class AgentBot {
     static deepCopyWithObjectCreate = true;
 
@@ -313,7 +315,7 @@ export class AgentBot {
             await this.notifier.sendRedemptionBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
-            await this.handleAgentDestruction(em);
+            await this.handleAgentDestroyed(em);
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendCCBAlert(event.args.timestamp);
@@ -370,29 +372,13 @@ export class AgentBot {
         if (this.stopRequested()) return;
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const timestamp = await latestBlockTimestampBN();
-        if (timestamp.sub(agentEnt.dailyTasksTimestamp).ltn(1 * DAYS)) return;
+        if (timestamp.sub(agentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
         const blockHeightProof = await this.getUnderlyingBlockHeightProof();
         if (blockHeightProof == null) return;
         logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
-        await this.handleCornerCases(rootEm);
         await this.checkForClaims();
         agentEnt.dailyTasksTimestamp = toBN(timestamp);
         await rootEm.persistAndFlush(agentEnt);
-    }
-
-    /**
-     * Checks if any minting or redemption is stuck in corner case.
-     * @param rootEm entity manager
-     */
-    async handleCornerCases(rootEm: EM): Promise<void> {
-        try {
-            logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
-            await this.redemption.checkOpenRedemptionsForExpiration(rootEm);
-            logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
-        } catch (error) {
-            console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases:`, error);
-        }
     }
 
     /**
@@ -745,7 +731,7 @@ export class AgentBot {
      * @param em entity manager
      * @param vaultAddress agent's vault address
      */
-    async handleAgentDestruction(em: EM): Promise<void> {
+    async handleAgentDestroyed(em: EM): Promise<void> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         await new AgentBotClosing(this, agentEnt).handleAgentDestroyed();
     }

@@ -77,32 +77,6 @@ export class AgentBotRedemption {
     }
 
     /**
-     * @param rootEm entity manager
-     */
-    async checkOpenRedemptionsForExpiration(rootEm: EM): Promise<void> {
-        const openRedemptions = await this.openRedemptions(rootEm, false);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length} for CORNER CASE.`);
-        for (const rd of openRedemptions) {
-            // TODO: write expired proof service based on timekeepers!
-            const proof = await this.bot.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
-            if (typeof proof === "object") {
-                await this.handleExpiredRedemption(rd, proof);
-                await rootEm.persistAndFlush(rd);
-            }
-        }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions for CORNER CASE.`);
-    }
-
-    async handleExpiredRedemption(rd: AgentRedemption, proof: ConfirmedBlockHeightExists.Proof) {
-        logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-        // corner case - agent did not pay
-        await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
-        rd.state = AgentRedemptionState.DONE;
-        await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
-        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
-    }
-
-    /**
      * Returns minting with state other than DONE.
      * @param em entity manager
      * @param onlyIds if true, only AgentRedemption's entity ids are return
@@ -127,28 +101,50 @@ export class AgentBotRedemption {
             .transactional(async (em) => {
                 const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
                 logger.info(`Agent ${this.agent.vaultAddress} is handling open redemption ${redemption.requestId} in state ${redemption.state}.`);
-                switch (redemption.state) {
-                    case AgentRedemptionState.STARTED:
-                        await this.checkBeforeRedemptionPayment(redemption);
-                        break;
-                    case AgentRedemptionState.PAID:
-                        await this.checkPaymentProofAvailable(redemption);
-                        break;
-                    case AgentRedemptionState.REQUESTED_PROOF:
-                        await this.checkConfirmPayment(redemption);
-                        break;
-                    case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
-                        await this.checkRejectRedemption(redemption);
-                        break;
-                    default:
-                        console.error(`Redemption state: ${redemption.state} not supported`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into redemption state ${redemption.state} not supported for redemption ${redemption.requestId}.`);
+                const expirationProof = await this.redemptionExpirationProof(redemption);
+                if (typeof expirationProof === "object") {
+                    await this.handleExpiredRedemption(redemption, expirationProof);
+                } else if (expirationProof === "NOT_EXPIRED") {
+                    await this.handleOpenRedemption(redemption);
                 }
             })
             .catch((error) => {
                 console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);
                 logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next redemption step for redemption ${id}:`, error);
             });
+    }
+
+    async redemptionExpirationProof(rd: AgentRedemption) {
+        return await this.bot.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
+    }
+
+    async handleOpenRedemption(redemption: AgentRedemption) {
+        switch (redemption.state) {
+            case AgentRedemptionState.STARTED:
+                await this.checkBeforeRedemptionPayment(redemption);
+                break;
+            case AgentRedemptionState.PAID:
+                await this.checkPaymentProofAvailable(redemption);
+                break;
+            case AgentRedemptionState.REQUESTED_PROOF:
+                await this.checkConfirmPayment(redemption);
+                break;
+            case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
+                await this.checkRejectRedemption(redemption);
+                break;
+            default:
+                console.error(`Redemption state: ${redemption.state} not supported`);
+                logger.error(`Agent ${this.agent.vaultAddress} run into redemption state ${redemption.state} not supported for redemption ${redemption.requestId}.`);
+        }
+    }
+
+    async handleExpiredRedemption(rd: AgentRedemption, proof: ConfirmedBlockHeightExists.Proof) {
+        logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
+        // corner case - agent did not pay
+        await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
+        rd.state = AgentRedemptionState.DONE;
+        await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
+        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
     }
 
     /**
