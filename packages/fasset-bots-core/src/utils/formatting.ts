@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import { BNish } from "./helpers";
 
 /**
  * Converts each consecutive sequence of spaces, tabs and newlines to a single space.
@@ -101,4 +102,8 @@ export function formatFixed(value: BN, decimals: number, format: FormatSettings 
 
 export function formatBips(value: BN, format?: FormatSettings): FormattedString {
     return `${formatFixed(value, 2, format)}%` as FormattedString;
+}
+
+export function formatTimestamp(value: BN): FormattedString {
+    return new Date(Number(value) * 1000).toISOString() as FormattedString;
 }

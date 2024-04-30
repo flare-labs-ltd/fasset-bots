@@ -363,11 +363,11 @@ describe("Agent bot unit tests", () => {
         const agentInfo = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfo.status).toNumber()).to.eq(AgentStatus.DESTROYING);
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.waitingForDestructionTimestamp).eq(destroyAllowedAt)).to.be.true;
         // allowed
         await time.increaseTo(destroyAllowedAt);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
     });
 
@@ -383,11 +383,11 @@ describe("Agent bot unit tests", () => {
         agentEnt.withdrawalAllowedAtAmount = amount.toString();
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
         // allowed
         await time.increaseTo(withdrawalAllowedAt);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         const agentVaultCollateralBalance = (await agentBot.agent.getAgentInfo()).totalVaultCollateralWei;
         expect(agentVaultCollateralBalance).to.eq("0");
@@ -406,13 +406,13 @@ describe("Agent bot unit tests", () => {
         agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAtPoolFeeShareBIPS;
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eq(validAtFeeBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).eq(validAtPoolFeeShareBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).eq(validAtBuyFAssetByAgentFactorBIPS)).to.be.true;
         // allowed
         await time.increaseTo(validAtPoolFeeShareBIPS);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         //announce update of other settings
         const validAtPoolTopupTokenPriceFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 9000);
         agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAtPoolTopupTokenPriceFactorBIPS;
@@ -420,12 +420,12 @@ describe("Agent bot unit tests", () => {
         agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = validAtPoolTopupCollateralRatioBIPS;
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).eq(validAtPoolTopupTokenPriceFactorBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).eq(validAtPoolTopupCollateralRatioBIPS)).to.be.true;
         // allowed
         await time.increaseTo(validAtPoolTopupCollateralRatioBIPS);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).eqn(0)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).eqn(0)).to.be.true;
         // announce more updates
@@ -435,23 +435,23 @@ describe("Agent bot unit tests", () => {
         agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = validAtMintingPoolCollateralRatioBIPS;
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).eq(validAtMintingVaultCollateralRatioBIPS)).to.be.true;
         expect(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).eq(validAtMintingPoolCollateralRatioBIPS)).to.be.true;
         // allowed
         await time.increaseTo(validAtMintingPoolCollateralRatioBIPS);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS.eqn(0)).to.be.true;
         expect(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS.eqn(0)).to.be.true;
         // announce another update
         const validAtPoolExitCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolExitCollateralRatioBIPS", 25000);
         agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = validAtPoolExitCollateralRatioBIPS;
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).eq(validAtPoolExitCollateralRatioBIPS)).to.be.true;
         // allowed
         await time.increaseTo(validAtPoolExitCollateralRatioBIPS);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS.eqn(0)).to.be.true;
         // announce and try to update an expired update
         const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
@@ -459,7 +459,7 @@ describe("Agent bot unit tests", () => {
         await orm.em.persist(agentEnt).flush();
         // cannot update, update expired
         await time.increaseTo(validAt2.add(invalidUpdateSeconds));
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
     });
 
@@ -474,7 +474,7 @@ describe("Agent bot unit tests", () => {
         expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eqn(0)).to.be.false;
         //allowed
         await time.increaseTo(validAtFeeBIPS);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eqn(0)).to.be.true;
     });
 
@@ -485,11 +485,11 @@ describe("Agent bot unit tests", () => {
         agentEnt.exitAvailableAllowedAtTimestamp = validAt;
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(validAt)).to.be.true;
         // allowed
         await time.increaseTo(validAt);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
     });
 
@@ -500,7 +500,7 @@ describe("Agent bot unit tests", () => {
         expect(toBN(agentEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
         expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.withdrawalAllowedAtAmount).to.eq("");
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
         expect(toBN(agentEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
         expect(toBN(agentEnt.withdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
@@ -514,27 +514,27 @@ describe("Agent bot unit tests", () => {
         const validAt = await agentBot.agent.announceExitAvailable();
         agentEnt.exitAvailableAllowedAtTimestamp = validAt;
         await orm.em.persist(agentEnt).flush();
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(validAt)).to.be.true;
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
         // allowed
         await time.increaseTo(validAt);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
         // try to close vault - announce pool token redemption and class 1 collateral withdrawal
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
         expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gtn(0)).to.be.true;
         // try to close vault - redeem pool tokens and withdraw class 1 collateral
         await time.increaseTo(maxBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp, agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp));
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         // try to close vault - close
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         // check agent status
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.DESTROYING);
@@ -551,11 +551,11 @@ describe("Agent bot unit tests", () => {
         const tx = await agentBot.agent.performUnderlyingWithdrawal(resp.paymentReference, 100, "SomeRandomUnderlyingAddress");
         agentEnt.underlyingWithdrawalConfirmTransaction = tx;
         // confirmation not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
         // confirmation allowed
         await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
     });
 
@@ -595,11 +595,11 @@ describe("Agent bot unit tests", () => {
         agentEnt.underlyingWithdrawalWaitingForCancelation = true;
         await orm.em.persist(agentEnt).flush();
         // cancelation not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
         // cancelation allowed
         await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
         expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
@@ -748,11 +748,11 @@ describe("Agent bot unit tests", () => {
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount.toString();
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
         // allowed
         await time.increaseTo(withdrawalAllowedAt);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
         expect(poolTokensBalance).to.eq("0");
@@ -768,11 +768,11 @@ describe("Agent bot unit tests", () => {
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount.addn(1).toString();
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
         // allowed
         await time.increaseTo(withdrawalAllowedAt);
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.false;
         const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
         expect(poolTokensBalance).to.eq(amount.toString());
@@ -788,12 +788,12 @@ describe("Agent bot unit tests", () => {
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = amount.toString();
         await orm.em.persist(agentEnt).flush();
         // not yet allowed
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eq(withdrawalAllowedAt)).to.be.true;
         // allowed
         const agentTimelockedOperationWindowSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         await time.increaseTo(withdrawalAllowedAt.add(agentTimelockedOperationWindowSeconds));
-        await agentBot.handleAgentsWaitingsAndCleanUp(orm.em);
+        await agentBot.handleTimelockedProcesses(orm.em);
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
         expect(poolTokensBalance).to.eq(amount.toString());

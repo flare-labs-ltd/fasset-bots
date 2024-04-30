@@ -29,6 +29,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { AgentBotClosing } from "./AgentBotClosing";
 import { AgentBotEventReader } from "./AgentBotEventReader";
 import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
@@ -46,7 +47,7 @@ export interface ITimeKeeper {
     latestProof?: ConfirmedBlockHeightExists.Proof;
 }
 
-enum ClaimType {
+export enum ClaimType {
     POOL = "POOL",
     VAULT = "VAULT",
 }
@@ -232,7 +233,7 @@ export class AgentBot {
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
         await this.handleOpenMintings(rootEm);
-        await this.handleAgentsWaitingsAndCleanUp(rootEm);
+        await this.handleTimelockedProcesses(rootEm);
         await this.handleDailyTasks(rootEm);
     }
 
@@ -380,6 +381,21 @@ export class AgentBot {
     }
 
     /**
+     * Checks if any minting or redemption is stuck in corner case.
+     * @param rootEm entity manager
+     */
+    async handleCornerCases(rootEm: EM): Promise<void> {
+        try {
+            logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
+            await this.redemption.checkOpenRedemptionsForExpiration(rootEm);
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
+        } catch (error) {
+            console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases:`, error);
+        }
+    }
+
+    /**
      * Checks if there are any claims for agent vault and collateral pool.
      */
     async checkForClaims(): Promise<void> {
@@ -441,40 +457,29 @@ export class AgentBot {
     }
 
     /**
-     * Checks if any minting or redemption is stuck in corner case.
-     * @param rootEm entity manager
-     */
-    async handleCornerCases(rootEm: EM): Promise<void> {
-        try {
-            logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
-            await this.redemption.checkOpenRedemptionsForExpiration(rootEm);
-            logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
-        } catch (error) {
-            console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases:`, error);
-        }
-    }
-
-    /**
      * Checks and handles if there are any AgentBot actions (withdraw, exit available list, update AgentBot setting) waited to be executed due to required announcement or time lock.
      * @param rootEm entity manager
      */
-    async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
+    async handleTimelockedProcesses(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
         await rootEm.transactional(async (em) => {
             const agentEnt: AgentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             const latestTimestamp = await latestBlockTimestampBN();
-            await this.handleWaitForAgentDestruction(agentEnt, latestTimestamp, em);
             await this.handleWaitForCollateralWithdrawal(agentEnt, latestTimestamp);
             await this.handleWaitForPoolTokenRedemption(agentEnt, latestTimestamp);
             await this.handleWaitForAgentSettingUpdate(agentEnt, latestTimestamp);
             await this.handleWaitAgentExitAvailable(agentEnt, latestTimestamp);
-            await this.handleAgentCloseProcess(agentEnt, latestTimestamp);
             await this.handleUnderlyingWithdrawal(agentEnt, latestTimestamp);
+            await this.handleAgentCloseProcess(agentEnt);
             em.persist(agentEnt);
         });
         logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleAgentsWaitingsAndCleanUp'.`);
+    }
+
+    private async handleAgentCloseProcess(agentEnt: AgentEntity) {
+        const closingHandler = new AgentBotClosing(this, agentEnt);
+        await closingHandler.handleAgentCloseProcess();
     }
 
     private async handleWaitForCollateralWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
@@ -538,111 +543,6 @@ export class AgentBot {
         if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
             const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS), "poolTopupTokenPriceFactorBIPS", latestTimestamp);
             if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
-        }
-    }
-
-    private async handleAgentCloseProcess(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (!agentEnt.waitingForDestructionCleanUp) return;
-        const agentInfo = await this.agent.getAgentInfo();
-        if (agentInfo.publiclyAvailable) return;
-        const waitingCollateralWithdrawal = toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO);
-        const waitingPoolTokenRedemption = toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO);
-        if (waitingCollateralWithdrawal || waitingPoolTokenRedemption) {
-            // vault collateral withdrawal
-            if (waitingCollateralWithdrawal) {
-                logger.debug(`Agent ${this.agent.vaultAddress} is waiting for collateral withdrawal before destruction.`);
-                const withdrawAllowedAt = toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp);
-                const withdrawAmount = toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount);
-                const successOrExpired = await this.withdrawCollateral(withdrawAllowedAt, withdrawAmount, latestTimestamp, ClaimType.VAULT);
-                if (successOrExpired) {
-                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = BN_ZERO;
-                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = "";
-                }
-            }
-            // pool token redemption
-            if (waitingPoolTokenRedemption) {
-                logger.debug(`Agent ${this.agent.vaultAddress} is waiting for pool token redemption before destruction.`);
-                const withdrawAllowedAt = toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp);
-                const withdrawAmount = toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount);
-                const successOrExpired = await this.withdrawCollateral(withdrawAllowedAt, withdrawAmount, latestTimestamp, ClaimType.POOL);
-                if (successOrExpired) {
-                    agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                    agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = "";
-                }
-            }
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} is checking if clean up before destruction is complete.`);
-            // agent checks if clean up is complete
-            // withdraw and self close pool fees
-            const poolFeeBalance = await this.agent.poolFeeBalance();
-            if (poolFeeBalance.gt(BN_ZERO)) {
-                await this.agent.withdrawPoolFees(poolFeeBalance);
-                await this.agent.selfClose(poolFeeBalance);
-                logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${poolFeeBalance}.`);
-            }
-            // check poolTokens and vaultCollateralBalance
-            const agentInfoForCollateral = await this.agent.getAgentInfo();
-            const freeVaultCollateralBalance = toBN(agentInfoForCollateral.freeVaultCollateralWei);
-            if (freeVaultCollateralBalance.gt(BN_ZERO)) {
-                // announce withdraw class 1
-                agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance);
-                agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
-                logger.info(`Agent ${this.agent.vaultAddress} announced vault collateral withdrawal ${freeVaultCollateralBalance} at ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
-            }
-            // check poolTokens
-            const poolTokenBalance = toBN(await this.agent.collateralPoolToken.balanceOf(this.agent.vaultAddress));
-            const agentInfoForPoolTokens = await this.agent.getAgentInfo();
-            if (poolTokenBalance.gt(BN_ZERO) && this.hasNoBackedFAssets(agentInfoForPoolTokens)) {
-                // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
-                agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
-                agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
-                logger.info(`Agent ${this.agent.vaultAddress} announced pool token redemption ${poolTokenBalance} at ${agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp}.`);
-            }
-            const agentInfoForDestroy = await this.agent.getAgentInfo();
-            const totalPoolTokens = toBN(await this.agent.collateralPoolToken.totalSupply());
-            // and wait for others to redeem
-            if (totalPoolTokens.eq(BN_ZERO) && this.hasNoBackedFAssets(agentInfoForDestroy)) {
-                // agent checks if clean is complete, agent can announce destroy
-                const destroyAllowedAt = await this.agent.announceDestroy();
-                agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
-                agentEnt.waitingForDestructionCleanUp = false;
-                await this.notifier.sendAgentAnnounceDestroy();
-                logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
-            } else {
-                if (toBN(agentInfoForDestroy.mintedUBA).gt(BN_ZERO)) {
-                    logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still backing FAssets.`);
-                }
-                if (toBN(agentInfoForDestroy.redeemingUBA).gt(BN_ZERO) || toBN(agentInfoForDestroy.poolRedeemingUBA).gt(BN_ZERO)) {
-                    logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still redeeming FAssets.`);
-                }
-                if (toBN(agentInfoForDestroy.reservedUBA).gt(BN_ZERO)) {
-                    logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent has some locked collateral by collateral reservation.`);
-                }
-                /* istanbul ignore else */
-                if (toBN(totalPoolTokens).gt(BN_ZERO)) {
-                    logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Total supply of collateral pool tokens is not 0.`);
-                }
-            }
-        }
-    }
-
-    private hasNoBackedFAssets(agentInfo: AgentInfo) {
-        return toBN(agentInfo.mintedUBA).eq(BN_ZERO) && toBN(agentInfo.redeemingUBA).eq(BN_ZERO) &&
-            toBN(agentInfo.reservedUBA).eq(BN_ZERO) && toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO);
-    }
-
-    private async handleWaitForAgentDestruction(agentEnt: AgentEntity, latestTimestamp: BN, em: EM) {
-        if (toBN(agentEnt.waitingForDestructionTimestamp).gt(BN_ZERO)) {
-            logger.info(`Agent ${this.agent.vaultAddress} is waiting for destruction.`);
-            // agent waiting for destruction
-            if (toBN(agentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
-                // agent can be destroyed
-                await this.agent.destroy();
-                agentEnt.waitingForDestructionTimestamp = BN_ZERO;
-                await this.handleAgentDestruction(em);
-            } else {
-                logger.info(`Agent ${this.agent.vaultAddress} cannot be destroyed. Allowed at ${agentEnt.waitingForDestructionTimestamp}. Current ${latestTimestamp}.`);
-            }
         }
     }
 
@@ -847,9 +747,7 @@ export class AgentBot {
      */
     async handleAgentDestruction(em: EM): Promise<void> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        agentEnt.active = false;
-        await this.notifier.sendAgentDestroyed();
-        logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
+        await new AgentBotClosing(this, agentEnt).handleAgentDestroyed();
     }
 
     /**
