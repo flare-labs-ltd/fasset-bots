@@ -8,9 +8,7 @@ import { EM } from "../config/orm";
 import { AgentEntity, Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
-import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
-import { CollateralPrice } from "../state/CollateralPrice";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { SourceId } from "../underlying-chain/SourceId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
@@ -18,11 +16,7 @@ import { CommandLineError } from "../utils";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
-import {
-    BN_ZERO, BNish, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS,
-    MAX_BIPS, MINUTES, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
-    VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN
-} from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -30,9 +24,11 @@ import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBotClosing } from "./AgentBotClosing";
+import { AgentBotCollateralManagement } from "./AgentBotCollateralManagement";
 import { AgentBotEventReader } from "./AgentBotEventReader";
 import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
+import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 
 const AgentVault = artifacts.require("AgentVault");
@@ -65,10 +61,12 @@ export class AgentBot {
     ) {}
 
     context = this.agent.context;
+    tokens = new AgentTokenBalances(this.context, this.agent.vaultAddress);
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
-    tokens = new AgentTokenBalances(this.context, this.agent.vaultAddress);
+    collateralManagement = new AgentBotCollateralManagement(this.agent, this.notifier, this.tokens);
+    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.notifier, this.ownerUnderlyingAddress, this.tokens);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -737,65 +735,6 @@ export class AgentBot {
     }
 
     /**
-     * Checks AgentBot's and owner's underlying balance after redemption is finished. If AgentBot's balance is too low, it tries to top it up from owner's account. See 'underlyingTopUp(...)'.
-     * @param agentVault agent's vault address
-     */
-    async checkUnderlyingBalance(): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is checking free underlying balance.`);
-        const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
-        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
-        const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
-        logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee}.`);
-        if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
-            await this.underlyingTopUp(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR), freeUnderlyingBalance);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
-        }
-    }
-
-    /**
-     * Tries to top up AgentBot's underlying account from owner's. It notifies about successful and unsuccessful try.
-     * It also checks owner's underlying balance and notifies when it is too low.
-     * @param amount amount to transfer from owner's underlying address to agent's underlying address
-     * @param agentVault agent's vault address
-     * @param freeUnderlyingBalance agent's free underlying balance
-     */
-    async underlyingTopUp(amount: BN, freeUnderlyingBalance: BN): Promise<void> {
-        try {
-            const amountF = await this.tokens.underlying.format(amount);
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
-                from owner's underlying address ${this.ownerUnderlyingAddress}.`);
-            const txHash = await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
-            await this.agent.confirmTopupPayment(txHash);
-            await this.notifier.sendLowUnderlyingAgentBalance(amountF);
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount
-                ${amountF} from owner's underlying address ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
-        } catch (error) {
-            const freeBalanceF = await this.tokens.underlying.format(freeUnderlyingBalance);
-            await this.notifier.sendLowUnderlyingAgentBalanceFailed(freeBalanceF);
-            logger.error(squashSpace`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeBalanceF} on underlying address
-                ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${this.ownerUnderlyingAddress}:`, error);
-        }
-        await this.checkForLowOwnerUnderlyingBalance();
-    }
-
-    async checkForLowOwnerUnderlyingBalance() {
-        const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
-        const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
-        const expectedBalance = estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR);
-        const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
-        const expectedBalanceF = await this.tokens.underlying.format(expectedBalance);
-        if (ownerUnderlyingBalance.lte(expectedBalance)) {
-            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, balanceF);
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
-                ${balanceF} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalanceF}.`);
-        } else {
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${balanceF}
-                on underlying address ${this.ownerUnderlyingAddress}.`);
-        }
-    }
-
-    /**
      * Check if any new PriceEpochFinalized events happened, which means that it may be necessary to topup collateral.
      */
     async checkForPriceChangeEvents() {
@@ -808,106 +747,7 @@ export class AgentBot {
         }
         if (needToCheckPrices) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized'.`);
-            await this.checkAgentForCollateralRatiosAndTopUp();
+            await this.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
         }
-    }
-
-    /**
-     * Checks both AgentBot's collateral ratios. In case of either being unhealthy, it tries to top up from owner's account in order to get out of Collateral Ratio Band or Liquidation due to price changes.
-     * It sends notification about successful and unsuccessful top up.
-     * At the end it also checks owner's balance and notifies when too low.
-     */
-    async checkAgentForCollateralRatiosAndTopUp(): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is checking collateral ratios.`);
-        const agentInfo = await this.agent.getAgentInfoIfExists();
-        if (agentInfo == null) return;
-        await this.checkForVaultCollateralTopup(agentInfo);
-        await this.checkForPoolCollateralTopup(agentInfo);
-        logger.info(`Agent ${this.agent.vaultAddress} finished checking for collateral topups.`);
-        await this.checkOwnerVaultCollateralBalance(agentInfo);
-        await this.checkOwnerNativeBalance(agentInfo);
-    }
-
-    async checkForVaultCollateralTopup(agentInfo: AgentInfo) {
-        const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
-        const requiredCrVaultCollateralBIPS = toBN(vaultCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUpVaultCollateral = await this.requiredTopUp(requiredCrVaultCollateralBIPS, agentInfo, vaultCollateralPrice);
-        if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
-            const requiredTopUpF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
-            try {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
-                await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
-                await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpF);
-                logger.info(`Agent ${this.agent.vaultAddress} topped up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
-            } catch (err) {
-                await this.notifier.sendVaultCollateralTopUpFailedAlert(requiredTopUpF);
-                logger.error(`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
-            }
-        }
-    }
-
-    async checkForPoolCollateralTopup(agentInfo: AgentInfo) {
-        const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
-        const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
-        if (requiredTopUpPool.gt(BN_ZERO)) {
-            const requiredTopUpF = await this.tokens.poolCollateral.format(requiredTopUpPool);
-            try {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
-                await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
-                await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpF);
-                logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
-            } catch (err) {
-                await this.notifier.sendPoolCollateralTopUpFailedAlert(requiredTopUpF);
-                logger.error(`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
-            }
-        }
-    }
-
-    async checkOwnerVaultCollateralBalance(agentInfo: AgentInfo) {
-        const ownerBalanceVaultCollateral = await this.tokens.vaultCollateral.balance(this.agent.owner.workAddress);
-        const vaultCollateralLowBalance = this.ownerVaultCollateralLowBalance(agentInfo);
-        if (ownerBalanceVaultCollateral.lte(vaultCollateralLowBalance)) {
-            const vaultBalanceF = await this.tokens.vaultCollateral.format(ownerBalanceVaultCollateral);
-            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, vaultBalanceF);
-            logger.info(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low vault collateral balance ${vaultBalanceF}.`);
-        }
-    }
-
-    async checkOwnerNativeBalance(agentInfo: AgentInfo) {
-        const ownerBalanceNative = await this.tokens.native.balance(this.agent.owner.workAddress);
-        const nativeLowBalance = this.ownerNativeLowBalance(agentInfo);
-        if (ownerBalanceNative.lte(nativeLowBalance)) {
-            const nativeBalanceF = await this.tokens.native.format(ownerBalanceNative);
-            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, nativeBalanceF);
-            logger.info(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance ${nativeBalanceF}.`);
-        }
-    }
-
-    /**
-     * Returns the value that is required to be topped up in order to reach healthy collateral ratio.
-     * If value is less than zero, top up is not needed.
-     * @param requiredCrBIPS required collateral ratio for healthy state (in BIPS)
-     * @param agentInfo AgentInfo object
-     * @param cp CollateralPrice object
-     * @return required amount for top up to reach healthy collateral ratio
-     */
-    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
-        const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
-        const balance = toBN(Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei);
-        const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(redeemingUBA));
-        const backingVaultCollateralWei = cp.convertUBAToTokenWei(totalUBA);
-        const requiredCollateral = backingVaultCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
-        return requiredCollateral.sub(balance);
-    }
-
-    private ownerNativeLowBalance(agentInfo: AgentInfo): BN {
-        const lockedPoolCollateral = toBN(agentInfo.totalPoolCollateralNATWei).sub(toBN(agentInfo.freePoolCollateralNATWei));
-        return lockedPoolCollateral.muln(POOL_COLLATERAL_RESERVE_FACTOR);
-    }
-
-    private ownerVaultCollateralLowBalance(agentInfo: AgentInfo): BN {
-        const lockedVaultCollateral = toBN(agentInfo.totalVaultCollateralWei).sub(toBN(agentInfo.freeVaultCollateralWei));
-        return lockedVaultCollateral.muln(VAULT_COLLATERAL_RESERVE_FACTOR);
     }
 }

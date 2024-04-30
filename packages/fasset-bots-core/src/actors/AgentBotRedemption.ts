@@ -62,7 +62,7 @@ export class AgentBotRedemption {
         const redemption = await this.findRedemption(em, requestId);
         redemption.state = AgentRedemptionState.DONE;
         logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${requestId}.`);
-        await this.bot.checkUnderlyingBalance();
+        await this.bot.underlyingManagement.checkUnderlyingBalance();
     }
 
     /**
