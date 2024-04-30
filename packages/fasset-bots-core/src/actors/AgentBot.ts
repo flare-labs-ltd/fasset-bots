@@ -5,7 +5,7 @@ import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
-import { AgentEntity, Event } from "../entities/agent";
+import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -13,7 +13,7 @@ import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { SourceId } from "../underlying-chain/SourceId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { CommandLineError } from "../utils";
-import { EvmEvent, eventOrder } from "../utils/events/common";
+import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
 import { BN_ZERO, BNish, DAYS, MINUTES, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
@@ -72,8 +72,6 @@ export class AgentBot {
     runner?: IRunner;
     timekeeper?: ITimeKeeper;
 
-    maxHandleEventBlocks = 1000;
-    lastPriceReaderEventBlock = -1;
     waitingForLatestBlockProofSince = BN_ZERO;
 
     static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentContext) {
@@ -228,8 +226,6 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async runStep(rootEm: EM): Promise<void> {
-        await this.eventReader.troubleshootEvents(rootEm);
-        await this.checkForPriceChangeEvents();
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
         await this.handleOpenMintings(rootEm);
@@ -237,44 +233,10 @@ export class AgentBot {
         await this.handleDailyTasks(rootEm);
     }
 
-    /**
-     * Performs appropriate actions according to received events.
-     * @param rootEm entity manager
-     */
-    async handleEvents(rootEm: EM): Promise<void> {
-        if (this.stopRequested()) return;
-        try {
-            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            await agentEnt.events.init();
-            const lastEventRead = agentEnt.lastEventRead();
-            // eslint-disable-next-line prefer-const
-            let [events, lastBlock] = await this.eventReader.readNewEvents(rootEm, this.maxHandleEventBlocks);
-            if (lastEventRead !== undefined) {
-                events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
-            }
-            for (const event of events) {
-                if (this.stopRequested()) return;
-                await rootEm
-                    .transactional(async (em) => {
-                        // log event is handled here! Transaction committing should be done at the last possible step!
-                        agentEnt.addNewEvent(new Event(agentEnt, event, true));
-                        agentEnt.currentEventBlock = event.blockNumber;
-                        // handle the event
-                        await this.handleEvent(em, event);
-                    })
-                    .catch(async (error) => {
-                        agentEnt.addNewEvent(new Event(agentEnt, event, false));
-                        await rootEm.persist(agentEnt).flush();
-                        console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event:`, error);
-                    });
-            }
-            agentEnt.currentEventBlock = lastBlock + 1;
-            await rootEm.persist(agentEnt).flush();
-        } catch (error) {
-            console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events:`, error);
-        }
+    async handleEvents(rootEm: EM) {
+        await this.eventReader.troubleshootEvents(rootEm);
+        await this.eventReader.checkForPriceChangeEvents();
+        await this.eventReader.handleNewEvents(rootEm);
     }
 
     async handleEvent(em: EM, event: EvmEvent): Promise<void> {
@@ -360,7 +322,6 @@ export class AgentBot {
         }
         logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
     }
-
 
     /**
      * Once a day checks corner cases and claims.
@@ -732,22 +693,5 @@ export class AgentBot {
     async handleAgentDestroyed(em: EM): Promise<void> {
         const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
         await new AgentBotClosing(this, agentEnt).handleAgentDestroyed();
-    }
-
-    /**
-     * Check if any new PriceEpochFinalized events happened, which means that it may be necessary to topup collateral.
-     */
-    async checkForPriceChangeEvents() {
-        let needToCheckPrices: boolean;
-        if (this.lastPriceReaderEventBlock >= 0) {
-            [needToCheckPrices, this.lastPriceReaderEventBlock] = await this.eventReader.priceChangeEventHappened(this.lastPriceReaderEventBlock + 1);
-        } else {
-            needToCheckPrices = true;   // this is first time in this method, so check is necessary
-            this.lastPriceReaderEventBlock = await this.eventReader.lastFinalizedBlock() + 1;
-        }
-        if (needToCheckPrices) {
-            logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized'.`);
-            await this.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
-        }
     }
 }

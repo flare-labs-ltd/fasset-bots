@@ -24,6 +24,9 @@ export class AgentBotEventReader {
 
     eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
 
+    lastPriceReaderEventBlock = -1;
+    maxHandleEventBlocks = 1000;
+
     async lastFinalizedBlock() {
         const blockHeight = await web3.eth.getBlockNumber();
         return blockHeight - this.context.nativeChainInfo.finalizationBlocks;
@@ -57,6 +60,46 @@ export class AgentBotEventReader {
         // sort events first by their block numbers, then internally by their event index
         events.sort(eventOrder);
         return [events, lastBlock];
+    }
+
+    /**
+     * Performs appropriate actions according to received events.
+     * @param rootEm entity manager
+     */
+    async handleNewEvents(rootEm: EM): Promise<void> {
+        if (this.bot.stopRequested()) return;
+        try {
+            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agentVaultAddress } as FilterQuery<AgentEntity>);
+            await agentEnt.events.init();
+            const lastEventRead = agentEnt.lastEventRead();
+            // eslint-disable-next-line prefer-const
+            let [events, lastBlock] = await this.readNewEvents(rootEm, this.maxHandleEventBlocks);
+            if (lastEventRead !== undefined) {
+                events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
+            }
+            for (const event of events) {
+                if (this.bot.stopRequested()) return;
+                await rootEm
+                    .transactional(async (em) => {
+                        // log event is handled here! Transaction committing should be done at the last possible step!
+                        agentEnt.addNewEvent(new Event(agentEnt, event, true));
+                        agentEnt.currentEventBlock = event.blockNumber;
+                        // handle the event
+                        await this.bot.handleEvent(em, event);
+                    })
+                    .catch(async (error) => {
+                        agentEnt.addNewEvent(new Event(agentEnt, event, false));
+                        await rootEm.persist(agentEnt).flush();
+                        console.error(`Error handling event ${event.signature} for agent ${this.agentVaultAddress}: ${error}`);
+                        logger.error(`Agent ${this.agentVaultAddress} run into error while handling an event:`, error);
+                    });
+            }
+            agentEnt.currentEventBlock = lastBlock + 1;
+            await rootEm.persist(agentEnt).flush();
+        } catch (error) {
+            console.error(`Error handling events for agent ${this.agentVaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agentVaultAddress} run into error while handling events:`, error);
+        }
     }
 
     async troubleshootEvents(rootEm: EM): Promise<void> {
@@ -106,6 +149,23 @@ export class AgentBotEventReader {
             if (_event.transactionIndex === event.transactionIndex && _event.logIndex === event.logIndex) {
                 return _event;
             }
+        }
+    }
+
+    /**
+     * Check if any new PriceEpochFinalized events happened, which means that it may be necessary to topup collateral.
+     */
+    async checkForPriceChangeEvents() {
+        let needToCheckPrices: boolean;
+        if (this.lastPriceReaderEventBlock >= 0) {
+            [needToCheckPrices, this.lastPriceReaderEventBlock] = await this.priceChangeEventHappened(this.lastPriceReaderEventBlock + 1);
+        } else {
+            needToCheckPrices = true;   // this is first time in this method, so check is necessary
+            this.lastPriceReaderEventBlock = await this.lastFinalizedBlock() + 1;
+        }
+        if (needToCheckPrices) {
+            logger.info(`Agent ${this.agentVaultAddress} received event 'PriceEpochFinalized'.`);
+            await this.bot.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
         }
     }
 

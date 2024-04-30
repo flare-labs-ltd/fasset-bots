@@ -615,7 +615,6 @@ describe("Agent bot tests", () => {
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.CCB);
         // run bot
-        await agentBot.checkForPriceChangeEvents();
         await agentBot.handleEvents(orm.em);
         expect(spyConsole).to.have.been.called.exactly(5);
     });
