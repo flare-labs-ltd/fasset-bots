@@ -17,7 +17,7 @@ import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { CommandLineError } from "../utils";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
-import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
+import { formatArgs, squashSpace } from "../utils/formatting";
 import {
     BN_ZERO, BNish, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS,
     MAX_BIPS, MINUTES, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
@@ -32,11 +32,11 @@ import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBotEventReader } from "./AgentBotEventReader";
 import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
+import { AgentTokenBalances } from "./AgentTokenBalances";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
-const IERC20 = artifacts.require("IERC20");
 
 export interface IRunner {
     stopRequested: boolean;
@@ -65,6 +65,7 @@ export class AgentBot {
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
+    tokens = new AgentTokenBalances(this.context, this.agent.vaultAddress);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -318,7 +319,7 @@ export class AgentBot {
             await this.notifier.sendLiquidationStartAlert(event.args.timestamp);
         } else if (eventIs(event, this.context.assetManager, "LiquidationPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendLiquidationWasPerformed(event.args.valueUBA);
+            await this.notifier.sendLiquidationWasPerformed(await this.tokens.fAsset.format(event.args.valueUBA));
         } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.agentVault);
@@ -696,19 +697,20 @@ export class AgentBot {
         // agent waiting for pool token redemption
         if (toBN(withdrawValidAt).lte(latestTimestamp)) {
             // agent can withdraw vault collateral
+            const token = type === ClaimType.VAULT ? this.tokens.vaultCollateral : this.tokens.poolCollateral;
             try {
                 if (type === ClaimType.VAULT) {
                     await this.agent.withdrawVaultCollateral(withdrawAmount);
-                    await this.notifier.sendWithdrawVaultCollateral(withdrawAmount);
+                    await this.notifier.sendWithdrawVaultCollateral(await token.format(withdrawAmount));
                 } else {
                     await this.agent.redeemCollateralPoolTokens(withdrawAmount);
-                    await this.notifier.sendRedeemCollateralPoolTokens(withdrawAmount);
+                    await this.notifier.sendRedeemCollateralPoolTokens(await token.format(withdrawAmount));
                 }
                 logger.info(`Agent ${this.agent.vaultAddress} withdrew ${type} collateral ${withdrawAmount}.`);
                 return true;
             } catch (error) {
                 if (errorIncluded(error, ["withdrawal: too late", "withdrawal: CR too low"])) {
-                    await this.notifier.sendAgentCannotWithdrawCollateral(withdrawAmount, type);
+                    await this.notifier.sendAgentCannotWithdrawCollateral(await token.format(withdrawAmount), type);
                     return true;
                 }
                 logger.error(`Agent ${this.agent.vaultAddress} run into error while withdrawing ${type} collateral:`, error);
@@ -874,24 +876,35 @@ export class AgentBot {
      */
     async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
         try {
-            logger.info(`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+            const amountF = await this.tokens.underlying.format(amount);
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
+                from owner's underlying address ${this.ownerUnderlyingAddress}.`);
             const txHash = await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
             await this.agent.confirmTopupPayment(txHash);
-            await this.notifier.sendLowUnderlyingAgentBalance(amount);
-            logger.info(`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount ${amount} from owner's underlying address ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
+            await this.notifier.sendLowUnderlyingAgentBalance(amountF);
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount
+                ${amountF} from owner's underlying address ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
         } catch (error) {
-            await this.notifier.sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalance);
-            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${this.ownerUnderlyingAddress}:`, error);
+            const freeBalanceF = await this.tokens.underlying.format(freeUnderlyingBalance);
+            await this.notifier.sendLowUnderlyingAgentBalanceFailed(freeBalanceF);
+            logger.error(squashSpace`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeBalanceF} on underlying address
+                ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${this.ownerUnderlyingAddress}:`, error);
         }
+        await this.checkForLowOwnerUnderlyingBalance();
+    }
+
+    async checkForLowOwnerUnderlyingBalance() {
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
-        const expectedBalance = toBN(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
+        const expectedBalance = estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR);
+        const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
+        const expectedBalanceF = await this.tokens.underlying.format(expectedBalance);
         if (ownerUnderlyingBalance.lte(expectedBalance)) {
-            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, ownerUnderlyingBalance);
+            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, balanceF);
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
-                ${ownerUnderlyingBalance} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`);
+                ${balanceF} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalanceF}.`);
         } else {
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${ownerUnderlyingBalance}
+            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${balanceF}
                 on underlying address ${this.ownerUnderlyingAddress}.`);
         }
     }
@@ -934,43 +947,42 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} does NOT need to top up any collateral.`);
         }
         if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
+            const requiredTopUpF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
             try {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${requiredTopUpVaultCollateral} from owner ${this.agent.owner}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
                 await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
-                await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpVaultCollateral);
-                logger.info(`Agent ${this.agent.vaultAddress} topped up vault collateral ${requiredTopUpVaultCollateral} from owner ${this.agent.owner}.`);
+                await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpF);
+                logger.info(`Agent ${this.agent.vaultAddress} topped up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
             } catch (err) {
-                await this.notifier.sendVaultCollateralTopUpFailedAlert(requiredTopUpVaultCollateral);
-                logger.error(`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${requiredTopUpVaultCollateral} from owner ${this.agent.owner}:`, err);
+                await this.notifier.sendVaultCollateralTopUpFailedAlert(requiredTopUpF);
+                logger.error(`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
             }
         }
         if (requiredTopUpPool.gt(BN_ZERO)) {
+            const requiredTopUpF = await this.tokens.poolCollateral.format(requiredTopUpPool);
             try {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${requiredTopUpPool} from owner ${this.agent.owner}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
                 await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
-                await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpPool);
-                logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpPool} from owner ${this.agent.owner}.`);
+                await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpF);
+                logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
             } catch (err) {
-                await this.notifier.sendPoolCollateralTopUpFailedAlert(requiredTopUpPool);
-                logger.error(`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens ${requiredTopUpPool} from owner ${this.agent.owner}:`, err);
+                await this.notifier.sendPoolCollateralTopUpFailedAlert(requiredTopUpF);
+                logger.error(`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
             }
         }
-        const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
-        const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.owner.workAddress);
+        const ownerBalanceVaultCollateral = await this.tokens.vaultCollateral.balance(this.agent.owner.workAddress);
         const vaultCollateralLowBalance = this.ownerVaultCollateralLowBalance(agentInfo);
         if (ownerBalanceVaultCollateral.lte(vaultCollateralLowBalance)) {
-            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress,
-                formatFixed(ownerBalanceVaultCollateral, Number(vaultCollateralPrice.collateral.decimals)),
-                vaultCollateralPrice.collateral.tokenFtsoSymbol);
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low vault collateral balance
-                ${ownerBalanceVaultCollateral} ${vaultCollateralPrice.collateral.tokenFtsoSymbol}.`);
+            const vaultBalanceF = await this.tokens.vaultCollateral.format(ownerBalanceVaultCollateral);
+            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, vaultBalanceF);
+            logger.info(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low vault collateral balance ${vaultBalanceF}.`);
         }
-        const ownerBalance = toBN(await web3.eth.getBalance(this.agent.owner.workAddress));
+        const ownerBalanceNative = await this.tokens.native.balance(this.agent.owner.workAddress);
         const nativeLowBalance = this.ownerNativeLowBalance(agentInfo);
-        if (ownerBalance.lte(nativeLowBalance)) {
-            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, formatFixed(ownerBalance, 18), poolCollateralPrice.collateral.tokenFtsoSymbol);
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance
-                ${ownerBalance} ${poolCollateralPrice.collateral.tokenFtsoSymbol}.`);
+        if (ownerBalanceNative.lte(nativeLowBalance)) {
+            const nativeBalanceF = await this.tokens.native.format(ownerBalanceNative);
+            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, nativeBalanceF);
+            logger.info(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance ${nativeBalanceF}.`);
         }
     }
 

@@ -115,7 +115,7 @@ describe("Toplevel runner and commands integration test", () => {
         // currencies
         const usdc = context.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc);
-        natCurrency = await Currencies.evmNative("NAT");
+        natCurrency = await Currencies.evmNative(context);
         xrpCurrency = Currencies.chain(xrpChainInfo);
         // mint some XRP to owner
         chain.mint(ownerUnderlyingAddress, xrpCurrency.parse("100"));

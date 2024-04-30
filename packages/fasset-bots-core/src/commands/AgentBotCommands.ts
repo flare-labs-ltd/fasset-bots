@@ -19,7 +19,7 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { Currencies, resolveInFassetBotsCore, squashSpace } from "../utils";
+import { Currencies, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, requireNotNull, toBN } from "../utils/helpers";
@@ -169,12 +169,12 @@ export class AgentBotCommands {
      */
     async buyCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
         const currency = await Currencies.agentPoolCollateral(this.context, agentVault);
-        const amountf = currency.formatValue(amount);
-        logger.info(`Agent's ${agentVault} owner ${this.owner} is starting to buy ${amountf} NAT worth of collateral pool tokens.`);
+        const amountf = currency.format(amount);
+        logger.info(`Agent's ${agentVault} owner ${this.owner} is starting to buy ${amountf} worth of collateral pool tokens.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.buyCollateralPoolTokens(amount);
         await this.notifierFor(agentVault).sendBuyCollateralPoolTokens(amountf);
-        logger.info(`Agent's ${agentVault} owner ${this.owner} bought ${amountf} NAT worth of collateral pool tokens.`);
+        logger.info(`Agent's ${agentVault} owner ${this.owner} bought ${amountf} worth of collateral pool tokens.`);
     }
 
     /**
@@ -236,11 +236,12 @@ export class AgentBotCommands {
     async announceWithdrawFromVault(agentVault: string, amount: string | BN): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);
-        await this.notifierFor(agentVault).sendWithdrawVaultCollateralAnnouncement(amount);
+        const amountF = await agentBot.tokens.vaultCollateral.format(amount);
+        await this.notifierFor(agentVault).sendWithdrawVaultCollateralAnnouncement(amountF);
         agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.withdrawalAllowedAtAmount = String(amount);
         await this.orm.em.persistAndFlush(agentEnt);
-        logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amount} at ${withdrawalAllowedAt.toString()}.`);
+        logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amountF} at ${withdrawalAllowedAt.toString()}.`);
     }
 
     /**
@@ -266,11 +267,12 @@ export class AgentBotCommands {
     async announceRedeemCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
-        await this.notifierFor(agentVault).sendRedeemCollateralPoolTokensAnnouncement(amount);
+        const amountF = await agentBot.tokens.poolToken.format(amount);
+        await this.notifierFor(agentVault).sendRedeemCollateralPoolTokensAnnouncement(amountF);
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
         agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = String(amount);
         await this.orm.em.persistAndFlush(agentEnt);
-        logger.info(`Agent ${agentVault} announced pool token redemption of ${amount} at ${withdrawalAllowedAt.toString()}.`);
+        logger.info(`Agent ${agentVault} announced pool token redemption of ${amountF} at ${withdrawalAllowedAt.toString()}.`);
     }
 
     /**
@@ -295,8 +297,9 @@ export class AgentBotCommands {
     async withdrawPoolFees(agentVault: string, amount: string | BN): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.withdrawPoolFees(amount);
-        await this.notifierFor(agentVault).sendWithdrawPoolFees(amount);
-        logger.info(`Agent ${agentVault} withdrew pool fees ${amount}.`);
+        const amountF = await agentBot.tokens.fAsset.format(amount);
+        await this.notifierFor(agentVault).sendWithdrawPoolFees(amountF);
+        logger.info(`Agent ${agentVault} withdrew pool fees ${amountF}.`);
     }
 
     /**
@@ -306,8 +309,9 @@ export class AgentBotCommands {
     async poolFeesBalance(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const balance = await agentBot.agent.poolFeeBalance();
-        await this.notifierFor(agentVault).sendBalancePoolFees(balance.toString());
-        logger.info(`Agent ${agentVault} has pool fee ${balance.toString()}.`);
+        const balanceF = await agentBot.tokens.fAsset.format(balance);
+        await this.notifierFor(agentVault).sendBalancePoolFees(balanceF);
+        logger.info(`Agent ${agentVault} has pool fee balance ${balanceF}.`);
         return balance.toString();
     }
 
@@ -555,8 +559,9 @@ export class AgentBotCommands {
         const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
         const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
         await collateralPool.delegate(recipient, bips, { from: agentEnt.ownerAddress });
-        await this.notifierFor(agentVault).sendDelegatePoolCollateral(collateralPool.address, recipient, bips);
-        logger.info(`Agent ${agentVault} delegated pool collateral to ${recipient} with bips ${bips}.`);
+        const bipsFmt = formatBips(toBN(bips));
+        await this.notifierFor(agentVault).sendDelegatePoolCollateral(collateralPool.address, recipient, bipsFmt);
+        logger.info(`Agent ${agentVault} delegated pool collateral to ${recipient} with percentage ${bipsFmt}.`);
     }
 
     /**

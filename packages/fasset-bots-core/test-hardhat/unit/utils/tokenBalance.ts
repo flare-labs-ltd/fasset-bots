@@ -37,31 +37,31 @@ describe("TokenBalance unit tests", () => {
     describe("Currency decimal conversion", () => {
         it("Should create currency converter for fasset", async () => {
             const converter = await Currencies.fasset(context);
-            const amount = await converter.parse("3.15");
+            const amount = converter.parse("3.15");
             assert.equal(amount.toString(), "3150000");
-            const formatted = await converter.formatValue(toBN(1234000), { decimals: 4, padRight: true });
+            const formatted = converter.formatValue(toBN(1234000), { decimals: 4, padRight: true });
             assert.equal(formatted, "1.2340");
-            const formattedU = await converter.format(toBN(1234000), { decimals: 4, padRight: true });
+            const formattedU = converter.format(toBN(1234000), { decimals: 4, padRight: true });
             assert.equal(formattedU, "1.2340 XRP");
         });
 
         it("Should create currency converter for vault currency (testUSDC)", async () => {
             const converter = await Currencies.agentVaultCollateral(context, agent.agentVault.address);
-            const amount = await converter.parse("3.15");
+            const amount = converter.parse("3.15");
             assert.equal(amount.toString(), "3150000");
-            const formatted = await converter.formatValue(toBN(1234000), { decimals: 4, padRight: true });
+            const formatted = converter.formatValue(toBN(1234000), { decimals: 4, padRight: true });
             assert.equal(formatted, "1.2340");
-            const formattedU = await converter.format(toBN(1234000), { decimals: 4, padRight: true });
+            const formattedU = converter.format(toBN(1234000), { decimals: 4, padRight: true });
             assert.equal(formattedU, "1.2340 testUSDC");
         });
 
         it("Should create currency converter for pool currency (CFLR)", async () => {
             const converter = await Currencies.agentPoolCollateral(context, agent.agentVault.address);
-            const amount = await converter.parse("3.15");
+            const amount = converter.parse("3.15");
             assert.equal(amount.toString(), "3150000000000000000");
-            const formatted = await converter.formatValue(toBNExp("1.234", 18), { decimals: 4, padRight: true });
+            const formatted = converter.formatValue(toBNExp("1.234", 18), { decimals: 4, padRight: true });
             assert.equal(formatted, "1.2340");
-            const formattedU = await converter.format(toBNExp("1.234", 18), { decimals: 4, padRight: true });
+            const formattedU = converter.format(toBNExp("1.234", 18), { decimals: 4, padRight: true });
             assert.equal(formattedU, "1.2340 WNAT");
         });
     });

@@ -9,7 +9,7 @@ import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chai
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { getAgentSettings } from "../utils/fasset-helpers";
-import { BNish, errorIncluded, expectErrors, toBN } from "../utils/helpers";
+import { BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
