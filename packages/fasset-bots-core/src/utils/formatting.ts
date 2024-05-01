@@ -1,5 +1,4 @@
 import BN from "bn.js";
-import { BNish } from "./helpers";
 
 /**
  * Converts each consecutive sequence of spaces, tabs and newlines to a single space.

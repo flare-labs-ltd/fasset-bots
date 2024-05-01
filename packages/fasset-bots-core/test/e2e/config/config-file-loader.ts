@@ -41,7 +41,7 @@ describe("config file loader tests", () => {
 
     it("Should not load config file - schema validation", async () => {
         expect(() => loadConfigFile(COSTON_CONTRACTS_INVALID))
-            .to.throw(/Invalid bot config JSON format:  must have required property/);
+            .to.throw(/Invalid bot config JSON format: *must have required property/);
     });
 
     it("Should not load config file - extends loop", async () => {
