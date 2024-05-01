@@ -67,6 +67,11 @@ export async function createTestAgentBot(
     return agentBot;
 }
 
+export async function updateAgentBotUnderlyingBlockProof(context: TestAssetBotContext, agentBot: AgentBot, queryWindow: number = 86400) {
+    assert(agentBot.timekeeper != null && agentBot.timekeeper.constructor === Object);  // only works for fake timekeeper set by createTestAgentBot
+    agentBot.timekeeper.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(queryWindow);
+}
+
 export async function createTestContractRetriever(context: TestAssetBotContext) {
     return await AssetContractRetriever.create(false, undefined, context.assetManagerController.address);
 }

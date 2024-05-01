@@ -19,7 +19,7 @@ import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus } from "../test-utils/helpers";
+import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -142,6 +142,7 @@ describe("Challenger tests", () => {
         const rdReq = reqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -225,6 +226,7 @@ describe("Challenger tests", () => {
         const rdReq = reqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -317,6 +319,7 @@ describe("Challenger tests", () => {
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -388,6 +391,7 @@ describe("Challenger tests", () => {
         redemption.txHash = txHash;
         redemption.state = AgentRedemptionState.PAID;
         // run step
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         await agentBot.runStep(orm.em);
         // catch 'RedemptionPaymentBlocked' event
@@ -568,6 +572,7 @@ describe("Challenger tests", () => {
         const rdReq = reqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em); // check if redemption is done orm.em.clear();

@@ -19,7 +19,7 @@ import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner } from "../test-utils/helpers";
+import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -124,6 +124,7 @@ describe("Agent bot tests", () => {
         const rdReq = rdReqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -157,7 +158,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));
         // get time proof
-        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // handle again
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
@@ -193,7 +194,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
         chain.mine(Number(crt.lastUnderlyingBlock));
         // get time proof
-        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // handle again
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
@@ -218,7 +219,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // get time proof
-        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // run step
         await agentBot.runStep(orm.em);
         // check if minting is done
@@ -239,7 +240,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // get time proof
-        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // run step
         await agentBot.runStep(orm.em);
         // check if minting is done
@@ -326,7 +327,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // get time proof
-        agentBot.timekeeper!.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(86400);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // run step
         await agentBot.runStep(orm.em);
         // check redemption
@@ -353,6 +354,7 @@ describe("Agent bot tests", () => {
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
         // agent pays
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
@@ -363,6 +365,7 @@ describe("Agent bot tests", () => {
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -397,6 +400,7 @@ describe("Agent bot tests", () => {
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
         // redemption has started and is paid
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         orm.em.clear();
         const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
@@ -494,8 +498,9 @@ describe("Agent bot tests", () => {
     });
 
     it("Should check collateral ratio after price changes", async () => {
-        const spyTop = spy.on(agentBot, "checkAgentForCollateralRatiosAndTopUp");
+        const spyTop = spy.on(agentBot.collateralManagement, "checkAgentForCollateralRatiosAndTopUp");
         // one inital price check must happen
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         expect(spyTop).to.have.been.called.exactly(1);
         // afterwards, price change shouldn't happen until next price finalization event
@@ -543,6 +548,7 @@ describe("Agent bot tests", () => {
         // perform minting
         const lots = 2;
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -565,6 +571,7 @@ describe("Agent bot tests", () => {
         const rdReq = rdReqs[0];
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -579,10 +586,10 @@ describe("Agent bot tests", () => {
         if (!toBN(info.dustUBA).eqn(0)) {
             await agentBot.agent.selfClose((await agentBot.agent.getAgentInfo()).dustUBA);
         }
-        // withdraw vault collateral and pool tokens
-        await time.increaseTo(maxBN(toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp), toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp)));
         // run agent's steps until destroy is announced
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.increase(30);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
@@ -593,7 +600,10 @@ describe("Agent bot tests", () => {
             if (agentEnt.waitingForDestructionCleanUp === false) break;
         }
         // await agentBot.runStep(orm.em);
-        const status = Number((await agentBot.agent.getAgentInfo()).status);
+        const info2 = await agentBot.agent.getAgentInfo();
+        assert.equal(String(info2.totalVaultCollateralWei), "0");
+        assert.equal(String(info2.totalPoolCollateralNATWei), "0");
+        const status = Number(info2.status);
         assert.equal(status, AgentStatus.DESTROYING);
     });
 

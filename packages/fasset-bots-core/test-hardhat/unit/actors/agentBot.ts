@@ -20,7 +20,7 @@ import { testNotifierTransports } from "../../../test/test-utils/testNotifierTra
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner } from "../../test-utils/helpers";
+import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 use(spies);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
@@ -93,7 +93,7 @@ describe("Agent bot unit tests", () => {
 
     it("Should top up collateral", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyTop = spy.on(agentBot, "requiredTopUp");
+        const spyTop = spy.on(agentBot.collateralManagement, "requiredTopUp");
         await agentBot.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
         expect(spyTop).to.have.been.called.twice;
     });
@@ -141,6 +141,7 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
         });
         await orm.em.persistAndFlush(rd);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.redemption.nextRedemptionStep(orm.em, rd.id);
         expect(spyLog).to.have.been.called.once;
     });

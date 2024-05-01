@@ -16,15 +16,15 @@ export class AgentBotClosing {
     context = this.agent.context;
 
     async closingPhase() {
-        const agentInfo = await this.agent.getAgentInfo();
-        if (agentInfo.publiclyAvailable) {
+        const agentInfo = await this.agent.getAgentInfoIfExists();
+        if (agentInfo == null || !this.agentEnt.active) {
+            return "DESTROYED";
+        } else if (agentInfo.publiclyAvailable) {
             return "PUBLIC";
         } else if (this.agentEnt.waitingForDestructionCleanUp) {
             return "CLEANUP";
         } else if (toBN(this.agentEnt.waitingForDestructionTimestamp).gt(BN_ZERO)) {
             return "DESTROYING";
-        } else if (!this.agentEnt.active) {
-            return "DESTROYED";
         }
     }
 
