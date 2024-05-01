@@ -77,7 +77,7 @@ export class AgentBotClosing {
             this.agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance);
             this.agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} announced vault collateral withdrawal of
-                ${this.bot.tokens.vaultCollateral.format(freeVaultCollateralBalance)} at ${this.agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
+                ${await this.bot.tokens.vaultCollateral.format(freeVaultCollateralBalance)} at ${this.agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
         }
     }
 
@@ -105,7 +105,7 @@ export class AgentBotClosing {
             this.agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
             this.agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} announced pool token redemption of
-                ${this.bot.tokens.poolToken.format(poolTokenBalance)} at ${this.agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp}.`);
+                ${await this.bot.tokens.poolToken.format(poolTokenBalance)} at ${this.agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp}.`);
         }
     }
 
