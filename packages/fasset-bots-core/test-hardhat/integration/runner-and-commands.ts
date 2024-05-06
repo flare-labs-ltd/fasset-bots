@@ -101,7 +101,7 @@ describe("Toplevel runner and commands integration test", () => {
         // set work address mapping
         await context.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // context map
-        const contexts = new Map<ChainId, TestAssetBotContext>([[context.chainInfo.chainId, context]]);
+        const contexts = new Map<string, TestAssetBotContext>([[context.chainInfo.symbol, context]]);
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, "auto", 60_000, loopDelay);
         // agent bot runner

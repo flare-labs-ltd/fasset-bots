@@ -20,7 +20,7 @@ describe("Agent bot runner tests", () => {
     let orm: ORM;
     let ownerAddress: string;
     let ownerUnderlyingAddress: string;
-    let contexts: Map<ChainId, TestAssetBotContext> = new Map();
+    let contexts: Map<string, TestAssetBotContext> = new Map();
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -32,7 +32,7 @@ describe("Agent bot runner tests", () => {
         orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
-        contexts.set(context.chainInfo.chainId, context);
+        contexts.set(context.chainInfo.symbol, context);
         return { orm, context, contexts };
     }
 
@@ -44,7 +44,7 @@ describe("Agent bot runner tests", () => {
         const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
-        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should run agent bot runner until its stopped", async () => {
@@ -69,7 +69,7 @@ describe("Agent bot runner tests", () => {
         const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay, [new FaultyNotifierTransport()]);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
-        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
         const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         // make faulty entity
         const agentEnt = agentEntities[0];

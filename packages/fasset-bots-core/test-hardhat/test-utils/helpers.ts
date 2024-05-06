@@ -122,14 +122,14 @@ async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSet
 }
 
 export const testTimekeeperService: ITimeKeeperService = {
-    get(chainId: ChainId) {
+    get(symbol: string) {
         return { latestProof: undefined };
     },
 };
 
 export function createTestAgentBotRunner(
     secrets: Secrets,
-    contexts: Map<ChainId, TestAssetBotContext>,
+    contexts: Map<string, TestAssetBotContext>,
     orm: ORM,
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,

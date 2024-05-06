@@ -1,6 +1,5 @@
 import { KeeperBotConfig, createTimekeeperContext } from "../config";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
-import { ChainId } from "../underlying-chain/ChainId";
 import { requireNotNull } from "../utils";
 import { TimeKeeper, TimeKeeperQueryWindow } from "./TimeKeeper";
 
@@ -8,37 +7,37 @@ export class TimeKeeperService {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public contexts: Map<ChainId, ITimekeeperContext>,
+        public contexts: Map<string, ITimekeeperContext>,   // map [chain token symbol] => context
         public timekeeperAddress: string,
         public queryWindow: TimeKeeperQueryWindow,
         public updateIntervalMs: number,
         public loopDelayMs: number
     ) {}
 
-    timekeepers = new Map<ChainId, TimeKeeper>();
+    timekeepers = new Map<string, TimeKeeper>();
 
     static async create(config: KeeperBotConfig, timekeeperAddress: string, queryWindow: TimeKeeperQueryWindow, updateIntervalMs: number, loopDelayMs: number) {
-        const contexts: Map<ChainId, ITimekeeperContext> = new Map();
+        const contexts: Map<string, ITimekeeperContext> = new Map();
         for (const chain of config.fAssets.values()) {
-            const chainId = chain.chainInfo.chainId;
-            if (!contexts.has(chainId)) {
+            const symbol = chain.chainInfo.symbol;
+            if (!contexts.has(symbol)) {
                 const context = await createTimekeeperContext(config, chain);
-                contexts.set(chainId, context);
+                contexts.set(symbol, context);
             }
         }
         return new TimeKeeperService(contexts, timekeeperAddress, queryWindow, updateIntervalMs, loopDelayMs);
     }
 
-    get(chainId: ChainId) {
-        const timekeeper = this.timekeepers.get(chainId);
+    get(symbol: string) {
+        const timekeeper = this.timekeepers.get(symbol);
         if (timekeeper != null) return timekeeper;
-        return this.start(chainId);
+        return this.start(symbol);
     }
 
-    start(chainId: ChainId) {
-        const context = requireNotNull(this.contexts.get(chainId), `Unknown chain id ${chainId}`);
+    start(symbol: string) {
+        const context = requireNotNull(this.contexts.get(symbol), `Unknown chain token symbol ${symbol}`);
         const timekeeper = new TimeKeeper(context, this.timekeeperAddress, this.queryWindow, this.updateIntervalMs, this.loopDelayMs);
-        this.timekeepers.set(chainId, timekeeper);
+        this.timekeepers.set(symbol, timekeeper);
         timekeeper.run();
         return timekeeper;
     }

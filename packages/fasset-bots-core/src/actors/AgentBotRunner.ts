@@ -4,16 +4,14 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { ChainId } from "../underlying-chain/ChainId";
 import { web3 } from "../utils";
-import { squashSpace } from "../utils/formatting";
 import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, ITimeKeeper } from "./AgentBot";
 
 export interface ITimeKeeperService {
-    get(chainId: ChainId): ITimeKeeper;
+    get(symbol: string): ITimeKeeper;
 }
 
 export class AgentBotRunner {
@@ -21,7 +19,7 @@ export class AgentBotRunner {
 
     constructor(
         public secrets: Secrets,
-        public contexts: Map<ChainId, IAssetAgentContext>,
+        public contexts: Map<string, IAssetAgentContext>,   // map [chain token symbol] => context
         public orm: ORM,
         public loopDelay: number,
         public notifierTransports: NotifierTransport[],
@@ -71,17 +69,16 @@ export class AgentBotRunner {
             this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
-                const chainId = ChainId.from(agentEntity.chainId);
-                const context = this.contexts.get(chainId);
+                const context = this.contexts.get(agentEntity.chainSymbol);
                 if (context == null) {
-                    console.warn(`Invalid chain symbol ${chainId}`);
-                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${chainId}.`);
+                    console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
+                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid token symbol ${agentEntity.chainSymbol}.`);
                     continue;
                 }
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
-                agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.chainId);
+                agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.symbol);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
@@ -111,12 +108,11 @@ export class AgentBotRunner {
     static async create(secrets: Secrets, botConfig: AgentBotConfig, timekeeperService: ITimeKeeperService): Promise<AgentBotRunner> {
         const ownerAddress = secrets.required("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
-        const contexts: Map<ChainId, IAssetAgentContext> = new Map();
+        const contexts: Map<string, IAssetAgentContext> = new Map();
         for (const chainConfig of botConfig.fAssets.values()) {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
-            contexts.set(assetContext.chainInfo.chainId, assetContext);
-            logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}
-                with symbol ${chainConfig.chainInfo.symbol}.`);
+            contexts.set(assetContext.chainInfo.symbol, assetContext);
+            logger.info(`Owner's ${ownerAddress} AgentBotRunner set context for token ${chainConfig.chainInfo.symbol} on chain ${assetContext.chainInfo.chainId}`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
