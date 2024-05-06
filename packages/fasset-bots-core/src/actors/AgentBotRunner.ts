@@ -13,7 +13,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, ITimeKeeper } from "./AgentBot";
 
 export interface ITimeKeeperService {
-    get(chainId: string): ITimeKeeper;
+    get(chainId: ChainId): ITimeKeeper;
 }
 
 export class AgentBotRunner {
@@ -21,7 +21,7 @@ export class AgentBotRunner {
 
     constructor(
         public secrets: Secrets,
-        public contexts: Map<string, IAssetAgentContext>,
+        public contexts: Map<ChainId, IAssetAgentContext>,
         public orm: ORM,
         public loopDelay: number,
         public notifierTransports: NotifierTransport[],
@@ -71,7 +71,7 @@ export class AgentBotRunner {
             this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
-                const chainId = ChainId.fromSourceId(agentEntity.chainId).chainName;
+                const chainId = ChainId.from(agentEntity.chainId);
                 const context = this.contexts.get(chainId);
                 if (context == null) {
                     console.warn(`Invalid chain symbol ${chainId}`);
@@ -81,7 +81,7 @@ export class AgentBotRunner {
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
-                agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.chainId.chainName);
+                agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.chainId);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
@@ -111,10 +111,10 @@ export class AgentBotRunner {
     static async create(secrets: Secrets, botConfig: AgentBotConfig, timekeeperService: ITimeKeeperService): Promise<AgentBotRunner> {
         const ownerAddress = secrets.required("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
-        const contexts: Map<string, IAssetAgentContext> = new Map();
+        const contexts: Map<ChainId, IAssetAgentContext> = new Map();
         for (const chainConfig of botConfig.fAssets.values()) {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
-            contexts.set(assetContext.chainInfo.symbol, assetContext);
+            contexts.set(assetContext.chainInfo.chainId, assetContext);
             logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}
                 with symbol ${chainConfig.chainInfo.symbol}.`);
         }

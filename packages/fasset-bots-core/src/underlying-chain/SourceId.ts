@@ -18,31 +18,30 @@ export class ChainId {
         return this.chainName;
     }
 
-    static fromChainName(chainName: string): ChainId {
-        return chainIdIndex.get(chainName) ?? createChainId(chainName, encodeAttestationName(chainName));
+    static from(chainNameOrSourceId: string): ChainId {
+        return chainIdIndex.get(chainNameOrSourceId) ?? createChainId(chainNameOrSourceId);
     }
 
-    static fromSourceId(sourceId: string): ChainId {
-        return chainIdIndex.get(sourceId) ?? createChainId(decodeAttestationName(sourceId), sourceId);
-    }
-
-    static XRP = ChainId.fromChainName("XRP");
-    static testXRP = ChainId.fromChainName("testXRP");
-    static BTC = ChainId.fromChainName("BTC");
-    static testBTC = ChainId.fromChainName("testBTC");
-    static DOGE = ChainId.fromChainName("DOGE");
-    static testDOGE = ChainId.fromChainName("testDOGE");
-    static LTC = ChainId.fromChainName("LTC");
-    static testLTC = ChainId.fromChainName("testLTC");
-    static ALGO = ChainId.fromChainName("ALGO");
-    static testALGO = ChainId.fromChainName("testALGO");
+    static XRP = ChainId.from("XRP");
+    static testXRP = ChainId.from("testXRP");
+    static BTC = ChainId.from("BTC");
+    static testBTC = ChainId.from("testBTC");
+    static DOGE = ChainId.from("DOGE");
+    static testDOGE = ChainId.from("testDOGE");
+    static LTC = ChainId.from("LTC");
+    static testLTC = ChainId.from("testLTC");
+    static ALGO = ChainId.from("ALGO");
+    static testALGO = ChainId.from("testALGO");
 }
 
 const chainIdIndex: Map<string, ChainId> = new Map();
 
-function createChainId(chainName: string, attestationSourceId: string) {
-    const chainId = new ChainId(chainName, attestationSourceId);
+function createChainId(chainNameOrSourceId: string) {
+    const [chainName, sourceId] = chainNameOrSourceId.startsWith("0x")
+        ? [decodeAttestationName(chainNameOrSourceId), chainNameOrSourceId]
+        : [chainNameOrSourceId, encodeAttestationName(chainNameOrSourceId)];
+    const chainId = new ChainId(chainName, sourceId);
     chainIdIndex.set(chainName, chainId);
-    chainIdIndex.set(attestationSourceId, chainId);
+    chainIdIndex.set(sourceId, chainId);
     return chainId;
 }

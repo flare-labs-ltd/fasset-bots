@@ -46,7 +46,7 @@ async function setupContext(fAssetSymbol: string) {
     if (!chainConfig.walletUrl) {
         throw new CommandLineError("Missing wallet url");
     }
-    const chainId = ChainId.fromChainName(chainConfig.chainId);
+    const chainId = ChainId.from(chainConfig.chainId);
     const walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, chainConfig.walletUrl, runConfig.walletOptions);
     console.log(chalk.cyan("Wallet initialized."));
     return walletHelper;

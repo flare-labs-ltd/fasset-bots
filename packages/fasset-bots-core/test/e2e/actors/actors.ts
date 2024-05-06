@@ -65,7 +65,7 @@ describe("Actor tests - coston", () => {
         accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), getNativeAccounts(secrets), null);
         ownerManagementAddress = secrets.required("owner.management.address");
         ownerAddress = secrets.required("owner.native.address");
-        ownerUnderlyingAddress = AgentBot.underlyingAddress(secrets, ChainId.fromChainName(runConfig.fAssets[fAssetSymbol].chainId));
+        ownerUnderlyingAddress = AgentBot.underlyingAddress(secrets, ChainId.from(runConfig.fAssets[fAssetSymbol].chainId));
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];
@@ -103,17 +103,17 @@ describe("Actor tests - coston", () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const contexts: Map<string, IAssetAgentContext> = new Map();
-        contexts.set(context.chainInfo.symbol, context);
+        const contexts: Map<ChainId, IAssetAgentContext> = new Map();
+        contexts.set(context.chainInfo.chainId, context);
         const agentBotRunner = new AgentBotRunner(secrets, contexts, orm, 5, testNotifierTransports, testTimekeeperService);
         expect(agentBotRunner.loopDelay).to.eq(5);
-        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
 
     it("Should create agent bot runner from bot config", async () => {
         const agentBotRunner = await AgentBotRunner.create(secrets, botConfig, testTimekeeperService);
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
-        expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
+        expect(agentBotRunner.contexts.get(context.chainInfo.chainId)).to.not.be.null;
     });
 
     it("Should create challenger", async () => {

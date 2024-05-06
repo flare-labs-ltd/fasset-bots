@@ -1,5 +1,6 @@
 import { KeeperBotConfig, createTimekeeperContext } from "../config";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
+import { ChainId } from "../underlying-chain/SourceId";
 import { requireNotNull } from "../utils";
 import { TimeKeeper, TimeKeeperQueryWindow } from "./TimeKeeper";
 
@@ -7,19 +8,19 @@ export class TimeKeeperService {
     static deepCopyWithObjectCreate = true;
 
     constructor(
-        public contexts: Map<string, ITimekeeperContext>,
+        public contexts: Map<ChainId, ITimekeeperContext>,
         public timekeeperAddress: string,
         public queryWindow: TimeKeeperQueryWindow,
         public updateIntervalMs: number,
         public loopDelayMs: number
     ) {}
 
-    timekeepers = new Map<string, TimeKeeper>();
+    timekeepers = new Map<ChainId, TimeKeeper>();
 
     static async create(config: KeeperBotConfig, timekeeperAddress: string, queryWindow: TimeKeeperQueryWindow, updateIntervalMs: number, loopDelayMs: number) {
-        const contexts: Map<string, ITimekeeperContext> = new Map();
+        const contexts: Map<ChainId, ITimekeeperContext> = new Map();
         for (const chain of config.fAssets.values()) {
-            const chainId = chain.chainInfo.chainId.chainName;
+            const chainId = chain.chainInfo.chainId;
             if (!contexts.has(chainId)) {
                 const context = await createTimekeeperContext(config, chain);
                 contexts.set(chainId, context);
@@ -28,13 +29,13 @@ export class TimeKeeperService {
         return new TimeKeeperService(contexts, timekeeperAddress, queryWindow, updateIntervalMs, loopDelayMs);
     }
 
-    get(chainId: string) {
+    get(chainId: ChainId) {
         const timekeeper = this.timekeepers.get(chainId);
         if (timekeeper != null) return timekeeper;
         return this.start(chainId);
     }
 
-    start(chainId: string) {
+    start(chainId: ChainId) {
         const context = requireNotNull(this.contexts.get(chainId), `Unknown chain id ${chainId}`);
         const timekeeper = new TimeKeeper(context, this.timekeeperAddress, this.queryWindow, this.updateIntervalMs, this.loopDelayMs);
         this.timekeepers.set(chainId, timekeeper);

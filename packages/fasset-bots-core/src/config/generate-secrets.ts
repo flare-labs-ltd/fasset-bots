@@ -14,7 +14,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
         const result: { [key: string]: ChainAccount } = {};
         result.native = generateNativeAccount();
         for (const chainName of chainNames) {
-            const chainId = ChainId.fromChainName(chainName);
+            const chainId = ChainId.from(chainName);
             const walletClient = createStubWalletClient(chainId);
             const underlyingAccount = walletClient.createWallet();
             result[chainName] = {

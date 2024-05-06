@@ -28,6 +28,7 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
+import { ChainId } from "../../src/underlying-chain/SourceId";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -121,14 +122,14 @@ async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSet
 }
 
 export const testTimekeeperService: ITimeKeeperService = {
-    get(chainId: string) {
+    get(chainId: ChainId) {
         return { latestProof: undefined };
     },
 };
 
 export function createTestAgentBotRunner(
     secrets: Secrets,
-    contexts: Map<string, TestAssetBotContext>,
+    contexts: Map<ChainId, TestAssetBotContext>,
     orm: ORM,
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,

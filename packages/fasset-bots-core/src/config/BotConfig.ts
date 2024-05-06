@@ -135,7 +135,7 @@ export async function createBotFAssetConfig(
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
-    const chainId = ChainId.fromChainName(fassetInfo.chainId);
+    const chainId = ChainId.from(fassetInfo.chainId);
     const result: BotFAssetConfig = {
         fAssetSymbol: fAssetSymbol,
         chainInfo: createChainInfo(chainId, fassetInfo, settings),
