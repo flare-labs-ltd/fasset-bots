@@ -1,7 +1,7 @@
 import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
-import { SourceId } from "../../src";
+import { ChainId } from "../../src";
 import { Secrets } from "../../src/config";
 import { ChainAccount } from "../../src/config/config-files/SecretsFile";
 import { ChainContracts, newContract } from "../../src/config/contracts";
@@ -198,7 +198,7 @@ export async function createTestAssetContext(
     };
 }
 
-export function createTestSecrets(chain: SourceId, ownerManagementAddress: string, ownerWorkAddress: string, ownerUnderlyingAddress: string) {
+export function createTestSecrets(chain: ChainId, ownerManagementAddress: string, ownerWorkAddress: string, ownerUnderlyingAddress: string) {
     return new Secrets("MEMORY", {
         apiKey: {},
         owner: {

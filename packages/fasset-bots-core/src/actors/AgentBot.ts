@@ -9,7 +9,7 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { CommandLineError } from "../utils";
 import { EvmEvent } from "../utils/events/common";
@@ -185,8 +185,8 @@ export class AgentBot {
         return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
     }
 
-    static underlyingAddress(secrets: Secrets, sourceId: SourceId) {
-        return secrets.required(`owner.${sourceId.chainName}.address`);
+    static underlyingAddress(secrets: Secrets, chainId: ChainId) {
+        return secrets.required(`owner.${chainId.chainName}.address`);
     }
 
     /**
@@ -196,7 +196,7 @@ export class AgentBot {
      */
     static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
         try {
-            if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
+            if (![ChainId.XRP, ChainId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
             const reference = owner.managementAddress;
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);

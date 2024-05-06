@@ -1,5 +1,5 @@
 import { time } from "@nomicfoundation/hardhat-network-helpers";
-import { AgentBotCommands, AgentBotRunner, SourceId, TimeKeeperService, UserBotCommands } from "../../src";
+import { AgentBotCommands, AgentBotRunner, ChainId, TimeKeeperService, UserBotCommands } from "../../src";
 import { AgentSettingsConfig, Secrets } from "../../src/config";
 import { ORM } from "../../src/config/orm";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
@@ -53,7 +53,7 @@ describe("Toplevel runner and commands integration test", () => {
     };
 
     const xrpChainInfo: TestChainInfo = {
-        chainId: SourceId.testXRP,
+        chainId: ChainId.testXRP,
         name: "Ripple",
         symbol: "XRP",
         decimals: 6,
@@ -97,7 +97,7 @@ describe("Toplevel runner and commands integration test", () => {
         context = await createTestAssetContext(accounts[0], xrpChainInfo);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         settings = await context.assetManager.getSettings();
-        secrets = createTestSecrets(SourceId.testXRP, ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
+        secrets = createTestSecrets(ChainId.testXRP, ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
         // set work address mapping
         await context.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // context map

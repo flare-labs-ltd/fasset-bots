@@ -1,6 +1,6 @@
 import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 
-export class SourceId {
+export class ChainId {
     constructor(
         /**
          * Human readable chain name (e.g. "XRP", "testXRP").
@@ -18,31 +18,31 @@ export class SourceId {
         return this.chainName;
     }
 
-    static fromChainName(chainName: string): SourceId {
-        return sourceIdIndex.get(chainName) ?? createSourceId(chainName, encodeAttestationName(chainName));
+    static fromChainName(chainName: string): ChainId {
+        return chainIdIndex.get(chainName) ?? createChainId(chainName, encodeAttestationName(chainName));
     }
 
-    static fromSourceId(sourceId: string): SourceId {
-        return sourceIdIndex.get(sourceId) ?? createSourceId(decodeAttestationName(sourceId), sourceId);
+    static fromSourceId(sourceId: string): ChainId {
+        return chainIdIndex.get(sourceId) ?? createChainId(decodeAttestationName(sourceId), sourceId);
     }
 
-    static XRP = SourceId.fromChainName("XRP");
-    static testXRP = SourceId.fromChainName("testXRP");
-    static BTC = SourceId.fromChainName("BTC");
-    static testBTC = SourceId.fromChainName("testBTC");
-    static DOGE = SourceId.fromChainName("DOGE");
-    static testDOGE = SourceId.fromChainName("testDOGE");
-    static LTC = SourceId.fromChainName("LTC");
-    static testLTC = SourceId.fromChainName("testLTC");
-    static ALGO = SourceId.fromChainName("ALGO");
-    static testALGO = SourceId.fromChainName("testALGO");
+    static XRP = ChainId.fromChainName("XRP");
+    static testXRP = ChainId.fromChainName("testXRP");
+    static BTC = ChainId.fromChainName("BTC");
+    static testBTC = ChainId.fromChainName("testBTC");
+    static DOGE = ChainId.fromChainName("DOGE");
+    static testDOGE = ChainId.fromChainName("testDOGE");
+    static LTC = ChainId.fromChainName("LTC");
+    static testLTC = ChainId.fromChainName("testLTC");
+    static ALGO = ChainId.fromChainName("ALGO");
+    static testALGO = ChainId.fromChainName("testALGO");
 }
 
-const sourceIdIndex: Map<string, SourceId> = new Map();
+const chainIdIndex: Map<string, ChainId> = new Map();
 
-function createSourceId(chainName: string, attestationSourceId: string) {
-    const sourceId = new SourceId(chainName, attestationSourceId);
-    sourceIdIndex.set(chainName, sourceId);
-    sourceIdIndex.set(attestationSourceId, sourceId);
-    return sourceId;
+function createChainId(chainName: string, attestationSourceId: string) {
+    const chainId = new ChainId(chainName, attestationSourceId);
+    chainIdIndex.set(chainName, chainId);
+    chainIdIndex.set(attestationSourceId, chainId);
+    return chainId;
 }

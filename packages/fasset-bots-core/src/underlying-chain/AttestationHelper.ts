@@ -4,7 +4,7 @@ import BN from "bn.js";
 import { prefix0x, toHex } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
-import { SourceId } from "./SourceId";
+import { ChainId } from "./SourceId";
 import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
 import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
 
@@ -33,7 +33,7 @@ export class AttestationHelper {
     constructor(
         public stateConnector: IStateConnectorClient,
         public chain: IBlockChain,
-        public chainId: SourceId
+        public chainId: ChainId
     ) {}
 
     roundFinalized(round: number): Promise<boolean> {

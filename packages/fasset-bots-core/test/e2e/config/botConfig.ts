@@ -5,8 +5,8 @@ import { Secrets, indexerApiKey } from "../../../src/config";
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
-import { createWalletClient, supportedSourceId } from "../../../src/config/create-wallet-client";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { createWalletClient, supportedChainId } from "../../../src/config/create-wallet-client";
+import { ChainId } from "../../../src/underlying-chain/SourceId";
 import { initWeb3 } from "../../../src/utils/web3";
 import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { getNativeAccounts } from "../../test-utils/test-helpers";
@@ -48,19 +48,19 @@ describe("Bot config tests", () => {
     });
 
     it("Should create wallet clients", async () => {
-        const testBTC = createWalletClient(secrets, SourceId.testBTC, walletTestBTCUrl);
-        expect(testBTC.chainType).to.eq(SourceId.testBTC);
-        const testDOGE = createWalletClient(secrets, SourceId.testDOGE, walletTestDOGEUrl);
-        expect(testDOGE.chainType).to.eq(SourceId.testDOGE);
-        const testXRP = createWalletClient(secrets, SourceId.testXRP, walletTestXRPUrl);
-        expect(testXRP.chainType).to.eq(SourceId.testXRP);
-        const btc = createWalletClient(secrets, SourceId.BTC, walletBTCUrl);
-        expect(btc.chainType).to.eq(SourceId.BTC);
-        const doge = createWalletClient(secrets, SourceId.DOGE, walletDOGEUrl);
-        expect(doge.chainType).to.eq(SourceId.DOGE);
-        const xrp = createWalletClient(secrets, SourceId.XRP, walletXRPUrl);
-        expect(xrp.chainType).to.eq(SourceId.XRP);
-        const invalidSourceId = SourceId.ALGO;
+        const testBTC = createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl);
+        expect(testBTC.chainType).to.eq(ChainId.testBTC);
+        const testDOGE = createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl);
+        expect(testDOGE.chainType).to.eq(ChainId.testDOGE);
+        const testXRP = createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl);
+        expect(testXRP.chainType).to.eq(ChainId.testXRP);
+        const btc = createWalletClient(secrets, ChainId.BTC, walletBTCUrl);
+        expect(btc.chainType).to.eq(ChainId.BTC);
+        const doge = createWalletClient(secrets, ChainId.DOGE, walletDOGEUrl);
+        expect(doge.chainType).to.eq(ChainId.DOGE);
+        const xrp = createWalletClient(secrets, ChainId.XRP, walletXRPUrl);
+        expect(xrp.chainType).to.eq(ChainId.XRP);
+        const invalidSourceId = ChainId.ALGO;
         const fn = () => {
             return createWalletClient(secrets, invalidSourceId, "");
         };
@@ -68,28 +68,28 @@ describe("Bot config tests", () => {
     });
 
     it("Should create block chain indexer", async () => {
-        const btc = createBlockchainIndexerHelper(SourceId.testBTC, indexerTestBTCUrl, indexerApiKey(secrets));
-        expect(btc.sourceId).to.eq(SourceId.testBTC);
-        const doge = createBlockchainIndexerHelper(SourceId.testDOGE, indexerTestDOGEUrl, indexerApiKey(secrets));
-        expect(doge.sourceId).to.eq(SourceId.testDOGE);
-        const xrp = createBlockchainIndexerHelper(SourceId.testXRP, indexerTestXRPUrl, indexerApiKey(secrets));
-        expect(xrp.sourceId).to.eq(SourceId.testXRP);
-        const sourceId = SourceId.LTC;
+        const btc = createBlockchainIndexerHelper(ChainId.testBTC, indexerTestBTCUrl, indexerApiKey(secrets));
+        expect(btc.chainId).to.eq(ChainId.testBTC);
+        const doge = createBlockchainIndexerHelper(ChainId.testDOGE, indexerTestDOGEUrl, indexerApiKey(secrets));
+        expect(doge.chainId).to.eq(ChainId.testDOGE);
+        const xrp = createBlockchainIndexerHelper(ChainId.testXRP, indexerTestXRPUrl, indexerApiKey(secrets));
+        expect(xrp.chainId).to.eq(ChainId.testXRP);
+        const chainId = ChainId.LTC;
         const fn = () => {
-            return createBlockchainIndexerHelper(sourceId, "", indexerApiKey(secrets));
+            return createBlockchainIndexerHelper(chainId, "", indexerApiKey(secrets));
         };
-        expect(fn).to.throw(`SourceId ${sourceId.chainName} not supported.`);
+        expect(fn).to.throw(`SourceId ${chainId.chainName} not supported.`);
     });
 
     it("Should create block chain wallet helper", async () => {
         const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
-        const btc = createBlockchainWalletHelper("agent", secrets, SourceId.testBTC, botConfig.orm.em, walletTestBTCUrl);
-        expect(btc.walletClient.chainType).to.eq(SourceId.testBTC);
-        const doge = createBlockchainWalletHelper("agent", secrets, SourceId.testDOGE, botConfig.orm.em, walletTestDOGEUrl);
-        expect(doge.walletClient.chainType).to.eq(SourceId.testDOGE);
-        const xrp = createBlockchainWalletHelper("user", secrets, SourceId.testXRP, undefined, walletTestXRPUrl);
-        expect(xrp.walletClient.chainType).to.eq(SourceId.testXRP);
-        const invalidSourceId = SourceId.ALGO;
+        const btc = createBlockchainWalletHelper("agent", secrets, ChainId.testBTC, botConfig.orm.em, walletTestBTCUrl);
+        expect(btc.walletClient.chainType).to.eq(ChainId.testBTC);
+        const doge = createBlockchainWalletHelper("agent", secrets, ChainId.testDOGE, botConfig.orm.em, walletTestDOGEUrl);
+        expect(doge.walletClient.chainType).to.eq(ChainId.testDOGE);
+        const xrp = createBlockchainWalletHelper("user", secrets, ChainId.testXRP, undefined, walletTestXRPUrl);
+        expect(xrp.walletClient.chainType).to.eq(ChainId.testXRP);
+        const invalidSourceId = ChainId.ALGO;
         const fn = () => {
             return createBlockchainWalletHelper("agent", secrets, invalidSourceId, botConfig.orm.em, "");
         };
@@ -98,7 +98,7 @@ describe("Bot config tests", () => {
 
     it("Should create attestation helper", async () => {
         const btc = await createAttestationHelper(
-            SourceId.testBTC,
+            ChainId.testBTC,
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
@@ -106,9 +106,9 @@ describe("Bot config tests", () => {
             indexerTestBTCUrl,
             indexerApiKey(secrets),
         );
-        expect(btc.chainId).to.eq(SourceId.testBTC);
+        expect(btc.chainId).to.eq(ChainId.testBTC);
         const doge = await createAttestationHelper(
-            SourceId.testDOGE,
+            ChainId.testDOGE,
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
@@ -116,9 +116,9 @@ describe("Bot config tests", () => {
             indexerTestDOGEUrl,
             indexerApiKey(secrets),
         );
-        expect(doge.chainId).to.eq(SourceId.testDOGE);
+        expect(doge.chainId).to.eq(ChainId.testDOGE);
         const xrp = await createAttestationHelper(
-            SourceId.testXRP,
+            ChainId.testXRP,
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
@@ -126,8 +126,8 @@ describe("Bot config tests", () => {
             indexerTestXRPUrl,
             indexerApiKey(secrets),
         );
-        expect(xrp.chainId).to.eq(SourceId.testXRP);
-        const unsupportedSourceId = SourceId.ALGO;
+        expect(xrp.chainId).to.eq(ChainId.testXRP);
+        const unsupportedSourceId = ChainId.ALGO;
         await expect(
             createAttestationHelper(
                 unsupportedSourceId,
@@ -172,14 +172,14 @@ describe("Bot config tests", () => {
     });
 
     it("Should return supported source id", () => {
-        expect(supportedSourceId(SourceId.ALGO)).to.be.false;
-        expect(supportedSourceId(SourceId.LTC)).to.be.false;
-        expect(supportedSourceId(SourceId.XRP)).to.be.true;
-        expect(supportedSourceId(SourceId.DOGE)).to.be.true;
-        expect(supportedSourceId(SourceId.BTC)).to.be.true;
-        expect(supportedSourceId(SourceId.testXRP)).to.be.true;
-        expect(supportedSourceId(SourceId.testDOGE)).to.be.true;
-        expect(supportedSourceId(SourceId.testBTC)).to.be.true;
+        expect(supportedChainId(ChainId.ALGO)).to.be.false;
+        expect(supportedChainId(ChainId.LTC)).to.be.false;
+        expect(supportedChainId(ChainId.XRP)).to.be.true;
+        expect(supportedChainId(ChainId.DOGE)).to.be.true;
+        expect(supportedChainId(ChainId.BTC)).to.be.true;
+        expect(supportedChainId(ChainId.testXRP)).to.be.true;
+        expect(supportedChainId(ChainId.testDOGE)).to.be.true;
+        expect(supportedChainId(ChainId.testBTC)).to.be.true;
     });
 
     it("Should not create config - assetManager or fAssetSymbol must be defined", async () => {

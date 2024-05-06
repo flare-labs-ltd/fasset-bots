@@ -1,7 +1,7 @@
 import { WALLET } from "@flarelabs/simple-wallet";
 import crypto from "node:crypto";
 import Web3 from "web3";
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 import { requireNotNull } from "../utils";
 import { loadConfigFile } from "./config-file-loader";
 import { ChainAccount, SecretsFile } from "./config-files/SecretsFile";
@@ -10,14 +10,14 @@ export type SecretsUser = "user" | "agent" | "other";
 
 export function generateSecrets(configFile: string, users: SecretsUser[], agentManagementAddress?: string) {
     const web3 = new Web3();
-    function generateAccount(chainIds: Set<string>) {
+    function generateAccount(chainNames: Set<string>) {
         const result: { [key: string]: ChainAccount } = {};
         result.native = generateNativeAccount();
-        for (const chainId of chainIds) {
-            const sourceId = SourceId.fromChainName(chainId);
-            const walletClient = createStubWalletClient(sourceId);
+        for (const chainName of chainNames) {
+            const chainId = ChainId.fromChainName(chainName);
+            const walletClient = createStubWalletClient(chainId);
             const underlyingAccount = walletClient.createWallet();
-            result[chainId] = {
+            result[chainName] = {
                 address: underlyingAccount.address,
                 private_key: underlyingAccount.privateKey,
             };
@@ -59,29 +59,29 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     return secrets;
 }
 
-function createStubWalletClient(sourceId: SourceId) {
-    if (sourceId === SourceId.BTC || sourceId === SourceId.testBTC) {
+function createStubWalletClient(chainId: ChainId) {
+    if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
         return new WALLET.BTC({
             url: "",
             username: "",
             password: "",
-            inTestnet: sourceId === SourceId.testBTC ? true : false,
+            inTestnet: chainId === ChainId.testBTC ? true : false,
         }); // UtxoMccCreate
-    } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
+    } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
         return new WALLET.DOGE({
             url: "",
             username: "",
             password: "",
-            inTestnet: sourceId === SourceId.testDOGE ? true : false,
+            inTestnet: chainId === ChainId.testDOGE ? true : false,
         }); // UtxoMccCreate
-    } else if (sourceId === SourceId.XRP || sourceId === SourceId.testXRP) {
+    } else if (chainId === ChainId.XRP || chainId === ChainId.testXRP) {
         return new WALLET.XRP({
             url: "",
             username: "",
             password: "",
-            inTestnet: sourceId === SourceId.testXRP ? true : false,
+            inTestnet: chainId === ChainId.testXRP ? true : false,
         }); // XrpMccCreate
     } else {
-        throw new Error(`SourceId ${sourceId} not supported.`);
+        throw new Error(`SourceId ${chainId} not supported.`);
     }
 }

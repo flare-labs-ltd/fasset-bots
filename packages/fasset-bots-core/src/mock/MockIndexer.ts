@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock, IBlockId, ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { MockChain } from "./MockChain";
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 import BN from "bn.js";
 
 export class MockIndexer extends BlockchainIndexerHelper {
@@ -11,10 +11,10 @@ export class MockIndexer extends BlockchainIndexerHelper {
     client: AxiosInstance;
     constructor(
         public indexerWebServerUrl: string,
-        public sourceId: SourceId,
+        public chainId: ChainId,
         public chain: MockChain
     ) {
-        super(indexerWebServerUrl, sourceId, "");
+        super(indexerWebServerUrl, chainId, "");
         this.client = axios.create({});
     }
 

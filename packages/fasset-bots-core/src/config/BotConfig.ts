@@ -10,7 +10,7 @@ import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
 import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
@@ -23,7 +23,7 @@ import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport
 import { AssetContractRetriever } from "./AssetContractRetriever";
 import { BotConfigFile, BotFAssetInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
-import { createWalletClient, requireSupportedSourceId, supportedSourceId } from "./create-wallet-client";
+import { createWalletClient, requireSupportedChainId, supportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
@@ -135,16 +135,16 @@ export async function createBotFAssetConfig(
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
-    const sourceId = SourceId.fromChainName(fassetInfo.chainId);
+    const chainId = ChainId.fromChainName(fassetInfo.chainId);
     const result: BotFAssetConfig = {
         fAssetSymbol: fAssetSymbol,
-        chainInfo: createChainInfo(sourceId, fassetInfo, settings),
+        chainInfo: createChainInfo(chainId, fassetInfo, settings),
         assetManager: assetManager,
         priceChangeEmitter: fassetInfo.priceChangeEmitter,
     };
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = createBlockchainWalletHelper(type, secrets, sourceId, em, fassetInfo.walletUrl, walletOptions);
+        result.wallet = createBlockchainWalletHelper(type, secrets, chainId, em, fassetInfo.walletUrl, walletOptions);
     }
     if (type === "agent" || type === "user" || type === "keeper") {
         assertNotNullCmd(fassetInfo.indexerUrl, "Missing indexerUrl in FAsset type ${fAssetSymbol}");
@@ -152,16 +152,16 @@ export async function createBotFAssetConfig(
         assertNotNull(submitter);   // if this is missing, it is program error
         const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
         const apiKey = indexerApiKey(secrets);
-        result.blockchainIndexerClient = createBlockchainIndexerHelper(sourceId, fassetInfo.indexerUrl, apiKey);
+        result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrl, apiKey);
         result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrl, apiKey);
         result.stateConnector = await createStateConnectorClient(fassetInfo.indexerUrl, apiKey, attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter);
     }
     return result;
 }
 
-export function createChainInfo(sourceId: SourceId, fassetInfo: BotFAssetInfo, settings: AssetManagerSettings): ChainInfo {
+export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, settings: AssetManagerSettings): ChainInfo {
     return {
-        chainId: sourceId,
+        chainId: chainId,
         name: fassetInfo.name,
         symbol: fassetInfo.symbol,
         decimals: Number(settings.assetDecimals),
@@ -172,18 +172,18 @@ export function createChainInfo(sourceId: SourceId, fassetInfo: BotFAssetInfo, s
 
 /**
  * Creates blockchain indexer helper. Relevant urls and api keys are provided in .env.
- * @param sourceId chain source
+ * @param chainId chain source
  * @param indexerUrl indexer's url
  * @returns instance of BlockchainIndexerHelper
  */
-export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: string, apiKey: string): BlockchainIndexerHelper {
-    requireSupportedSourceId(sourceId);
-    return new BlockchainIndexerHelper(indexerUrl, sourceId, apiKey);
+export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrl: string, apiKey: string): BlockchainIndexerHelper {
+    requireSupportedChainId(chainId);
+    return new BlockchainIndexerHelper(indexerUrl, chainId, apiKey);
 }
 
 /**
  * Creates blockchain wallet helper using wallet client.
- * @param sourceId chain source
+ * @param chainId chain source
  * @param em entity manager (optional)
  * @param walletUrl chain's url
  * @param inTestnet if testnet should be used, optional parameter
@@ -192,20 +192,20 @@ export function createBlockchainIndexerHelper(sourceId: SourceId, indexerUrl: st
 export function createBlockchainWalletHelper(
     type: "agent" | "user",
     secrets: Secrets,
-    sourceId: SourceId,
+    chainId: ChainId,
     em: EntityManager | undefined,
     walletUrl: string,
     options?: StuckTransaction
 ): BlockchainWalletHelper {
-    requireSupportedSourceId(sourceId);
-    const walletClient = createWalletClient(secrets, sourceId, walletUrl, options);
+    requireSupportedChainId(chainId);
+    const walletClient = createWalletClient(secrets, chainId, walletUrl, options);
     const walletKeys = type === "agent" ? DBWalletKeys.from(requireNotNull(em), secrets) : new MemoryWalletKeys();
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }
 
 /**
  * Creates attestation helper.
- * @param sourceId chain source
+ * @param chainId chain source
  * @param attestationProviderUrls list of attestation provider's urls
  * @param scProofVerifierAddress SCProofVerifier's contract address
  * @param stateConnectorAddress StateConnector's contract address
@@ -214,7 +214,7 @@ export function createBlockchainWalletHelper(
  * @returns instance of AttestationHelper
  */
 export async function createAttestationHelper(
-    sourceId: SourceId,
+    chainId: ChainId,
     attestationProviderUrls: string[],
     scProofVerifierAddress: string,
     stateConnectorAddress: string,
@@ -222,12 +222,12 @@ export async function createAttestationHelper(
     indexerUrl: string,
     indexerApiKey: string,
 ): Promise<AttestationHelper> {
-    if (!supportedSourceId(sourceId)) {
-        throw new Error(`SourceId ${sourceId} not supported.`);
+    if (!supportedChainId(chainId)) {
+        throw new Error(`SourceId ${chainId} not supported.`);
     }
     const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
-    const indexer = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey);
-    return new AttestationHelper(stateConnector, indexer, sourceId);
+    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
+    return new AttestationHelper(stateConnector, indexer, chainId);
 }
 
 /**

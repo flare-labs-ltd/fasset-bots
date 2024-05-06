@@ -4,7 +4,7 @@ import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../
 import { ORM } from "../../src/config/orm";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
-import { SourceId } from "../../src/underlying-chain/SourceId";
+import { ChainId } from "../../src/underlying-chain/SourceId";
 import { prefix0x } from "../../src/utils/helpers";
 import { createTestOrm } from "../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../test-utils/test-bot-config";
@@ -21,7 +21,7 @@ export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3
 
 describe("XRP transaction integration tests", () => {
     let secrets: Secrets;
-    const sourceId: SourceId = SourceId.testXRP;
+    const chainId: ChainId = ChainId.testXRP;
     const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const amountToSendDrops = 1000000;
@@ -29,8 +29,8 @@ describe("XRP transaction integration tests", () => {
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
-        blockChainIndexerHelper = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey(secrets));
-        walletHelper = createBlockchainWalletHelper("agent", secrets, sourceId, orm.em, walletUrl);
+        blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
+        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
     });
 
     it("Should send funds and retrieve transaction", async () => {

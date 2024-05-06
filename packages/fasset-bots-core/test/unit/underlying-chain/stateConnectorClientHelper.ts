@@ -4,7 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 import rewire from "rewire";
 import { Secrets, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { ChainId } from "../../../src/underlying-chain/SourceId";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
@@ -15,7 +15,7 @@ const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const sourceId = SourceId.testXRP;
+const chainId = ChainId.testXRP;
 const finalizationBlocks: number = 6;
 
 describe("testXRP attestation/state connector tests", () => {
@@ -54,12 +54,12 @@ describe("testXRP attestation/state connector tests", () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP, indexerApiKey(secrets));
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets));
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
-            sourceId: sourceId.sourceId,
+            sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
                 blockNumber: String(blockHeight - testChainInfo.xrp.finalizationBlocks),
@@ -159,7 +159,7 @@ describe("State connector tests - decoding", () => {
         const proofData: ConfirmedBlockHeightExists.Proof = {
             data: {
                 attestationType: invalidAttestationType,
-                sourceId: SourceId.testXRP.sourceId,
+                sourceId: ChainId.testXRP.sourceId,
                 lowestUsedTimestamp: "1687489872",
                 votingRound: "571512",
                 requestBody: {

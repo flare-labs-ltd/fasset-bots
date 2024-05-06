@@ -11,7 +11,7 @@ import { Agent } from "../../../src/fasset/Agent";
 import { Minter } from "../../../src/mock/Minter";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
+import { ChainId } from "../../../src/underlying-chain/SourceId";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { fail } from "../../../src/utils/helpers";
 import { NotifierTransport } from "../../../src/utils/notifier/BaseNotifier";
@@ -20,7 +20,7 @@ import { cleanUp } from "../test-helpers";
 import { testNotifierTransports } from "../testNotifierTransports";
 
 export async function createTestMinter(ctx: IAssetAgentContext, address: string, useExistingUnderlyingAddress?: string) {
-    if (!(ctx.chainInfo.chainId === SourceId.testXRP)) fail("only for XRP testnet for now");
+    if (!(ctx.chainInfo.chainId === ChainId.testXRP)) fail("only for XRP testnet for now");
     const underlyingAddress = useExistingUnderlyingAddress ? useExistingUnderlyingAddress : await ctx.wallet.createAccount();
     return Minter.create(ctx, address, underlyingAddress, ctx.wallet);
 }

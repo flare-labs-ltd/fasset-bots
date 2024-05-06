@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { SourceId } from "@flarelabs/fasset-bots-core";
+import { ChainId } from "@flarelabs/fasset-bots-core";
 import { Secrets, createBlockchainWalletHelper, loadAgentConfigFile, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
 import { CommandLineError } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
@@ -46,8 +46,8 @@ async function setupContext(fAssetSymbol: string) {
     if (!chainConfig.walletUrl) {
         throw new CommandLineError("Missing wallet url");
     }
-    const sourceId = SourceId.fromChainName(chainConfig.chainId);
-    const walletHelper = createBlockchainWalletHelper("agent", secrets, sourceId, orm.em, chainConfig.walletUrl, runConfig.walletOptions);
+    const chainId = ChainId.fromChainName(chainConfig.chainId);
+    const walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, chainConfig.walletUrl, runConfig.walletOptions);
     console.log(chalk.cyan("Wallet initialized."));
     return walletHelper;
 }

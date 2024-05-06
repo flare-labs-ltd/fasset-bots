@@ -1,9 +1,9 @@
 import { expect } from "chai";
-import { SourceId } from "../../../src";
+import { ChainId } from "../../../src";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH, Secrets } from "../../../src/config/secrets";
 import { requireEnv } from "../../../src/utils/helpers";
 
-const chainId = SourceId.testXRP;
+const chainId = ChainId.testXRP;
 
 describe("Secrets unit tests", () => {
     it("Should not return secret", async () => {

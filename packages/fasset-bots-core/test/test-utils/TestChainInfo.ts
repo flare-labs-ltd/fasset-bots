@@ -1,5 +1,5 @@
 import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
-import { SourceId } from "../../src/underlying-chain/SourceId";
+import { ChainId } from "../../src/underlying-chain/SourceId";
 
 export interface TestNatInfo {
     name: string;
@@ -30,7 +30,7 @@ export const testNativeChainInfo: NativeChainInfo = {
 
 export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
     eth: {
-        chainId: SourceId.LTC,
+        chainId: ChainId.LTC,
         name: "Ethereum",
         symbol: "ETH",
         decimals: 18,
@@ -43,7 +43,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         requireEOAProof: true,
     },
     btc: {
-        chainId: SourceId.testBTC,
+        chainId: ChainId.testBTC,
         name: "Bitcoin",
         symbol: "BTC",
         decimals: 8,
@@ -56,7 +56,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         requireEOAProof: false,
     },
     xrp: {
-        chainId: SourceId.testXRP,
+        chainId: ChainId.testXRP,
         name: "Ripple",
         symbol: "XRP",
         decimals: 6,

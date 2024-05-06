@@ -1,7 +1,7 @@
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 
 export interface ChainInfo {
-    chainId: SourceId;
+    chainId: ChainId;
     name: string;
     symbol: string;
     decimals: number;

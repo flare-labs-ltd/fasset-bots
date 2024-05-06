@@ -2,7 +2,7 @@ import { FilterQuery } from "@mikro-orm/core";
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
-import { SourceId, TimeKeeper } from "../../../src";
+import { ChainId, TimeKeeper } from "../../../src";
 import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
@@ -65,7 +65,7 @@ describe("Actor tests - coston", () => {
         accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), getNativeAccounts(secrets), null);
         ownerManagementAddress = secrets.required("owner.management.address");
         ownerAddress = secrets.required("owner.native.address");
-        ownerUnderlyingAddress = AgentBot.underlyingAddress(secrets, SourceId.fromChainName(runConfig.fAssets[fAssetSymbol].chainId));
+        ownerUnderlyingAddress = AgentBot.underlyingAddress(secrets, ChainId.fromChainName(runConfig.fAssets[fAssetSymbol].chainId));
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];

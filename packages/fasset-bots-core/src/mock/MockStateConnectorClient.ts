@@ -5,7 +5,7 @@ import {
 import { constants } from "@openzeppelin/test-helpers";
 import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 import { AttestationNotProved, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { filterStackTrace, sleep, toBN, toNumber } from "../utils/helpers";
@@ -56,7 +56,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         setInterval(() => void this.finalizeRound(), timedRoundSeconds * 1000);
     }
 
-    addChain(id: SourceId, chain: MockChain) {
+    addChain(id: ChainId, chain: MockChain) {
         this.supportedChains[id.sourceId] = chain;
     }
 

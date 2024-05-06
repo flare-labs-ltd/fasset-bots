@@ -1,49 +1,49 @@
 import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
 
-const supportedSourceIds = [SourceId.XRP, SourceId.BTC, SourceId.DOGE, SourceId.testXRP, SourceId.testBTC, SourceId.testDOGE];
+const supportedSourceIds = [ChainId.XRP, ChainId.BTC, ChainId.DOGE, ChainId.testXRP, ChainId.testBTC, ChainId.testDOGE];
 
-export function requireSupportedSourceId(sourceId: SourceId) {
-    if (!supportedSourceId(sourceId)) {
-        throw new CommandLineError(`SourceId ${sourceId.chainName} not supported.`);
+export function requireSupportedChainId(chainId: ChainId) {
+    if (!supportedChainId(chainId)) {
+        throw new CommandLineError(`SourceId ${chainId.chainName} not supported.`);
     }
 }
 
-export function supportedSourceId(sourceId: SourceId) {
-    return supportedSourceIds.includes(sourceId);
+export function supportedChainId(chainId: ChainId) {
+    return supportedSourceIds.includes(chainId);
 }
 
 /**
  * Creates wallet client.
- * @param sourceId chain source
+ * @param chainId chain source
  * @param walletUrl chain's url
  * @param inTestnet if testnet should be used, optional parameter
  * @returns instance of Wallet implementation according to sourceId
  */
 export function createWalletClient(
     secrets: Secrets,
-    sourceId: SourceId,
+    chainId: ChainId,
     walletUrl: string,
     options: StuckTransaction = {}
 ): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
-    requireSupportedSourceId(sourceId);
-    if (sourceId === SourceId.BTC || sourceId === SourceId.testBTC) {
+    requireSupportedChainId(chainId);
+    if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
         return new WALLET.BTC({
             url: walletUrl,
             username: "",
             password: "",
-            inTestnet: sourceId === SourceId.testBTC ? true : false,
+            inTestnet: chainId === ChainId.testBTC ? true : false,
             apiTokenKey: secrets.optional("apiKey.btc_rpc"),
             stuckTransactionOptions: options,
         }); // UtxoMccCreate
-    } else if (sourceId === SourceId.DOGE || sourceId === SourceId.testDOGE) {
+    } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
         return new WALLET.DOGE({
             url: walletUrl,
             username: "",
             password: "",
-            inTestnet: sourceId === SourceId.testDOGE ? true : false,
+            inTestnet: chainId === ChainId.testDOGE ? true : false,
             apiTokenKey: secrets.optional("apiKey.doge_rpc"),
             stuckTransactionOptions: options,
         }); // UtxoMccCreate
@@ -53,7 +53,7 @@ export function createWalletClient(
             username: "",
             password: "",
             apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
-            inTestnet: sourceId === SourceId.testXRP ? true : false,
+            inTestnet: chainId === ChainId.testXRP ? true : false,
             stuckTransactionOptions: options,
         }); // XrpMccCreate
     }

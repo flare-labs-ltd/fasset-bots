@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, prefix0x, retry, sleep, toBN } from "../utils/helpers";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
-import { SourceId } from "./SourceId";
+import { ChainId } from "./SourceId";
 import BN from "bn.js";
 
 // Satoshi to BTC 100_000_000
@@ -25,7 +25,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     constructor(
         public indexerWebServerUrl: string,
-        public sourceId: SourceId,
+        public chainId: ChainId,
         private indexerWebServerApiKey: string
     ) {
         const createAxiosConfig: AxiosRequestConfig = {
@@ -260,18 +260,18 @@ export class BlockchainIndexerHelper implements IBlockChain {
     private async handleInputsOutputs(data: any, input: boolean): Promise<TxInputOutput[]> {
         const type = data.transactionType;
         const res = data.response;
-        switch (this.sourceId) {
-            case SourceId.BTC:
-            case SourceId.DOGE:
-            case SourceId.testBTC:
-            case SourceId.testDOGE:
+        switch (this.chainId) {
+            case ChainId.BTC:
+            case ChainId.DOGE:
+            case ChainId.testBTC:
+            case ChainId.testDOGE:
                 return await this.UTXOInputsOutputs(type, res, input);
-            case SourceId.XRP:
-            case SourceId.testXRP:
+            case ChainId.XRP:
+            case ChainId.testXRP:
                 return this.XRPInputsOutputs(data, input);
             default:
-                logger.error(`Block chain indexer helper error: invalid SourceId: ${this.sourceId}`);
-                throw new Error(`Invalid SourceId: ${this.sourceId}.`);
+                logger.error(`Block chain indexer helper error: invalid SourceId: ${this.chainId}`);
+                throw new Error(`Invalid SourceId: ${this.chainId}.`);
         }
     }
 
@@ -296,7 +296,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     private get isUTXOchain(): boolean {
-        return this.sourceId === SourceId.testBTC || this.sourceId === SourceId.testDOGE || this.sourceId === SourceId.LTC;
+        return this.chainId === ChainId.testBTC || this.chainId === ChainId.testDOGE || this.chainId === ChainId.LTC;
     }
 
     private async UTXOInputsOutputs(type: string, data: any, input: boolean): Promise<TxInputOutput[]> {
@@ -399,35 +399,35 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     // Values are copied from attestation configs https://gitlab.com/flarenetwork/state-connector-protocol/-/blob/main/specs/attestations/configs.md?ref_type=heads
     finalizationBlocksByChain(): number {
-        switch (this.sourceId) {
-            case SourceId.XRP:
-            case SourceId.testXRP:
+        switch (this.chainId) {
+            case ChainId.XRP:
+            case ChainId.testXRP:
                 return 3;
-            case SourceId.BTC:
-            case SourceId.testBTC:
+            case ChainId.BTC:
+            case ChainId.testBTC:
                 return 6;
-            case SourceId.DOGE:
-            case SourceId.testDOGE:
+            case ChainId.DOGE:
+            case ChainId.testDOGE:
                 return 60;
             default:
-                throw new Error(`SourceId ${this.sourceId} not supported.`);
+                throw new Error(`SourceId ${this.chainId} not supported.`);
         }
     }
 
     // From simple-wallet https://gitlab.com/flarenetwork/simple-wallet/-/blob/main/src/utils/constants.ts?ref_type=heads
     secondsPerBlockByChain(): number {
-        switch (this.sourceId) {
-            case SourceId.XRP:
-            case SourceId.testXRP:
+        switch (this.chainId) {
+            case ChainId.XRP:
+            case ChainId.testXRP:
                 return 4;
-            case SourceId.BTC:
-            case SourceId.testBTC:
+            case ChainId.BTC:
+            case ChainId.testBTC:
                 return 600;
-            case SourceId.DOGE:
-            case SourceId.testDOGE:
+            case ChainId.DOGE:
+            case ChainId.testDOGE:
                 return 60;
             default:
-                throw new Error(`SourceId ${this.sourceId} not supported.`);
+                throw new Error(`SourceId ${this.chainId} not supported.`);
         }
     }
 }

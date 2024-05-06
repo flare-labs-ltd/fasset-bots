@@ -4,7 +4,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { SourceId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/SourceId";
 import { web3 } from "../utils";
 import { squashSpace } from "../utils/formatting";
 import { sleep } from "../utils/helpers";
@@ -71,7 +71,7 @@ export class AgentBotRunner {
             this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
-                const chainId = SourceId.fromSourceId(agentEntity.chainId).chainName;
+                const chainId = ChainId.fromSourceId(agentEntity.chainId).chainName;
                 const context = this.contexts.get(chainId);
                 if (context == null) {
                     console.warn(`Invalid chain symbol ${chainId}`);
