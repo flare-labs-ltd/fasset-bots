@@ -2,7 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
 import { SourceId } from "../../src";
-import { Secrets, decodedChainId } from "../../src/config";
+import { Secrets } from "../../src/config";
 import { ChainAccount } from "../../src/config/config-files/SecretsFile";
 import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
@@ -144,7 +144,7 @@ export async function createTestAssetContext(
     const chain = new MockChain(await time.latest());
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
-    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId]: chain }, "auto", useAlwaysFailsProver ? useAlwaysFailsProver : false);
+    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId.sourceId]: chain }, "auto", useAlwaysFailsProver ? useAlwaysFailsProver : false);
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const verificationClient = new MockVerificationApiClient();
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
@@ -209,7 +209,7 @@ export function createTestSecrets(chain: SourceId, ownerManagementAddress: strin
                 address: ownerWorkAddress,
                 private_key: "not_needed",
             },
-            [decodedChainId(chain)]: {
+            [chain.chainName]: {
                 address: ownerUnderlyingAddress,
                 private_key: "not_needed",
             }
@@ -265,7 +265,7 @@ function createTestAssetManagerSettings(
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
         agentOwnerRegistry: contracts.AgentOwnerRegistry.address ?? ZERO_ADDRESS,
         burnAddress: parameters.burnAddress,
-        chainId: chainInfo.chainId,
+        chainId: chainInfo.chainId.sourceId,
         poolTokenSuffix: parameters.poolTokenSuffix,
         assetDecimals: chainInfo.decimals,
         assetUnitUBA: toBNExp(1, chainInfo.decimals),

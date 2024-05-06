@@ -1,12 +1,12 @@
-import { constants } from "@openzeppelin/test-helpers";
 import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import { constants } from "@openzeppelin/test-helpers";
+import BN from "bn.js";
 import { prefix0x, toHex } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
 import { SourceId } from "./SourceId";
 import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
 import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
-import BN from "bn.js";
 
 export class AttestationHelperError extends Error {
     constructor(message: string) {
@@ -54,7 +54,7 @@ export class AttestationHelper {
         }
         const request: Payment.Request = {
             attestationType: Payment.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 transactionId: prefix0x(transactionHash),
@@ -75,7 +75,7 @@ export class AttestationHelper {
         }
         const request: BalanceDecreasingTransaction.Request = {
             attestationType: BalanceDecreasingTransaction.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 transactionId: prefix0x(transactionHash),
@@ -103,7 +103,7 @@ export class AttestationHelper {
         }
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 minimalBlockNumber: String(startBlock),
@@ -130,7 +130,7 @@ export class AttestationHelper {
         }
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 blockNumber: String(blockNumber),
@@ -143,7 +143,7 @@ export class AttestationHelper {
     async requestAddressValidityProof(underlyingAddress: string): Promise<AttestationRequestId | null> {
         const request: AddressValidity.Request = {
             attestationType: AddressValidity.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 addressStr: underlyingAddress,

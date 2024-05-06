@@ -5,7 +5,7 @@ import { Secrets, indexerApiKey } from "../../../src/config";
 import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
-import { createWalletClient, decodedChainId, supportedSourceId } from "../../../src/config/create-wallet-client";
+import { createWalletClient, supportedSourceId } from "../../../src/config/create-wallet-client";
 import { SourceId } from "../../../src/underlying-chain/SourceId";
 import { initWeb3 } from "../../../src/utils/web3";
 import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
@@ -64,7 +64,7 @@ describe("Bot config tests", () => {
         const fn = () => {
             return createWalletClient(secrets, invalidSourceId, "");
         };
-        expect(fn).to.throw(`SourceId ${decodedChainId(invalidSourceId)} not supported.`);
+        expect(fn).to.throw(`SourceId ${invalidSourceId.chainName} not supported.`);
     });
 
     it("Should create block chain indexer", async () => {
@@ -78,7 +78,7 @@ describe("Bot config tests", () => {
         const fn = () => {
             return createBlockchainIndexerHelper(sourceId, "", indexerApiKey(secrets));
         };
-        expect(fn).to.throw(`SourceId ${decodedChainId(sourceId)} not supported.`);
+        expect(fn).to.throw(`SourceId ${sourceId.chainName} not supported.`);
     });
 
     it("Should create block chain wallet helper", async () => {
@@ -93,7 +93,7 @@ describe("Bot config tests", () => {
         const fn = () => {
             return createBlockchainWalletHelper("agent", secrets, invalidSourceId, botConfig.orm.em, "");
         };
-        expect(fn).to.throw(`SourceId ${decodedChainId(invalidSourceId)} not supported.`);
+        expect(fn).to.throw(`SourceId ${invalidSourceId.chainName} not supported.`);
     });
 
     it("Should create attestation helper", async () => {

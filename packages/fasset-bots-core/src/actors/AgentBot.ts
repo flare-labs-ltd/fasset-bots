@@ -3,7 +3,6 @@ import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
@@ -121,7 +120,7 @@ export class AgentBot {
         // save state
         return await rootEm.transactional(async (em) => {
             const agentEntity = new AgentEntity();
-            agentEntity.chainId = context.chainInfo.chainId;
+            agentEntity.chainId = context.chainInfo.chainId.sourceId;
             agentEntity.chainSymbol = context.chainInfo.symbol;
             agentEntity.ownerAddress = agent.owner.managementAddress;
             agentEntity.vaultAddress = agent.vaultAddress;
@@ -187,7 +186,7 @@ export class AgentBot {
     }
 
     static underlyingAddress(secrets: Secrets, sourceId: SourceId) {
-        return secrets.required(`owner.${decodedChainId(sourceId)}.address`);
+        return secrets.required(`owner.${sourceId.chainName}.address`);
     }
 
     /**

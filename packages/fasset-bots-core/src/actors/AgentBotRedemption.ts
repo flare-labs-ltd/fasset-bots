@@ -1,3 +1,4 @@
+import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
@@ -14,7 +15,6 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
-import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 
 export class AgentBotRedemption {
     static deepCopyWithObjectCreate = true;
@@ -157,7 +157,7 @@ export class AgentBotRedemption {
         const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
         /* istanbul ignore else */
         if (lastBlock && this.stillTimeToPayForRedemption(lastBlock, redemption)) {
-            const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId, redemption.paymentAddress);
+            const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId.sourceId, redemption.paymentAddress);
             if (validation.isValid && validation.standardAddress === redemption.paymentAddress) {
                 await this.payForRedemption(redemption);
             } else {
@@ -187,7 +187,7 @@ export class AgentBotRedemption {
     }
 
     async redeemerAddressValid(underlyingAddress: string) {
-        const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId, underlyingAddress);
+        const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId.sourceId, underlyingAddress);
         return validation.isValid && validation.standardAddress === underlyingAddress;
     }
 

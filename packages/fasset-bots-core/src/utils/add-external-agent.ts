@@ -50,7 +50,7 @@ export async function addExternalAgentVault(
         const newAgent = new AgentEntity();
         newAgent.vaultAddress = agentVaultAddress;
         newAgent.collateralPoolAddress = agentInfo.collateralPool;
-        newAgent.chainId = assetContext.chainInfo.chainId;
+        newAgent.chainId = assetContext.chainInfo.chainId.sourceId;
         newAgent.chainSymbol = assetContext.chainInfo.symbol;
         newAgent.ownerAddress = ownerAddress;
         newAgent.underlyingAddress = agentInfo.underlyingAddressString;

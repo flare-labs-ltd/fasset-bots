@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeperService } from "@flarelabs/fasset-bots-core";
-import { Secrets, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "@flarelabs/fasset-bots-core/config";
+import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -28,7 +28,7 @@ program.action(async () => {
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         // store owner's underlying address
         for (const ctx of runner.contexts.values()) {
-            const chainName = decodedChainId(ctx.chainInfo.chainId);
+            const chainName = ctx.chainInfo.chainId.chainName;
             const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);

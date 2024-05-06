@@ -7,7 +7,6 @@ import { Secrets } from "../config";
 import { closeBotConfig, createBotConfig } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext } from "../config/create-asset-context";
-import { decodedChainId } from "../config/create-wallet-client";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -116,12 +115,12 @@ export class UserBotCommands {
     // Otherwise the agent will reject the redemption and the user will lose the fasset value.
     static async loadUnderlyingAddress(secrets: Secrets, context: IAssetAgentContext, verificationClient: IVerificationApiClient) {
         const chainId = context.chainInfo.chainId;
-        const chainName = decodedChainId(chainId);
+        const chainName = chainId.chainName;
         // read address and private key from secrets
         const underlyingAddress = secrets.required(`user.${chainName}.address`);
         const underlyingPrivateKey = secrets.required(`user.${chainName}.private_key`);
         // validate
-        const res = await verificationClient.checkAddressValidity(chainId, underlyingAddress);
+        const res = await verificationClient.checkAddressValidity(chainId.sourceId, underlyingAddress);
         if (!res.isValid) {
             logger.error(`User's underlying address ${underlyingAddress} is invalid.`);
             throw new CommandLineError("Invalid underlying address");

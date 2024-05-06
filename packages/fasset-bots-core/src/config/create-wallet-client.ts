@@ -1,5 +1,4 @@
 import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
-import { decodeAttestationName, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { SourceId } from "../underlying-chain/SourceId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
@@ -8,20 +7,12 @@ const supportedSourceIds = [SourceId.XRP, SourceId.BTC, SourceId.DOGE, SourceId.
 
 export function requireSupportedSourceId(sourceId: SourceId) {
     if (!supportedSourceId(sourceId)) {
-        throw new CommandLineError(`SourceId ${decodedChainId(sourceId)} not supported.`);
+        throw new CommandLineError(`SourceId ${sourceId.chainName} not supported.`);
     }
 }
 
 export function supportedSourceId(sourceId: SourceId) {
-    return supportedSourceIds.includes(encodedChainId(sourceId));
-}
-
-export function encodedChainId(chainId: string) {
-    return chainId.startsWith("0x") ? chainId : encodeAttestationName(chainId);
-}
-
-export function decodedChainId(chainId: string) {
-    return chainId.startsWith("0x") ? decodeAttestationName(chainId) : chainId;
+    return supportedSourceIds.includes(sourceId);
 }
 
 /**

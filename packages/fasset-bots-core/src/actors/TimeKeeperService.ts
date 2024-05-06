@@ -1,4 +1,4 @@
-import { KeeperBotConfig, createTimekeeperContext, decodedChainId } from "../config";
+import { KeeperBotConfig, createTimekeeperContext } from "../config";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { requireNotNull } from "../utils";
 import { TimeKeeper, TimeKeeperQueryWindow } from "./TimeKeeper";
@@ -19,7 +19,7 @@ export class TimeKeeperService {
     static async create(config: KeeperBotConfig, timekeeperAddress: string, queryWindow: TimeKeeperQueryWindow, updateIntervalMs: number, loopDelayMs: number) {
         const contexts: Map<string, ITimekeeperContext> = new Map();
         for (const chain of config.fAssets.values()) {
-            const chainId = decodedChainId(chain.chainInfo.chainId);
+            const chainId = chain.chainInfo.chainId.chainName;
             if (!contexts.has(chainId)) {
                 const context = await createTimekeeperContext(config, chain);
                 contexts.set(chainId, context);

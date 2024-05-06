@@ -1,9 +1,10 @@
 import { expect } from "chai";
-import { decodedChainId } from "../../../src/config/create-wallet-client";
+import { SourceId } from "../../../src";
 import { ENCRYPTION_PASSWORD_MIN_LENGTH, Secrets } from "../../../src/config/secrets";
 import { requireEnv } from "../../../src/utils/helpers";
 
-const chainId = "testXRP";
+const chainId = SourceId.testXRP;
+
 describe("Secrets unit tests", () => {
     it("Should not return secret", async () => {
         const secrets = new Secrets("no_file.json", { apiKey: {} });
@@ -16,7 +17,7 @@ describe("Secrets unit tests", () => {
 
     it("Should not return secret 2", async () => {
         const secrets = new Secrets("no_file.json", { apiKey: {}, owner: { testXRP: { address: "0xabcd", private_key: "0xabcd" } } });
-        const address = secrets.required(`owner.${decodedChainId(chainId)}.address`);
+        const address = secrets.required(`owner.${chainId.chainName}.address`);
         const secretName = `owner.${chainId}.address.` + address + "." + address;
         const fn = () => {
             return secrets.required(secretName);

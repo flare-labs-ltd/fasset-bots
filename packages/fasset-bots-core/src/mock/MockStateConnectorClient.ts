@@ -1,8 +1,8 @@
-import { constants } from "@openzeppelin/test-helpers";
 import {
     ARBase, ARESBase, AddressValidity, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MIC_SALT,
     MerkleTree, Payment, ReferencedPaymentNonexistence, decodeAttestationName
 } from "@flarenetwork/state-connector-protocol";
+import { constants } from "@openzeppelin/test-helpers";
 import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
 import { SourceId } from "../underlying-chain/SourceId";
@@ -57,7 +57,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
     }
 
     addChain(id: SourceId, chain: MockChain) {
-        this.supportedChains[id] = chain;
+        this.supportedChains[id.sourceId] = chain;
     }
 
     async roundFinalized(round: number): Promise<boolean> {

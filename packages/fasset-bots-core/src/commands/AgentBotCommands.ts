@@ -11,7 +11,6 @@ import { closeBotConfig, createBotConfig } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
-import { decodedChainId } from "../config/create-wallet-client";
 import { ORM } from "../config/orm";
 import { Secrets } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
@@ -77,8 +76,8 @@ export class AgentBotCommands {
         // verify keys
         await this.verifyWorkAddress(context, owner);
         // create underlying wallet key
-        const underlyingAddress = secrets.required(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.address`);
-        const underlyingPrivateKey = secrets.required(`owner.${decodedChainId(chainConfig.chainInfo.chainId)}.private_key`);
+        const underlyingAddress = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.address`);
+        const underlyingPrivateKey = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.private_key`);
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);

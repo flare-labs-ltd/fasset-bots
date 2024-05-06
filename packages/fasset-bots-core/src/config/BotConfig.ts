@@ -23,7 +23,7 @@ import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport
 import { AssetContractRetriever } from "./AssetContractRetriever";
 import { BotConfigFile, BotFAssetInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
-import { createWalletClient, encodedChainId, requireSupportedSourceId, supportedSourceId } from "./create-wallet-client";
+import { createWalletClient, requireSupportedSourceId, supportedSourceId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
@@ -135,7 +135,7 @@ export async function createBotFAssetConfig(
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
-    const sourceId = encodedChainId(fassetInfo.chainId);
+    const sourceId = SourceId.fromChainName(fassetInfo.chainId);
     const result: BotFAssetConfig = {
         fAssetSymbol: fAssetSymbol,
         chainInfo: createChainInfo(sourceId, fassetInfo, settings),
@@ -159,7 +159,7 @@ export async function createBotFAssetConfig(
     return result;
 }
 
-export function createChainInfo(sourceId: string, fassetInfo: BotFAssetInfo, settings: AssetManagerSettings): ChainInfo {
+export function createChainInfo(sourceId: SourceId, fassetInfo: BotFAssetInfo, settings: AssetManagerSettings): ChainInfo {
     return {
         chainId: sourceId,
         name: fassetInfo.name,

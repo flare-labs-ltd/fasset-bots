@@ -1,12 +1,10 @@
 import { WALLET } from "@flarelabs/simple-wallet";
-import { encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import crypto from "node:crypto";
 import Web3 from "web3";
 import { SourceId } from "../underlying-chain/SourceId";
-import { ChainAccount } from "./config-files/SecretsFile";
-import { SecretsFile } from "./config-files/SecretsFile";
-import { loadConfigFile } from "./config-file-loader";
 import { requireNotNull } from "../utils";
+import { loadConfigFile } from "./config-file-loader";
+import { ChainAccount, SecretsFile } from "./config-files/SecretsFile";
 
 export type SecretsUser = "user" | "agent" | "other";
 
@@ -16,7 +14,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
         const result: { [key: string]: ChainAccount } = {};
         result.native = generateNativeAccount();
         for (const chainId of chainIds) {
-            const sourceId = encodeAttestationName(chainId);
+            const sourceId = SourceId.fromChainName(chainId);
             const walletClient = createStubWalletClient(sourceId);
             const underlyingAccount = walletClient.createWallet();
             result[chainId] = {

@@ -1,9 +1,10 @@
 import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
-import { AgentBotConfig, Secrets, decodedChainId } from "../config";
+import { AgentBotConfig, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
+import { SourceId } from "../underlying-chain/SourceId";
 import { web3 } from "../utils";
 import { squashSpace } from "../utils/formatting";
 import { sleep } from "../utils/helpers";
@@ -70,7 +71,7 @@ export class AgentBotRunner {
             this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
-                const chainId = decodedChainId(agentEntity.chainId);
+                const chainId = SourceId.fromSourceId(agentEntity.chainId).chainName;
                 const context = this.contexts.get(chainId);
                 if (context == null) {
                     console.warn(`Invalid chain symbol ${chainId}`);
@@ -80,7 +81,7 @@ export class AgentBotRunner {
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
-                agentBot.timekeeper = this.timekeeperService.get(decodedChainId(context.chainInfo.chainId));
+                agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.chainId.chainName);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);

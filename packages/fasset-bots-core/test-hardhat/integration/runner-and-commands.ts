@@ -1,6 +1,6 @@
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { AgentBotCommands, AgentBotRunner, SourceId, TimeKeeperService, UserBotCommands } from "../../src";
-import { AgentSettingsConfig, Secrets, decodedChainId } from "../../src/config";
+import { AgentSettingsConfig, Secrets } from "../../src/config";
 import { ORM } from "../../src/config/orm";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
@@ -101,7 +101,7 @@ describe("Toplevel runner and commands integration test", () => {
         // set work address mapping
         await context.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // context map
-        const contexts = new Map<string, TestAssetBotContext>([[decodedChainId(context.chainInfo.chainId), context]]);
+        const contexts = new Map<string, TestAssetBotContext>([[context.chainInfo.chainId.chainName, context]]);
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, "auto", 60_000, loopDelay);
         // agent bot runner
