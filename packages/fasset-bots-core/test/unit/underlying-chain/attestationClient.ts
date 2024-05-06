@@ -6,7 +6,7 @@ import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
-import { ChainId } from "../../../src/underlying-chain/SourceId";
+import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
 import { toBN } from "../../../src/utils/helpers";

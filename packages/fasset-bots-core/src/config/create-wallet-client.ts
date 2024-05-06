@@ -1,5 +1,5 @@
 import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
-import { ChainId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
 

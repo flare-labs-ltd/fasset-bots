@@ -4,7 +4,7 @@ import { Secrets } from "../../../src/config";
 import { createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
-import { ChainId } from "../../../src/underlying-chain/SourceId";
+import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { createTestOrm } from "../../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";

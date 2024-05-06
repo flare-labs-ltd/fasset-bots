@@ -4,7 +4,7 @@ import BN from "bn.js";
 import { prefix0x, toHex } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
-import { ChainId } from "./SourceId";
+import { ChainId } from "./ChainId";
 import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
 import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
 

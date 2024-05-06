@@ -4,7 +4,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { ChainId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/ChainId";
 import { web3 } from "../utils";
 import { squashSpace } from "../utils/formatting";
 import { sleep } from "../utils/helpers";

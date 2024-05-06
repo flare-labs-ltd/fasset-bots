@@ -4,7 +4,7 @@ import rewire from "rewire";
 import { Secrets, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
-import { ChainId } from "../../../src/underlying-chain/SourceId";
+import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { IBlockChain, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
 import { BN_ZERO, toBN } from "../../../src/utils/helpers";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";

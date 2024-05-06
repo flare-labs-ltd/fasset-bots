@@ -4,7 +4,7 @@ import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../
 import { ORM } from "../../src/config/orm";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
-import { ChainId } from "../../src/underlying-chain/SourceId";
+import { ChainId } from "../../src/underlying-chain/ChainId";
 import { prefix0x } from "../../src/utils/helpers";
 import { createTestOrm } from "../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../test-utils/test-bot-config";

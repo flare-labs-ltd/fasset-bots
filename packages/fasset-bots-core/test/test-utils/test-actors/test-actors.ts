@@ -11,7 +11,7 @@ import { Agent } from "../../../src/fasset/Agent";
 import { Minter } from "../../../src/mock/Minter";
 import { Redeemer } from "../../../src/mock/Redeemer";
 import { TrackedState } from "../../../src/state/TrackedState";
-import { ChainId } from "../../../src/underlying-chain/SourceId";
+import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { fail } from "../../../src/utils/helpers";
 import { NotifierTransport } from "../../../src/utils/notifier/BaseNotifier";

@@ -1,4 +1,4 @@
-import { ChainId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/ChainId";
 
 export interface ChainInfo {
     chainId: ChainId;

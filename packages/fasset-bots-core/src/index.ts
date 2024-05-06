@@ -9,5 +9,5 @@ export { PoolUserBotCommands } from "./commands/PoolUserBotCommands";
 export { InfoBotCommands } from "./commands/InfoBotCommands";
 export { generateSecrets, SecretsUser } from "./config/generate-secrets";
 export { ActorBaseKind } from "./fasset-bots/ActorBase";
-export { ChainId } from "./underlying-chain/SourceId";
+export { ChainId } from "./underlying-chain/ChainId";
 export { AgentEntity } from "./entities/agent";

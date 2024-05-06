@@ -5,7 +5,7 @@ import {
 import { constants } from "@openzeppelin/test-helpers";
 import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
-import { ChainId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/ChainId";
 import { AttestationNotProved, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { filterStackTrace, sleep, toBN, toNumber } from "../utils/helpers";

@@ -19,7 +19,19 @@ export class ChainId {
     }
 
     static from(chainNameOrSourceId: string): ChainId {
-        return chainIdIndex.get(chainNameOrSourceId) ?? createChainId(chainNameOrSourceId);
+        return ChainId.chainIdIndex.get(chainNameOrSourceId) ?? ChainId.createChainId(chainNameOrSourceId);
+    }
+
+    private static chainIdIndex: Map<string, ChainId> = new Map();
+
+    private static createChainId(chainNameOrSourceId: string) {
+        const [chainName, sourceId] = chainNameOrSourceId.startsWith("0x")
+            ? [decodeAttestationName(chainNameOrSourceId), chainNameOrSourceId]
+            : [chainNameOrSourceId, encodeAttestationName(chainNameOrSourceId)];
+        const chainId = new ChainId(chainName, sourceId);
+        ChainId.chainIdIndex.set(chainName, chainId);
+        ChainId.chainIdIndex.set(sourceId, chainId);
+        return chainId;
     }
 
     static XRP = ChainId.from("XRP");
@@ -32,16 +44,4 @@ export class ChainId {
     static testLTC = ChainId.from("testLTC");
     static ALGO = ChainId.from("ALGO");
     static testALGO = ChainId.from("testALGO");
-}
-
-const chainIdIndex: Map<string, ChainId> = new Map();
-
-function createChainId(chainNameOrSourceId: string) {
-    const [chainName, sourceId] = chainNameOrSourceId.startsWith("0x")
-        ? [decodeAttestationName(chainNameOrSourceId), chainNameOrSourceId]
-        : [chainNameOrSourceId, encodeAttestationName(chainNameOrSourceId)];
-    const chainId = new ChainId(chainName, sourceId);
-    chainIdIndex.set(chainName, chainId);
-    chainIdIndex.set(sourceId, chainId);
-    return chainId;
 }

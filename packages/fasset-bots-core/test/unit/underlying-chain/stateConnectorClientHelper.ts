@@ -4,7 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 import rewire from "rewire";
 import { Secrets, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
-import { ChainId } from "../../../src/underlying-chain/SourceId";
+import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";

@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, prefix0x, retry, sleep, toBN } from "../utils/helpers";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
-import { ChainId } from "./SourceId";
+import { ChainId } from "./ChainId";
 import BN from "bn.js";
 
 // Satoshi to BTC 100_000_000

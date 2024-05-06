@@ -1,6 +1,6 @@
 import { KeeperBotConfig, createTimekeeperContext } from "../config";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
-import { ChainId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/ChainId";
 import { requireNotNull } from "../utils";
 import { TimeKeeper, TimeKeeperQueryWindow } from "./TimeKeeper";
 

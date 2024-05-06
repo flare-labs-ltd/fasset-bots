@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock, IBlockId, ITransaction } from "../underlying-chain/interfaces/IBlockChain";
 import { MockChain } from "./MockChain";
-import { ChainId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/ChainId";
 import BN from "bn.js";
 
 export class MockIndexer extends BlockchainIndexerHelper {

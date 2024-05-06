@@ -1,7 +1,7 @@
 import { WALLET } from "@flarelabs/simple-wallet";
 import crypto from "node:crypto";
 import Web3 from "web3";
-import { ChainId } from "../underlying-chain/SourceId";
+import { ChainId } from "../underlying-chain/ChainId";
 import { requireNotNull } from "../utils";
 import { loadConfigFile } from "./config-file-loader";
 import { ChainAccount, SecretsFile } from "./config-files/SecretsFile";

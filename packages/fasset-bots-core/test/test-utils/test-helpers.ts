@@ -10,7 +10,7 @@ import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
-import { ChainId } from "../../src/underlying-chain/SourceId";
+import { ChainId } from "../../src/underlying-chain/ChainId";
 import { DBWalletKeys, IWalletKeys } from "../../src/underlying-chain/WalletKeys";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../../src/utils/events/common";
