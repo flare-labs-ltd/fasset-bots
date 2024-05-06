@@ -46,11 +46,12 @@ export type AssetManagerControllerEvents = import("../../typechain-truffle/Asset
 
 const GENESIS_GOVERNANCE = "0xfffEc6C83c8BF5c3F4AE0cCF8c45CE20E4560BD7";
 
-export type TestFtsos = Record<"nat" | "usdc" | "usdt" | "asset", FtsoMockInstance>;
+export type TestFtsos = Record<"nat" | "usdc" | "usdt" | "eth" | "asset", FtsoMockInstance>;
 
 export const ftsoNatInitialPrice = 0.42;
 export const ftsoUsdcInitialPrice = 1.01;
 export const ftsoUsdtInitialPrice = 0.99;
+export const ftsoEthInitialPrice = 2000;
 
 export type TestAssetBotContext = Modify<
     IAssetAgentContext,
@@ -80,16 +81,7 @@ export type TestAssetTrackedStateContext = Modify<
     }
 >;
 
-export async function createTestAssetContext(
-    governance: string,
-    chainInfo: TestChainInfo,
-    requireEOAAddressProof?: boolean,
-    customParameters?: any,
-    updateExecutor?: string,
-    useAlwaysFailsProver?: boolean,
-    assetManagerControllerAddress?: string,
-    useFaultyWallet?: boolean
-): Promise<TestAssetBotContext> {
+export async function createTestChainContracts(governance: string, updateExecutor?: string) {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -112,10 +104,19 @@ export async function createTestAssetContext(
     const vpContract = await VPContract.new(wNat.address, false);
     await wNat.setWriteVpContract(vpContract.address, { from: governance });
     await wNat.setReadVpContract(vpContract.address, { from: governance });
+    // create stablecoins
+    const testUSDC = await FakeERC20.new(governance, "Test USDCoin", "testUSDC", 6);
+    const testUSDT = await FakeERC20.new(governance, "Test Tether", "testUSDT", 6);
+    const testETH = await FakeERC20.new(governance, "Test Ethereum", "testETH", 18);
     // create ftso registry
     const ftsoRegistry = await FtsoRegistryMock.new();
     // await ftsoRegistry.addFtso(natFtso.address);
     const ftsoManager = await FtsoManagerMock.new();
+    // ftsos
+    await createFtsoMock(ftsoRegistry, "NAT", ftsoNatInitialPrice);
+    await createFtsoMock(ftsoRegistry, "testUSDC", ftsoUsdcInitialPrice);
+    await createFtsoMock(ftsoRegistry, "testUSDT", ftsoUsdtInitialPrice);
+    await createFtsoMock(ftsoRegistry, "testETH", ftsoEthInitialPrice);
     // create price reader
     const priceReader = await PriceReader.new(addressUpdater.address, ftsoRegistry.address);
     // create collateral pool factory
@@ -139,44 +140,74 @@ export async function createTestAssetContext(
         AgentOwnerRegistry: newContract("AgentOwnerRegistry", "AgentOwnerRegistry.sol", agentOwnerRegistry.address),
         CollateralPoolTokenFactory: newContract("CollateralPoolTokenFactory", "CollateralPoolTokenFactory.sol", collateralPoolTokenFactory.address),
         PriceReader: newContract("PriceReader", "PriceReader.sol", priceReader.address),
+        TestUSDC: newContract("TestUSDC", "FakeERC20.sol", testUSDC.address),
+        TestUSDT: newContract("TestUSDT", "FakeERC20.sol", testUSDT.address),
+        TestETH: newContract("TestETH", "FakeERC20.sol", testETH.address),
     };
+    return contracts;
+}
+
+type CreateTestAssetContextOptions = {
+    contracts?: ChainContracts;
+    requireEOAAddressProof?: boolean;
+    customParameters?: any;
+    updateExecutor?: string;
+    useAlwaysFailsProver?: boolean;
+    assetManagerControllerAddress?: string;
+    useFaultyWallet?: boolean;
+};
+
+export async function createTestAssetContext(
+    governance: string,
+    chainInfo: TestChainInfo,
+    options: CreateTestAssetContextOptions = {}
+): Promise<TestAssetBotContext> {
+    const contracts = options.contracts ?? await createTestChainContracts(governance, options.updateExecutor);
+    // contract wrappers
+    const stateConnector = await StateConnector.at(contracts.StateConnector.address);
+    const assetManagerController = await AssetManagerController.at(contracts.AssetManagerController.address);
+    const ftsoRegistry = await FtsoRegistryMock.at(contracts.FtsoRegistry.address);
+    const ftsoManager = await FtsoManagerMock.at(contracts.FtsoManager.address);
+    const wNat = await WNat.at(contracts.WNat.address);
+    const addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
+    const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
+    // stablecoins
+    const stablecoins = {
+        usdc: await FakeERC20.at(contracts.TestUSDC!.address),
+        usdt: await FakeERC20.at(contracts.TestUSDT!.address),
+        eth: await FakeERC20.at(contracts.TestETH!.address),
+    };
+    // ftsos
+    const ftsos: TestFtsos = {
+        nat: await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol("NAT")),
+        usdc: await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol("testUSDC")),
+        usdt: await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol("testUSDT")),
+        eth: await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol("testETH")),
+        asset: await createFtsoMock(ftsoRegistry, chainInfo.symbol, chainInfo.startPrice),
+    }
     // create mock chain attestation provider
     const chain = new MockChain(await time.latest());
     chain.finalizationBlocks = chainInfo.finalizationBlocks;
     chain.secondsPerBlock = chainInfo.blockTime;
-    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId.sourceId]: chain }, "auto", useAlwaysFailsProver ? useAlwaysFailsProver : false);
+    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId.sourceId]: chain }, "auto", options.useAlwaysFailsProver ?? false);
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const verificationClient = new MockVerificationApiClient();
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
-    const wallet = useFaultyWallet ? new FaultyWallet() : new MockChainWallet(chain);
-    // create stablecoins
-    const stablecoins = {
-        usdc: await FakeERC20.new(governance, "Test USDCoin", "testUSDC", 6),
-        usdt: await FakeERC20.new(governance, "Test Tether", "testUSDT", 6),
-    };
-    // ftsos
-    const ftsos = await createTestFtsos(ftsoRegistry, chainInfo);
+    const wallet = options.useFaultyWallet ? new FaultyWallet() : new MockChainWallet(chain);
     // collaterals
     const collaterals = createTestCollaterals(contracts, chainInfo, stablecoins);
     // create asset manager
-    const parameterFilename = `./fasset-config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
+    const parameterFilename = chainInfo.parameterFile ?? `./fasset-config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
-    const settings = createTestAssetManagerSettings(contracts, customParameters ? customParameters : parameters, chainInfo, requireEOAAddressProof);
+    const settings = createTestAssetManagerSettings(contracts, options.customParameters ?? parameters, chainInfo, options.requireEOAAddressProof);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
-    const [assetManager, fAsset] = await newAssetManager(governance, assetManagerControllerAddress ? assetManagerControllerAddress : assetManagerController,
-        chainInfo.name, chainInfo.symbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals,
-        web3DeepNormalize(settings), collaterals);
+    const [assetManager, fAsset] = await newAssetManager(governance, options.assetManagerControllerAddress ?? assetManagerController,
+        chainInfo.name, chainInfo.symbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
     // indexer
     const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
-    //
-    const natFtsoSymbol: string = collaterals[0].tokenFtsoSymbol;
-    const natFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(natFtsoSymbol));
-    const assetFtso = await FtsoMock.at(await ftsoRegistry.getFtsoBySymbol(chainInfo.symbol));
-    // native chain info
-    const nativeChainInfo = testNativeChainInfo;
     // return context
     return {
-        nativeChainInfo,
+        nativeChainInfo: testNativeChainInfo,
         chainInfo,
         blockchainIndexer,
         wallet,
@@ -186,8 +217,8 @@ export async function createTestAssetContext(
         ftsoManager,
         wNat,
         fAsset,
-        natFtso,
-        assetFtso,
+        natFtso: ftsos.nat,
+        assetFtso: ftsos.asset,
         ftsos,
         addressUpdater,
         priceChangeEmitter: ftsoManager,
@@ -362,15 +393,6 @@ export async function createFtsoMock(
     await ftso.setCurrentPriceFromTrustedProviders(toBNExp(initialPrice, decimals), 0);
     await ftsoRegistry.addFtso(ftso.address);
     return ftso;
-}
-
-export async function createTestFtsos(ftsoRegistry: FtsoRegistryMockInstance, assetChainInfo: TestChainInfo): Promise<TestFtsos> {
-    return {
-        nat: await createFtsoMock(ftsoRegistry, "NAT", ftsoNatInitialPrice),
-        usdc: await createFtsoMock(ftsoRegistry, "testUSDC", ftsoUsdcInitialPrice),
-        usdt: await createFtsoMock(ftsoRegistry, "testUSDT", ftsoUsdtInitialPrice),
-        asset: await createFtsoMock(ftsoRegistry, assetChainInfo.symbol, assetChainInfo.startPrice),
-    };
 }
 
 export async function setLotSizeAmg(newLotSizeAMG: BNish, context: TestAssetBotContext, governance: string) {

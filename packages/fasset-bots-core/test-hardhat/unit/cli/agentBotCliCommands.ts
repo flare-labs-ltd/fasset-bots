@@ -415,15 +415,7 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should upgrade WNat", async () => {
         const assetManagerControllerAddress = accounts[301];
-        const localContext = await createTestAssetContext(
-            governance,
-            testChainInfo.xrp,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            assetManagerControllerAddress
-        );
+        const localContext = await createTestAssetContext(governance, testChainInfo.xrp, { assetManagerControllerAddress });
         const agent = await createAgent(localContext);
         botCliCommands.context = localContext;
         const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
@@ -448,7 +440,7 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should not create agent bot via bot cli commands", async () => {
-        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
+        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp, { useFaultyWallet: true });
         await expectRevert(botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT)),
             "Could not activate or verify new agent vault's XRP account.");
         //change context back

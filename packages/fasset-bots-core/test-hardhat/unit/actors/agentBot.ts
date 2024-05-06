@@ -119,7 +119,7 @@ describe("Agent bot unit tests", () => {
 
     it("Should prove EOA address", async () => {
         const spyEOA = spy.on(AgentBot, "proveEOAaddress");
-        const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, true);
+        const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
         await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         await createTestAgentBot(contextEOAProof, orm, ownerAddress);
         expect(spyEOA).to.have.been.called.once;

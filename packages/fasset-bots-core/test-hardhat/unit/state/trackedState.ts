@@ -78,7 +78,7 @@ describe("Tracked state tests", () => {
     let assetManagerControllerAddress: string;
 
     async function createContextAndInitializeTrackedState(assetManagerControllerAddress?: string): Promise<void> {
-        context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, updateExecutor, undefined, assetManagerControllerAddress);
+        context = await createTestAssetContext(governance, testChainInfo.xrp, { updateExecutor, assetManagerControllerAddress });
         trackedStateContext = getTestAssetTrackedStateContext(context);
         chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         const lastBlock = await web3.eth.getBlockNumber();

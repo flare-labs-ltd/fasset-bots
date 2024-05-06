@@ -19,6 +19,7 @@ export interface TestChainInfo extends ChainInfo {
     finalizationBlocks: number;
     underlyingBlocksForPayment: number;
     lotSize: number;
+    parameterFile?: string;
 }
 
 export const testNativeChainInfo: NativeChainInfo = {
@@ -57,7 +58,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
     },
     xrp: {
         chainId: ChainId.testXRP,
-        name: "Ripple",
+        name: "XRP",
         symbol: "XRP",
         decimals: 6,
         amgDecimals: 6,

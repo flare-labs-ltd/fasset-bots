@@ -195,7 +195,7 @@ export async function createTestContext(governance: string, setMaxTrustedPriceAg
     const parameterFilename = `./fasset-config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
-    return await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
+    return await createTestAssetContext(governance, testChainInfo.xrp, { customParameters: parameters });
 }
 
 export async function createCRAndPerformMinting(minter: Minter, vaultAddress: string, lots: number, chain: MockChain) {

@@ -52,10 +52,10 @@ describe("Toplevel runner and commands integration test", () => {
         buyFAssetByAgentFactor: "0.99"
     };
 
-    const xrpChainInfo: TestChainInfo = {
+    const testXrpChainInfo: TestChainInfo = {
         chainId: ChainId.testXRP,
-        name: "Ripple",
-        symbol: "XRP",
+        name: "Test XRP",
+        symbol: "testXRP",
         decimals: 6,
         amgDecimals: 6,
         startPrice: 0.53,
@@ -64,6 +64,22 @@ describe("Toplevel runner and commands integration test", () => {
         underlyingBlocksForPayment: 100,
         lotSize: 10,
         requireEOAProof: false,
+        parameterFile: "./fasset-config/coston/f-testxrp.json",
+    };
+
+    const fakeXrpChainInfo: TestChainInfo = {
+        chainId: ChainId.testXRP,
+        name: "Fake XRP",
+        symbol: "fakeXRP",
+        decimals: 6,
+        amgDecimals: 6,
+        startPrice: 0.60,
+        blockTime: 2,
+        finalizationBlocks: 3,
+        underlyingBlocksForPayment: 100,
+        lotSize: 10,
+        requireEOAProof: false,
+        parameterFile: "./fasset-config/coston/f-fakexrp.json",
     };
 
     async function waitForEvent(fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
@@ -94,7 +110,7 @@ describe("Toplevel runner and commands integration test", () => {
     async function initialize() {
         console.log("Creating context...");
         orm = await createTestOrm();
-        context = await createTestAssetContext(accounts[0], xrpChainInfo);
+        context = await createTestAssetContext(accounts[0], testXrpChainInfo);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         settings = await context.assetManager.getSettings();
         secrets = createTestSecrets(ChainId.testXRP, ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
@@ -116,7 +132,7 @@ describe("Toplevel runner and commands integration test", () => {
         const usdc = context.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc);
         natCurrency = await Currencies.evmNative(context);
-        xrpCurrency = Currencies.chain(xrpChainInfo);
+        xrpCurrency = Currencies.chain(testXrpChainInfo);
         // mint some XRP to owner
         chain.mint(ownerUnderlyingAddress, xrpCurrency.parse("100"));
         chain.mine(chain.finalizationBlocks + 1);  // add enough blocks for finalized block proof to succeed

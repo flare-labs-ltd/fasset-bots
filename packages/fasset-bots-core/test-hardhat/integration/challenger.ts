@@ -440,7 +440,7 @@ describe("Challenger tests", () => {
         // check status
         const agentStatus1 = await getAgentStatus(agentBot);
         assert.equal(agentStatus1, AgentStatus.NORMAL);
-        const faultyContext = await createTestAssetContext(accounts[0], testChainInfo.xrp, undefined, undefined, undefined, true);
+        const faultyContext = await createTestAssetContext(accounts[0], testChainInfo.xrp, { useAlwaysFailsProver: true });
         const challenger = await createTestChallenger(faultyContext, challengerAddress, state);
         await challenger.runStep();
         const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
