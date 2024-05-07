@@ -2,39 +2,39 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { AgentBotCommands, AgentBotRunner, ChainId, TimeKeeperService, UserBotCommands } from "../../src";
 import { AgentSettingsConfig, Secrets } from "../../src/config";
 import { ORM } from "../../src/config/orm";
+import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
-import { AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
 import { MockChain } from "../../src/mock/MockChain";
+import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { Currencies, Currency } from "../../src/utils";
 import { Web3ContractEventDecoder } from "../../src/utils/events/Web3ContractEventDecoder";
 import { EvmEvent } from "../../src/utils/events/common";
 import { eventIs } from "../../src/utils/events/truffle";
-import { checkedCast, sleep } from "../../src/utils/helpers";
-import { web3 } from "../../src/utils/web3";
+import { firstValue, getOrCreateAsync, sleep } from "../../src/utils/helpers";
+import { artifacts, web3 } from "../../src/utils/web3";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
-import { FakeERC20Instance } from "../../typechain-truffle";
-import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../test-utils/create-test-asset-context";
+import { FakeERC20Instance, Truffle } from "../../typechain-truffle";
+import { TestAssetBotContext, createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
+
+const StateConnector = artifacts.require("StateConnectorMock");
 
 describe("Toplevel runner and commands integration test", () => {
     const loopDelay = 100; // ms
     let accounts: string[];
-    let context: TestAssetBotContext;
     let orm: ORM;
     let ownerManagementAddress: string;
     const ownerUnderlyingAddress = "owner_underlying_1";
     let ownerWorkAddress: string;
     let userAddress: string;
     const userUnderlyingAddress = "user_underlying_1";
-    let chain: MockChain;
-    let settings: AssetManagerSettings;
+    let contexts: Map<string, TestAssetBotContext> = new Map();
+    let chains: Map<ChainId, MockChain> = new Map();
     let secrets: Secrets;
     let timekeeperService: TimeKeeperService;
     let botRunner: AgentBotRunner;
-    let agentCommands: AgentBotCommands;
-    let userCommands: UserBotCommands;
     let usdcCurrency: Currency;
     let natCurrency: Currency;
     let xrpCurrency: Currency;
@@ -68,27 +68,22 @@ describe("Toplevel runner and commands integration test", () => {
     };
 
     const fakeXrpChainInfo: TestChainInfo = {
-        chainId: ChainId.testXRP,
+        ...testXrpChainInfo,
         name: "Fake XRP",
         symbol: "fakeXRP",
-        decimals: 6,
-        amgDecimals: 6,
         startPrice: 0.60,
-        blockTime: 2,
-        finalizationBlocks: 3,
-        underlyingBlocksForPayment: 100,
-        lotSize: 10,
-        requireEOAProof: false,
         parameterFile: "./fasset-config/coston/f-fakexrp.json",
     };
 
-    async function waitForEvent(fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
+    const testChainInfos = [testXrpChainInfo, fakeXrpChainInfo];
+
+    async function waitForEvent(contract: Truffle.ContractInstance, fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
         const sleepTime = 100;
-        const eventDecoder = new Web3ContractEventDecoder({ assetManager: context.assetManager });
+        const eventDecoder = new Web3ContractEventDecoder({ contract });
         for (let t = 0; t < maxWaitMs; t += sleepTime) {
             const toBlock = await web3.eth.getBlockNumber();
             if (fromBlock <= toBlock) {
-                const rawEvents = await web3.eth.getPastLogs({ address: context.assetManager.address, fromBlock, toBlock });
+                const rawEvents = await web3.eth.getPastLogs({ address: contract.address, fromBlock, toBlock });
                 const events = eventDecoder.decodeEvents(rawEvents);
                 for (const event of events) {
                     if (predicate(event)) return;
@@ -98,6 +93,16 @@ describe("Toplevel runner and commands integration test", () => {
             await sleep(sleepTime);
         }
         throw new Error(`Event did not occur in ${maxWaitMs}ms`);
+    }
+
+    function createAgentCommands(context: IAssetAgentContext) {
+        const ownerAddressPair = new OwnerAddressPair(ownerManagementAddress, ownerWorkAddress);
+        return new AgentBotCommands(context, ownerAddressPair, ownerUnderlyingAddress, orm, testNotifierTransports);
+    }
+
+    async function createUserCommands(context: IAssetAgentContext) {
+        const fassetSymbol = await context.fAsset.symbol();
+        return new UserBotCommands(context, fassetSymbol, userAddress, userUnderlyingAddress);
     }
 
     before(async () => {
@@ -110,84 +115,103 @@ describe("Toplevel runner and commands integration test", () => {
     async function initialize() {
         console.log("Creating context...");
         orm = await createTestOrm();
-        context = await createTestAssetContext(accounts[0], testXrpChainInfo);
-        chain = checkedCast(context.blockchainIndexer.chain, MockChain);
-        settings = await context.assetManager.getSettings();
-        secrets = createTestSecrets(ChainId.testXRP, ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
+        const contracts = await createTestChainContracts(accounts[0]);
+        const stateConnector = await StateConnector.at(contracts.StateConnector.address);
+        const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto");
+        // secrets
+        secrets = createTestSecrets(testChainInfos.map(ci => ci.chainId), ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
+        // create contexts
+        for (const chainInfo of testChainInfos) {
+            const chain = await getOrCreateAsync(chains, chainInfo.chainId, () => createTestChain(chainInfo));
+            const context = await createTestAssetContext(accounts[0], chainInfo, { contracts, chain, stateConnectorClient });
+            contexts.set(chainInfo.symbol, context);
+        }
         // set work address mapping
-        await context.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
-        // context map
-        const contexts = new Map<string, TestAssetBotContext>([[context.chainInfo.symbol, context]]);
+        const context0 = contexts.get(testChainInfos[0].symbol)!;
+        await context0.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, "auto", 60_000, loopDelay);
         // agent bot runner
         botRunner = new AgentBotRunner(secrets, contexts, orm, loopDelay, testNotifierTransports, timekeeperService);
-        // agent bot commands
-        const ownerAddressPair = new OwnerAddressPair(ownerManagementAddress, ownerWorkAddress);
-        agentCommands = new AgentBotCommands(context, ownerAddressPair, ownerUnderlyingAddress, orm, testNotifierTransports);
-        // user bot commands
-        const fassetSymbol = await context.fAsset.symbol();
-        userCommands = new UserBotCommands(context, fassetSymbol, userAddress, userUnderlyingAddress);
         // currencies
-        const usdc = context.stablecoins.usdc as FakeERC20Instance;
+        const usdc = context0.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc);
-        natCurrency = await Currencies.evmNative(context);
+        natCurrency = await Currencies.evmNative(context0);
         xrpCurrency = Currencies.chain(testXrpChainInfo);
-        // mint some XRP to owner
-        chain.mint(ownerUnderlyingAddress, xrpCurrency.parse("100"));
-        chain.mine(chain.finalizationBlocks + 1);  // add enough blocks for finalized block proof to succeed
         // mint some collaterals to owner
         await usdc.mintAmount(ownerWorkAddress, usdcCurrency.parse("1000"));
-        // mint some xrp to user
-        chain.mint(userUnderlyingAddress, xrpCurrency.parse("1000"));
+        // mint some underlying
+        for (const chain of chains.values()) {
+            // to owner
+            chain.mint(ownerUnderlyingAddress, xrpCurrency.parse("100"));
+            chain.mine(chain.finalizationBlocks + 1);  // add enough blocks for finalized block proof to succeed
+            // mint some xrp to user
+            chain.mint(userUnderlyingAddress, xrpCurrency.parse("1000"));
+        }
         //
-        return { orm, context, chain, settings, timekeeperService, botRunner, agentCommands, userCommands };
+        console.log("Context created.");
+        return { orm, contexts, chains, timekeeperService, botRunner };
     }
 
     beforeEach(async () => {
-        ({ orm, context, chain, settings, timekeeperService, botRunner, agentCommands, userCommands } = await loadFixtureCopyVars(initialize));
+        ({ orm, contexts, chains, timekeeperService, botRunner } = await loadFixtureCopyVars(initialize));
         // start runners in background
         console.log("Starting the bots...");
         timekeeperService.startAll();
         void botRunner.run();
         while (!botRunner.running) await sleep(100);
-        chain.enableTimedMining(500);
+        for (const chain of chains.values()) {
+            chain.enableTimedMining(500);
+        }
     });
 
     afterEach(async () => {
         console.log("Stopping the bots...");
-        chain.disableTimedMining();
+        for (const chain of chains.values()) {
+            chain.disableTimedMining();
+        }
         botRunner.requestStop();
         while (botRunner.running) await sleep(100);
         await timekeeperService.stopAll();
     });
 
     it("create agent vault, mint, redeem, and close", async () => {
-        const agent = await agentCommands.createAgentVault(newAgentSettings);
-        const agentVault = agent.vaultAddress;
-        await agentCommands.depositToVault(agentVault, usdcCurrency.parse("100"));
-        await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("100000"));
-        await agentCommands.enterAvailableList(agentVault);
-        await userCommands.infoBot().printAvailableAgents();
-        // mint
-        await userCommands.mint(agentVault, 10, false);
-        // redeem
-        const lastBlock = await web3.eth.getBlockNumber();
-        await userCommands.redeem(10);
-        await waitForEvent(lastBlock, 5000, (ev) => eventIs(ev, context.assetManager, "RedemptionPerformed") && ev.args.agentVault === agentVault);
-        // close
-        const lastBlock2 = await web3.eth.getBlockNumber();
-        await agentCommands.closeVault(agentVault);
-        // wait for close process to finish (speed up time to rush through all the timelocks)
-        const tm1 = setInterval(() => void time.increase(100), 200);
-        try {
-            await waitForEvent(lastBlock2, 20000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
-        } finally {
-            clearInterval(tm1);
-        }
+        await Promise.allSettled(Array.from(contexts.values()).map(async context => {
+            console.log(`***** Testing for asset ${context.chainInfo.symbol} *****`);
+            const agentCommands = createAgentCommands(context);
+            const userCommands = await createUserCommands(context);
+            //
+            const agent = await agentCommands.createAgentVault(newAgentSettings);
+            const agentVault = agent.vaultAddress;
+            await agentCommands.depositToVault(agentVault, usdcCurrency.parse("100"));
+            await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("100000"));
+            await agentCommands.enterAvailableList(agentVault);
+            await userCommands.infoBot().printAvailableAgents();
+            // mint
+            await userCommands.mint(agentVault, 10, false);
+            // redeem
+            const lastBlock = await web3.eth.getBlockNumber();
+            await userCommands.redeem(10);
+            await waitForEvent(context.assetManager, lastBlock, 5000, (ev) => eventIs(ev, context.assetManager, "RedemptionPerformed") && ev.args.agentVault === agentVault);
+            // close
+            const lastBlock2 = await web3.eth.getBlockNumber();
+            await agentCommands.closeVault(agentVault);
+            // wait for close process to finish (speed up time to rush through all the timelocks)
+            const tm1 = setInterval(() => void time.increase(100), 200);
+            try {
+                await waitForEvent(context.assetManager, lastBlock2, 20000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
+            } finally {
+                clearInterval(tm1);
+            }
+        }));
     });
 
     it("create agent vault, mint, and agent executes mint", async () => {
+        const context = firstValue(contexts)!;
+        const agentCommands = createAgentCommands(context);
+        const userCommands = await createUserCommands(context);
+        const chain = context.blockchainIndexer.chain;
+        //
         const agent = await agentCommands.createAgentVault(newAgentSettings);
         const agentVault = agent.vaultAddress;
         await agentCommands.depositToVault(agentVault, usdcCurrency.parse("100"));
@@ -197,6 +221,6 @@ describe("Toplevel runner and commands integration test", () => {
         const lastEvmBlock = await web3.eth.getBlockNumber();
         await userCommands.mint(agentVault, 10, true);
         chain.mine(300);    // agent will only execute minting once the time for payment expires on underlying chain
-        await waitForEvent(lastEvmBlock, 5000, (ev) => eventIs(ev, context.assetManager, "MintingExecuted") && ev.args.agentVault === agentVault);
+        await waitForEvent(context.assetManager, lastEvmBlock, 5000, (ev) => eventIs(ev, context.assetManager, "MintingExecuted") && ev.args.agentVault === agentVault);
     });
 });

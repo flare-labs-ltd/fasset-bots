@@ -41,14 +41,14 @@ describe("Agent bot runner tests", () => {
     });
 
     it("Should create agent bot runner", async () => {
-        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should run agent bot runner until its stopped", async () => {
-        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
         const spyStep = spy.on(agentBotRunner, "runStep");
         agentBotRunner.requestStop();
@@ -66,7 +66,7 @@ describe("Agent bot runner tests", () => {
         await createTestAgentBot(otherContext, orm, ownerAddress, "UNDERLYING");
         await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         // create runner
-        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay, [new FaultyNotifierTransport()]);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;

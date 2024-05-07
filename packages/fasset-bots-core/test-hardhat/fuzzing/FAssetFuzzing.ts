@@ -19,7 +19,7 @@ import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInf
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
-import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";

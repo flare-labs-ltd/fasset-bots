@@ -3,7 +3,7 @@ import BN from "bn.js";
 import fs from "fs";
 import { ChainId } from "../../src";
 import { Secrets } from "../../src/config";
-import { ChainAccount } from "../../src/config/config-files/SecretsFile";
+import { ChainAccount, SecretsFile } from "../../src/config/config-files/SecretsFile";
 import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
 import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
@@ -147,6 +147,13 @@ export async function createTestChainContracts(governance: string, updateExecuto
     return contracts;
 }
 
+export async function createTestChain(chainInfo: TestChainInfo) {
+    const chain = new MockChain(await time.latest());
+    chain.finalizationBlocks = chainInfo.finalizationBlocks;
+    chain.secondsPerBlock = chainInfo.blockTime;
+    return chain;
+}
+
 type CreateTestAssetContextOptions = {
     contracts?: ChainContracts;
     requireEOAAddressProof?: boolean;
@@ -155,6 +162,8 @@ type CreateTestAssetContextOptions = {
     useAlwaysFailsProver?: boolean;
     assetManagerControllerAddress?: string;
     useFaultyWallet?: boolean;
+    chain?: MockChain;
+    stateConnectorClient?: MockStateConnectorClient;
 };
 
 export async function createTestAssetContext(
@@ -186,10 +195,8 @@ export async function createTestAssetContext(
         asset: await createFtsoMock(ftsoRegistry, chainInfo.symbol, chainInfo.startPrice),
     }
     // create mock chain attestation provider
-    const chain = new MockChain(await time.latest());
-    chain.finalizationBlocks = chainInfo.finalizationBlocks;
-    chain.secondsPerBlock = chainInfo.blockTime;
-    const stateConnectorClient = new MockStateConnectorClient(stateConnector, { [chainInfo.chainId.sourceId]: chain }, "auto", options.useAlwaysFailsProver ?? false);
+    const chain = options.chain ?? await createTestChain(chainInfo);
+    const stateConnectorClient = options.stateConnectorClient ?? new MockStateConnectorClient(stateConnector, {}, "auto", options.useAlwaysFailsProver ?? false);
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const verificationClient = new MockVerificationApiClient();
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
@@ -229,8 +236,8 @@ export async function createTestAssetContext(
     };
 }
 
-export function createTestSecrets(chain: ChainId, ownerManagementAddress: string, ownerWorkAddress: string, ownerUnderlyingAddress: string) {
-    return new Secrets("MEMORY", {
+export function createTestSecrets(chains: ChainId[], ownerManagementAddress: string, ownerWorkAddress: string, ownerUnderlyingAddress: string) {
+    const secrets: SecretsFile = {
         apiKey: {},
         owner: {
             management: {
@@ -240,12 +247,15 @@ export function createTestSecrets(chain: ChainId, ownerManagementAddress: string
                 address: ownerWorkAddress,
                 private_key: "not_needed",
             },
-            [chain.chainName]: {
-                address: ownerUnderlyingAddress,
-                private_key: "not_needed",
-            }
         }
-    });
+    };
+    for (const chain of chains) {
+        secrets.owner![chain.chainName] = {
+            address: ownerUnderlyingAddress,
+            private_key: "not_needed",
+        };
+    }
+    return new Secrets("MEMORY", secrets);
 }
 
 export function getTestAssetTrackedStateContext(context: TestAssetBotContext, useCustomStrategy: boolean = false): TestAssetTrackedStateContext {
