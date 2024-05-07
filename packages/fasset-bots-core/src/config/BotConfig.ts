@@ -22,7 +22,7 @@ import { RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNu
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { BotConfigFile, BotFAssetInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId, supportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
@@ -85,7 +85,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             fAssets: fAssets,
             nativeChainInfo: configFile.nativeChainInfo,
             orm: orm,
-            notifiers: standardNotifierTransports(secrets, configFile.alertsUrl),
+            notifiers: standardNotifierTransports(secrets, configFile.apiNotifierConfigs),
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
@@ -103,12 +103,14 @@ export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOp
     }
 }
 
-export function standardNotifierTransports(secrets: Secrets, alertsUrl: string | undefined) {
+export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs: ApiNotifierConfig[] | undefined) {
     const transports: NotifierTransport[] = [];
     transports.push(new ConsoleNotifierTransport());
     transports.push(new LoggerNotifierTransport());
-    if (alertsUrl) {
-        transports.push(new ApiNotifierTransport(alertsUrl, secrets.required("apiKey.agent_bot")));
+    if (apiNotifierConfigs !== undefined) {
+        for (const apiNotifierConfig of apiNotifierConfigs) {
+            transports.push(new ApiNotifierTransport(apiNotifierConfig.apiUrl, apiNotifierConfig.apiKey));
+        }
     }
     return transports;
 }

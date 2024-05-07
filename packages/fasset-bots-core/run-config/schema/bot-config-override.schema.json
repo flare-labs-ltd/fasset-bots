@@ -2,6 +2,22 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "additionalProperties": false,
     "definitions": {
+        "ApiNotifierConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "apiKey": {
+                    "type": "string"
+                },
+                "apiUrl": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "apiKey",
+                "apiUrl"
+            ],
+            "type": "object"
+        },
         "BotStrategyDefinition": {
             "additionalProperties": false,
             "properties": {
@@ -112,8 +128,11 @@
         "$schema": {
             "type": "string"
         },
-        "alertsUrl": {
-            "type": "string"
+        "apiNotifierConfigs": {
+            "items": {
+                "$ref": "#/definitions/ApiNotifierConfig"
+            },
+            "type": "array"
         },
         "assetManagerController": {
             "type": "string"
