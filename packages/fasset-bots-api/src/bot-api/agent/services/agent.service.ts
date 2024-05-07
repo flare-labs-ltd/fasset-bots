@@ -1,15 +1,17 @@
-import { AgentBotCommands, AgentEntity } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, MAX_BIPS, artifacts, createSha256Hash, generateRandomHexString, requireEnv, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, MAX_BIPS, artifacts, createSha256Hash, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, AllVaults, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, AllVaults, CollateralTemplate, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { exec } from "child_process";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
+import { allTemplate } from "../../common/VaultTemplates";
+import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -329,6 +331,13 @@ export class AgentService {
         }
         const jsonToSave = JSON.stringify(secrets, null, 4);
         fs.writeFileSync(FASSET_BOT_SECRETS, jsonToSave);
+        fs.chmod(FASSET_BOT_SECRETS, 0o600, (err) => {
+            if (err) {
+              console.error('Error changing file permissions:', err);
+              return;
+            }
+            console.log('File permissions changed successfully.');
+        });
     }
 
     async checkSecretsFile(): Promise<boolean> {
@@ -402,12 +411,14 @@ export class AgentService {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
             // get collateral data
             const collateralTypes = await cli.context.assetManager.getCollateralTypes();
-            const collateralTokens: string[] = [];
+            const collateralTokens: CollateralTemplate[] = [];
             for (const collateralType of collateralTypes) {
                 const symbol = collateralType.tokenFtsoSymbol;
                 const collateralClass = collateralType.collateralClass;
                 if (collateralClass == toBN(2)) {
-                    collateralTokens.push(symbol);
+                    const template = JSON.stringify(allTemplate);
+                    collateralTokens.push({symbol: symbol, template: template});
+                    console.log(JSON.parse(template));
                 }
             }
             const collateral: VaultCollaterals = { fassetSymbol: fasset, collaterals: collateralTokens };
@@ -456,5 +467,10 @@ export class AgentService {
                 allVaults.push({fassetSymbol: fasset, vaults: vaultsForFasset});
         }
         return allVaults;
+    }
+
+    async generateSecrets(): Promise<SecretsFile> {
+        const secrets = generateSecrets(process.env.FASSET_BOT_CONFIG ?? resolveInFassetBotsCore("run-config/coston-bot.json"), ["agent"], "");
+        return secrets;
     }
 }
