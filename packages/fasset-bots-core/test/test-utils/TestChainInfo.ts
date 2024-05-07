@@ -1,4 +1,5 @@
-import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
+import { ChainInfo } from "../../src/fasset/ChainInfo";
+import { NativeChainInfo } from "../../src/fasset/NativeChainInfo";
 import { ChainId } from "../../src/underlying-chain/ChainId";
 
 export interface TestNatInfo {

@@ -1,4 +1,4 @@
-import { NativeChainInfo } from "../../fasset/ChainInfo";
+import { NativeChainInfo } from "../../fasset/NativeChainInfo";
 import { DatabaseType, SchemaUpdate } from "../orm";
 
 export interface OrmConfigOptions {
