@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { SecretsUser, generateSecrets } from "@flarelabs/fasset-bots-core";
-import { createSha256Hash, generateRandomHexString, resolveInFassetBotsCore, squashSpace } from "@flarelabs/fasset-bots-core/utils";
+import { createSha256Hash, generateRandomHexString, logger, resolveInFassetBotsCore, squashSpace } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
@@ -36,6 +36,16 @@ program
                 program.error(`error: file ${opts.output} already exists`);
             }
             fs.writeFileSync(opts.output, json);
+            if (process.platform !== "win32") {
+                try {
+                    fs.chmodSync(opts.output, 0o600);
+                } catch (error) {
+                    logger.error(`Error changing mode for file ${opts.output}`, error);
+                    console.error(`${chalk.yellow("WARNING:")} You must set file permissions to 600 by executing "chmod 600 ${opts.output}"`);
+                }
+            } else if (process.env.ALLOW_SECRETS_ON_WINDOWS !== "true") {
+                console.error(`${chalk.yellow("WARNING:")} You must set environment variable ALLOW_SECRETS_ON_WINDOWS=true to use secrets on windows`);
+            }
         } else {
             console.log(json);
         }
