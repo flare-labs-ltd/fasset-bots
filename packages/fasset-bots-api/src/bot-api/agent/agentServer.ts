@@ -4,8 +4,10 @@ import helmet from "helmet";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { WsAdapter } from "@nestjs/platform-ws";
+import { initializeMikroORM } from "./mikro-orm.config";
 
 export async function runAgentServer() {
+    await initializeMikroORM();
     const app = await NestFactory.create(AgentModule);
     app.useWebSocketAdapter(new WsAdapter(app));
 

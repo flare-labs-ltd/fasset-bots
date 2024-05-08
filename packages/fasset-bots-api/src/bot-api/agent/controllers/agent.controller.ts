@@ -310,9 +310,9 @@ export class AgentController {
     @Post("botAlert")
     //@UseGuards(AuthGuard("api-key"))
     public async sendNotification(
-        @Body() notification: PostAlert
+        @Body() alert: PostAlert
     ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.saveNotification(notification));
+        return handleApiResponse(this.agentService.saveAlert(alert));
     }
 
     @Get("botAlert")
@@ -341,7 +341,7 @@ export class AgentController {
     })
     public async getNotifications(
     ): Promise<ApiResponseWrapper<PostAlert[]>> {
-        return handleApiResponse(this.agentService.getNotifications());
+        return handleApiResponse(this.agentService.getAlerts());
     }
 
     @Get("workAddress")

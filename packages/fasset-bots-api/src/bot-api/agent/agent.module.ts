@@ -8,9 +8,10 @@ import { UnderlyingController } from "./controllers/underlying.controller";
 import { AuthModule } from "./auth/auth.module";
 import { CacheModule } from "@nestjs/cache-manager";
 import { AgentSettingsService } from "./services/agentSettings.service";
-
+import mikroOrmConfig from "./mikro-orm.config";
+import { MikroOrmModule } from '@mikro-orm/nestjs';
 @Module({
-    imports: [ConfigModule.forRoot(), AuthModule, CacheModule.register()],
+    imports: [ConfigModule.forRoot(), AuthModule, CacheModule.register(), MikroOrmModule.forRoot(mikroOrmConfig)],
     controllers: [AgentController, AgentVaultController, PoolController, UnderlyingController],
     providers: [AgentService, AgentSettingsService],
 })

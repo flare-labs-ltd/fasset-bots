@@ -12,6 +12,8 @@ import { exec } from "child_process";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
 import { allTemplate } from "../../common/VaultTemplates";
 import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
+import { EntityManager } from "@mikro-orm/core";
+import { Alert } from "../../common/entities/AlertDB";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 
@@ -22,7 +24,8 @@ const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
 @Injectable()
 export class AgentService {
     constructor(
-        @Inject(CACHE_MANAGER) private cacheManager: Cache
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        private readonly em: EntityManager
     ) {}
 
     async createAgent(fAssetSymbol: string, agentSettings: AgentSettingsConfig): Promise<AgentCreateResponse | null> {
@@ -267,24 +270,26 @@ export class AgentService {
         return { balance: balance.toString() };
     }
 
-    async saveNotification(notification: PostAlert): Promise<void> {
-        let notifications: PostAlert[] | undefined = await this.cacheManager.get<PostAlert[]>("notifications");
-        if (notifications == undefined) {
-            notifications = [];
-        }
-        notifications.push(notification);
-
-        let expirationTime: number | undefined = await this.cacheManager.get<number>("notifications_ttl");
-        if (expirationTime == undefined || expirationTime < Date.now()) {
-            expirationTime = Date.now() + 3600000;
-            await this.cacheManager.set("notifications_ttl", expirationTime, 0);
-            await this.cacheManager.set("notifications", notifications, 3600000);
-        }
+    async saveAlert(notification: PostAlert): Promise<void> {
+        // Currently delete alerts that are older than 5 days
+        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000))
+        await this.deleteExpiredAlerts();
+        await this.em.persistAndFlush(alert);
     }
 
-    async getNotifications(): Promise<PostAlert[]> {
-        const notifications: PostAlert[] = (await this.cacheManager.get<PostAlert[]>("notifications")) ?? [];
-        return notifications;
+    async deleteExpiredAlerts(): Promise<void> {
+        const expiredAlerts = await this.em.find(Alert, { expiration: { $lt: Date.now() } });
+        for (const expiredAlert of expiredAlerts) {
+            this.em.remove(expiredAlert);
+        }
+        await this.em.flush();
+      }
+
+    async getAlerts(): Promise<PostAlert[]> {
+        const alertRepository = this.em.getRepository(Alert);
+        const alerts = (await alertRepository.findAll()) as Alert[];
+        const postAlerts: any[] = alerts.map((alert: any) => JSON.parse(alert.alert));
+        return postAlerts;
     }
 
     async getAgentWorkAddress(): Promise<string> {

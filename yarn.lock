@@ -1243,6 +1243,13 @@ __metadata:
   resolution: "@flarelabs/fasset-bots-api@workspace:packages/fasset-bots-api"
   dependencies:
     "@flarelabs/fasset-bots-core": "workspace:*"
+    "@mikro-orm/cli": 5.8.4
+    "@mikro-orm/core": 5.8.4
+    "@mikro-orm/knex": 5.8.4
+    "@mikro-orm/mysql": 5.8.4
+    "@mikro-orm/nestjs": 5.2.3
+    "@mikro-orm/postgresql": 5.8.4
+    "@mikro-orm/sqlite": 5.8.4
     "@nestjs/cache-manager": ^2.2.1
     "@nestjs/cli": ^10.1.18
     "@nestjs/common": ^10.2.6
@@ -1266,6 +1273,7 @@ __metadata:
     "@types/passport-http": ^0.3.9
     "@types/passport-strategy": ^0.2.36
     axios: 1.5.1
+    bn.js: 5.2.1
     cache-manager: ^5.4.0
     class-transformer: ^0.5.1
     class-validator: ^0.14.0
@@ -1786,6 +1794,17 @@ __metadata:
     "@mikro-orm/seeder":
       optional: true
   checksum: d4dff20d9611d121f056ac66a26e6c9d915190e8653f424eb438696b63c4b4d41c7d8d99f1b6110acbc80607e2a15e562f60b213a8b56bd4e08cd96fc8c52c3b
+  languageName: node
+  linkType: hard
+
+"@mikro-orm/nestjs@npm:5.2.3":
+  version: 5.2.3
+  resolution: "@mikro-orm/nestjs@npm:5.2.3"
+  peerDependencies:
+    "@mikro-orm/core": ^5.0.0 || ^6.0.0-dev.0
+    "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
+    "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0
+  checksum: 703cf15baea301651a8733f257ddc4361b77b2aa719b0d2bcc5d18c17b6ae9aeedf0a4fcec165f13559bf5e75220511452c649e518e646b672da1dd22d6dd263
   languageName: node
   linkType: hard
 
