@@ -8,7 +8,7 @@ import chalk from "chalk";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
-const program = programWithCommonOptions("bot", "single_fasset");
+const program = programWithCommonOptions("agent", "single_fasset");
 
 program.name("utils").description("Command line blockchain helpers");
 

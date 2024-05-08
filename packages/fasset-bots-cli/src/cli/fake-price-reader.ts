@@ -11,7 +11,7 @@ import { toplevelRun } from "../utils/toplevel";
 const FakePriceReader = artifacts.require("FakePriceReader");
 const PriceReader = artifacts.require("FtsoV1PriceReader");
 
-const program = programWithCommonOptions("bot", "all_fassets");
+const program = programWithCommonOptions("util", "all_fassets");
 
 program.name("fake-price-reader").description("Command line commands managing and reading prices on fake price reader");
 

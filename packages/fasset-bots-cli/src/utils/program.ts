@@ -1,56 +1,81 @@
-import { resolveInFassetBotsCore, squashSpace } from "@flarelabs/fasset-bots-core/utils";
-import { Command, Option } from "commander";
+import { resolveInFassetBotsCore, squashSpace, stripIndent } from "@flarelabs/fasset-bots-core/utils";
+import { Command } from "commander";
 import fs from "fs";
 import os from "os";
 import path from "path";
 
-export function programWithCommonOptions(user: "bot" | "user", fassets: "single_fasset" | "all_fassets") {
-    const program = new Command();
-
+export function programWithCommonOptions(user: "agent" | "user" | "bot" | "util", fassets: "single_fasset" | "all_fassets") {
     const configEnvVar = user === "user" ? "FASSET_USER_CONFIG" : "FASSET_BOT_CONFIG";
     const secretsEnvVar = user === "user" ? "FASSET_USER_SECRETS" : "FASSET_BOT_SECRETS";
     const allowDefaultSecrets = user === "user";
 
-    program.addOption(
-        program
+    function createConfigOption() {
+        return program
             .createOption(
                 "-c, --config <configFile>",
                 squashSpace`Config file path. If not provided, environment variable ${configEnvVar} is used as path, if set.
                         Default file is embedded in the program and usually works.`
             )
             .env(configEnvVar)
-            .default(resolveInFassetBotsCore("run-config/coston-user.json"))
-    );
-    program.addOption(
-        setDynamicDefault(
-            program
-                .createOption(
-                    "-s, --secrets <secretsFile>",
-                    squashSpace`File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable ${secretsEnvVar}
-                            is used as path, if set. ${allowDefaultSecrets ? "Default file is <USER_HOME>/.fasset/secrets.json." : ""}`
-                )
-                .env(secretsEnvVar),
-            allowDefaultSecrets ? defaultSecretsPath() : undefined
-        )
-    );
-    if (fassets === "single_fasset") {
-        program.addOption(
-            program
-                .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
-                .makeOptionMandatory()
-        );
+            .argParser(expandConfigPath)
+            .default(expandConfigPath("coston"));
     }
 
+    // single word network name conversions, e.g. "coston" --> ".../fasset-bots-core/run-config/coston-bot.json"
+    function expandConfigPath(config: string) {
+        if (/^\w+$/.test(config)) {
+            const suffix = user === "user" ? "user" : "bot";
+            return resolveInFassetBotsCore(`run-config/${config}-${suffix}.json`);
+        }
+        return config;
+    }
+
+    function createSecretsOption() {
+        const secretsOption = program
+            .createOption(
+                "-s, --secrets <secretsFile>",
+                squashSpace`File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable ${secretsEnvVar}
+                            is used as path, if set. ${allowDefaultSecrets ? "Default file is <USER_HOME>/.fasset/secrets.json." : ""}`
+            )
+            .env(secretsEnvVar);
+        if (allowDefaultSecrets) {
+            return secretsOption.default(defaultSecretsPath());
+        } else {
+            return secretsOption.makeOptionMandatory();
+        }
+    }
+
+    function createFAssetOption() {
+        return program
+            .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
+            .makeOptionMandatory();
+    }
+
+    function verifyFilesExist() {
+        const options: { config: string; secrets: string; } = program.opts();
+        // check config file
+        if (!fs.existsSync(options.config)) {
+            program.error(`Config file ${options.config} does not exist.`);
+        }
+        // check secrets file
+        if (!fs.existsSync(options.secrets)) {
+            const userOpts = { "agent": "--agent <management address>", "user": "--user", "bot": "--other", "util": "" };
+            program.error(stripIndent`Secrets file ${options.secrets} does not exist. To create new secrets file, please execute
+                                          yarn key-gen generateSecrets ${userOpts[user] ?? ""} -o "${options.secrets}"
+                                      and edit the file as instructed by generateSecrets.`);
+        }
+    }
+
+    const program = new Command();
+    program.addOption(createConfigOption());
+    program.addOption(createSecretsOption());
+    if (fassets === "single_fasset") {
+        program.addOption(createFAssetOption());
+    }
+    program.hook("preAction", () => verifyFilesExist());
     return program;
 }
 
 function defaultSecretsPath() {
-    const defaultSecretsPath = path.resolve(os.homedir(), "fasset/secrets.json");
-    if (fs.existsSync(defaultSecretsPath)) {
-        return defaultSecretsPath;
-    }
-}
-
-function setDynamicDefault(option: Option, defaultValue: string | undefined) {
-    return defaultValue != undefined ? option.default(defaultValue) : option.makeOptionMandatory();
+    return path.resolve(os.homedir(), "fasset/secrets.json");
 }

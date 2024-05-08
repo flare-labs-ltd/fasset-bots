@@ -13,7 +13,7 @@ const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 const AssetManagerController = artifacts.require("AssetManagerController");
 
-const program = programWithCommonOptions("bot", "all_fassets");
+const program = programWithCommonOptions("util", "all_fassets");
 
 program.name("test-governance").description("Command line commands for governance operation (not in production mode)");
 

@@ -9,7 +9,7 @@ import { toplevelRun } from "../utils/toplevel";
 
 const TIMEKEEPER_INTERVAL = 300_000;
 
-const program = programWithCommonOptions("bot", "all_fassets");
+const program = programWithCommonOptions("agent", "all_fassets");
 
 program.action(async () => {
     // eslint-disable-next-line no-constant-condition

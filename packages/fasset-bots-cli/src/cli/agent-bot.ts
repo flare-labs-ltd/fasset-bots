@@ -9,7 +9,7 @@ import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 import { validateDecimal } from "../utils/validation";
 
-const program = programWithCommonOptions("bot", "single_fasset");
+const program = programWithCommonOptions("agent", "single_fasset");
 
 program.name("agent-bot").description("Command line commands for AgentBot");
 

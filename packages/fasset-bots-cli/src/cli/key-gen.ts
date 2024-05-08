@@ -6,6 +6,7 @@ import { createSha256Hash, generateRandomHexString, logger, resolveInFassetBotsC
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
+import path from "path";
 import { toplevelRun } from "../utils/toplevel";
 
 const program = new Command();
@@ -34,6 +35,9 @@ program
         if (opts.output) {
             if (fs.existsSync(opts.output) && !opts.overwrite) {
                 program.error(`error: file ${opts.output} already exists`);
+            }
+            if (!fs.existsSync(path.dirname(opts.output))) {
+                fs.mkdirSync(path.dirname(opts.output));
             }
             fs.writeFileSync(opts.output, json);
             if (process.platform !== "win32") {

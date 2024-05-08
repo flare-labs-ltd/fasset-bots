@@ -10,6 +10,27 @@ export function squashSpace(strings: TemplateStringsArray, ...args: any[]) {
     return String.raw({ raw: normStrings }, ...args);
 }
 
+/**
+ * Fix indentation in a multiline template string by deleting the smallest indent after line 1.
+ * This allows template string to be nicely indented in code and when printed.
+ */
+export function stripIndent(strings: TemplateStringsArray, ...args: any[]): string;
+export function stripIndent(text: string): string;
+export function stripIndent(strings: string | TemplateStringsArray, ...args: any[]) {
+    function countIndentSpaces(s: string) {
+        let i = 0;
+        while (i < s.length && s[i] === " ") i++;
+        return i;
+    }
+    const text = typeof strings === "string" ? strings : String.raw({ raw: strings }, ...args);
+    const lines = text.split("\n");
+    const indentsInLinesAfterFirst = lines.slice(1).map(countIndentSpaces);
+    const minIndent = Math.min(...indentsInLinesAfterFirst);
+    const indentStr = " ".repeat(minIndent);
+    const strippedLines = lines.map((line, i) => i > 0 && line.startsWith(indentStr) ? line.slice(minIndent) : line);
+    return strippedLines.join("\n");
+}
+
 export function isBigNumber(x: any): x is BN | string {
     return BN.isBN(x) || (typeof x === "string" && /^\d+$/.test(x));
 }
