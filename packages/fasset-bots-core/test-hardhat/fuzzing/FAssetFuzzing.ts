@@ -19,7 +19,7 @@ import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInf
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
-import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
@@ -96,10 +96,9 @@ describe("Fuzzing tests", () => {
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
-            const secrets = createTestSecrets(chainInfo.chainId, ownerAddress, ownerAddress, ownerUnderlyingAddress);
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
             const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-            const botCliCommands = new AgentBotCommands(secrets, context, owner, orm, notifiers);
+            const botCliCommands = new AgentBotCommands(context, owner, ownerUnderlyingAddress, orm, notifiers);
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
             agentBots.push(fuzzingAgentBot);
             eventFormatter.addAddress(`BOT_${i}`, fuzzingAgentBot.agentBot.agent.vaultAddress);
@@ -135,7 +134,7 @@ describe("Fuzzing tests", () => {
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];
-        const timeKeeper = new TimeKeeper(timeKeeperAddress, context, 60000);
+        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, 7200, 60000, 5000);
         timeKeeper.run();
         // init some state
         await refreshAvailableAgents();
@@ -218,7 +217,7 @@ describe("Fuzzing tests", () => {
                 await commonTrackedState.readUnhandledEvents();
             }
         }
-        timeKeeper.clear();
+        timeKeeper.stop();
         // wait for all threads to finish
         runner.comment(`Remaining threads: ${runner.runningThreads}`);
         while (runner.runningThreads > 0) {

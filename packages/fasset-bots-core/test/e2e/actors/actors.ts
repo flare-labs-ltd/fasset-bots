@@ -2,13 +2,14 @@ import { FilterQuery } from "@mikro-orm/core";
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
-import { TimeKeeper } from "../../../src";
+import { ChainId, TimeKeeper } from "../../../src";
 import { ActorBaseRunner } from "../../../src/actors/ActorBaseRunner";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotRunner } from "../../../src/actors/AgentBotRunner";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
+import { TimeKeeperService } from "../../../src/actors/TimeKeeperService";
 import { AgentBotConfig, BotFAssetConfigWithIndexer, BotFAssetConfigWithWallet, KeeperBotConfig, Secrets } from "../../../src/config";
 import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { createBotConfig } from "../../../src/config/BotConfig";
@@ -23,6 +24,7 @@ import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { requireNotNull, sleep } from "../../../src/utils";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
+import { testTimekeeperService } from "../../../test-hardhat/test-utils/helpers";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { cleanUp, enableSlowTests, getNativeAccounts, itIf } from "../../test-utils/test-helpers";
@@ -63,7 +65,7 @@ describe("Actor tests - coston", () => {
         accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), getNativeAccounts(secrets), null);
         ownerManagementAddress = secrets.required("owner.management.address");
         ownerAddress = secrets.required("owner.native.address");
-        ownerUnderlyingAddress = AgentBot.underlyingAddress(secrets, runConfig.fAssets[fAssetSymbol].chainId);
+        ownerUnderlyingAddress = AgentBot.underlyingAddress(secrets, ChainId.from(runConfig.fAssets[fAssetSymbol].chainId));
         challengerAddress = accounts[1];
         liquidatorAddress = accounts[2];
         systemKeeperAddress = accounts[3];
@@ -103,13 +105,13 @@ describe("Actor tests - coston", () => {
     it("Should create agent bot runner", async () => {
         const contexts: Map<string, IAssetAgentContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
-        const agentBotRunner = new AgentBotRunner(secrets, contexts, orm, 5, testNotifierTransports);
+        const agentBotRunner = new AgentBotRunner(secrets, contexts, orm, 5, testNotifierTransports, testTimekeeperService);
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
     it("Should create agent bot runner from bot config", async () => {
-        const agentBotRunner = await AgentBotRunner.create(secrets, botConfig);
+        const agentBotRunner = await AgentBotRunner.create(secrets, botConfig, testTimekeeperService);
         expect(agentBotRunner.loopDelay).to.eq(runConfig.loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
@@ -154,11 +156,13 @@ describe("Actor tests - coston", () => {
     it("should start and stop timekeepers", async () => {
         const spyUpdate = spy.on(TimeKeeper.prototype, "updateUnderlyingBlock");
         try {
-            const timekeepers = await TimeKeeper.startTimekeepers(actorConfig, ownerAddress, 300_000);
+            const timekeeperService = await TimeKeeperService.create(actorConfig, ownerAddress, 7200, 300_000, 5000)
+            timekeeperService.startAll();
+            const timekeepers = Array.from(timekeeperService.timekeepers.values());
             expect(timekeepers.length).to.be.eq(2);
             await sleep(2000);
-            await TimeKeeper.stopTimekeepers(timekeepers);
-            expect(spyUpdate).to.be.called.twice;
+            await timekeeperService.stopAll();
+            expect(spyUpdate).to.be.called.exactly(2);
         } finally {
             spy.restore(TimeKeeper.prototype);
         }

@@ -1,5 +1,5 @@
-import BN from "bn.js";
-import { BNish } from "..";
+import { FormattedString } from "../formatting";
+import { BNish } from "../helpers";
 import { BaseNotifier, BotType, NotifierTransport } from "./BaseNotifier";
 
 export enum AgentNotificationKey {
@@ -144,57 +144,57 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendVaultCollateralTopUpAlert(value: BNish) {
+    async sendVaultCollateralTopUpAlert(value: FormattedString) {
         await this.info(
             AgentNotificationKey.AGENT_COLLATERAL_TOP_UP,
             `Agent ${this.address} was automatically topped up with collateral ${value} due to price changes.`
         );
     }
 
-    async sendPoolCollateralTopUpAlert(value: BNish) {
+    async sendPoolCollateralTopUpAlert(value: FormattedString) {
         await this.info(
             AgentNotificationKey.POOL_COLLATERAL_TOP_UP,
             `Agent ${this.address} POOL was automatically topped up with collateral ${value} due to price changes.`
         );
     }
 
-    async sendVaultCollateralTopUpFailedAlert(value: BNish) {
+    async sendVaultCollateralTopUpFailedAlert(value: FormattedString) {
         await this.danger(
             AgentNotificationKey.AGENT_COLLATERAL_TOP_UP_FAILED,
             `Agent ${this.address} could not be automatically topped up with collateral ${value} due to price changes.`
         );
     }
 
-    async sendPoolCollateralTopUpFailedAlert(value: BNish) {
+    async sendPoolCollateralTopUpFailedAlert(value: FormattedString) {
         await this.danger(
             AgentNotificationKey.POOL_COLLATERAL_TOP_UP_FAILED,
             `Agent ${this.address} POOL could not be automatically topped up with collateral ${value} due to price changes.`
         );
     }
 
-    async sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalanceUBA: BNish) {
+    async sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalanceUBA: FormattedString) {
         await this.danger(
             AgentNotificationKey.LOW_AGENT_FREE_UNDERLYING_BALANCE,
             `Agent ${this.address} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`
         );
     }
 
-    async sendLowUnderlyingAgentBalance(amount: BNish) {
+    async sendLowUnderlyingAgentBalance(amount: FormattedString) {
         await this.info(
             AgentNotificationKey.LOW_AGENT_FREE_UNDERLYING_BALANCE,
             `Agent ${this.address} was automatically topped up with underlying ${amount}.`
         );
     }
 
-    async sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: BNish) {
+    async sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: FormattedString) {
         await this.info(
             AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE,
             `Owner's underlying address ${ownerUnderlyingAddress} has low underlying ${ownerUnderlyingBalance}.`
         );
     }
 
-    async sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: string, tokenSymbol: string) {
-        await this.info(AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance: ${balance} ${tokenSymbol}.`);
+    async sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: FormattedString) {
+        await this.info(AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance ${balance}.`);
     }
 
     async sendRedemptionAddressValidationNoProof(requestId: BNish | null, roundId: number, requestData: string, address: string) {
@@ -225,10 +225,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendDailyTaskNoProofObtained(roundId: number, requestData: string) {
+    async sendDailyTaskNoProofObtained(minutes: number) {
         await this.danger(
             AgentNotificationKey.DAILY_TASK_NO_PROOF_OBTAINED,
-            `Agent ${this.address} cannot obtain proof confirmed block height existence in round ${roundId} with requested data ${requestData}.`
+            `Agent ${this.address} cannot obtain proof confirmed block height existence, waiting for more than ${minutes} minutes.`
         );
     }
 
@@ -240,11 +240,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.AGENT_CREATED, `Agent ${this.address} was created.`);
     }
 
-    async sendWithdrawVaultCollateral(amount: BNish) {
+    async sendWithdrawVaultCollateral(amount: FormattedString) {
         await this.info(AgentNotificationKey.WITHDRAW_VAULT_COLLATERAL, `Agent ${this.address} withdrew ${amount} of vault collateral.`);
     }
 
-    async sendWithdrawVaultCollateralAnnouncement(amount: BNish) {
+    async sendWithdrawVaultCollateralAnnouncement(amount: FormattedString) {
         await this.info(
             AgentNotificationKey.WITHDRAW_VAULT_COLLATERAL_ANNOUNCEMENT,
             `Agent ${this.address} ANNOUNCED withdrawal of ${amount} for vault collateral.`
@@ -258,7 +258,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendRedeemCollateralPoolTokens(amount: BNish) {
+    async sendRedeemCollateralPoolTokens(amount: FormattedString) {
         await this.info(AgentNotificationKey.REDEEM_POOL_TOKEN, `Agent ${this.address} redeemed of ${amount} pool tokens.`);
     }
 
@@ -269,7 +269,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendRedeemCollateralPoolTokensAnnouncement(amount: BNish | BN) {
+    async sendRedeemCollateralPoolTokensAnnouncement(amount: FormattedString) {
         await this.info(AgentNotificationKey.REDEEM_POOL_TOKEN_ANNOUNCEMENT, `Agent ${this.address} ANNOUNCED redemptions of ${amount} pool tokens.`);
     }
 
@@ -308,20 +308,20 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.REDEEM_POOL_TOKEN, `Agent ${this.address} redeemed pool tokens.`);
     }
 
-    async sendBuyCollateralPoolTokens(amount: BNish | BN) {
-        await this.info(AgentNotificationKey.BUY_POOL_TOKENS, `Agent ${this.address} bought ${amount} NAT worth of pool tokens successfully.`);
+    async sendBuyCollateralPoolTokens(amount: FormattedString) {
+        await this.info(AgentNotificationKey.BUY_POOL_TOKENS, `Agent ${this.address} bought ${amount} worth of pool tokens successfully.`);
     }
 
-    async sendVaultCollateralDeposit(amount: BNish | BN) {
+    async sendVaultCollateralDeposit(amount: FormattedString) {
         await this.info(AgentNotificationKey.VAULT_COLLATERAL_DEPOSIT, `Deposit of ${amount} vault collateral tokens to agent ${this.address} was successful.`);
     }
 
-    async sendWithdrawPoolFees(amount: BNish | BN) {
+    async sendWithdrawPoolFees(amount: FormattedString) {
         await this.info(AgentNotificationKey.WITHDRAW_POOL_FEES, `Agent ${this.address} withdrew pool fees ${amount} successfully.`);
     }
 
-    async sendBalancePoolFees(amount: BNish) {
-        await this.info(AgentNotificationKey.BALANCE_POOL_FEES, `Agent ${this.address} has following pool fees balance ${amount}.`);
+    async sendBalancePoolFees(amount: FormattedString) {
+        await this.info(AgentNotificationKey.BALANCE_POOL_FEES, `Agent ${this.address} has pool fees balance ${amount}.`);
     }
 
     async sendSelfClose() {
@@ -400,12 +400,12 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.REDEMPTION_PAYMENT_PROOF, `Payment proof for redemption ${requestId} was requested for ${this.address}.`);
     }
 
-    async sendDelegatePoolCollateral(poolCollateral: string, recipient: string, bips: string | BN) {
-        await this.info(AgentNotificationKey.POOL_DELEGATE, `Agent ${this.address} delegated pool collateral ${poolCollateral} to ${recipient} with ${bips}.`);
+    async sendDelegatePoolCollateral(poolAddress: string, recipient: string, bips: FormattedString) {
+        await this.info(AgentNotificationKey.POOL_DELEGATE, `Agent ${this.address} delegated ${bips} of pool collateral for pool ${poolAddress} to ${recipient}.`);
     }
 
-    async sendUndelegatePoolCollateral(poolCollateral: string) {
-        await this.info(AgentNotificationKey.POOL_UNDELEGATE, `Agent ${this.address} undelegated all pool collateral ${poolCollateral}.`);
+    async sendUndelegatePoolCollateral(poolAddress: string) {
+        await this.info(AgentNotificationKey.POOL_UNDELEGATE, `Agent ${this.address} undelegated all pool collateral for pool ${poolAddress}.`);
     }
 
     async sendAgentCannotUpdateSettingExpired(setting: string) {
@@ -415,7 +415,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendAgentCannotWithdrawCollateral(amount: BNish, type: string) {
+    async sendAgentCannotWithdrawCollateral(amount: FormattedString, type: string) {
         await this.danger(
             AgentNotificationKey.WITHDRAWAL_FAILED,
             `Agent ${this.address} could not withdrew ${type} collateral of ${amount}.`

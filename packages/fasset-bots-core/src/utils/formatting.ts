@@ -67,6 +67,8 @@ function groupIntegerDigits(x: string, seperator: string = "_") {
     return x;
 }
 
+export type FormattedString = string & { _formattedStringTypeTag: undefined };
+
 export interface FormatSettings {
     decimals?: number;          // maximum decimals to display
     padRight?: boolean;         // if true, display decimals even if they are 0
@@ -76,14 +78,14 @@ export interface FormatSettings {
 
 const BN_TEN = new BN(10);
 
-export function formatFixed(value: BN, decimals: number, format: FormatSettings = {}) {
+export function formatFixed(value: BN, decimals: number, format: FormatSettings = {}): FormattedString {
     let displayDecimals = decimals;
     if (format.decimals != null && format.decimals < decimals) {
         displayDecimals = Math.max(format.decimals, 0);
         value = value.divRound(BN_TEN.pow(new BN(decimals - displayDecimals)));
     }
     if (displayDecimals === 0) {
-        return value.toString(10);
+        return value.toString(10) as FormattedString;
     }
     const mantissa = value.toString(10).padStart(displayDecimals + 1, "0");
     const dotPos = mantissa.length - displayDecimals;
@@ -94,5 +96,13 @@ export function formatFixed(value: BN, decimals: number, format: FormatSettings 
     if (format.groupDigits) {
         result = groupIntegerDigits(result, format.groupSeparator ?? "_");
     }
-    return result;
+    return result as FormattedString;
+}
+
+export function formatBips(value: BN, format?: FormatSettings): FormattedString {
+    return `${formatFixed(value, 2, format)}%` as FormattedString;
+}
+
+export function formatTimestamp(value: BN): FormattedString {
+    return new Date(Number(value) * 1000).toISOString() as FormattedString;
 }

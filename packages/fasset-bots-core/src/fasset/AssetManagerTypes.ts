@@ -1,16 +1,9 @@
 import { AssetManagerInitInstance, IIAssetManagerInstance } from "../../typechain-truffle";
 
-type _AssetManagerSettings = Parameters<AssetManagerInitInstance['init']>[2];
-export type AssetManagerSettings = _AssetManagerSettings;
-
 export enum CollateralClass {
     POOL = 1,
     VAULT = 2,
 }
-
-export type CollateralType = Parameters<AssetManagerInitInstance['init']>[3][0];
-
-export type AgentSettings = Parameters<IIAssetManagerInstance["createAgentVault"]>[1];
 
 // status as returned from GetAgentInfo
 export enum AgentStatus {
@@ -20,10 +13,6 @@ export enum AgentStatus {
     FULL_LIQUIDATION = 3, // illegal payment liquidation - always liquidates all and then agent must close vault
     DESTROYING = 4, // agent announced destroy, cannot mint again; all existing mintings have been redeemed before
 }
-
-export type AgentInfo = Awaited<ReturnType<IIAssetManagerInstance["getAgentInfo"]>>;
-
-export type AvailableAgentInfo = Awaited<ReturnType<IIAssetManagerInstance["getAvailableAgentsDetailedList"]>>[0][0];
 
 export type AgentSetting =
     | "feeBIPS"
@@ -40,3 +29,18 @@ export enum TokenExitType {
     MINIMIZE_FEE_DEBT,
     KEEP_RATIO,
 }
+
+type _AssetManagerSettings = Parameters<AssetManagerInitInstance['init']>[2];
+export interface AssetManagerSettings extends _AssetManagerSettings {}
+
+type _CollateralType = Parameters<AssetManagerInitInstance['init']>[3][0];
+export interface CollateralType extends _CollateralType {}
+
+type _AgentSettings = Parameters<IIAssetManagerInstance["createAgentVault"]>[1];
+export interface AgentSettings extends _AgentSettings {}
+
+type _AgentInfo = Awaited<ReturnType<IIAssetManagerInstance["getAgentInfo"]>>;
+export interface AgentInfo extends _AgentInfo {}
+
+type _AvailableAgentInfo = Awaited<ReturnType<IIAssetManagerInstance["getAvailableAgentsDetailedList"]>>[0][0];
+export interface AvailableAgentInfo extends _AvailableAgentInfo {}

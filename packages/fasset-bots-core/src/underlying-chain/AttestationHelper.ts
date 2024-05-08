@@ -1,12 +1,12 @@
-import { constants } from "@openzeppelin/test-helpers";
 import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import { constants } from "@openzeppelin/test-helpers";
+import BN from "bn.js";
 import { prefix0x, toHex } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
-import { SourceId } from "./SourceId";
+import { ChainId } from "./ChainId";
 import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
 import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
-import BN from "bn.js";
 
 export class AttestationHelperError extends Error {
     constructor(message: string) {
@@ -14,7 +14,7 @@ export class AttestationHelperError extends Error {
     }
 }
 
-export function attestationProved(result: OptionalAttestationProof): result is AttestationProof {
+export function attestationProved(result: OptionalAttestationProof | null | undefined): result is AttestationProof {
     return typeof result === "object" && result != null;
 }
 
@@ -33,7 +33,7 @@ export class AttestationHelper {
     constructor(
         public stateConnector: IStateConnectorClient,
         public chain: IBlockChain,
-        public chainId: SourceId
+        public chainId: ChainId
     ) {}
 
     roundFinalized(round: number): Promise<boolean> {
@@ -54,7 +54,7 @@ export class AttestationHelper {
         }
         const request: Payment.Request = {
             attestationType: Payment.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 transactionId: prefix0x(transactionHash),
@@ -75,7 +75,7 @@ export class AttestationHelper {
         }
         const request: BalanceDecreasingTransaction.Request = {
             attestationType: BalanceDecreasingTransaction.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 transactionId: prefix0x(transactionHash),
@@ -103,7 +103,7 @@ export class AttestationHelper {
         }
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 minimalBlockNumber: String(startBlock),
@@ -120,18 +120,20 @@ export class AttestationHelper {
     async requestConfirmedBlockHeightExistsProof(queryWindow: number): Promise<AttestationRequestId | null> {
         logger.info(`Attestation helper: requesting confirmed block height exists proof with queryWindow ${queryWindow}`);
         const blockHeight = await this.chain.getBlockHeight();
-        const finalizationBlock = await this.chain.getBlockAt(blockHeight);
+        const blockNumber = Math.max(blockHeight - this.chain.finalizationBlocks, 0);
+        const finalizationBlockNumber = blockNumber + this.chain.finalizationBlocks;
+        const finalizationBlock = await this.chain.getBlockAt(finalizationBlockNumber);
         /* istanbul ignore if */
         if (finalizationBlock == null) {
-            logger.error(`Attestation helper error: finalization block not found (block ${blockHeight}, height ${await this.chain.getBlockHeight()})`);
-            throw new AttestationHelperError(`finalization block not found (block ${blockHeight}, height ${await this.chain.getBlockHeight()})`);
+            logger.error(`Attestation helper error: finalization block not found (finalization block ${finalizationBlockNumber}, height ${blockHeight})`);
+            throw new AttestationHelperError(`finalization block not found (finalization block ${finalizationBlockNumber}, height ${blockHeight})`);
         }
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
-                blockNumber: String(blockHeight - this.chain.finalizationBlocks),
+                blockNumber: String(blockNumber),
                 queryWindow: String(queryWindow),
             },
         };
@@ -141,7 +143,7 @@ export class AttestationHelper {
     async requestAddressValidityProof(underlyingAddress: string): Promise<AttestationRequestId | null> {
         const request: AddressValidity.Request = {
             attestationType: AddressValidity.TYPE,
-            sourceId: this.chainId,
+            sourceId: this.chainId.sourceId,
             messageIntegrityCode: constants.ZERO_BYTES32,
             requestBody: {
                 addressStr: underlyingAddress,

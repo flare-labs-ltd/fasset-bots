@@ -1,21 +1,21 @@
+import { ConfirmedBlockHeightExists, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import rewire from "rewire";
+import { Secrets, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
+import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
 import { ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import rewire from "rewire";
-use(chaiAsPromised);
 import { testChainInfo } from "../../test-utils/TestChainInfo";
 import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
-import { SourceId } from "../../../src/underlying-chain/SourceId";
-import { ConfirmedBlockHeightExists, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
-import { Secrets, indexerApiKey } from "../../../src/config";
+use(chaiAsPromised);
 const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
 const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
 
 let stateConnectorClient: StateConnectorClientHelper;
-const sourceId = SourceId.testXRP;
+const chainId = ChainId.testXRP;
 const finalizationBlocks: number = 6;
 
 describe("testXRP attestation/state connector tests", () => {
@@ -54,12 +54,12 @@ describe("testXRP attestation/state connector tests", () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(sourceId, INDEXER_URL_XRP, indexerApiKey(secrets));
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets));
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
-            sourceId: sourceId,
+            sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
                 blockNumber: String(blockHeight - testChainInfo.xrp.finalizationBlocks),
@@ -159,7 +159,7 @@ describe("State connector tests - decoding", () => {
         const proofData: ConfirmedBlockHeightExists.Proof = {
             data: {
                 attestationType: invalidAttestationType,
-                sourceId: SourceId.testXRP,
+                sourceId: ChainId.testXRP.sourceId,
                 lowestUsedTimestamp: "1687489872",
                 votingRound: "571512",
                 requestBody: {

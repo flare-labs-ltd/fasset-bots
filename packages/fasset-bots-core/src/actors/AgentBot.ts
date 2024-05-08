@@ -1,52 +1,53 @@
 import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
-import { CollateralReserved, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { decodedChainId } from "../config/create-wallet-client";
 import { EM } from "../config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, DailyProofState, Event } from "../entities/agent";
+import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
-import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
-import { CollateralPrice } from "../state/CollateralPrice";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
-import { SourceId } from "../underlying-chain/SourceId";
-import { IBlock, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
-import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
+import { ChainId } from "../underlying-chain/ChainId";
+import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
+import { CommandLineError } from "../utils";
+import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
-import { attestationWindowSeconds, latestUnderlyingBlock } from "../utils/fasset-helpers";
-import { formatArgs, formatFixed, squashSpace } from "../utils/formatting";
-import {
-    BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, DAYS, MAX_BIPS, NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, POOL_COLLATERAL_RESERVE_FACTOR,
-    VAULT_COLLATERAL_RESERVE_FACTOR, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, findOneSubstring, toBN
-} from "../utils/helpers";
+import { formatArgs, squashSpace } from "../utils/formatting";
+import { BN_ZERO, BNish, DAYS, MINUTES, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { AgentNotificationKey, AgentNotifier } from "../utils/notifier/AgentNotifier";
-import { NotificationLevel, NotifierTransport } from "../utils/notifier/BaseNotifier";
+import { AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { AgentBotClosing } from "./AgentBotClosing";
+import { AgentBotCollateralManagement } from "./AgentBotCollateralManagement";
+import { AgentBotEventReader } from "./AgentBotEventReader";
+import { AgentBotMinting } from "./AgentBotMinting";
+import { AgentBotRedemption } from "./AgentBotRedemption";
+import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
+import { AgentTokenBalances } from "./AgentTokenBalances";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolToken = artifacts.require("CollateralPoolToken");
-const IERC20 = artifacts.require("IERC20");
 
 export interface IRunner {
     stopRequested: boolean;
 }
 
-enum ClaimType {
+export interface ITimeKeeper {
+    latestProof?: ConfirmedBlockHeightExists.Proof;
+}
+
+export enum ClaimType {
     POOL = "POOL",
     VAULT = "VAULT",
 }
 
-const MAX_EVENT_RETRY = 5;
+export const PERFORM_DAILY_TASKS_EVERY = 1 * DAYS;
 
 export class AgentBot {
     static deepCopyWithObjectCreate = true;
@@ -59,10 +60,18 @@ export class AgentBot {
     ) {}
 
     context = this.agent.context;
-    eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
-    latestProof: ConfirmedBlockHeightExists.Proof | null = null;
+    tokens = new AgentTokenBalances(this.context, this.agent.vaultAddress);
+    eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
+    minting = new AgentBotMinting(this, this.agent, this.notifier);
+    redemption = new AgentBotRedemption(this, this.agent, this.notifier);
+    collateralManagement = new AgentBotCollateralManagement(this.agent, this.notifier, this.tokens);
+    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.notifier, this.ownerUnderlyingAddress, this.tokens);
+
+    // only set when created by an AgentBotRunner
     runner?: IRunner;
-    maxHandleEventBlocks = 1000;
+    timekeeper?: ITimeKeeper;
+
+    waitingForLatestBlockProofSince = BN_ZERO;
 
     static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
@@ -111,7 +120,7 @@ export class AgentBot {
         // save state
         return await rootEm.transactional(async (em) => {
             const agentEntity = new AgentEntity();
-            agentEntity.chainId = context.chainInfo.chainId;
+            agentEntity.chainId = context.chainInfo.chainId.sourceId;
             agentEntity.chainSymbol = context.chainInfo.symbol;
             agentEntity.ownerAddress = agent.owner.managementAddress;
             agentEntity.vaultAddress = agent.vaultAddress;
@@ -119,7 +128,6 @@ export class AgentBot {
             agentEntity.active = true;
             agentEntity.currentEventBlock = lastBlock + 1;
             agentEntity.collateralPoolAddress = agent.collateralPool.address;
-            agentEntity.dailyProofState = DailyProofState.OBTAINED_PROOF;
             em.persist(agentEntity);
             logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
                 underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
@@ -177,8 +185,8 @@ export class AgentBot {
         return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
     }
 
-    static underlyingAddress(secrets: Secrets, sourceId: SourceId) {
-        return secrets.required(`owner.${decodedChainId(sourceId)}.address`);
+    static underlyingAddress(secrets: Secrets, chainId: ChainId) {
+        return secrets.required(`owner.${chainId.chainName}.address`);
     }
 
     /**
@@ -188,7 +196,7 @@ export class AgentBot {
      */
     static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
         try {
-            if (![SourceId.XRP, SourceId.testXRP].includes(context.chainInfo.chainId)) return;
+            if (![ChainId.XRP, ChainId.testXRP].includes(context.chainInfo.chainId)) return;
             const starterAmount = XRP_ACTIVATE_BALANCE;
             const reference = owner.managementAddress;
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
@@ -200,7 +208,8 @@ export class AgentBot {
             logger.info(`Owner ${owner} activated underlying address ${vaultUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
             logger.error(`Owner ${owner} couldn't activate underlying address ${vaultUnderlyingAddress}:`, error);
-            throw new Error(`Could not activate or verify new XRP account ${vaultUnderlyingAddress}`);
+            throw new CommandLineError(squashSpace`Could not activate or verify new agent vault's XRP account.
+                Note that the owner's XRP account ${ownerUnderlyingAddress} requires at least ${2 * Number(XRP_ACTIVATE_BALANCE) * 1e-6 + 1} XRP to activate the new account.`);
         }
     }
 
@@ -216,148 +225,56 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async runStep(rootEm: EM): Promise<void> {
-        await this.troubleshootEvents(rootEm);
         await this.handleEvents(rootEm);
         await this.handleOpenRedemptions(rootEm);
-        await this.handleAgentsWaitingsAndCleanUp(rootEm);
+        await this.handleOpenMintings(rootEm);
+        await this.handleTimelockedProcesses(rootEm);
         await this.handleDailyTasks(rootEm);
     }
 
-    async troubleshootEvents(rootEm: EM): Promise<void> {
-        try {
-            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            await agentEnt.events.init();
-            for (const event of agentEnt.unhandledEvents().sort(eventOrder)) {
-                if (this.stopRequested()) return;
-                await rootEm
-                    .transactional(async (em) => {
-                        const fullEvent = await this.getEventFromEntity(event);
-                        if (fullEvent != null) {
-                            await this.handleEvent(em, fullEvent);
-                        } else {
-                            await this.notifier.send(NotificationLevel.DANGER, AgentNotificationKey.UNRESOLVED_EVENT,
-                                `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; ir will be skipped.`);
-                        }
-                        agentEnt.events.remove(event);
-                    })
-                    .catch(async (error) => {
-                        event.retries += 1;
-                        if (event.retries > MAX_EVENT_RETRY) {
-                            agentEnt.events.remove(event);
-                        }
-                        await rootEm.persist(agentEnt).flush();
-                        console.error(`Error troubleshooting handling of event with id ${event.id} for agent ${this.agent.vaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event:`, error);
-                    });
-            }
-        } catch (error) {
-            console.error(`Error troubleshooting events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while troubleshooting events:`, error);
-        }
-    }
-
-    async getEventFromEntity(event: Event): Promise<EvmEvent | undefined> {
-        const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
-        const events = [];
-        const logsAssetManager = await web3.eth.getPastLogs({
-            address: this.agent.assetManager.address,
-            fromBlock: event.blockNumber,
-            toBlock: event.blockNumber,
-            topics: [null, encodedVaultAddress],
-        });
-        const logsFtsoManager = await web3.eth.getPastLogs({
-            address: this.context.priceChangeEmitter.address,
-            fromBlock: event.blockNumber,
-            toBlock: event.blockNumber,
-            topics: [null],
-        });
-        events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
-        events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
-        for (const _event of events) {
-            if (_event.transactionIndex === event.transactionIndex && _event.logIndex === event.logIndex) {
-                return _event;
-            }
-        }
-    }
-
-    /**
-     * Performs appropriate actions according to received events.
-     * @param rootEm entity manager
-     */
-    async handleEvents(rootEm: EM): Promise<void> {
-        if (this.stopRequested()) return;
-        try {
-            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            await agentEnt.events.init();
-            const lastEventRead = agentEnt.lastEventRead();
-            // eslint-disable-next-line prefer-const
-            let [events, lastBlock] = await this.readNewEvents(rootEm, this.maxHandleEventBlocks);
-            if (lastEventRead !== undefined) {
-                events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
-            }
-            for (const event of events) {
-                if (this.stopRequested()) return;
-                await rootEm
-                    .transactional(async (em) => {
-                        // log event is handled here! Transaction committing should be done at the last possible step!
-                        agentEnt.addNewEvent(new Event(agentEnt, event, true));
-                        agentEnt.currentEventBlock = event.blockNumber;
-                        // handle the event
-                        await this.handleEvent(em, event);
-                    })
-                    .catch(async (error) => {
-                        agentEnt.addNewEvent(new Event(agentEnt, event, false));
-                        await rootEm.persist(agentEnt).flush();
-                        console.error(`Error handling event ${event.signature} for agent ${this.agent.vaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into error while handling an event:`, error);
-                    });
-            }
-            agentEnt.currentEventBlock = lastBlock + 1;
-            await rootEm.persist(agentEnt).flush();
-        } catch (error) {
-            console.error(`Error handling events for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling events:`, error);
-        }
+    async handleEvents(rootEm: EM) {
+        await this.eventReader.troubleshootEvents(rootEm);
+        await this.eventReader.checkForPriceChangeEvents();
+        await this.eventReader.handleNewEvents(rootEm);
     }
 
     async handleEvent(em: EM, event: EvmEvent): Promise<void> {
+        // only events for this agent should be handled (this should already be the case due to filter in readNewEvents, but just to be sure)
+        if (event.args.agentVault && event.args.agentVault.toLowerCase() !== this.agent.vaultAddress.toLowerCase()) return;
         if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
-            await this.mintingStarted(em, event.args);
+            await this.minting.mintingStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "CollateralReservationDeleted")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationDeleted' with data ${formatArgs(event.args)}.`);
-            const minting = await this.findMinting(em, event.args.collateralReservationId);
-            await this.mintingExecuted(minting, false);
+            const minting = await this.minting.findMinting(em, event.args.collateralReservationId);
+            await this.minting.mintingExecuted(minting, false);
         } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
             if (!event.args.collateralReservationId.isZero()) {
                 logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
-                const minting = await this.findMinting(em, event.args.collateralReservationId);
-                await this.mintingExecuted(minting, true);
+                const minting = await this.minting.findMinting(em, event.args.collateralReservationId);
+                await this.minting.mintingExecuted(minting, true);
             }
         } else if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
-            await this.redemptionStarted(em, event.args);
+            await this.redemption.redemptionStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionDefault")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
-            await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            await this.redemption.redemptionFinished(em, event.args.requestId);
             await this.notifier.sendRedemptionWasPerformed(event.args.requestId, event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
-            await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            await this.redemption.redemptionFinished(em, event.args.requestId);
             await this.notifier.sendRedemptionFailed(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
-            await this.redemptionFinished(em, event.args.requestId, event.args.agentVault);
+            await this.redemption.redemptionFinished(em, event.args.requestId);
             await this.notifier.sendRedemptionBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
-            await this.handleAgentDestruction(em, event.args.agentVault);
-        } else if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
-            logger.info(`Agent ${this.agent.vaultAddress} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
-            await this.checkAgentForCollateralRatiosAndTopUp();
+            await this.handleAgentDestroyed(em);
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendCCBAlert(event.args.timestamp);
@@ -366,7 +283,7 @@ export class AgentBot {
             await this.notifier.sendLiquidationStartAlert(event.args.timestamp);
         } else if (eventIs(event, this.context.assetManager, "LiquidationPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendLiquidationWasPerformed(event.args.valueUBA);
+            await this.notifier.sendLiquidationWasPerformed(await this.tokens.fAsset.format(event.args.valueUBA));
         } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.agentVault);
@@ -380,40 +297,29 @@ export class AgentBot {
     }
 
     /**
-     * Checks is there are any new events from assetManager.
-     * @param em entity manager
-     * @returns list of EvmEvents
+     * @param rootEm entity manager
      */
-    async readNewEvents(em: EM, maximumBlocks: number): Promise<[EvmEvent[], number]> {
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        logger.info(`Agent ${this.agent.vaultAddress} started reading native events FROM block ${agentEnt.currentEventBlock}`);
-        // get all logs for this agent
-        const nci = this.context.nativeChainInfo;
-        const lastChainBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
-        const lastBlock = Math.min(agentEnt.currentEventBlock + maximumBlocks, lastChainBlock);
-        const events: EvmEvent[] = [];
-        const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agent.vaultAddress);
-        for (let lastBlockRead = agentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
-            if (this.stopRequested()) break;
-            const logsAssetManager = await web3.eth.getPastLogs({
-                address: this.agent.assetManager.address,
-                fromBlock: lastBlockRead,
-                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
-                topics: [null, encodedVaultAddress],
-            });
-            events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
-            const logsFtsoManager = await web3.eth.getPastLogs({
-                address: this.context.priceChangeEmitter.address,
-                fromBlock: lastBlockRead,
-                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
-                topics: [null],
-            });
-            events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));
+    async handleOpenMintings(rootEm: EM): Promise<void> {
+        const openMintings = await this.minting.openMintings(rootEm, true);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
+        for (const rd of openMintings) {
+            if (this.stopRequested()) return;
+            await this.minting.nextMintingStep(rootEm, rd.id);
         }
-        logger.info(`Agent ${this.agent.vaultAddress} finished reading native events TO block ${lastBlock}`);
-        // sort events first by their block numbers, then internally by their event index
-        events.sort(eventOrder);
-        return [events, lastBlock];
+        logger.info(`Agent ${this.agent.vaultAddress} finished handling open mintings.`);
+    }
+
+    /**
+     * @param rootEm entity manager
+     */
+    async handleOpenRedemptions(rootEm: EM): Promise<void> {
+        const openRedemptions = await this.redemption.openRedemptions(rootEm, true);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
+        for (const rd of openRedemptions) {
+            if (this.stopRequested()) return;
+            await this.redemption.nextRedemptionStep(rootEm, rd.id);
+        }
+        logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
     }
 
     /**
@@ -423,61 +329,14 @@ export class AgentBot {
     async handleDailyTasks(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
         const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const latestBlock = await latestUnderlyingBlock(this.context.blockchainIndexer);
-        /* istanbul ignore else */
-        if (latestBlock) {
-            logger.info(`Agent ${this.agent.vaultAddress} checks if daily task need to be handled. List time checked: ${agentEnt.dailyTasksTimestamp.toString()}. Latest block: ${latestBlock.number}, ${latestBlock.timestamp}.`);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve latest block in handleDailyTasks.`);
-            return;
-        }
-        if (
-            latestBlock &&
-            toBN(latestBlock.timestamp)
-                .sub(toBN(agentEnt.dailyTasksTimestamp))
-                .gtn(1 * DAYS)
-        ) {
-            if (agentEnt.dailyProofState === DailyProofState.OBTAINED_PROOF) {
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to request confirmed block heigh exists proof daily tasks.`);
-                const request = await this.context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(this.context.assetManager));
-                if (request) {
-                    agentEnt.dailyProofState = DailyProofState.WAITING_PROOF;
-                    agentEnt.dailyProofRequestRound = request.round;
-                    agentEnt.dailyProofRequestData = request.data;
-                    logger.info(`Agent ${this.agent.vaultAddress} requested confirmed block heigh exists proof for daily tasks: dailyProofRequestRound ${request.round} and dailyProofRequestData ${request.data}`);
-                    await rootEm.persistAndFlush(agentEnt);
-                } else {
-                    // else cannot prove request yet
-                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet request confirmed block heigh exists for proof daily tasks`);
-                }
-            } else {
-                // agentEnt.dailyProofState === DailyProofState.WAITING_PROOF
-                assertNotNull(agentEnt.dailyProofRequestRound);
-                assertNotNull(agentEnt.dailyProofRequestData);
-                logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
-                if (proof === AttestationNotProved.NOT_FINALIZED) {
-                    logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                    return;
-                }
-                if (attestationProved(proof)) {
-                    logger.info(`Agent ${this.agent.vaultAddress} obtained confirmed block heigh exists proof daily tasks in round ${agentEnt.dailyProofRequestRound} and data ${agentEnt.dailyProofRequestData}.`);
-                    this.latestProof = proof;
-
-                    agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
-                    await this.handleCornerCases(rootEm);
-                    await this.checkForClaims();
-                    agentEnt.dailyTasksTimestamp = toBN(latestBlock.timestamp);
-                    await rootEm.persistAndFlush(agentEnt);
-                } else {
-                    await this.notifier.sendDailyTaskNoProofObtained(agentEnt.dailyProofRequestRound, agentEnt.dailyProofRequestData);
-                    // request new block height proof
-                    agentEnt.dailyProofState = DailyProofState.OBTAINED_PROOF;
-                    await rootEm.persistAndFlush(agentEnt);
-                }
-            }
-        }
-        logger.info(`Agent ${this.agent.vaultAddress} finished checking if daily task need to be handled.`);
+        const timestamp = await latestBlockTimestampBN();
+        if (timestamp.sub(agentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
+        const blockHeightProof = await this.getUnderlyingBlockHeightProof();
+        if (blockHeightProof == null) return;
+        logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
+        await this.checkForClaims();
+        agentEnt.dailyTasksTimestamp = toBN(timestamp);
+        await rootEm.persistAndFlush(agentEnt);
     }
 
     /**
@@ -502,7 +361,7 @@ export class AgentBot {
             const notClaimedRewards: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(addressToClaim);
             if (notClaimedRewards.length > 0) {
                 const unClaimedEpoch = notClaimedRewards[notClaimedRewards.length - 1];
-                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch.toString()}`);
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch}`);
                 if (type === ClaimType.VAULT) {
                     await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, addressToClaim, { from: this.agent.owner.workAddress });
                 } else {
@@ -542,272 +401,137 @@ export class AgentBot {
     }
 
     /**
-     * Checks if any minting or redemption is stuck in corner case.
-     * @param rootEm entity manager
-     */
-    async handleCornerCases(rootEm: EM): Promise<void> {
-        try {
-            logger.info(`Agent ${this.agent.vaultAddress} started handling corner cases.`);
-            await this.handleOpenMintings(rootEm);
-            await this.handleOpenRedemptionsForCornerCase(rootEm);
-            logger.info(`Agent ${this.agent.vaultAddress} finished handling corner cases.`);
-        } catch (error) {
-            console.error(`Error handling corner cases for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling corner cases:`, error);
-        }
-    }
-
-    /**
      * Checks and handles if there are any AgentBot actions (withdraw, exit available list, update AgentBot setting) waited to be executed due to required announcement or time lock.
      * @param rootEm entity manager
      */
-    async handleAgentsWaitingsAndCleanUp(rootEm: EM): Promise<void> {
+    async handleTimelockedProcesses(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
         await rootEm.transactional(async (em) => {
-            const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            const agentEnt: AgentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
             const latestTimestamp = await latestBlockTimestampBN();
-            if (toBN(agentEnt.waitingForDestructionTimestamp).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for destruction.`);
-                // agent waiting for destruction
-                if (toBN(agentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
-                    // agent can be destroyed
-                    await this.agent.destroy();
-                    agentEnt.waitingForDestructionTimestamp = BN_ZERO;
-                    await this.handleAgentDestruction(em, agentEnt.vaultAddress);
-                } else {
-                    logger.info(`Agent ${this.agent.vaultAddress} cannot be destroyed. Allowed at ${agentEnt.waitingForDestructionTimestamp.toString()}. Current ${latestTimestamp.toString()}.`);
-                }
-            }
-            // vault collateral withdrawal
-            if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-                const successOrExpired = await this.withdrawCollateral(toBN(agentEnt.withdrawalAllowedAtTimestamp), toBN(agentEnt.withdrawalAllowedAtAmount), latestTimestamp, ClaimType.VAULT);
-                if (successOrExpired) {
-                    agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
-                    agentEnt.withdrawalAllowedAtAmount = "";
-                }
-            }
-            // pool token redemption
-            if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-                const successOrExpired = await this.withdrawCollateral(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp), toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount), latestTimestamp, ClaimType.POOL);
-                if (successOrExpired) {
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
-                }
-            }
-            //Agent settings update
-            //Agent update feeBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
-            }
-            //Agent update poolFeeShareBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(
-                    toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS),
-                    "poolFeeShareBIPS",
-                    latestTimestamp
-                );
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
-            }
-            //Agent update mintingVaultCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(
-                    toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS),
-                    "mintingVaultCollateralRatioBIPS",
-                    latestTimestamp
-                );
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
-            }
-            //Agent update mintingPoolCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(
-                    toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS),
-                    "mintingPoolCollateralRatioBIPS",
-                    latestTimestamp
-                );
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
-            }
-            //Agent update buyFAssetByAgentFactorBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(
-                    toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS),
-                    "buyFAssetByAgentFactorBIPS",
-                    latestTimestamp
-                );
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
-            }
-            //Agent update poolExitCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(
-                    toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS),
-                    "poolExitCollateralRatioBIPS",
-                    latestTimestamp
-                );
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
-            }
-            //Agent update poolTopupCollateralRatioBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(
-                    toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS),
-                    "poolTopupCollateralRatioBIPS",
-                    latestTimestamp
-                );
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
-            }
-            //Agent update poolTopupTokenPriceFactorBIPS
-            if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
-                const updatedOrExpired = await this.updateAgentSettings(
-                    toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS),
-                    "poolTopupTokenPriceFactorBIPS",
-                    latestTimestamp
-                );
-                if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
-            }
-            if (
-                toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO) ||
-                (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO) && agentEnt.waitingForDestructionCleanUp)
-            ) {
-                // agent can exit available
-                await this.exitAvailable(agentEnt);
-            } else if (
-                agentEnt.waitingForDestructionCleanUp &&
-                (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO) ||
-                    toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO))
-            ) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for clean up before destruction.`);
-                // vault collateral withdrawal
-                if (toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-                    const successOrExpired = await this.withdrawCollateral(
-                        toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp),
-                        toBN(agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount),
-                        latestTimestamp,
-                        ClaimType.VAULT
-                    );
-                    if (successOrExpired) {
-                        agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = BN_ZERO;
-                        agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = "";
-                    }
-                }
-                // pool token redemption
-                if (toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-                    const successOrExpired = await this.withdrawCollateral(
-                        toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp),
-                        toBN(agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount),
-                        latestTimestamp,
-                        ClaimType.POOL
-                    );
-                    if (successOrExpired) {
-                        agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                        agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = "";
-                    }
-                }
-            } else if (agentEnt.waitingForDestructionCleanUp) {
-                logger.info(`Agent ${this.agent.vaultAddress} is checking if clean up before destruction is complete.`);
-                // agent checks if clean up is complete
-                // withdraw and self close pool fees
-                const poolFeeBalance = await this.agent.poolFeeBalance();
-                if (poolFeeBalance.gt(BN_ZERO)) {
-                    await this.agent.withdrawPoolFees(poolFeeBalance);
-                    await this.agent.selfClose(poolFeeBalance);
-                    logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${poolFeeBalance.toString()}.`);
-                }
-                // check poolTokens and vaultCollateralBalance
-                const agentInfoForAnnounce = await this.agent.getAgentInfo();
-                const freeVaultCollateralBalance = toBN(agentInfoForAnnounce.freeVaultCollateralWei);
-                if (freeVaultCollateralBalance.gt(BN_ZERO)) {
-                    // announce withdraw class 1
-                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp =
-                        await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance);
-                    agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
-                    logger.info(`Agent ${this.agent.vaultAddress} announced vault collateral withdrawal ${freeVaultCollateralBalance.toString()} at ${agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
-                }
-                // check poolTokens
-                const poolTokenBalance = toBN(await this.agent.collateralPoolToken.balanceOf(this.agent.vaultAddress));
-                const agentInfo = await this.agent.getAgentInfo();
-                if (
-                    poolTokenBalance.gt(BN_ZERO) &&
-                    toBN(agentInfo.mintedUBA).eq(BN_ZERO) &&
-                    toBN(agentInfo.redeemingUBA).eq(BN_ZERO) &&
-                    toBN(agentInfo.reservedUBA).eq(BN_ZERO) &&
-                    toBN(agentInfo.poolRedeemingUBA).eq(BN_ZERO)
-                ) {
-                    // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
-                    agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
-                    agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
-                    logger.info(`Agent ${this.agent.vaultAddress} announced pool token redemption ${poolTokenBalance.toString()} at ${agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp}.`);
-                }
-                const agentInfoForDestroy = await this.agent.getAgentInfo();
-                const totalPoolTokens = toBN(await this.agent.collateralPoolToken.totalSupply());
-                //and wait for others to redeem
-                if (
-                    totalPoolTokens.eq(BN_ZERO) &&
-                    toBN(agentInfoForDestroy.mintedUBA).eq(BN_ZERO) &&
-                    toBN(agentInfoForDestroy.redeemingUBA).eq(BN_ZERO) &&
-                    toBN(agentInfoForDestroy.reservedUBA).eq(BN_ZERO) &&
-                    toBN(agentInfoForDestroy.poolRedeemingUBA).eq(BN_ZERO)
-                ) {
-                    // agent checks if clean is complete, agent can announce destroy
-                    const destroyAllowedAt = await this.agent.announceDestroy();
-                    agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
-                    agentEnt.waitingForDestructionCleanUp = false;
-                    await this.notifier.sendAgentAnnounceDestroy();
-                    logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
-                } else {
-                    if (toBN(agentInfoForDestroy.mintedUBA).gt(BN_ZERO)) {
-                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still backing FAssets.`);
-                    }
-                    if (toBN(agentInfoForDestroy.redeemingUBA).gt(BN_ZERO) || toBN(agentInfoForDestroy.poolRedeemingUBA).gt(BN_ZERO)) {
-                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still redeeming FAssets.`);
-                    }
-                    if (toBN(agentInfoForDestroy.reservedUBA).gt(BN_ZERO)) {
-                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent has some locked collateral by collateral reservation.`);
-                    }
-                    /* istanbul ignore else */
-                    if (toBN(totalPoolTokens).gt(BN_ZERO)) {
-                        logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Total supply of collateral pool tokens is not 0.`);
-                    }
-                }
-            }
-            // confirm underlying withdrawal
-            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
-                // agent waiting for underlying withdrawal
-                if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
-                    const settings = await this.context.assetManager.getSettings();
-                    const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
-                    if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                        // agent can confirm underlying withdrawal
-                        await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
-                        await this.notifier.sendConfirmWithdrawUnderlying();
-                        logger.info(`Agent ${this.agent.vaultAddress} confirmed underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                        agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                    } else {
-                        logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
-                    }
-                }
-            }
-            // cancel underlying withdrawal
-            if (agentEnt.underlyingWithdrawalWaitingForCancelation) {
-                logger.info(`Agent ${this.agent.vaultAddress} is waiting for canceling underlying withdrawal.`);
-                const settings = await this.context.assetManager.getSettings();
-                const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
-                if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                    // agent can confirm cancel withdrawal announcement
-                    await this.agent.cancelUnderlyingWithdrawal();
-                    await this.notifier.sendCancelWithdrawUnderlying();
-                    logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                    agentEnt.underlyingWithdrawalWaitingForCancelation = false;
-                } else {
-                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).toString()}. Current ${latestTimestamp.toString()}.`);
-                }
-            }
+            await this.handleWaitForCollateralWithdrawal(agentEnt, latestTimestamp);
+            await this.handleWaitForPoolTokenRedemption(agentEnt, latestTimestamp);
+            await this.handleWaitForAgentSettingUpdate(agentEnt, latestTimestamp);
+            await this.handleWaitAgentExitAvailable(agentEnt, latestTimestamp);
+            await this.handleUnderlyingWithdrawal(agentEnt, latestTimestamp);
+            await this.handleAgentCloseProcess(agentEnt);
             em.persist(agentEnt);
         });
         logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleAgentsWaitingsAndCleanUp'.`);
+    }
+
+    private async handleAgentCloseProcess(agentEnt: AgentEntity) {
+        const closingHandler = new AgentBotClosing(this, agentEnt);
+        await closingHandler.handleAgentCloseProcess();
+    }
+
+    async handleWaitForCollateralWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
+        if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+            const allowedAt = toBN(agentEnt.withdrawalAllowedAtTimestamp);
+            const amount = toBN(agentEnt.withdrawalAllowedAtAmount);
+            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
+            if (successOrExpired) {
+                agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
+                agentEnt.withdrawalAllowedAtAmount = "";
+            }
+        }
+    }
+
+    async handleWaitForPoolTokenRedemption(agentEnt: AgentEntity, latestTimestamp: BN) {
+        if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+            const allowedAt = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
+            const amount = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
+            if (successOrExpired) {
+                agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+                agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+            }
+        }
+    }
+
+    // Agent settings update
+    private async handleWaitForAgentSettingUpdate(agentEnt: AgentEntity, latestTimestamp: BN) {
+        //Agent update feeBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
+        }
+        //Agent update poolFeeShareBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS), "poolFeeShareBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
+        }
+        //Agent update mintingVaultCollateralRatioBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
+        }
+        //Agent update mintingPoolCollateralRatioBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
+        }
+        //Agent update buyFAssetByAgentFactorBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS), "buyFAssetByAgentFactorBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
+        }
+        //Agent update poolExitCollateralRatioBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
+        }
+        //Agent update poolTopupCollateralRatioBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
+        }
+        //Agent update poolTopupTokenPriceFactorBIPS
+        if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS), "poolTopupTokenPriceFactorBIPS", latestTimestamp);
+            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
+        }
+    }
+
+    private async handleUnderlyingWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
+        // confirm underlying withdrawal
+        if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
+            logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
+            // agent waiting for underlying withdrawal
+            if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
+                const settings = await this.context.assetManager.getSettings();
+                const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
+                if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                    // agent can confirm underlying withdrawal
+                    await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
+                    await this.notifier.sendConfirmWithdrawUnderlying();
+                    logger.info(`Agent ${this.agent.vaultAddress} confirmed underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                } else {
+                    const withdrawalAllowedAt = toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
+                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${withdrawalAllowedAt}. Current ${latestTimestamp}.`);
+                }
+            }
+        }
+        // cancel underlying withdrawal
+        if (agentEnt.underlyingWithdrawalWaitingForCancelation) {
+            logger.info(`Agent ${this.agent.vaultAddress} is waiting for canceling underlying withdrawal.`);
+            const settings = await this.context.assetManager.getSettings();
+            const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
+            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                // agent can confirm cancel withdrawal announcement
+                await this.agent.cancelUnderlyingWithdrawal();
+                await this.notifier.sendCancelWithdrawUnderlying();
+                logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                agentEnt.underlyingWithdrawalWaitingForCancelation = false;
+            } else {
+                logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
+            }
+        }
     }
 
     /**
@@ -819,30 +543,30 @@ export class AgentBot {
      * @returns true if withdraw successful or time expired
      */
     async withdrawCollateral(withdrawValidAt: BN, withdrawAmount: BN, latestTimestamp: BN, type: ClaimType): Promise<boolean> {
-        const desiredErrorIncludes = ["withdrawal: too late", "withdrawal: CR too low"];
         logger.info(`Agent ${this.agent.vaultAddress} is waiting to withdraw ${type} collateral.`);
         // agent waiting for pool token redemption
         if (toBN(withdrawValidAt).lte(latestTimestamp)) {
             // agent can withdraw vault collateral
+            const token = type === ClaimType.VAULT ? this.tokens.vaultCollateral : this.tokens.poolCollateral;
             try {
                 if (type === ClaimType.VAULT) {
                     await this.agent.withdrawVaultCollateral(withdrawAmount);
-                    await this.notifier.sendWithdrawVaultCollateral(withdrawAmount);
+                    await this.notifier.sendWithdrawVaultCollateral(await token.format(withdrawAmount));
                 } else {
                     await this.agent.redeemCollateralPoolTokens(withdrawAmount);
-                    await this.notifier.sendRedeemCollateralPoolTokens(withdrawAmount);
+                    await this.notifier.sendRedeemCollateralPoolTokens(await token.format(withdrawAmount));
                 }
-                logger.info(`Agent ${this.agent.vaultAddress} withdrew ${type} collateral ${withdrawAmount.toString()}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} withdrew ${type} collateral ${withdrawAmount}.`);
                 return true;
             } catch (error) {
-                if (error instanceof Error && findOneSubstring(error.message, desiredErrorIncludes)) {
-                    await this.notifier.sendAgentCannotWithdrawCollateral(withdrawAmount, type);
+                if (errorIncluded(error, ["withdrawal: too late", "withdrawal: CR too low"])) {
+                    await this.notifier.sendAgentCannotWithdrawCollateral(await token.format(withdrawAmount), type);
                     return true;
                 }
                 logger.error(`Agent ${this.agent.vaultAddress} run into error while withdrawing ${type} collateral:`, error);
             }
         } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot withdraw ${type} collateral. Allowed at ${withdrawValidAt.toString()}. Current ${latestTimestamp.toString()}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} cannot withdraw ${type} collateral. Allowed at ${withdrawValidAt}. Current ${latestTimestamp}.`);
         }
         return false;
     }
@@ -855,7 +579,6 @@ export class AgentBot {
      * @returns true if settings was updated or valid time expired
      */
     async updateAgentSettings(settingValidAt: BN, settingsName: string, latestTimestamp: BN): Promise<boolean> {
-        const updateNotValidMsg = "update not valid anymore";
         logger.info(`Agent ${this.agent.vaultAddress} is waiting for ${settingsName} agent setting update.`);
         // agent waiting for setting update
         if (toBN(settingValidAt).lte(latestTimestamp)) {
@@ -865,14 +588,14 @@ export class AgentBot {
                 await this.notifier.sendAgentSettingsUpdate(settingsName);
                 return true;
             } catch (error) {
-                if (error instanceof Error && error.message.includes(updateNotValidMsg)) {
+                if (errorIncluded(error, ["update not valid anymore"])) {
                     await this.notifier.sendAgentCannotUpdateSettingExpired(settingsName);
                     return true;
                 }
                 logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${settingsName}:`, error);
             }
         } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot update agent setting ${settingsName}. Allowed at ${settingValidAt.toString()}. Current ${latestTimestamp.toString()}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} cannot update agent setting ${settingsName}. Allowed at ${settingValidAt}. Current ${latestTimestamp}.`);
         }
         return false;
     }
@@ -881,612 +604,40 @@ export class AgentBot {
      * AgentBot exits available if already allowed
      * @param agentEnt agent entity
      */
+    async handleWaitAgentExitAvailable(agentEnt: AgentEntity, latestTimestamp: BN) {
+        if (this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
+        await this.exitAvailable(agentEnt);
+    }
+
     async exitAvailable(agentEnt: AgentEntity) {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to exit available list.`);
-        const latestTimestamp = await latestBlockTimestampBN();
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(BN_ZERO)) {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot exit available list - exit not announced.`);
-        } else if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(latestTimestamp)) {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot exit available list. Allowed at ${agentEnt.exitAvailableAllowedAtTimestamp.toString()}. Current ${latestTimestamp.toString()}.`);
-        } else {
-            await this.agent.exitAvailable();
-            agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
-            await this.notifier.sendAgentExitedAvailable();
-            logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
-        }
+        await this.agent.exitAvailable();
+        agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+        await this.notifier.sendAgentExitedAvailable();
+        logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
     }
 
-    async exitAvailableProcessStatus(agentEnt: AgentEntity) {
+    /**
+     * Return the status of "exit available" process
+     * @param agentEnt agent entity
+     * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED -> EXITED
+     */
+    async getExitAvailableProcessStatus(agentEnt: AgentEntity) {
         const agentInfo = await this.agent.getAgentInfo();
-        if (!agentInfo.publiclyAvailable) return "exited";
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).eq(BN_ZERO)) return "not_announced";
-        const timestamp = await latestBlockTimestampBN();
-        if (toBN(agentEnt.exitAvailableAllowedAtTimestamp).lte(timestamp)) return "can_exit";
-        return "announced";
+        if (!agentInfo.publiclyAvailable) return "EXITED";
+        return this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
     }
 
     /**
-     * Stores received collateral reservation as minting in persistent state.
-     * @param em entity manager
-     * @param request event's CollateralReserved arguments
+     * Return status of any action requiring announcement (wwthdrawal, exit, etc.)
+     * @param actionAllowedAt the saved timestamp of ehen the action is allowed
+     * @param currentTimestamp the current timestamp
+     * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED
      */
-    async mintingStarted(em: EM, request: EventArgs<CollateralReserved>): Promise<void> {
-        em.create(
-            AgentMinting,
-            {
-                state: AgentMintingState.STARTED,
-                agentAddress: this.agent.vaultAddress,
-                agentUnderlyingAddress: this.agent.underlyingAddress,
-                requestId: toBN(request.collateralReservationId),
-                valueUBA: toBN(request.valueUBA),
-                feeUBA: toBN(request.feeUBA),
-                firstUnderlyingBlock: toBN(request.firstUnderlyingBlock),
-                lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
-                lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
-                paymentReference: request.paymentReference,
-            } as RequiredEntityData<AgentMinting>,
-            { persist: true }
-        );
-        await this.notifier.sendMintingStarted(request.collateralReservationId);
-        logger.info(`Agent ${this.agent.vaultAddress} started minting ${request.collateralReservationId.toString()}.`);
-    }
-
-    /**
-     * Returns minting by required id from persistent state.
-     * @param em entity manager
-     * @param requestId collateral reservation id
-     * @returns instance of AgentMinting
-     */
-    async findMinting(em: EM, requestId: BN): Promise<AgentMinting> {
-        const agentAddress = this.agent.vaultAddress;
-        return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
-    }
-
-    /**
-     * @param rootEm entity manager
-     */
-    async handleOpenMintings(rootEm: EM): Promise<void> {
-        const openMintings = await this.openMintings(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
-        for (const rd of openMintings) {
-            await this.nextMintingStep(rootEm, rd.id);
-        }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open mintings.`);
-    }
-
-    /**
-     * Returns minting with state other than DONE.
-     * @param em entity manager
-     * @param onlyIds if true, only AgentMinting's entity ids are return
-     * @return list of AgentMinting's instances
-     */
-    async openMintings(em: EM, onlyIds: boolean): Promise<AgentMinting[]> {
-        let query = em.createQueryBuilder(AgentMinting);
-        if (onlyIds) query = query.select("id");
-        return await query
-            .where({ agentAddress: this.agent.vaultAddress })
-            .andWhere({ $not: { state: AgentMintingState.DONE } })
-            .getResultList();
-    }
-
-    /**
-     * Marks stored minting in persistent state as DONE.
-     * @param minting AgentMinting entity
-     * @param executed if true, notifies about executed minting, otherwise notifies about deleted minting
-     */
-    async mintingExecuted(minting: AgentMinting, executed: boolean): Promise<void> {
-        minting.state = AgentMintingState.DONE;
-        if (executed) {
-            await this.notifier.sendMintingExecuted(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} closed (executed) minting ${minting.requestId}.`);
-        } else {
-            await this.notifier.sendMintingDeleted(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} closed (deleted) minting ${minting.requestId}.`);
-        }
-    }
-
-    /**
-     * Handles mintings stored in persistent state according to their state.
-     * @param rootEm entity manager
-     * @param id AgentMinting's entity id
-     */
-    async nextMintingStep(rootEm: EM, id: number): Promise<void> {
-        await rootEm
-            .transactional(async (em) => {
-                const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
-                logger.info(`Agent ${this.agent.vaultAddress} is handling open minting ${minting.requestId} in state ${minting.state}.`);
-                switch (minting.state) {
-                    case AgentMintingState.STARTED:
-                        await this.checkForNonPaymentProofOrExpiredProofs(minting);
-                        break;
-                    case AgentMintingState.REQUEST_NON_PAYMENT_PROOF:
-                        await this.checkNonPayment(minting);
-                        break;
-                    case AgentMintingState.REQUEST_PAYMENT_PROOF:
-                        await this.checkPaymentAndExecuteMinting(minting);
-                        break;
-                    default:
-                        console.error(`Minting state: ${minting.state} not supported`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId.toString()}.`);
-                }
-            })
-            .catch((error) => {
-                console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
-            });
-    }
-
-    /**
-     * When minting is in state STARTED, it checks if underlying payment proof for collateral reservation expired in indexer.
-     * If proof expired (corner case), it calls unstickMinting, sets the state of minting in persistent state as DONE and send notification to owner.
-     * If proof exists, it checks if time for payment expired on underlying. If if did not expire, then it does nothing.
-     * If time for payment expired, it checks via indexer if transaction for payment exists.
-     * If it does exists, then it requests for payment proof - see requestPaymentProofForMinting().
-     * If it does not exist, then it request non payment proof - see requestNonPaymentProofForMinting().
-     * @param minting AgentMinting entity
-     */
-    async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
-        const proof = await this.checkProofExpiredInIndexer(toBN(minting.lastUnderlyingBlock), toBN(minting.lastUnderlyingTimestamp));
-        if (proof) {
-            // corner case: proof expires in indexer
-            logger.info(`Agent ${this.agent.vaultAddress} is calling 'unstickMinting' ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
-            const settings = await this.context.assetManager.getSettings();
-            const burnNats = toBN(
-                (await this.agent.getPoolCollateralPrice())
-                    .convertUBAToTokenWei(toBN(minting.valueUBA))
-                    .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS))
-                    .divn(MAX_BIPS)
-            );
-            // TODO what to do if owner does not have enough nat
-            await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), {
-                from: this.agent.owner.workAddress,
-                value: burnNats,
-            });
-            minting.state = AgentMintingState.DONE;
-            await this.notifier.sendMintingIndexerExpired(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} unstuck minting ${minting.requestId}.`);
-        } else {
-            // proof did not expire
-            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-            const latestBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
-            console.log(`latestBlock  number=${latestBlock?.number} timestamp=${latestBlock?.timestamp}`);
-            // wait times expires on underlying + finalizationBlock
-            if (latestBlock && Number(minting.lastUnderlyingBlock) + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
-                // time for payment expired on underlying
-                logger.info(`Agent ${this.agent.vaultAddress} waited that time for underlying payment expired for minting ${minting.requestId}.`);
-                const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference);
-                /* istanbul ignore else */
-                if (txs.length === 1) {
-                    // corner case: minter pays and doesn't execute minting
-                    // check minter paid -> request payment proof -> execute minting
-                    const txHash = txs[0].hash;
-                    // TODO is it ok to check first address in UTXO chains?
-                    const sourceAddress = txs[0].inputs[0][0];
-                    logger.info(`Agent ${this.agent.vaultAddress} found payment transaction ${txHash} for minting ${minting.requestId}.`);
-                    await this.requestPaymentProofForMinting(minting, txHash, sourceAddress);
-                } else if (txs.length === 0) {
-                    // minter did not pay -> request non payment proof -> unstick minting
-                    logger.info(`Agent ${this.agent.vaultAddress} did NOT found payment transaction for minting ${minting.requestId}.`);
-                    await this.requestNonPaymentProofForMinting(minting);
-                }
-            }
-        }
-    }
-
-    /**
-     * Sends request for minting payment proof, sets state for minting in persistent state to REQUEST_PAYMENT_PROOF and sends notification to owner,
-     * @param minting AgentMinting entity
-     * @param txHash transaction hash for minting payment
-     * @param sourceAddress minter's underlying address
-     */
-    async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is sending request for payment proof for transaction ${txHash} and minting ${minting.requestId.toString()}.`);
-        const request = await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
-        if (request) {
-            minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
-            minting.proofRequestRound = request.round;
-            minting.proofRequestData = request.data;
-            await this.notifier.sendMintingPaymentProofRequested(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} requested payment proof for transaction ${txHash} and minting ${minting.requestId}; source underlying address ${sourceAddress}, proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
-            logger.info(`Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${txHash} and minting ${minting.requestId.toString()}.`);
-        }
-    }
-
-    /**
-     * Sends request for minting non payment proof, sets state for minting in persistent state to REQUEST_NON_PAYMENT_PROOF and sends notification to owner,
-     * @param minting AgentMinting entity
-     */
-    async requestNonPaymentProofForMinting(minting: AgentMinting): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is sending request for non payment proof for minting ${minting.requestId.toString()}.`);
-        const request = await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
-            minting.agentUnderlyingAddress,
-            minting.paymentReference,
-            toBN(minting.valueUBA).add(toBN(minting.feeUBA)),
-            Number(minting.firstUnderlyingBlock),
-            Number(minting.lastUnderlyingBlock),
-            Number(minting.lastUnderlyingTimestamp)
-        );
-        if (request) {
-            minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
-            minting.proofRequestRound = request.round;
-            minting.proofRequestData = request.data;
-            await this.notifier.sendMintingNonPaymentProofRequested(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} requested non payment proof for minting ${minting.requestId}; reference ${minting.paymentReference}, target underlying address ${minting.agentUnderlyingAddress}, proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
-            logger.info(`Agent ${this.agent.vaultAddress} cannot yet prove non payment proof for minting ${minting.requestId.toString()}.`);
-        }
-    }
-
-    /**
-     * When minting is in state REQUEST_NON_PAYMENT_PROOF, it obtains non payment proof, calls mintingPaymentDefault and sets minting in persistent state to DONE.
-     * If proof cannot be obtained, it sends notification to owner.
-     * @param minting AgentMinting entity
-     */
-    async checkNonPayment(minting: AgentMinting): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-        assertNotNull(minting.proofRequestRound);
-        assertNotNull(minting.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound, minting.proofRequestData);
-        if (proof === AttestationNotProved.NOT_FINALIZED) {
-            logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            return;
-        }
-        if (attestationProved(proof)) {
-            logger.info(`Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            const nonPaymentProof = proof;
-            await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.owner.workAddress });
-            minting.state = AgentMintingState.DONE;
-            await this.mintingExecuted(minting, true);
-            logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(nonPaymentProof))}.`);
-            await this.notifier.sendMintingDefaultSuccess(minting.requestId);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            await this.notifier.sendMintingDefaultFailure(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
-        }
-    }
-
-    /**
-     * When minting is in state REQUEST_PAYMENT_PROOF, it obtains payment proof, calls executeMinting and sets minting in persistent state to DONE.
-     * If proof cannot be obtained, it sends notification to owner.
-     * @param minting AgentMinting entity
-     */
-    async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-        assertNotNull(minting.proofRequestRound);
-        assertNotNull(minting.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound, minting.proofRequestData);
-        if (proof === AttestationNotProved.NOT_FINALIZED) {
-            logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            return;
-        }
-        if (attestationProved(proof)) {
-            logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            const paymentProof = proof;
-            await this.context.assetManager.executeMinting(web3DeepNormalize(paymentProof), minting.requestId, { from: this.agent.owner.workAddress });
-            minting.state = AgentMintingState.DONE;
-            logger.info(`Agent ${this.agent.vaultAddress} executed minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for minting ${minting.requestId} with in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
-        }
-    }
-
-    /**
-     * Stores received redemption request as redemption in persistent state.
-     * @param em entity manager
-     * @param request event's RedemptionRequested arguments
-     */
-    async redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>): Promise<void> {
-        em.create(
-            AgentRedemption,
-            {
-                state: AgentRedemptionState.STARTED,
-                agentAddress: this.agent.vaultAddress,
-                requestId: toBN(request.requestId),
-                paymentAddress: request.paymentAddress,
-                valueUBA: toBN(request.valueUBA),
-                feeUBA: toBN(request.feeUBA),
-                paymentReference: request.paymentReference,
-                lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
-                lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
-            } as RequiredEntityData<AgentRedemption>,
-            { persist: true }
-        );
-        await this.notifier.sendRedemptionStarted(request.requestId);
-        logger.info(`Agent ${this.agent.vaultAddress} started redemption ${request.requestId.toString()}.`);
-    }
-
-    /**
-     * Marks stored redemption in persistent state as DONE, then it checks AgentBot's and owner's underlying balance.
-     * @param em entity manager
-     * @param requestId redemption request id
-     * @param agentVault agent's vault address
-     */
-    async redemptionFinished(em: EM, requestId: BN, agentVault: string): Promise<void> {
-        const redemption = await this.findRedemption(em, requestId);
-        redemption.state = AgentRedemptionState.DONE;
-        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${requestId.toString()}.`);
-        await this.checkUnderlyingBalance(agentVault);
-    }
-
-    /**
-     * Returns redemption by required id from persistent state.
-     * @param em entity manager
-     * @param requestId redemption request id
-     * @param instance of AgentRedemption
-     */
-    async findRedemption(em: EM, requestId: BN): Promise<AgentRedemption> {
-        const agentAddress = this.agent.vaultAddress;
-        return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
-    }
-
-    /**
-     * @param rootEm entity manager
-     */
-    async handleOpenRedemptions(rootEm: EM): Promise<void> {
-        const openRedemptions = await this.openRedemptions(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
-        for (const rd of openRedemptions) {
-            if (this.stopRequested()) return;
-            await this.nextRedemptionStep(rootEm, rd.id);
-        }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
-    }
-
-    /**
-     * @param rootEm entity manager
-     */
-    async handleOpenRedemptionsForCornerCase(rootEm: EM): Promise<void> {
-        const openRedemptions = await this.openRedemptions(rootEm, false);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length} for CORNER CASE.`);
-        for (const rd of openRedemptions) {
-            const proof = await this.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
-            if (proof) {
-                logger.info(`Agent ${this.agent.vaultAddress} found corner case for redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-                // corner case - agent did not pay
-                await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
-                rd.state = AgentRedemptionState.DONE;
-                await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
-                await rootEm.persistAndFlush(rd);
-                logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
-            }
-        }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions for CORNER CASE.`);
-    }
-
-    /**
-     * Returns minting with state other than DONE.
-     * @param em entity manager
-     * @param onlyIds if true, only AgentRedemption's entity ids are return
-     * * @return list of AgentRedemption's instances
-     */
-    async openRedemptions(em: EM, onlyIds: boolean): Promise<AgentRedemption[]> {
-        let query = em.createQueryBuilder(AgentRedemption);
-        if (onlyIds) query = query.select("id");
-        return await query
-            .where({ agentAddress: this.agent.vaultAddress })
-            .andWhere({ $not: { state: AgentRedemptionState.DONE } })
-            .getResultList();
-    }
-
-    /**
-     * Handles redemptions stored in persistent state according to their state.
-     * @param rootEm entity manager
-     * @param id AgentRedemption's entity id
-     */
-    async nextRedemptionStep(rootEm: EM, id: number): Promise<void> {
-        await rootEm
-            .transactional(async (em) => {
-                const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
-                logger.info(`Agent ${this.agent.vaultAddress} is handling open redemption ${redemption.requestId} in state ${redemption.state}.`);
-                switch (redemption.state) {
-                    case AgentRedemptionState.STARTED:
-                        await this.checkBeforeRedemptionPayment(redemption);
-                        break;
-                    case AgentRedemptionState.PAID:
-                        await this.checkPaymentProofAvailable(redemption);
-                        break;
-                    case AgentRedemptionState.REQUESTED_PROOF:
-                        await this.checkConfirmPayment(redemption);
-                        break;
-                    case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
-                        await this.checkRejectRedemption(redemption);
-                        break;
-                    default:
-                        console.error(`Redemption state: ${redemption.state} not supported`);
-                        logger.error(squashSpace`Agent ${this.agent.vaultAddress} run into redemption state ${redemption.state} not supported
-                            for redemption ${redemption.requestId.toString()}.`);
-                }
-            })
-            .catch((error) => {
-                console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next redemption step for redemption ${id}:`, error);
-            });
-    }
-
-    /**
-     * When redemption is in state STARTED, it checks if payment can be done in time.
-     * Then it performs payment and sets the state of redemption in persistent state as PAID.
-     * @param redemption AgentRedemption entity
-     */
-    async checkBeforeRedemptionPayment(redemption: AgentRedemption): Promise<void> {
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-        const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
-        /* istanbul ignore else */
-        if (lastBlock && this.stillTimeToPayForRedemption(lastBlock, redemption)) {
-            const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId, redemption.paymentAddress);
-            if (validation.isValid && validation.standardAddress === redemption.paymentAddress) {
-                await this.payForRedemption(redemption);
-            } else {
-                await this.startRejectRedemption(redemption);
-            }
-        } else if (lastBlock) {
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${redemption.requestId}.
-                Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock.toString()}
-                with timestamp ${redemption.lastUnderlyingTimestamp.toString()}. Current block is ${lastBlock.number}
-                with timestamp ${lastBlock.timestamp}.`);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in checkBeforeRedemptionPayment for ${redemption.requestId}.`);
-        }
-    }
-
-    async payForRedemption(redemption: AgentRedemption) {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId.toString()}.`);
-        const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
-        // !!! TODO: what if there are too little funds on underlying address to pay for fee?
-        const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
-        redemption.txHash = txHash;
-        redemption.state = AgentRedemptionState.PAID;
-        await this.notifier.sendRedemptionPaid(redemption.requestId);
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
-            with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
-            ${redemption.paymentReference}, amount ${paymentAmount.toString()}.`);
-    }
-
-    async redeemerAddressValid(underlyingAddress: string) {
-        const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId, underlyingAddress);
-        return validation.isValid && validation.standardAddress === underlyingAddress;
-    }
-
-    async startRejectRedemption(redemption: AgentRedemption) {
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment address invalidity
-            for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}.`);
-        const request = await this.context.attestationProvider.requestAddressValidityProof(redemption.paymentAddress);
-        if (request) {
-            redemption.state = AgentRedemptionState.REQUESTED_REJECTION_PROOF;
-            redemption.proofRequestRound = request.round;
-            redemption.proofRequestData = request.data;
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} requested payment proof for payment address invalidity
-                for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress},
-                proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot request payment proof for payment address invalidity
-                for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}.`);
-        }
-    }
-
-    async checkRejectRedemption(redemption: AgentRedemption): Promise<void> {
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to obtain proof for payment address invalidity
-            for redemption ${redemption.requestId.toString()} and address ${redemption.paymentAddress}
-            in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-        assertNotNull(redemption.proofRequestRound);
-        assertNotNull(redemption.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound, redemption.proofRequestData);
-        if (proof === AttestationNotProved.NOT_FINALIZED) {
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for address validation for redemption
-                ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-        } else if (attestationProved(proof)) {
-            const response = proof.data.responseBody;
-            if (!response.isValid || response.standardAddress !== redemption.paymentAddress) {
-                logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained address validation proof for redemption
-                    ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-                await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
-                redemption.state = AgentRedemptionState.DONE;
-                logger.info(squashSpace`Agent ${this.agent.vaultAddress} rejected redemption ${redemption.requestId}
-                    with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
-            } else {
-                // this should never happen unless there is a problem with the verifier server
-                logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained conflicting address validation proof
-                    for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-                await this.notifier.sendRedemptionAddressValidationProofConflict(redemption.requestId,
-                    redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
-            }
-        } else {
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain address validation proof for redemption ${redemption.requestId}
-                in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
-                redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
-        }
-    }
-
-    /**
-     * Checks if redemption payment can be made in time (as specified in redemption event).
-     * @param lastBlock
-     * @param redemption
-     * @returns
-     */
-    stillTimeToPayForRedemption(lastBlock: IBlock, redemption: AgentRedemption): boolean {
-        const lastAcceptedBlockNumber = lastBlock.number + this.context.blockchainIndexer.finalizationBlocks + 1;
-        const lastAcceptedTimestamp =
-            lastBlock.timestamp +
-            this.context.blockchainIndexer.finalizationBlocks * this.context.blockchainIndexer.secondsPerBlock +
-            this.context.blockchainIndexer.secondsPerBlock;
-        if (
-            toBN(lastAcceptedBlockNumber).lt(toBN(redemption.lastUnderlyingBlock)) ||
-            toBN(lastAcceptedTimestamp).lt(toBN(redemption.lastUnderlyingTimestamp))
-        ) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * When redemption is in state PAID it requests payment proof - see requestPaymentProof().
-     * @param redemption AgentRedemption entity
-     */
-    async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
-        assertNotNull(redemption.txHash);
-        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-        if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
-            await this.requestPaymentProof(redemption);
-            await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
-        }
-    }
-
-    /**
-     * Sends request for redemption payment proof, sets state for redemption in persistent state to REQUESTED_PROOF.
-     * @param redemption AgentRedemption entity
-     */
-    async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment proof transaction ${redemption.txHash}
-            and redemption ${redemption.requestId.toString()}.`);
-        assertNotNull(redemption.txHash);
-        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash, this.agent.underlyingAddress, redemption.paymentAddress);
-        if (request) {
-            redemption.state = AgentRedemptionState.REQUESTED_PROOF;
-            redemption.proofRequestRound = request.round;
-            redemption.proofRequestData = request.data;
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} requested payment proof for transaction ${redemption.txHash}
-                and redemption ${redemption.requestId}; target underlying address ${redemption.paymentAddress},
-                proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${redemption.txHash}
-                and redemption ${redemption.requestId.toString()}.`);
-        }
-    }
-
-    /**
-     * When redemption is in state REQUESTED_PROOF, it obtains payment proof, calls confirmRedemptionPayment and sets the state of redemption in persistent state as DONE.
-     * If proof expired (corner case), it calls finishRedemptionWithoutPayment, sets the state of redemption in persistent state as DONE and send notification to owner.
-     * If proof cannot be obtained, it sends notification to owner.
-     * @param redemption AgentRedemption entity
-     */
-    async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-        assertNotNull(redemption.proofRequestRound);
-        assertNotNull(redemption.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound, redemption.proofRequestData);
-        if (proof === AttestationNotProved.NOT_FINALIZED) {
-            logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            return;
-        }
-        if (attestationProved(proof)) {
-            logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            const paymentProof = proof;
-            await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(paymentProof), redemption.requestId, { from: this.agent.owner.workAddress });
-            redemption.state = AgentRedemptionState.DONE;
-            logger.info(`Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
-        }
+    anouncementStatus(actionAllowedAt: BNish, currentTimestamp: BN) {
+        actionAllowedAt = toBN(actionAllowedAt);
+        if (actionAllowedAt.eq(BN_ZERO)) return "NOT_ANNOUNCED";
+        if (actionAllowedAt.gt(currentTimestamp)) return "WAITING";
+        return "ALLOWED";
     }
 
     /**
@@ -1495,19 +646,46 @@ export class AgentBot {
      * @param lastUnderlyingTimestamp last underlying timestamp to perform payment
      * @returns proved attestation provider data
      */
-    async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ConfirmedBlockHeightExists.Proof | null> {
+    async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ConfirmedBlockHeightExists.Proof | "NOT_EXPIRED" | "WAITING_PROOF"> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
-        const proof = this.latestProof;
+        // try to get proof whether payment/non-payment proofs have expired
+        const proof = await this.getUnderlyingBlockHeightProof();
         if (proof) {
             const lqwBlock = toBN(proof.data.responseBody.lowestQueryWindowBlockNumber);
             const lqwBTimestamp = toBN(proof.data.responseBody.lowestQueryWindowBlockTimestamp);
             if (lqwBlock.gt(lastUnderlyingBlock) && lqwBTimestamp.gt(lastUnderlyingTimestamp)) {
                 logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CANNOT be obtained from indexer.`);
                 return proof;
+            } else {
+                logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
+                return "NOT_EXPIRED";
             }
         }
-        logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
-        return null;
+        return "WAITING_PROOF";
+    }
+
+    /**
+     * Get the latest underlying block height exists proof from the timekeeper or
+     * @returns
+     */
+    async getUnderlyingBlockHeightProof() {
+        assertNotNull(this.timekeeper, "Cannot obtain underlying block height - timekeeper not set.");
+        // obtain the proof
+        const proof = this.timekeeper.latestProof;
+        if (attestationProved(proof)) {
+            this.waitingForLatestBlockProofSince = BN_ZERO;
+            return proof;
+        }
+        // if waiting for proof for more than expected time, notify agent and restart wait
+        const timestamp = await latestBlockTimestampBN();
+        if (this.waitingForLatestBlockProofSince.gt(BN_ZERO) && timestamp.sub(this.waitingForLatestBlockProofSince).gtn(10 * MINUTES)) {
+            await this.notifier.sendDailyTaskNoProofObtained(10);
+            this.waitingForLatestBlockProofSince = timestamp;
+        }
+        // start waiting for proof
+        if (this.waitingForLatestBlockProofSince.eq(BN_ZERO)) {
+            this.waitingForLatestBlockProofSince = timestamp;
+        }
     }
 
     /**
@@ -1515,151 +693,8 @@ export class AgentBot {
      * @param em entity manager
      * @param vaultAddress agent's vault address
      */
-    async handleAgentDestruction(em: EM, vaultAddress: string): Promise<void> {
-        const agentBotEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
-        agentBotEnt.active = false;
-        await this.notifier.sendAgentDestroyed();
-        logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
-    }
-
-    /**
-     * Checks AgentBot's and owner's underlying balance after redemption is finished. If AgentBot's balance is too low, it tries to top it up from owner's account. See 'underlyingTopUp(...)'.
-     * @param agentVault agent's vault address
-     */
-    async checkUnderlyingBalance(agentVault: string): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is checking free underlying balance.`);
-        const freeUnderlyingBalance = toBN((await this.agent.getAgentInfo()).freeUnderlyingBalanceUBA);
-        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance.toString()}.`);
-        const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
-        logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
-        if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
-            await this.underlyingTopUp(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR), agentVault, freeUnderlyingBalance);
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
-        }
-    }
-
-    /**
-     * Tries to top up AgentBot's underlying account from owner's. It notifies about successful and unsuccessful try.
-     * It also checks owner's underlying balance and notifies when it is too low.
-     * @param amount amount to transfer from owner's underlying address to agent's underlying address
-     * @param agentVault agent's vault address
-     * @param freeUnderlyingBalance agent's gree underlying balance
-     */
-    async underlyingTopUp(amount: BN, agentVault: string, freeUnderlyingBalance: BN): Promise<void> {
-        try {
-            logger.info(`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress} from owner's underlying address ${this.ownerUnderlyingAddress}.`);
-            const txHash = await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
-            await this.agent.confirmTopupPayment(txHash);
-            await this.notifier.sendLowUnderlyingAgentBalance(amount);
-            logger.info(`Agent ${this.agent.vaultAddress} topped up underlying address ${this.agent.underlyingAddress} with amount ${amount.toString()} from owner's underlying address ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
-        } catch (error) {
-            await this.notifier.sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalance);
-            logger.error(`Agent ${this.agent.vaultAddress} has low free underlying balance ${freeUnderlyingBalance.toString()} on underlying address ${this.agent.underlyingAddress} and could not be topped up from owner's underlying address ${this.ownerUnderlyingAddress}:`, error);
-        }
-        const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
-        const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
-        const expectedBalance = toBN(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
-        if (ownerUnderlyingBalance.lte(expectedBalance)) {
-            await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, ownerUnderlyingBalance);
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
-                ${ownerUnderlyingBalance.toString()} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalance}.`);
-        } else {
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${ownerUnderlyingBalance.toString()}
-                on underlying address ${this.ownerUnderlyingAddress}.`);
-        }
-    }
-
-    /**
-     * Checks both AgentBot's collateral ratios. In case of either being unhealthy, it tries to top up from owner's account in order to get out of Collateral Ratio Band or Liquidation due to price changes.
-     * It sends notification about successful and unsuccessful top up.
-     * At the end it also checks owner's balance and notifies when too low.
-     */
-    async checkAgentForCollateralRatiosAndTopUp(): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is checking collateral ratios.`);
-        const agentInfo = await this.agent.getAgentInfo();
-        const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
-        const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
-
-        const requiredCrVaultCollateralBIPS = toBN(vaultCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
-        const requiredTopUpVaultCollateral = await this.requiredTopUp(requiredCrVaultCollateralBIPS, agentInfo, vaultCollateralPrice);
-        const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
-        if (requiredTopUpVaultCollateral.lte(BN_ZERO) && requiredTopUpPool.lte(BN_ZERO)) {
-            // no need for top up
-            logger.info(`Agent ${this.agent.vaultAddress} does NOT need to top up any collateral.`);
-        }
-        if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
-            try {
-                logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up vault collateral
-                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
-                await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
-                await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpVaultCollateral);
-                logger.info(squashSpace`Agent ${this.agent.vaultAddress} topped up vault collateral
-                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}.`);
-            } catch (err) {
-                await this.notifier.sendVaultCollateralTopUpFailedAlert(requiredTopUpVaultCollateral);
-                logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral
-                    ${requiredTopUpVaultCollateral.toString()} from owner ${this.agent.owner}:`, err);
-            }
-        }
-        if (requiredTopUpPool.gt(BN_ZERO)) {
-            try {
-                logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens
-                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
-                await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
-                await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpPool);
-                logger.info(squashSpace`Agent ${this.agent.vaultAddress} bought collateral pool tokens
-                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}.`);
-            } catch (err) {
-                await this.notifier.sendPoolCollateralTopUpFailedAlert(requiredTopUpPool);
-                logger.error(squashSpace`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens
-                    ${requiredTopUpPool.toString()} from owner ${this.agent.owner}:`, err);
-            }
-        }
-        const vaultCollateralToken = await IERC20.at(vaultCollateralPrice.collateral.token);
-        const ownerBalanceVaultCollateral = await vaultCollateralToken.balanceOf(this.agent.owner.workAddress);
-        const vaultCollateralLowBalance = this.ownerVaultCollateralLowBalance(agentInfo);
-        if (ownerBalanceVaultCollateral.lte(vaultCollateralLowBalance)) {
-            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress,
-                formatFixed(ownerBalanceVaultCollateral, Number(vaultCollateralPrice.collateral.decimals)),
-                vaultCollateralPrice.collateral.tokenFtsoSymbol);
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low vault collateral balance
-                ${ownerBalanceVaultCollateral.toString()} ${vaultCollateralPrice.collateral.tokenFtsoSymbol}.`);
-        }
-        const ownerBalance = toBN(await web3.eth.getBalance(this.agent.owner.workAddress));
-        const nativeLowBalance = this.ownerNativeLowBalance(agentInfo);
-        if (ownerBalance.lte(nativeLowBalance)) {
-            await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, formatFixed(ownerBalance, 18), poolCollateralPrice.collateral.tokenFtsoSymbol);
-            logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance
-                ${ownerBalance.toString()} ${poolCollateralPrice.collateral.tokenFtsoSymbol}.`);
-        }
-    }
-
-    /**
-     * Returns the value that is required to be topped up in order to reach healthy collateral ratio.
-     * If value is less than zero, top up is not needed.
-     * @param requiredCrBIPS required collateral ratio for healthy state (in BIPS)
-     * @param agentInfo AgentInfo object
-     * @param cp CollateralPrice object
-     * @return required amount for top up to reach healthy collateral ratio
-     */
-    private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
-        const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
-        const balance = toBN(Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei);
-        const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(redeemingUBA));
-        const backingVaultCollateralWei = cp.convertUBAToTokenWei(totalUBA);
-        const requiredCollateral = backingVaultCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
-        return requiredCollateral.sub(balance);
-    }
-
-    private ownerNativeLowBalance(agentInfo: AgentInfo): BN {
-        const lockedPoolCollateral = toBN(agentInfo.totalPoolCollateralNATWei).sub(toBN(agentInfo.freePoolCollateralNATWei));
-        return lockedPoolCollateral.muln(POOL_COLLATERAL_RESERVE_FACTOR);
-    }
-
-    private ownerVaultCollateralLowBalance(agentInfo: AgentInfo): BN {
-        const lockedVaultCollateral = toBN(agentInfo.totalVaultCollateralWei).sub(toBN(agentInfo.freeVaultCollateralWei));
-        return lockedVaultCollateral.muln(VAULT_COLLATERAL_RESERVE_FACTOR);
+    async handleAgentDestroyed(em: EM): Promise<void> {
+        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        await new AgentBotClosing(this, agentEnt).handleAgentDestroyed();
     }
 }

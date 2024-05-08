@@ -10,7 +10,7 @@ import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
-import { SourceId } from "../../src/underlying-chain/SourceId";
+import { ChainId } from "../../src/underlying-chain/ChainId";
 import { DBWalletKeys, IWalletKeys } from "../../src/underlying-chain/WalletKeys";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../../src/utils/events/common";
@@ -55,12 +55,12 @@ export async function performRedemptionPayment(agent: Agent, request: EventArgs<
 }
 
 export async function receiveBlockAndTransaction(
-    sourceId: SourceId,
+    chainId: ChainId,
     blockChainIndexerClient: BlockchainIndexerHelper,
     indexerUrl: string,
     indexerApiKey: string,
 ): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
-    const blockChainHelper = createBlockchainIndexerHelper(sourceId, indexerUrl, indexerApiKey);
+    const blockChainHelper = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
     const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
     if (resp.status === "OK") {
         const blockNumber = resp.data.last;

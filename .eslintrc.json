@@ -7,11 +7,7 @@
     ],
     "parserOptions": {
         "ecmaVersion": 2020,
-        "tsconfigRootDir": ".",
-        "project": [
-            "./tsconfig.json"
-        ],
-        "EXPERIMENTAL_useProjectService": true
+        "project": true
     },
     "extends": [
         "eslint:recommended",

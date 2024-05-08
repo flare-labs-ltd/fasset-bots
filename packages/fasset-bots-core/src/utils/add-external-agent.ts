@@ -1,10 +1,11 @@
 import "dotenv/config";
+
 import { assertNotNullCmd } from ".";
 import { Secrets } from "../config";
 import { createBotConfig } from "../config/BotConfig";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext } from "../config/create-asset-context";
-import { AgentEntity, DailyProofState } from "../entities/agent";
+import { AgentEntity } from "../entities/agent";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 import { ZERO_ADDRESS } from "./helpers";
 
@@ -49,13 +50,12 @@ export async function addExternalAgentVault(
         const newAgent = new AgentEntity();
         newAgent.vaultAddress = agentVaultAddress;
         newAgent.collateralPoolAddress = agentInfo.collateralPool;
-        newAgent.chainId = assetContext.chainInfo.chainId;
+        newAgent.chainId = assetContext.chainInfo.chainId.sourceId;
         newAgent.chainSymbol = assetContext.chainInfo.symbol;
         newAgent.ownerAddress = ownerAddress;
         newAgent.underlyingAddress = agentInfo.underlyingAddressString;
         newAgent.active = active;
         newAgent.currentEventBlock = fromBlock ?? lastBlock + 1;
-        newAgent.dailyProofState = DailyProofState.OBTAINED_PROOF;
         em.persist(newAgent);
     });
 }

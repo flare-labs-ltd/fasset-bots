@@ -4,35 +4,44 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { squashSpace } from "../utils/formatting";
+import { web3 } from "../utils";
 import { sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { AgentBot } from "./AgentBot";
-import { web3 } from "../utils";
+import { AgentBot, ITimeKeeper } from "./AgentBot";
 
+export interface ITimeKeeperService {
+    get(symbol: string): ITimeKeeper;
+}
 
 export class AgentBotRunner {
     static deepCopyWithObjectCreate = true;
 
     constructor(
         public secrets: Secrets,
-        public contexts: Map<string, IAssetAgentContext>,
+        public contexts: Map<string, IAssetAgentContext>,   // map [chain token symbol] => context
         public orm: ORM,
         public loopDelay: number,
-        public notifierTransports: NotifierTransport[]
+        public notifierTransports: NotifierTransport[],
+        public timekeeperService: ITimeKeeperService,
     ) {}
 
+    public running = false;
     public stopRequested = false;
     public restartRequested = false;
 
     async run(): Promise<void> {
         this.stopRequested = false;
         this.restartRequested = false;
-        while (!this.stopLoop()) {
-            await this.runStep();
-            if (this.stopLoop()) break;
-            await sleep(this.loopDelay);
+        this.running = true;
+        try {
+            while (!this.stopLoop()) {
+                await this.runStep();
+                if (this.stopLoop()) break;
+                await sleep(this.loopDelay);
+            }
+        } finally {
+            this.running = false;
         }
     }
 
@@ -57,25 +66,19 @@ export class AgentBotRunner {
     async runStep(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
         for (const agentEntity of agentEntities) {
+            this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
                 const context = this.contexts.get(agentEntity.chainSymbol);
                 if (context == null) {
                     console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
-                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid chain symbol ${agentEntity.chainSymbol}.`);
+                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid token symbol ${agentEntity.chainSymbol}.`);
                     continue;
-                }
-                const newSecrets = Secrets.load(this.secrets.filePath);
-                if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
-                    const ownerAddress = newSecrets.required(`owner.native.address`);
-                    this.requestRestart();
-                    console.warn(`Owner's native address from secrets file, does not match their used account`);
-                    logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
-                    break;
                 }
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
+                agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.symbol);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
@@ -86,22 +89,32 @@ export class AgentBotRunner {
         }
     }
 
+    checkForWorkAddressChange() {
+        if (this.secrets.filePath === "MEMORY") return;     // memory secrets (for tests)
+        const newSecrets = Secrets.load(this.secrets.filePath);
+        if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
+            const ownerAddress = newSecrets.required(`owner.native.address`);
+            this.requestRestart();
+            console.warn(`Owner's native address from secrets file, does not match their used account`);
+            logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
+        }
+    }
+
     /**
      * Creates AgentBot runner from AgentBotConfig
      * @param botConfig - configs to run bot
      * @returns instance of AgentBotRunner
      */
-    static async create(secrets: Secrets, botConfig: AgentBotConfig): Promise<AgentBotRunner> {
+    static async create(secrets: Secrets, botConfig: AgentBotConfig, timekeeperService: ITimeKeeperService): Promise<AgentBotRunner> {
         const ownerAddress = secrets.required("owner.management.address");
         logger.info(`Owner ${ownerAddress} started to create AgentBotRunner.`);
         const contexts: Map<string, IAssetAgentContext> = new Map();
         for (const chainConfig of botConfig.fAssets.values()) {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
             contexts.set(assetContext.chainInfo.symbol, assetContext);
-            logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for chain ${assetContext.chainInfo.chainId}
-                with symbol ${chainConfig.chainInfo.symbol}.`);
+            logger.info(`Owner's ${ownerAddress} AgentBotRunner set context for token ${chainConfig.chainInfo.symbol} on chain ${assetContext.chainInfo.chainId}`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        return new AgentBotRunner(secrets, contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifiers);
+        return new AgentBotRunner(secrets, contexts, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
     }
 }

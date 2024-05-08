@@ -1,10 +1,9 @@
-import { Cascade, Collection, Entity, Enum, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import BN from "bn.js";
 import { BNType } from "../config/orm-types";
+import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
-import { EvmEvent } from "../utils/events/common";
-import { eventOrder } from "../utils/events/common";
-import BN from "bn.js";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -141,15 +140,6 @@ export class AgentEntity {
 
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
     dailyTasksTimestamp: BN = BN_ZERO;
-
-    @Enum({ type: "DailyProofState", columnType: "varchar(20)", default: "obtainedProof" })
-    dailyProofState!: DailyProofState;
-
-    @Property({ nullable: true })
-    dailyProofRequestRound?: number;
-
-    @Property({ nullable: true, type: "text" })
-    dailyProofRequestData?: string;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
@@ -281,11 +271,6 @@ export class Event {
         this.handled = handled;
         this.agent = agent;
     }
-}
-
-export enum DailyProofState {
-    WAITING_PROOF = "waitingProof",
-    OBTAINED_PROOF = "obtainedProof",
 }
 
 export enum AgentMintingState {

@@ -14,7 +14,7 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
-import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 use(chaiAsPromised);
@@ -33,6 +33,7 @@ describe("AgentBot cli commands unit tests", () => {
     let context: TestAssetBotContext;
     let orm: ORM;
     let ownerAddress: string;
+    const ownerUnderlyingAddress = "owner_underlying_1";
     let minterAddress: string;
     let botCliCommands: AgentBotCommands;
     let chain: MockChain;
@@ -57,8 +58,7 @@ describe("AgentBot cli commands unit tests", () => {
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
         const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-        const secrets = createTestSecrets(context.chainInfo.chainId, ownerAddress, ownerAddress, "ownyr_underlying_1");
-        botCliCommands = new AgentBotCommands(secrets, context, owner, orm, testNotifierTransports);
+        botCliCommands = new AgentBotCommands(context, owner, ownerUnderlyingAddress, orm, testNotifierTransports);
         return { orm, context, chain, botCliCommands };
     }
 
@@ -99,7 +99,7 @@ describe("AgentBot cli commands unit tests", () => {
         // buy collateral pool tokens
         await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
         // try to exit - not in available list yet
-        await botCliCommands.exitAvailableList(vaultAddress);
+        await expectRevert(botCliCommands.exitAvailableList(vaultAddress), "agent not available");
         const agentInfoBefore2 = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoBefore2.publiclyAvailable).to.be.false;
         // enter available
@@ -111,7 +111,7 @@ describe("AgentBot cli commands unit tests", () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: vaultAddress } as FilterQuery<AgentEntity>);
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).gt(BN_ZERO)).to.be.true;
         // try to exit - not yet allowed
-        await botCliCommands.exitAvailableList(vaultAddress);
+        await expectRevert(botCliCommands.exitAvailableList(vaultAddress), "cannot exit available list. Allowed at");
         const agentInfoMiddle2 = await context.assetManager.getAgentInfo(vaultAddress);
         expect(agentInfoMiddle2.publiclyAvailable).to.be.true;
         // skip time
@@ -415,15 +415,7 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should upgrade WNat", async () => {
         const assetManagerControllerAddress = accounts[301];
-        const localContext = await createTestAssetContext(
-            governance,
-            testChainInfo.xrp,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            assetManagerControllerAddress
-        );
+        const localContext = await createTestAssetContext(governance, testChainInfo.xrp, { assetManagerControllerAddress });
         const agent = await createAgent(localContext);
         botCliCommands.context = localContext;
         const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
@@ -448,9 +440,9 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should not create agent bot via bot cli commands", async () => {
-        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp, undefined, undefined, undefined, undefined, undefined, true);
+        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp, { useFaultyWallet: true });
         await expectRevert(botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT)),
-            "Could not activate or verify new XRP account");
+            "Could not activate or verify new agent vault's XRP account.");
         //change context back
         botCliCommands.context = context;
     });

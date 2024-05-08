@@ -2,7 +2,7 @@ import BN from "bn.js";
 import { assert } from "chai";
 import fs from "fs";
 import { AgentBot } from "../../src/actors/AgentBot";
-import { AgentBotRunner } from "../../src/actors/AgentBotRunner";
+import { AgentBotRunner, ITimeKeeperService } from "../../src/actors/AgentBotRunner";
 import { Challenger } from "../../src/actors/Challenger";
 import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
@@ -28,6 +28,7 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
+import { ChainId } from "../../src/underlying-chain/ChainId";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -62,14 +63,21 @@ export async function createTestAgentBot(
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
     const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    return await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
+    const agentBot = await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
+    agentBot.timekeeper = { latestProof: undefined };
+    return agentBot;
+}
+
+export async function updateAgentBotUnderlyingBlockProof(context: TestAssetBotContext, agentBot: AgentBot, queryWindow: number = 86400) {
+    assert(agentBot.timekeeper != null && agentBot.timekeeper.constructor === Object);  // only works for fake timekeeper set by createTestAgentBot
+    agentBot.timekeeper.latestProof = await context.attestationProvider.proveConfirmedBlockHeightExists(queryWindow);
 }
 
 export async function createTestContractRetriever(context: TestAssetBotContext) {
     return await AssetContractRetriever.create(false, undefined, context.assetManagerController.address);
 }
 
-export function makeBotFAssetConfigMap(fassets: BotFAssetConfig[]) {
+export function makeBotFAssetConfigMap<T extends BotFAssetConfig>(fassets: T[]) {
     return new Map(fassets.map(it => [it.fAssetSymbol, it]));
 }
 
@@ -113,6 +121,12 @@ async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSet
     }
 }
 
+export const testTimekeeperService: ITimeKeeperService = {
+    get(symbol: string) {
+        return { latestProof: undefined };
+    },
+};
+
 export function createTestAgentBotRunner(
     secrets: Secrets,
     contexts: Map<string, TestAssetBotContext>,
@@ -120,7 +134,7 @@ export function createTestAgentBotRunner(
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
-    return new AgentBotRunner(secrets, contexts, orm, loopDelay, notifiers);
+    return new AgentBotRunner(secrets, contexts, orm, loopDelay, notifiers, testTimekeeperService);
 }
 
 export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
@@ -181,7 +195,7 @@ export async function createTestContext(governance: string, setMaxTrustedPriceAg
     const parameterFilename = `./fasset-config/hardhat/f-${testChainInfo.xrp.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     parameters.maxTrustedPriceAgeSeconds = setMaxTrustedPriceAgeSeconds;
-    return await createTestAssetContext(governance, testChainInfo.xrp, undefined, parameters);
+    return await createTestAssetContext(governance, testChainInfo.xrp, { customParameters: parameters });
 }
 
 export async function createCRAndPerformMinting(minter: Minter, vaultAddress: string, lots: number, chain: MockChain) {

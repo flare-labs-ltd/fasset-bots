@@ -1,4 +1,4 @@
-import { NativeChainInfo } from "../../fasset/ChainInfo";
+import { NativeChainInfo } from "../../fasset/NativeChainInfo";
 import { DatabaseType, SchemaUpdate } from "../orm";
 
 export interface OrmConfigOptions {
@@ -25,6 +25,11 @@ export interface BotFAssetInfo {
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
 }
 
+export interface ApiNotifierConfig {
+    apiUrl: string
+    apiKey: string
+}
+
 export interface BotStrategyDefinition {
     className: string;
     config?: any;
@@ -42,15 +47,16 @@ export interface BotConfigFile {
     loopDelay: number;
     nativeChainInfo: NativeChainInfo;
     rpcUrl: string;
-    alertsUrl?: string;
     attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
     prioritizeAddressUpdater: boolean;
     // at least one must be set
     assetManagerController?: string;
     contractsJsonFile?: string;
+    // notifier apis
+    apiNotifierConfigs?: ApiNotifierConfig[]
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator
-    challengeStrategy?: BotStrategyDefinition; // only for challenger
+    challengeStrategy?: BotStrategyDefinition; // only for challenge
 }
 
 export type BotConfigFileOverride =

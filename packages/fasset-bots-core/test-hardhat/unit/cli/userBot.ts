@@ -19,7 +19,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer } from "../../test-utils/helpers";
+import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -159,12 +159,13 @@ describe("UserBot cli commands unit tests", () => {
         userBot.writeState(data);
         // run agent's steps until redemption process is finished
         for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }

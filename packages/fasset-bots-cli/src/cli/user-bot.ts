@@ -171,7 +171,7 @@ program
         console.log("FAsset: ", await fasset.formatBalance(bot.nativeAddress));
         const underlying = await TokenBalances.fassetUnderlyingToken(bot.context);
         console.log(`Underlying (${bot.context.chainInfo.name}): `, await underlying.formatBalance(bot.underlyingAddress));
-        const native = await TokenBalances.evmNative(bot.context.nativeChainInfo.tokenSymbol);
+        const native = await TokenBalances.evmNative(bot.context);
         console.log(`Native (${bot.context.nativeChainInfo.chainName}): `, await native.formatBalance(bot.nativeAddress));
         for (const collateral of await bot.context.assetManager.getCollateralTypes()) {
             if (!toBN(collateral.validUntil).eqn(0)) continue;

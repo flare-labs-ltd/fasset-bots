@@ -1,8 +1,8 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotRunner, TimeKeeper } from "@flarelabs/fasset-bots-core";
-import { Secrets, closeBotConfig, createBotConfig, decodedChainId, loadAgentConfigFile } from "@flarelabs/fasset-bots-core/config";
+import { AgentBotRunner, TimeKeeperService } from "@flarelabs/fasset-bots-core";
+import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -21,17 +21,18 @@ program.action(async () => {
         const ownerPrivateKey: string = secrets.required("owner.native.private_key");
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [ownerPrivateKey], ownerAddress);
         const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
+        // create timekeepers
+        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, "auto", TIMEKEEPER_INTERVAL, 5000);
+        timekeeperService.startAll();
         // create runner and agents
-        const runner = await AgentBotRunner.create(secrets, botConfig);
+        const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         // store owner's underlying address
         for (const ctx of runner.contexts.values()) {
-            const chainName = decodedChainId(ctx.chainInfo.chainId);
+            const chainName = ctx.chainInfo.chainId.chainName;
             const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
         }
-        // create timekeepers
-        const timekeepers = await TimeKeeper.startTimekeepers(botConfig, ownerAddress, TIMEKEEPER_INTERVAL);
         // run
         try {
             console.log("Agent bot started, press CTRL+C to end");
@@ -41,7 +42,7 @@ program.action(async () => {
             });
             await runner.run();
         } finally {
-            await TimeKeeper.stopTimekeepers(timekeepers);
+            await timekeeperService.stopAll();
             await closeBotConfig(botConfig);
         }
         if (runner.stopRequested) {

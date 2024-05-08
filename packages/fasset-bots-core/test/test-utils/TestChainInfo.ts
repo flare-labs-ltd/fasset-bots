@@ -1,5 +1,6 @@
-import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
-import { SourceId } from "../../src/underlying-chain/SourceId";
+import { ChainInfo } from "../../src/fasset/ChainInfo";
+import { NativeChainInfo } from "../../src/fasset/NativeChainInfo";
+import { ChainId } from "../../src/underlying-chain/ChainId";
 
 export interface TestNatInfo {
     name: string;
@@ -19,6 +20,7 @@ export interface TestChainInfo extends ChainInfo {
     finalizationBlocks: number;
     underlyingBlocksForPayment: number;
     lotSize: number;
+    parameterFile?: string;
 }
 
 export const testNativeChainInfo: NativeChainInfo = {
@@ -30,7 +32,7 @@ export const testNativeChainInfo: NativeChainInfo = {
 
 export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
     eth: {
-        chainId: SourceId.LTC,
+        chainId: ChainId.LTC,
         name: "Ethereum",
         symbol: "ETH",
         decimals: 18,
@@ -43,7 +45,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         requireEOAProof: true,
     },
     btc: {
-        chainId: SourceId.testBTC,
+        chainId: ChainId.testBTC,
         name: "Bitcoin",
         symbol: "BTC",
         decimals: 8,
@@ -56,8 +58,8 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         requireEOAProof: false,
     },
     xrp: {
-        chainId: SourceId.testXRP,
-        name: "Ripple",
+        chainId: ChainId.testXRP,
+        name: "XRP",
         symbol: "XRP",
         decimals: 6,
         amgDecimals: 6,
@@ -65,7 +67,7 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         blockTime: 4,
         finalizationBlocks: 3,
         underlyingBlocksForPayment: 10,
-        lotSize: 10_000,
+        lotSize: 10,
         requireEOAProof: false,
     },
 };

@@ -17,6 +17,7 @@ export interface ChainContracts {
     StateConnector: Contract;
     WNat: Contract;
     FtsoManager: Contract;
+    FtsoRegistry: Contract;
     // fasset
     SCProofVerifier: Contract;
     AgentVaultFactory: Contract;

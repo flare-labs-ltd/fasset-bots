@@ -5,7 +5,7 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { ContractWithEvents } from "./events/truffle";
-import { toBN, toNumber } from "./helpers";
+import { requireNotNull, toBN, toNumber } from "./helpers";
 import { web3DeepNormalize } from "./web3normalize";
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
@@ -45,8 +45,8 @@ export async function attestationWindowSeconds(assetManager: IIAssetManagerInsta
     return Number(settings.attestationWindowSeconds);
 }
 
-export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexerHelper): Promise<IBlock | null> {
+export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexerHelper): Promise<IBlock> {
     const blockHeight = await blockchainIndexer.getBlockHeight();
     const latestBlock = await blockchainIndexer.getBlockAt(blockHeight);
-    return latestBlock;
+    return requireNotNull(latestBlock, "Block at block height does not exist");
 }

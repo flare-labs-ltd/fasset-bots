@@ -1,5 +1,5 @@
 import { IERC20MetadataInstance } from "../../typechain-truffle";
-import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
+import { IAssetAgentContext, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { Currency } from "./Currency";
@@ -10,8 +10,8 @@ const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("IICollateralPool");
 
 export namespace TokenBalances {
-    export async function evmNative(symbol: string) {
-        return new EVMNativeTokenBalance(new Currency(symbol, 18));
+    export async function evmNative(context: IAssetNativeChainContext) {
+        return new EVMNativeTokenBalance(new Currency(context.nativeChainInfo.tokenSymbol, 18));
     }
 
     export async function wallet(walletClient: IBlockChainWallet, currency: Currency) {
@@ -59,39 +59,5 @@ export namespace TokenBalances {
         const pool = await CollateralPool.at(agentInfo.collateralPool);
         const poolToken = await IERC20.at(await pool.poolToken());
         return TokenBalances.erc20(poolToken);
-    }
-}
-
-export namespace Currencies {
-    export function evmNative(symbol: string) {
-        return TokenBalances.evmNative(symbol).then(tb => tb.currency);
-    }
-
-    export function erc20(token: IERC20MetadataInstance) {
-        return TokenBalances.erc20(token).then(tb => tb.currency);
-    }
-
-    export function collateralType(collateral: CollateralType) {
-        return TokenBalances.collateralType(collateral).then(tb => tb.currency);
-    }
-
-    export function fasset(context: IAssetAgentContext) {
-        return TokenBalances.fasset(context).then(tb => tb.currency);
-    }
-
-    export function fassetUnderlyingToken(context: IAssetAgentContext) {
-        return TokenBalances.fassetUnderlyingToken(context).then(tb => tb.currency);
-    }
-
-    export function agentVaultCollateral(context: IAssetAgentContext, agentVaultAddress: string) {
-        return TokenBalances.agentVaultCollateral(context, agentVaultAddress).then(tb => tb.currency);
-    }
-
-    export function agentPoolCollateral(context: IAssetAgentContext, agentVaultAddress: string) {
-        return TokenBalances.agentPoolCollateral(context, agentVaultAddress).then(tb => tb.currency);
-    }
-
-    export function agentCollateralPoolToken(context: IAssetAgentContext, agentVaultAddress: string) {
-        return TokenBalances.agentCollateralPoolToken(context, agentVaultAddress).then(tb => tb.currency);
     }
 }

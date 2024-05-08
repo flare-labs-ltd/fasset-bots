@@ -1,5 +1,5 @@
 import { AgentBotCommands, AgentEntity, generateSecrets } from "@flarelabs/fasset-bots-core";
-import { AgentSettingsConfig, Secrets, decodedChainId, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
+import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { BN_ZERO, MAX_BIPS, artifacts, createSha256Hash, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
@@ -186,7 +186,8 @@ export class AgentService {
 
     async createUnderlying(fAssetSymbol: string): Promise<AgentUnderlying> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const account = await cli.createUnderlyingAccount();
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        const account = await cli.createUnderlyingAccount(secrets);
         return { address: account.address, privateKey: account.privateKey };
     }
 
@@ -262,8 +263,7 @@ export class AgentService {
 
     async getAgentUnderlyingBalance(fAssetSymbol: string): Promise<AgentBalance> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const ownerUnderlyingAddress = cli.secrets.required(`owner.${decodedChainId(cli.context.chainInfo.chainId)}.address`);
-        const balance = await cli.context.wallet.getBalance(ownerUnderlyingAddress);
+        const balance = await cli.context.wallet.getBalance(cli.ownerUnderlyingAddress);
         return { balance: balance.toString() };
     }
 

@@ -9,7 +9,7 @@ import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chai
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { getAgentSettings } from "../utils/fasset-helpers";
-import { BNish, toBN } from "../utils/helpers";
+import { BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
@@ -67,6 +67,15 @@ export class Agent {
 
     async getAgentInfo(): Promise<AgentInfo> {
         return await this.assetManager.getAgentInfo(this.agentVault.address);
+    }
+
+    async getAgentInfoIfExists(): Promise<AgentInfo | null> {
+        try {
+            return await this.assetManager.getAgentInfo(this.agentVault.address);
+        } catch (error) {
+            expectErrors(error, ["invalid agent vault address"]);
+            return null;
+        }
     }
 
     async getVaultCollateral(): Promise<CollateralType> {

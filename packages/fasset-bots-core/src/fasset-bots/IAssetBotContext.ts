@@ -1,5 +1,6 @@
 import { AddressUpdaterInstance, AgentOwnerRegistryInstance, AssetManagerControllerInstance, FAssetInstance, IIAssetManagerInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
-import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
+import { ChainInfo } from "../fasset/ChainInfo";
+import { NativeChainInfo } from "../fasset/NativeChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
@@ -41,7 +42,6 @@ export interface ITimekeeperContext extends IAssetNativeChainContext {
 
 export interface ILiquidatorContext extends IAssetNativeChainContext {
     liquidationStrategy?: {
-        // only for liquidator
         className: string;
         config?: any;
     };
@@ -51,7 +51,6 @@ export interface IChallengerContext extends IAssetNativeChainContext {
     blockchainIndexer: BlockchainIndexerHelper;
     attestationProvider: AttestationHelper;
     challengeStrategy?: {
-        // only for challenger
         className: string;
         config?: any;
     };

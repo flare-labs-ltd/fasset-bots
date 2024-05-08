@@ -7,6 +7,7 @@ import { BotType, NotificationLevel } from "../../../src/utils/notifier/BaseNoti
 import { ChallengerNotifier } from "../../../src/utils/notifier/ChallengerNotifier";
 import { LiquidatorNotifier } from "../../../src/utils/notifier/LiquidatorNotifier";
 import { FaultyNotifierTransport } from "../../test-utils/FaultyNotifierTransport";
+import { FormattedString } from "../../../src/utils";
 use(chaiAsPromised);
 use(spies);
 
@@ -93,39 +94,39 @@ describe("Notifier tests", () => {
 
     it("Should send top up collateral alert", async () => {
         const spySend = spy.on(transport, "send");
-        await notifier.sendVaultCollateralTopUpAlert("1");
-        await notifier.sendPoolCollateralTopUpAlert("1");
+        await notifier.sendVaultCollateralTopUpAlert("1" as FormattedString);
+        await notifier.sendPoolCollateralTopUpAlert("1" as FormattedString);
         expect(spySend).to.have.been.called.twice;
     });
 
     it("Should send top up collateral failed alert", async () => {
         const spySend = spy.on(transport, "send");
-        await notifier.sendVaultCollateralTopUpFailedAlert("1");
-        await notifier.sendPoolCollateralTopUpFailedAlert("1");
+        await notifier.sendVaultCollateralTopUpFailedAlert("1" as FormattedString);
+        await notifier.sendPoolCollateralTopUpFailedAlert("1" as FormattedString);
         expect(spySend).to.have.been.called.twice;
     });
 
     it("Should send low underlying balance failed alert", async () => {
         const spySend = spy.on(notifier, "sendLowUnderlyingAgentBalanceFailed");
-        await notifier.sendLowUnderlyingAgentBalanceFailed("1");
+        await notifier.sendLowUnderlyingAgentBalanceFailed("1" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send low underlying agent balance alert", async () => {
         const spySend = spy.on(notifier, "sendLowUnderlyingAgentBalance");
-        await notifier.sendLowUnderlyingAgentBalance("1");
+        await notifier.sendLowUnderlyingAgentBalance("1" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send low balance on owner's underlying address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
-        await notifier.sendLowBalanceOnUnderlyingOwnersAddress("underlying", "1");
+        await notifier.sendLowBalanceOnUnderlyingOwnersAddress("underlying", "1" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send low balance on owner's address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnOwnersAddress");
-        await notifier.sendLowBalanceOnOwnersAddress("ownerAddress", "1", "NAT");
+        await notifier.sendLowBalanceOnOwnersAddress("ownerAddress", "1" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
@@ -133,7 +134,7 @@ describe("Notifier tests", () => {
         const spySend = spy.on(transport, "send");
         await notifier.sendRedemptionNoProofObtained("reqId", 1, "data");
         await notifier.sendMintingNoProofObtained("reqId", 1, "data");
-        await notifier.sendDailyTaskNoProofObtained(1, "data");
+        await notifier.sendDailyTaskNoProofObtained(10);
         expect(spySend).to.have.been.called.exactly(3);
     });
 
@@ -151,7 +152,7 @@ describe("Notifier tests", () => {
 
     it("Should send agent withdrew vault collateral collateral", async () => {
         const spySend = spy.on(notifier, "sendWithdrawVaultCollateral");
-        await notifier.sendWithdrawVaultCollateral("100");
+        await notifier.sendWithdrawVaultCollateral("100" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
@@ -193,25 +194,25 @@ describe("Notifier tests", () => {
 
     it("Should send agent bought pool tokens", async () => {
         const spySend = spy.on(notifier, "sendBuyCollateralPoolTokens");
-        await notifier.sendBuyCollateralPoolTokens("amount");
+        await notifier.sendBuyCollateralPoolTokens("10" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send vault collateral was deposited to agent", async () => {
         const spySend = spy.on(notifier, "sendVaultCollateralDeposit");
-        await notifier.sendVaultCollateralDeposit("amount");
+        await notifier.sendVaultCollateralDeposit("10" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send pool fees were withdrawn", async () => {
         const spySend = spy.on(notifier, "sendWithdrawPoolFees");
-        await notifier.sendWithdrawPoolFees("amount");
+        await notifier.sendWithdrawPoolFees("10" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send pool fees balance", async () => {
         const spySend = spy.on(notifier, "sendBalancePoolFees");
-        await notifier.sendBalancePoolFees("amount");
+        await notifier.sendBalancePoolFees("10" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
@@ -283,7 +284,7 @@ describe("Notifier tests", () => {
 
     it("Should send pool collateral delegated", async () => {
         const spySend = spy.on(notifier, "sendDelegatePoolCollateral");
-        await notifier.sendDelegatePoolCollateral("pool", "recipient1", "1000");
+        await notifier.sendDelegatePoolCollateral("pool", "recipient1", "1000" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
@@ -336,13 +337,13 @@ describe("Notifier tests", () => {
 
     it("Should send redemption of collateral pool tokens was announced", async () => {
         const spySend = spy.on(notifier, "sendRedeemCollateralPoolTokensAnnouncement");
-        await notifier.sendRedeemCollateralPoolTokensAnnouncement("amount");
+        await notifier.sendRedeemCollateralPoolTokensAnnouncement("10" as FormattedString);
         expect(spySend).to.have.been.called.once;
     });
 
     it("Should send cannot withdraw collateral", async () => {
         const spySend = spy.on(notifier, "sendAgentCannotWithdrawCollateral");
-        await notifier.sendAgentCannotWithdrawCollateral("amount", "POOL");
+        await notifier.sendAgentCannotWithdrawCollateral("10" as FormattedString, "POOL");
         expect(spySend).to.have.been.called.once;
     });
 

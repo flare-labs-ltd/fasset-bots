@@ -121,7 +121,7 @@ describe("Attestation client unit tests", () => {
 
     describe("tests with faulty prover", () => {
         async function initialize() {
-            context = await createTestAssetContext(accounts[0], testChainInfo.xrp, undefined, undefined, undefined, true);
+            context = await createTestAssetContext(accounts[0], testChainInfo.xrp, { useAlwaysFailsProver: true });
             chain = checkedCast(context.blockchainIndexer.chain, MockChain);
             return { context, chain };
         }
