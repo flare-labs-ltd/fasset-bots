@@ -4,7 +4,9 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-export function programWithCommonOptions(user: "agent" | "user" | "bot" | "util", fassets: "single_fasset" | "all_fassets") {
+type UserTypeForOptions = "agent" | "user" | "bot" | "util";
+
+export function programWithCommonOptions(user: UserTypeForOptions, fassets: "single_fasset" | "all_fassets") {
     const configEnvVar = user === "user" ? "FASSET_USER_CONFIG" : "FASSET_BOT_CONFIG";
     const secretsEnvVar = user === "user" ? "FASSET_USER_SECRETS" : "FASSET_BOT_SECRETS";
     const allowDefaultSecrets = user === "user";
@@ -17,17 +19,8 @@ export function programWithCommonOptions(user: "agent" | "user" | "bot" | "util"
                         Default file is embedded in the program and usually works.`
             )
             .env(configEnvVar)
-            .argParser(expandConfigPath)
-            .default(expandConfigPath("coston"));
-    }
-
-    // single word network name conversions, e.g. "coston" --> ".../fasset-bots-core/run-config/coston-bot.json"
-    function expandConfigPath(config: string) {
-        if (/^\w+$/.test(config)) {
-            const suffix = user === "user" ? "user" : "bot";
-            return resolveInFassetBotsCore(`run-config/${config}-${suffix}.json`);
-        }
-        return config;
+            .argParser((v) => expandConfigPath(v, user))
+            .default(expandConfigPath("coston", user));
     }
 
     function createSecretsOption() {
@@ -35,7 +28,7 @@ export function programWithCommonOptions(user: "agent" | "user" | "bot" | "util"
             .createOption(
                 "-s, --secrets <secretsFile>",
                 squashSpace`File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable ${secretsEnvVar}
-                            is used as path, if set. ${allowDefaultSecrets ? "Default file is <USER_HOME>/.fasset/secrets.json." : ""}`
+                            is used as path, if set. ${allowDefaultSecrets ? "Default file is <USER_HOME>/fasset/secrets.json." : ""}`
             )
             .env(secretsEnvVar);
         if (allowDefaultSecrets) {
@@ -74,6 +67,15 @@ export function programWithCommonOptions(user: "agent" | "user" | "bot" | "util"
     }
     program.hook("preAction", () => verifyFilesExist());
     return program;
+}
+
+// single word network name conversions, e.g. "coston" --> ".../fasset-bots-core/run-config/coston-bot.json"
+export function expandConfigPath(config: string, user: UserTypeForOptions) {
+    if (/^\w+$/.test(config)) {
+        const suffix = user === "user" ? "user" : "bot";
+        return resolveInFassetBotsCore(`run-config/${config}-${suffix}.json`);
+    }
+    return config;
 }
 
 function defaultSecretsPath() {

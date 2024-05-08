@@ -2,11 +2,12 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { SecretsUser, generateSecrets } from "@flarelabs/fasset-bots-core";
-import { createSha256Hash, generateRandomHexString, logger, resolveInFassetBotsCore, squashSpace } from "@flarelabs/fasset-bots-core/utils";
+import { createSha256Hash, generateRandomHexString, logger, squashSpace } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
 import path from "path";
+import { expandConfigPath } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
 const program = new Command();
@@ -28,8 +29,9 @@ program
         if (opts.agent) users.push("agent");
         if (opts.other) users.push("other");
         if (!opts.config) {
-            opts.config = process.env.FASSET_BOT_CONFIG ?? process.env.FASSET_USER_CONFIG ?? resolveInFassetBotsCore("run-config/coston-bot.json");
+            opts.config = process.env.FASSET_BOT_CONFIG ?? process.env.FASSET_USER_CONFIG ?? "coston";
         }
+        opts.config = expandConfigPath(opts.config, "bot");
         const secrets = generateSecrets(opts.config, users, opts.agent);
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
