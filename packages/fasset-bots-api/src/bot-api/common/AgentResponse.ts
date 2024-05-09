@@ -67,6 +67,7 @@ export interface VaultInfo {
     mintedAmount: string;
     vaultAmount: string;
     poolAmount: string;
+    agentCPTs: string;
 }
 
 export interface AllVaults {

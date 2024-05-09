@@ -254,6 +254,7 @@ export class AgentService {
     async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentVaultInfo> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const collateralToken = await cli.context.assetManager.getCollateralType(2,info.vaultCollateralToken);
         const agentVaultInfo: any = {};
         for (const key of Object.keys(info)) {
             if (!isNaN(parseInt(key))) continue;
@@ -261,6 +262,7 @@ export class AgentService {
             const modified = (typeof value === "boolean") ? value : value.toString();
             agentVaultInfo[key as keyof typeof info] = modified;
         }
+        agentVaultInfo.vaultCollateralToken = collateralToken.tokenFtsoSymbol;
         return agentVaultInfo;
     }
 
@@ -465,7 +467,7 @@ export class AgentService {
                 const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: info.mintedUBA, vaultAmount: info.totalVaultCollateralWei,
-                    poolAmount: info.totalPoolCollateralNATWei};
+                    poolAmount: info.totalPoolCollateralNATWei, agentCPTs: info.totalAgentPoolTokensWei};
                 vaultsForFasset.push(vaultInfo);
             }
             if (vaultsForFasset.length != 0)
