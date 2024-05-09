@@ -140,6 +140,10 @@ export class AgentEntity {
 
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
     dailyTasksTimestamp: BN = BN_ZERO;
+
+    // not used - here just to keep the non-null contraint from breaking; delete column when we support migrations
+    @Property({ columnType: "varchar(20)", default: "obtainedProof" })
+    dailyProofState!: string;
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
