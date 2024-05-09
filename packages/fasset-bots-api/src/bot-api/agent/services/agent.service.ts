@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultInfo, AgentVaultStatus, AllCollaterals, AllVaults, CollateralTemplate, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { exec } from "child_process";
@@ -16,6 +16,8 @@ import { EntityManager } from "@mikro-orm/core";
 import { Alert } from "../../common/entities/AlertDB";
 
 const IERC20 = artifacts.require("IERC20Metadata");
+const CollateralPool = artifacts.require("CollateralPool");
+const IERC20Metadata = artifacts.require("IERC20Metadata");
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
@@ -251,11 +253,14 @@ export class AgentService {
         return agentInfos
     }
 
-    async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentVaultInfo> {
+    async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<ExtendedAgentVaultInfo> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const collateralToken = await cli.context.assetManager.getCollateralType(2,info.vaultCollateralToken);
         const agentVaultInfo: any = {};
+        const pool = await CollateralPool.at(info.collateralPool);
+        const poolToken = await IERC20Metadata.at(await pool.poolToken());
+        const tokenSymbol = await poolToken.symbol();
         for (const key of Object.keys(info)) {
             if (!isNaN(parseInt(key))) continue;
             const value = info[key as keyof typeof info];
@@ -263,6 +268,7 @@ export class AgentService {
             agentVaultInfo[key as keyof typeof info] = modified;
         }
         agentVaultInfo.vaultCollateralToken = collateralToken.tokenFtsoSymbol;
+        agentVaultInfo.poolSuffix = tokenSymbol;
         return agentVaultInfo;
     }
 

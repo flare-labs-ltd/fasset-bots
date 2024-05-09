@@ -4,7 +4,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
 import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultInfo, AgentVaultStatus, AllCollaterals, VaultCollaterals } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllCollaterals, ExtendedAgentVaultInfo, VaultCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
@@ -240,7 +240,7 @@ export class AgentController {
                         publiclyAvailable: { type: 'boolean', example: false },
                         feeBIPS: { type: 'string', example: '25' },
                         poolFeeShareBIPS: { type: 'string', example: '4000' },
-                        vaultCollateralToken: { type: 'string', example: '0x988136EC5228b0b637CfcE14bFEc53D0C4ddC27d' },
+                        vaultCollateralToken: { type: 'string', example: 'testUSDC' },
                         mintingVaultCollateralRatioBIPS: { type: 'string', example: '16000' },
                         mintingPoolCollateralRatioBIPS: { type: 'string', example: '24000' },
                         freeCollateralLots: { type: 'string', example: '0' },
@@ -271,7 +271,8 @@ export class AgentController {
                         buyFAssetByAgentFactorBIPS: { type: 'string', example: '9900' },
                         poolExitCollateralRatioBIPS: { type: 'string', example: '26000' },
                         poolTopupCollateralRatioBIPS: { type: 'string', example: '22000' },
-                        poolTopupTokenPriceFactorBIPS: { type: 'string', example: '8000' }
+                        poolTopupTokenPriceFactorBIPS: { type: 'string', example: '8000' },
+                        poolSuffix: { type: 'string', example: 'POOLSUFFIXNAME'}
                     }
                 }
             }
@@ -280,7 +281,7 @@ export class AgentController {
     public async getAgentVaultInfo(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
-    ): Promise<ApiResponseWrapper<AgentVaultInfo>> {
+    ): Promise<ApiResponseWrapper<ExtendedAgentVaultInfo>> {
         return handleApiResponse(this.agentService.getAgentVaultInfo(fAssetSymbol, agentVaultAddress));
     }
 

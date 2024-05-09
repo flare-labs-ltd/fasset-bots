@@ -103,6 +103,10 @@ type BNsToStrings<T> = {
 }
 export type AgentVaultInfo = BNsToStrings<AgentInfo>
 
+export type ExtendedAgentVaultInfo = AgentVaultInfo & {
+    poolSuffix: string;
+};
+
 export const requiredKeysForSecrets = ["wallet.encryption_password",
                                         "apiKey.indexer", "apiKey.xrp_rpc", "apiKey.native_rpc", "apiKey.agent_bot",
                                     "owner.management.address", "owner.native.address", "owner.native.private_key",
