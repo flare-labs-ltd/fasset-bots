@@ -41,7 +41,7 @@ export class InfoBotCommands {
         const botConfig = await createBotConfig("common", secrets, config);
         // create config
         const chainConfig = fAssetSymbol ? botConfig.fAssets.get(fAssetSymbol) : firstValue(botConfig.fAssets);
-        assertNotNullCmd(chainConfig, "FAsset does not exist");
+        assertNotNullCmd(chainConfig, `FAsset "${fAssetSymbol}" does not exist`);
         const context = await createNativeContext(botConfig, chainConfig);
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);

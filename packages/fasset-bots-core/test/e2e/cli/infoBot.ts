@@ -17,6 +17,6 @@ describe("InfoBot cli commands unit tests", () => {
     });
 
     it("Should not create InfoBot", async () => {
-        await expect(InfoBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "Invalid")).to.eventually.be.rejectedWith("FAsset does not exist");
+        await expect(InfoBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "Invalid")).to.eventually.be.rejectedWith(`FAsset "Invalid" does not exist`);
     });
 });
