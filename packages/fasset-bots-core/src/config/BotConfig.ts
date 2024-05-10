@@ -6,7 +6,7 @@ import { Secrets } from ".";
 import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { ChainInfo } from "../fasset/ChainInfo";
-import { NativeChainInfo } from "../fasset/NativeChainInfo";
+import { NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
@@ -18,11 +18,11 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
-import { RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull } from "../utils";
+import { BN_ZERO, RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull, toBNExp } from "../utils";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId, supportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
@@ -83,7 +83,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         return {
             loopDelay: configFile.loopDelay,
             fAssets: fAssets,
-            nativeChainInfo: configFile.nativeChainInfo,
+            nativeChainInfo: createNativeChainInfo(configFile.nativeChainInfo),
             orm: orm,
             notifiers: standardNotifierTransports(secrets, configFile.apiNotifierConfigs),
             contractRetriever: retriever,
@@ -93,6 +93,13 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
     } catch (error) {
         await orm?.close();
         throw error;
+    }
+}
+
+export function createNativeChainInfo(nativeChainInfo: BotNativeChainInfo): NativeChainInfo {
+    return {
+        ...nativeChainInfo,
+        recommendedOwnerBalance: nativeChainInfo.recommendedOwnerBalance != null ? toBNExp(nativeChainInfo.recommendedOwnerBalance, 18) : BN_ZERO,
     }
 }
 
@@ -163,13 +170,16 @@ export async function createBotFAssetConfig(
 }
 
 export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, settings: AssetManagerSettings): ChainInfo {
+    const decimals = Number(settings.assetDecimals);
     return {
         chainId: chainId,
         name: fassetInfo.name,
         symbol: fassetInfo.symbol,
-        decimals: Number(settings.assetDecimals),
+        decimals: decimals,
         amgDecimals: Number(settings.assetMintingDecimals),
         requireEOAProof: settings.requireEOAAddressProof,
+        minimumAccountBalance: fassetInfo.minimumAccountBalance != null ? toBNExp(fassetInfo.minimumAccountBalance, decimals) : BN_ZERO,
+        recommendedOwnerBalance: fassetInfo.recommendedOwnerBalance != null ? toBNExp(fassetInfo.recommendedOwnerBalance, decimals) : BN_ZERO,
     }
 }
 

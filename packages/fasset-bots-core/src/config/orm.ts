@@ -1,13 +1,10 @@
 import { MikroORM, Options } from "@mikro-orm/core";
 import { AbstractSqlDriver, SqlEntityManager } from "@mikro-orm/knex";
+import { DatabaseType, SchemaUpdate } from "./config-files/BotConfigFile";
 
 export type EM = SqlEntityManager;
 
 export type ORM = MikroORM<AbstractSqlDriver>;
-
-export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
-
-export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
 export type CreateOrmOptions = Options<AbstractSqlDriver> & {
     schemaUpdate?: SchemaUpdate;

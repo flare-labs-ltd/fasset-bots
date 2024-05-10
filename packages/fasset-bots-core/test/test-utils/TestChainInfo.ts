@@ -1,6 +1,7 @@
 import { ChainInfo } from "../../src/fasset/ChainInfo";
-import { NativeChainInfo } from "../../src/fasset/NativeChainInfo";
+import { NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { ChainId } from "../../src/underlying-chain/ChainId";
+import { BN_ZERO, toBNExp } from "../../src/utils";
 
 export interface TestNatInfo {
     name: string;
@@ -28,6 +29,7 @@ export const testNativeChainInfo: NativeChainInfo = {
     tokenSymbol: "NAT",
     finalizationBlocks: 0,
     readLogsChunkSize: 10,
+    recommendedOwnerBalance: toBNExp(1, 18)
 };
 
 export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
@@ -37,6 +39,8 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         symbol: "ETH",
         decimals: 18,
         amgDecimals: 9,
+        minimumAccountBalance: BN_ZERO,
+        recommendedOwnerBalance: toBNExp("0.1", 18),
         startPrice: 1621.0,
         blockTime: 12,
         finalizationBlocks: 6,
@@ -50,6 +54,8 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         symbol: "BTC",
         decimals: 8,
         amgDecimals: 8,
+        minimumAccountBalance: BN_ZERO,
+        recommendedOwnerBalance: toBNExp("0.01", 8),
         startPrice: 25213.0,
         blockTime: 600,
         finalizationBlocks: 6,
@@ -63,6 +69,8 @@ export const testChainInfo: Record<"eth" | "btc" | "xrp", TestChainInfo> = {
         symbol: "XRP",
         decimals: 6,
         amgDecimals: 6,
+        minimumAccountBalance: toBNExp(10, 6),
+        recommendedOwnerBalance: toBNExp(50, 6),
         startPrice: 0.53,
         blockTime: 4,
         finalizationBlocks: 3,
