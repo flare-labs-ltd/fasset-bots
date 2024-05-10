@@ -105,8 +105,15 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
     * @returns {BN} - balance in drops
     */
    async getAccountBalance(account: string): Promise<BN> {
-      const data = await this.getAccountInfo(account);
-      return toBN(data.result.account_data.Balance);
+      try {
+         const data = await this.getAccountInfo(account);
+         return toBN(data.result.account_data.Balance);
+      } catch (error) {
+         if (error instanceof Error && error.message.includes(`"error_message": "Account not found."`)) {
+            return toBN(0);
+         }
+         throw error;
+      }
    }
 
    /**

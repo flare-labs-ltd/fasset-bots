@@ -1,5 +1,6 @@
-import { NativeChainInfo } from "../../fasset/NativeChainInfo";
-import { DatabaseType, SchemaUpdate } from "../orm";
+export type DatabaseType = "mysql" | "sqlite" | "postgresql";
+
+export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
 
 export interface OrmConfigOptions {
     type: DatabaseType;
@@ -23,7 +24,21 @@ export interface BotFAssetInfo {
     inTestnet?: boolean; // for agent bot and user (optional)
     indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    minimumAccountBalance?: string; // only needed for XRP
+    recommendedOwnerBalance?: string;
+    faucet?: string;
 }
+
+export interface BotNativeChainInfo {
+    chainName: string;
+    tokenSymbol: string;
+    finalizationBlocks: number;
+    // maximum number of blocks in getPastLogs() call
+    readLogsChunkSize: number;
+    recommendedOwnerBalance?: string;
+    faucet?: string;
+}
+
 
 export interface ApiNotifierConfig {
     apiUrl: string
@@ -45,7 +60,7 @@ export interface BotConfigFile {
     fAssets: { [fAssetSymbol: string]: BotFAssetInfo };
     // notifierFile: string;
     loopDelay: number;
-    nativeChainInfo: NativeChainInfo;
+    nativeChainInfo: BotNativeChainInfo;
     rpcUrl: string;
     attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
     prioritizeAddressUpdater: boolean;
@@ -63,7 +78,7 @@ export type BotConfigFileOverride =
     Partial<Omit<BotConfigFile, "fAssets" | "nativeChainInfo">> & {
         extends: string;
         fAssets?: { [fAssetSymbol: string]: Partial<BotFAssetInfo> };
-        nativeChainInfo?: Partial<NativeChainInfo>;
+        nativeChainInfo?: Partial<BotNativeChainInfo>;
     };
 
 export type Schema_BotConfigFile = BotConfigFile & { $schema?: string };

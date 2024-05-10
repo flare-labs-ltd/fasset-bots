@@ -113,6 +113,7 @@ export function toStringExp(x: number | string, exponent: number): string {
         const decimals = Math.min(exponent, significantDecimals);
         xStr = x.toFixed(decimals);
     } else {
+        if (!/^\d+(\.\d+)?$/.test(x)) throw new Error("toStringExp: invalid number format");
         xStr = x;
     }
     const dot = xStr.indexOf(".");

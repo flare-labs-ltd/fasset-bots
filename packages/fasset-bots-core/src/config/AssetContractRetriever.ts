@@ -1,4 +1,4 @@
-import { AddressUpdaterInstance, AssetManagerControllerInstance, IIAssetManagerInstance, Truffle } from "../../typechain-truffle";
+import { AddressUpdaterInstance, AssetManagerControllerInstance, FAssetInstance, IIAssetManagerInstance, Truffle } from "../../typechain-truffle";
 import { CommandLineError, requireNotNullCmd } from "../utils/command-line-errors";
 import { ZERO_ADDRESS } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
@@ -38,13 +38,15 @@ export class ContractRetriever {
     }
 }
 
+type FAssetPair = { assetManager: IIAssetManagerInstance; fasset: FAssetInstance };
+
 export class AssetContractRetriever extends ContractRetriever {
     constructor(
         prioritizeAddressUpdater: boolean,
         addressUpdater: AddressUpdaterInstance,
         contracts: ChainContracts | undefined,
         public assetManagerController: AssetManagerControllerInstance,
-        public assetManagers: Map<string, IIAssetManagerInstance>,
+        public assetManagers: Map<string, FAssetPair>,
     ) {
         super(prioritizeAddressUpdater, addressUpdater, contracts);
     }
@@ -68,16 +70,20 @@ export class AssetContractRetriever extends ContractRetriever {
     }
 
     getAssetManager(symbol: string) {
-        return requireNotNullCmd(this.assetManagers.get(symbol), `No asset manager for FAsset with symbol ${symbol}`);
+        return requireNotNullCmd(this.assetManagers.get(symbol)?.assetManager, `No asset manager for FAsset with symbol ${symbol}`);
+    }
+
+    getFAsset(symbol: string) {
+        return requireNotNullCmd(this.assetManagers.get(symbol)?.fasset, `No asset manager for FAsset with symbol ${symbol}`);
     }
 
     static async createAssetManagerMap(assetManagerController: AssetManagerControllerInstance) {
-        const map = new Map<string, IIAssetManagerInstance>();
+        const map = new Map<string, FAssetPair>();
         for (const assetManagerAddress of await assetManagerController.getAssetManagers()) {
             const assetManager = await IIAssetManager.at(assetManagerAddress);
             const fasset = await FAsset.at(await assetManager.fAsset());
             const symbol = await fasset.symbol();
-            map.set(symbol, assetManager);
+            map.set(symbol, { assetManager, fasset });
         }
         return map;
     }

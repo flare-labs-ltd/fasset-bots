@@ -1,6 +1,6 @@
 import { AddressUpdaterInstance, AgentOwnerRegistryInstance, AssetManagerControllerInstance, FAssetInstance, IIAssetManagerInstance, IPriceChangeEmitterInstance, WNatInstance } from "../../typechain-truffle";
 import { ChainInfo } from "../fasset/ChainInfo";
-import { NativeChainInfo } from "../fasset/NativeChainInfo";
+import { NativeChainInfo } from "../fasset/ChainInfo";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";

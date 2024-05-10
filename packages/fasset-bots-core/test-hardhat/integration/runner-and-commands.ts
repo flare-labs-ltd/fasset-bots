@@ -10,7 +10,7 @@ import { Currencies, Currency } from "../../src/utils";
 import { Web3ContractEventDecoder } from "../../src/utils/events/Web3ContractEventDecoder";
 import { EvmEvent } from "../../src/utils/events/common";
 import { eventIs } from "../../src/utils/events/truffle";
-import { firstValue, getOrCreateAsync, sleep } from "../../src/utils/helpers";
+import { firstValue, getOrCreateAsync, sleep, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
@@ -58,6 +58,8 @@ describe("Toplevel runner and commands integration test", () => {
         symbol: "testXRP",
         decimals: 6,
         amgDecimals: 6,
+        minimumAccountBalance: toBNExp(10, 6),
+        recommendedOwnerBalance: toBNExp(50, 6),
         startPrice: 0.53,
         blockTime: 2,
         finalizationBlocks: 3,

@@ -7,7 +7,9 @@
         "chainName": "Coston",
         "tokenSymbol": "CFLR",
         "finalizationBlocks": 6,
-        "readLogsChunkSize": 10
+        "readLogsChunkSize": 10,
+        "recommendedOwnerBalance": "10",
+        "faucet": "https://faucet.flare.network"
     },
     "fAssets": {
         "FtestXRP": {
@@ -15,7 +17,10 @@
             "name": "Test XRP",
             "symbol": "testXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234"
+            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "minimumAccountBalance": "10",
+            "recommendedOwnerBalance": "50",
+            "faucet": "https://faucet.tequ.dev/"
         },
         "FfakeXRP": {
             "chainId": "testXRP",
@@ -23,6 +28,9 @@
             "symbol": "fakeXRP",
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "minimumAccountBalance": "10",
+            "recommendedOwnerBalance": "50",
+            "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FakePriceReader"
         }
     },

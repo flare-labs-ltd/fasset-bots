@@ -1,9 +1,10 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotCommands } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
 import { Secrets, loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
 import { CommandLineError, Currencies, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
@@ -12,6 +13,18 @@ import { validateDecimal } from "../utils/validation";
 const program = programWithCommonOptions("agent", "single_fasset");
 
 program.name("agent-bot").description("Command line commands for AgentBot");
+
+program
+    .command("validateOwner")
+    .description("validate the owner's settings and check the owner's addresses' balances")
+    .action(async () => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        console.log(chalk.cyan("Initializing environment..."));
+        const validator = await AgentBotOwnerValidation.create(options.secrets, options.config, printingReporter);
+        console.log(chalk.cyan("Environment successfully initialized."));
+        await validator.validate([options.fasset]);
+        if (printingReporter.errorCount === 0) console.log("Agent owner is set up correctly.");
+    });
 
 program
     .command("create")
@@ -28,6 +41,8 @@ program
             console.log(`Initial settings have been written to ${fname}. Please edit this file and then execute "yarn agent-bot create ${fname}"`);
         } else if (agentSettingsPath != null && fs.existsSync(agentSettingsPath)) {
             const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+            const validator = await AgentBotOwnerValidation.fromContext(cli.context, options.secrets, options.config);
+            await validator.validate([options.fasset]);
             await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
         } else {
             if (agentSettingsPath != null) {

@@ -27,6 +27,7 @@ import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
+import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -46,35 +47,36 @@ export class AgentBotCommands {
 
     /**
      * Creates instance of BotCliCommands.
-     * @param runConfigFile path to configuration file
+     * @param configFileName path to configuration file
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of BotCliCommands class
      */
-    static async create(secretsFile: string, runConfigFile: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
+    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
         const secrets = Secrets.load(secretsFile);
         const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         // load config
         logger.info(`Owner ${owner.managementAddress} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
-        const runConfig = loadAgentConfigFile(runConfigFile, `Owner ${owner.managementAddress}`);
+        const configFile = loadAgentConfigFile(configFileName, `Owner ${owner.managementAddress}`);
         // init web3 and accounts
-        const nativePrivateKey = secrets.required("owner.native.private_key");
+        const workPrivateKey = secrets.required("owner.native.private_key");
         const apiKey = secrets.optional("apiKey.native_rpc");
-        const accounts = await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, apiKey), [nativePrivateKey], null);
-        /* istanbul ignore next */
-        if (owner.workAddress !== accounts[0]) {
-            logger.error(`Owner ${owner.managementAddress} has invalid address/private key pair.`);
-            throw new Error("Invalid address/private key pair");
+        await initWeb3(authenticatedHttpProvider(configFile.rpcUrl, apiKey), [workPrivateKey], null);
+        if (validate) {
+            AgentBotOwnerValidation.verifyWorkPrivateKey(owner, workPrivateKey);
         }
         // create config
-        const botConfig = await createBotConfig("agent", secrets, runConfig, owner.workAddress);
+        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
         registerCleanup?.(() => closeBotConfig(botConfig));
         // create context
         const chainConfig = botConfig.fAssets.get(fAssetSymbol);
         assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
         const context = await createAgentBotContext(botConfig, chainConfig);
         // verify keys
-        await this.verifyWorkAddress(context, owner);
+        if (validate) {
+            await AgentBotOwnerValidation.verifyAgentWhitelisted(context.agentOwnerRegistry, owner);
+            await AgentBotOwnerValidation.verifyWorkAddress(context.agentOwnerRegistry, owner);
+        }
         // create underlying wallet key
         const underlyingAddress = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.address`);
         const underlyingPrivateKey = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.private_key`);
@@ -82,18 +84,6 @@ export class AgentBotCommands {
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
         return new AgentBotCommands(context, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
-    }
-
-    static async verifyWorkAddress(context: IAssetAgentContext, owner: OwnerAddressPair) {
-        // get work address
-        const chainWorkAddress = await Agent.getOwnerWorkAddress(context, owner.managementAddress);
-        // ensure that work address is defined and matches the one from secrets.json
-        if (chainWorkAddress === ZERO_ADDRESS) {
-            throw new CommandLineError(`Management address ${owner.managementAddress} has no registered work address.`);
-        } else if (chainWorkAddress !== owner.workAddress) {
-            throw new CommandLineError(squashSpace`Work address ${chainWorkAddress} registered by management address ${owner.managementAddress}
-                does not match the owner.native address ${owner.workAddress} from your secrets file.`);
-        }
     }
 
     notifierFor(agentVault: string) {

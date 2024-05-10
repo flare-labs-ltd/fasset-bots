@@ -84,16 +84,25 @@
                 "chainId": {
                     "type": "string"
                 },
+                "faucet": {
+                    "type": "string"
+                },
                 "inTestnet": {
                     "type": "boolean"
                 },
                 "indexerUrl": {
                     "type": "string"
                 },
+                "minimumAccountBalance": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "priceChangeEmitter": {
+                    "type": "string"
+                },
+                "recommendedOwnerBalance": {
                     "type": "string"
                 },
                 "symbol": {
@@ -105,10 +114,13 @@
             },
             "type": "object"
         },
-        "Partial<NativeChainInfo>": {
+        "Partial<BotNativeChainInfo>": {
             "additionalProperties": false,
             "properties": {
                 "chainName": {
+                    "type": "string"
+                },
+                "faucet": {
                     "type": "string"
                 },
                 "finalizationBlocks": {
@@ -116,6 +128,9 @@
                 },
                 "readLogsChunkSize": {
                     "type": "number"
+                },
+                "recommendedOwnerBalance": {
+                    "type": "string"
                 },
                 "tokenSymbol": {
                     "type": "string"
@@ -165,7 +180,7 @@
             "type": "number"
         },
         "nativeChainInfo": {
-            "$ref": "#/definitions/Partial<NativeChainInfo>"
+            "$ref": "#/definitions/Partial<BotNativeChainInfo>"
         },
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"

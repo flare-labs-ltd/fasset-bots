@@ -24,16 +24,25 @@
                 "chainId": {
                     "type": "string"
                 },
+                "faucet": {
+                    "type": "string"
+                },
                 "inTestnet": {
                     "type": "boolean"
                 },
                 "indexerUrl": {
                     "type": "string"
                 },
+                "minimumAccountBalance": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "priceChangeEmitter": {
+                    "type": "string"
+                },
+                "recommendedOwnerBalance": {
                     "type": "string"
                 },
                 "symbol": {
@@ -47,6 +56,36 @@
                 "chainId",
                 "name",
                 "symbol"
+            ],
+            "type": "object"
+        },
+        "BotNativeChainInfo": {
+            "additionalProperties": false,
+            "properties": {
+                "chainName": {
+                    "type": "string"
+                },
+                "faucet": {
+                    "type": "string"
+                },
+                "finalizationBlocks": {
+                    "type": "number"
+                },
+                "readLogsChunkSize": {
+                    "type": "number"
+                },
+                "recommendedOwnerBalance": {
+                    "type": "string"
+                },
+                "tokenSymbol": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "chainName",
+                "finalizationBlocks",
+                "readLogsChunkSize",
+                "tokenSymbol"
             ],
             "type": "object"
         },
@@ -70,30 +109,6 @@
                 "sqlite"
             ],
             "type": "string"
-        },
-        "NativeChainInfo": {
-            "additionalProperties": false,
-            "properties": {
-                "chainName": {
-                    "type": "string"
-                },
-                "finalizationBlocks": {
-                    "type": "number"
-                },
-                "readLogsChunkSize": {
-                    "type": "number"
-                },
-                "tokenSymbol": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "chainName",
-                "finalizationBlocks",
-                "readLogsChunkSize",
-                "tokenSymbol"
-            ],
-            "type": "object"
         },
         "OrmConfigOptions": {
             "additionalProperties": {},
@@ -173,7 +188,7 @@
             "type": "number"
         },
         "nativeChainInfo": {
-            "$ref": "#/definitions/NativeChainInfo"
+            "$ref": "#/definitions/BotNativeChainInfo"
         },
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
