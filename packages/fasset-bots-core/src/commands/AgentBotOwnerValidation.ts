@@ -107,7 +107,7 @@ export class AgentBotOwnerValidation {
         if (managementAddressBalance.lt(managementAddressRecBal)) {
             const recBalFmt = natCurrency.format(managementAddressRecBal);
             const faucetInfo = nativeChainInfo.faucet ? `\nGo to [${nativeChainInfo.faucet}] and fund [${owner.workAddress}].` : "";
-            this.reporter.error(`Agent management address (${owner.managementAddress}) balance must be > ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
+            this.reporter.error(`Agent management address (${owner.managementAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
         } else {
             this.reporter.log(`    management address has balance ${balanceFmt}.`);
         }
@@ -127,7 +127,7 @@ export class AgentBotOwnerValidation {
             const faucetInfo = nativeChainInfo.faucet
                 ? `\nGo to [${nativeChainInfo.faucet}] and fund [${owner.workAddress}] or transfer some ${natCurrency.symbol} from management address.`
                 : `\nTransfer some ${natCurrency.symbol} from management address.`;
-            this.reporter.error(`Agent work address (${owner.managementAddress}) balance must be > ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
+            this.reporter.error(`Agent work address (${owner.managementAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
         } else {
             this.reporter.log(`    work address has balance ${balanceFmt}.`);
         }
@@ -150,7 +150,7 @@ export class AgentBotOwnerValidation {
         if (underlyingBalance.lt(underlyingRecBal)) {
             const recBalFmt = walletTokenBalance.currency.format(underlyingRecBal);
             const faucetInfo = fassetInfo.faucet ? `\nGo to [${fassetInfo.faucet}] and fund [${underlyingAddress}].` : "";
-            this.reporter.error(`Owner's ${fassetInfo.chainId} address (${underlyingAddress}) balance must be > ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
+            this.reporter.error(`Owner's ${fassetInfo.chainId} address (${underlyingAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
         } else {
             this.reporter.log(`    owner's ${fassetInfo.chainId} address has balance ${balanceFmt}.`);
         }
@@ -196,7 +196,7 @@ export class AgentBotOwnerValidation {
             reporter.error(stripIndent`Owner management address ${owner.managementAddress} has registered work address ${chainWorkAddress},
                                        which doesn't match the work address ${owner.workAddress} in the secrets file.
                                        Go to [${explorerUrl}], enable MetaMask and set '8. setWorkAddress' to [${owner.workAddress}].
-                                       Note that only one work address can be set for an management address, so previous work address will not work anymore.`);
+                                       Note that only one work address can be set for one management address, so previous work address will not work anymore.`);
         } else {
             reporter.log(`    owner work address is registered correctly.`);
         }

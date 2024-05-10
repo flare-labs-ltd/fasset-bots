@@ -41,6 +41,8 @@ program
             console.log(`Initial settings have been written to ${fname}. Please edit this file and then execute "yarn agent-bot create ${fname}"`);
         } else if (agentSettingsPath != null && fs.existsSync(agentSettingsPath)) {
             const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+            const validator = await AgentBotOwnerValidation.fromContext(cli.context, options.secrets, options.config);
+            await validator.validate([options.fasset]);
             await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
         } else {
             if (agentSettingsPath != null) {
