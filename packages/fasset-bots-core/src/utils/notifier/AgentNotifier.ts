@@ -75,7 +75,7 @@ export enum AgentNotificationKey {
 
 export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     constructor(address: string, transports: NotifierTransport[]) {
-        super(BotType.LIQUIDATOR, address, transports);
+        super(BotType.AGENT, address, transports);
     }
 
     async sendCCBAlert(timestamp: string) {
