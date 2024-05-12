@@ -44,7 +44,7 @@ export class AttestationHelper {
         return this.stateConnector.waitForRoundFinalization(round);
     }
 
-    async requestPaymentProof(transactionHash: string, sourceAddress: string | null, receivingAddress: string | null): Promise<AttestationRequestId | null> {
+    async requestPaymentProof(transactionHash: string, sourceAddress: string | null, receivingAddress: string | null): Promise<AttestationRequestId> {
         logger.info(`Attestation helper: requesting payment proof with transactionHash ${transactionHash}, sourceAddress ${sourceAddress} and receivingAddress ${receivingAddress}`);
         const transaction = await this.chain.getTransaction(transactionHash);
         const block = await this.chain.getTransactionBlock(transactionHash);
@@ -65,7 +65,7 @@ export class AttestationHelper {
         return await this.stateConnector.submitRequest(request);
     }
 
-    async requestBalanceDecreasingTransactionProof(transactionHash: string, sourceAddress: string): Promise<AttestationRequestId | null> {
+    async requestBalanceDecreasingTransactionProof(transactionHash: string, sourceAddress: string): Promise<AttestationRequestId> {
         logger.info(`Attestation helper: requesting balance decreasing transaction proof with transactionHash ${transactionHash} and sourceAddress ${sourceAddress}`);
         const transaction = await this.chain.getTransaction(transactionHash);
         const block = await this.chain.getTransactionBlock(transactionHash);
@@ -92,7 +92,7 @@ export class AttestationHelper {
         startBlock: number,
         endBlock: number,
         endTimestamp: number
-    ): Promise<AttestationRequestId | null> {
+    ): Promise<AttestationRequestId> {
         logger.info(`Attestation helper: requesting referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`);
         const overflowBlockNum = Math.max(endBlock + 1, await this.chain.getBlockHeight() - this.chain.finalizationBlocks);
         const overflowBlock = await this.chain.getBlockAt(overflowBlockNum);
@@ -117,7 +117,7 @@ export class AttestationHelper {
         return await this.stateConnector.submitRequest(request);
     }
 
-    async requestConfirmedBlockHeightExistsProof(queryWindow: number): Promise<AttestationRequestId | null> {
+    async requestConfirmedBlockHeightExistsProof(queryWindow: number): Promise<AttestationRequestId> {
         logger.info(`Attestation helper: requesting confirmed block height exists proof with queryWindow ${queryWindow}`);
         const blockHeight = await this.chain.getBlockHeight();
         const blockNumber = Math.max(blockHeight - this.chain.finalizationBlocks, 0);
@@ -140,7 +140,7 @@ export class AttestationHelper {
         return await this.stateConnector.submitRequest(request);
     }
 
-    async requestAddressValidityProof(underlyingAddress: string): Promise<AttestationRequestId | null> {
+    async requestAddressValidityProof(underlyingAddress: string): Promise<AttestationRequestId> {
         const request: AddressValidity.Request = {
             attestationType: AddressValidity.TYPE,
             sourceId: this.chainId.sourceId,
@@ -180,10 +180,6 @@ export class AttestationHelper {
     async provePayment(transactionHash: string, sourceAddress: string | null, receivingAddress: string | null): Promise<Payment.Proof> {
         logger.info(`Attestation helper: proving payment proof with transactionHash ${transactionHash}, sourceAddress ${sourceAddress} and receivingAddress ${receivingAddress}`);
         const request = await this.requestPaymentProof(transactionHash, sourceAddress, receivingAddress);
-        if (request == null) {
-            logger.error(`Attestation helper error: payment not proved`);
-            throw new AttestationHelperError("payment: not proved");
-        }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const result = await this.obtainPaymentProof(request.round, request.data);
         /* istanbul ignore if */
@@ -197,10 +193,6 @@ export class AttestationHelper {
     async proveBalanceDecreasingTransaction(transactionHash: string, sourceAddress: string): Promise<BalanceDecreasingTransaction.Proof> {
         logger.info(`Attestation helper: proving balance decreasing transaction proof with transactionHash ${transactionHash} and sourceAddress ${sourceAddress}`);
         const request = await this.requestBalanceDecreasingTransactionProof(transactionHash, sourceAddress);
-        if (request == null) {
-            logger.error(`Attestation helper error: balanceDecreasingTransaction not proved`);
-            throw new AttestationHelperError("balanceDecreasingTransaction: not proved");
-        }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const result = await this.obtainBalanceDecreasingTransactionProof(request.round, request.data);
         /* istanbul ignore if */
@@ -221,10 +213,6 @@ export class AttestationHelper {
     ): Promise<ReferencedPaymentNonexistence.Proof> {
         logger.info(`Attestation helper: proving referenced payment nonexistence proof with destinationAddress ${destinationAddress}, paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock} and endTimestamp ${endTimestamp}`);
         const request = await this.requestReferencedPaymentNonexistenceProof(destinationAddress, paymentReference, amount, startBlock, endBlock, endTimestamp);
-        if (request == null) {
-            logger.error(`Attestation helper error: referencedPaymentNonexistence not proved`);
-            throw new AttestationHelperError("referencedPaymentNonexistence: not proved");
-        }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const result = await this.obtainReferencedPaymentNonexistenceProof(request.round, request.data);
         /* istanbul ignore if */
@@ -238,10 +226,6 @@ export class AttestationHelper {
     async proveConfirmedBlockHeightExists(queryWindow: number): Promise<ConfirmedBlockHeightExists.Proof> {
         logger.info(`Attestation helper: proving confirmed block height exists proof with queryWindow ${queryWindow}`);
         const request = await this.requestConfirmedBlockHeightExistsProof(queryWindow);
-        if (request == null) {
-            logger.error(`Attestation helper error: confirmedBlockHeightExists not proved`);
-            throw new AttestationHelperError("confirmedBlockHeightExists: not proved");
-        }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const result = await this.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
         /* istanbul ignore if */
@@ -254,9 +238,6 @@ export class AttestationHelper {
 
     async proveAddressValidity(underlyingAddress: string): Promise<AddressValidity.Proof> {
         const request = await this.requestAddressValidityProof(underlyingAddress);
-        if (request == null) {
-            throw new AttestationHelperError("addressValidity: not proved");
-        }
         await this.stateConnector.waitForRoundFinalization(request.round);
         const result = await this.obtainAddressValidityProof(request.round, request.data);
         if (!attestationProved(result)) {

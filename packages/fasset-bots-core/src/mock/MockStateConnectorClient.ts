@@ -6,7 +6,7 @@ import { constants } from "@openzeppelin/test-helpers";
 import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
 import { ChainId } from "../underlying-chain/ChainId";
-import { AttestationNotProved, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof, StateConnectorClientError } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { filterStackTrace, sleep, toBN, toNumber } from "../utils/helpers";
 import { MockAlwaysFailsAttestationProver } from "./MockAlwaysFailsAttestationProver";
@@ -21,12 +21,6 @@ interface RoundProof {
 interface FinalizedRound {
     proofs: { [requestData: string]: RoundProof };
     tree: MerkleTree;
-}
-
-export class StateConnectorClientError extends Error {
-    constructor(message: string) {
-        super(message);
-    }
 }
 
 // auto - create new round for every pushed request and finalize immediately - useful for unit tests
@@ -77,10 +71,12 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         }
     }
 
-    async submitRequest(request: ARBase): Promise<AttestationRequestId | null> {
+    async submitRequest(request: ARBase): Promise<AttestationRequestId> {
         // add message integrity code to request data - for this, we have to obtain the response before submitting request
         const responseData = this.proveParsedRequest(request);
-        if (responseData == null) return null;  // cannot prove request (yet)
+        if (responseData == null) { // cannot prove request (yet)
+            throw new StateConnectorClientError(`StateConnectorClient: cannot submit request`);
+        }
         const mic = this.definitionStore.attestationResponseHash(responseData, MIC_SALT);
         if (mic == null) {
             throw new StateConnectorClientError(`StateConnectorClient: invalid attestation data`);

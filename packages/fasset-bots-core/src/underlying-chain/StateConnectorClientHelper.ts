@@ -8,13 +8,7 @@ import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { attestationProved } from "./AttestationHelper";
-import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof } from "./interfaces/IStateConnectorClient";
-
-export class StateConnectorError extends Error {
-    constructor(message: string) {
-        super(message);
-    }
-}
+import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof, StateConnectorClientError } from "./interfaces/IStateConnectorClient";
 
 export interface PrepareRequestResult {
     abiEncodedRequest: string;
@@ -119,9 +113,12 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             .catch((e: AxiosError) => {
                 const message = `State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
                 logger.error(message);
-                throw new StateConnectorError(message);
+                throw new StateConnectorClientError(message);
             });
-        const data = response.data.abiEncodedRequest;
+        const data = response.data?.abiEncodedRequest;
+        if (data == null) {
+            throw new StateConnectorClientError(`Cannot submit proof request`);
+        }
         const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
         const attReq = requiredEventArgs(txRes, "AttestationRequest");
         const calculatedRoundId = this.timestampToRoundId(toNumber(attReq.timestamp));
@@ -163,11 +160,11 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             if (disproved > 0) {
                 return AttestationNotProved.DISPROVED;
             }
-            throw new StateConnectorError("There aren't any working attestation providers.");
+            throw new StateConnectorClientError("There aren't any working attestation providers.");
         } catch (e) {
             logger.error(`State connector error`, e);
             /* istanbul ignore next */
-            throw e instanceof StateConnectorError ? e : new StateConnectorError(String(e));
+            throw e instanceof StateConnectorClientError ? e : new StateConnectorClientError(String(e));
         }
     }
 
@@ -229,7 +226,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 return await this.scProofVerifier.verifyAddressValidity(normalizedProofData);
             default:
                 logger.error(`State connector error: invalid attestation type ${proofData.data.attestationType}`);
-                throw new StateConnectorError(`Invalid attestation type ${proofData.data.attestationType}`);
+                throw new StateConnectorClientError(`Invalid attestation type ${proofData.data.attestationType}`);
         }
     }
 

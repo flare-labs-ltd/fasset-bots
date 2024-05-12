@@ -1,5 +1,11 @@
 import { ARBase, ARESBase } from "@flarenetwork/state-connector-protocol";
 
+export class StateConnectorClientError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
 export interface AttestationRequestId {
     round: number;
     data: string;
@@ -22,6 +28,6 @@ export type OptionalAttestationProof = AttestationProof<ARESBase> | AttestationN
 export interface IStateConnectorClient {
     roundFinalized(round: number): Promise<boolean>;
     waitForRoundFinalization(round: number): Promise<void>;
-    submitRequest(request: ARBase): Promise<AttestationRequestId | null>;
+    submitRequest(request: ARBase): Promise<AttestationRequestId>;
     obtainProof(round: number, requestData: string): Promise<OptionalAttestationProof>;
 }
