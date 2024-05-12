@@ -95,10 +95,11 @@ program
     .command("mintExecute")
     .description("Tries to execute the minting that was paid but the execution failed")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
-    .action(async (requestId: string) => {
+    .option("--noWait", "don't wait for minting proof, but immediatelly exit with exitcode 1 if the proof isn't available")
+    .action(async (requestId: string, cmdOptions: { noWait?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await minterBot.proveAndExecuteSavedMinting(requestId);
+        await minterBot.proveAndExecuteSavedMinting(requestId, cmdOptions.noWait ?? false);
     });
 
 program

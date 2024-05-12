@@ -63,9 +63,22 @@ export class Minter {
         await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(transactionHash);
     }
 
+    async isTransactionFinalized(transactionHash: string) {
+        const transaction = await this.context.blockchainIndexer.getTransaction(transactionHash);
+        return transaction != null; // when transaction appears in indexer, it must be finalized
+    }
+
     async proveMintingPayment(paymentAddress: string, transactionHash: string) {
         await this.waitForTransactionFinalization(transactionHash);
         return await this.attestationProvider.provePayment(transactionHash, this.underlyingAddress, paymentAddress);
+    }
+
+    async requestPaymentProof(paymentAddress: string, transactionHash: string) {
+        return await this.context.attestationProvider.requestPaymentProof(transactionHash, this.underlyingAddress, paymentAddress);
+    }
+
+    async obtainPaymentProof(roundId: number, requestData: string) {
+        return await this.context.attestationProvider.obtainPaymentProof(roundId, requestData);
     }
 
     async executeProvedMinting(collateralReservationId: BNish, proof: Payment.Proof, executorAddress: string) {

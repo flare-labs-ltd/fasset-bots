@@ -22,6 +22,7 @@ import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBotCommands } from "./InfoBotCommands";
+import { attestationProved } from "../underlying-chain/AttestationHelper";
 
 /* istanbul ignore next */
 const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
@@ -35,6 +36,7 @@ interface MintData {
     paymentAddress: string;
     executorAddress: string;
     createdAt: string;
+    proofRequest?: { round: number, data: string };
 }
 
 interface RedeemData {
@@ -197,7 +199,7 @@ export class UserBotCommands {
             console.log("If the minting fails or is interrupted, it can be executed by the executor. Please pass the executor the state file:");
             console.log("    " + this.stateFilePath("mint", requestId));
         }
-        await this.proveAndExecuteSavedMinting(requestId);
+        await this.proveAndExecuteSavedMinting(requestId, false);
         logger.info(`User ${this.nativeAddress} finished minting with agent ${agentVault}.`);
     }
 
@@ -205,9 +207,13 @@ export class UserBotCommands {
      * Proves minting payment and executes minting.
      * @param requestIdOrPath minting request id or minting state file path
      */
-    async proveAndExecuteSavedMinting(requestIdOrPath: BNish | string) {
+    async proveAndExecuteSavedMinting(requestIdOrPath: BNish | string, noWait: boolean) {
         const state = this.readState("mint", requestIdOrPath);
-        await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
+        if (noWait) {
+            await this.proveAndExecuteSavedMintingNoWait(requestIdOrPath, state);
+        } else {
+            await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
+        }
         this.deleteState(state, requestIdOrPath);
     }
 
@@ -230,6 +236,35 @@ export class UserBotCommands {
         await minter.executeProvedMinting(collateralReservationId, proof, ZERO_ADDRESS);
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`);
+    }
+
+    async proveAndExecuteSavedMintingNoWait(requestIdOrPath: BNish | string, state: MintData) {
+        const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
+        // if proof request has not been submitted yet, submit (when transction is finalized)
+        if (state.proofRequest == null) {
+            logger.info(`User ${this.nativeAddress} is checking for transaction ${state.transactionHash} finalization for reservation ${state.requestId}.`);
+            const transactionFinalized = await minter.isTransactionFinalized(state.transactionHash);
+            if (!transactionFinalized) {
+                throw new CommandLineError(`Transaction ${state.transactionHash} not finalized yet.`)
+            }
+            // submit proof request
+            const request = await minter.requestPaymentProof(state.paymentAddress, state.transactionHash)
+                .catch(e => { throw CommandLineError.replace(e, `Payment proof not available yet.`); });
+            logger.info(`User ${this.nativeAddress} has submitted payment proof request in round ${request.round} with data ${request.data} for reservation ${state.requestId}.`);
+            state.proofRequest = request;
+            this.writeState(state, requestIdOrPath);
+        }
+        // check if proof is available
+        console.log(`User ${this.nativeAddress} is checking for existence of the proof of underlying payment transaction ${state.transactionHash}...`);
+        const proof = await minter.obtainPaymentProof(state.proofRequest.round, state.proofRequest.data);
+        if (!attestationProved(proof)) {
+            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`)
+        }
+        console.log(`Executing payment...`);
+        logger.info(`User ${this.nativeAddress} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);
+        await minter.executeProvedMinting(state.requestId, proof, ZERO_ADDRESS);
+        console.log("Done");
+        logger.info(`User ${this.nativeAddress} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);
     }
 
     async listMintings(): Promise<void> {
@@ -389,10 +424,10 @@ export class UserBotCommands {
         }
     }
 
-    writeState(data: StateData): void {
-        const dir = this.stateFileDir(data.type);
+    writeState(data: StateData, requestIdOrPath?: BNish | string): void {
+        const fname = this.stateFilePath(data.type, requestIdOrPath ?? data.requestId);
+        const dir = path.dirname(fname);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        const fname = path.resolve(dir, `${data.requestId}.json`);
         fs.writeFileSync(fname, JSON.stringify(data, null, 4));
     }
 
