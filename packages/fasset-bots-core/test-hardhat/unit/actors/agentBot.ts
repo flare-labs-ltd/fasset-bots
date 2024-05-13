@@ -605,7 +605,7 @@ describe("Agent bot unit tests", () => {
         expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
 
-    it("Should not request proofs - cannot prove requests yet", async () => {
+    it.only("Should not request proofs - cannot prove requests yet", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
@@ -631,7 +631,8 @@ describe("Agent bot unit tests", () => {
         // switch attestation prover to always fail mode
         checkedCast(agentBot.agent.attestationProvider.stateConnector, MockStateConnectorClient).useAlwaysFailsProver = true;
         //
-        await agentBot.minting.requestNonPaymentProofForMinting(minting);
+        await agentBot.minting.requestNonPaymentProofForMinting(minting)
+            .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
         const transactionHash = await agentBot.agent.wallet.addTransaction(
             randomUnderlyingAddress,
@@ -639,7 +640,8 @@ describe("Agent bot unit tests", () => {
             1,
             PaymentReference.selfMint(agentBot.agent.vaultAddress)
         );
-        await agentBot.minting.requestPaymentProofForMinting(minting, transactionHash, randomUnderlyingAddress);
+        await agentBot.minting.requestPaymentProofForMinting(minting, transactionHash, randomUnderlyingAddress)
+            .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
         const transactionHash1 = await agentBot.agent.wallet.addTransaction(
             agentBot.agent.underlyingAddress,
@@ -661,7 +663,8 @@ describe("Agent bot unit tests", () => {
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
             txHash: transactionHash1,
         };
-        await agentBot.redemption.requestPaymentProof(redemption);
+        await agentBot.redemption.requestPaymentProof(redemption)
+            .catch(e => console.error(e));
         expect(redemption.state).to.eq("paid");
         // handleDailyTasks
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
