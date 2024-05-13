@@ -1,6 +1,6 @@
 import { AgentBotCommands, AgentEntity, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, MAX_BIPS, artifacts, createSha256Hash, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -215,11 +215,12 @@ export class AgentService {
             const symbol = collateralType.tokenFtsoSymbol;
             const token = await IERC20.at(collateralType.token);
             const balance = await token.balanceOf(cli.owner.workAddress);
-            const collateral = { symbol, balance: balance.toString() } as any;
+            const decimals = (await token.decimals()).toNumber();
+            const collateral = { symbol, balance: formatFixed(toBN(balance), decimals, { decimals: 3, groupDigits: true, groupSeparator: ","  }) } as any;
             if (symbol === "CFLR" || symbol === "C2FLR" || symbol === "SGB" || symbol == "FLR") {
                 const nonWrappedBalance = await web3.eth.getBalance(cli.owner.workAddress);
                 collateral.wrapped = collateral.balance;
-                collateral.balance = nonWrappedBalance.toString();
+                collateral.balance = formatFixed(toBN(nonWrappedBalance), decimals, { decimals: 3, groupDigits: true, groupSeparator: "," });
             }
             collaterals.push(collateral);
         }
