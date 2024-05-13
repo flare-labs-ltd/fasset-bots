@@ -1,5 +1,6 @@
 import { CommandLineError, logger } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
+import path from "path";
 
 const toplevelRunFinalizers: Array<() => Promise<void>> = [];
 
@@ -10,6 +11,13 @@ export function registerToplevelFinalizer(finalizer: () => Promise<void>) {
 // toplevel async function runner for node.js
 export function toplevelRun(main: () => Promise<void>) {
     const scriptInfo = `${require.main?.filename ?? "UNKNOWN"} [pid=${process.pid}]`;
+    logger.info(`************************************************************************************************************************`);
+    try {
+        const niceMainPath = path.relative(process.cwd(), process.argv[1]).replace(/\\/g, "/");
+        logger.info(`***** EXECUTING: ${path.basename(process.argv[0])} ${niceMainPath} ${process.argv.slice(2).join(" ")}`);
+    } catch (error) {
+        logger.info(`***** EXECUTING: ${process.argv.join(" ")}`);
+    }
     logger.info(`***** ${scriptInfo} starting...`);
     runWithFinalizers(main)
         .then(() => {
