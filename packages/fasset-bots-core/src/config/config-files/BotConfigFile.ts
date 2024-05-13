@@ -20,8 +20,9 @@ export interface BotFAssetInfo {
     chainId: string;
     name: string;
     symbol: string; // only used as database id
+    tokenSymbol: string;    // underlying token symbol
+    tokenDecimals: number;  // decimals for both underlying token and fasset
     walletUrl?: string; // for agent bot and user
-    inTestnet?: boolean; // for agent bot and user (optional)
     indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
     minimumAccountBalance?: string; // only needed for XRP

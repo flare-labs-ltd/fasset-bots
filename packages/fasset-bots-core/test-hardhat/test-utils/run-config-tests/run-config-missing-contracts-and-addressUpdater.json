@@ -13,6 +13,8 @@
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
+            "tokenSymbol": "testXRP",
+            "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"
         }

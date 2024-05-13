@@ -14,12 +14,16 @@
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
+            "tokenSymbol": "testXRP",
+            "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp"
         },
         "FfakeXRP": {
             "chainId": "testXRP",
             "name": "Fake XRP",
             "symbol": "fakeXRP",
+            "tokenSymbol": "testXRP",
+            "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "priceChangeEmitter": "FakePriceReader"
         }

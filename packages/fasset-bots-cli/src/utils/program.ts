@@ -9,7 +9,6 @@ type UserTypeForOptions = "agent" | "user" | "bot" | "util";
 export function programWithCommonOptions(user: UserTypeForOptions, fassets: "single_fasset" | "all_fassets") {
     const configEnvVar = user === "user" ? "FASSET_USER_CONFIG" : "FASSET_BOT_CONFIG";
     const secretsEnvVar = user === "user" ? "FASSET_USER_SECRETS" : "FASSET_BOT_SECRETS";
-    const allowDefaultSecrets = user === "user";
 
     function createConfigOption() {
         return program
@@ -24,6 +23,7 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
     }
 
     function createSecretsOption() {
+        const allowDefaultSecrets = user === "user";
         const secretsOption = program
             .createOption(
                 "-s, --secrets <secretsFile>",

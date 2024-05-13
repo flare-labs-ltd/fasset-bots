@@ -87,9 +87,6 @@
                 "faucet": {
                     "type": "string"
                 },
-                "inTestnet": {
-                    "type": "boolean"
-                },
                 "indexerUrl": {
                     "type": "string"
                 },
@@ -106,6 +103,12 @@
                     "type": "string"
                 },
                 "symbol": {
+                    "type": "string"
+                },
+                "tokenDecimals": {
+                    "type": "number"
+                },
+                "tokenSymbol": {
                     "type": "string"
                 },
                 "walletUrl": {

@@ -1,41 +1,4 @@
 {
-    "$schema": "./schema/bot-config.schema.json",
-    "loopDelay": 5000,
-    "contractsJsonFile": "../fasset-deployment/coston.json",
-    "prioritizeAddressUpdater": false,
-    "nativeChainInfo": {
-        "chainName": "Coston",
-        "tokenSymbol": "CFLR",
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10,
-        "recommendedOwnerBalance": "10",
-        "faucet": "https://faucet.flare.network"
-    },
-    "fAssets": {
-        "FtestXRP": {
-            "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
-            "minimumAccountBalance": "10",
-            "recommendedOwnerBalance": "50",
-            "faucet": "https://faucet.tequ.dev/"
-        },
-        "FfakeXRP": {
-            "chainId": "testXRP",
-            "name": "Fake XRP",
-            "symbol": "fakeXRP",
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
-            "minimumAccountBalance": "10",
-            "recommendedOwnerBalance": "50",
-            "faucet": "https://faucet.tequ.dev/",
-            "priceChangeEmitter": "FakePriceReader"
-        }
-    },
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
-    ]
+    "$schema": "./schema/bot-config-override.schema.json",
+    "extends": "coston-bot.json"
 }

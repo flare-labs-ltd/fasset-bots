@@ -27,9 +27,6 @@
                 "faucet": {
                     "type": "string"
                 },
-                "inTestnet": {
-                    "type": "boolean"
-                },
                 "indexerUrl": {
                     "type": "string"
                 },
@@ -48,6 +45,12 @@
                 "symbol": {
                     "type": "string"
                 },
+                "tokenDecimals": {
+                    "type": "number"
+                },
+                "tokenSymbol": {
+                    "type": "string"
+                },
                 "walletUrl": {
                     "type": "string"
                 }
@@ -55,7 +58,9 @@
             "required": [
                 "chainId",
                 "name",
-                "symbol"
+                "symbol",
+                "tokenDecimals",
+                "tokenSymbol"
             ],
             "type": "object"
         },

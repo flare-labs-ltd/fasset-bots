@@ -31,7 +31,7 @@ export namespace TokenBalances {
         return new ERC20TokenBalance(token, new Currency(symbol, decimals));
     }
 
-    export async function fasset(context: IAssetAgentContext) {
+    export async function fasset(context: IAssetNativeChainContext) {
         return TokenBalances.erc20(context.fAsset as IERC20MetadataInstance);
     }
 
