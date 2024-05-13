@@ -17,7 +17,7 @@ const program = programWithCommonOptions("user", "single_fasset");
 program.name("user-bot").description("Command line commands for FAsset user (minter, redeemer, or collateral pool provider)");
 
 program.addOption(
-    program.createOption("--dir", squashSpace`Directory where minting and redemption state files will be stored. If not provided,
+    program.createOption("-d, --dir <userDataDir>", squashSpace`Directory where minting and redemption state files will be stored. If not provided,
         the environment variable FASSET_USER_DATA_DIR is used, if set. Default is <USER_HOME>/fasset.`)
         .env("FASSET_USER_DATA_DIR")
         .default(path.resolve(os.homedir(), "fasset"))
