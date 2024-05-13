@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AgentService } from "./services/agent.service";
 import { AgentController } from "./controllers/agent.controller";
@@ -10,9 +10,14 @@ import { CacheModule } from "@nestjs/cache-manager";
 import { AgentSettingsService } from "./services/agentSettings.service";
 import mikroOrmConfig from "./mikro-orm.config";
 import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { RequestLoggerMiddleware } from "./interceptors/request.logger";
 @Module({
     imports: [ConfigModule.forRoot(), AuthModule, CacheModule.register(), MikroOrmModule.forRoot(mikroOrmConfig)],
     controllers: [AgentController, AgentVaultController, PoolController, UnderlyingController],
     providers: [AgentService, AgentSettingsService],
 })
-export class AgentModule {}
+export class AgentModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+      }
+}

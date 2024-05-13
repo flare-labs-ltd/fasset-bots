@@ -184,8 +184,11 @@ export class AgentService {
 
     async updateAgentSettings(fAssetSymbol: string, agentVaultAddress: string, settings: AgentSettingsDTO[]): Promise<void> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const currentSettings: any = await cli.printAgentSettings(agentVaultAddress);
         for (const setting of settings) {
-            await cli.updateAgentSetting(agentVaultAddress, setting.name, setting.value);
+            if(parseInt(currentSettings[setting.name], 10) != parseInt(setting.value, 10)){
+                await cli.updateAgentSetting(agentVaultAddress, setting.name, setting.value);
+            }
         }
     }
 
@@ -281,6 +284,12 @@ export class AgentService {
 
     async saveAlert(notification: PostAlert): Promise<void> {
         // Currently delete alerts that are older than 5 days
+        /*
+        if(notification.title == "MINTING STARTED" || notification.title == "MINTING EXECUTED" || notification.title == "REDEMPTION STARTED" ||
+            notification.title == "REDEMPTION PAID" || notification.title == "REDEMPTION PAYMENT PROOF REQUESTED" || notification.title == "REDEMPTION WAS PERFORMED"){
+            return;
+        }
+        */
         const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000))
         await this.deleteExpiredAlerts();
         await this.em.persistAndFlush(alert);
@@ -389,7 +398,6 @@ export class AgentService {
         if(secrets.data.owner){
             secrets.data.owner.native.address = address;
             secrets.data.owner.native.private_key = privateKey;
-            console.log(secrets);
             const json = JSON.stringify(secrets.data, null, 4);
             fs.writeFileSync(FASSET_BOT_SECRETS, json);
         }
@@ -432,7 +440,6 @@ export class AgentService {
                 if (collateralClass == toBN(2)) {
                     const template = JSON.stringify(allTemplate);
                     collateralTokens.push({symbol: symbol, template: template});
-                    console.log(JSON.parse(template));
                 }
             }
             const collateral: VaultCollaterals = { fassetSymbol: fasset, collaterals: collateralTokens };
