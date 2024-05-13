@@ -1,7 +1,6 @@
 import BN from "bn.js";
 import chalk from "chalk";
 import fs from "fs";
-import os from "os";
 import path from "path";
 import { Secrets } from "../config";
 import { closeBotConfig, createBotConfig } from "../config/BotConfig";
@@ -12,6 +11,7 @@ import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { PaymentReference } from "../fasset/PaymentReference";
 import { Minter } from "../mock/Minter";
 import { Redeemer } from "../mock/Redeemer";
+import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
@@ -22,10 +22,6 @@ import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBotCommands } from "./InfoBotCommands";
-import { attestationProved } from "../underlying-chain/AttestationHelper";
-
-/* istanbul ignore next */
-const USER_DATA_DIR = process.env.FASSET_USER_DATA_DIR ?? path.resolve(os.homedir(), "fasset");
 
 export const CollateralPool = artifacts.require("CollateralPool");
 
@@ -75,9 +71,8 @@ export class UserBotCommands {
         public fAssetSymbol: string,
         public nativeAddress: string,
         public underlyingAddress: string,
+        public userDataDir: string,
     ) {}
-
-    static userDataDir: string = USER_DATA_DIR;
 
     /**
      * Creates instance of UserBot.
@@ -85,7 +80,7 @@ export class UserBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of UserBot
      */
-    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
+    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, userDataDir: string, registerCleanup?: CleanupRegistration) {
         const secrets = Secrets.load(secretsFile);
         const nativeAddress = secrets.required("user.native.address");
         logger.info(`User ${nativeAddress} started to initialize cli environment.`);
@@ -110,7 +105,7 @@ export class UserBotCommands {
         const underlyingAddress = await this.loadUnderlyingAddress(secrets, context, fassetConfig.verificationClient);
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
-        return new UserBotCommands(context, fAssetSymbol, nativeAddress, underlyingAddress);
+        return new UserBotCommands(context, fAssetSymbol, nativeAddress, underlyingAddress, userDataDir);
     }
 
     // User must make sure that underlying address is valid and normalized.
@@ -403,7 +398,7 @@ export class UserBotCommands {
 
     stateFileDir(type: StateData["type"]) {
         const controllerAddress = this.context.assetManagerController.address.slice(2, 10);
-        return path.resolve(UserBotCommands.userDataDir, `${controllerAddress}-${this.fAssetSymbol}-${type}`);
+        return path.resolve(this.userDataDir, `${controllerAddress}-${this.fAssetSymbol}-${type}`);
     }
 
     stateFilePath(type: StateData["type"], requestIdOrPath: BNish | string) {

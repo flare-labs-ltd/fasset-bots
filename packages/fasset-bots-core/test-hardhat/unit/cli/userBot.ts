@@ -60,9 +60,9 @@ describe("UserBot cli commands unit tests", () => {
     let agentBot: AgentBot;
     let minter: Minter;
     let redeemer: Redeemer;
+    const userDataDir = "./test-data";
 
     before(async () => {
-        UserBotCommands.userDataDir = "./test-data";
         accounts = await web3.eth.getAccounts();
         // accounts
         ownerAddress = accounts[3];
@@ -78,7 +78,7 @@ describe("UserBot cli commands unit tests", () => {
         chain.secondsPerBlock = 1;
         // user bot
         const fAssetSymbol = "TESTHHSYM";
-        userBot = new UserBotCommands(context, fAssetSymbol, minterAddress, userUnderlyingAddress);
+        userBot = new UserBotCommands(context, fAssetSymbol, minterAddress, userUnderlyingAddress, userDataDir);
         poolUserBot = new PoolUserBotCommands(context, fAssetSymbol, minterAddress);
         agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         minter = await createTestMinter(context, minterAddress, chain, userUnderlyingAddress);
@@ -97,7 +97,7 @@ describe("UserBot cli commands unit tests", () => {
     after(function () {
         // clean up -  delete residual redeem files
         const fileList: string[] = [];
-        const dir = `./${UserBotCommands.userDataDir}/${userBot.fAssetSymbol}-redeem/`;
+        const dir = `${userDataDir}/${userBot.fAssetSymbol}-redeem/`;
         fs.readdirSync(dir).forEach((file) => {
             const fullPath = path.join(dir, file);
             fileList.push(fullPath);
@@ -295,11 +295,42 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `./${UserBotCommands.userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();
-        await userBot.proveAndExecuteSavedMinting(mintData.requestId);
+        await userBot.proveAndExecuteSavedMinting(mintData.requestId, false);
+        const existAfter = existsSync(newFilename);
+        expect(existAfter).to.be.false;
+    });
+
+    it("Should proof and execute saved minting - no wait", async () => {
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 1);
+        const txHash = await minter.performMintingPayment(crt);
+        const timestamp = await latestBlockTimestamp();
+        const mintData: MintData = {
+            type: "mint",
+            requestId: String(crt.collateralReservationId),
+            paymentAddress: crt.paymentAddress,
+            transactionHash: txHash,
+            executorAddress: ZERO_ADDRESS,
+            createdAt: userBot.timestampToDateString(timestamp),
+        };
+        userBot.writeState(mintData);
+        const newFilename = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const existBefore = existsSync(newFilename);
+        expect(existBefore).to.be.true;
+        await userBot.listMintings();
+        let finished = false;
+        let count = 0;
+        while (!finished) {
+            try {
+                await userBot.proveAndExecuteSavedMinting(mintData.requestId, true);
+                finished = true;
+            } catch (error) {
+                console.log(`Waiting for minitng to finish, attempt ${++count}`);
+            }
+        }
         const existAfter = existsSync(newFilename);
         expect(existAfter).to.be.false;
     });

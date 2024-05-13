@@ -104,7 +104,7 @@ describe("Toplevel runner and commands integration test", () => {
 
     async function createUserCommands(context: IAssetAgentContext) {
         const fassetSymbol = await context.fAsset.symbol();
-        return new UserBotCommands(context, fassetSymbol, userAddress, userUnderlyingAddress);
+        return new UserBotCommands(context, fassetSymbol, userAddress, userUnderlyingAddress, "./test-data");
     }
 
     before(async () => {

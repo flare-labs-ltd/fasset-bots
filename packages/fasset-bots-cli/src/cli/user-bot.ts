@@ -3,8 +3,10 @@ import "source-map-support/register";
 
 import { InfoBotCommands, PoolUserBotCommands, UserBotCommands } from "@flarelabs/fasset-bots-core";
 import { Secrets } from "@flarelabs/fasset-bots-core/config";
-import { TokenBalances, formatFixed, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { TokenBalances, formatFixed, squashSpace, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
+import os from "os";
+import path from "path";
 import Web3 from "web3";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
@@ -13,6 +15,13 @@ import { translateError, validate, validateAddress, validateDecimal, validateInt
 const program = programWithCommonOptions("user", "single_fasset");
 
 program.name("user-bot").description("Command line commands for FAsset user (minter, redeemer, or collateral pool provider)");
+
+program.addOption(
+    program.createOption("--dir", squashSpace`Directory where minting and redemption state files will be stored. If not provided,
+        the environment variable FASSET_USER_DATA_DIR is used, if set. Default is <USER_HOME>/fasset.`)
+        .env("FASSET_USER_DATA_DIR")
+        .default(path.resolve(os.homedir(), "fasset"))
+);
 
 program
     .command("info")
@@ -62,13 +71,13 @@ program
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .option("--noWait", "only reserve and pay for the minting, don't wait for payment finalization and proof; you have to execute the minting later")
     .action(async (numberOfLots: string, cmdOptions: { agent?: string, updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean }) => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         validateAddress(cmdOptions.agent, "Agent vault address");
         validateInteger(numberOfLots, "Number of lots", { min: 1 });
         validateAddress(cmdOptions.executor, "Executor address");
         validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set");
         validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set");
-        const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(numberOfLots)));
         validate(agentVault != null, "No agent with enough free lots available");
         try {
@@ -97,8 +106,8 @@ program
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .option("--noWait", "don't wait for minting proof, but immediatelly exit with exitcode 1 if the proof isn't available")
     .action(async (requestId: string, cmdOptions: { noWait?: boolean }) => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         await minterBot.proveAndExecuteSavedMinting(requestId, cmdOptions.noWait ?? false);
     });
 
@@ -106,8 +115,8 @@ program
     .command("mintStatus")
     .description("List all open mintings")
     .action(async () => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         await minterBot.listMintings();
     });
 
@@ -118,8 +127,8 @@ program
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .action(async (numberOfLots: string, cmdOptions: { executor?: string, executorFee?: string }) => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         validateInteger(numberOfLots, "Number of lots", { min: 1 });
         validateAddress(cmdOptions.executor, "Executor address");
         validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set");
@@ -142,8 +151,8 @@ program
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
     .action(async (requestId: string) => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         try {
             await redeemerBot.savedRedemptionDefault(requestId);
         } catch (error) {
@@ -157,8 +166,8 @@ program
     .command("redemptionStatus")
     .description("List all open redemptions")
     .action(async () => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         await redeemerBot.listRedemptions();
     });
 
@@ -166,8 +175,8 @@ program
     .command("balance")
     .description("Get user balances for relevant tokens")
     .action(async () => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const bot = await UserBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const bot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         const fasset = await TokenBalances.fasset(bot.context);
         console.log("FAsset: ", await fasset.formatBalance(bot.nativeAddress));
         const underlying = await TokenBalances.fassetUnderlyingToken(bot.context);
