@@ -12,6 +12,8 @@ import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 import { translateError, validate, validateAddress, validateDecimal, validateInteger } from "../utils/validation";
 
+const TRANSACTION_FEE_FACTOR = 2;
+
 const program = programWithCommonOptions("user", "single_fasset");
 
 program.name("user-bot").description("Command line commands for FAsset user (minter, redeemer, or collateral pool provider)");
@@ -57,7 +59,7 @@ program
             const bot = await InfoBotCommands.create(options.secrets, options.config, options.fasset);
             await bot.printAgentInfo(agentVaultAddress);
         } catch (error) {
-            translateError(error, { "invalid agent vault address": `Agent vault with address ${agentVaultAddress} does not exist` });
+            translateError(error, { "invalid agent vault address": `Agent vault with address ${agentVaultAddress} does not exist.` });
         }
     });
 
@@ -75,11 +77,12 @@ program
         validateAddress(cmdOptions.agent, "Agent vault address");
         validateInteger(numberOfLots, "Number of lots", { min: 1 });
         validateAddress(cmdOptions.executor, "Executor address");
-        validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set");
-        validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set");
+        validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set.");
+        validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set.");
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
+        await validateUnderlyingBalance(minterBot, numberOfLots);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(numberOfLots)));
-        validate(agentVault != null, "No agent with enough free lots available");
+        validate(agentVault != null, "No agent with enough free lots available.");
         try {
             if (cmdOptions.updateBlock) {
                 await minterBot.updateUnderlyingTime();
@@ -91,11 +94,11 @@ program
             }
         } catch (error) {
             translateError(error, {
-                "invalid agent vault address": `Agent vault with address ${agentVault} does not exist`,
-                "not enough free collateral": `Agent ${agentVault} does not have enough free collateral to accept the minting request`,
-                "agent not in mint queue": `Agent ${agentVault} is not available for minting; try some other one`,
-                "rc: invalid agent status": `Agent ${agentVault} is not available for minting; try some other one`,
-                "agent's fee too high": `Agent ${agentVault} just changed minting fee; select an agent again`,
+                "invalid agent vault address": `Agent vault with address ${agentVault} does not exist.`,
+                "not enough free collateral": `Agent ${agentVault} does not have enough free collateral to accept the minting request.`,
+                "agent not in mint queue": `Agent ${agentVault} is not available for minting; try some other one.`,
+                "rc: invalid agent status": `Agent ${agentVault} is not available for minting; try some other one.`,
+                "agent's fee too high": `Agent ${agentVault} just changed minting fee; select an agent again.`,
             });
         }
     });
@@ -131,8 +134,8 @@ program
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         validateInteger(numberOfLots, "Number of lots", { min: 1 });
         validateAddress(cmdOptions.executor, "Executor address");
-        validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set");
-        validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set");
+        validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set.");
+        validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set.");
         try {
             if (cmdOptions.executor && cmdOptions.executorFee) {
                 await redeemerBot.redeem(numberOfLots, cmdOptions.executor, cmdOptions.executorFee);
@@ -141,7 +144,7 @@ program
             }
         } catch (error) {
             translateError(error, {
-                "f-asset balance too low": `User account does not hold ${numberOfLots} lots of ${options.fasset}`
+                "f-asset balance too low": `User account does not hold ${numberOfLots} lots of ${options.fasset}.`
             });
         }
     });
@@ -157,7 +160,7 @@ program
             await redeemerBot.savedRedemptionDefault(requestId);
         } catch (error) {
             translateError(error, {
-                "redemption default too early": "Agent still has time to pay; please try redemptionDefault later if the redemption isn't paid"
+                "redemption default too early": "Agent still has time to pay; please try redemptionDefault later if the redemption isn't paid."
             });
         }
     });
@@ -240,11 +243,11 @@ program
         let tokenAmountWei: BN;
         if (tokenAmountOrAll === "all") {
             tokenAmountWei = balance;
-            validate(tokenAmountWei.gtn(0), "Collateral pool token balance is zero");
+            validate(tokenAmountWei.gtn(0), "Collateral pool token balance is zero.");
         } else {
             validateDecimal(tokenAmountOrAll, "Token amount", { strictMin: 0 });
             tokenAmountWei = toBNExp(tokenAmountOrAll, 18);
-            validate(tokenAmountWei.lte(balance), `Token amount must not exceed user's balance of pool tokens, which is ${formatFixed(balance, 18)}`);
+            validate(tokenAmountWei.lte(balance), `Token amount must not exceed user's balance of pool tokens, which is ${formatFixed(balance, 18)}.`);
         }
         const fassetDecimals = Number(await bot.context.fAsset.decimals());
         try {
@@ -258,13 +261,25 @@ program
         } catch (error) {
             translateError(error, {
                 "token share is zero": "Token amount must be greater than 0",
-                "token balance too low": `Token amount must not exceed user's balance of pool tokens, which is ${formatFixed(balance, 18)}`,
-                "collateral ratio falls below exitCR": `Cannot exit pool at this time, since it would reduce the collateral ratio to dangerously low level; try with lower token amount`,
-                "collateral left after exit is too low and non-zero": `Should not exit with nearly all tokens - use "all" for token amount`,
-                "insufficient non-timelocked balance": "You cannot exit pool immediately after entering, please wait a minute",
+                "token balance too low": `Token amount must not exceed user's balance of pool tokens, which is ${formatFixed(balance, 18)}.`,
+                "collateral ratio falls below exitCR": `Cannot exit pool at this time, since it would reduce the collateral ratio to dangerously low level; try with lower token amount.`,
+                "collateral left after exit is too low and non-zero": `Should not exit with nearly all tokens - use "all" for token amount.`,
+                "insufficient non-timelocked balance": "You cannot exit pool immediately after entering, please wait a minute.",
             });
         }
     });
+
+async function validateUnderlyingBalance(minterBot: UserBotCommands, numberOfLots: string) {
+    const balanceReader = await TokenBalances.fassetUnderlyingToken(minterBot.context);
+    const userBalance = await balanceReader.balance(minterBot.underlyingAddress);
+    const mintBalance = toBN(numberOfLots).mul(await minterBot.infoBot().getLotSizeBN());
+    const transactionFee = await minterBot.context.wallet.getTransactionFee();
+    const requiredBalance = mintBalance.add(minterBot.context.chainInfo.minimumAccountBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
+    validate(userBalance.gte(requiredBalance),
+        squashSpace`User does not have enough ${balanceReader.currency.symbol} available.
+                    Available ${balanceReader.currency.format(userBalance)},
+                    required ${balanceReader.currency.format(requiredBalance)}. Minting will probably fail.`);
+}
 
 async function getPoolAddress(bot: PoolUserBotCommands, poolAddressOrTokenSymbol: string) {
     return Web3.utils.isAddress(poolAddressOrTokenSymbol)
@@ -277,8 +292,8 @@ toplevelRun(async () => {
         await program.parseAsync();
     } catch (error) {
         translateError(error, {
-            "invalid agent vault address": "Agent vault with given address does not exist",
-            "insufficient funds for gas * price + value": "User account does not heave enough CFLR",
+            "invalid agent vault address": "Agent vault with given address does not exist.",
+            "insufficient funds for gas * price + value": "User account does not heave enough CFLR.",
         });
     }
 });

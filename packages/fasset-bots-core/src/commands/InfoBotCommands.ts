@@ -222,9 +222,14 @@ export class InfoBotCommands {
         return await poolToken.balanceOf(address);
     }
 
-    private async getLotSize(settings?: AssetManagerSettings) {
+    async getLotSize(settings?: AssetManagerSettings) {
         settings ??= await this.context.assetManager.getSettings();
         return Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
+    }
+
+    async getLotSizeBN(settings?: AssetManagerSettings) {
+        settings ??= await this.context.assetManager.getSettings();
+        return toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
     }
 
     async printAgentInfo(vaultAddress: string) {
