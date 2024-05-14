@@ -1,6 +1,6 @@
 import { AgentBotCommands, AgentEntity, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -47,7 +47,8 @@ export class AgentService {
 
     async depositToVault(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.depositToVault(agentVaultAddress, amount);
+        const currency = await Currencies.agentVaultCollateral(cli.context, agentVaultAddress);
+        await cli.depositToVault(agentVaultAddress, currency.parse(amount));
     }
 
     async withdrawVaultCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
@@ -67,7 +68,8 @@ export class AgentService {
 
     async buyPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.buyCollateralPoolTokens(agentVaultAddress, amount);
+        const currency = await Currencies.agentPoolCollateral(cli.context, agentVaultAddress);
+        await cli.buyCollateralPoolTokens(agentVaultAddress, currency.parse(amount));
     }
 
     async withdrawPoolFees(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
@@ -481,7 +483,8 @@ export class AgentService {
                 const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: info.mintedUBA, vaultAmount: info.totalVaultCollateralWei,
-                    poolAmount: info.totalPoolCollateralNATWei, agentCPTs: info.totalAgentPoolTokensWei};
+                    poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
+                    agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
                 vaultsForFasset.push(vaultInfo);
             }
             if (vaultsForFasset.length != 0)
