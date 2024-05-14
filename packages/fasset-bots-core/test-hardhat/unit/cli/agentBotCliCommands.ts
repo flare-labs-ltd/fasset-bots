@@ -9,7 +9,7 @@ import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain } from "../../../src/mock/MockChain";
-import { BN_ZERO, checkedCast, toBN, toStringExp } from "../../../src/utils/helpers";
+import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
@@ -17,6 +17,8 @@ import { testNotifierTransports } from "../../../test/test-utils/testNotifierTra
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { AgentCollateral } from "../../../test/test-utils/collateral-data/AgentCollateral";
+import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -84,6 +86,22 @@ describe("AgentBot cli commands unit tests", () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent!.vaultAddress } as FilterQuery<AgentEntity>);
         const collateral = await context.wNat.balanceOf(agentEnt.collateralPoolAddress);
         expect(collateral.toString()).to.eq(depositAmountWei);
+    });
+
+    it("Should buy both collaterals for n lots", async () => {
+        const agent = await createAgent();
+        // no testUSDC
+        await expectRevert(botCliCommands.depositCollateralForLots(agent.vaultAddress, "5", "1.05"), "Not enough testUSDC on owner's work address.");
+        await context.stablecoins.usdc.mintAmount(ownerAddress, toBNExp(100, 6), { from: governance });
+        // no NAT
+        const origBalance = await web3.eth.getBalance(ownerAddress);
+        await setBalance(ownerAddress, 0);
+        await expectRevert(botCliCommands.depositCollateralForLots(agent.vaultAddress, "5", "1.05"), "Not enough NAT on owner's work address.");
+        await setBalance(ownerAddress, web3.utils.fromDecimal(origBalance));
+        // everything ok
+        await botCliCommands.depositCollateralForLots(agent.vaultAddress, "5", "1.05");
+        const agentInfo = await agent.getAgentInfo();
+        expect(Number(agentInfo.freeCollateralLots)).to.eq(5);
     });
 
     it("Should enter, announce exit available list and exit available list", async () => {

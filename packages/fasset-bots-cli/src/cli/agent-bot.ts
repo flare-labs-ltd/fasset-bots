@@ -8,7 +8,7 @@ import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
-import { validateDecimal } from "../utils/validation";
+import { validateDecimal, validateInteger } from "../utils/validation";
 
 const program = programWithCommonOptions("agent", "single_fasset");
 
@@ -54,6 +54,20 @@ program
             console.error(`Then edit that file and execute again with edited file's path as argument.`);
             process.exit(1);
         }
+    });
+
+program
+    .command("depositCollaterals")
+    .description("deposit enough vault and pool collateral to be able to mint given amount of lots")
+    .argument("<agentVaultAddress>")
+    .argument("<lots>", "the number of lots the agent should be able to mint after deposit (existing collateral in the vault is ignored)")
+    .addOption(program.createOption("-m, --multiplier <multiplier>", "the number to multiply the amount with, to compensate for price changes").default("1.05"))
+    .action(async (agentVault: string, lots: string, cmdopts: { multiplier: string }) => {
+        validateInteger(lots, "lots", { min: 1 });
+        validateDecimal(cmdopts.multiplier, "multiplier", { min: 1, max: 2 });
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        await cli.depositCollateralForLots(agentVault, lots, cmdopts.multiplier);
     });
 
 program

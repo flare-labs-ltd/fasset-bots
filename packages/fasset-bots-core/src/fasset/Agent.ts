@@ -79,7 +79,8 @@ export class Agent {
     }
 
     async getVaultCollateral(): Promise<CollateralType> {
-        return await this.assetManager.getCollateralType(CollateralClass.VAULT, (await this.getAgentSettings()).vaultCollateralToken);
+        const agentSettings = await this.getAgentSettings();
+        return await this.assetManager.getCollateralType(CollateralClass.VAULT, agentSettings.vaultCollateralToken);
     }
 
     async getPoolCollateral(): Promise<CollateralType> {

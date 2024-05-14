@@ -18,7 +18,7 @@ import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, ZERO_ADDRESS, toBIPS, to
 import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { AssetManagerControllerInstance, IERC20Instance } from "../../typechain-truffle";
+import { AssetManagerControllerInstance, FakeERC20Instance, IERC20Instance } from "../../typechain-truffle";
 import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
 import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
@@ -62,7 +62,7 @@ export type TestAssetBotContext = Modify<
         ftsos: TestFtsos;
         blockchainIndexer: MockIndexer;
         assetManagerController: ContractWithEvents<AssetManagerControllerInstance, AssetManagerControllerEvents>;
-        stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
+        stablecoins: Record<string, ContractWithEvents<FakeERC20Instance, IERC20Events>>;
         collaterals: CollateralType[];
     }
 >;
@@ -74,7 +74,7 @@ export type TestAssetTrackedStateContext = Modify<
         assetFtso: FtsoMockInstance;
         ftsoManager: FtsoManagerMockInstance;
         blockchainIndexer: MockIndexer;
-        stablecoins: Record<string, ContractWithEvents<IERC20Instance, IERC20Events>>;
+        stablecoins: Record<string, ContractWithEvents<FakeERC20Instance, IERC20Events>>;
         collaterals: CollateralType[];
         liquidationStrategy?: { className: string; config?: any; };
         challengeStrategy?: { className: string; config?: any; };

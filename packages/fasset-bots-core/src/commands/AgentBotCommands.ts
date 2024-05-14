@@ -18,10 +18,10 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { Currencies, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
+import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, requireNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, maxBN, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -90,6 +90,10 @@ export class AgentBotCommands {
         return new AgentNotifier(agentVault, this.notifiers);
     }
 
+    infoBot() {
+        return new InfoBotCommands(this.context);
+    }
+
     async prepareCreateAgentSettings(): Promise<Schema_AgentSettingsConfig> {
         const allCollaterals = await this.context.assetManager.getCollateralTypes();
         const collaterals = allCollaterals.filter(c => Number(c.collateralClass) === CollateralClass.VAULT && String(c.validUntil) === "0");
@@ -133,6 +137,64 @@ export class AgentBotCommands {
         } catch (error) {
             logger.error(`Owner ${this.owner} couldn't create agent:`, error);
             throw error;
+        }
+    }
+
+    /**
+     * Deposit enough of both collaterals to be able to mint `lots` lots. (Doesn't consider collateral already in the vault / pool.)
+     * @param agentVault agent vault address
+     * @param lots number of lots, must be whole number
+     * @param multiplier a number with which the deposit amount will be multiplied, to compensate for small price changes
+     */
+    async depositCollateralForLots(agentVault: string, lots: string | BN, multiplier: string | number) {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const lotSize = await this.infoBot().getLotSizeBN();
+        const amountUBA = toBN(lots).mul(lotSize);
+        // calculate collateral amounts and validate balances
+        const vaultCollateral = await this.mintingVaultCollateral(agentBot.agent, amountUBA, Number(multiplier));
+        await this.checkVaultBalance(agentVault, vaultCollateral);
+        const poolCollateral = await this.mintingPoolCollateral(agentBot.agent, amountUBA, Number(multiplier));
+        await this.checkPoolBalance(agentVault, poolCollateral);
+        // perform deposit
+        await this.depositToVault(agentVault, vaultCollateral);
+        await this.buyCollateralPoolTokens(agentVault, poolCollateral);
+    }
+
+    async mintingVaultCollateral(agent: Agent, amountUBA: BN, multiplier: number) {
+        const agentInfo = await agent.getAgentInfo();
+        const price = await agent.getVaultCollateralPrice();
+        const mintingCRBips = maxBN(toBN(price.collateral.minCollateralRatioBIPS), toBN(agentInfo.mintingVaultCollateralRatioBIPS));
+        return price.convertUBAToTokenWei(amountUBA).mul(mintingCRBips).muln(Number(multiplier)).addn(MAX_BIPS - 1).divn(MAX_BIPS);
+    }
+
+    async checkVaultBalance(agentVault: string, depositAmount: BN) {
+        const balanceReader = await TokenBalances.agentVaultCollateral(this.context, agentVault);
+        const ownerBalance = await balanceReader.balance(this.owner.workAddress);
+        if (ownerBalance.lt(depositAmount)) {
+            const currency = balanceReader.currency;
+            const balanceFmt = currency.format(ownerBalance);
+            const requiredFmt = currency.format(depositAmount);
+            throw new CommandLineError(squashSpace`Not enough ${currency.symbol} on owner's work address. Balance is ${balanceFmt}, required ${requiredFmt}.
+                Vault collateral deposit will probably fail.`);
+        }
+    }
+
+    async mintingPoolCollateral(agent: Agent, amountUBA: BN, multiplier: number) {
+        const agentInfo = await agent.getAgentInfo();
+        const price = await agent.getPoolCollateralPrice();
+        const mintingCRBips = maxBN(toBN(price.collateral.minCollateralRatioBIPS), toBN(agentInfo.mintingPoolCollateralRatioBIPS));
+        return price.convertUBAToTokenWei(amountUBA).mul(mintingCRBips).muln(Number(multiplier)).addn(MAX_BIPS - 1).divn(MAX_BIPS);
+    }
+
+    async checkPoolBalance(agentVault: string, depositAmount: BN) {
+        const balanceReader = await TokenBalances.evmNative(this.context);
+        const ownerBalance = await balanceReader.balance(this.owner.workAddress);
+        if (ownerBalance.lt(depositAmount)) {
+            const currency = balanceReader.currency;
+            const balanceFmt = currency.format(ownerBalance);
+            const requiredFmt = currency.format(depositAmount);
+            throw new CommandLineError(squashSpace`Not enough ${currency.symbol} on owner's work address. Balance is ${balanceFmt}, required ${requiredFmt}.
+                Pool collateral deposit will probably fail.`);
         }
     }
 
@@ -500,8 +562,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async printAgentInfo(agentVault: string): Promise<void> {
-        const infoBot = new InfoBotCommands(this.context);
-        await infoBot.printAgentInfo(agentVault);
+        await this.infoBot().printAgentInfo(agentVault);
     }
 
     /**

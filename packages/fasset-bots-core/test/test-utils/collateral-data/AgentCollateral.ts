@@ -17,7 +17,8 @@ export class AgentCollateral {
         public agentPoolTokens: CollateralData
     ) {}
 
-    static async create(assetManager: IIAssetManagerInstance, settings: AssetManagerSettings, agentVault: string) {
+    static async create(assetManager: IIAssetManagerInstance, agentVault: string) {
+        const settings = await assetManager.getSettings();
         const agentInfo = await assetManager.getAgentInfo(agentVault);
         const collateralPool = await CollateralPool.at(agentInfo.collateralPool);
         const collateralPoolToken = await CollateralPoolToken.at(await collateralPool.poolToken());
