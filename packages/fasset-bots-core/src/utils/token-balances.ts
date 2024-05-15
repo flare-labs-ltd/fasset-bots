@@ -2,7 +2,6 @@ import { IERC20MetadataInstance } from "../../typechain-truffle";
 import { IAssetAgentContext, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { Currency } from "./Currency";
 import { ERC20TokenBalance, EVMNativeTokenBalance, WalletTokenBalance } from "./TokenBalance";
 import { artifacts } from "./web3";
 
@@ -11,24 +10,24 @@ const CollateralPool = artifacts.require("IICollateralPool");
 
 export namespace TokenBalances {
     export async function evmNative(context: IAssetNativeChainContext) {
-        return new EVMNativeTokenBalance(new Currency(context.nativeChainInfo.tokenSymbol, 18));
+        return new EVMNativeTokenBalance(context.nativeChainInfo.tokenSymbol, 18);
     }
 
-    export async function wallet(walletClient: IBlockChainWallet, currency: Currency) {
-        return new WalletTokenBalance(walletClient, currency);
+    export async function wallet(walletClient: IBlockChainWallet, symbol: string, decimals: number) {
+        return new WalletTokenBalance(walletClient, symbol, decimals);
     }
 
     export async function erc20(token: IERC20MetadataInstance) {
         const symbol = await token.symbol();
         const decimals = Number(await token.decimals());
-        return new ERC20TokenBalance(token, new Currency(symbol, decimals));
+        return new ERC20TokenBalance(token, symbol, decimals);
     }
 
     export async function collateralType(collateral: CollateralType) {
         const token = await IERC20.at(collateral.token);
         const symbol = await token.symbol().catch(() => collateral.tokenFtsoSymbol);
         const decimals = Number(collateral.decimals);
-        return new ERC20TokenBalance(token, new Currency(symbol, decimals));
+        return new ERC20TokenBalance(token, symbol, decimals);
     }
 
     export async function fasset(context: IAssetNativeChainContext) {
@@ -38,7 +37,7 @@ export namespace TokenBalances {
     export async function fassetUnderlyingToken(context: IAssetAgentContext) {
         const symbol = await context.fAsset.assetSymbol();
         const decimals = Number(await context.fAsset.decimals());
-        return new WalletTokenBalance(context.wallet, new Currency(symbol, decimals));
+        return new WalletTokenBalance(context.wallet, symbol, decimals);
     }
 
     export async function agentVaultCollateral(context: IAssetAgentContext, agentVaultAddress: string) {

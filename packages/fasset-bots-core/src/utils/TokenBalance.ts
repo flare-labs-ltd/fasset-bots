@@ -6,16 +6,16 @@ import { FormatSettings } from "./formatting";
 import { toBN } from "./helpers";
 import { web3 } from "./web3";
 
-export abstract class TokenBalance {
-    constructor(
-        public currency: Currency
-    ) {}
+export abstract class TokenBalance extends Currency {
+    constructor(symbol: string, decimals: number) {
+        super(symbol, decimals);
+    }
 
     abstract balance(address: string): Promise<BN>;
 
     async formatBalance(address: string, format?: FormatSettings) {
         const balance = await this.balance(address);
-        return this.currency.format(balance, format);
+        return this.format(balance, format);
     }
 }
 
@@ -28,9 +28,10 @@ export class EVMNativeTokenBalance extends TokenBalance {
 export class WalletTokenBalance extends TokenBalance {
     constructor(
         public wallet: IBlockChainWallet,
-        currency: Currency,
+        symbol: string,
+        decimals: number,
     ) {
-        super(currency);
+        super(symbol, decimals);
     }
 
     balance(address: string) {
@@ -41,9 +42,10 @@ export class WalletTokenBalance extends TokenBalance {
 export class ERC20TokenBalance extends TokenBalance {
     constructor(
         public token: IERC20MetadataInstance,
-        currency: Currency,
+        symbol: string,
+        decimals: number,
     ) {
-        super(currency);
+        super(symbol, decimals);
     }
 
     balance(address: string) {

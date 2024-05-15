@@ -18,17 +18,17 @@ export class LazyTokenBalance {
 
     async parse(amount: string) {
         this.tokenBalance ??= await this.initializer();
-        return this.tokenBalance.currency.parse(amount);
+        return this.tokenBalance.parse(amount);
     }
 
     async formatValue(amount: BNish, format?: CurrencyFormatSettings) {
         this.tokenBalance ??= await this.initializer();
-        return this.tokenBalance.currency.formatValue(amount, format);
+        return this.tokenBalance.formatValue(amount, format);
     }
 
     async format(amount: BNish, format?: CurrencyFormatSettings) {
         this.tokenBalance ??= await this.initializer();
-        return this.tokenBalance.currency.format(amount, format);
+        return this.tokenBalance.format(amount, format);
     }
 }
 

@@ -55,7 +55,7 @@ program
             const secrets = Secrets.load(options.secrets);
             const chainId = ChainId.from(fassetInfo.chainId);
             const wallet = createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(fassetInfo.walletUrl));
-            const balance = await TokenBalances.wallet(wallet, new Currency(fassetInfo.tokenSymbol, fassetInfo.tokenDecimals));
+            const balance = await TokenBalances.wallet(wallet, fassetInfo.tokenSymbol, fassetInfo.tokenDecimals);
             console.log(await balance.formatBalance(address));
         }
     });

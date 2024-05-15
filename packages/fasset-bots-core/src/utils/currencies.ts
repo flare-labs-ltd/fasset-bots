@@ -12,34 +12,34 @@ export namespace Currencies {
     }
 
     export function evmNative(context: IAssetNativeChainContext) {
-        return TokenBalances.evmNative(context).then(tb => tb.currency);
+        return TokenBalances.evmNative(context);
     }
 
     export function erc20(token: IERC20MetadataInstance) {
-        return TokenBalances.erc20(token).then(tb => tb.currency);
+        return TokenBalances.erc20(token);
     }
 
     export function collateralType(collateral: CollateralType) {
-        return TokenBalances.collateralType(collateral).then(tb => tb.currency);
+        return TokenBalances.collateralType(collateral);
     }
 
     export function fasset(context: IAssetAgentContext) {
-        return TokenBalances.fasset(context).then(tb => tb.currency);
+        return TokenBalances.fasset(context);
     }
 
     export function fassetUnderlyingToken(context: IAssetAgentContext) {
-        return TokenBalances.fassetUnderlyingToken(context).then(tb => tb.currency);
+        return TokenBalances.fassetUnderlyingToken(context);
     }
 
     export function agentVaultCollateral(context: IAssetAgentContext, agentVaultAddress: string) {
-        return TokenBalances.agentVaultCollateral(context, agentVaultAddress).then(tb => tb.currency);
+        return TokenBalances.agentVaultCollateral(context, agentVaultAddress);
     }
 
     export function agentPoolCollateral(context: IAssetAgentContext, agentVaultAddress: string) {
-        return TokenBalances.agentPoolCollateral(context, agentVaultAddress).then(tb => tb.currency);
+        return TokenBalances.agentPoolCollateral(context, agentVaultAddress);
     }
 
     export function agentCollateralPoolToken(context: IAssetAgentContext, agentVaultAddress: string) {
-        return TokenBalances.agentCollateralPoolToken(context, agentVaultAddress).then(tb => tb.currency);
+        return TokenBalances.agentCollateralPoolToken(context, agentVaultAddress);
     }
 }

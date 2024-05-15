@@ -9,7 +9,6 @@ import { OwnerAddressPair } from "../fasset/Agent";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { MemoryWalletKeys } from "../underlying-chain/WalletKeys";
-import { Currency } from "../utils/Currency";
 import { EVMNativeTokenBalance, WalletTokenBalance } from "../utils/TokenBalance";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { stripIndent } from "../utils/formatting";
@@ -97,15 +96,14 @@ export class AgentBotOwnerValidation {
 
     private async verifyOwnerManagementBalance(owner: OwnerAddressPair) {
         const nativeChainInfo = this.configFile.nativeChainInfo;
-        const natBalance = new EVMNativeTokenBalance(new Currency(nativeChainInfo.tokenSymbol, 18));
-        const natCurrency = natBalance.currency;
+        const natToken = new EVMNativeTokenBalance(nativeChainInfo.tokenSymbol, 18);
         // check managementAddress balance
         this.reporter.log(`Verifying balance on management address...`);
-        const managementAddressBalance = await natBalance.balance(owner.managementAddress);
-        const managementAddressRecBal = natCurrency.parse(nativeChainInfo.recommendedOwnerBalance ?? "0");
-        const balanceFmt = natCurrency.format(managementAddressBalance);
+        const managementAddressBalance = await natToken.balance(owner.managementAddress);
+        const managementAddressRecBal = natToken.parse(nativeChainInfo.recommendedOwnerBalance ?? "0");
+        const balanceFmt = natToken.format(managementAddressBalance);
         if (managementAddressBalance.lt(managementAddressRecBal)) {
-            const recBalFmt = natCurrency.format(managementAddressRecBal);
+            const recBalFmt = natToken.format(managementAddressRecBal);
             const faucetInfo = nativeChainInfo.faucet ? `\nGo to [${nativeChainInfo.faucet}] and fund [${owner.workAddress}].` : "";
             this.reporter.error(`Agent management address (${owner.managementAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
         } else {
@@ -115,18 +113,17 @@ export class AgentBotOwnerValidation {
 
     private async verifyOwnerWorkBalance(owner: OwnerAddressPair) {
         const nativeChainInfo = this.configFile.nativeChainInfo;
-        const natBalance = new EVMNativeTokenBalance(new Currency(nativeChainInfo.tokenSymbol, 18));
-        const natCurrency = natBalance.currency;
+        const natToken = new EVMNativeTokenBalance(nativeChainInfo.tokenSymbol, 18);
         // check workAddress balance
         this.reporter.log(`Verifying balance on work address...`);
-        const workAddressBalance = await natBalance.balance(owner.workAddress);
-        const workAddressRecBal = natCurrency.parse(nativeChainInfo.recommendedOwnerBalance ?? "0");
-        const balanceFmt = natCurrency.format(workAddressBalance);
+        const workAddressBalance = await natToken.balance(owner.workAddress);
+        const workAddressRecBal = natToken.parse(nativeChainInfo.recommendedOwnerBalance ?? "0");
+        const balanceFmt = natToken.format(workAddressBalance);
         if (workAddressBalance.lt(workAddressRecBal)) {
-            const recBalFmt = natCurrency.format(workAddressRecBal);
+            const recBalFmt = natToken.format(workAddressRecBal);
             const faucetInfo = nativeChainInfo.faucet
-                ? `\nGo to [${nativeChainInfo.faucet}] and fund [${owner.workAddress}] or transfer some ${natCurrency.symbol} from management address.`
-                : `\nTransfer some ${natCurrency.symbol} from management address.`;
+                ? `\nGo to [${nativeChainInfo.faucet}] and fund [${owner.workAddress}] or transfer some ${natToken.symbol} from management address.`
+                : `\nTransfer some ${natToken.symbol} from management address.`;
             this.reporter.error(`Agent work address (${owner.managementAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
         } else {
             this.reporter.log(`    work address has balance ${balanceFmt}.`);
@@ -143,12 +140,12 @@ export class AgentBotOwnerValidation {
         assertCmd(!!underlyingAddress, `Missing field "owner.${fassetInfo.chainId}.address" in secrets file ${this.secrets.filePath}. Did you use "yarn generateSecrets --agent" to generate it?`);
         //
         this.reporter.log(`Verifying balance on owner's ${fassetInfo.chainId} address ${underlyingAddress}...`);
-        const walletTokenBalance = await this.createWalletTokenBalance(fassetSymbol);
-        const underlyingBalance = await walletTokenBalance.balance(underlyingAddress);
-        const underlyingRecBal = walletTokenBalance.currency.parse(fassetInfo.recommendedOwnerBalance ?? "0");
-        const balanceFmt = walletTokenBalance.currency.format(underlyingBalance);
+        const walletToken = await this.createWalletTokenBalance(fassetSymbol);
+        const underlyingBalance = await walletToken.balance(underlyingAddress);
+        const underlyingRecBal = walletToken.parse(fassetInfo.recommendedOwnerBalance ?? "0");
+        const balanceFmt = walletToken.format(underlyingBalance);
         if (underlyingBalance.lt(underlyingRecBal)) {
-            const recBalFmt = walletTokenBalance.currency.format(underlyingRecBal);
+            const recBalFmt = walletToken.format(underlyingRecBal);
             const faucetInfo = fassetInfo.faucet ? `\nGo to [${fassetInfo.faucet}] and fund [${underlyingAddress}].` : "";
             this.reporter.error(`Owner's ${fassetInfo.chainId} address (${underlyingAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
         } else {
@@ -161,8 +158,7 @@ export class AgentBotOwnerValidation {
         const walletClient = createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl));
         const wallet = new BlockchainWalletHelper(walletClient, new MemoryWalletKeys());
         const fasset = requireNotNull(this.fassets.get(fassetSymbol));
-        const underlyingCurrency = new Currency(await fasset.assetSymbol(), Number(await fasset.decimals()));
-        return new WalletTokenBalance(wallet, underlyingCurrency);
+        return new WalletTokenBalance(wallet, await fasset.assetSymbol(), Number(await fasset.decimals()));
     }
 
     static verifyWorkPrivateKey(owner: OwnerAddressPair, workPrivateKey: string, reporter = throwingReporter) {

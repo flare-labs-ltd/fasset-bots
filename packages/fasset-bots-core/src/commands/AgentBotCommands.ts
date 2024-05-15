@@ -171,10 +171,9 @@ export class AgentBotCommands {
         const balanceReader = await TokenBalances.agentVaultCollateral(this.context, agentVault);
         const ownerBalance = await balanceReader.balance(this.owner.workAddress);
         if (ownerBalance.lt(depositAmount)) {
-            const currency = balanceReader.currency;
-            const balanceFmt = currency.format(ownerBalance);
-            const requiredFmt = currency.format(depositAmount);
-            throw new CommandLineError(squashSpace`Not enough ${currency.symbol} on owner's work address. Balance is ${balanceFmt}, required ${requiredFmt}.
+            const balanceFmt = balanceReader.format(ownerBalance);
+            const requiredFmt = balanceReader.format(depositAmount);
+            throw new CommandLineError(squashSpace`Not enough ${balanceReader.symbol} on owner's work address. Balance is ${balanceFmt}, required ${requiredFmt}.
                 Vault collateral deposit will probably fail.`);
         }
     }
@@ -190,10 +189,9 @@ export class AgentBotCommands {
         const balanceReader = await TokenBalances.evmNative(this.context);
         const ownerBalance = await balanceReader.balance(this.owner.workAddress);
         if (ownerBalance.lt(depositAmount)) {
-            const currency = balanceReader.currency;
-            const balanceFmt = currency.format(ownerBalance);
-            const requiredFmt = currency.format(depositAmount);
-            throw new CommandLineError(squashSpace`Not enough ${currency.symbol} on owner's work address. Balance is ${balanceFmt}, required ${requiredFmt}.
+            const balanceFmt = balanceReader.format(ownerBalance);
+            const requiredFmt = balanceReader.format(depositAmount);
+            throw new CommandLineError(squashSpace`Not enough ${balanceReader.symbol} on owner's work address. Balance is ${balanceFmt}, required ${requiredFmt}.
                 Pool collateral deposit will probably fail.`);
         }
     }
