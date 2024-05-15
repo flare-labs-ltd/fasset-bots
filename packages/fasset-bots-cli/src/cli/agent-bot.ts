@@ -130,10 +130,11 @@ program
     .command("info")
     .description("print agent info")
     .argument("<agentVaultAddress>")
-    .action(async (agentVault: string) => {
+    .option("--raw", "print direct output of getAgentInfo")
+    .action(async (agentVault: string, cmdopts: { raw: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.printAgentInfo(agentVault);
+        await cli.printAgentInfo(agentVault, cmdopts.raw);
     });
 
 program

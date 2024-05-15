@@ -78,3 +78,7 @@ export async function createNativeContext(config: BotConfig, chainConfig: BotFAs
         wNat: await WNat.at(await assetManager.getWNat()),
     }
 }
+
+export function isAssetAgentContext(context: IAssetNativeChainContext): context is IAssetAgentContext {
+    return "wallet" in context;
+}

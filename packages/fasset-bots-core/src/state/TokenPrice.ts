@@ -4,6 +4,7 @@ import { IERC20Events } from "../fasset-bots/IAssetBotContext";
 import { ContractWithEvents } from "../utils/events/truffle";
 import { BNish, getOrCreateAsync, requireNotNull, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
+import { FormatSettings, formatFixed } from "../utils";
 
 const IERC20 = artifacts.require("IERC20");
 const IPriceReader = artifacts.require("IPriceReader");
@@ -26,6 +27,10 @@ export class TokenPrice {
 
     fresh(relativeTo: TokenPrice, maxAge: BN) {
         return this.timestamp.add(maxAge).gte(relativeTo.timestamp);
+    }
+
+    format(format?: FormatSettings) {
+        return formatFixed(this.price, Number(this.decimals), format);
     }
 }
 

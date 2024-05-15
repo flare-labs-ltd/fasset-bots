@@ -1,4 +1,5 @@
 import { FilterQuery } from "@mikro-orm/core";
+import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -17,8 +18,6 @@ import { testNotifierTransports } from "../../../test/test-utils/testNotifierTra
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
-import { AgentCollateral } from "../../../test/test-utils/collateral-data/AgentCollateral";
-import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -207,7 +206,14 @@ describe("AgentBot cli commands unit tests", () => {
     it("Should run command 'printAgentInfo'", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
-        await botCliCommands.printAgentInfo(agent.vaultAddress);
+        await botCliCommands.printAgentInfo(agent.vaultAddress, false);
+        expect(spyConsole).to.be.called();
+    });
+
+    it("Should run command 'printAgentInfo' (raw)", async () => {
+        const agent = await createAgent();
+        const spyConsole = spy.on(console, "log");
+        await botCliCommands.printAgentInfo(agent.vaultAddress, true);
         expect(spyConsole).to.be.called();
     });
 

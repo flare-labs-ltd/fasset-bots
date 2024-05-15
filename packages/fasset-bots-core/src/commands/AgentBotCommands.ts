@@ -559,8 +559,12 @@ export class AgentBotCommands {
      * Get agent info
      * @param agentVault agent's vault address
      */
-    async printAgentInfo(agentVault: string): Promise<void> {
-        await this.infoBot().printAgentInfo(agentVault);
+    async printAgentInfo(agentVault: string, raw: boolean): Promise<void> {
+        if (raw) {
+            await this.infoBot().printRawAgentInfo(agentVault);
+        } else {
+            await this.infoBot().printAgentInfo(agentVault, this.ownerUnderlyingAddress);
+        }
     }
 
     /**

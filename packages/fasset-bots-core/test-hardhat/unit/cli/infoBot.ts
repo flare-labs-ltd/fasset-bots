@@ -102,7 +102,7 @@ describe("InfoBot cli commands unit tests", () => {
     it("Should print agent info", async () => {
         const spyLog = spy.on(console, "log");
         const agent = await createTestAgentAndMakeAvailable(context, ownerAddress, agentUnderlyingAddress);
-        await infoBot.printAgentInfo(agent.vaultAddress);
+        await infoBot.printRawAgentInfo(agent.vaultAddress);
         expect(spyLog).to.be.called.gt(0);
     });
 
