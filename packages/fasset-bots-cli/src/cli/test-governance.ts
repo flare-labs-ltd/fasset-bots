@@ -4,10 +4,11 @@ import "source-map-support/register";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync } from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
+import { validateAddress, validateDecimal } from "../utils/validation";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
@@ -93,9 +94,11 @@ async function isAgentWhitelisted(secretsFile: string, configFileName: string, o
 
 async function mintFakeTokens(secretsFile: string, configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
     const [secrets, config] = await initEnvironment(secretsFile, configFileName);
+    validateDecimal(amount, "Invalid amount");
+    validateAddress(recipientAddress, `Invalid recipient address ${recipientAddress}`);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const deployerAddress = secrets.required("deployer.address");
-    const tokenAddres = requireNotNull(contracts[tokenSymbol]).address;
+    const tokenAddres = requireNotNullCmd(contracts[tokenSymbol], `Invalid token symbol ${tokenSymbol}`).address;
     const token = await FakeERC20.at(tokenAddres);
     const decimals = Number(await token.decimals());
     const amountBN = toBNExp(amount, decimals);

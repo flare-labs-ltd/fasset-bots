@@ -2,11 +2,14 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { ChainId, InfoBotCommands } from "@flarelabs/fasset-bots-core";
-import { BotConfigFile, Secrets, createBlockchainWalletHelper, loadAgentConfigFile, loadConfigFile, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currency, TokenBalances, assertNotNullCmd, requireNotNull } from "@flarelabs/fasset-bots-core/utils";
+import { BotConfigFile, Secrets, createBlockchainWalletHelper, loadAgentConfigFile, loadConfigFile, loadContracts, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
+import { CommandLineError, Currency, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
+import { validateAddress } from "../utils/validation";
+
+const ERC20 = artifacts.require("IERC20Metadata");
 
 const program = programWithCommonOptions("agent", "all_fassets");
 
@@ -42,6 +45,7 @@ program
         const options: { config: string; secrets: string } = program.opts();
         const config = loadConfigFile(options.config);
         const [type, fassetSymbol] = findToken(config, token);
+        validateAddress(address, `Address ${address}`);
         if (type === "nat") {
             const bot = await InfoBotCommands.create(options.secrets, options.config, undefined);
             const balance = await TokenBalances.evmNative(bot.context);
@@ -49,6 +53,16 @@ program
         } else if (type === "fasset") {
             const bot = await InfoBotCommands.create(options.secrets, options.config, fassetSymbol);
             const balance = await TokenBalances.fasset(bot.context);
+            console.log(await balance.formatBalance(address));
+        } else if (type === "erc20") {
+            const secrets = Secrets.load(options.secrets);
+            const config = loadConfigFile(options.config);
+            const apiKey = secrets.optional("apiKey.native_rpc");
+            await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), [], null);
+            const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+            const tokenCtr = requireNotNullCmd(contracts[token], `Unknown token "${token}"`);
+            const tokenContract = await ERC20.at(tokenCtr.address);
+            const balance = await TokenBalances.erc20(tokenContract);
             console.log(await balance.formatBalance(address));
         } else {
             const fassetInfo = config.fAssets[requireNotNull(fassetSymbol)];
@@ -78,7 +92,7 @@ toplevelRun(async () => {
     await program.parseAsync();
 });
 
-function findToken(config: BotConfigFile, symbol: string): [type: "nat" | "fasset" | "underlying", fassetSymbol?: string] {
+function findToken(config: BotConfigFile, symbol: string): [type: "nat" | "fasset" | "underlying" | "erc20", fassetSymbol?: string] {
     symbol = symbol.toUpperCase();
     if (symbol === "NAT" || symbol === config.nativeChainInfo.tokenSymbol.toUpperCase()) {
         return ["nat"];
@@ -91,7 +105,7 @@ function findToken(config: BotConfigFile, symbol: string): [type: "nat" | "fasse
             return ["underlying", fassetSymbol];
         }
     }
-    throw new CommandLineError(`Unnown token symbol ${symbol}`);
+    return ["erc20"];
 }
 
 async function setupContext(fAssetSymbol: string) {
