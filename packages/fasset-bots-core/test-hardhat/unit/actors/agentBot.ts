@@ -605,7 +605,7 @@ describe("Agent bot unit tests", () => {
         expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
 
-    it.only("Should not request proofs - cannot prove requests yet", async () => {
+    it("Should not request proofs - cannot prove requests yet", async () => {
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
