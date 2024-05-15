@@ -717,13 +717,14 @@ export class AgentBotCommands {
             poolTopupTokenPriceFactorBIPS: "0",
         };
         try {
-            await this.context.assetManager.createAgentVault.call(fakeAddressProof, fakeSettings);
+            await this.context.assetManager.createAgentVault.call(fakeAddressProof, fakeSettings, { from: this.owner.workAddress });
         } catch (e: unknown) {
             if (errorIncluded(e, ["suffix already reserved"])) {
                 throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
             } else if (errorIncluded(e, ["invalid character in suffix"])) {
                 throw new CommandLineError(`Collateral pool token suffix "${suffix}" contains invalid characters.`);
             }
+            logger.warn(`Unknown error validating pool suffix "${suffix}":`, e);
         }
     }
 }
