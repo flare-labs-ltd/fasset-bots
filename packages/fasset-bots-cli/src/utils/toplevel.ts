@@ -27,7 +27,7 @@ export function toplevelRun(main: () => Promise<void>) {
             if (error instanceof CommandLineError) {
                 logger.error(`***** ${scriptInfo} ended with user error: ${error}`);
                 console.error(chalk.red("Error:"), error.message);
-                process.exitCode = 1;
+                process.exitCode = error.exitCode;
             } else {
                 logger.error(`***** ${scriptInfo} ended with unexpected error:`, error);
                 console.error(error);

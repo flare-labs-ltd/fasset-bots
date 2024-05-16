@@ -25,6 +25,9 @@ import { InfoBotCommands } from "./InfoBotCommands";
 
 export const CollateralPool = artifacts.require("CollateralPool");
 
+// exit codes
+const ERR_CANNOT_EXECUTE_YET = 10;
+
 interface MintData {
     type: "mint";
     requestId: string;
@@ -240,11 +243,11 @@ export class UserBotCommands {
             logger.info(`User ${this.nativeAddress} is checking for transaction ${state.transactionHash} finalization for reservation ${state.requestId}.`);
             const transactionFinalized = await minter.isTransactionFinalized(state.transactionHash);
             if (!transactionFinalized) {
-                throw new CommandLineError(`Transaction ${state.transactionHash} not finalized yet.`)
+                throw new CommandLineError(`Transaction ${state.transactionHash} not finalized yet.`, ERR_CANNOT_EXECUTE_YET)
             }
             // submit proof request
             const request = await minter.requestPaymentProof(state.paymentAddress, state.transactionHash)
-                .catch(e => { throw CommandLineError.replace(e, `Payment proof not available yet.`); });
+                .catch(e => { throw CommandLineError.replace(e, `Payment proof not available yet.`, ERR_CANNOT_EXECUTE_YET); });
             logger.info(`User ${this.nativeAddress} has submitted payment proof request in round ${request.round} with data ${request.data} for reservation ${state.requestId}.`);
             state.proofRequest = request;
             this.writeState(state, requestIdOrPath);
@@ -253,7 +256,7 @@ export class UserBotCommands {
         console.log(`User ${this.nativeAddress} is checking for existence of the proof of underlying payment transaction ${state.transactionHash}...`);
         const proof = await minter.obtainPaymentProof(state.proofRequest.round, state.proofRequest.data);
         if (!attestationProved(proof)) {
-            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`)
+            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET)
         }
         console.log(`Executing payment...`);
         logger.info(`User ${this.nativeAddress} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);

@@ -5,13 +5,20 @@ import { logger } from "./logger";
  * A type of error that prints nice message instead of stack trace in command line tools.
  */
 export class CommandLineError extends Error {
+    constructor(
+        message: string,
+        public exitCode: number = 1,
+    ) {
+        super(message);
+    }
+
     static wrap(error: any) {
         return error?.message ? new CommandLineError(error.message) : error;
     }
 
-    static replace(error: any, message: string) {
+    static replace(error: any, message: string, exitCode?: number) {
         logger.error(`Error replaced with command line error "${message}":`, error);
-        return new CommandLineError(message);
+        return new CommandLineError(message, exitCode);
     }
 }
 
