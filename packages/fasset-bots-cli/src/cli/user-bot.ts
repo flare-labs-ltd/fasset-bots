@@ -72,7 +72,8 @@ program
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .option("--noWait", "only reserve and pay for the minting, don't wait for payment finalization and proof; you have to execute the minting later")
-    .action(async (numberOfLots: string, cmdOptions: { agent?: string, updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean }) => {
+    .option("--noPay", "just reserve the collateral without paying the underlying")
+    .action(async (numberOfLots: string, cmdOptions: { agent?: string, updateBlock?: boolean, executor?: string, executorFee?: string, noWait?: boolean, noPay?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         validateAddress(cmdOptions.agent, "Agent vault address");
         validateInteger(numberOfLots, "Number of lots", { min: 1 });
@@ -88,9 +89,9 @@ program
                 await minterBot.updateUnderlyingTime();
             }
             if (cmdOptions.executor && cmdOptions.executorFee) {
-                await minterBot.mint(agentVault, numberOfLots, !!cmdOptions.noWait, cmdOptions.executor, cmdOptions.executorFee);
+                await minterBot.mint(agentVault, numberOfLots, !!cmdOptions.noWait, cmdOptions.noPay, cmdOptions.executor, cmdOptions.executorFee);
             } else {
-                await minterBot.mint(agentVault, numberOfLots, !!cmdOptions.noWait);
+                await minterBot.mint(agentVault, numberOfLots, !!cmdOptions.noWait, cmdOptions.noPay);
             }
         } catch (error) {
             translateError(error, {

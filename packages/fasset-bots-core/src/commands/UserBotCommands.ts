@@ -151,7 +151,7 @@ export class UserBotCommands {
      * @param executorAddress
      * @param executorFeeNatWei
      */
-    async reserveCollateral(agentVault: string, lots: BNish, executorAddress: string, executorFeeNatWei?: BNish): Promise<BN> {
+    async reserveCollateral(agentVault: string, lots: BNish, executorAddress: string, executorFeeNatWei?: BNish, noPay: boolean = false): Promise<BN> {
         logger.info(`User ${this.nativeAddress} started minting with agent ${agentVault}.`);
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Reserving collateral...");
@@ -160,6 +160,7 @@ export class UserBotCommands {
         logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(`User ${this.nativeAddress} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${crt.paymentAddress}.`);
+        if (noPay) return crt.collateralReservationId;
         const txHash = await minter.performMintingPayment(crt);
         const timestamp = await latestBlockTimestamp();
         const state: MintData = {
@@ -182,9 +183,9 @@ export class UserBotCommands {
      * @param executorAddress optional address of the executor
      * @param executorFeeNatWei optional executor fee (required if executor is used)
      */
-    async mint(agentVault: string, lots: BNish, noWait: boolean, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
-        const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
-        if (noWait) {
+    async mint(agentVault: string, lots: BNish, noWait: boolean, noPay: boolean = false, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
+        const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei, noPay);
+        if (noWait || noPay) {
             console.log(`The minting started and must be executed later by running "user-bot mintExecute ${requestId}".`);
             if (executorAddress !== ZERO_ADDRESS) {
                 console.log("The minting can also be executed by the executor. Please pass the executor the state file:");
