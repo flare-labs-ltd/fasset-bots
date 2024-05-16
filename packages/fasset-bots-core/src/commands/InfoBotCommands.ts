@@ -7,7 +7,7 @@ import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { formatFixed } from "../utils/formatting";
-import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, toBN } from "../utils/helpers";
+import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, toBN, randomChoice } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
@@ -72,8 +72,11 @@ export class InfoBotCommands {
     async findBestAgent(minAvailableLots: BN): Promise<string | undefined> {
         const agents = await this.getAvailableAgents();
         const eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
+        if (eligible.length === 0) return undefined;
         eligible.sort((a, b) => -toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
-        return eligible[0]?.agentVault;
+        const lowestFee = toBN(eligible[0].feeBIPS);
+        eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
+        return randomChoice(eligible)?.agentVault;
     }
 
     /**

@@ -372,3 +372,8 @@ export function firstValue<K, V>(map: Map<K, V>): V | undefined {
         return v;
     }
 }
+
+export function randomChoice<K>(array: K[]): K | undefined {
+    if (array.length === 0) return undefined;
+    return array[Math.floor(Math.random() * array.length)];
+}
