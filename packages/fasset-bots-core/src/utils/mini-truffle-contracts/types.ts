@@ -1,6 +1,7 @@
 import Web3 from "web3";
 import { TransactionConfig } from "web3-core";
 import { AbiItem } from "web3-utils";
+import { AddressLocks } from "./address-locks";
 
 /**
  * Possible finalization methods.
@@ -56,10 +57,9 @@ export interface ContractSettings {
     resubmitTransaction: ResubmitTransaction[];
 
     /**
-     * Maximum number of millisecinds to wait for locking an address nonce before giving up.
-     * Locking the nonce makes sure that there are no errors because two transaction from the same address try to execute.
+     * Method to lock addresses - can be in-memory locks (for tests) or filesystem locks (that support multiple processes).
      */
-    nonceLockTimeoutMS: number;
+    addressLocks: AddressLocks;
 }
 
 /**
