@@ -1,6 +1,9 @@
+import os from "os";
+import path from "path";
 import Web3 from "web3";
 import { provider } from "web3-core";
 import { Artifacts } from "../../typechain-truffle";
+import { FilesystemAddressLocks, MemoryAddressLocks } from "./mini-truffle-contracts/address-locks";
 import { createArtifacts } from "./mini-truffle-contracts/artifacts";
 import { ContractSettings } from "./mini-truffle-contracts/types";
 import { resolveInFassetBotsCore } from "./package-paths";
@@ -26,7 +29,9 @@ export const contractSettings: ContractSettings = updateWithHardhatNetworkDefaul
     gasMultiplier: 1.5,
     defaultAccount: web3.eth.defaultAccount,
     waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10_000 },
-    nonceLockTimeoutMS: 60_000,
+    addressLocks: new MemoryAddressLocks({
+        waitTimeoutMS: 60_000,
+    }),
     resubmitTransaction: [
         { afterMS: 10_000, priceFactor: 1.2 },
         { afterMS: 20_000, priceFactor: 2.0 },
@@ -51,9 +56,13 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     const defaultAccountAddress = typeof defaultAccount === "number" ? accounts[defaultAccount] : defaultAccount;
     web3.eth.defaultAccount = defaultAccountAddress;
     contractSettings.defaultAccount = defaultAccountAddress;
-    // for real network, wait 2 extra blocks after nonce increase
+    // for real network, wait 2 extra blocks after nonce increase and use filesystem locks
     contractSettings.waitFor = { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } };
-    contractSettings.nonceLockTimeoutMS = 120_000;
+    contractSettings.addressLocks = new FilesystemAddressLocks({
+        lockDir: path.resolve(os.tmpdir(), "fasset/locks"),
+        waitTimeoutMS: 120_000,
+        lockExpirationMS: 300_000,
+    });
     contractSettings.resubmitTransaction = [
         { afterMS: 30_000, priceFactor: 1.2 },
         { afterMS: 60_000, priceFactor: 2.0 },
@@ -133,7 +142,7 @@ function updateWithHardhatNetworkDefaults(settings: ContractSettings): ContractS
         gasMultiplier: settings.gasMultiplier, // ignore networkConfig - it has value 1 even if not set explicitly
         defaultAccount: settings.defaultAccount ?? networkConfig.from ?? firstAccountAddress(),
         waitFor: settings.waitFor,
-        nonceLockTimeoutMS: settings.nonceLockTimeoutMS,
         resubmitTransaction: settings.resubmitTransaction,
+        addressLocks: settings.addressLocks,
     };
 }

@@ -1,18 +1,21 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect } from "chai";
 import { network } from "hardhat";
+import path from "path";
+import fs from "fs";
+import { TransactionReceipt } from "web3-core";
 import { improveConsoleLog, preventReentrancy, requireNotNull, sleep } from "../../../src/utils/helpers";
+import { FilesystemAddressLocks, MemoryAddressLocks } from "../../../src/utils/mini-truffle-contracts/address-locks";
 import { CancelToken, CancelTokenRegistration } from "../../../src/utils/mini-truffle-contracts/cancelable-promises";
 import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle-contracts/contracts";
 import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
+import { captureStackTrace, fixErrorStack } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
-import { captureStackTrace, fixErrorStack } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
-import path from "path";
-import { TransactionReceipt } from "web3-core";
 import { FakePriceReaderInstance } from "../../../typechain-truffle";
 
 describe("mini truffle and artifacts tests", () => {
+    const TEST_LOCK_DIR = "./test-data/locks";
     let accounts: string[];
 
     before(async () => {
@@ -531,11 +534,6 @@ describe("mini truffle and artifacts tests", () => {
     });
 
     describe("resubmit test", () => {
-        async function setMining(type: "auto" | "manual" | "interval", timeMS: number = 1000) {
-            await network.provider.send("evm_setAutomine", [type === "auto"]);
-            await network.provider.send("evm_setIntervalMining", [type === "interval" ? timeMS : 0]);
-        }
-
         afterEach(async () => {
             await setMining("auto");
         });
@@ -611,11 +609,12 @@ describe("mini truffle and artifacts tests", () => {
             const { 2: dec } = await fpr.getPrice("XRP");
             assert.equal(Number(dec), 20);
         });
+    });
 
-        async function delayed<T>(ms: number, func: () => Promise<T>) {
-            await sleep(ms);
-            return await func();
-        }
+    describe("memory lock tests", () => {
+        afterEach(async () => {
+            await setMining("auto");
+        });
 
         it("should lock nonce", async () => {
             const FakePriceReader = artifacts.require("FakePriceReader");
@@ -624,7 +623,7 @@ describe("mini truffle and artifacts tests", () => {
                     { afterMS: 1000, priceFactor: 2 },
                     { afterMS: 3000, priceFactor: 3 },
                 ],
-                nonceLockTimeoutMS: 3000,
+                addressLocks: new MemoryAddressLocks({ waitTimeoutMS: 3000 }),
             };
             const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
             // set to timed mining
@@ -647,7 +646,7 @@ describe("mini truffle and artifacts tests", () => {
                     { afterMS: 1000, priceFactor: 2 },
                     { afterMS: 3000, priceFactor: 3 },
                 ],
-                nonceLockTimeoutMS: 3000,
+                addressLocks: new MemoryAddressLocks({ waitTimeoutMS: 3000 }),
             };
             const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
             // set to timed mining
@@ -667,10 +666,119 @@ describe("mini truffle and artifacts tests", () => {
         });
     });
 
+    describe("filesystem lock tests", () => {
+        afterEach(async () => {
+            await setMining("auto");
+        });
+
+        const settings1: Partial<ContractSettings> = {
+            resubmitTransaction: [
+                { afterMS: 1000, priceFactor: 2 },
+                { afterMS: 3000, priceFactor: 3 },
+            ],
+            addressLocks: new FilesystemAddressLocks({
+                waitTimeoutMS: 3000,
+                lockExpirationMS: 60_000,
+                lockDir: TEST_LOCK_DIR,
+            }),
+        };
+
+        it("simple test (filesystem lock)", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
+            await withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 });
+            await withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.5e9 });
+            // check result
+            const { 2: dec1 } = await fpr.getPrice("XRP");
+            assert.equal(Number(dec1), 6);
+            const { 2: dec2 } = await fpr.getPrice("BTC");
+            assert.equal(Number(dec2), 8);
+        });
+
+        it("should lock nonce (filesystem)", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
+            // set to timed mining
+            await setMining("interval", 2000);
+            await Promise.all([
+                withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
+                delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.5e9 })),
+            ]);
+            // check result
+            const { 2: dec1 } = await fpr.getPrice("XRP");
+            assert.equal(Number(dec1), 6);
+            const { 2: dec2 } = await fpr.getPrice("BTC");
+            assert.equal(Number(dec2), 8);
+        });
+
+        it("wait for lock should timeout (filesystem)", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
+            // set to timed mining
+            await setMining("interval", 2000);
+            const results = await Promise.allSettled([
+                withSettings(fpr, settings1).setDecimals("XRP", 6, { gasPrice: 1.5e9 }),
+                delayed(100, () => withSettings(fpr, settings1).setDecimals("BTC", 8, { gasPrice: 1.6e9 })),
+                delayed(200, () => withSettings(fpr, settings1).setDecimals("DOGE", 5, { gasPrice: 1.7e9 })),
+            ]);
+            assert(results[0].status === "fulfilled", "first submit should succeed");
+            assert(results.filter((r) => r.status === "fulfilled").length === 2, "exactly 2 submits should succeed");
+            const failed = results.find((r) => r.status === "rejected");
+            assert(
+                failed?.status === "rejected" && failed.reason.message.includes("Timeout waiting to obtain address nonce lock"),
+                `expected error 'Timeout waiting to obtain address nonce lock', got '${(failed as any).reason?.message || "No exception"}'`
+            );
+        });
+
+        it("should expire lock (filesystem)", async () => {
+            const addressLocks = new FilesystemAddressLocks({
+                waitTimeoutMS: 3000,
+                lockExpirationMS: 2_000,
+                lockDir: TEST_LOCK_DIR,
+            });
+            let count = 0;
+            async function testLock(waitMS: number) {
+                const lock = await addressLocks.lock(accounts[0]);
+                await sleep(waitMS);
+                ++count;
+                await addressLocks.release(lock);
+            }
+            await Promise.all([
+                testLock(5000),
+                delayed(1500, () => testLock(1000)),
+            ]);
+            assert.equal(count, 2);
+        });
+
+        it("should create and cleanup lock dir (filesystem)", async () => {
+            const addressLocks = new FilesystemAddressLocks({
+                waitTimeoutMS: 3000,
+                lockExpirationMS: 2_000,
+                lockDir: TEST_LOCK_DIR,
+            });
+            fs.rmSync(TEST_LOCK_DIR, { recursive: true, force: true });
+            // create a lockfile
+            await addressLocks.lock(accounts[0]);
+            // create a fake lockfile
+            const fakeLockfile = path.resolve(TEST_LOCK_DIR, `${accounts[1]}.lock`);
+            fs.writeFileSync(fakeLockfile, "invalid-lock");
+            const files1 = fs.readdirSync(TEST_LOCK_DIR);
+            assert.equal(files1.length, 2);
+            FilesystemAddressLocks.cleanup();
+            const files2 = fs.readdirSync(TEST_LOCK_DIR);
+            assert.equal(files2.length, 1);
+            fs.rmSync(fakeLockfile);
+        });
+    });
+
     describe.skip("Coston nonce wait tests", () => {
         const costonFinalizationSettings: Partial<ContractSettings> = {
             waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } },
-            nonceLockTimeoutMS: 120_000,
+            addressLocks: new FilesystemAddressLocks({
+                lockDir: TEST_LOCK_DIR,
+                waitTimeoutMS: 120_000,
+                lockExpirationMS: 300_000,
+            }),
             resubmitTransaction: [
                 { afterMS: 30_000, priceFactor: 1.2 },
                 { afterMS: 60_000, priceFactor: 2.0 },
@@ -713,7 +821,14 @@ describe("mini truffle and artifacts tests", () => {
         it("parallel transactions should work", async () => {
             const fprAddresses = ["0x35c1419Da7cf0Ff885B8Ef8EA9242FEF6800c99b", "0xE55aA921A1001f0a19241264a50063683D2e1179", "0xf89AA2f1397e9A0622c8Fc99aB1947E28b5EF876",
                 "0x0EBCa695959e5f138Af772FAa44ce1A9C7aEd921", "0x8BFFF31B1757da579Bb5B118489568526F7fb6D4"];
-            const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), { ...costonFinalizationSettings, nonceLockTimeoutMS: 3600_000 });
+            const FakePriceReader = withSettings(artifacts.require("FakePriceReader"), {
+                ...costonFinalizationSettings,
+                addressLocks: new FilesystemAddressLocks({
+                    lockDir: TEST_LOCK_DIR,
+                    waitTimeoutMS: 3600_000,
+                    lockExpirationMS: 7200_000,
+                })
+            });
             const fprs: FakePriceReaderInstance[] = [];
             for (const addr of fprAddresses) {
                 fprs.push(await FakePriceReader.at(addr));
@@ -728,6 +843,16 @@ describe("mini truffle and artifacts tests", () => {
             await Promise.all(promises);
         });
     });
+
+    async function setMining(type: "auto" | "manual" | "interval", timeMS: number = 1000) {
+        await network.provider.send("evm_setAutomine", [type === "auto"]);
+        await network.provider.send("evm_setIntervalMining", [type === "interval" ? timeMS : 0]);
+    }
+
+    async function delayed<T>(ms: number, func: () => Promise<T>) {
+        await sleep(ms);
+        return await func();
+    }
 
     async function expectRevertWithCorrectStack(promise: Promise<any>, message: string) {
         const filename = path.basename(__filename);

@@ -1,5 +1,5 @@
 import { TransactionConfig, TransactionReceipt } from "web3-core";
-import { BN_ZERO, maxBN, sleep, toBN } from "../helpers";
+import { BN_ZERO, maxBN, toBN } from "../helpers";
 import { CancelToken, PromiseCancelled, cancelableSleep } from "./cancelable-promises";
 import { waitForFinalization, waitForReceipt } from "./finalization";
 import { captureStackTrace, fixErrorStack, transactionLogger } from "./transaction-logging";
@@ -16,32 +16,14 @@ import { ContractSettings } from "./types";
  */
 export async function submitTransaction(transactionId: number, settings: ContractSettings, config: TransactionConfig) {
     const fromAddress = config.from as string;
-    await lockAddress(settings, fromAddress);
+    const lock = await settings.addressLocks.lock(fromAddress);
     transactionLogger.info("LOCK", { transactionId, fromAddress });
     try {
         return await performSubmits(transactionId, settings, config);
     } finally {
         transactionLogger.info("UNLOCK", { transactionId, fromAddress });
-        await releaseAddress(fromAddress);
+        await settings.addressLocks.release(lock);
     }
-}
-
-const addressLocks = new Map<string, boolean>();
-
-async function lockAddress(settings: ContractSettings, address: string) {
-    const start = new Date().getTime();
-    while (new Date().getTime() - start < settings.nonceLockTimeoutMS) {
-        if (!addressLocks.get(address)) {
-            addressLocks.set(address, true);
-            return;
-        }
-        await sleep(100);
-    }
-    throw new Error("Timeout waiting to obtain address nonce lock");
-}
-
-async function releaseAddress(address: string) {
-    addressLocks.delete(address);
 }
 
 async function performSubmits(transactionId: number, settings: ContractSettings, config: TransactionConfig) {
