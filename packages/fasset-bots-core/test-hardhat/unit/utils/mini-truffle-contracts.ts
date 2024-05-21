@@ -1,15 +1,15 @@
 import { constants, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect } from "chai";
+import fs from "fs";
 import { network } from "hardhat";
 import path from "path";
-import fs from "fs";
 import { TransactionReceipt } from "web3-core";
 import { improveConsoleLog, preventReentrancy, requireNotNull, sleep } from "../../../src/utils/helpers";
 import { FilesystemAddressLocks, MemoryAddressLocks } from "../../../src/utils/mini-truffle-contracts/address-locks";
 import { CancelToken, CancelTokenRegistration } from "../../../src/utils/mini-truffle-contracts/cancelable-promises";
 import { MiniTruffleContract, MiniTruffleContractInstance, withSettings } from "../../../src/utils/mini-truffle-contracts/contracts";
-import { waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
-import { captureStackTrace, fixErrorStack } from "../../../src/utils/mini-truffle-contracts/transaction-logging";
+import { TransactionSubmitRevertedError, waitForFinalization, waitForNonceIncrease, waitForReceipt } from "../../../src/utils/mini-truffle-contracts/finalization";
+import { TransactionFailedError } from "../../../src/utils/mini-truffle-contracts/methods";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
 import { FakePriceReaderInstance } from "../../../typechain-truffle";
@@ -266,7 +266,7 @@ describe("mini truffle and artifacts tests", () => {
         }
 
         it("error handling in direct send transaction should work (different wait types)", async () => {
-            await expectRevertWithCorrectStack(
+            await expectRevert(
                 lowLevelExecuteMethodWithError({ what: "confirmations", confirmations: 3, timeoutMS: 10_000 }),
                 "price not initialized"
             );
@@ -494,42 +494,82 @@ describe("mini truffle and artifacts tests", () => {
             await fpr.setPrice("BTC", 1000, { gas: 1e6 }).catch((e) => {
                 console.error("SEND ERR NG", e);
                 assert.include(e.stack, filename);
+                console.error("SEND ERR NG (full)", e.fullStack());
             });
         });
+    });
 
-        function rejectTimer() {
-            return new Promise((resolve, reject) => {
-                const parentStack = captureStackTrace();
-                setTimeout(() => {
-                    reject(fixErrorStack(new Error("Time passed"), parentStack));
-                }, 300);
-            });
-        }
-
-        function rejectTimerSimp() {
-            return new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    reject(new Error("Time passed"));
-                }, 300);
-            });
-        }
-
-        it("test reject", async () => {
-            await rejectTimer().catch((e) => {
-                console.error("TIMER ERR", e);
-                assert.include(e.stack, path.basename(__filename));
-            });
+    describe("submit error handling with extra blocks", () => {
+        afterEach(async () => {
+            await setMining("auto");
         });
 
-        it("test reject simp", async () => {
-            try {
-                await rejectTimerSimp().catch((e) => {
-                    throw fixErrorStack(e, 1);
-                });
-            } catch (e: any) {
-                console.error("TIMER ERR", e);
-                assert.include(e.stack, path.basename(__filename));
-            }
+        it("should wait for two blocks extra after error happens (originally wait nonce with extra)", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            const settings: ContractSettings = {
+                ...contractSettings,
+                waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 5000 } },
+                resubmitTransaction: []
+            };
+            await setMining("interval", 1000);
+            // let error happen in submit
+            let error: unknown;
+            await withSettings(fpr, settings).setPrice("BTC", 1000, { gas: 1e6 })
+                .catch(e => error = e);
+            const blockNumber = await web3.eth.getBlockNumber();
+            assert(error instanceof TransactionFailedError);
+            assert.include(error.message, "price not initialized");
+            const cause = error.errorCause;
+            assert(cause instanceof TransactionSubmitRevertedError);
+            const transaction = await web3.eth.getTransaction(cause.transactionHash);
+            assert.isAtLeast(blockNumber, transaction.blockNumber! + 2);
+        });
+
+        it("should wait for two blocks extra after error happens, stop by time (originally wait confirmations)", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            const settings: ContractSettings = {
+                ...contractSettings,
+                waitFor: { what: "confirmations", timeoutMS: 2000, confirmations: 5 },
+                resubmitTransaction: []
+            };
+            await setMining("interval", 1000);
+            // let error happen in submit
+            let error: unknown;
+            await withSettings(fpr, settings).setPrice("BTC", 1000, { gas: 1e6 })
+                .catch(e => error = e);
+            const blockNumber = await web3.eth.getBlockNumber();
+            assert(error instanceof TransactionFailedError);
+            assert.include(error.message, "price not initialized");
+            const cause = error.errorCause;
+            assert(cause instanceof TransactionSubmitRevertedError);
+            const transaction = await web3.eth.getTransaction(cause.transactionHash);
+            assert.isAtLeast(blockNumber, transaction.blockNumber! + 2);
+        });
+
+        it("should wait for two blocks extra after error happens and then reorg", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            const settings: ContractSettings = {
+                ...contractSettings,
+                waitFor: { what: "nonceIncrease", pollMS: 500, timeoutMS: 10000, extra: { blocks: 2, timeMS: 5000 } },
+                resubmitTransaction: []
+            };
+            await setMining("interval", 2000);
+            // simulate network reorg with snapshot/revert
+            const snapshotId = await network.provider.send("evm_snapshot", []);
+            setTimeout(() => { void network.provider.send("evm_revert", [snapshotId]); }, 2500);
+            // let error happen in submit
+            let error: unknown;
+            await withSettings(fpr, settings).setPrice("BTC", 1000, { gas: 1e6 })
+                .catch(e => error = e);
+            // check
+            assert(error instanceof TransactionFailedError);
+            const cause = error.errorCause;
+            assert(cause instanceof TransactionSubmitRevertedError);
+            const transaction = await web3.eth.getTransaction(cause.transactionHash).catch(e => null);
+            assert.isNull(transaction);
         });
     });
 
