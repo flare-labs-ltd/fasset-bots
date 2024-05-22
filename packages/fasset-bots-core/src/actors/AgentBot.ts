@@ -346,7 +346,9 @@ export class AgentBot {
         if (blockHeightProof == null) return;
         logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
         await this.checkForClaims();
-        await this.updateAgentEntity(rootEm, {dailyTasksTimestamp: toBN(timestamp)});
+        await this.updateAgentEntity(rootEm, async (agentEnt) => {
+            agentEnt.dailyTasksTimestamp = toBN(timestamp);
+        });
     }
 
     /**
@@ -440,7 +442,10 @@ export class AgentBot {
             const amount = toBN(readAgentEnt.withdrawalAllowedAtAmount);
             const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
             if (successOrExpired) {
-                await this.updateAgentEntity(rootEm, { withdrawalAllowedAtTimestamp: BN_ZERO, withdrawalAllowedAtAmount: "" });
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
+                    agentEnt.withdrawalAllowedAtAmount = "";
+                });
             }
         }
     }
@@ -452,7 +457,10 @@ export class AgentBot {
             const amount = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
             const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
             if (successOrExpired) {
-                await this.updateAgentEntity(rootEm, { poolTokenRedemptionWithdrawalAllowedAtTimestamp: BN_ZERO, poolTokenRedemptionWithdrawalAllowedAtAmount: "" });
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+                });
             }
         }
     }
@@ -463,7 +471,11 @@ export class AgentBot {
         //Agent update feeBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
             const updatedOrExpired = await this.updateAgentSettings(toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtFeeBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
+                });
+            }
         }
         //Agent update poolFeeShareBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
@@ -472,7 +484,11 @@ export class AgentBot {
                 "poolFeeShareBIPS",
                 latestTimestamp
             );
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolFeeShareBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
+                });
+            }
         }
         //Agent update mintingVaultCollateralRatioBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
@@ -481,7 +497,11 @@ export class AgentBot {
                 "mintingVaultCollateralRatioBIPS",
                 latestTimestamp
             );
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtMintingVaultCrBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
+                });
+            }
         }
         //Agent update mintingPoolCollateralRatioBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
@@ -490,7 +510,11 @@ export class AgentBot {
                 "mintingPoolCollateralRatioBIPS",
                 latestTimestamp
             );
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtMintingPoolCrBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
+                });
+            }
         }
         //Agent update buyFAssetByAgentFactorBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
@@ -499,7 +523,11 @@ export class AgentBot {
                 "buyFAssetByAgentFactorBIPS",
                 latestTimestamp
             );
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
+                });
+            }
         }
         //Agent update poolExitCollateralRatioBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
@@ -508,7 +536,11 @@ export class AgentBot {
                 "poolExitCollateralRatioBIPS",
                 latestTimestamp
             );
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolExitCrBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
+                });
+            }
         }
         //Agent update poolTopupCollateralRatioBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
@@ -517,7 +549,11 @@ export class AgentBot {
                 "poolTopupCollateralRatioBIPS",
                 latestTimestamp
             );
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolTopupCrBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
+                });
+            }
         }
         //Agent update poolTopupTokenPriceFactorBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
@@ -526,7 +562,11 @@ export class AgentBot {
                 "poolTopupTokenPriceFactorBIPS",
                 latestTimestamp
             );
-            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: BN_ZERO });
+            if (updatedOrExpired) {
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
+                });
+            }
         }
     }
 
@@ -544,7 +584,10 @@ export class AgentBot {
                     await this.agent.confirmUnderlyingWithdrawal(readAgentEnt.underlyingWithdrawalConfirmTransaction);
                     await this.notifier.sendConfirmWithdrawUnderlying();
                     logger.info(`Agent ${this.agent.vaultAddress} confirmed underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                    await this.updateAgentEntity(rootEm, {underlyingWithdrawalAnnouncedAtTimestamp: BN_ZERO, underlyingWithdrawalConfirmTransaction: ""})
+                    await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                        agentEnt.underlyingWithdrawalConfirmTransaction = ""
+                    });
                 } else {
                     const withdrawalAllowedAt = toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
                     logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${withdrawalAllowedAt}. Current ${latestTimestamp}.`);
@@ -561,7 +604,11 @@ export class AgentBot {
                 await this.agent.cancelUnderlyingWithdrawal();
                 await this.notifier.sendCancelWithdrawUnderlying();
                 logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                await this.updateAgentEntity(rootEm, {underlyingWithdrawalAnnouncedAtTimestamp: BN_ZERO, underlyingWithdrawalConfirmTransaction: "", underlyingWithdrawalWaitingForCancelation: false})
+                await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                    agentEnt.underlyingWithdrawalWaitingForCancelation = false;
+                });
             } else {
                 logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
             }
@@ -646,7 +693,9 @@ export class AgentBot {
 
     async exitAvailable(rootEm: EM) {
         await this.agent.exitAvailable();
-        await this.updateAgentEntity(rootEm, {exitAvailableAllowedAtTimestamp: BN_ZERO})
+        await this.updateAgentEntity(rootEm, async (agentEnt) => {
+            agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+        });
         await this.notifier.sendAgentExitedAvailable();
         logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
     }
@@ -733,30 +782,21 @@ export class AgentBot {
     }
 
     /**
-     * Updates agent entity
-     * @param rootEm entity manager
-     * @param args fields with values to be updated
+     * Updates AgentEntity within a transactional context.
+     * @param rootEm root EntityManager to manage the database context
+     * @param modify asynchronous callback function that performs modifications on the retrieved AgentEntity
      */
-    async updateAgentEntity(rootEm: EM, args: { [key: string]: any }): Promise<void> {
+    async updateAgentEntity(rootEm: EM, modify: (agentEnt: AgentEntity) => Promise<void>): Promise<void> {
         await rootEm.transactional(async (em) => {
             const agentEnt: AgentEntity = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-
-            Object.assign(agentEnt, args);
-            //TODO (Urska): probably it should be in the following format
-            // Object.keys(args).forEach((key) => {
-            //     console.log(key);
-            //     if (key in agentEnt) {
-            //         agentEnt[key as keyof AgentEntity] = args[key as keyof AgentEntity];
-            //     }
-            // });
-
-            em.persist(agentEnt);
+            await modify(agentEnt);
+            await em.persistAndFlush(agentEnt);
         });
     }
 
     /**
-     * Fetches agent entity
-     * @param rootEm entity manager
+     * Fetches AgentEntity
+     * @param rootEm root EntityManager to manage the database context
      */
     async fetchAgentEntity(rootEm: EM): Promise<AgentEntity> {
         return await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);

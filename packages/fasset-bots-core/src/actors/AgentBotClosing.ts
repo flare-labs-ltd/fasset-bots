@@ -76,7 +76,10 @@ export class AgentBotClosing {
         if (freeVaultCollateralBalance.gt(BN_ZERO) && this.hasNoBackedFAssets(agentInfo)) {
             // announce withdraw class 1
             const withdrawalAllowedAt = await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance)
-            await this.bot.updateAgentEntity(rootEm, { destroyVaultCollateralWithdrawalAllowedAtTimestamp: withdrawalAllowedAt, destroyVaultCollateralWithdrawalAllowedAtAmount: freeVaultCollateralBalance.toString() });
+            await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+                agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
+            });
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} announced vault collateral withdrawal of
                 ${await this.bot.tokens.vaultCollateral.format(freeVaultCollateralBalance)} at ${readAgentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
@@ -91,7 +94,10 @@ export class AgentBotClosing {
         const latestTimestamp = await latestBlockTimestampBN();
         const successOrExpired = await this.bot.withdrawCollateral(withdrawAllowedAt, withdrawAmount, latestTimestamp, ClaimType.VAULT);
         if (successOrExpired) {
-            await this.bot.updateAgentEntity(rootEm, { destroyVaultCollateralWithdrawalAllowedAtTimestamp: BN_ZERO, destroyVaultCollateralWithdrawalAllowedAtAmount: "" });
+            await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = BN_ZERO;
+                agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = "";
+            });
         }
     }
 
@@ -106,7 +112,10 @@ export class AgentBotClosing {
         if (poolTokenBalance.gt(BN_ZERO) && this.hasNoBackedFAssets(agentInfo)) {
             // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
             const redemptionAllowedAt = await this.agent.announcePoolTokenRedemption(poolTokenBalance);
-            await this.bot.updateAgentEntity(rootEm, { destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp: redemptionAllowedAt, destroyPoolTokenRedemptionWithdrawalAllowedAtAmount: poolTokenBalance.toString() });
+            await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = redemptionAllowedAt;
+                agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
+            });
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} announced pool token redemption of
                 ${await this.bot.tokens.poolToken.format(poolTokenBalance)} at ${readAgentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp}.`);
@@ -121,7 +130,10 @@ export class AgentBotClosing {
         const latestTimestamp = await latestBlockTimestampBN();
         const successOrExpired = await this.bot.withdrawCollateral(withdrawAllowedAt, withdrawAmount, latestTimestamp, ClaimType.POOL);
         if (successOrExpired) {
-            await this.bot.updateAgentEntity(rootEm, { destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp: BN_ZERO, destroyPoolTokenRedemptionWithdrawalAllowedAtAmount: "" });
+            await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+                agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = "";
+            });
         }
     }
 
@@ -132,7 +144,10 @@ export class AgentBotClosing {
         const everythingClean = totalPoolTokens.eq(BN_ZERO) && totalVaultCollateral.eq(BN_ZERO) && this.hasNoBackedFAssets(agentInfo);
         if (everythingClean) {
             const destroyAllowedAt = await this.agent.announceDestroy();
-            await this.bot.updateAgentEntity(rootEm, { waitingForDestructionTimestamp: destroyAllowedAt, waitingForDestructionCleanUp: false });
+            await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
+                agentEnt.waitingForDestructionCleanUp = false;
+            });
             await this.notifier.sendAgentAnnounceDestroy();
             logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
         }
@@ -147,7 +162,10 @@ export class AgentBotClosing {
             if (toBN(readAgentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
                 // agent can be destroyed
                 await this.agent.destroy();
-                await this.handleAgentDestroyed(rootEm, { waitingForDestructionTimestamp: BN_ZERO });
+                await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.waitingForDestructionTimestamp = BN_ZERO;
+                });
+                await this.handleAgentDestroyed(rootEm);
             } else {
                 const allowedIn = toBN(readAgentEnt.waitingForDestructionTimestamp).sub(latestTimestamp);
                 logger.info(`Agent ${this.agent.vaultAddress} cannot be destroyed yet. Allowed in ${allowedIn} seconds.`);
@@ -155,8 +173,10 @@ export class AgentBotClosing {
         }
     }
 
-    async handleAgentDestroyed(rootEm: EM, fields_to_update: { [key: string]: any } = {}) {
-        await this.bot.updateAgentEntity(rootEm, { active: false, ...fields_to_update });
+    async handleAgentDestroyed(rootEm: EM) {
+        await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+            agentEnt.active = false;
+        });
         await this.notifier.sendAgentDestroyed();
         logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
     }
