@@ -1,10 +1,20 @@
 import Web3 from "web3";
 import { PromiEvent, TransactionReceipt } from "web3-core";
+import { sleep } from "../helpers";
 import { CancelToken, CancelTokenRegistration, cancelableSleep } from "./cancelable-promises";
-import { captureStackTrace, fixErrorStack, transactionLogger } from "./transaction-logging";
+import { ErrorWithCause, extractErrorMessage, transactionLogger } from "./transaction-logging";
 import { TransactionWaitFor } from "./types";
 
 export class FinalizationTimeoutError extends Error {}
+
+export class TransactionSubmitRevertedError extends ErrorWithCause {
+    constructor(message: string, cause: any, public transactionHash: string) {
+        super(message, cause);
+    }
+}
+
+export class UnexpectedTransactionError extends ErrorWithCause {}
+
 
 /**
  * Wait for finalization of a method, depending on the provided `waitFor` parameter.
@@ -57,8 +67,7 @@ export function waitForReceipt(promiEvent: PromiEvent<TransactionReceipt>, cance
     let cancelRegistration: CancelTokenRegistration;
     return new Promise<TransactionReceipt>((resolve, reject) => {
         promiEvent.on("receipt", (receipt) => resolve(receipt)).catch(ignore);
-        const parentStack = captureStackTrace(2);
-        promiEvent.on("error", (error) => reject(fixErrorStack(error, parentStack))).catch(ignore);
+        promiEvent.on("error", (error) => reject(wrapTransactionError(error))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();
@@ -84,8 +93,7 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
                 }
             })
             .catch(ignore);
-        const parentStack = captureStackTrace(2);
-        promiEvent.on("error", (error) => reject(fixErrorStack(error, parentStack))).catch(ignore);
+        promiEvent.on("error", (error) => reject(wrapTransactionError(error))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
         cancelRegistration.unregister();
@@ -142,6 +150,34 @@ export async function waitForNonceIncrease(
         }
         await cancelableSleep(pollMS, cancelToken);
     }
+}
+
+export async function waitAfterError(web3: Web3, waitFor: TransactionWaitFor) {
+    if (waitFor.what === "nonceIncrease" && waitFor.extra) {
+        await waitBlocks(web3, waitFor.extra.blocks, waitFor.extra.timeMS, waitFor.pollMS);
+    } else if (waitFor.what === "confirmations") {
+        await waitBlocks(web3, waitFor.confirmations, waitFor.timeoutMS ?? 120_000, 500);
+    }
+}
+
+async function waitBlocks(web3: Web3, blocks: number, timeMS: number, pollMS: number) {
+    const startBlock = await web3.eth.getBlockNumber();
+    const startTime = new Date().getTime();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        await sleep(pollMS);
+        const block = await web3.eth.getBlockNumber();
+        const time = new Date().getTime();
+        if (block >= startBlock + blocks || time >= startTime + timeMS) {
+            break;
+        }
+    }
+}
+
+function wrapTransactionError(error: any) {
+    const transactionHash = error?.receipt?.transactionHash ?? error?.transactionHash;
+    const message = extractErrorMessage(error, "Unexpected transaction error");
+    return transactionHash ? new TransactionSubmitRevertedError(message, error, transactionHash) : new UnexpectedTransactionError(message, error);
 }
 
 /* istanbul ignore next */

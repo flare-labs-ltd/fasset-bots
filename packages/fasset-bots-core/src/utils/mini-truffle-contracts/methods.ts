@@ -4,9 +4,14 @@ import { AbiItem, AbiOutput } from "web3-utils";
 import { getOrCreate, systemTimestamp, toBN } from "../helpers";
 import { web3DeepNormalize } from "../web3normalize";
 import { MiniTruffleContract, MiniTruffleContractInstance } from "./contracts";
+import { TransactionSubmitRevertedError, waitAfterError } from "./finalization";
 import { submitTransaction } from "./submit-transaction";
-import { fixErrorStack, transactionLogger } from "./transaction-logging";
+import { ErrorWithCause, extractErrorMessage, transactionLogger } from "./transaction-logging";
 import { ContractSettings } from "./types";
+
+export class InvalidMethodInvocationError extends Error {}
+
+export class TransactionFailedError extends ErrorWithCause {}
 
 /**
  * Constructor for instances of given contract.
@@ -167,10 +172,10 @@ function decodeArgument(abiItem: AbiOutput, value: any) {
 function splitMethodArgs(method: AbiItem | undefined, args: any[]): [methodArgs: any[], config: TransactionConfig] {
     const paramsLen = method?.inputs?.length ?? 0;
     if (args.length < paramsLen) {
-        throw new Error("Not enough arguments");
+        throw new InvalidMethodInvocationError("Not enough arguments");
     }
     if (args.length > paramsLen + 1) {
-        throw new Error("Too many arguments");
+        throw new InvalidMethodInvocationError("Too many arguments");
     }
     return args.length > paramsLen ? [args.slice(0, paramsLen), args[paramsLen]] : [args, {}];
 }
@@ -197,19 +202,28 @@ async function executeMethodSend(settings: ContractSettings, transactionConfig: 
     const { web3, gasMultiplier, waitFor } = settings;
     const config = mergeConfig(settings, transactionConfig);
     if (typeof config.from !== "string") {
-        throw new Error("'from' field is mandatory");
+        throw new InvalidMethodInvocationError("'from' field is mandatory");
     }
     const transactionId = ++lastTransactionId;
     if (config.gas == null && settings.gas == "auto") {
         transactionLogger.info("SEND (estimate gas)", { transactionId, waitFor, transaction: config });
-        const gas = await web3.eth.estimateGas(config).catch((e) => throwWrappedError(transactionId, e));
+        const gas = await web3.eth.estimateGas(config).catch((e) => throwWrappedError(transactionId, e, "estimateGas"));
         config.gas = Math.floor(gas * gasMultiplier);
     }
     try {
         return await submitTransaction(transactionId, settings, config);
-    } catch (e: any) {
-        transactionLogger.info("ERROR", { transactionId, stack: e.stack });
-        throw e; // should be wrapped already
+    } catch (error) {
+        if (error instanceof TransactionSubmitRevertedError) {
+            await waitAfterError(web3, settings.waitFor);
+            /* istanbul ignore next */
+            const transaction = await web3.eth.getTransaction(error.transactionHash).catch(e => null);
+            if (transaction != null && transaction.blockNumber != null) {
+                // retry transaction with call to get the revert reason
+                await web3.eth.call(config, transaction.blockNumber)
+                    .catch((e) => throwWrappedError(transactionId, error, "send", e.message));
+            }
+        }
+        throwWrappedError(transactionId, error, "send");
     }
 }
 
@@ -217,7 +231,7 @@ async function executeMethodCall(settings: ContractSettings, transactionConfig: 
     const config = mergeConfig(settings, transactionConfig);
     const transactionId = ++lastTransactionId;
     transactionLogger.info("CALL", { transactionId, transaction: config });
-    return await settings.web3.eth.call(config).catch((e) => throwWrappedError(transactionId, e));
+    return await settings.web3.eth.call(config).catch((e) => throwWrappedError(transactionId, e, "call"));
 }
 
 /**
@@ -227,7 +241,7 @@ async function executeMethodEstimateGas(settings: ContractSettings, transactionC
     const config = mergeConfig(settings, transactionConfig);
     const transactionId = ++lastTransactionId;
     transactionLogger.info("ESTIMATE_GAS", { transactionId, transaction: config });
-    return await settings.web3.eth.estimateGas(config).catch((e) => throwWrappedError(transactionId, e));
+    return await settings.web3.eth.estimateGas(config).catch((e) => throwWrappedError(transactionId, e, "estimateGas"));
 }
 
 /**
@@ -244,8 +258,9 @@ function mergeConfig(settings: ContractSettings, transactionConfig: TransactionC
     return config;
 }
 
-function throwWrappedError(transactionId: number, e: any): never {
-    const wrapped = fixErrorStack(e, 2);
-    transactionLogger.info("ERROR", { transactionId, stack: wrapped.stack });
+function throwWrappedError(transactionId: number, error: unknown, executionType: "call" | "send" | "estimateGas", forceMessage?: string): never {
+    const message = `${forceMessage ?? extractErrorMessage(error)}`;
+    const wrapped = new TransactionFailedError(message, error);
+    transactionLogger.info(`ERROR [${executionType}]`, { transactionId, stack: wrapped.fullStack() });
     throw wrapped;
 }

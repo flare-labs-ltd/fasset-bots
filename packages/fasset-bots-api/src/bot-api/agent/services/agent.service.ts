@@ -481,8 +481,10 @@ export class AgentService {
                 const mintedLots = Number(info.mintedUBA) / lotSize;
                 const vaultCR = Number(info.mintingVaultCollateralRatioBIPS) / MAX_BIPS;
                 const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
+                const mintedAmount = Number(info.mintedUBA) / Number(settings.assetUnitUBA);
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
-                    freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: info.mintedUBA, vaultAmount: info.totalVaultCollateralWei,
+                    freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
+                    vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), 6, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
                 vaultsForFasset.push(vaultInfo);

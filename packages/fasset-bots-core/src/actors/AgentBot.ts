@@ -49,6 +49,18 @@ export enum ClaimType {
 
 export const PERFORM_DAILY_TASKS_EVERY = 1 * DAYS;
 
+/**
+ * Data that has to persist throughout a program, but not forever.
+ * It cannot be stored directly in AgentBot class, because that is re-created on every loop of AgentBotRunner.
+ */
+export class AgentBotTransientStorage {
+    // used by AgentBotEventReader.checkForPriceChangeEvents to track the last block for which PriceFinalized event was called
+    lastPriceReaderEventBlock = -1;
+
+    // used by getUnderlyingBlockHeightProof to detect when the wait is too long and agent has to be notified
+    waitingForLatestBlockProofSince = BN_ZERO;
+}
+
 export class AgentBot {
     static deepCopyWithObjectCreate = true;
 
@@ -70,8 +82,7 @@ export class AgentBot {
     // only set when created by an AgentBotRunner
     runner?: IRunner;
     timekeeper?: ITimeKeeper;
-
-    waitingForLatestBlockProofSince = BN_ZERO;
+    transientStorage: AgentBotTransientStorage = new AgentBotTransientStorage();    // changed when running in AgentBotRunner
 
     static async createUnderlyingAddress(rootEm: EM, context: IAssetAgentContext) {
         return await rootEm.transactional(async () => await context.wallet.createAccount());
@@ -689,26 +700,26 @@ export class AgentBot {
     }
 
     /**
-     * Get the latest underlying block height exists proof from the timekeeper or
-     * @returns
+     * Get the latest underlying block height exists proof from the timekeeper
      */
     async getUnderlyingBlockHeightProof() {
         assertNotNull(this.timekeeper, "Cannot obtain underlying block height - timekeeper not set.");
         // obtain the proof
         const proof = this.timekeeper.latestProof;
         if (attestationProved(proof)) {
-            this.waitingForLatestBlockProofSince = BN_ZERO;
+            this.transientStorage.waitingForLatestBlockProofSince = BN_ZERO;
             return proof;
         }
         // if waiting for proof for more than expected time, notify agent and restart wait
         const timestamp = await latestBlockTimestampBN();
-        if (this.waitingForLatestBlockProofSince.gt(BN_ZERO) && timestamp.sub(this.waitingForLatestBlockProofSince).gtn(10 * MINUTES)) {
+        const waitingSince = this.transientStorage.waitingForLatestBlockProofSince;
+        if (waitingSince.gt(BN_ZERO) && timestamp.sub(waitingSince).gtn(10 * MINUTES)) {
             await this.notifier.sendDailyTaskNoProofObtained(10);
-            this.waitingForLatestBlockProofSince = timestamp;
+            this.transientStorage.waitingForLatestBlockProofSince = timestamp;
         }
         // start waiting for proof
-        if (this.waitingForLatestBlockProofSince.eq(BN_ZERO)) {
-            this.waitingForLatestBlockProofSince = timestamp;
+        if (this.transientStorage.waitingForLatestBlockProofSince.eq(BN_ZERO)) {
+            this.transientStorage.waitingForLatestBlockProofSince = timestamp;
         }
     }
 
