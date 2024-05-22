@@ -5,10 +5,10 @@ import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { web3 } from "../utils";
-import { sleep } from "../utils/helpers";
+import { getOrCreate, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { AgentBot, ITimeKeeper } from "./AgentBot";
+import { AgentBot, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
 
 export interface ITimeKeeperService {
     get(symbol: string): ITimeKeeper;
@@ -29,6 +29,8 @@ export class AgentBotRunner {
     public running = false;
     public stopRequested = false;
     public restartRequested = false;
+
+    private transientStorage: Map<string, AgentBotTransientStorage> = new Map();
 
     async run(): Promise<void> {
         this.stopRequested = false;
@@ -79,6 +81,7 @@ export class AgentBotRunner {
                 const agentBot = await AgentBot.fromEntity(context, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
                 agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.symbol);
+                agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);

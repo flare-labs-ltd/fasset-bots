@@ -6,6 +6,8 @@ import { logger } from "../logger";
 const SLEEP_TIME = 100;
 const SLEEP_TIME_AFTER_EXPIRATION = 2000;
 
+export class AddressLockTimeoutError extends Error {}
+
 export interface LockId {
     id: string;
     address: string;
@@ -52,7 +54,7 @@ export class MemoryAddressLocks implements AddressLocks {
             }
             await sleep(100);
         }
-        throw new Error("Timeout waiting to obtain address nonce lock");
+        throw new AddressLockTimeoutError("Timeout waiting to obtain address nonce lock");
     }
 
     async release(lock: LockId) {
@@ -117,7 +119,7 @@ export class FilesystemAddressLocks implements AddressLocks {
             }
             await sleep(SLEEP_TIME);
         }
-        throw new Error("Timeout waiting to obtain address nonce lock");
+        throw new AddressLockTimeoutError("Timeout waiting to obtain address nonce lock");
     }
 
     async release(lock: LockId) {

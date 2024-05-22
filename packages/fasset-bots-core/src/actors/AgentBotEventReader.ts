@@ -24,7 +24,7 @@ export class AgentBotEventReader {
 
     eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager, priceChangeEmitter: this.context.priceChangeEmitter });
 
-    lastPriceReaderEventBlock = -1;
+
     maxHandleEventBlocks = 1000;
 
     async lastFinalizedBlock() {
@@ -152,17 +152,20 @@ export class AgentBotEventReader {
         }
     }
 
+
     /**
      * Check if any new PriceEpochFinalized events happened, which means that it may be necessary to topup collateral.
      */
     async checkForPriceChangeEvents() {
         let needToCheckPrices: boolean;
-        if (this.lastPriceReaderEventBlock >= 0) {
-            [needToCheckPrices, this.lastPriceReaderEventBlock] = await this.priceChangeEventHappened(this.lastPriceReaderEventBlock + 1);
+        let lastPriceReaderEventBlock = this.bot.transientStorage.lastPriceReaderEventBlock;
+        if (lastPriceReaderEventBlock >= 0) {
+            [needToCheckPrices, lastPriceReaderEventBlock] = await this.priceChangeEventHappened(lastPriceReaderEventBlock + 1);
         } else {
             needToCheckPrices = true;   // this is first time in this method, so check is necessary
-            this.lastPriceReaderEventBlock = await this.lastFinalizedBlock() + 1;
+            lastPriceReaderEventBlock = await this.lastFinalizedBlock() + 1;
         }
+        this.bot.transientStorage.lastPriceReaderEventBlock = lastPriceReaderEventBlock;
         if (needToCheckPrices) {
             logger.info(`Agent ${this.agentVaultAddress} received event 'PriceEpochFinalized'.`);
             await this.bot.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
