@@ -531,7 +531,7 @@ export class AgentBot {
     }
 
     private async handleUnderlyingWithdrawal(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm);//TODO (Urska): is it enough to read only once
+        const readAgentEnt = await this.fetchAgentEntity(rootEm); //TODO (Urska): is it enough to read only once
         // confirm underlying withdrawal
         if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
             logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
@@ -656,15 +656,15 @@ export class AgentBot {
      * @param agentEnt agent entity
      * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED -> EXITED
      */
-    async getExitAvailableProcessStatus(agentEnt: AgentEntity) {//TODO (Urska) - use read
+    async getExitAvailableProcessStatus(agentEnt: AgentEntity) { //TODO (Urska) - use read?
         const agentInfo = await this.agent.getAgentInfo();
         if (!agentInfo.publiclyAvailable) return "EXITED";
         return this.announcementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
     }
 
     /**
-     * Return status of any action requiring announcement (wwthdrawal, exit, etc.)
-     * @param actionAllowedAt the saved timestamp of ehen the action is allowed
+     * Return status of any action requiring announcement (withdrawal, exit, etc.)
+     * @param actionAllowedAt the saved timestamp of when the action is allowed
      * @param currentTimestamp the current timestamp
      * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED
      */
@@ -728,7 +728,7 @@ export class AgentBot {
      * @param em entity manager
      * @param vaultAddress agent's vault address
      */
-    async handleAgentDestroyed(em: EM): Promise<void> { //TODO (Urska)
+    async handleAgentDestroyed(em: EM): Promise<void> {
         await new AgentBotClosing(this).handleAgentDestroyed(em);
     }
 
@@ -737,13 +737,13 @@ export class AgentBot {
             const agentEnt: AgentEntity = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
 
             Object.assign(agentEnt, args);
-            //TODO
-            Object.keys(args).forEach((key) => {
-                console.log(key);
-                if (key in agentEnt) {
-                    // agentEnt[key as keyof AgentEntity] = args[key as keyof AgentEntity];
-                }
-            });
+            //TODO (Urska): probably it should be in the following format
+            // Object.keys(args).forEach((key) => {
+            //     console.log(key);
+            //     if (key in agentEnt) {
+            //         agentEnt[key as keyof AgentEntity] = args[key as keyof AgentEntity];
+            //     }
+            // });
 
             em.persist(agentEnt);
         });
