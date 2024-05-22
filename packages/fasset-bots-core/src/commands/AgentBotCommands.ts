@@ -263,7 +263,7 @@ export class AgentBotCommands {
     async exitAvailableList(agentVault: string): Promise<void> {
         const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
         try {
-            await agentBot.exitAvailable(agentEnt);
+            await agentBot.exitAvailable(this.orm.em);
         } catch (error) {
             if (errorIncluded(error, ["exit not announced"])) {
                 throw new CommandLineError(`Agent ${agentEnt.vaultAddress} cannot exit available list - exit not announced.`);
