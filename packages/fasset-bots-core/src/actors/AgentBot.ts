@@ -732,6 +732,11 @@ export class AgentBot {
         await new AgentBotClosing(this).handleAgentDestroyed(em);
     }
 
+    /**
+     * Updates agent entity
+     * @param rootEm entity manager
+     * @param args fields with values to be updated
+     */
     async updateAgentEntity(rootEm: EM, args: { [key: string]: any }): Promise<void> {
         await rootEm.transactional(async (em) => {
             const agentEnt: AgentEntity = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -749,6 +754,10 @@ export class AgentBot {
         });
     }
 
+    /**
+     * Fetches agent entity
+     * @param rootEm entity manager
+     */
     async fetchAgentEntity(rootEm: EM): Promise<AgentEntity> {
         return await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
     }
