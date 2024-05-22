@@ -3,7 +3,7 @@ export { ActorBaseRunner } from "./actors/ActorBaseRunner";
 export { AgentBotCommands } from "./commands/AgentBotCommands";
 export { AgentBotOwnerValidation, throwingReporter, printingReporter } from "./commands/AgentBotOwnerValidation";
 export { AgentBotRunner } from "./actors/AgentBotRunner";
-export { TimeKeeper, TimeKeeperQueryWindow } from "./actors/TimeKeeper";
+export { TimeKeeper, TimeKeeperQueryWindow, TimekeeperTimingConfig } from "./actors/TimeKeeper";
 export { TimeKeeperService } from "./actors/TimeKeeperService";
 export { UserBotCommands } from "./commands/UserBotCommands";
 export { PoolUserBotCommands } from "./commands/PoolUserBotCommands";

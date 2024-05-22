@@ -8,15 +8,42 @@ import { CancelToken, PromiseCancelled, cancelableSleep } from "../utils/mini-tr
 
 export type TimeKeeperQueryWindow = number | "auto";
 
+export interface TimekeeperTimingConfig {
+    /**
+     * Smallest query window on attestation client, in seconds (if set to "auto", value from asset manager settings is used).
+     */
+    queryWindow: TimeKeeperQueryWindow;
+
+    /**
+     * The amount of time (in milliseconds) between starting two consecutive updates.
+     */
+    updateIntervalMs: number;
+
+    /**
+     * Sleep time (in milliseconds) between checks for finalization.
+     */
+    loopDelayMs: number;
+
+    /**
+     * To avoid too many updates of independent bots, only execute update if the current stored underlying time is more than
+     * this amount of seconds older of the underlying time in this timekeeper's proof.
+     */
+    maxUnderlyingTimestampAgeS: number;
+
+    /**
+     * To prevent many bots submitting time concurrently (immediately after SC round finalization),
+     * delay execution time by a random number of milliseconds, up to this amount.
+     */
+    maxUpdateTimeDelayMs: number;
+}
+
 export class TimeKeeper {
     static deepCopyWithObjectCreate = true;
 
     constructor(
         public context: ITimekeeperContext,
         public address: string,
-        public queryWindow: TimeKeeperQueryWindow,
-        public updateIntervalMs: number,
-        public loopDelayMs: number,
+        public timing: TimekeeperTimingConfig,
     ) {}
 
     private timer?: NodeJS.Timeout;
@@ -35,15 +62,14 @@ export class TimeKeeper {
     async updateUnderlyingBlock() {
         this.cancelUpdate = new CancelToken();
         try {
-            const queryWindow = this.queryWindow === "auto" ? await attestationWindowSeconds(this.context.assetManager) : this.queryWindow;
+            const queryWindow = this.timing.queryWindow === "auto" ? await attestationWindowSeconds(this.context.assetManager) : this.timing.queryWindow;
             const proof = await this.proveConfirmedBlockHeightExists(queryWindow, this.cancelUpdate);
-            await this.context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: this.address });
-            const { 0: underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
-            logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${underlyingBlock} timestamp=${underlyingTimestamp}`);
             // update last proof (make sure that block number is increasing, if something weird happens)
             if (this.latestProof == undefined || Number(this.latestProof.data.requestBody.blockNumber) < Number(proof.data.requestBody.blockNumber)) {
                 this.latestProof = proof;
             }
+            // update block on chain
+            await this.executeCurrentBlockUpdate(proof, this.cancelUpdate);
         } catch (error) {
             if (error instanceof PromiseCancelled) return;
             console.error(`Error updating underlying block for asset manager ${this.context.assetManager.address} with user ${this.address}: ${error}`);
@@ -51,6 +77,19 @@ export class TimeKeeper {
         } finally {
             this.cancelUpdate = undefined;
         }
+    }
+
+    async executeCurrentBlockUpdate(proof: ConfirmedBlockHeightExists.Proof, cancelUpdate: CancelToken) {
+        const delay = Math.floor(Math.random() * this.timing.maxUpdateTimeDelayMs);
+        await cancelableSleep(delay, cancelUpdate);
+        const { 0: _underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
+        if (Number(proof.data.responseBody.blockTimestamp) - Number(underlyingTimestamp) < this.timing.maxUnderlyingTimestampAgeS) {
+            logger.info(`Underlying block already refreshed, skipping update.`)
+            return;
+        }
+        await this.context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: this.address });
+        const { 0: newUnderlyingBlock, 1: newUnderlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
+        logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${newUnderlyingBlock} timestamp=${newUnderlyingTimestamp}`);
     }
 
     updateRunning() {
@@ -67,7 +106,7 @@ export class TimeKeeper {
             throw new Error("Timekeeper: balanceDecreasingTransaction: not proved");
         }
         while (!(await this.context.attestationProvider.stateConnector.roundFinalized(request.round))) {
-            await cancelableSleep(this.loopDelayMs, cancelUpdate);
+            await cancelableSleep(this.timing.loopDelayMs, cancelUpdate);
         }
         logger.info(`Obtained underlying block proof for asset manager ${this.context.assetManager.address}, updating with user ${this.address}...`);
         const proof = await this.context.attestationProvider.obtainConfirmedBlockHeightExistsProof(request.round, request.data);
@@ -82,7 +121,7 @@ export class TimeKeeper {
      */
     run() {
         setImmediate(() => void this.updateUnderlyingBlock()); // do not wait whole interval for start
-        this.timer = setInterval(() => void this.updateUnderlyingBlock(), this.updateIntervalMs);
+        this.timer = setInterval(() => void this.updateUnderlyingBlock(), this.timing.updateIntervalMs);
     }
 
     /**
