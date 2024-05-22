@@ -749,6 +749,8 @@ export class AgentBotCommands {
                 throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
             } else if (errorIncluded(e, ["invalid character in suffix"])) {
                 throw new CommandLineError(`Collateral pool token suffix "${suffix}" contains invalid characters.`);
+            } else if (errorIncluded(e, ["address validity not proved"])) {
+                return; // the expected error
             }
             logger.warn(`Unknown error validating pool suffix "${suffix}":`, e);
         }
