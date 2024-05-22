@@ -669,9 +669,9 @@ describe("Agent bot unit tests", () => {
         // handleDailyTasks
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const lastHandledTimestamp = Number(agentEnt.dailyTasksTimestamp);
-        expect(Number(agentBot.waitingForLatestBlockProofSince)).to.be.equal(0);
+        expect(Number(agentBot.transientStorage.waitingForLatestBlockProofSince)).to.be.equal(0);
         await agentBot.handleDailyTasks(orm.em);
-        expect(Number(agentBot.waitingForLatestBlockProofSince)).not.to.be.equal(0);
+        expect(Number(agentBot.transientStorage.waitingForLatestBlockProofSince)).not.to.be.equal(0);
         orm.em.clear();
         const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(Number(agentEnt2.dailyTasksTimestamp)).to.be.equal(lastHandledTimestamp);
