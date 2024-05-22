@@ -118,22 +118,22 @@ export class AgentBot {
         const lastBlock = await web3.eth.getBlockNumber();
         const agent = await Agent.create(context, owner, addressValidityProof, agentSettingsConfig);
         // save state
-        return await rootEm.transactional(async (em) => {
-            const agentEntity = new AgentEntity();
-            agentEntity.chainId = context.chainInfo.chainId.sourceId;
-            agentEntity.chainSymbol = context.chainInfo.symbol;
-            agentEntity.ownerAddress = agent.owner.managementAddress;
-            agentEntity.vaultAddress = agent.vaultAddress;
-            agentEntity.underlyingAddress = agent.underlyingAddress;
-            agentEntity.active = true;
-            agentEntity.currentEventBlock = lastBlock + 1;
-            agentEntity.collateralPoolAddress = agent.collateralPool.address;
-            em.persist(agentEntity);
-            logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
-                underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
-            const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-            return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
-        });
+        const agentEntity = new AgentEntity();
+        agentEntity.chainId = context.chainInfo.chainId.sourceId;
+        agentEntity.chainSymbol = context.chainInfo.symbol;
+        agentEntity.ownerAddress = agent.owner.managementAddress;
+        agentEntity.vaultAddress = agent.vaultAddress;
+        agentEntity.underlyingAddress = agent.underlyingAddress;
+        agentEntity.active = true;
+        agentEntity.currentEventBlock = lastBlock + 1;
+        agentEntity.collateralPoolAddress = agent.collateralPool.address;
+        await rootEm.persistAndFlush(agentEntity);
+
+        logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
+            underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
+
+        const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
+        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
     }
 
     /**
@@ -328,15 +328,14 @@ export class AgentBot {
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
-        const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        const readAgentEnt = await this.fetchAgentEntity(rootEm)
         const timestamp = await latestBlockTimestampBN();
-        if (timestamp.sub(agentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
+        if (timestamp.sub(readAgentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
         const blockHeightProof = await this.getUnderlyingBlockHeightProof();
         if (blockHeightProof == null) return;
         logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
         await this.checkForClaims();
-        agentEnt.dailyTasksTimestamp = toBN(timestamp);
-        await rootEm.persistAndFlush(agentEnt);
+        await this.updateAgentEntity(rootEm, {dailyTasksTimestamp: toBN(timestamp)});
     }
 
     /**
@@ -407,129 +406,153 @@ export class AgentBot {
     async handleTimelockedProcesses(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
-        await rootEm.transactional(async (em) => {
-            const agentEnt: AgentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            const latestTimestamp = await latestBlockTimestampBN();
-            await this.handleWaitForCollateralWithdrawal(agentEnt, latestTimestamp);
-            await this.handleWaitForPoolTokenRedemption(agentEnt, latestTimestamp);
-            await this.handleWaitForAgentSettingUpdate(agentEnt, latestTimestamp);
-            await this.handleWaitAgentExitAvailable(agentEnt, latestTimestamp);
-            await this.handleUnderlyingWithdrawal(agentEnt, latestTimestamp);
-            await this.handleAgentCloseProcess(agentEnt);
-            em.persist(agentEnt);
-        });
+        const latestTimestamp = await latestBlockTimestampBN();
+        await this.handleWaitForCollateralWithdrawal(rootEm, latestTimestamp);
+        await this.handleWaitForPoolTokenRedemption(rootEm, latestTimestamp);
+        await this.handleWaitForAgentSettingUpdate(rootEm, latestTimestamp);
+        await this.handleWaitAgentExitAvailable(rootEm, latestTimestamp);
+        await this.handleUnderlyingWithdrawal(rootEm, latestTimestamp);
+        await this.handleAgentCloseProcess(rootEm);
         logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleAgentsWaitingsAndCleanUp'.`);
     }
 
-    private async handleAgentCloseProcess(agentEnt: AgentEntity) {
-        const closingHandler = new AgentBotClosing(this, agentEnt);
-        await closingHandler.handleAgentCloseProcess();
+
+    private async handleAgentCloseProcess(rootEm: EM) {
+        const closingHandler = new AgentBotClosing(this);
+        await closingHandler.handleAgentCloseProcess(rootEm);
     }
 
-    async handleWaitForCollateralWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const allowedAt = toBN(agentEnt.withdrawalAllowedAtTimestamp);
-            const amount = toBN(agentEnt.withdrawalAllowedAtAmount);
+    async handleWaitForCollateralWithdrawal(rootEm: EM, latestTimestamp: BN) {
+        const readAgentEnt = await this.fetchAgentEntity(rootEm);
+        if (toBN(readAgentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+            const allowedAt = toBN(readAgentEnt.withdrawalAllowedAtTimestamp);
+            const amount = toBN(readAgentEnt.withdrawalAllowedAtAmount);
             const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
             if (successOrExpired) {
-                agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
-                agentEnt.withdrawalAllowedAtAmount = "";
+                await this.updateAgentEntity(rootEm, { withdrawalAllowedAtTimestamp: BN_ZERO, withdrawalAllowedAtAmount: "" });
             }
         }
     }
 
-    async handleWaitForPoolTokenRedemption(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const allowedAt = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
-            const amount = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+    async handleWaitForPoolTokenRedemption(rootEm: EM, latestTimestamp: BN) {
+        const readAgentEnt = await this.fetchAgentEntity(rootEm);
+        if (toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+            const allowedAt = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
+            const amount = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
             const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
             if (successOrExpired) {
-                agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+                await this.updateAgentEntity(rootEm, { poolTokenRedemptionWithdrawalAllowedAtTimestamp: BN_ZERO, poolTokenRedemptionWithdrawalAllowedAtAmount: "" });
             }
         }
     }
 
     // Agent settings update
-    private async handleWaitForAgentSettingUpdate(agentEnt: AgentEntity, latestTimestamp: BN) {
+    private async handleWaitForAgentSettingUpdate(rootEm: EM, latestTimestamp: BN) {
+        const readAgentEnt = await this.fetchAgentEntity(rootEm); //TODO (Urska): is it enough to fetch only once?
         //Agent update feeBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtFeeBIPS: BN_ZERO });
         }
         //Agent update poolFeeShareBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS), "poolFeeShareBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(
+                toBN(readAgentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS),
+                "poolFeeShareBIPS",
+                latestTimestamp
+            );
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolFeeShareBIPS: BN_ZERO });
         }
         //Agent update mintingVaultCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(
+                toBN(readAgentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS),
+                "mintingVaultCollateralRatioBIPS",
+                latestTimestamp
+            );
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtMintingVaultCrBIPS: BN_ZERO });
         }
         //Agent update mintingPoolCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(
+                toBN(readAgentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS),
+                "mintingPoolCollateralRatioBIPS",
+                latestTimestamp
+            );
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtMintingPoolCrBIPS: BN_ZERO });
         }
         //Agent update buyFAssetByAgentFactorBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS), "buyFAssetByAgentFactorBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(
+                toBN(readAgentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS),
+                "buyFAssetByAgentFactorBIPS",
+                latestTimestamp
+            );
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: BN_ZERO });
         }
         //Agent update poolExitCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(
+                toBN(readAgentEnt.agentSettingUpdateValidAtPoolExitCrBIPS),
+                "poolExitCollateralRatioBIPS",
+                latestTimestamp
+            );
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolExitCrBIPS: BN_ZERO });
         }
         //Agent update poolTopupCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(
+                toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS),
+                "poolTopupCollateralRatioBIPS",
+                latestTimestamp
+            );
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolTopupCrBIPS: BN_ZERO });
         }
         //Agent update poolTopupTokenPriceFactorBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS), "poolTopupTokenPriceFactorBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
+        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
+            const updatedOrExpired = await this.updateAgentSettings(
+                toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS),
+                "poolTopupTokenPriceFactorBIPS",
+                latestTimestamp
+            );
+            if (updatedOrExpired) await this.updateAgentEntity(rootEm, { agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: BN_ZERO });
         }
     }
 
-    private async handleUnderlyingWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
+    private async handleUnderlyingWithdrawal(rootEm: EM, latestTimestamp: BN) {
+        const readAgentEnt = await this.fetchAgentEntity(rootEm);//TODO (Urska): is it enough to read only once
         // confirm underlying withdrawal
-        if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
+        if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
             logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
             // agent waiting for underlying withdrawal
-            if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
+            if (readAgentEnt.underlyingWithdrawalConfirmTransaction.length) {
                 const settings = await this.context.assetManager.getSettings();
                 const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
-                if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                     // agent can confirm underlying withdrawal
-                    await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
+                    await this.agent.confirmUnderlyingWithdrawal(readAgentEnt.underlyingWithdrawalConfirmTransaction);
                     await this.notifier.sendConfirmWithdrawUnderlying();
-                    logger.info(`Agent ${this.agent.vaultAddress} confirmed underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                    logger.info(`Agent ${this.agent.vaultAddress} confirmed underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                    await this.updateAgentEntity(rootEm, {underlyingWithdrawalAnnouncedAtTimestamp: BN_ZERO, underlyingWithdrawalConfirmTransaction: ""})
                 } else {
-                    const withdrawalAllowedAt = toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
+                    const withdrawalAllowedAt = toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
                     logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${withdrawalAllowedAt}. Current ${latestTimestamp}.`);
                 }
             }
         }
         // cancel underlying withdrawal
-        if (agentEnt.underlyingWithdrawalWaitingForCancelation) {
+        if (readAgentEnt.underlyingWithdrawalWaitingForCancelation) {
             logger.info(`Agent ${this.agent.vaultAddress} is waiting for canceling underlying withdrawal.`);
             const settings = await this.context.assetManager.getSettings();
             const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
-            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+            if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                 // agent can confirm cancel withdrawal announcement
                 await this.agent.cancelUnderlyingWithdrawal();
                 await this.notifier.sendCancelWithdrawUnderlying();
-                logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                agentEnt.underlyingWithdrawalWaitingForCancelation = false;
+                logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                await this.updateAgentEntity(rootEm, {underlyingWithdrawalAnnouncedAtTimestamp: BN_ZERO, underlyingWithdrawalConfirmTransaction: "", underlyingWithdrawalWaitingForCancelation: false})
             } else {
-                logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
             }
         }
     }
@@ -604,14 +627,15 @@ export class AgentBot {
      * AgentBot exits available if already allowed
      * @param agentEnt agent entity
      */
-    async handleWaitAgentExitAvailable(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
-        await this.exitAvailable(agentEnt);
+    async handleWaitAgentExitAvailable(rootEm: EM, latestTimestamp: BN) {
+        const readAgentEnt = await this.fetchAgentEntity(rootEm);
+        if (this.announcementStatus(readAgentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
+        await this.exitAvailable(rootEm);
     }
 
-    async exitAvailable(agentEnt: AgentEntity) {
+    async exitAvailable(rootEm: EM) {
         await this.agent.exitAvailable();
-        agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+        await this.updateAgentEntity(rootEm, {exitAvailableAllowedAtTimestamp: BN_ZERO})
         await this.notifier.sendAgentExitedAvailable();
         logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
     }
@@ -621,10 +645,10 @@ export class AgentBot {
      * @param agentEnt agent entity
      * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED -> EXITED
      */
-    async getExitAvailableProcessStatus(agentEnt: AgentEntity) {
+    async getExitAvailableProcessStatus(agentEnt: AgentEntity) {//TODO (Urska) - use read
         const agentInfo = await this.agent.getAgentInfo();
         if (!agentInfo.publiclyAvailable) return "EXITED";
-        return this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
+        return this.announcementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
     }
 
     /**
@@ -633,7 +657,7 @@ export class AgentBot {
      * @param currentTimestamp the current timestamp
      * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED
      */
-    anouncementStatus(actionAllowedAt: BNish, currentTimestamp: BN) {
+    announcementStatus(actionAllowedAt: BNish, currentTimestamp: BN) {
         actionAllowedAt = toBN(actionAllowedAt);
         if (actionAllowedAt.eq(BN_ZERO)) return "NOT_ANNOUNCED";
         if (actionAllowedAt.gt(currentTimestamp)) return "WAITING";
@@ -693,8 +717,28 @@ export class AgentBot {
      * @param em entity manager
      * @param vaultAddress agent's vault address
      */
-    async handleAgentDestroyed(em: EM): Promise<void> {
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await new AgentBotClosing(this, agentEnt).handleAgentDestroyed();
+    async handleAgentDestroyed(em: EM): Promise<void> { //TODO (Urska)
+        await new AgentBotClosing(this).handleAgentDestroyed(em);
+    }
+
+    async updateAgentEntity(rootEm: EM, args: { [key: string]: any }): Promise<void> {
+        await rootEm.transactional(async (em) => {
+            const agentEnt: AgentEntity = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+
+            Object.assign(agentEnt, args);
+            //TODO
+            Object.keys(args).forEach((key) => {
+                console.log(key);
+                if (key in agentEnt) {
+                    // agentEnt[key as keyof AgentEntity] = args[key as keyof AgentEntity];
+                }
+            });
+
+            em.persist(agentEnt);
+        });
+    }
+
+    async fetchAgentEntity(rootEm: EM): Promise<AgentEntity> {
+        return await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
     }
 }
