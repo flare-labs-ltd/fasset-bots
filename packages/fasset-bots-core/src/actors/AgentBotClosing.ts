@@ -29,20 +29,22 @@ export class AgentBotClosing {
     }
 
     async handleAgentCloseProcess(rootEm: EM) {
-        const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
-        const closingPhase = await this.closingPhase(readAgentEnt);
+        const readAgentEntAtBegining = await this.bot.fetchAgentEntity(rootEm);
+        const closingPhase = await this.closingPhase(readAgentEntAtBegining);
         if (closingPhase === "CLEANUP") {
             logger.info(`Agent ${this.agent.vaultAddress} is performing cleanup.`);
             // withdraw and self close pool fees
             await this.withdrawPoolFees();
             // start or continue vault collateral withdrawal
-            if (this.waitingCollateralWithdrawal(readAgentEnt)) {
+            const readAgentEntAtWithdrawal = await this.bot.fetchAgentEntity(rootEm);
+            if (this.waitingCollateralWithdrawal(readAgentEntAtWithdrawal)) {
                 await this.performVaultCollateralWithdrawalWhenAllowed(rootEm);
             } else {
                 await this.startVaultCollateralWithdrawal(rootEm);
             }
             // start or continue pool token redemption
-            if (this.waitingPoolTokenRedemption(readAgentEnt)) {
+            const readAgentEntAtPTRedemption = await this.bot.fetchAgentEntity(rootEm);
+            if (this.waitingPoolTokenRedemption(readAgentEntAtPTRedemption)) {
                 await this.performPoolTokenRedemptionWhenAllowed(rootEm);
             } else {
                 await this.startPoolTokenRedemption(rootEm);
