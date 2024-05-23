@@ -70,7 +70,7 @@ export function waitForReceipt(promiEvent: PromiEvent<TransactionReceipt>, cance
         promiEvent.on("error", (error) => reject(wrapTransactionError(error))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
-        cancelRegistration.unregister();
+        cancelToken.unregister(cancelRegistration);
         (promiEvent as any).off("receipt");
         (promiEvent as any).off("error");
     });
@@ -96,7 +96,7 @@ export function waitForConfirmations(promiEvent: PromiEvent<any>, confirmationsR
         promiEvent.on("error", (error) => reject(wrapTransactionError(error))).catch(ignore);
         cancelRegistration = cancelToken.register(reject);
     }).finally(() => {
-        cancelRegistration.unregister();
+        cancelToken.unregister(cancelRegistration);
         (promiEvent as any).off("confirmation");
         (promiEvent as any).off("error");
     });
