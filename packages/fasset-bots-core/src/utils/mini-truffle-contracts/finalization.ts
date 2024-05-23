@@ -1,6 +1,6 @@
 import Web3 from "web3";
 import { PromiEvent, TransactionReceipt } from "web3-core";
-import { sleep } from "../helpers";
+import { sleep, systemTimestampMS } from "../helpers";
 import { CancelToken, CancelTokenRegistration, cancelableSleep } from "./cancelable-promises";
 import { ErrorWithCause, extractErrorMessage, transactionLogger } from "./transaction-logging";
 import { TransactionWaitFor } from "./types";
@@ -129,10 +129,10 @@ export async function waitForNonceIncrease(
             } else if (startBlock < 0) {
                 // start waiting for block increase or extra time to pass
                 startBlock = await web3.eth.getBlockNumber();
-                startTime = new Date().getTime();
+                startTime = systemTimestampMS();
             } else {
                 const block = await web3.eth.getBlockNumber();
-                const time = new Date().getTime();
+                const time = systemTimestampMS();
                 if (block >= startBlock + extra.blocks || time >= startTime + extra.timeMS) {
                     cancelToken.check(); // prevent returning value if cancelled
                     return { nonce, extraBlocks: block - startBlock, extraTime: time - startTime };
@@ -141,7 +141,7 @@ export async function waitForNonceIncrease(
         } else if (startBlock >= 0) {
             // nonce decreased while waiting - possibly a network reorg
             const block = await web3.eth.getBlockNumber();
-            const time = new Date().getTime();
+            const time = systemTimestampMS();
             transactionLogger.warn(`NONCE DECREASE - restarting extra block count (initial=${initialNonce} >= current=${nonce}, extra blocks=${block - startBlock}, extra time=${time - startTime})`,
                 { initialNonce, nonce, extraBlocks: block - startBlock, extraTime: time - startTime });
             // if nonce fell back during wait for extra blocks, require full wait again
@@ -162,12 +162,12 @@ export async function waitAfterError(web3: Web3, waitFor: TransactionWaitFor) {
 
 async function waitBlocks(web3: Web3, blocks: number, timeMS: number, pollMS: number) {
     const startBlock = await web3.eth.getBlockNumber();
-    const startTime = new Date().getTime();
+    const startTime = systemTimestampMS();
     // eslint-disable-next-line no-constant-condition
     while (true) {
         await sleep(pollMS);
         const block = await web3.eth.getBlockNumber();
-        const time = new Date().getTime();
+        const time = systemTimestampMS();
         if (block >= startBlock + blocks || time >= startTime + timeMS) {
             break;
         }
