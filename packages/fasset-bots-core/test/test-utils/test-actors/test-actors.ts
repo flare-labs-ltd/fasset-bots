@@ -16,7 +16,6 @@ import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
 import { fail } from "../../../src/utils/helpers";
 import { NotifierTransport } from "../../../src/utils/notifier/BaseNotifier";
 import { DEFAULT_POOL_TOKEN_SUFFIX } from "../../../test-hardhat/test-utils/helpers";
-import { cleanUp } from "../test-helpers";
 import { testNotifierTransports } from "../testNotifierTransports";
 
 export async function createTestMinter(ctx: IAssetAgentContext, address: string, useExistingUnderlyingAddress?: string) {

@@ -1,7 +1,6 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { expect, spy, use } from "chai";
 import spies from "chai-spies";
-import { ChainId } from "../../../src";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { web3 } from "../../../src/utils/web3";
