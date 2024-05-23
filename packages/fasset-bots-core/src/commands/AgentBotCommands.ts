@@ -523,11 +523,11 @@ export class AgentBotCommands {
             const latestTimestamp = await latestBlockTimestampBN();
             if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                 await agentBot.agent.confirmUnderlyingWithdrawal(txHash);
-                logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                     agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                     agentEnt.underlyingWithdrawalConfirmTransaction = "";
                 });
+                logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 await this.notifierFor(agentVault).sendConfirmWithdrawUnderlying();
             } else {
                 logger.info(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);

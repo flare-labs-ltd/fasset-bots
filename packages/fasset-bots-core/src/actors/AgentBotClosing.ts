@@ -1,4 +1,5 @@
 import { EM } from "../config/orm";
+import { AgentEntity } from "../entities/agent";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
 import { latestBlockTimestampBN, squashSpace } from "../utils";
 import { BN_ZERO, toBN } from "../utils/helpers";
@@ -14,8 +15,7 @@ export class AgentBotClosing {
     notifier = this.bot.notifier;
     context = this.agent.context;
 
-    async closingPhase(rootEm: EM) {
-        const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
+    async closingPhase(readAgentEnt: AgentEntity) {
         const agentInfo = await this.agent.getAgentInfoIfExists();
         if (agentInfo == null || !readAgentEnt.active) {
             return "DESTROYED";
@@ -29,19 +29,20 @@ export class AgentBotClosing {
     }
 
     async handleAgentCloseProcess(rootEm: EM) {
-        const closingPhase = await this.closingPhase(rootEm);
+        const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
+        const closingPhase = await this.closingPhase(readAgentEnt);
         if (closingPhase === "CLEANUP") {
             logger.info(`Agent ${this.agent.vaultAddress} is performing cleanup.`);
             // withdraw and self close pool fees
             await this.withdrawPoolFees();
             // start or continue vault collateral withdrawal
-            if (await this.waitingCollateralWithdrawal(rootEm)) {
+            if (this.waitingCollateralWithdrawal(readAgentEnt)) {
                 await this.performVaultCollateralWithdrawalWhenAllowed(rootEm);
             } else {
                 await this.startVaultCollateralWithdrawal(rootEm);
             }
             // start or continue pool token redemption
-            if (await this.waitingPoolTokenRedemption(rootEm)) {
+            if (this.waitingPoolTokenRedemption(readAgentEnt)) {
                 await this.performPoolTokenRedemptionWhenAllowed(rootEm);
             } else {
                 await this.startPoolTokenRedemption(rootEm);
@@ -65,8 +66,7 @@ export class AgentBotClosing {
         }
     }
 
-    async waitingCollateralWithdrawal(rootEm: EM) {
-        const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
+    waitingCollateralWithdrawal(readAgentEnt: AgentEntity) {
         return toBN(readAgentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp).gt(BN_ZERO);
     }
 
@@ -80,9 +80,8 @@ export class AgentBotClosing {
                 agentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
                 agentEnt.destroyVaultCollateralWithdrawalAllowedAtAmount = freeVaultCollateralBalance.toString();
             });
-            const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} announced vault collateral withdrawal of
-                ${await this.bot.tokens.vaultCollateral.format(freeVaultCollateralBalance)} at ${readAgentEnt.destroyVaultCollateralWithdrawalAllowedAtTimestamp}.`);
+                ${await this.bot.tokens.vaultCollateral.format(freeVaultCollateralBalance)} at ${withdrawalAllowedAt}.`);
         }
     }
 
@@ -101,8 +100,7 @@ export class AgentBotClosing {
         }
     }
 
-    async waitingPoolTokenRedemption(rootEm: EM) {
-        const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
+    waitingPoolTokenRedemption(readAgentEnt: AgentEntity) {
         return toBN(readAgentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO);
     }
 
@@ -116,9 +114,8 @@ export class AgentBotClosing {
                 agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp = redemptionAllowedAt;
                 agentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtAmount = poolTokenBalance.toString();
             });
-            const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} announced pool token redemption of
-                ${await this.bot.tokens.poolToken.format(poolTokenBalance)} at ${readAgentEnt.destroyPoolTokenRedemptionWithdrawalAllowedAtTimestamp}.`);
+                ${await this.bot.tokens.poolToken.format(poolTokenBalance)} at ${redemptionAllowedAt}.`);
         }
     }
 
