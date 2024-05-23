@@ -788,7 +788,7 @@ export class AgentBot {
      */
     async updateAgentEntity(rootEm: EM, modify: (agentEnt: AgentEntity) => Promise<void>): Promise<void> {
         await rootEm.transactional(async (em) => {
-            const agentEnt: AgentEntity = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            const agentEnt: AgentEntity = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>, { refresh: true });
             await modify(agentEnt);
             await em.persistAndFlush(agentEnt);
         });
@@ -799,6 +799,6 @@ export class AgentBot {
      * @param rootEm root EntityManager to manage the database context
      */
     async fetchAgentEntity(rootEm: EM): Promise<AgentEntity> {
-        return await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        return await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>, { refresh: true });
     }
 }
