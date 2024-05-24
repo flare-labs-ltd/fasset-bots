@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { sleep } from "../helpers";
+import { sleep, systemTimestampMS } from "../helpers";
 import { logger } from "../logger";
 
 const SLEEP_TIME = 100;
@@ -170,10 +170,6 @@ export class FilesystemAddressLocks implements AddressLocks {
             }
         }
     }
-}
-
-function systemTimestampMS() {
-    return new Date().getTime();
 }
 
 function assureDirectoryExists(dir: string) {

@@ -24,6 +24,7 @@ import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { requireNotNull, sleep } from "../../../src/utils";
 import { authenticatedHttpProvider, initWeb3, web3 } from "../../../src/utils/web3";
+import { testTimekeeperTimingConfig } from "../../../test-hardhat/test-utils/create-test-asset-context";
 import { testTimekeeperService } from "../../../test-hardhat/test-utils/helpers";
 import { createTestAgentBot, createTestChallenger, createTestLiquidator, createTestSystemKeeper } from "../../test-utils/test-actors/test-actors";
 import { COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, COSTON_TEST_AGENT_SETTINGS, TEST_SECRETS } from "../../test-utils/test-bot-config";
@@ -156,7 +157,7 @@ describe("Actor tests - coston", () => {
     it("should start and stop timekeepers", async () => {
         const spyUpdate = spy.on(TimeKeeper.prototype, "updateUnderlyingBlock");
         try {
-            const timekeeperService = await TimeKeeperService.create(actorConfig, ownerAddress, 7200, 300_000, 5000)
+            const timekeeperService = await TimeKeeperService.create(actorConfig, ownerAddress, testTimekeeperTimingConfig({ queryWindow: 7200, updateIntervalMs: 300_000 }))
             timekeeperService.startAll();
             const timekeepers = Array.from(timekeeperService.timekeepers.values());
             expect(timekeepers.length).to.be.eq(2);

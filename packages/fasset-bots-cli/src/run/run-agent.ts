@@ -1,13 +1,19 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotRunner, TimeKeeperService } from "@flarelabs/fasset-bots-core";
+import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
-const TIMEKEEPER_INTERVAL = 300_000;
+const timekeeperConfig: TimekeeperTimingConfig = {
+    queryWindow: "auto",
+    updateIntervalMs: 300_000,
+    loopDelayMs: 5000,
+    maxUnderlyingTimestampAgeS: 60,
+    maxUpdateTimeDelayMs: 30_000,
+}
 
 const program = programWithCommonOptions("agent", "all_fassets");
 
@@ -22,7 +28,7 @@ program.action(async () => {
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [ownerPrivateKey], ownerAddress);
         const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
         // create timekeepers
-        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, "auto", TIMEKEEPER_INTERVAL, 5000);
+        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, timekeeperConfig);
         timekeeperService.startAll();
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);

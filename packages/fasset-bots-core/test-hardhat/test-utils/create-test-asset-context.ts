@@ -1,7 +1,7 @@
 import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
-import { ChainId } from "../../src";
+import { ChainId, TimekeeperTimingConfig } from "../../src";
 import { Secrets } from "../../src/config";
 import { ChainAccount, SecretsFile } from "../../src/config/config-files/SecretsFile";
 import { ChainContracts, newContract } from "../../src/config/contracts";
@@ -18,7 +18,7 @@ import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, ZERO_ADDRESS, toBIPS, to
 import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
-import { AssetManagerControllerInstance, FakeERC20Instance, IERC20Instance } from "../../typechain-truffle";
+import { AssetManagerControllerInstance, FakeERC20Instance } from "../../typechain-truffle";
 import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock";
 import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
@@ -411,4 +411,15 @@ export async function setLotSizeAmg(newLotSizeAMG: BNish, context: TestAssetBotC
         context.assetManagerController,
         governance
     );
+}
+
+export function testTimekeeperTimingConfig(overrides?: Partial<TimekeeperTimingConfig>): TimekeeperTimingConfig {
+    return {
+        queryWindow: "auto",
+        updateIntervalMs: 60_000,
+        loopDelayMs: 5000,
+        maxUnderlyingTimestampAgeS: 1,
+        maxUpdateTimeDelayMs: 0,
+        ...overrides
+    };
 }
