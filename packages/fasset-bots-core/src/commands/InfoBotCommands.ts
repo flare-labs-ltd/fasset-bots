@@ -318,7 +318,7 @@ export class InfoBotCommands {
         const underlyingBR = await TokenBalances.fassetUnderlyingToken(this.context);
         const vaultBR = air.vaultCollateral.balanceReader;
         const poolBR = air.poolCollateral.balanceReader;
-        const poolTokenBR = await TokenBalances.erc20(await air.collateralPoolToken());
+        const poolTokenBR = air.poolTokenBalanceReader;
         //
         const poolNativeCollateral = new CollateralPriceCalculator(agentInfo, air.poolCollateral.price, nativeBR, ZERO_ADDRESS);
         //
@@ -328,7 +328,7 @@ export class InfoBotCommands {
         console.log(`    FAsset token: ${fassetBR.symbol}`);
         console.log(`    Underlying token: ${underlyingBR.symbol}`);
         console.log(`    Vault collateral token: ${air.vaultCollateral.currency.symbol}`);
-        console.log(`    Collateral pool token: ${await air.collateralPoolToken().then(tok => tok.symbol())}`);
+        console.log(`    Collateral pool token: ${poolTokenBR.symbol}`);
         //
         // const
         console.log("Network exchange rates:");
