@@ -107,6 +107,7 @@ export class AgentBotRedemption {
                 } else if (expirationProof === "NOT_EXPIRED") {
                     await this.handleOpenRedemption(redemption);
                 }
+                await em.persistAndFlush(redemption);
             })
             .catch((error) => {
                 console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);

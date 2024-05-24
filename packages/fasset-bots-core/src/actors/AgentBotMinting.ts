@@ -117,6 +117,7 @@ export class AgentBotMinting {
                         console.error(`Minting state: ${minting.state} not supported`);
                         logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId}.`);
                 }
+                await em.persistAndFlush(minting);
             })
             .catch((error) => {
                 console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
@@ -257,7 +258,6 @@ export class AgentBotMinting {
             logger.info(`Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             const nonPaymentProof = proof;
             await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.owner.workAddress });
-            minting.state = AgentMintingState.DONE;
             await this.mintingExecuted(minting, true);
             logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(nonPaymentProof))}.`);
             await this.notifier.sendMintingDefaultSuccess(minting.requestId);
