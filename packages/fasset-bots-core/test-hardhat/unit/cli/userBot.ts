@@ -97,7 +97,18 @@ describe("UserBot cli commands unit tests", () => {
     after(function () {
         // clean up -  delete residual redeem files
         const fileList: string[] = [];
-        const dir = `${userDataDir}/${userBot.fAssetSymbol}-redeem/`;
+        const data: RedeemData = {
+            type: "redeem",
+            requestId: "",
+            amountUBA: "",
+            paymentReference: "",
+            firstUnderlyingBlock: "",
+            lastUnderlyingBlock: "",
+            lastUnderlyingTimestamp: "",
+            executorAddress: "",
+            createdAt: "",
+        };
+        const dir = createUserTestMintOrRedeemFile(data, false);
         fs.readdirSync(dir).forEach((file) => {
             const fullPath = path.join(dir, file);
             fileList.push(fullPath);
@@ -107,6 +118,12 @@ describe("UserBot cli commands unit tests", () => {
             fs.unlinkSync(file);
         }
     });
+
+    function createUserTestMintOrRedeemFile(data: MintData | RedeemData, filePath: boolean = true): string {
+        const folderPath = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-${data.type}/`;
+        if (filePath) return `${folderPath}${data.requestId}.json`;
+        else return folderPath
+    }
 
     it("Should update underlying block", async () => {
         const blockBefore = await context.assetManager.currentUnderlyingBlock();
@@ -295,7 +312,7 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = createUserTestMintOrRedeemFile(mintData);
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();
@@ -317,7 +334,7 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename =createUserTestMintOrRedeemFile(mintData);
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();
