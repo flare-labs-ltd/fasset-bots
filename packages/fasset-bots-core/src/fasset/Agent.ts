@@ -4,6 +4,7 @@ import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance
 import { AgentAvailable, AgentDestroyed, AllEvents, AvailableAgentExited, IIAssetManagerInstance, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/IIAssetManager";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralPrice } from "../state/CollateralPrice";
+import { TokenPriceReader } from "../state/TokenPrice";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
@@ -12,8 +13,7 @@ import { getAgentSettings } from "../utils/fasset-helpers";
 import { BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
-import { CollateralDataFactory } from "./CollateralData";
+import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
 
 const AgentVault = artifacts.require("AgentVault");
@@ -87,16 +87,16 @@ export class Agent {
         return await this.assetManager.getCollateralType(CollateralClass.POOL, await this.assetManager.getWNat());
     }
 
-    async getVaultCollateralPrice(): Promise<CollateralPrice> {
-        const settings = await this.assetManager.getSettings();
-        const collateralDataFactory = await CollateralDataFactory.create(settings);
-        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getVaultCollateral());
+    async getVaultCollateralPrice(settings?: AssetManagerSettings): Promise<CollateralPrice> {
+        settings ??= await this.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        return await CollateralPrice.forCollateral(priceReader, settings, await this.getVaultCollateral());
     }
 
-    async getPoolCollateralPrice(): Promise<CollateralPrice> {
-        const settings = await this.assetManager.getSettings();
-        const collateralDataFactory = await CollateralDataFactory.create(settings);
-        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getPoolCollateral());
+    async getPoolCollateralPrice(settings?: AssetManagerSettings): Promise<CollateralPrice> {
+        settings ??= await this.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        return await CollateralPrice.forCollateral(priceReader, settings, await this.getPoolCollateral());
     }
 
     /**

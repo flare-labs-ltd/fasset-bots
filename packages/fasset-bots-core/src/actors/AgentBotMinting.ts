@@ -180,8 +180,9 @@ export class AgentBotMinting {
     async handleExpiredMinting(minting: AgentMinting, proof: ConfirmedBlockHeightExists.Proof) {
         logger.info(`Agent ${this.agent.vaultAddress} is calling 'unstickMinting' ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
         const settings = await this.context.assetManager.getSettings();
-        const natPriceConverter = await this.agent.getPoolCollateralPrice();
-        const burnNats = natPriceConverter.convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const natPriceConverter = await this.agent.getPoolCollateralPrice(settings);
+        const burnNats = natPriceConverter.convertUBAToTokenWei(toBN(minting.valueUBA))
+            .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
         // TODO what to do if owner does not have enough nat
         await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), {
             from: this.agent.owner.workAddress,
