@@ -51,12 +51,14 @@ export enum AgentNotificationKey {
     LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE",
     LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS",
     LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS",
-    CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT",
+    CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL",
     CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT",
     ACTIVE_WITHDRAWAL = "ACTIVE WITHDRAWAL",
     NO_ACTIVE_WITHDRAWAL = "NO ACTIVE WITHDRAWAL",
-    ANNOUNCE_WITHDRAW_UNDERLYING = "ANNOUNCE UNDERLYING WITHDRAWAL",
     WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL",
+    UNDERLYING_PAYMENT_PAID = "UNDERLYING PAYMENT",
+    UNDERLYING_PAYMENT_PROOF = " UNDERLYING PAYMENT PROOF REQUESTED",
+    UNDERLYING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR UNDERLYING PAYMENT",
     // pool
     BUY_POOL_TOKENS = "BUY POOL TOKENS",
     VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT",
@@ -179,13 +181,6 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendLowUnderlyingAgentBalance(amount: FormattedString) {
-        await this.info(
-            AgentNotificationKey.LOW_AGENT_FREE_UNDERLYING_BALANCE,
-            `Agent ${this.address} was automatically topped up with underlying ${amount}.`
-        );
-    }
-
     async sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: FormattedString) {
         await this.info(
             AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE,
@@ -293,8 +288,8 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.AGENT_ANNOUNCE_DESTROY, `Agent ${this.address} successfully announced its DESTRUCTION.`);
     }
 
-    async sendConfirmWithdrawUnderlying() {
-        await this.info(AgentNotificationKey.CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying withdrawal was successfully confirmed.`);
+    async sendConfirmWithdrawUnderlying(type: string) {
+        await this.info(AgentNotificationKey.CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
     }
 
     async sendCancelWithdrawUnderlying() {
@@ -334,13 +329,6 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendNoActiveWithdrawal() {
         await this.info(AgentNotificationKey.NO_ACTIVE_WITHDRAWAL, `Agent ${this.address} has NO active underlying withdrawal announcement.`);
-    }
-
-    async sendAnnounceUnderlyingWithdrawal(paymentReference: string) {
-        await this.info(
-            AgentNotificationKey.ANNOUNCE_WITHDRAW_UNDERLYING,
-            `Agent ${this.address} announced underlying withdrawal with payment reference ${paymentReference}.`
-        );
     }
 
     async sendUnderlyingWithdrawalPerformed(txHash: string) {
@@ -419,6 +407,21 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.danger(
             AgentNotificationKey.WITHDRAWAL_FAILED,
             `Agent ${this.address} could not withdrew ${type} collateral of ${amount}.`
+        );
+    }
+
+    async sendAgentUnderlyingPaymentCreated(txHash: string, type: string) {
+        await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txHash}.`);
+    }
+
+    async sendAgentUnderlyingPaymentRequestPaymentProof(txHash: string, type: string) {
+        await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PROOF, `Payment proof for underlying ${type} payment ${txHash} was requested for ${this.address}.`);
+    }
+
+    async sendAgentUnderlyingPaymentNoProofObtained(txHash: string, type: string, roundId: number, requestData: string) {
+        await this.danger(
+            AgentNotificationKey.UNDERLYING_NO_PROOF_OBTAINED,
+            `Agent ${this.address} cannot obtain proof for underlying ${type} payment ${txHash} in round ${roundId} with requested data ${requestData}.`
         );
     }
 }

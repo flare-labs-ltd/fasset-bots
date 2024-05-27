@@ -467,75 +467,31 @@ export class AgentBotCommands {
     }
 
     /**
-     * Announces agent's underlying withdrawal. Firstly, it checks if there is any active withdrawal.
-     * Lastly, it marks in persistent state that underlying withdrawal has started and it is then
-     * handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
-     * @param agentVault agent's vault address
-     * @returns payment reference needed to make legal withdrawal or null (e.g. underlying withdrawal is already announced)
-     */
-    async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
-        try {
-            const { agentBot } = await this.getAgentBot(agentVault);
-            const announce = await agentBot.agent.announceUnderlyingWithdrawal();
-            const latestBlock =  await latestBlockTimestampBN()
-            await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
-            });
-            await this.notifierFor(agentVault).sendAnnounceUnderlyingWithdrawal(announce.paymentReference);
-            logger.info(`Agent ${agentVault} announced underlying withdrawal at ${latestBlock.toString()} with reference ${announce.paymentReference}.`);
-            return announce.paymentReference;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
-
-    /**
-     * Performs agent's underlying withdrawal.
+     * Announces and performs agent's underlying withdrawal.
+     * It marks in persistent state that underlying withdrawal has started and it is then
+     * handled by methods 'handleTimelockedProcesses' and  'handleOpenUnderlyingPayments' in AgentBot.ts.
      * @param agentVault agent's vault address
      * @param amount amount to be transferred
      * @param destinationAddress underlying destination address
-     * @param paymentReference announced underlying payment reference
-     * @returns transaction hash
      */
-    async performUnderlyingWithdrawal(agentVault: string, amount: string | BN, destinationAddress: string, paymentReference: string): Promise<string> {
-        const { agentBot } = await this.getAgentBot(agentVault);
-        const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
-        await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-            agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
-        });
-        await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash);
-        logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`);
-        return txHash;
-    }
+    async withdrawUnderlying(agentVault: string, amount: string | BN, destinationAddress: string): Promise<string | null> {
+        try {
+            const { agentBot } = await this.getAgentBot(agentVault);
+            const announce = await agentBot.agent.announceUnderlyingWithdrawal();
+            const latestBlock =  await latestBlockTimestampBN();
+            const txHash = await agentBot.agent.performUnderlyingWithdrawal(announce.paymentReference, amount, destinationAddress);
 
-    /**
-     * Confirms agent's underlying withdrawal, if already allowed. Otherwise it marks in persistent state that confirmation
-     * of underlying withdrawal has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
-     * @param agentVault agent's vault address
-     * @param txHash transaction hash of underlying withdrawal payment
-     */
-    async confirmUnderlyingWithdrawal(agentVault: string, txHash: string): Promise<void> {
-        logger.info(`Agent ${agentVault} is waiting for confirming underlying withdrawal.`);
-        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
-        if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
-            const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
-            const latestTimestamp = await latestBlockTimestampBN();
-            if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                await agentBot.agent.confirmUnderlyingWithdrawal(txHash);
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                });
-                logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                await this.notifierFor(agentVault).sendConfirmWithdrawUnderlying();
-            } else {
-                logger.info(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
-                console.log(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
-            }
-        } else {
-            await this.notifierFor(agentVault).sendNoActiveWithdrawal();
-            logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
+            await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
+                agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
+            });
+
+        await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash);
+        logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${announce.paymentReference} and txHash ${txHash}.`);
+            return txHash;
+        } catch (error) {
+            console.error(error);
+            return null;
         }
     }
 

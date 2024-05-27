@@ -4,7 +4,7 @@ import BN from "bn.js";
 import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { EM } from "../config/orm";
-import { AgentEntity } from "../entities/agent";
+import { AgentEntity, AgentUnderlyingPaymentType } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -240,6 +240,7 @@ export class AgentBot {
         await this.handleOpenRedemptions(rootEm);
         await this.handleOpenMintings(rootEm);
         await this.handleTimelockedProcesses(rootEm);
+        await this.handleOpenUnderlyingPayments(rootEm);
         await this.handleDailyTasks(rootEm);
     }
 
@@ -331,6 +332,19 @@ export class AgentBot {
             await this.redemption.nextRedemptionStep(rootEm, rd.id);
         }
         logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
+    }
+
+    /**
+     * @param rootEm entity manager
+     */
+        async handleOpenUnderlyingPayments(rootEm: EM): Promise<void> {
+            const openUnderlyingPayments = await this.underlyingManagement.openUnderlyingPaymentIds(rootEm);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling open underlying payments #${openUnderlyingPayments.length}.`);
+        for (const up of openUnderlyingPayments) {
+            if (this.stopRequested()) return;
+            await this.underlyingManagement.nextUnderlyingPaymentStep(rootEm, up.id);
+        }
+        logger.info(`Agent ${this.agent.vaultAddress} finished handling open underlying payments.`);
     }
 
     /**
@@ -467,7 +481,7 @@ export class AgentBot {
 
     // Agent settings update
     private async handleWaitForAgentSettingUpdate(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm); //TODO (Urska): is it enough to fetch only once?
+        const readAgentEnt = await this.fetchAgentEntity(rootEm);
         //Agent update feeBIPS
         if (toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
             const updatedOrExpired = await this.updateAgentSettings(toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
@@ -571,7 +585,7 @@ export class AgentBot {
     }
 
     private async handleUnderlyingWithdrawal(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm); //TODO (Urska): is it enough to read only once
+        const readAgentEnt = await this.fetchAgentEntity(rootEm);
         // confirm underlying withdrawal
         if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
             logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
@@ -581,9 +595,7 @@ export class AgentBot {
                 const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
                 if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                     // agent can confirm underlying withdrawal
-                    await this.agent.confirmUnderlyingWithdrawal(readAgentEnt.underlyingWithdrawalConfirmTransaction);
-                    await this.notifier.sendConfirmWithdrawUnderlying();
-                    logger.info(`Agent ${this.agent.vaultAddress} confirmed underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                    await this.underlyingManagement.createAgentUnderlyingPayment(rootEm, readAgentEnt.underlyingWithdrawalConfirmTransaction, AgentUnderlyingPaymentType.WITHDRAWAL);
                     await this.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                         agentEnt.underlyingWithdrawalConfirmTransaction = ""
@@ -705,7 +717,7 @@ export class AgentBot {
      * @param agentEnt agent entity
      * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED -> EXITED
      */
-    async getExitAvailableProcessStatus(agentEnt: AgentEntity) { //TODO (Urska) - use read?
+    async getExitAvailableProcessStatus(agentEnt: AgentEntity) {
         const agentInfo = await this.agent.getAgentInfo();
         if (!agentInfo.publiclyAvailable) return "EXITED";
         return this.announcementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
