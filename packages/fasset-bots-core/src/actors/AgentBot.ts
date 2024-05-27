@@ -298,7 +298,7 @@ export class AgentBot {
             await this.notifier.sendLiquidationWasPerformed(await this.tokens.fAsset.format(event.args.valueUBA));
         } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendFullLiquidationAlert(event.args.agentVault);
+            await this.notifier.sendFullLiquidationAlert();
         } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'DuplicatePaymentConfirmed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash1, event.args.transactionHash2);

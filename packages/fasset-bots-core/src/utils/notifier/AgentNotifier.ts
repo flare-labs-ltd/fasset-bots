@@ -331,8 +331,8 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.NO_ACTIVE_WITHDRAWAL, `Agent ${this.address} has NO active underlying withdrawal announcement.`);
     }
 
-    async sendUnderlyingWithdrawalPerformed(txHash: string) {
-        await this.info(AgentNotificationKey.WITHDRAW_UNDERLYING, `Agent ${this.address} withdrew underlying with transaction ${txHash}.`);
+    async sendUnderlyingWithdrawalPerformed(txHash: string, paymentReference: string) {
+        await this.info(AgentNotificationKey.WITHDRAW_UNDERLYING, `Agent ${this.address} withdrew underlying with transaction ${txHash} and payment reference ${paymentReference}.`);
     }
 
     async sendMintingExecuted(requestId: BNish) {

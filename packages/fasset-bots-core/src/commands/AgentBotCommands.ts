@@ -486,7 +486,7 @@ export class AgentBotCommands {
                 agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
             });
 
-        await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash);
+        await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash, announce.paymentReference);
         logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${announce.paymentReference} and txHash ${txHash}.`);
             return txHash;
         } catch (error) {
