@@ -60,6 +60,13 @@ export function systemTimestamp() {
 }
 
 /**
+ * Return system time as millisecond timestamp (milliseconds since 1.1.1970).
+ */
+export function systemTimestampMS() {
+    return new Date().getTime();
+}
+
+/**
  * Check if value is non-null.
  * Useful in array.filter, to return array of non-nullable types.
  */

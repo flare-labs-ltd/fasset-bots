@@ -5,6 +5,8 @@ import { MiniTruffleContract } from "./contracts";
 import { ContractJson, ContractSettings } from "./types";
 import { Artifacts, Truffle } from "../../../typechain-truffle";
 
+export class UnknownArtifactError extends Error {}
+
 interface ArtifactData {
     name: string;
     path: string;
@@ -51,7 +53,7 @@ class ArtifactsImpl implements Artifacts {
         }
         const artifactData = this.artifactMap.get(name);
         if (artifactData == null) {
-            throw new Error(`Unknown artifact ${name}`);
+            throw new UnknownArtifactError(`Unknown artifact ${name}`);
         }
         if (artifactData.contractJson == null) {
             artifactData.contractJson = fs.readFileSync(artifactData.path).toString();

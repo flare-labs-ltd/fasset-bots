@@ -61,7 +61,7 @@ program
     .description("deposit enough vault and pool collateral to be able to mint given amount of lots")
     .argument("<agentVaultAddress>")
     .argument("<lots>", "the number of lots the agent should be able to mint after deposit (existing collateral in the vault is ignored)")
-    .addOption(program.createOption("-m, --multiplier <multiplier>", "the number to multiply the amount with, to compensate for price changes").default("1.05"))
+    .addOption(program.createOption("-m, --multiplier <multiplier>", "the number to multiply the amount with, to compensate for price changes, and account for FAssets minted as collateral pool fees.").default("1.05"))
     .action(async (agentVault: string, lots: string, cmdopts: { multiplier: string }) => {
         validateInteger(lots, "lots", { min: 1 });
         validateDecimal(cmdopts.multiplier, "multiplier", { min: 1, max: 2 });

@@ -16,7 +16,7 @@ import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { FakeERC20Instance, Truffle } from "../../typechain-truffle";
-import { TestAssetBotContext, createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 
 const StateConnector = artifacts.require("StateConnectorMock");
@@ -132,7 +132,7 @@ describe("Toplevel runner and commands integration test", () => {
         const context0 = contexts.get(testChainInfos[0].symbol)!;
         await context0.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // timekeeper
-        timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, "auto", 60_000, loopDelay);
+        timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay }));
         // agent bot runner
         botRunner = new AgentBotRunner(secrets, contexts, orm, loopDelay, testNotifierTransports, timekeeperService);
         // currencies

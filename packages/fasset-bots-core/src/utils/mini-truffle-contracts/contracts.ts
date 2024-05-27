@@ -7,6 +7,8 @@ import { replaceStringRange } from "../helpers";
 import { createContractInstanceConstructor, executeConstructor } from "./methods";
 import { ContractJson, ContractSettings } from "./types";
 
+export class ContractError extends Error {}
+
 /**
  * Simple implementation of Truffle.ContractInstance.
  */
@@ -68,7 +70,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 
     async deployed(): Promise<any> {
         if (!this.address) {
-            throw new Error(`Contract ${this.contractName} has not been deployed`);
+            throw new ContractError(`Contract ${this.contractName} has not been deployed`);
         }
         return await this.at(this.address);
     }
@@ -77,7 +79,7 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
         const bytecode = await this._settings.web3.eth.getCode(address);
         if (bytecode == null || bytecode.length < 4) {
             // need at least one byte of bytecode (there is also 0x prefix)
-            throw new Error(`Cannot create instance of ${this.contractName}; no code at address ${address}`);
+            throw new ContractError(`Cannot create instance of ${this.contractName}; no code at address ${address}`);
         }
         return new this._instanceConstructor(this, this._settings, address);
     }
@@ -85,15 +87,15 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
     async new(...args: any[]): Promise<any> {
         if (this._bytecode == null || this._bytecode.length < 4) {
             // need at least one byte of bytecode (there is also 0x prefix)
-            throw new Error(`Contract ${this.contractName} is abstract; cannot deploy`);
+            throw new ContractError(`Contract ${this.contractName} is abstract; cannot deploy`);
         }
         if (this._bytecode.includes("_")) {
-            throw new Error(`Contract ${this.contractName} must be linked before deploy`);
+            throw new ContractError(`Contract ${this.contractName} must be linked before deploy`);
         }
         const result = await executeConstructor(this._settings, this.abi, this._bytecode, args);
         /* istanbul ignore if */
         if (result.contractAddress == null) {
-            throw new Error(`Deploy of contract ${this.contractName} failed`); // I don't know if this can happen
+            throw new ContractError(`Deploy of contract ${this.contractName} failed`); // I don't know if this can happen
         }
         const instance = new this._instanceConstructor(this, this._settings, result.contractAddress);
         instance.transactionHash = result.transactionHash;
@@ -103,10 +105,10 @@ export class MiniTruffleContract implements Truffle.Contract<any> {
 
     link(...args: any) {
         if (this._bytecode == null || this._bytecode.length < 4) {
-            throw new Error(`Contract ${this.contractName} is abstract; cannot link`);
+            throw new ContractError(`Contract ${this.contractName} is abstract; cannot link`);
         }
         if (!(args.length === 1 && args[0] instanceof MiniTruffleContractInstance)) {
-            throw new Error(`Only supported variant is '${this.contractName}.link(instance)'`);
+            throw new ContractError(`Only supported variant is '${this.contractName}.link(instance)'`);
         }
         const instance = args[0];
         const { contractName, sourceName } = instance._contractFactory._contractJson;

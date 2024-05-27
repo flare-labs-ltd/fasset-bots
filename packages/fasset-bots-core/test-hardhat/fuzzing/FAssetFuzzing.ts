@@ -19,7 +19,7 @@ import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInf
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
-import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
 import { DEFAULT_POOL_TOKEN_SUFFIX, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter } from "../test-utils/helpers";
 import { FuzzingAgentBot } from "./FuzzingAgentBot";
@@ -134,7 +134,7 @@ describe("Fuzzing tests", () => {
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];
-        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, 7200, 60000, 5000);
+        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, testTimekeeperTimingConfig({ queryWindow: 7200 }));
         timeKeeper.run();
         // init some state
         await refreshAvailableAgents();

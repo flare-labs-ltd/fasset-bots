@@ -1,8 +1,8 @@
 import { TransactionConfig, TransactionReceipt } from "web3-core";
-import { BN_ZERO, maxBN, sleep, toBN } from "../helpers";
+import { BN_ZERO, maxBN, toBN } from "../helpers";
 import { CancelToken, PromiseCancelled, cancelableSleep } from "./cancelable-promises";
-import { waitForFinalization, waitForReceipt } from "./finalization";
-import { captureStackTrace, fixErrorStack, transactionLogger } from "./transaction-logging";
+import { UnexpectedTransactionError, waitForFinalization, waitForReceipt } from "./finalization";
+import { transactionLogger } from "./transaction-logging";
 import { ContractSettings } from "./types";
 
 /**
@@ -16,32 +16,14 @@ import { ContractSettings } from "./types";
  */
 export async function submitTransaction(transactionId: number, settings: ContractSettings, config: TransactionConfig) {
     const fromAddress = config.from as string;
-    await lockAddress(settings, fromAddress);
+    const lock = await settings.addressLocks.lock(fromAddress);
     transactionLogger.info("LOCK", { transactionId, fromAddress });
     try {
         return await performSubmits(transactionId, settings, config);
     } finally {
         transactionLogger.info("UNLOCK", { transactionId, fromAddress });
-        await releaseAddress(fromAddress);
+        await settings.addressLocks.release(lock);
     }
-}
-
-const addressLocks = new Map<string, boolean>();
-
-async function lockAddress(settings: ContractSettings, address: string) {
-    const start = new Date().getTime();
-    while (new Date().getTime() - start < settings.nonceLockTimeoutMS) {
-        if (!addressLocks.get(address)) {
-            addressLocks.set(address, true);
-            return;
-        }
-        await sleep(100);
-    }
-    throw new Error("Timeout waiting to obtain address nonce lock");
-}
-
-async function releaseAddress(address: string) {
-    addressLocks.delete(address);
 }
 
 async function performSubmits(transactionId: number, settings: ContractSettings, config: TransactionConfig) {
@@ -55,7 +37,6 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
     }
     const cancelToken = new CancelToken();
     let currentGasPrice = BN_ZERO;
-    const parentStack = captureStackTrace(2);
     const resubmits = resubmitTransaction.map(async (resubmit, index) => {
         if (resubmit.afterMS > 0) {
             await cancelableSleep(resubmit.afterMS, cancelToken);
@@ -72,15 +53,14 @@ async function performSubmits(transactionId: number, settings: ContractSettings,
         const finalizationPromise = waitForFinalization(transactionId, settings.web3, settings.waitFor, nonce, fromAddress, promiEvent, finalizationCancelToken);
         finalizationPromise.catch(ignore);
         try {
-            const receipt = await waitForReceipt(promiEvent, cancelToken).finally(() => {
-                // delay cancel to make sure we don't cancel a success because the replaced transaction failure triggers first
-                setTimeout(() => cancelToken.cancel(), 100);
-            });
+            const receipt = await waitForReceipt(promiEvent, cancelToken)
+                .finally(() => {
+                    // delay cancel to make sure we don't cancel a success because the replaced transaction failure triggers first
+                    setTimeout(() => cancelToken.cancel(), 100);
+                });
             transactionLogger.info("RECEIPT", { transactionId, resubmit: index, receipt });
             await finalizationPromise;
             return receipt;
-        } catch (e) {
-            throw fixErrorStack(e, parentStack);
         } finally {
             finalizationCancelToken.cancel();
         }
@@ -93,12 +73,15 @@ function extractActualResult(results: PromiseSettledResult<TransactionReceipt>[]
     for (const result of results) {
         if (result.status === "fulfilled") {
             return result.value;
-        } else if (!(result.reason instanceof PromiseCancelled)) {
+        }
+    }
+    for (const result of results) {
+        if (result.status === "rejected" && !(result.reason instanceof PromiseCancelled)) {
             throw result.reason;
         }
     }
     /* istanbul ignore next - this should never happen */
-    throw new Error("All resubmits canceled");
+    throw new UnexpectedTransactionError("All resubmits canceled", null);
 }
 
 /* istanbul ignore next */
