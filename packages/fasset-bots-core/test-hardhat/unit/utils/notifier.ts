@@ -27,10 +27,10 @@ describe("Notifier tests", () => {
         spy.restore(console);
     });
 
-    it("Should send custom message", async () => {
+    it("Should send critical custom message", async () => {
         const spySend = spy.on(notifier, "send");
-        await notifier.send(NotificationLevel.INFO, AgentNotificationKey.ACTIVE_WITHDRAWAL, message);
-        expect(spySend).to.have.been.called.with.exactly(NotificationLevel.INFO, AgentNotificationKey.ACTIVE_WITHDRAWAL, message);
+        await notifier.send(NotificationLevel.CRITICAL, AgentNotificationKey.ACTIVE_WITHDRAWAL, message);
+        expect(spySend).to.have.been.called.with.exactly(NotificationLevel.CRITICAL, AgentNotificationKey.ACTIVE_WITHDRAWAL, message);
     });
 
     it("Should send CCB alert", async () => {
@@ -112,12 +112,6 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
-    it("Should send low underlying agent balance alert", async () => {
-        const spySend = spy.on(notifier, "sendLowUnderlyingAgentBalance");
-        await notifier.sendLowUnderlyingAgentBalance("1" as FormattedString);
-        expect(spySend).to.have.been.called.once;
-    });
-
     it("Should send low balance on owner's underlying address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
         await notifier.sendLowBalanceOnUnderlyingOwnersAddress("underlying", "1" as FormattedString);
@@ -171,12 +165,6 @@ describe("Notifier tests", () => {
     it("Should send agent announced destruction", async () => {
         const spySend = spy.on(notifier, "sendAgentAnnounceDestroy");
         await notifier.sendAgentAnnounceDestroy();
-        expect(spySend).to.have.been.called.once;
-    });
-
-    it("Should send agent confirmed underlying withdrawal announcement", async () => {
-        const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
-        await notifier.sendConfirmWithdrawUnderlying();
         expect(spySend).to.have.been.called.once;
     });
 
@@ -234,15 +222,9 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
-    it("Should send underlying withdrawal was announced", async () => {
-        const spySend = spy.on(notifier, "sendAnnounceUnderlyingWithdrawal");
-        await notifier.sendAnnounceUnderlyingWithdrawal("paymentReference");
-        expect(spySend).to.have.been.called.once;
-    });
-
     it("Should send underlying withdrawal was performed", async () => {
         const spySend = spy.on(notifier, "sendUnderlyingWithdrawalPerformed");
-        await notifier.sendUnderlyingWithdrawalPerformed("txHash");
+        await notifier.sendUnderlyingWithdrawalPerformed("txHash", "paymentReference");
         expect(spySend).to.have.been.called.once;
     });
 
@@ -356,6 +338,36 @@ describe("Notifier tests", () => {
     it("Should send pool token redemption announcement", async () => {
         const spySend = spy.on(notifier, "sendCancelRedeemCollateralPoolTokensAnnouncement");
         await notifier.sendCancelRedeemCollateralPoolTokensAnnouncement();
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send redemption address validation - no proof", async () => {
+        const spySend = spy.on(notifier, "sendRedemptionAddressValidationNoProof");
+        await notifier.sendRedemptionAddressValidationNoProof(1, 1, "data", "address");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send redemption address validation - proof conflict", async () => {
+        const spySend = spy.on(notifier, "sendRedemptionAddressValidationProofConflict");
+        await notifier.sendRedemptionAddressValidationProofConflict(1, 1, "data", "address");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send AgentUnderlyingPayment created", async () => {
+        const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentCreated");
+        await notifier.sendAgentUnderlyingPaymentCreated("hash", "type");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send AgentUnderlyingPayment request payment proof", async () => {
+        const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentRequestPaymentProof");
+        await notifier.sendAgentUnderlyingPaymentRequestPaymentProof("hash", "type");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send confirm underlying withdrawaf", async () => {
+        const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
+        await notifier.sendConfirmWithdrawUnderlying("type");
         expect(spySend).to.have.been.called.once;
     });
 });

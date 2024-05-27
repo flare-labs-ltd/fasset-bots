@@ -105,11 +105,11 @@ export class FuzzingAgentBot {
         const amount = randomBN(toBN(agentInfo.freeUnderlyingBalanceUBA));
         if (amount.isZero()) return;
         // announce
-        const reference = await this.botCliCommands.announceUnderlyingWithdrawal(this.agentBot.agent.vaultAddress);
-        if (coinFlip(0.8) && reference) {
-            const txHash = await this.botCliCommands.performUnderlyingWithdrawal(this.agentBot.agent.vaultAddress, amount.toString(), this.ownerUnderlyingAddress, reference);
-            await this.botCliCommands.confirmUnderlyingWithdrawal(this.agentBot.agent.vaultAddress, txHash);
-        } else if (reference) {
+        const resp = await this.agentBot.agent.announceUnderlyingWithdrawal();
+        if (coinFlip(0.8) && resp.paymentReference) {
+            const txHash = await this.agentBot.agent.performUnderlyingWithdrawal(resp.paymentReference, amount.toString(), this.ownerUnderlyingAddress);
+            await this.agentBot.agent.confirmUnderlyingWithdrawal(txHash);
+        } else if (resp.paymentReference) {
             // cancel withdrawal
             await this.botCliCommands.cancelUnderlyingWithdrawal(this.agentBot.agent.vaultAddress);
         }

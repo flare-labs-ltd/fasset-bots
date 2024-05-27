@@ -296,10 +296,11 @@ describe("AgentBot cli commands unit tests", () => {
         expect(toBN(amount).gt(toBN(amountAfter))).to.be.true;
     });
 
-    it("Should run command 'announceUnderlyingWithdrawal' and 'cancelUnderlyingWithdrawal'", async () => {
-        const spyAnnounce = spy.on(botCliCommands, "announceUnderlyingWithdrawal");
+    it("Should run command 'withdrawUnderlying' and 'cancelUnderlyingWithdrawal'", async () => {
+        const spyAnnounce = spy.on(botCliCommands, "withdrawUnderlying");
         const agent = await createAgent();
-        await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
+        const amountToWithdraw = 100;
+        await botCliCommands.withdrawUnderlying(agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
         const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(toBN(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
         expect(spyAnnounce).to.be.called.once;
@@ -314,15 +315,6 @@ describe("AgentBot cli commands unit tests", () => {
         expect(toBN(agentEntCancel.underlyingWithdrawalAnnouncedAtTimestamp).eq(BN_ZERO)).to.be.true;
     });
 
-    it("Should run command 'announceUnderlyingWithdrawal'", async () => {
-        const agent = await createAgent();
-        await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
-        const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
-        const res = await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
-        expect(res).to.be.null;
-    });
-
     it("Should run command 'cancelUnderlyingWithdrawal' - no active withdrawals", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
@@ -332,48 +324,9 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should run command 'performUnderlyingWithdrawal'", async () => {
         const agent = await createAgent();
-        const paymentReference = await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
         const amountToWithdraw = 100;
-        const txHash = await botCliCommands.performUnderlyingWithdrawal(
-            agent.vaultAddress,
-            amountToWithdraw.toString(),
-            "SomeRandomUnderlyingAddress",
-            paymentReference!
-        );
+        const txHash = await botCliCommands.withdrawUnderlying(agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
         expect(txHash).to.not.be.undefined;
-    });
-
-    it("Should run command 'confirmUnderlyingWithdrawal'", async () => {
-        const agent = await createAgent();
-        const paymentReference = await botCliCommands.announceUnderlyingWithdrawal(agent.vaultAddress);
-        const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
-        const amountToWithdraw = 100;
-        const txHash = await botCliCommands.performUnderlyingWithdrawal(
-            agent.vaultAddress,
-            amountToWithdraw.toString(),
-            "SomeRandomUnderlyingAddress",
-            paymentReference!
-        );
-        chain.mine(chain.finalizationBlocks + 1);
-        //  not enough time passed
-        await botCliCommands.confirmUnderlyingWithdrawal(agent.vaultAddress, txHash);
-        const agentEntConfirmToSoon = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEntConfirmToSoon.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
-        expect(agentEntConfirmToSoon.underlyingWithdrawalConfirmTransaction).to.eq(txHash);
-        // time passed
-        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await botCliCommands.confirmUnderlyingWithdrawal(agent.vaultAddress, txHash);
-        const agentEntConfirm = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEntConfirm.underlyingWithdrawalAnnouncedAtTimestamp).eq(BN_ZERO)).to.be.true;
-        expect(agentEntConfirm.underlyingWithdrawalConfirmTransaction).to.eq("");
-    });
-
-    it("Should run command 'confirmUnderlyingWithdrawal' - no active withdrawals", async () => {
-        const agent = await createAgent();
-        const spyConsole = spy.on(console, "log");
-        await botCliCommands.confirmUnderlyingWithdrawal(agent.vaultAddress, "txHash");
-        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'listActiveAgents'", async () => {
