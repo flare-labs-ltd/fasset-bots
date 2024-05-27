@@ -1,7 +1,7 @@
 import { KeeperBotConfig, createTimekeeperContext } from "../config";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { requireNotNull } from "../utils";
-import { TimeKeeper, TimeKeeperQueryWindow } from "./TimeKeeper";
+import { TimeKeeper, TimekeeperTimingConfig } from "./TimeKeeper";
 
 export class TimeKeeperService {
     static deepCopyWithObjectCreate = true;
@@ -9,14 +9,12 @@ export class TimeKeeperService {
     constructor(
         public contexts: Map<string, ITimekeeperContext>,   // map [chain token symbol] => context
         public timekeeperAddress: string,
-        public queryWindow: TimeKeeperQueryWindow,
-        public updateIntervalMs: number,
-        public loopDelayMs: number
+        public timing: TimekeeperTimingConfig,
     ) {}
 
     timekeepers = new Map<string, TimeKeeper>();
 
-    static async create(config: KeeperBotConfig, timekeeperAddress: string, queryWindow: TimeKeeperQueryWindow, updateIntervalMs: number, loopDelayMs: number) {
+    static async create(config: KeeperBotConfig, timekeeperAddress: string, timing: TimekeeperTimingConfig) {
         const contexts: Map<string, ITimekeeperContext> = new Map();
         for (const chain of config.fAssets.values()) {
             const symbol = chain.chainInfo.symbol;
@@ -25,7 +23,7 @@ export class TimeKeeperService {
                 contexts.set(symbol, context);
             }
         }
-        return new TimeKeeperService(contexts, timekeeperAddress, queryWindow, updateIntervalMs, loopDelayMs);
+        return new TimeKeeperService(contexts, timekeeperAddress, timing);
     }
 
     get(symbol: string) {
@@ -36,7 +34,7 @@ export class TimeKeeperService {
 
     start(symbol: string) {
         const context = requireNotNull(this.contexts.get(symbol), `Unknown chain token symbol ${symbol}`);
-        const timekeeper = new TimeKeeper(context, this.timekeeperAddress, this.queryWindow, this.updateIntervalMs, this.loopDelayMs);
+        const timekeeper = new TimeKeeper(context, this.timekeeperAddress, this.timing);
         this.timekeepers.set(symbol, timekeeper);
         timekeeper.run();
         return timekeeper;

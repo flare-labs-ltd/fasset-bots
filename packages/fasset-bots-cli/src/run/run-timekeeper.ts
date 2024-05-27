@@ -1,13 +1,19 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { TimeKeeperService } from "@flarelabs/fasset-bots-core";
+import { TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { Secrets, closeBotConfig, createBotConfig, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
-const INTERVAL: number = 120_000; // in ms
+const timekeeperConfig: TimekeeperTimingConfig = {
+    queryWindow: 7200,
+    updateIntervalMs: 120_000,
+    loopDelayMs: 2000,
+    maxUnderlyingTimestampAgeS: 1,
+    maxUpdateTimeDelayMs: 0,
+}
 
 const program = programWithCommonOptions("bot", "all_fassets");
 
@@ -19,7 +25,7 @@ program.action(async () => {
     const timekeeperPrivateKey: string = secrets.required("timeKeeper.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [timekeeperPrivateKey], null);
     const config = await createBotConfig("keeper", secrets, runConfig, timekeeperAddress);
-    const timekeeperService = await TimeKeeperService.create(config, timekeeperAddress, 7200, INTERVAL, config.loopDelay);
+    const timekeeperService = await TimeKeeperService.create(config, timekeeperAddress, timekeeperConfig);
     timekeeperService.startAll();
     // run
     try {

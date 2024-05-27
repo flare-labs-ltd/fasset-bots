@@ -1,7 +1,7 @@
 import { time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import fs from "fs";
-import { ChainId } from "../../src";
+import { ChainId, TimekeeperTimingConfig } from "../../src";
 import { Secrets } from "../../src/config";
 import { ChainAccount, SecretsFile } from "../../src/config/config-files/SecretsFile";
 import { ChainContracts, newContract } from "../../src/config/contracts";
@@ -411,4 +411,15 @@ export async function setLotSizeAmg(newLotSizeAMG: BNish, context: TestAssetBotC
         context.assetManagerController,
         governance
     );
+}
+
+export function testTimekeeperTimingConfig(overrides?: Partial<TimekeeperTimingConfig>): TimekeeperTimingConfig {
+    return {
+        queryWindow: "auto",
+        updateIntervalMs: 60_000,
+        loopDelayMs: 5000,
+        maxUnderlyingTimestampAgeS: 1,
+        maxUpdateTimeDelayMs: 0,
+        ...overrides
+    };
 }

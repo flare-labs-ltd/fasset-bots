@@ -434,10 +434,11 @@ describe("mini truffle and artifacts tests", () => {
                     }, 200);
                     testRegistration = cancelToken.register(reject);
                 }).finally(() => {
-                    testRegistration.unregister();
+                    cancelToken.unregister(testRegistration);
                     clearInterval(testTimer);
                 });
                 void testCancelable.catch(); // prevent uncought promise rejection
+                assert.equal(cancelToken.registrations.size, 1);
                 // check should work
                 cancelToken.check();
                 // wait 0.5 sec
@@ -470,9 +471,22 @@ describe("mini truffle and artifacts tests", () => {
             const promise1 = new Promise((resolve, reject) => {
                 registration1 = cancelToken.register((err) => reject(err));
             });
+            assert.equal(cancelToken.registrations.size, 0);
             await expectRevertWithCorrectStack(promise1, "Promise cancelled");
-            registration1!.unregister(); // should succeed
+            cancelToken.unregister(registration1!); // should succeed
             expect(() => cancelToken.check()).to.throw("Promise cancelled");
+        });
+
+        it("cancel token should correctly ignore null and unregistered registrations", async () => {
+            const cancelToken = new CancelToken();
+            // eslint-disable-next-line prefer-const
+            let registration1: CancelTokenRegistration;
+            cancelToken.unregister(registration1!); // uregistering undefined should succeed
+            registration1 = cancelToken.register((err) => {});
+            assert.equal(cancelToken.registrations.size, 1);
+            cancelToken.unregister(registration1!); // should succeed
+            assert.equal(cancelToken.registrations.size, 0);
+            cancelToken.unregister(registration1!); // repeating should succeed
         });
     });
 
