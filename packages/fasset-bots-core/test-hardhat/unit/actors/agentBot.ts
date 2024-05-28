@@ -100,12 +100,29 @@ describe("Agent bot unit tests", () => {
 
     it("Should top up underlying", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyBalance0 = spy.on(agentBot.notifier, "sendLowUnderlyingAgentBalance");
+        const spyBalance0 = spy.on(agentBot.underlyingManagement, "createAgentUnderlyingPayment");
         const spyBalance1 = spy.on(agentBot.notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
+        const spyBalance2 = spy.on(agentBot.underlyingManagement.notifier, "sendConfirmWithdrawUnderlying");
         const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
         await agentBot.underlyingManagement.underlyingTopUp(orm.em, toBN(balance), toBN(1));
+        chain.mine(chain.finalizationBlocks + 1);
         expect(spyBalance0).to.have.been.called.once;
         expect(spyBalance1).to.have.been.called.once;
+        const topUpPayment0 = await orm.em.findOneOrFail(AgentUnderlyingPayment, {type: AgentUnderlyingPaymentType.TOP_UP }  as FilterQuery<AgentUnderlyingPayment>, {orderBy: {id: ('DESC')}});
+        expect(topUpPayment0.state).to.equal(AgentUnderlyingPaymentState.PAID);
+        // run agent's steps until underlying payment process is finished
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if underlying payment is done
+            orm.em.clear();
+            const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, {txHash: topUpPayment0.txHash }  as FilterQuery<AgentUnderlyingPayment> );
+            console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
+            if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
+        }
+        expect(spyBalance2).to.have.been.called.once;
     });
 
     it("Should prove EOA address", async () => {
