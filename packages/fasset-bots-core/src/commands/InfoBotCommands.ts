@@ -99,15 +99,14 @@ export class InfoBotCommands {
     async printSystemInfo() {
         const fAsset = this.context.fAsset;
         const assetManager = this.context.assetManager;
-        const settings = await assetManager.getSettings();
-        const symbol = await fAsset.symbol();
-        console.log(`FAsset: ${await fAsset.name()} (${symbol}) at ${fAsset.address}`);
+        const fassetBR = await TokenBalances.fasset(this.context);
+        console.log(`FAsset: ${await fAsset.name()} (${fassetBR.symbol}) at ${fAsset.address}`);
         console.log(`Asset manager: ${assetManager.address}`);
-        const mintedWei = await fAsset.totalSupply();
-        const minted = Number(mintedWei) / Number(settings.assetUnitUBA);
-        const lotSizeUBA = await this.getLotSize(settings);
+        const mintedWei = await fassetBR.totalSupply();
+        const lotSizeUBA = await this.getLotSize();
         const mintedLots = Number(mintedWei) / lotSizeUBA;
-        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`);
+        console.log(`Lot size: ${fassetBR.format(lotSizeUBA)}`);
+        console.log(`Minted: ${fassetBR.format(mintedWei)}  (${mintedLots.toFixed(6)} lots)`);
     }
 
     async printAvailableAgents() {
