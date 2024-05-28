@@ -54,6 +54,8 @@ export const PERFORM_DAILY_TASKS_EVERY = 1 * DAYS;
  * It cannot be stored directly in AgentBot class, because that is re-created on every loop of AgentBotRunner.
  */
 export class AgentBotTransientStorage {
+    static deepCopyWithObjectCreate = true;
+
     // used by AgentBotEventReader.checkForPriceChangeEvents to track the last block for which PriceFinalized event was called
     lastPriceReaderEventBlock = -1;
 
