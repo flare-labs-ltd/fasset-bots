@@ -106,12 +106,6 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.twice;
     });
 
-    it("Should send low underlying balance failed alert", async () => {
-        const spySend = spy.on(notifier, "sendLowUnderlyingAgentBalanceFailed");
-        await notifier.sendLowUnderlyingAgentBalanceFailed("1" as FormattedString);
-        expect(spySend).to.have.been.called.once;
-    });
-
     it("Should send low balance on owner's underlying address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
         await notifier.sendLowBalanceOnUnderlyingOwnersAddress("underlying", "1" as FormattedString);

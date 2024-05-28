@@ -174,13 +174,6 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalanceUBA: FormattedString) {
-        await this.danger(
-            AgentNotificationKey.LOW_AGENT_FREE_UNDERLYING_BALANCE,
-            `Agent ${this.address} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`
-        );
-    }
-
     async sendLowBalanceOnUnderlyingOwnersAddress(ownerUnderlyingAddress: string, ownerUnderlyingBalance: FormattedString) {
         await this.info(
             AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE,
