@@ -44,7 +44,7 @@ export class Liquidator extends ActorBase {
         logger.info(`Liquidator ${address} initialized asset context.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(context, lastBlock);
-        await trackedState.initialize();
+        await trackedState.initialize(true);
         logger.info(`Liquidator ${address} initialized tracked state.`);
         return new Liquidator(context, new ScopedRunner(), address, trackedState, config.notifiers);
     }
