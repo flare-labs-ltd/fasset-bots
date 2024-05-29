@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import chalk from "chalk";
 import { formatArgs } from "../formatting";
-import { DEFAULT_TIMEOUT } from "../helpers";
+import { DEFAULT_TIMEOUT, systemTimestamp } from "../helpers";
 import { logger } from "../logger";
 import { BotType, NotificationLevel, NotifierTransport } from "./BaseNotifier";
 
@@ -19,6 +19,34 @@ export class LoggerNotifierTransport implements NotifierTransport {
             logger.warn(`[ALERT:DANGER] ${title}: ${message}`, { notification: { level, type, address } });
         } else if (level === NotificationLevel.CRITICAL) {
             logger.error(`[ALERT:CRITICAL] ${title}: ${message}`, { notification: { level, type, address } });
+        }
+    }
+}
+
+// the time in seconds to throttle alert with title `notificationKey` (default no throttle)
+export type NotifierThrottlingTimes = { [notificationKey: string]: number };
+
+export class ThrottlingNotifierTransport implements NotifierTransport {
+    static deepCopyWithObjectCreate = true;
+
+    constructor(
+        public wrappedTransport: NotifierTransport,
+        public throttlingTimes: NotifierThrottlingTimes,
+    ) {}
+
+    public lastAlertAt: { [notificationKey: string]: number } = {};
+
+    async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {
+        const timestamp = systemTimestamp();
+        if (title in this.throttlingTimes) {
+            const lastAlertAt = this.lastAlertAt[title] ?? 0;
+            if (timestamp - lastAlertAt >= this.throttlingTimes[title]) {
+                await this.wrappedTransport.send(type, address, level, title, message);
+                this.lastAlertAt[title] = timestamp;
+            }
+        } else {
+            // no throttling for this message type
+            await this.wrappedTransport.send(type, address, level, title, message);
         }
     }
 }

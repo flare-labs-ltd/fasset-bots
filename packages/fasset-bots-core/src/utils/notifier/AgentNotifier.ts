@@ -1,5 +1,5 @@
 import { FormattedString } from "../formatting";
-import { BNish } from "../helpers";
+import { BNish, HOURS } from "../helpers";
 import { BaseNotifier, BotType, NotifierTransport } from "./BaseNotifier";
 
 export enum AgentNotificationKey {
@@ -74,6 +74,10 @@ export enum AgentNotificationKey {
     UNRESOLVED_EVENT = "EVENT IN DATABASE NOT FOUND ON CHAIN - SKIPPED",
 }
 
+export const agentNotifierThrottlingTimes = {
+    [AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE]: 6 * HOURS,
+    [AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE]: 6 * HOURS,
+};
 
 export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     constructor(address: string, transports: NotifierTransport[]) {
