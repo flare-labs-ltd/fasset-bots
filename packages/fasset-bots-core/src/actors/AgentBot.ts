@@ -324,39 +324,54 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleOpenMintings(rootEm: EM): Promise<void> {
-        const openMintings = await this.minting.openMintings(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
-        for (const rd of openMintings) {
-            if (this.stopRequested()) return;
-            await this.minting.nextMintingStep(rootEm, rd.id);
+        try {
+            const openMintings = await this.minting.openMintings(rootEm, true);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
+            for (const rd of openMintings) {
+                if (this.stopRequested()) return;
+                await this.minting.nextMintingStep(rootEm, rd.id);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open mintings.`);
+        } catch (error) {
+            console.error(`Error while handling open mintings for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open mintings:`, error);
         }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open mintings.`);
     }
 
     /**
      * @param rootEm entity manager
      */
     async handleOpenRedemptions(rootEm: EM): Promise<void> {
-        const openRedemptions = await this.redemption.openRedemptions(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
-        for (const rd of openRedemptions) {
-            if (this.stopRequested()) return;
-            await this.redemption.nextRedemptionStep(rootEm, rd.id);
+        try {
+            const openRedemptions = await this.redemption.openRedemptions(rootEm, true);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
+            for (const rd of openRedemptions) {
+                if (this.stopRequested()) return;
+                await this.redemption.nextRedemptionStep(rootEm, rd.id);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
+        } catch (error) {
+            console.error(`Error while handling open redemptions for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open redemptions:`, error);
         }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
     }
 
     /**
      * @param rootEm entity manager
      */
-        async handleOpenUnderlyingPayments(rootEm: EM): Promise<void> {
+    async handleOpenUnderlyingPayments(rootEm: EM): Promise<void> {
+        try {
             const openUnderlyingPayments = await this.underlyingManagement.openUnderlyingPaymentIds(rootEm);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open underlying payments #${openUnderlyingPayments.length}.`);
-        for (const up of openUnderlyingPayments) {
-            if (this.stopRequested()) return;
-            await this.underlyingManagement.nextUnderlyingPaymentStep(rootEm, up.id);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open underlying payments #${openUnderlyingPayments.length}.`);
+            for (const up of openUnderlyingPayments) {
+                if (this.stopRequested()) return;
+                await this.underlyingManagement.nextUnderlyingPaymentStep(rootEm, up.id);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open underlying payments.`);
+        } catch (error) {
+            console.error(`Error while handling open underlying payments for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open underlying payments:`, error);
         }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open underlying payments.`);
     }
 
     /**
@@ -364,17 +379,23 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
-        if (this.stopRequested()) return;
-        const readAgentEnt = await this.fetchAgentEntity(rootEm)
-        const timestamp = await latestBlockTimestampBN();
-        if (timestamp.sub(readAgentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
-        const blockHeightProof = await this.getUnderlyingBlockHeightProof();
-        if (blockHeightProof == null) return;
-        logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
-        await this.checkForClaims();
-        await this.updateAgentEntity(rootEm, async (agentEnt) => {
-            agentEnt.dailyTasksTimestamp = toBN(timestamp);
-        });
+        try {
+            if (this.stopRequested()) return;
+            const readAgentEnt = await this.fetchAgentEntity(rootEm)
+            const timestamp = await latestBlockTimestampBN();
+            if (timestamp.sub(readAgentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
+            const blockHeightProof = await this.getUnderlyingBlockHeightProof();
+            if (blockHeightProof == null) return;
+            logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
+            await this.checkForClaims();
+            await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.dailyTasksTimestamp = toBN(timestamp);
+            });
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
+        } catch (error) {
+            console.error(`Error while handling daily tasks for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling daily tasks:`, error);
+        }
     }
 
     /**
@@ -462,32 +483,42 @@ export class AgentBot {
     }
 
     async handleWaitForCollateralWithdrawal(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm);
-        if (toBN(readAgentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const allowedAt = toBN(readAgentEnt.withdrawalAllowedAtTimestamp);
-            const amount = toBN(readAgentEnt.withdrawalAllowedAtAmount);
-            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
-            if (successOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
-                    agentEnt.withdrawalAllowedAtAmount = "";
-                });
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            if (toBN(readAgentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+                const allowedAt = toBN(readAgentEnt.withdrawalAllowedAtTimestamp);
+                const amount = toBN(readAgentEnt.withdrawalAllowedAtAmount);
+                const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
+                if (successOrExpired) {
+                    await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
+                        agentEnt.withdrawalAllowedAtAmount = "";
+                    });
+                }
             }
+        } catch (error) {
+            console.error(`Error while handling wait for collateral withdrawal for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling wait for collateral withdrawal during handleTimelockedProcesses:`, error);
         }
     }
 
     async handleWaitForPoolTokenRedemption(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm);
-        if (toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const allowedAt = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
-            const amount = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
-            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
-            if (successOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                    agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
-                });
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            if (toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+                const allowedAt = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
+                const amount = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+                const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
+                if (successOrExpired) {
+                    await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+                        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+                    });
+                }
             }
+        } catch (error) {
+            console.error(`Error while handling wait for pool token redemption for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling wait for pool token redemption during handleTimelockedProcesses:`, error);
         }
     }
 
@@ -597,45 +628,56 @@ export class AgentBot {
     }
 
     private async handleUnderlyingWithdrawal(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm);
-        // confirm underlying withdrawal
-        if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
-            logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
-            // agent waiting for underlying withdrawal
-            if (readAgentEnt.underlyingWithdrawalConfirmTransaction.length) {
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            // confirm underlying withdrawal
+            if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
+                logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
+                // agent waiting for underlying withdrawal
+                if (readAgentEnt.underlyingWithdrawalConfirmTransaction.length) {
+                    const settings = await this.context.assetManager.getSettings();
+                    const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
+                    if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                        // agent can confirm underlying withdrawal
+                        await this.underlyingManagement.createAgentUnderlyingPayment(rootEm, readAgentEnt.underlyingWithdrawalConfirmTransaction, AgentUnderlyingPaymentType.WITHDRAWAL);
+                        await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                            agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                            agentEnt.underlyingWithdrawalConfirmTransaction = ""
+                        });
+                    } else {
+                        const withdrawalAllowedAt = toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
+                        logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${withdrawalAllowedAt}. Current ${latestTimestamp}.`);
+                    }
+                }
+            }
+        } catch(error) {
+            console.error(`Error while handling underlying withdrawal for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling underlying withdrawal during handleTimelockedProcesses:`, error);
+        }
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            // cancel underlying withdrawal
+            if (readAgentEnt.underlyingWithdrawalWaitingForCancelation) {
+                logger.info(`Agent ${this.agent.vaultAddress} is waiting for canceling underlying withdrawal.`);
                 const settings = await this.context.assetManager.getSettings();
                 const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
                 if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                    // agent can confirm underlying withdrawal
-                    await this.underlyingManagement.createAgentUnderlyingPayment(rootEm, readAgentEnt.underlyingWithdrawalConfirmTransaction, AgentUnderlyingPaymentType.WITHDRAWAL);
+                    // agent can confirm cancel withdrawal announcement
+                    await this.agent.cancelUnderlyingWithdrawal();
+                    await this.notifier.sendCancelWithdrawUnderlying();
+                    logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
                     await this.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                        agentEnt.underlyingWithdrawalConfirmTransaction = ""
+                        agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                        agentEnt.underlyingWithdrawalWaitingForCancelation = false;
                     });
                 } else {
-                    const withdrawalAllowedAt = toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
-                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${withdrawalAllowedAt}. Current ${latestTimestamp}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
                 }
             }
-        }
-        // cancel underlying withdrawal
-        if (readAgentEnt.underlyingWithdrawalWaitingForCancelation) {
-            logger.info(`Agent ${this.agent.vaultAddress} is waiting for canceling underlying withdrawal.`);
-            const settings = await this.context.assetManager.getSettings();
-            const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
-            if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                // agent can confirm cancel withdrawal announcement
-                await this.agent.cancelUnderlyingWithdrawal();
-                await this.notifier.sendCancelWithdrawUnderlying();
-                logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                    agentEnt.underlyingWithdrawalWaitingForCancelation = false;
-                });
-            } else {
-                logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
-            }
+        } catch(error) {
+            console.error(`Error while handling underlying cancelation for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling underlying cancelation during handleTimelockedProcesses:`, error);
         }
     }
 
@@ -710,9 +752,14 @@ export class AgentBot {
      * @param agentEnt agent entity
      */
     async handleWaitAgentExitAvailable(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm);
-        if (this.announcementStatus(readAgentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
-        await this.exitAvailable(rootEm);
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            if (this.announcementStatus(readAgentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
+            await this.exitAvailable(rootEm);
+        } catch (error) {
+            console.error(`Error while handling wait for agent exit available for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling wait for agent exit available during handleTimelockedProcesses:`, error);
+        }
     }
 
     async exitAvailable(rootEm: EM) {
