@@ -1,6 +1,7 @@
 import { FormattedString } from "../formatting";
 import { BNish, HOURS } from "../helpers";
 import { BaseNotifier, BotType, NotifierTransport } from "./BaseNotifier";
+import { NotifierThrottlingConfigs } from "./NotifierTransports";
 
 export enum AgentNotificationKey {
     // agent status and settings,
@@ -74,9 +75,9 @@ export enum AgentNotificationKey {
     UNRESOLVED_EVENT = "EVENT IN DATABASE NOT FOUND ON CHAIN - SKIPPED",
 }
 
-export const agentNotifierThrottlingTimes = {
-    [AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE]: 6 * HOURS,
-    [AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE]: 6 * HOURS,
+export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
+    [AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE]: { duration: 6 * HOURS, addressInKey: false },
+    [AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE]: { duration: 6 * HOURS, addressInKey: false },
 };
 
 export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {

@@ -24,25 +24,28 @@ export class LoggerNotifierTransport implements NotifierTransport {
 }
 
 // the time in seconds to throttle alert with title `notificationKey` (default no throttle)
-export type NotifierThrottlingTimes = { [notificationKey: string]: number };
+type NotifierThrottlingConfig = { duration: number; addressInKey: boolean; };
+export type NotifierThrottlingConfigs = { [notificationKey: string]: NotifierThrottlingConfig };
 
 export class ThrottlingNotifierTransport implements NotifierTransport {
     static deepCopyWithObjectCreate = true;
 
     constructor(
         public wrappedTransport: NotifierTransport,
-        public throttlingTimes: NotifierThrottlingTimes,
+        public throttling: NotifierThrottlingConfigs,
     ) {}
 
     public lastAlertAt: { [notificationKey: string]: number } = {};
 
     async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {
         const timestamp = systemTimestamp();
-        if (title in this.throttlingTimes) {
-            const lastAlertAt = this.lastAlertAt[title] ?? 0;
-            if (timestamp - lastAlertAt >= this.throttlingTimes[title]) {
+        const throttling = this.throttling[title];
+        if (throttling) {
+            const key = throttling.addressInKey ? `${title}-${address}` : title;
+            const lastAlertAt = this.lastAlertAt[key] ?? 0;
+            if (timestamp - lastAlertAt >= throttling.duration) {
                 await this.wrappedTransport.send(type, address, level, title, message);
-                this.lastAlertAt[title] = timestamp;
+                this.lastAlertAt[key] = timestamp;
             }
         } else {
             // no throttling for this message type
