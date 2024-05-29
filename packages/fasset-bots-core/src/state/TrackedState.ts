@@ -83,6 +83,7 @@ export class TrackedState {
     async registerInitialAgents(): Promise<void> {
         let retries = 0;
         let start = 0;
+        // eslint-disable-next-line no-constant-condition
         while (true) {
             try {
                 const { 0: newAgents, 1: totalLength } = await this.context.assetManager.getAllAgents(start, start + MAX_AGENT_FETCH_BATCH_SIZE);
