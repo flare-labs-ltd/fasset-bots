@@ -19,8 +19,9 @@ import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWal
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { Currency, RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull, toBNExp } from "../utils";
+import { agentNotifierThrottlingTimes } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport } from "../utils/notifier/NotifierTransports";
+import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport, ThrottlingNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
 import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
@@ -120,11 +121,12 @@ export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOp
 
 export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs: ApiNotifierConfig[] | undefined) {
     const transports: NotifierTransport[] = [];
-    transports.push(new ConsoleNotifierTransport());
+    transports.push(new ThrottlingNotifierTransport(new ConsoleNotifierTransport(), agentNotifierThrottlingTimes));
     transports.push(new LoggerNotifierTransport());
     if (apiNotifierConfigs !== undefined) {
         for (const apiNotifierConfig of apiNotifierConfigs) {
-            transports.push(new ApiNotifierTransport(apiNotifierConfig.apiUrl, apiNotifierConfig.apiKey));
+            const transport = new ApiNotifierTransport(apiNotifierConfig.apiUrl, apiNotifierConfig.apiKey);
+            transports.push(new ThrottlingNotifierTransport(transport, agentNotifierThrottlingTimes));
         }
     }
     return transports;
