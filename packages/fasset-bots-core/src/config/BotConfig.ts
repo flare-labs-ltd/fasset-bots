@@ -2,11 +2,11 @@ import "dotenv/config";
 
 import { StuckTransaction } from "@flarelabs/simple-wallet";
 import { EntityManager } from "@mikro-orm/core";
+import BN from "bn.js";
 import { Secrets } from ".";
 import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
-import { ChainInfo } from "../fasset/ChainInfo";
-import { NativeChainInfo } from "../fasset/ChainInfo";
+import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
@@ -18,11 +18,11 @@ import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
-import { BN_ZERO, RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull, toBNExp } from "../utils";
+import { Currency, RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull, toBNExp } from "../utils";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId, supportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
@@ -48,14 +48,24 @@ export interface BotFAssetConfig {
     verificationClient?: IVerificationApiClient; // only for agent bot and user
     assetManager: IIAssetManagerInstance;
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    agentBotSettings?: AgentBotSettings;
 }
 
+export interface AgentBotSettings {
+    liquidationPreventionFactor: number;
+    vaultCollateralReserveFactor: number;
+    poolCollateralReserveFactor: number;
+    recommendedOwnerUnderlyingBalance: BN;
+    minimumVaultUnderlyingBalance: BN;
+}
+
+export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
 export type BotFAssetConfigWithWallet = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient">;
 export type BotFAssetConfigWithIndexer = RequireFields<BotFAssetConfig, "blockchainIndexerClient" | "stateConnector" | "verificationClient">;
 
-export type AgentBotConfig = RequireFields<BotConfig<BotFAssetConfigWithWallet>, "orm">;    // for agent
-export type UserBotConfig = BotConfig<BotFAssetConfigWithWallet>;                           // for minter and redeemer
-export type KeeperBotConfig = BotConfig<BotFAssetConfigWithIndexer>;                        // for challenger and timekeeper
+export type AgentBotConfig = RequireFields<BotConfig<BotFAssetAgentConfig>, "orm">; // for agent
+export type UserBotConfig = BotConfig<BotFAssetConfigWithWallet>;                   // for minter and redeemer
+export type KeeperBotConfig = BotConfig<BotFAssetConfigWithIndexer>;                // for challenger and timekeeper
 
 export type BotConfigType = "agent" | "user" | "keeper" | "common";
 
@@ -77,7 +87,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         const retriever = await AssetContractRetriever.create(configFile.prioritizeAddressUpdater, configFile.contractsJsonFile, configFile.assetManagerController);
         const fAssets: Map<string, BotFAssetConfig> = new Map();
         for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
-            const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
+            const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, configFile.agentBotSettings,
+                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
             fAssets.set(symbol, fassetConfig);
         }
         return {
@@ -97,10 +108,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
 }
 
 export function createNativeChainInfo(nativeChainInfo: BotNativeChainInfo): NativeChainInfo {
-    return {
-        ...nativeChainInfo,
-        recommendedOwnerBalance: nativeChainInfo.recommendedOwnerBalance != null ? toBNExp(nativeChainInfo.recommendedOwnerBalance, 18) : BN_ZERO,
-    }
+    return { ...nativeChainInfo };
 }
 
 export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOptions, databaseAccount?: DatabaseAccount) {
@@ -138,6 +146,7 @@ export async function createBotFAssetConfig(
     retriever: AssetContractRetriever,
     fAssetSymbol: string,
     fassetInfo: BotFAssetInfo,
+    agentSettings: AgentBotSettingsJson | undefined,
     em: EM | undefined,
     attestationProviderUrls: string[] | undefined,
     submitter: string | undefined,
@@ -155,6 +164,11 @@ export async function createBotFAssetConfig(
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
         result.wallet = createBlockchainWalletHelper(type, secrets, chainId, em, fassetInfo.walletUrl, walletOptions);
+    }
+    if (type === "agent") {
+        assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
+        assertNotNullCmd(agentSettings.fAssets[fAssetSymbol], `Missing agent bot settings for fasset ${fAssetSymbol}`);
+        result.agentBotSettings = createAgentBotSettings(agentSettings, agentSettings.fAssets[fAssetSymbol], result.chainInfo);
     }
     if (type === "agent" || type === "user" || type === "keeper") {
         assertNotNullCmd(fassetInfo.indexerUrl, "Missing indexerUrl in FAsset type ${fAssetSymbol}");
@@ -178,8 +192,18 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
         decimals: decimals,
         amgDecimals: Number(settings.assetMintingDecimals),
         requireEOAProof: settings.requireEOAAddressProof,
-        minimumAccountBalance: fassetInfo.minimumAccountBalance != null ? toBNExp(fassetInfo.minimumAccountBalance, decimals) : BN_ZERO,
-        recommendedOwnerBalance: fassetInfo.recommendedOwnerBalance != null ? toBNExp(fassetInfo.recommendedOwnerBalance, decimals) : BN_ZERO,
+        minimumAccountBalance: toBNExp(fassetInfo.minimumAccountBalance ?? "0", decimals),
+    }
+}
+
+function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSettings: AgentBotFassetSettingsJson, chainInfo: ChainInfo): AgentBotSettings {
+    const underlying = new Currency(chainInfo.symbol, chainInfo.decimals);
+    return {
+        liquidationPreventionFactor: Number(agentBotSettings.liquidationPreventionFactor),
+        vaultCollateralReserveFactor: Number(agentBotSettings.vaultCollateralReserveFactor),
+        poolCollateralReserveFactor: Number(agentBotSettings.poolCollateralReserveFactor),
+        minimumVaultUnderlyingBalance: underlying.parse(fassetSettings.minimumVaultUnderlyingBalance),
+        recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
     }
 }
 

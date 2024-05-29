@@ -1,27 +1,27 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import { AgentBot } from "../../src/actors/AgentBot";
-import { createBlockchainIndexerHelper } from "../../src/config/BotConfig";
+import { AgentBotSettings, createBlockchainIndexerHelper } from "../../src/config/BotConfig";
 import { ORM } from "../../src/config/orm";
 import { Secrets } from "../../src/config/secrets";
 import { AgentEntity } from "../../src/entities/agent";
 import { WalletAddress } from "../../src/entities/wallet";
 import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
+import { MockChain } from "../../src/mock/MockChain";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../../src/underlying-chain/ChainId";
 import { DBWalletKeys, IWalletKeys } from "../../src/underlying-chain/WalletKeys";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
+import { TokenBalances } from "../../src/utils";
 import { EventArgs } from "../../src/utils/events/common";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
 import { BN_ZERO, fail, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
+import { TestAssetBotContext } from "../../test-hardhat/test-utils/create-test-asset-context";
 import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { testNotifierTransports } from "./testNotifierTransports";
-import { MockChain } from "../../src/mock/MockChain";
-import { TestAssetBotContext } from "../../test-hardhat/test-utils/create-test-asset-context";
-import { TokenBalances } from "../../src/utils";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
@@ -87,22 +87,22 @@ export async function balanceOfVaultCollateral(vaultCollateralTokenAddress: stri
     return await vaultCollateralToken.balanceOf(address);
 }
 
-export async function cleanUp(context: IAssetAgentContext, orm: ORM, ownerAddress: string, ownerUnderlyingAddress: string, destroyAgentsAfterTests: string[]) {
+export async function cleanUp(context: IAssetAgentContext, agentBotSettings: AgentBotSettings, orm: ORM, ownerAddress: string, ownerUnderlyingAddress: string, destroyAgentsAfterTests: string[]) {
     const destroyAgents = destroyAgentsAfterTests;
     const waitingTime = (await context.assetManager.getSettings()).withdrawalWaitMinSeconds;
     for (const agentAddress of destroyAgents) {
         try {
-            await destroyAgent(context, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
+            await destroyAgent(context, agentBotSettings, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
         } catch (e) {
             if (e instanceof Error) {
                 if (e.message.includes("destroy: not allowed yet")) {
                     await sleep(Number(toBN(waitingTime).muln(1000)));
-                    await destroyAgent(context, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
+                    await destroyAgent(context, agentBotSettings, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
                 }
                 if (e.message.includes("destroy not announced")) {
                     await context.assetManager.announceDestroyAgent(agentAddress, { from: ownerAddress });
                     await sleep(Number(toBN(waitingTime).muln(1000)));
-                    await destroyAgent(context, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
+                    await destroyAgent(context, agentBotSettings, orm, agentAddress, ownerAddress, ownerUnderlyingAddress);
                 }
                 if (e.message.includes("AgentEntity not found")) {
                     continue;
@@ -113,9 +113,9 @@ export async function cleanUp(context: IAssetAgentContext, orm: ORM, ownerAddres
     }
 }
 
-export async function destroyAgent(context: IAssetAgentContext, orm: ORM, agentAddress: string, ownerAddress: string, ownerUnderlyingAddress: string) {
+export async function destroyAgent(context: IAssetAgentContext, agentBotSettings: AgentBotSettings, orm: ORM, agentAddress: string, ownerAddress: string, ownerUnderlyingAddress: string) {
     const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentAddress, active: true } as FilterQuery<AgentEntity>);
-    const agentBot = await AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
+    const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
     const agentInfoForAnnounce = await context.assetManager.getAgentInfo(agentAddress);
     const freeVaultCollateralBalance = toBN(agentInfoForAnnounce.freeVaultCollateralWei);
     const freePoolTokenBalance = toBN(agentInfoForAnnounce.freePoolCollateralNATWei);

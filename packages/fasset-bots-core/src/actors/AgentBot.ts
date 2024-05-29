@@ -1,7 +1,7 @@
 import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
-import { Secrets } from "../config";
+import { AgentBotSettings, Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentUnderlyingPaymentType } from "../entities/agent";
@@ -14,6 +14,7 @@ import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { CommandLineError, TokenBalances } from "../utils";
 import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
+import { checkUnderlyingFunds } from "../utils/fasset-helpers";
 import { formatArgs, squashSpace } from "../utils/formatting";
 import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -29,7 +30,6 @@ import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
 import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentTokenBalances } from "./AgentTokenBalances";
-import { checkUnderlyingFunds } from "../utils/fasset-helpers";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -69,6 +69,7 @@ export class AgentBot {
 
     constructor(
         public agent: Agent,
+        public agentBotSettings: AgentBotSettings,
         public notifier: AgentNotifier,
         public owner: OwnerAddressPair,
         public ownerUnderlyingAddress: string,
@@ -117,6 +118,7 @@ export class AgentBot {
     static async create(
         rootEm: EM,
         context: IAssetAgentContext,
+        agentBotSettings: AgentBotSettings,
         owner: OwnerAddressPair,
         ownerUnderlyingAddress: string,
         addressValidityProof: AddressValidity.Proof,
@@ -147,7 +149,7 @@ export class AgentBot {
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
 
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
+            return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
     }
 
     /**
@@ -180,6 +182,7 @@ export class AgentBot {
      */
     static async fromEntity(
         context: IAssetAgentContext,
+        agentBotSettings: AgentBotSettings,
         agentEntity: AgentEntity,
         ownerUnderlyingAddress: string,
         notifierTransports: NotifierTransport[]
@@ -202,7 +205,7 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
     }
 
     static underlyingAddress(secrets: Secrets, chainId: ChainId) {

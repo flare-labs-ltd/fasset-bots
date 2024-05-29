@@ -7,7 +7,7 @@ import chalk from "chalk";
 import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
@@ -39,6 +39,7 @@ export class AgentBotCommands {
 
     constructor(
         public context: IAssetAgentContext,
+        public agentBotSettings: AgentBotSettings,
         public owner: OwnerAddressPair,
         public ownerUnderlyingAddress: string,
         public orm: ORM,
@@ -83,7 +84,7 @@ export class AgentBotCommands {
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
-        return new AgentBotCommands(context, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
+        return new AgentBotCommands(context, chainConfig.agentBotSettings, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
     }
 
     notifierFor(agentVault: string) {
@@ -129,7 +130,8 @@ export class AgentBotCommands {
             ]);
             console.log(`Creating agent bot...`);
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
-            const agentBot = await AgentBot.create(this.orm.em, this.context, this.owner, this.ownerUnderlyingAddress, addressValidityProof, agentBotSettings, this.notifiers);
+            const agentBot = await AgentBot.create(this.orm.em, this.context, this.agentBotSettings, this.owner, this.ownerUnderlyingAddress,
+                addressValidityProof, agentBotSettings, this.notifiers);
             await this.notifierFor(agentBot.agent.vaultAddress).sendAgentCreated();
             console.log(`Agent bot created.`);
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
@@ -579,7 +581,7 @@ export class AgentBotCommands {
      */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; readAgentEnt: AgentEntity }> {
         const readAgentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, readAgentEnt, this.ownerUnderlyingAddress, this.notifiers);
+        const agentBot = await AgentBot.fromEntity(this.context, this.agentBotSettings, readAgentEnt, this.ownerUnderlyingAddress, this.notifiers);
         return { agentBot, readAgentEnt };
     }
 

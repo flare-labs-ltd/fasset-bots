@@ -49,16 +49,23 @@ function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override:
     result.ormOptions = { ...config.ormOptions, ...override.ormOptions };
     result.walletOptions = { ...config.walletOptions, ...override.walletOptions };
     result.nativeChainInfo = { ...config.nativeChainInfo, ...override.nativeChainInfo };
-    result.fAssets = { ...config.fAssets };
-    for (const [symbol, info] of Object.entries(override.fAssets ?? {})) {
-        if (symbol in config.fAssets) {
-            result.fAssets[symbol] = { ...config.fAssets[symbol], ...info };
+    result.fAssets = mergeFAssets(overrideFile, config.fAssets, override.fAssets);
+    result.agentBotSettings = { ...config.agentBotSettings, ...override.agentBotSettings };
+    result.agentBotSettings.fAssets = mergeFAssets(`${overrideFile} (agentBotSettings)`, config.agentBotSettings.fAssets, override.agentBotSettings?.fAssets);
+    return result;
+}
+
+function mergeFAssets(overrideFile: string, configFAssets: Record<string, any>, overrideFAssets: Record<string, any> | undefined) {
+    const resultFAssets: Record<string, any> = { ...configFAssets };
+    for (const [symbol, info] of Object.entries(overrideFAssets ?? {})) {
+        if (symbol in configFAssets) {
+            resultFAssets[symbol] = { ...configFAssets[symbol], ...info };
         } else {
             console.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
             logger.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
         }
     }
-    return result;
+    return resultFAssets;
 }
 
 function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {

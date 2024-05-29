@@ -9,7 +9,6 @@ export interface ChainInfo {
     amgDecimals: number;
     requireEOAProof: boolean;
     minimumAccountBalance: BN; // only needed for XRP
-    recommendedOwnerBalance: BN;
 }
 
 export interface NativeChainInfo {
@@ -18,5 +17,4 @@ export interface NativeChainInfo {
     finalizationBlocks: number;
     // maximum number of blocks in getPastLogs() call
     readLogsChunkSize: number;
-    recommendedOwnerBalance: BN;
 }

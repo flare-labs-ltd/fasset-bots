@@ -12,13 +12,13 @@ import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain } from "../../../src/mock/MockChain";
 import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
-import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 use(chaiAsPromised);
 use(spies);
 
@@ -59,7 +59,7 @@ describe("AgentBot cli commands unit tests", () => {
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // bot cli commands
         const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-        botCliCommands = new AgentBotCommands(context, owner, ownerUnderlyingAddress, orm, testNotifierTransports);
+        botCliCommands = new AgentBotCommands(context, testAgentBotSettings.xrp, owner, ownerUnderlyingAddress, orm, testNotifierTransports);
         return { orm, context, chain, botCliCommands };
     }
 

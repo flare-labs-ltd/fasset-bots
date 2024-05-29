@@ -14,8 +14,6 @@ export type Modify<T, R> = Omit<T, keyof R> & R;
 
 export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
-export type NullableToNonNullable<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : unknown;
-
 export const BN_ZERO = new BN(0);
 export const BN_ONE: BN = Web3.utils.toBN(1);
 export const BN_TEN: BN = Web3.utils.toBN(10);
@@ -78,7 +76,7 @@ export function isNotNull<T>(x: T): x is NonNullable<T> {
  * Check if value is non-null and throw otherwise.
  * Returns guaranteed non-null value.
  */
-export function requireNotNull<T>(x: T, errorMessage?: string): NullableToNonNullable<T> {
+export function requireNotNull<T>(x: T, errorMessage?: string): NonNullable<T> {
     if (x != null) return x as any;
     throw new Error(errorMessage ?? "Value is null or undefined");
 }
