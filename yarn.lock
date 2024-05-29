@@ -1368,6 +1368,42 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@flarelabs/fasset-liquidator@workspace:packages/fasset-liquidator":
+  version: 0.0.0-use.local
+  resolution: "@flarelabs/fasset-liquidator@workspace:packages/fasset-liquidator"
+  dependencies:
+    "@nomicfoundation/hardhat-chai-matchers": ^2.0.2
+    "@nomicfoundation/hardhat-ethers": ^3.0.4
+    "@nomicfoundation/hardhat-network-helpers": ^1.0.9
+    "@nomicfoundation/hardhat-toolbox": ^3.0.0
+    "@nomicfoundation/hardhat-verify": ^1.1.1
+    "@openzeppelin/contracts": ^4.9.3
+    "@typechain/ethers-v6": ^0.4.0
+    "@typechain/hardhat": ^8.0.3
+    "@types/chai": ^4.3.6
+    "@types/dotenv": ^8.2.0
+    "@types/mocha": ^10.0.1
+    "@types/node": ^20.5.7
+    blazeswap: "git+https://github.com/kuco23/blazeswap.git#main"
+    chai: ^4.3.10
+    chalk: 4.1.2
+    commander: ^11.1.0
+    cross-env: ^7.0.3
+    dotenv: ^16.3.1
+    ethers: ^6.7.1
+    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.6"
+    hardhat: 2.20.1
+    hardhat-gas-reporter: ^1.0.9
+    mocha: ^10.3.0
+    rimraf: ^5.0.1
+    solidity-coverage: ^0.8.5
+    ts-node: ^10.9.1
+    tsx: ^4.7.1
+    typechain: ^8.2.0
+    typescript: ^4.6.3
+  languageName: unknown
+  linkType: soft
+
 "@flarelabs/simple-wallet@workspace:*, @flarelabs/simple-wallet@workspace:packages/simple-wallet":
   version: 0.0.0-use.local
   resolution: "@flarelabs/simple-wallet@workspace:packages/simple-wallet"
@@ -8686,39 +8722,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fasset-liquidator@workspace:packages/fasset-liquidator":
+"fasset-bots-monorepo@workspace:.":
   version: 0.0.0-use.local
-  resolution: "fasset-liquidator@workspace:packages/fasset-liquidator"
+  resolution: "fasset-bots-monorepo@workspace:."
   dependencies:
-    "@nomicfoundation/hardhat-chai-matchers": ^2.0.2
-    "@nomicfoundation/hardhat-ethers": ^3.0.4
-    "@nomicfoundation/hardhat-network-helpers": ^1.0.9
-    "@nomicfoundation/hardhat-toolbox": ^3.0.0
-    "@nomicfoundation/hardhat-verify": ^1.1.1
-    "@openzeppelin/contracts": ^4.9.3
-    "@typechain/ethers-v6": ^0.4.0
-    "@typechain/hardhat": ^8.0.3
-    "@types/chai": ^4.3.6
-    "@types/dotenv": ^8.2.0
-    "@types/mocha": ^10.0.1
-    "@types/node": ^20.5.7
-    blazeswap: "git+https://github.com/kuco23/blazeswap.git#main"
-    chai: ^4.3.10
-    chalk: 4.1.2
-    commander: ^11.1.0
-    cross-env: ^7.0.3
-    dotenv: ^16.3.1
-    ethers: ^6.7.1
-    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.6"
-    hardhat: 2.20.1
-    hardhat-gas-reporter: ^1.0.9
-    mocha: ^10.3.0
-    rimraf: ^5.0.1
-    solidity-coverage: ^0.8.5
-    ts-node: ^10.9.1
-    tsx: ^4.7.1
-    typechain: ^8.2.0
-    typescript: ^4.6.3
+    "@goldstack/utils-typescript-references": 0.3.9
+    "@istanbuljs/nyc-config-typescript": 1.0.2
+    "@types/mocha": 10.0.6
+    "@types/rewire": 2.5.30
+    "@typescript-eslint/eslint-plugin": 6.7.3
+    "@typescript-eslint/parser": 6.7.3
+    dotenv: 16.3.1
+    eslint: 8.50.0
+    eslint-plugin-node: 11.1.0
+    mocha: 10.2.0
+    nyc: 15.1.0
+    rimraf: 5.0.5
+    source-map-support: 0.5.21
+    ts-node: 10.9.1
+    typescript: 5.2.2
   languageName: unknown
   linkType: soft
 
@@ -15105,28 +15127,6 @@ __metadata:
   checksum: 3db4dfe5c793f40ac7e0be689a1f75d05e6f2ca0c66189aeb62adab8c436b857ab4420a419251ee60370d41d957a55698fc5e23ab1e1b41715f33217bc4bb558
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@goldstack/utils-typescript-references": 0.3.9
-    "@istanbuljs/nyc-config-typescript": 1.0.2
-    "@types/mocha": 10.0.6
-    "@types/rewire": 2.5.30
-    "@typescript-eslint/eslint-plugin": 6.7.3
-    "@typescript-eslint/parser": 6.7.3
-    dotenv: 16.3.1
-    eslint: 8.50.0
-    eslint-plugin-node: 11.1.0
-    mocha: 10.2.0
-    nyc: 15.1.0
-    rimraf: 5.0.5
-    source-map-support: 0.5.21
-    ts-node: 10.9.1
-    typescript: 5.2.2
-  languageName: unknown
-  linkType: soft
 
 "run-async@npm:^2.2.0, run-async@npm:^2.4.0":
   version: 2.4.1

@@ -48,15 +48,9 @@
         "allowGlobalContext": true
     },
     "liquidationStrategy": {
-        "className": "DexLiquidationStrategy",
-        "config": {
-            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
-        }
+        "className": "DefaultLiquidationStrategy"
     },
     "challengeStrategy": {
-        "className": "DexChallengeStrategy",
-        "config": {
-            "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
-        }
+        "className": "DefaultChallengeStrategy"
     }
 }
