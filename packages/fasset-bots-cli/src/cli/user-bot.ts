@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { InfoBotCommands, PoolUserBotCommands, UserBotCommands } from "@flarelabs/fasset-bots-core";
 import { Secrets } from "@flarelabs/fasset-bots-core/config";
-import { TokenBalances, formatFixed, squashSpace, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { TRANSACTION_FEE_FACTOR, TokenBalances, formatFixed, squashSpace, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import os from "os";
 import path from "path";
@@ -11,8 +11,6 @@ import Web3 from "web3";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 import { translateError, validate, validateAddress, validateDecimal, validateInteger } from "../utils/validation";
-
-const TRANSACTION_FEE_FACTOR = 2;
 
 const program = programWithCommonOptions("user", "single_fasset");
 

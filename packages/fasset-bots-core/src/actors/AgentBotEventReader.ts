@@ -1,6 +1,5 @@
-import { FilterQuery } from "@mikro-orm/core";
 import { EM } from "../config/orm";
-import { AgentEntity, Event } from "../entities/agent";
+import { Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EvmEvent, eventOrder } from "../utils/events/common";
@@ -38,14 +37,14 @@ export class AgentBotEventReader {
      * @returns list of EvmEvents
      */
     async readNewEvents(em: EM, maximumBlocks: number): Promise<[EvmEvent[], number]> {
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agentVaultAddress } as FilterQuery<AgentEntity>);
-        logger.info(`Agent ${this.agentVaultAddress} started reading native events FROM block ${agentEnt.currentEventBlock}`);
+        const readAgentEnt = await this.bot.fetchAgentEntity(em);
+        logger.info(`Agent ${this.agentVaultAddress} started reading native events FROM block ${readAgentEnt.currentEventBlock}`);
         // get all logs for this agent
         const nci = this.context.nativeChainInfo;
-        const lastBlock = Math.min(agentEnt.currentEventBlock + maximumBlocks, await this.lastFinalizedBlock());
+        const lastBlock = Math.min(readAgentEnt.currentEventBlock + maximumBlocks, await this.lastFinalizedBlock());
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
-        for (let lastBlockRead = agentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
+        for (let lastBlockRead = readAgentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
             if (this.bot.stopRequested()) break;
             // asset manager events
             const logsAssetManager = await web3.eth.getPastLogs({
@@ -69,9 +68,9 @@ export class AgentBotEventReader {
     async handleNewEvents(rootEm: EM): Promise<void> {
         if (this.bot.stopRequested()) return;
         try {
-            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agentVaultAddress } as FilterQuery<AgentEntity>);
-            await agentEnt.events.init();
-            const lastEventRead = agentEnt.lastEventRead();
+            const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
+            await readAgentEnt.events.init();
+            const lastEventRead = readAgentEnt.lastEventRead();
             // eslint-disable-next-line prefer-const
             let [events, lastBlock] = await this.readNewEvents(rootEm, this.maxHandleEventBlocks);
             if (lastEventRead !== undefined) {
@@ -79,23 +78,24 @@ export class AgentBotEventReader {
             }
             for (const event of events) {
                 if (this.bot.stopRequested()) return;
-                await rootEm
-                    .transactional(async (em) => {
-                        // log event is handled here! Transaction committing should be done at the last possible step!
+                try {
+                    await this.bot.handleEvent(rootEm, event);
+                    // log event is handled here! Transaction committing should be done at the last possible step!
+                    await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.addNewEvent(new Event(agentEnt, event, true));
                         agentEnt.currentEventBlock = event.blockNumber;
-                        // handle the event
-                        await this.bot.handleEvent(em, event);
-                    })
-                    .catch(async (error) => {
-                        agentEnt.addNewEvent(new Event(agentEnt, event, false));
-                        await rootEm.persist(agentEnt).flush();
-                        console.error(`Error handling event ${event.signature} for agent ${this.agentVaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agentVaultAddress} run into error while handling an event:`, error);
                     });
+                } catch (error) {
+                    await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.addNewEvent(new Event(agentEnt, event, false));
+                    });
+                    console.error(`Error handling event ${event.signature} for agent ${this.agentVaultAddress}: ${error}`);
+                    logger.error(`Agent ${this.agentVaultAddress} run into error while handling an event:`, error);
+                }
             }
-            agentEnt.currentEventBlock = lastBlock + 1;
-            await rootEm.persist(agentEnt).flush();
+            await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.currentEventBlock = lastBlock + 1;
+            });
         } catch (error) {
             console.error(`Error handling events for agent ${this.agentVaultAddress}: ${error}`);
             logger.error(`Agent ${this.agentVaultAddress} run into error while handling events:`, error);
@@ -104,30 +104,33 @@ export class AgentBotEventReader {
 
     async troubleshootEvents(rootEm: EM): Promise<void> {
         try {
-            const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agentVaultAddress } as FilterQuery<AgentEntity>);
-            await agentEnt.events.init();
-            for (const event of agentEnt.unhandledEvents().sort(eventOrder)) {
+            const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
+            await readAgentEnt.events.init();
+            const unhandledEvents = readAgentEnt.unhandledEvents().sort(eventOrder)
+            for (const event of unhandledEvents) {
                 if (this.bot.stopRequested()) return;
-                await rootEm
-                    .transactional(async (em) => {
-                        const fullEvent = await this.getEventFromEntity(event);
-                        if (fullEvent != null) {
-                            await this.bot.handleEvent(em, fullEvent);
-                        } else {
-                            await this.notifier.danger(AgentNotificationKey.UNRESOLVED_EVENT,
-                                `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; ir will be skipped.`);
-                        }
+                try {
+
+                    const fullEvent = await this.getEventFromEntity(event);
+                    if (fullEvent != null) {
+                        await this.bot.handleEvent(rootEm, fullEvent);
+                    } else {
+                        await this.notifier.danger(AgentNotificationKey.UNRESOLVED_EVENT,
+                            `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; ir will be skipped.`);
+                    }
+                    await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.events.remove(event);
-                    })
-                    .catch(async (error) => {
-                        event.retries += 1;
-                        if (event.retries > MAX_EVENT_RETRY) {
-                            agentEnt.events.remove(event);
-                        }
-                        await rootEm.persist(agentEnt).flush();
-                        console.error(`Error troubleshooting handling of event with id ${event.id} for agent ${this.agentVaultAddress}: ${error}`);
-                        logger.error(`Agent ${this.agentVaultAddress} run into error while handling an event:`, error);
                     });
+                } catch (error) {
+                    event.retries += 1;
+                    if (event.retries > MAX_EVENT_RETRY) {
+                        await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                            agentEnt.events.remove(event);
+                        });
+                    }
+                    console.error(`Error troubleshooting handling of event with id ${event.id} for agent ${this.agentVaultAddress}: ${error}`);
+                    logger.error(`Agent ${this.agentVaultAddress} run into error while handling an event:`, error);
+                }
             }
         } catch (error) {
             console.error(`Error troubleshooting events for agent ${this.agentVaultAddress}: ${error}`);

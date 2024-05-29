@@ -27,9 +27,7 @@ Available commands:
 -   `poolFeesBalance <agentVault> -f [fAssetSymbol]` - pool fees balance of agent
 -   `selfClose <agentVault> <amountUBA> -f [fAssetSymbol]` - self close agent vault with amountUBA of FAssets
 -   `close <agentVault>` - begin the process of closing agent vault; all the steps required will later be performed automatically by running agent bot
--   `announceUnderlyingWithdrawal <agentVault> -f [fAssetSymbol]` - announce underlying withdrawal and get needed payment reference
--   `performUnderlyingWithdrawal <agentVault> <amount> <destinationAddress> <paymentReference> -f [fAssetSymbol]` - perform underlying withdrawal and get needed transaction hash
--   `confirmUnderlyingWithdrawal <agentVault> <transactionHash> -f [fAssetSymbol]` - confirm underlying withdrawal with transaction hash
+-   `withdrawUnderlying <agentVault> <amount> <destinationAddress> -f [fAssetSymbol]` - announces and perform underlying withdrawal and get needed transaction hash
 -   `cancelUnderlyingWithdrawal <agentVault> -f [fAssetSymbol]` - cancel underlying withdrawal announcement
 -   `listAgents` - list active agent from persistent state
 -   `delegatePoolCollateral <agentVault> <recipient> <bips> -f [fAssetSymbol]`- delegate pool collateral, where <bips> is basis points (1/100 of one percent)

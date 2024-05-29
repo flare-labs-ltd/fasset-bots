@@ -243,12 +243,13 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async announceExitAvailableList(agentVault: string): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        const status = await agentBot.getExitAvailableProcessStatus(agentEnt);
+        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
+        const status = await agentBot.getExitAvailableProcessStatus(readAgentEnt);
         if (status === "NOT_ANNOUNCED") {
             const exitAllowedAt = await agentBot.agent.announceExitAvailable();
-            agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
-            await this.orm.em.persistAndFlush(agentEnt);
+            await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                agentEnt.exitAvailableAllowedAtTimestamp = exitAllowedAt;
+            });
             await this.notifierFor(agentVault).sendAgentAnnouncedExitAvailable();
             logger.info(`Agent ${agentVault} announced exit available list at ${exitAllowedAt.toString()}.`);
         } else {
@@ -261,16 +262,16 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async exitAvailableList(agentVault: string): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
         try {
-            await agentBot.exitAvailable(agentEnt);
+            await agentBot.exitAvailable(this.orm.em);
         } catch (error) {
             if (errorIncluded(error, ["exit not announced"])) {
-                throw new CommandLineError(`Agent ${agentEnt.vaultAddress} cannot exit available list - exit not announced.`);
+                throw new CommandLineError(`Agent ${readAgentEnt.vaultAddress} cannot exit available list - exit not announced.`);
             }
             if (errorIncluded(error, ["exit too soon"])) {
-                throw new CommandLineError(squashSpace`Agent ${agentEnt.vaultAddress} cannot exit available list.
-                    Allowed at ${agentEnt.exitAvailableAllowedAtTimestamp}, current timestamp is ${await latestBlockTimestampBN()}.`);
+                throw new CommandLineError(squashSpace`Agent ${readAgentEnt.vaultAddress} cannot exit available list.
+                    Allowed at ${readAgentEnt.exitAvailableAllowedAtTimestamp}, current timestamp is ${await latestBlockTimestampBN()}.`);
             }
             throw error;
         }
@@ -283,13 +284,14 @@ export class AgentBotCommands {
      * @param amount amount to be withdrawn
      */
     async announceWithdrawFromVault(agentVault: string, amount: string | BN): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        const { agentBot } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);
         const amountF = await agentBot.tokens.vaultCollateral.format(amount);
+        await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+            agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+            agentEnt.withdrawalAllowedAtAmount = String(amount);
+        });
         await this.notifierFor(agentVault).sendWithdrawVaultCollateralAnnouncement(amountF);
-        agentEnt.withdrawalAllowedAtTimestamp = withdrawalAllowedAt;
-        agentEnt.withdrawalAllowedAtAmount = String(amount);
-        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced vault collateral withdrawal ${amountF} at ${withdrawalAllowedAt.toString()}.`);
     }
 
@@ -298,12 +300,13 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async cancelWithdrawFromVaultAnnouncement(agentVault: string): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
+        await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+            agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
+            agentEnt.withdrawalAllowedAtAmount = "";
+        });
         await this.notifierFor(agentVault).sendCancelVaultCollateralAnnouncement();
-        agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
-        agentEnt.withdrawalAllowedAtAmount = "";
-        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} cancelled vault collateral withdrawal announcement.`);
     }
 
@@ -314,13 +317,14 @@ export class AgentBotCommands {
      * @param amount amount to be redeemed
      */
     async announceRedeemCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        const { agentBot } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
         const amountF = await agentBot.tokens.poolToken.format(amount);
+        await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+            agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
+            agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = String(amount);
+        });
         await this.notifierFor(agentVault).sendRedeemCollateralPoolTokensAnnouncement(amountF);
-        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = withdrawalAllowedAt;
-        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = String(amount);
-        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced pool token redemption of ${amountF} at ${withdrawalAllowedAt.toString()}.`);
     }
 
@@ -329,12 +333,13 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async cancelCollateralPoolTokensAnnouncement(agentVault: string): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
+        await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+            agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+            agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+        });
         await this.notifierFor(agentVault).sendCancelRedeemCollateralPoolTokensAnnouncement();
-        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
-        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} cancelled pool token redemption announcement.`);
     }
 
@@ -384,46 +389,61 @@ export class AgentBotCommands {
      * @param settingValue
      */
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
+        const { agentBot } = await this.getAgentBot(agentVault);
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
         switch (settingName) {
             case "feeBIPS": {
-                agentEnt.agentSettingUpdateValidAtFeeBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtFeeBIPS = validAt;
+                });
                 break;
             }
             case "poolFeeShareBIPS": {
-                agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAt;
+                });
                 break;
             }
             case "mintingVaultCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = validAt;
+                });
                 break;
             }
             case "mintingPoolCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = validAt;
+                });
                 break;
             }
             case "buyFAssetByAgentFactorBIPS": {
-                agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = validAt;
+                });
                 break;
             }
             case "poolExitCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = validAt;
+                });
                 break;
             }
             case "poolTopupCollateralRatioBIPS": {
-                agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = validAt;
+                });
                 break;
             }
             case "poolTopupTokenPriceFactorBIPS": {
-                agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt;
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt;
+                });
                 break;
             }
             default: {
                 throw new CommandLineError(`Invalid setting name ${settingName}`);
             }
         }
-        await this.orm.em.persistAndFlush(agentEnt);
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
         console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
     }
@@ -447,71 +467,31 @@ export class AgentBotCommands {
     }
 
     /**
-     * Announces agent's underlying withdrawal. Firstly, it checks if there is any active withdrawal.
-     * Lastly, it marks in persistent state that underlying withdrawal has started and it is then
-     * handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
-     * @param agentVault agent's vault address
-     * @returns payment reference needed to make legal withdrawal or null (e.g. underlying withdrawal is already announced)
-     */
-    async announceUnderlyingWithdrawal(agentVault: string): Promise<string | null> {
-        try {
-            const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-            const announce = await agentBot.agent.announceUnderlyingWithdrawal();
-            agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-            await this.orm.em.persistAndFlush(agentEnt);
-            await this.notifierFor(agentVault).sendAnnounceUnderlyingWithdrawal(announce.paymentReference);
-            logger.info(`Agent ${agentVault} announced underlying withdrawal at ${agentEnt.underlyingWithdrawalAnnouncedAtTimestamp.toString()} with reference ${announce.paymentReference}.`);
-            return announce.paymentReference;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    }
-
-    /**
-     * Performs agent's underlying withdrawal.
+     * Announces and performs agent's underlying withdrawal.
+     * It marks in persistent state that underlying withdrawal has started and it is then
+     * handled by methods 'handleTimelockedProcesses' and  'handleOpenUnderlyingPayments' in AgentBot.ts.
      * @param agentVault agent's vault address
      * @param amount amount to be transferred
      * @param destinationAddress underlying destination address
-     * @param paymentReference announced underlying payment reference
-     * @returns transaction hash
      */
-    async performUnderlyingWithdrawal(agentVault: string, amount: string | BN, destinationAddress: string, paymentReference: string): Promise<string> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        const txHash = await agentBot.agent.performUnderlyingWithdrawal(paymentReference, amount, destinationAddress);
-        agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
-        await this.orm.em.persistAndFlush(agentEnt);
-        await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash);
-        logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${paymentReference} and txHash ${txHash}.`);
-        return txHash;
-    }
+    async withdrawUnderlying(agentVault: string, amount: string | BN, destinationAddress: string): Promise<string | null> {
+        try {
+            const { agentBot } = await this.getAgentBot(agentVault);
+            const announce = await agentBot.agent.announceUnderlyingWithdrawal();
+            const latestBlock =  await latestBlockTimestampBN();
+            const txHash = await agentBot.agent.performPayment(destinationAddress, amount, announce.paymentReference);
 
-    /**
-     * Confirms agent's underlying withdrawal, if already allowed. Otherwise it marks in persistent state that confirmation
-     * of underlying withdrawal has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
-     * @param agentVault agent's vault address
-     * @param txHash transaction hash of underlying withdrawal payment
-     */
-    async confirmUnderlyingWithdrawal(agentVault: string, txHash: string): Promise<void> {
-        logger.info(`Agent ${agentVault} is waiting for confirming underlying withdrawal.`);
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
-            const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
-            const latestTimestamp = await latestBlockTimestampBN();
-            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                await agentBot.agent.confirmUnderlyingWithdrawal(txHash);
-                logger.info(`Agent ${agentVault} confirmed underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                await this.orm.em.persistAndFlush(agentEnt);
-                await this.notifierFor(agentVault).sendConfirmWithdrawUnderlying();
-            } else {
-                logger.info(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
-                console.log(`Agent ${agentVault} cannot yet confirm underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
-            }
-        } else {
-            await this.notifierFor(agentVault).sendNoActiveWithdrawal();
-            logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
+            await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
+                agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
+            });
+
+        await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash, announce.paymentReference);
+        logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${announce.paymentReference} and txHash ${txHash}.`);
+            return txHash;
+        } catch (error) {
+            console.error(error);
+            return null;
         }
     }
 
@@ -520,23 +500,25 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async cancelUnderlyingWithdrawal(agentVault: string): Promise<void> {
-        const { agentBot, agentEnt } = await this.getAgentBot(agentVault);
-        if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
+        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
+        if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
             logger.info(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
             console.log(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
             const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
             const latestTimestamp = await latestBlockTimestampBN();
-            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+            if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
                 await agentBot.agent.cancelUnderlyingWithdrawal();
-                logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                await this.orm.em.persistAndFlush(agentEnt);
+                logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                });
                 await this.notifierFor(agentVault).sendCancelWithdrawUnderlying();
             } else {
-                agentEnt.underlyingWithdrawalWaitingForCancelation = true;
-                await this.orm.em.persistAndFlush(agentEnt);
-                logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
-                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
+                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                    agentEnt.underlyingWithdrawalWaitingForCancelation = true;
+                });
+                logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
+                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
             }
         } else {
             await this.notifierFor(agentVault).sendNoActiveWithdrawal();
@@ -595,10 +577,10 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      * @returns object containing instances of AgentBot and AgentEntity respectively
      */
-    async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; agentEnt: AgentEntity }> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, agentEnt, this.ownerUnderlyingAddress, this.notifiers);
-        return { agentBot, agentEnt };
+    async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; readAgentEnt: AgentEntity }> {
+        const readAgentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentBot = await AgentBot.fromEntity(this.context, readAgentEnt, this.ownerUnderlyingAddress, this.notifiers);
+        return { agentBot, readAgentEnt };
     }
 
     /**
@@ -608,9 +590,9 @@ export class AgentBotCommands {
      * @param bips percentage of voting power to be delegated in bips
      */
     async delegatePoolCollateral(agentVault: string, recipient: string, bips: string | BN): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
-        await collateralPool.delegate(recipient, bips, { from: agentEnt.ownerAddress });
+        const { readAgentEnt } = await this.getAgentBot(agentVault);
+        const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
+        await collateralPool.delegate(recipient, bips, { from: readAgentEnt.ownerAddress });
         const bipsFmt = formatBips(toBN(bips));
         await this.notifierFor(agentVault).sendDelegatePoolCollateral(collateralPool.address, recipient, bipsFmt);
         logger.info(`Agent ${agentVault} delegated pool collateral to ${recipient} with percentage ${bipsFmt}.`);
@@ -621,9 +603,9 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async undelegatePoolCollateral(agentVault: string): Promise<void> {
-        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const collateralPool = await CollateralPool.at(agentEnt.collateralPoolAddress);
-        await collateralPool.undelegateAll({ from: agentEnt.ownerAddress });
+        const { readAgentEnt } = await this.getAgentBot(agentVault);
+        const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
+        await collateralPool.undelegateAll({ from: readAgentEnt.ownerAddress });
         await this.notifierFor(agentVault).sendUndelegatePoolCollateral(collateralPool.address);
         logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
     }

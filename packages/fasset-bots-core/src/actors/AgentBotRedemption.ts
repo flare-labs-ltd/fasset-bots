@@ -62,7 +62,7 @@ export class AgentBotRedemption {
         const redemption = await this.findRedemption(em, requestId);
         redemption.state = AgentRedemptionState.DONE;
         logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${requestId}.`);
-        await this.bot.underlyingManagement.checkUnderlyingBalance();
+        await this.bot.underlyingManagement.checkUnderlyingBalance(em);
     }
 
     /**
@@ -107,6 +107,7 @@ export class AgentBotRedemption {
                 } else if (expirationProof === "NOT_EXPIRED") {
                     await this.handleOpenRedemption(redemption);
                 }
+                await em.persistAndFlush(redemption);
             })
             .catch((error) => {
                 console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);

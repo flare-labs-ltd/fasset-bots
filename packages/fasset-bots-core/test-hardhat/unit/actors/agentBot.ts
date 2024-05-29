@@ -1,10 +1,11 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState, AgentUnderlyingPayment, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../../../src/entities/agent";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockChain } from "../../../src/mock/MockChain";
@@ -21,7 +22,9 @@ import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/cr
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 use(spies);
+use(chaiAsPromised);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
 
@@ -98,30 +101,38 @@ describe("Agent bot unit tests", () => {
         expect(spyTop).to.have.been.called.twice;
     });
 
-    it("Should top up underlying - failed", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
-        const spyBalance = spy.on(agentBot.notifier, "sendLowUnderlyingAgentBalanceFailed");
-        const topUpAmount = balance.addn(1);
-        await agentBot.underlyingManagement.underlyingTopUp(toBN(topUpAmount), toBN(1));
-        expect(spyBalance).to.have.been.called.once;
-    });
-
     it("Should top up underlying", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyBalance0 = spy.on(agentBot.notifier, "sendLowUnderlyingAgentBalance");
+        const spyBalance0 = spy.on(agentBot.underlyingManagement, "createAgentUnderlyingPayment");
         const spyBalance1 = spy.on(agentBot.notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
+        const spyBalance2 = spy.on(agentBot.underlyingManagement.notifier, "sendConfirmWithdrawUnderlying");
         const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
-        await agentBot.underlyingManagement.underlyingTopUp(toBN(balance), toBN(1));
+        await agentBot.underlyingManagement.underlyingTopUp(orm.em, toBN(balance).sub(context.chainInfo.minimumAccountBalance));
+        chain.mine(chain.finalizationBlocks + 1);
         expect(spyBalance0).to.have.been.called.once;
         expect(spyBalance1).to.have.been.called.once;
+        const topUpPayment0 = await orm.em.findOneOrFail(AgentUnderlyingPayment, {type: AgentUnderlyingPaymentType.TOP_UP }  as FilterQuery<AgentUnderlyingPayment>, {orderBy: {id: ('DESC')}});
+        expect(topUpPayment0.state).to.equal(AgentUnderlyingPaymentState.PAID);
+        // run agent's steps until underlying payment process is finished
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if underlying payment is done
+            orm.em.clear();
+            const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, {txHash: topUpPayment0.txHash }  as FilterQuery<AgentUnderlyingPayment> );
+            console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
+            if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
+        }
+        expect(spyBalance2).to.have.been.called.once;
     });
 
     it("Should prove EOA address", async () => {
         const spyEOA = spy.on(AgentBot, "proveEOAaddress");
         const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
         await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
-        await createTestAgentBot(contextEOAProof, orm, ownerAddress);
+        await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress)).to.eventually.be.rejectedWith(/^Not enough funds to prove EOAaddress/).and.be.an.instanceOf(Error);
         expect(spyEOA).to.have.been.called.once;
     });
 
@@ -278,6 +289,43 @@ describe("Agent bot unit tests", () => {
         expect(spyProof).to.have.been.called.once;
     });
 
+    it("Should not receive proof 3 - not finalized", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
+        // create redemption
+        const rd = orm.em.create(AgentRedemption, {
+            state: AgentRedemptionState.REQUESTED_PROOF,
+            agentAddress: agentBot.agent.vaultAddress,
+            requestId: "003",
+            paymentAddress: "",
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            paymentReference: "",
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            proofRequestRound: 1,
+            proofRequestData: "",
+        });
+        await agentBot.redemption.checkConfirmPayment(rd);
+        expect(spyProof).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 4 - not finalized", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
+        // create underlying payment
+        const up = orm.em.create(AgentUnderlyingPayment, {
+            state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
+            type: AgentUnderlyingPaymentType.TOP_UP,
+            agentAddress: agentBot.agent.vaultAddress,
+            txHash: "hash",
+            proofRequestRound: 1,
+            proofRequestData: "data",
+        });
+        await agentBot.underlyingManagement.checkConfirmPayment(up);
+        expect(spyProof).to.have.been.called.once;
+    });
+
     it("Should not receive proof 1 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
@@ -353,6 +401,23 @@ describe("Agent bot unit tests", () => {
         await agentBot.handleDailyTasks(orm.em);
         await time.increase(15 * MINUTES);
         await agentBot.handleDailyTasks(orm.em);
+        expect(spyProof).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 5 - no proof", async () => {
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyProof = spy.on(agentBot.notifier, "sendAgentUnderlyingPaymentNoProofObtained");
+        // create underlying payment
+        const up = orm.em.create(AgentUnderlyingPayment, {
+            state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
+            type: AgentUnderlyingPaymentType.TOP_UP,
+            agentAddress: agentBot.agent.vaultAddress,
+            txHash: "hash",
+            proofRequestRound: 0,
+            proofRequestData: "data",
+        });
+        await agentBot.underlyingManagement.checkConfirmPayment(up);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -549,7 +614,9 @@ describe("Agent bot unit tests", () => {
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         await orm.em.persist(agentEnt).flush();
         // pay
-        const tx = await agentBot.agent.performUnderlyingWithdrawal(resp.paymentReference, 100, "SomeRandomUnderlyingAddress");
+        const paymentAmount = toBN(100);
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, paymentAmount);
+        const tx = await agentBot.agent.performPayment("SomeRandomUnderlyingAddress", paymentAmount, resp.paymentReference);
         agentEnt.underlyingWithdrawalConfirmTransaction = tx;
         // confirmation not yet allowed
         await agentBot.handleTimelockedProcesses(orm.em);
@@ -569,7 +636,7 @@ describe("Agent bot unit tests", () => {
         const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS));
 
         const allAmountUBA = amountUBA.add(poolFee);
-        context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
+        await fundUnderlying(context, randomUnderlyingAddress, allAmountUBA);
         // self mint
         const transactionHash = await agentBot.agent.wallet.addTransaction(
             randomUnderlyingAddress,
@@ -801,5 +868,29 @@ describe("Agent bot unit tests", () => {
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
         expect(poolTokensBalance).to.eq(amount.toString());
+    });
+
+    it("Should not do next underlying payment step due to invalid underlying payment state", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyLog = spy.on(console, "error");
+        // create underlying payment with invalid state
+        const up = orm.em.create(AgentUnderlyingPayment, {
+            state: "invalid" as AgentUnderlyingPaymentState,
+            type: AgentUnderlyingPaymentType.TOP_UP,
+            agentAddress: agentBot.agent.vaultAddress,
+            txHash: "hash",
+            proofRequestRound: 1,
+            proofRequestData: "data",
+        });
+        await orm.em.persistAndFlush(up);
+        await agentBot.underlyingManagement.nextUnderlyingPaymentStep(orm.em, up.id);
+        expect(spyLog).to.have.been.called.once;
+    });
+
+    it("Should not do next underlying payment step due to underlying payment not found in db", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyLog = spy.on(console, "error");
+        await agentBot.underlyingManagement.nextUnderlyingPaymentStep(orm.em, 1000);
+        expect(spyLog).to.have.been.called.once;
     });
 });

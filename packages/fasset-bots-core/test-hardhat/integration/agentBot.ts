@@ -499,7 +499,9 @@ describe("Agent bot tests", () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const spyTop = spy.on(agentBot.collateralManagement, "checkAgentForCollateralRatiosAndTopUp");
-        // one inital price check must happen
+        // reset transientStorage to force priceEvent check
+        agentBot.transientStorage.lastPriceReaderEventBlock = -1;
+        agentBot.transientStorage.waitingForLatestBlockProofSince = BN_ZERO;
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         expect(spyTop).to.have.been.called.exactly(1);

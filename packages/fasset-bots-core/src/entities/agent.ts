@@ -277,6 +277,38 @@ export class Event {
     }
 }
 
+
+@Entity()
+@Unique({ properties: ["txHash"] })
+export class AgentUnderlyingPayment {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property()
+    state!: AgentUnderlyingPaymentState;
+
+
+    @Property()
+    type!: AgentUnderlyingPaymentType;
+
+    @Property({ length: ADDRESS_LENGTH })
+    agentAddress!: string;
+
+    // 'PAID' state data
+
+    @Property({ nullable: true })
+    txHash!: string;
+
+    // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
+
+    @Property({ nullable: true })
+    proofRequestRound?: number;
+
+    @Property({ nullable: true, type: "text" })
+    proofRequestData?: string;
+}
+
+
 export enum AgentMintingState {
     DONE = "done",
     STARTED = "started",
@@ -291,4 +323,15 @@ export enum AgentRedemptionState {
     REQUESTED_PROOF = "requestedProof",
     NOT_REQUESTED_PROOF = "notRequestedProof",
     REQUESTED_REJECTION_PROOF = "requestedRejectionProof",
+}
+
+export enum AgentUnderlyingPaymentState {
+    PAID = "paid",
+    REQUESTED_PROOF = "requestedProof",
+    DONE = "done",
+}
+
+export enum AgentUnderlyingPaymentType {
+    TOP_UP = "top_up",
+    WITHDRAWAL = "withdrawal",
 }

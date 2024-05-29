@@ -120,31 +120,12 @@ export class AgentService {
         await cli.exitAvailableList(agentVaultAddress);
     }
 
-    async announceUnderlyingWithdrawal(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentUnderlying> {
+    async withdrawUnderlying(fAssetSymbol: string, agentVaultAddress: string, amount: string, destinationAddress: string,): Promise<AgentUnderlying> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const ref = await cli.announceUnderlyingWithdrawal(agentVaultAddress);
-        return {
-            paymentReference: ref,
-        };
-    }
-
-    async performUnderlyingWithdrawal(
-        fAssetSymbol: string,
-        agentVaultAddress: string,
-        amount: string,
-        destinationAddress: string,
-        paymentReference: string
-    ): Promise<AgentUnderlying> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const transactionHash = await cli.performUnderlyingWithdrawal(agentVaultAddress, amount, destinationAddress, paymentReference);
+        const transactionHash = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
         return {
             transactionHash,
         };
-    }
-
-    async confirmUnderlyingWithdrawal(fAssetSymbol: string, agentVaultAddress: string, transactionHash: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.confirmUnderlyingWithdrawal(agentVaultAddress, transactionHash);
     }
 
     async cancelUnderlyingWithdrawal(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {

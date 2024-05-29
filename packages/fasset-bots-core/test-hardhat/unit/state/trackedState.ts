@@ -14,7 +14,7 @@ import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { BN_ZERO, MAX_BIPS, QUERY_WINDOW_SECONDS, ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { performRedemptionPayment } from "../../../test/test-utils/test-helpers";
+import { fundUnderlying, performRedemptionPayment } from "../../../test/test-utils/test-helpers";
 import { AgentDestroyed, AgentVaultCreated } from "../../../typechain-truffle/IIAssetManager";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
@@ -235,7 +235,7 @@ describe("Tracked state tests", () => {
 
         const randomUnderlyingAddress = "RANDOM_UNDERLYING";
         const allAmountUBA = amountUBA.add(poolFee);
-        context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
+        await fundUnderlying(context, randomUnderlyingAddress, allAmountUBA);
 
         const transactionHash = await agentBLocal.wallet.addTransaction(
             randomUnderlyingAddress,
@@ -434,7 +434,7 @@ describe("Tracked state tests", () => {
         await time.increase(skipTime);
         const underlyingAddress: string = "RANDOM_UNDERLYING_ADDRESS";
         const deposit = toBN(200);
-        chain.mint(underlyingAddress, deposit);
+        await fundUnderlying(context, underlyingAddress, deposit);
         const tx = await agentBLocal.performTopupPayment(deposit, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         await agentBLocal.confirmTopupPayment(tx);

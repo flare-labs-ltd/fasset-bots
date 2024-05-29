@@ -9,12 +9,14 @@ import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { getAgentSettings } from "../utils/fasset-helpers";
-import { BNish, expectErrors, toBN } from "../utils/helpers";
+import { checkUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
+import { BNish, TRANSACTION_FEE_FACTOR, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
+import { TokenBalances, logger } from "../utils";
+
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -247,7 +249,7 @@ export class Agent {
      * @returns transaction hash
      */
     async performTopupPayment(amount: BNish, underlyingAddress: string): Promise<string> {
-        return await this.wallet.addTransaction(underlyingAddress, this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address));
+        return await this.performPayment(this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address), underlyingAddress);
     }
 
     /**
@@ -266,17 +268,6 @@ export class Agent {
     async announceUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalAnnounced>> {
         const res = await this.assetManager.announceUnderlyingWithdrawal(this.agentVault.address, { from: this.owner.workAddress });
         return requiredEventArgs(res, "UnderlyingWithdrawalAnnounced");
-    }
-
-    /**
-     * Performs underlying withdrawal
-     * @param paymentReference payment reference from announce underlying withdrawal
-     * @param amount amount to be withdrawn
-     * @param underlyingAddress destination underlying address
-     * @returns transaction hash
-     */
-    async performUnderlyingWithdrawal(paymentReference: string, amount: BNish, underlyingAddress: string): Promise<string> {
-        return await this.wallet.addTransaction(this.underlyingAddress, underlyingAddress, amount, paymentReference);
     }
 
     /**
@@ -317,8 +308,9 @@ export class Agent {
      * @param options instance of TransactionOptionsWithFee
      * @returns transaction hash
      */
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, options?: TransactionOptionsWithFee) {
-        return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, options);
+    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
+        await this.enoughUnderlyingFunds(paymentSourceAddress, paymentDestinationAddress, paymentAmount);
+        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 
     /**
@@ -375,5 +367,15 @@ export class Agent {
      */
     async upgradeWNatContract(): Promise<void> {
         await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.owner.workAddress });
+    }
+
+    async enoughUnderlyingFunds(sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<void> {
+        const enoughFunds = await checkUnderlyingFunds(this.context, sourceUnderlyingAddress, destinationUnderlyingAddress, amount);
+        if (enoughFunds) {
+            return;
+        }  else {
+            logger.error(`Agent ${this.vaultAddress} run into error while performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.`)
+            throw Error(`Not enough funds on underlying address ${sourceUnderlyingAddress}`);
+        }
     }
 }

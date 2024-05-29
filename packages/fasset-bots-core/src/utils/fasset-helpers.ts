@@ -1,11 +1,13 @@
 import { IIAssetManagerInstance } from "../../typechain-truffle";
-import { AssetManagerEvents } from "../fasset-bots/IAssetBotContext";
+import { AssetManagerEvents, IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { ContractWithEvents } from "./events/truffle";
-import { requireNotNull, toBN, toNumber } from "./helpers";
+import { BNish, TRANSACTION_FEE_FACTOR, requireNotNull, toBN, toNumber } from "./helpers";
+import { logger } from "./logger";
+import { TokenBalances } from "./token-balances";
 import { web3DeepNormalize } from "./web3normalize";
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
@@ -49,4 +51,18 @@ export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexer
     const blockHeight = await blockchainIndexer.getBlockHeight();
     const latestBlock = await blockchainIndexer.getBlockAt(blockHeight);
     return requireNotNull(latestBlock, "Block at block height does not exist");
+}
+
+export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<boolean> {
+    const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
+    const senderBalance = await balanceReader.balance(sourceUnderlyingAddress);
+    const transactionFee = await context.wallet.getTransactionFee();
+    const requiredBalance = toBN(amount).add(context.chainInfo.minimumAccountBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
+    if (senderBalance.gte(requiredBalance)) {
+        return true;
+    }  else {
+        logger.error(`Cannot performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.
+        Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}`);
+        return false;
+    }
 }

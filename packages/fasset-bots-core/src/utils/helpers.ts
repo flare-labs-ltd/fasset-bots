@@ -43,7 +43,7 @@ export const MAX_UINT256 = toBN(1).shln(256).subn(1);
 export const DEFAULT_TIMEOUT = 15000;
 export const DEFAULT_RETRIES = 3;
 
-export const XRP_ACTIVATE_BALANCE = toBNExp(10, 6);
+export const TRANSACTION_FEE_FACTOR = 2;
 
 /**
  * Asynchronously wait `ms` milliseconds.
