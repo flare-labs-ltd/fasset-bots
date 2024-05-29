@@ -97,6 +97,11 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
+  isPoolTokenSuffixReserved(
+    _suffix: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   methods: {
     getAgentFullPoolCollateral(
       _agentVault: string,
@@ -179,6 +184,11 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
+
+    isPoolTokenSuffixReserved(
+      _suffix: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;
