@@ -41,6 +41,7 @@ const depositNat = toBNExp(1_000_000, 18);
 const depositUnderlying = toBNExp(1_000_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
 export const DEFAULT_POOL_TOKEN_SUFFIX: () => string = () => "POOL-TOKEN-" + Math.floor(Math.random() * 10_000);
+export const QUERY_WINDOW_SECONDS = 86400;
 
 export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);

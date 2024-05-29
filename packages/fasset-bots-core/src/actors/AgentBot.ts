@@ -80,8 +80,8 @@ export class AgentBot {
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
-    collateralManagement = new AgentBotCollateralManagement(this.agent, this.notifier, this.tokens);
-    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.notifier, this.ownerUnderlyingAddress, this.tokens);
+    collateralManagement = new AgentBotCollateralManagement(this.agent, this.agentBotSettings, this.notifier, this.tokens);
+    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.agentBotSettings, this.notifier, this.ownerUnderlyingAddress, this.tokens);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;

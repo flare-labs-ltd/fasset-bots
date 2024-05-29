@@ -27,15 +27,6 @@ export const HOURS = 60 * MINUTES;
 export const DAYS = 24 * HOURS;
 export const WEEKS = 7 * DAYS;
 
-export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
-export const NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR = 1.2;
-// factors of locked collaterals that a healthy agent owner would need to own as their reserves
-// (seperate for each agent vault)
-export const VAULT_COLLATERAL_RESERVE_FACTOR = 0.1;
-export const POOL_COLLATERAL_RESERVE_FACTOR = 0.1;
-
-export const QUERY_WINDOW_SECONDS = 86400;
-
 export const MAX_UINT256 = toBN(1).shln(256).subn(1);
 
 export const DEFAULT_TIMEOUT = 15000;
