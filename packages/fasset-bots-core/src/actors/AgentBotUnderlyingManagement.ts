@@ -34,8 +34,8 @@ export class AgentBotUnderlyingManagement {
         logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee}.`);
-        if (freeUnderlyingBalance.lte(this.agentBotSettings.minimumVaultUnderlyingBalance)) {
-            const topupAmount = this.agentBotSettings.minimumVaultUnderlyingBalance.sub(freeUnderlyingBalance);
+        if (freeUnderlyingBalance.lte(this.agentBotSettings.minimumFreeUnderlyingBalance)) {
+            const topupAmount = this.agentBotSettings.minimumFreeUnderlyingBalance.sub(freeUnderlyingBalance);
             await this.underlyingTopUp(em, topupAmount);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);

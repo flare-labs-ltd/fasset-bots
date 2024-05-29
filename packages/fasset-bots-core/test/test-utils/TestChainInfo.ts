@@ -86,21 +86,21 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
-        minimumVaultUnderlyingBalance: toBNExp(0.01, 18),
+        minimumFreeUnderlyingBalance: toBNExp(0.01, 18),
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 18),
     },
     "BTC": {
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
-        minimumVaultUnderlyingBalance: toBNExp(0.001, 8),
+        minimumFreeUnderlyingBalance: toBNExp(0.001, 8),
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 8),
     },
     "XRP": {
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
-        minimumVaultUnderlyingBalance: toBNExp(12, 6),
+        minimumFreeUnderlyingBalance: toBNExp(12, 6),
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
     }
 }

@@ -81,7 +81,7 @@ describe("Toplevel runner and commands integration test", () => {
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
-        minimumVaultUnderlyingBalance: toBNExp(12, 6),
+        minimumFreeUnderlyingBalance: toBNExp(12, 6),
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
     };
 

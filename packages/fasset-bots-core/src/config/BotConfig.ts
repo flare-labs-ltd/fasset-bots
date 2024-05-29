@@ -56,7 +56,7 @@ export interface AgentBotSettings {
     vaultCollateralReserveFactor: number;
     poolCollateralReserveFactor: number;
     recommendedOwnerUnderlyingBalance: BN;
-    minimumVaultUnderlyingBalance: BN;
+    minimumFreeUnderlyingBalance: BN;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
@@ -202,7 +202,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
         liquidationPreventionFactor: Number(agentBotSettings.liquidationPreventionFactor),
         vaultCollateralReserveFactor: Number(agentBotSettings.vaultCollateralReserveFactor),
         poolCollateralReserveFactor: Number(agentBotSettings.poolCollateralReserveFactor),
-        minimumVaultUnderlyingBalance: underlying.parse(fassetSettings.minimumVaultUnderlyingBalance),
+        minimumFreeUnderlyingBalance: underlying.parse(fassetSettings.minimumFreeUnderlyingBalance),
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
     }
 }

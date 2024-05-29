@@ -78,36 +78,37 @@ export interface BotConfigFile {
 export interface AgentBotFassetSettingsJson {
     /**
      * The amount of underlying currency on woner's underlying address, below which an alert is triggered.
-     * @pattern ^[0-9]+(\.[0-9]+)$
+     * @pattern ^[0-9]+(\.[0-9]+)?$
      */
     recommendedOwnerBalance: string;
 
     /**
      * The amount of underlying currency on woner's underlying address, below which the address should be topped-up,
      * to prevent negative free underlying balance after redemptions.
+     * @pattern ^[0-9]+(\.[0-9]+)?$
      */
-    minimumVaultUnderlyingBalance: string;
+    minimumFreeUnderlyingBalance: string;
 }
 
 export interface AgentBotSettingsJson {
     /**
      * Minimum amount of collateral to topup vault to, to prevent liquidation.
      * Relative to collateral's CCB CR.
-     * @pattern ^[0-9]+(\.[0-9]+)$
+     * @pattern ^[0-9]+(\.[0-9]+)?$
      */
     liquidationPreventionFactor: string;
 
     /**
      * The threshold for USDC/WETH/... on owner's work address, below which alert is triggered.
      * Relative to required vault collateral for current minted amount.
-     * @pattern ^[0-9]+(\.[0-9]+)$
+     * @pattern ^[0-9]+(\.[0-9]+)?$
      */
     vaultCollateralReserveFactor: string;
 
     /**
      * The threshold for NAT on owner's work address, below which alert is triggered.
      * Relative to required pool collateral for current minted amount.
-     * @pattern ^[0-9]+(\.[0-9]+)%$
+     * @pattern ^[0-9]+(\.[0-9]+)?$
      */
     poolCollateralReserveFactor: string;
 
