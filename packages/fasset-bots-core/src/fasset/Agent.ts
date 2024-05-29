@@ -7,15 +7,15 @@ import { CollateralPrice } from "../state/CollateralPrice";
 import { TokenPriceReader } from "../state/TokenPrice";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { checkUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
-import { BNish, TRANSACTION_FEE_FACTOR, expectErrors, toBN } from "../utils/helpers";
+import { BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
-import { TokenBalances, logger } from "../utils";
 
 
 const AgentVault = artifacts.require("AgentVault");
@@ -375,7 +375,7 @@ export class Agent {
             return;
         }  else {
             logger.error(`Agent ${this.vaultAddress} run into error while performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.`)
-            throw Error(`Not enough funds on underlying address ${sourceUnderlyingAddress}`);
+            throw new Error(`Not enough funds on underlying address ${sourceUnderlyingAddress}`);
         }
     }
 }

@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { AddressValidity, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
@@ -21,7 +21,7 @@ import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, maxBN, requireNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, errorIncluded, maxBN, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -675,42 +675,17 @@ export class AgentBotCommands {
         await agentBot.agent.upgradeWNatContract();
     }
 
-    // HACK - until fasset-v2 support pool token validity check, exploit the fact that token validation is the first thing in createAgentVault call
-    private async validateCollateralPoolTokenSuffix(suffix: string) {
-        const fakeAddressProof: AddressValidity.Proof = {
-            data: {
-                attestationType: "0x4164647265737356616c69646974790000000000000000000000000000000000",
-                lowestUsedTimestamp: "0xffffffffffffffff",
-                requestBody: { addressStr: ZERO_ADDRESS },
-                responseBody: { isValid: false, standardAddress: ZERO_ADDRESS, standardAddressHash: ZERO_BYTES32 },
-                sourceId: "0x7465737458525000000000000000000000000000000000000000000000000000",
-                votingRound: "0",
-            },
-            merkleProof: [],
-        };
-        const fakeSettings: AgentSettings = {
-            poolTokenSuffix: suffix,
-            vaultCollateralToken: ZERO_ADDRESS,
-            feeBIPS: "0",
-            poolFeeShareBIPS: "0",
-            buyFAssetByAgentFactorBIPS: "0",
-            mintingPoolCollateralRatioBIPS: "0",
-            mintingVaultCollateralRatioBIPS: "0",
-            poolExitCollateralRatioBIPS: "0",
-            poolTopupCollateralRatioBIPS: "0",
-            poolTopupTokenPriceFactorBIPS: "0",
-        };
-        try {
-            await this.context.assetManager.createAgentVault.call(fakeAddressProof, fakeSettings, { from: this.owner.workAddress });
-        } catch (e: unknown) {
-            if (errorIncluded(e, ["suffix already reserved"])) {
-                throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
-            } else if (errorIncluded(e, ["invalid character in suffix"])) {
-                throw new CommandLineError(`Collateral pool token suffix "${suffix}" contains invalid characters.`);
-            } else if (errorIncluded(e, ["address validity not proved"])) {
-                return; // the expected error
-            }
-            logger.warn(`Unknown error validating pool suffix "${suffix}":`, e);
+    async validateCollateralPoolTokenSuffix(suffix: string) {
+        const maxLength = 20;
+        if (suffix.length >= maxLength) {
+            throw new CommandLineError(`Collateral pool token suffix "${suffix}" is too long - maximum length is ${maxLength - 1}.`);
+        }
+        const validSyntax = /^[A-Z0-9-]+$/.test(suffix) && !suffix.startsWith("-") && !suffix.endsWith("-");
+        if (!validSyntax) {
+            throw new CommandLineError(`Collateral pool token suffix can contain only characters 'A'-'Z', '0'-'9' and '-', and cannot start or end with '-'.`);
+        }
+        if (await this.context.assetManager.isPoolTokenSuffixReserved(suffix)) {
+            throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
         }
     }
 }

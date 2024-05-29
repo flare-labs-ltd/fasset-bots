@@ -224,7 +224,9 @@ export class AgentBot {
         try {
             const reference = owner.managementAddress;
             const enoughFunds = await checkUnderlyingFunds(context, ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount);
-            if (!enoughFunds) throw Error;
+            if (!enoughFunds) {
+                throw new Error(`Not enough funds on underlying address ${ownerUnderlyingAddress}`);
+            }
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */

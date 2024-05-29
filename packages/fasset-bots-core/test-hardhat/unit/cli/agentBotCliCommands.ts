@@ -10,6 +10,7 @@ import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain } from "../../../src/mock/MockChain";
+import { CommandLineError } from "../../../src/utils";
 import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -55,8 +56,9 @@ describe("AgentBot cli commands unit tests", () => {
 
     async function initialize() {
         orm = await createTestOrm();
-        context = await createTestAssetContext(governance, testChainInfo.xrp);
+        context = await createTestAssetContext(governance, { ...testChainInfo.xrp, finalizationBlocks: 0 });
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
+        chain.mint(ownerUnderlyingAddress, toBNExp(50, 6));
         // bot cli commands
         const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
         botCliCommands = new AgentBotCommands(context, testAgentBotSettings.xrp, owner, ownerUnderlyingAddress, orm, testNotifierTransports);
@@ -417,11 +419,35 @@ describe("AgentBot cli commands unit tests", () => {
     });
 
     it("Should create agent bot via bot cli commands", async () => {
-        botCliCommands.context = await createTestAssetContext(governance, testChainInfo.xrp);
-        const agentBot = botCliCommands.createAgentVault(loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+        const settings = loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
+        settings.poolTokenSuffix = "AB-X5";
+        expect(await botCliCommands.context.assetManager.isPoolTokenSuffixReserved(settings.poolTokenSuffix)).equal(false);
+        const agentBot = await botCliCommands.createAgentVault(settings);
         expect(agentBot).to.not.be.undefined;
-        //change context back
-        botCliCommands.context = context;
+        expect(await botCliCommands.context.assetManager.isPoolTokenSuffixReserved(settings.poolTokenSuffix)).equal(true);
+        // cannot create vault twice with same token
+        await expect(botCliCommands.createAgentVault(settings))
+            .to.eventually.be.rejectedWith(/Agent vault with collateral pool token suffix ".*" already exists./)
+            .and.to.be.instanceOf(CommandLineError);
+    });
+
+    it("Should validate collateral pool token syntax", async () => {
+        await botCliCommands.validateCollateralPoolTokenSuffix("A-B8C-ZX15"); // should be ok
+        await expect(botCliCommands.validateCollateralPoolTokenSuffix("abc"))
+            .to.eventually.be.rejectedWith(/Collateral pool token suffix can contain only characters 'A'-'Z', '0'-'9' and '-', and cannot start or end with '-'./)
+            .and.to.be.instanceOf(CommandLineError);
+        await expect(botCliCommands.validateCollateralPoolTokenSuffix("-ABC"))
+            .to.eventually.be.rejectedWith(/Collateral pool token suffix can contain only characters 'A'-'Z', '0'-'9' and '-', and cannot start or end with '-'./)
+            .and.to.be.instanceOf(CommandLineError);
+        await expect(botCliCommands.validateCollateralPoolTokenSuffix("01234567890123456789"))
+            .to.eventually.be.rejectedWith(/Collateral pool token suffix ".*" is too long - maximum length is 19./)
+            .and.to.be.instanceOf(CommandLineError);
+        const settings = loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
+        settings.poolTokenSuffix = "A-B8C-ZX15";
+        await botCliCommands.createAgentVault(settings);
+        await expect(botCliCommands.validateCollateralPoolTokenSuffix("A-B8C-ZX15"))
+            .to.eventually.be.rejectedWith(/Agent vault with collateral pool token suffix ".*" already exists./)
+            .and.to.be.instanceOf(CommandLineError);
     });
 
     it("Should run command 'cancelWithdrawFromVaultAnnouncement'", async () => {
