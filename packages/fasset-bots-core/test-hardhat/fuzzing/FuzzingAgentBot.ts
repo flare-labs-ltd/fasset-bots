@@ -107,7 +107,7 @@ export class FuzzingAgentBot {
         // announce
         const resp = await this.agentBot.agent.announceUnderlyingWithdrawal();
         if (coinFlip(0.8) && resp.paymentReference) {
-            const txHash = await this.agentBot.agent.performUnderlyingWithdrawal(resp.paymentReference, amount.toString(), this.ownerUnderlyingAddress);
+            const txHash = await this.agentBot.agent.performPayment(this.ownerUnderlyingAddress, amount.toString(), resp.paymentReference);
             await this.agentBot.agent.confirmUnderlyingWithdrawal(txHash);
         } else if (resp.paymentReference) {
             // cancel withdrawal

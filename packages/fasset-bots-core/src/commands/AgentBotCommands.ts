@@ -479,7 +479,7 @@ export class AgentBotCommands {
             const { agentBot } = await this.getAgentBot(agentVault);
             const announce = await agentBot.agent.announceUnderlyingWithdrawal();
             const latestBlock =  await latestBlockTimestampBN();
-            const txHash = await agentBot.agent.performUnderlyingWithdrawal(announce.paymentReference, amount, destinationAddress);
+            const txHash = await agentBot.agent.performPayment(destinationAddress, amount, announce.paymentReference);
 
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;

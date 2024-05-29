@@ -15,10 +15,13 @@ import { DBWalletKeys, IWalletKeys } from "../../src/underlying-chain/WalletKeys
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../../src/utils/events/common";
 import { requiredEventArgs } from "../../src/utils/events/truffle";
-import { BN_ZERO, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, fail, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
 import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { testNotifierTransports } from "./testNotifierTransports";
+import { MockChain } from "../../src/mock/MockChain";
+import { TestAssetBotContext } from "../../test-hardhat/test-utils/create-test-asset-context";
+import { TokenBalances } from "../../src/utils";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
@@ -51,7 +54,7 @@ export async function removeWalletAddressFromDB(walletKeys: IWalletKeys | Blockc
 
 export async function performRedemptionPayment(agent: Agent, request: EventArgs<RedemptionRequested>, options?: TransactionOptionsWithFee): Promise<string> {
     const paymentAmount = request.valueUBA.sub(request.feeUBA);
-    return await agent.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, options);
+    return await agent.performPayment(request.paymentAddress, paymentAmount, request.paymentReference, agent.underlyingAddress, options);
 }
 
 export async function receiveBlockAndTransaction(
@@ -154,4 +157,16 @@ export function itUnless(condition: boolean | (() => boolean)) {
 
 export function enableSlowTests() {
     return process.env.ENABLE_SLOW_TESTS === 'true';
+}
+
+export async function fundUnderlying(context: TestAssetBotContext, underlyingAddress:string, amount: BN) {
+    if (!(context.blockchainIndexer.chain instanceof MockChain)) fail("only for mock chains");
+    const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
+    const senderBalance = await balanceReader.balance(underlyingAddress);
+    const minBalance = context.chainInfo.minimumAccountBalance;
+    if (senderBalance.eq(BN_ZERO)) {
+        context.blockchainIndexer.chain.mint(underlyingAddress, amount.add(minBalance))
+    } else {
+        context.blockchainIndexer.chain.mint(underlyingAddress, amount)
+    }
 }

@@ -1,6 +1,7 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
@@ -21,7 +22,9 @@ import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/cr
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 use(spies);
+use(chaiAsPromised);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
 
@@ -104,7 +107,7 @@ describe("Agent bot unit tests", () => {
         const spyBalance1 = spy.on(agentBot.notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
         const spyBalance2 = spy.on(agentBot.underlyingManagement.notifier, "sendConfirmWithdrawUnderlying");
         const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
-        await agentBot.underlyingManagement.underlyingTopUp(orm.em, toBN(balance), toBN(1));
+        await agentBot.underlyingManagement.underlyingTopUp(orm.em, toBN(balance).sub(context.chainInfo.minimumAccountBalance));
         chain.mine(chain.finalizationBlocks + 1);
         expect(spyBalance0).to.have.been.called.once;
         expect(spyBalance1).to.have.been.called.once;
@@ -129,7 +132,7 @@ describe("Agent bot unit tests", () => {
         const spyEOA = spy.on(AgentBot, "proveEOAaddress");
         const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
         await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
-        await createTestAgentBot(contextEOAProof, orm, ownerAddress);
+        await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress)).to.eventually.be.rejectedWith(/^Not enough funds to prove EOAaddress/).and.be.an.instanceOf(Error);
         expect(spyEOA).to.have.been.called.once;
     });
 
@@ -611,7 +614,9 @@ describe("Agent bot unit tests", () => {
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         await orm.em.persist(agentEnt).flush();
         // pay
-        const tx = await agentBot.agent.performUnderlyingWithdrawal(resp.paymentReference, 100, "SomeRandomUnderlyingAddress");
+        const paymentAmount = toBN(100);
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, paymentAmount);
+        const tx = await agentBot.agent.performPayment("SomeRandomUnderlyingAddress", paymentAmount, resp.paymentReference);
         agentEnt.underlyingWithdrawalConfirmTransaction = tx;
         // confirmation not yet allowed
         await agentBot.handleTimelockedProcesses(orm.em);
@@ -631,7 +636,7 @@ describe("Agent bot unit tests", () => {
         const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS));
 
         const allAmountUBA = amountUBA.add(poolFee);
-        context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
+        await fundUnderlying(context, randomUnderlyingAddress, allAmountUBA);
         // self mint
         const transactionHash = await agentBot.agent.wallet.addTransaction(
             randomUnderlyingAddress,

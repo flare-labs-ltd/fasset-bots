@@ -11,11 +11,11 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError } from "../utils";
+import { CommandLineError, TokenBalances } from "../utils";
 import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
-import { BN_ZERO, BNish, DAYS, MINUTES, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -29,6 +29,7 @@ import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
 import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+import { checkUnderlyingFunds } from "../utils/fasset-helpers";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -156,7 +157,13 @@ export class AgentBot {
     static async proveEOAaddress(context: IAssetAgentContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
-        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, reference);
+        const smallest_amount = 1;
+        const enoughFunds = await checkUnderlyingFunds(context, underlyingAddress, underlyingAddress, smallest_amount);
+        if (!enoughFunds) {
+            logger.error(`Not enough funds to prove EOAaddress ${underlyingAddress}`)
+            throw new Error(`Not enough funds to prove EOAaddress ${underlyingAddress}`);
+        }
+        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, smallest_amount, reference);
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(web3DeepNormalize(proof), { from: owner.workAddress });
@@ -201,26 +208,29 @@ export class AgentBot {
     }
 
     /**
-     * Activates agent's underlying XRP account by depositing 10 XRP from owner's underlying.
+     * Activates agent's underlying account.
      * @param context fasset agent bot context
      * @param vaultUnderlyingAddress agent's underlying address
      */
     static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
+        const starterAmount = context.chainInfo.minimumAccountBalance;
+        if (starterAmount == BN_ZERO) return;
+        const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
         try {
-            if (![ChainId.XRP, ChainId.testXRP].includes(context.chainInfo.chainId)) return;
-            const starterAmount = XRP_ACTIVATE_BALANCE;
             const reference = owner.managementAddress;
+            const enoughFunds = await checkUnderlyingFunds(context, ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount);
+            if (!enoughFunds) throw Error;
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
             if (!transaction || transaction?.status != TX_SUCCESS) {
-                throw new Error(`Could not activate or verify new XRP account with transaction ${txHash}`);
+                throw new Error(`Could not activate or verify new ${balanceReader.symbol} account with transaction ${txHash}`);
             }
             logger.info(`Owner ${owner} activated underlying address ${vaultUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
             logger.error(`Owner ${owner} couldn't activate underlying address ${vaultUnderlyingAddress}:`, error);
-            throw new CommandLineError(squashSpace`Could not activate or verify new agent vault's XRP account.
-                Note that the owner's XRP account ${ownerUnderlyingAddress} requires at least ${2 * Number(XRP_ACTIVATE_BALANCE) * 1e-6 + 1} XRP to activate the new account.`);
+            throw new CommandLineError(squashSpace`Could not activate or verify new agent vault's ${balanceReader.symbol}  account.
+                Note that the owner's ${balanceReader.symbol}  account ${ownerUnderlyingAddress} requires at least ${2 * Number(starterAmount) * 1e-6 + 1} ${balanceReader.symbol}  to activate the new account.`);
         }
     }
 

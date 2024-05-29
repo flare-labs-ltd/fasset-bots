@@ -27,7 +27,7 @@ export class AgentBotUnderlyingManagement {
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee}.`);
         if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
-            await this.underlyingTopUp(em, estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR), freeUnderlyingBalance);
+            await this.underlyingTopUp(em, estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
         }
@@ -38,14 +38,12 @@ export class AgentBotUnderlyingManagement {
      * It also checks owner's underlying balance and notifies when it is too low.
      * @param amount amount to transfer from owner's underlying address to agent's underlying address
      * @param agentVault agent's vault address
-     * @param freeUnderlyingBalance agent's free underlying balance
      */
-    async underlyingTopUp(em: EM, amount: BN, freeUnderlyingBalance: BN): Promise<void> {
+    async underlyingTopUp(em: EM, amount: BN): Promise<void> {
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
         const txHash = await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
-        console.log("txHash", txHash)
         await this.createAgentUnderlyingPayment(em, txHash, AgentUnderlyingPaymentType.TOP_UP);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner sent underlying ${AgentUnderlyingPaymentType.TOP_UP} payment to ${this.agent.underlyingAddress} with amount
             ${amountF} from ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
@@ -55,7 +53,7 @@ export class AgentBotUnderlyingManagement {
     async checkForLowOwnerUnderlyingBalance() {
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
-        const expectedBalance = estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR);
+        const expectedBalance = this.context.chainInfo.minimumAccountBalance.add(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
         const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
         const expectedBalanceF = await this.tokens.underlying.format(expectedBalance);
         if (ownerUnderlyingBalance.lte(expectedBalance)) {

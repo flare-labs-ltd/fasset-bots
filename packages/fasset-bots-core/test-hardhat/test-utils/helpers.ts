@@ -20,7 +20,7 @@ import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, ZERO_ADDRESS, toBN, toBNExp } from "../../src/utils/helpers";
+import { BNish, ZERO_ADDRESS, fail, toBN, toBNExp } from "../../src/utils/helpers";
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
@@ -28,6 +28,8 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
+import { MockIndexer } from "../../src/mock/MockIndexer";
+import { fundUnderlying } from "../../test/test-utils/test-helpers";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -57,7 +59,7 @@ export async function createTestAgentBot(
     await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     ownerUnderlyingAddress ??= `underlying_${ownerManagementAddress}`;
-    context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
+    await fundUnderlying(context, ownerUnderlyingAddress, depositUnderlying);
     const vaultUnderlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
     const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
@@ -108,7 +110,9 @@ export async function createTestAgent(
     const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
-    return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
+    const agent = await Agent.create(context, owner, addressValidityProof, agentBotSettings);
+    await fundUnderlying(context, agent.underlyingAddress, context.chainInfo.minimumAccountBalance);
+    return agent;
 }
 
 async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSetWorkAddress: boolean, ownerManagementAddress: string) {
