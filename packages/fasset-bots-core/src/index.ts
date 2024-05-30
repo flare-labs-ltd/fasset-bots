@@ -12,3 +12,4 @@ export { generateSecrets, SecretsUser } from "./config/generate-secrets";
 export { ActorBaseKind } from "./fasset-bots/ActorBase";
 export { ChainId } from "./underlying-chain/ChainId";
 export { AgentEntity } from "./entities/agent";
+export { AgentSettingName, AgentUpdateSettingState } from "./entities/common";

@@ -825,4 +825,9 @@ describe("Agent bot tests", () => {
             if (agentEnt.active === false) break;
         }
     });
+
+    it.only("Should is called", async () => {
+        const agentInfo = await agentBot.agent.getAgentInfo()
+        console.log(agentInfo)
+    });
 });

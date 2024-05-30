@@ -1,9 +1,9 @@
 import BN from "bn.js";
 import { AgentBotSettings } from "../config";
 import { Agent } from "../fasset/Agent";
-import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentStatus, CollateralClass } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
-import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, MAX_UINT256, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentTokenBalances } from "./AgentTokenBalances";
@@ -32,6 +32,8 @@ export class AgentBotCollateralManagement {
         logger.info(`Agent ${this.agent.vaultAddress} finished checking for collateral topups.`);
         await this.checkOwnerVaultCollateralBalance(agentInfo);
         await this.checkOwnerNativeBalance(agentInfo);
+        await this.checkIfCanEndLiquidation(agentInfo);
+        // TODO (Urška) check if liquidation can be ended
     }
 
     async checkForVaultCollateralTopup(agentInfo: AgentInfo) {
@@ -90,6 +92,30 @@ export class AgentBotCollateralManagement {
         }
     }
 
+
+    async checkIfCanEndLiquidation(agentInfo: AgentInfo) {
+        console.log(agentInfo);
+        const currentStatus = Number(agentInfo.status);
+        if (currentStatus != AgentStatus.CCB && currentStatus != AgentStatus.LIQUIDATION) return;
+        const vaultCollateral = await this.agent.getVaultCollateral();
+        const poolCollateral = await this.agent.getPoolCollateral();
+        const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
+        const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
+
+        const vaultCRBIPS = await this.collateralRatioBIPS(agentInfo, vaultCollateralPrice)
+
+        if (currentStatus == AgentStatus.CCB) {
+            if(vaultCRBIPS.gte(toBN(vaultCollateral.ccbMinCollateralRatioBIPS))) {
+
+            }
+        }
+        // vaultCollateral
+        // poolCollateral.
+
+
+
+    }
+
     /**
      * Returns the value that is required to be topped up in order to reach healthy collateral ratio.
      * If value is less than zero, top up is not needed.
@@ -99,12 +125,22 @@ export class AgentBotCollateralManagement {
      * @return required amount for top up to reach healthy collateral ratio
      */
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
+        const { totalCollateralWei, backingCollateralWei } = await this.totalAndBackingCollateral(agentInfo, cp);
+        const requiredCollateral = backingCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
+        return requiredCollateral.sub(totalCollateralWei);
+    }
+
+    private async totalAndBackingCollateral(agentInfo: AgentInfo, cp: CollateralPrice): Promise<{ totalCollateralWei: BN, backingCollateralWei: BN }> {
         const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
-        const balance = toBN(Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei);
+        const totalCollateralWei = toBN(Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(redeemingUBA));
-        const backingVaultCollateralWei = cp.convertUBAToTokenWei(totalUBA);
-        const requiredCollateral = backingVaultCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
-        return requiredCollateral.sub(balance);
+        const backingCollateralWei = cp.convertUBAToTokenWei(totalUBA);
+        return { totalCollateralWei, backingCollateralWei};
+    }
+
+    private async collateralRatioBIPS(agentInfo: AgentInfo, cp: CollateralPrice) {
+        const c = await this.totalAndBackingCollateral(agentInfo, cp);
+        return c.totalCollateralWei.muln(MAX_BIPS).div(c.backingCollateralWei);
     }
 
     private ownerNativeLowBalance(agentInfo: AgentInfo): BN {
