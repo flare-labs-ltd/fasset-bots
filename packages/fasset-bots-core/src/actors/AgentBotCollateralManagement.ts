@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import { AgentBotSettings } from "../config";
 import { Agent } from "../fasset/Agent";
-import { AgentInfo, AgentStatus, CollateralClass } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentStatus, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { BN_ZERO, MAX_BIPS, MAX_UINT256, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -93,26 +93,35 @@ export class AgentBotCollateralManagement {
     }
 
 
-    async checkIfCanEndLiquidation(agentInfo: AgentInfo) {
-        console.log(agentInfo);
+    async checkIfCanEndLiquidation(agentInfo: AgentInfo): Promise<void> {
         const currentStatus = Number(agentInfo.status);
         if (currentStatus != AgentStatus.CCB && currentStatus != AgentStatus.LIQUIDATION) return;
+
         const vaultCollateral = await this.agent.getVaultCollateral();
         const poolCollateral = await this.agent.getPoolCollateral();
         const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
         const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
-
-        const vaultCRBIPS = await this.collateralRatioBIPS(agentInfo, vaultCollateralPrice)
+        const vaultCRBIPS = await this.collateralRatioBIPS(agentInfo, vaultCollateralPrice);
+        const poolCRBIPS = await this.collateralRatioBIPS(agentInfo, poolCollateralPrice);
 
         if (currentStatus == AgentStatus.CCB) {
-            if(vaultCRBIPS.gte(toBN(vaultCollateral.ccbMinCollateralRatioBIPS))) {
-
+            if(vaultCRBIPS.gte(toBN(vaultCollateral.ccbMinCollateralRatioBIPS)) &&
+                poolCRBIPS.gte(toBN(poolCollateral.ccbMinCollateralRatioBIPS))) {
+                    await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.vaultAddress });
+                    logger.info(`Agent ${this.agent.vaultAddress} could not end liquidation after price change.`);
+            } else {
+                logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
             }
         }
-        // vaultCollateral
-        // poolCollateral.
-
-
+        if (currentStatus == AgentStatus.LIQUIDATION) {
+            if(vaultCRBIPS.gte(toBN(vaultCollateral.safetyMinCollateralRatioBIPS)) &&
+                poolCRBIPS.gte(toBN(poolCollateral.safetyMinCollateralRatioBIPS))) {
+                    await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.vaultAddress });
+                    logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
+            } else {
+                logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
+            }
+        }
 
     }
 
