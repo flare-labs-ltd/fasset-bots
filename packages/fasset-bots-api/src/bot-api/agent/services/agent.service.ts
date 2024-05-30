@@ -223,6 +223,7 @@ export class AgentService {
 
         const agentInfos: AgentVaultStatus[] = [];
         for (const agent of agentVaults) {
+            await agent.updateSettings.init()
             const agentInfo = await cli.context.assetManager.getAgentInfo(agent.vaultAddress);
             agentInfos.push({
                 vaultAddress: agent.vaultAddress,
@@ -462,6 +463,7 @@ export class AgentService {
             const vaultsForFasset: VaultInfo[] = [];
             // For each vault calculate needed info
             for (const vault of agentVaults) {
+                await vault.updateSettings.init()
                 let updating = false;
                 if (toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.FEE)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_FEE_SHARE)).gt(BN_ZERO) ||
                 toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_VAULT_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_POOL_CR)).gt(BN_ZERO) ||

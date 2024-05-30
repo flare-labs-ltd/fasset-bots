@@ -141,9 +141,20 @@ export class Liquidator extends ActorBase {
     }
 
     private async liquidateAgent(agent: TrackedAgentState): Promise<void> {
+        if (!await this.hasEnoughBalanceToStartLiquidation()) {
+            logger.info(`Liquidator ${this.address} does not have enough FAssets to liquidate agent ${agent.vaultAddress}.`);
+            console.log(`Liquidator ${this.address} does not have enough FAssets to liquidate agent ${agent.vaultAddress}.`)
+            return;
+        }
         await this.liquidationStrategy.liquidate(agent);
         logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
         await this.notifier.sendAgentLiquidated(agent.vaultAddress);
         console.log(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
+    }
+
+    private async hasEnoughBalanceToStartLiquidation(): Promise<boolean> {
+        // TODO: check if balance is larger or equal to 1 AMG
+        const balance = await this.context.fAsset.balanceOf(this.address);
+        return balance.gtn(0);
     }
 }

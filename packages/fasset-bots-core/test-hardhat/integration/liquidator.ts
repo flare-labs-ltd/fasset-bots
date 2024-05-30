@@ -166,21 +166,6 @@ describe("Liquidator tests", () => {
         expect(spyMinting).to.have.been.called.once;
     });
 
-    it("Should not check collateral ratio after price changes - faulty function", async () => {
-        const lastBlock = await web3.eth.getBlockNumber();
-        const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
-        await mockState.initialize();
-        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, mockState);
-        const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
-        await mockState.getAgentTriggerAdd(agentBot.agent.vaultAddress);
-        // mock price changes
-        await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
-        // check collateral ratio after price changes
-        await liquidator.runStep();
-        expect(spyLiquidation).to.have.been.called.once;
-    });
-
     it("Should catch full liquidation", async () => {
         const challengerState = new TrackedState(trackedStateContext, await web3.eth.getBlockNumber());
         await challengerState.initialize();

@@ -7,7 +7,7 @@ import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { formatFixed } from "../utils/formatting";
-import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, toBN, randomChoice } from "../utils/helpers";
+import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, randomChoice, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
@@ -306,6 +306,15 @@ export class InfoBotCommands {
         async function formatCollateralAt(cpr: CollateralPriceCalculator, address: string) {
             return formatCollateral(cpr, await cpr.balanceReader.balance(address));
         }
+        function formatAgentStatus(status: AgentStatus) {
+            switch (status) {
+                case AgentStatus.NORMAL: return `healthy`;
+                case AgentStatus.CCB: return `in collateral call band`;
+                case AgentStatus.LIQUIDATION: return `in liquidation`;
+                case AgentStatus.FULL_LIQUIDATION: return `in full liquidation`;
+                case AgentStatus.DESTROYING: return `closing`;
+            }
+        }
         //
         // const fAsset = this.context.fAsset;
         const assetManager = this.context.assetManager;
@@ -329,18 +338,18 @@ export class InfoBotCommands {
         console.log(`    Vault collateral token: ${air.vaultCollateral.currency.symbol}`);
         console.log(`    Collateral pool token: ${poolTokenBR.symbol}`);
         //
-        // const
         console.log("Network exchange rates:");
         console.log(`    ${nativeBR.symbol}/USD: ${air.poolCollateral.price.tokenPrice?.format()}`);
         console.log(`    ${vaultBR.symbol}/USD: ${air.vaultCollateral.price.tokenPrice?.format()}`);
         console.log(`    ${underlyingBR.symbol}/USD: ${air.poolCollateral.price.assetPrice?.format()}`);
         //
         console.log("Agent mint and collateral:");
-        console.log(`    Free: ${agentInfo.freeCollateralLots}`);
+        console.log(`    Status: ${formatAgentStatus(Number(agentInfo.status))}`);
+        console.log(`    Public: ${agentInfo.publiclyAvailable}`);
+        console.log(`    Free lots: ${agentInfo.freeCollateralLots}`);
         console.log(`    Minted: ${formatBackedAmount(agentInfo.mintedUBA)}`);
         console.log(`    Reserved: ${formatBackedAmount(agentInfo.reservedUBA)}`);
         console.log(`    Redeeming: ${formatBackedAmount(agentInfo.redeemingUBA)}`);
-        console.log(`    Public: ${agentInfo.publiclyAvailable}`);
         console.log(`    Vault CR: ${formatCR(agentInfo.vaultCollateralRatioBIPS)}  ` +
             `(minCR=${formatCR(air.vaultCollateral.minCRBips())}, mintingCR=${formatCR(air.vaultCollateral.mintingCRBips())})`);
         console.log(`    Pool CR: ${formatCR(agentInfo.poolCollateralRatioBIPS)}  ` +
@@ -360,18 +369,27 @@ export class InfoBotCommands {
         console.log(`Agent collateral pool: ${agentInfo.collateralPool}`);
         console.log(`    Balance: ${await poolBR.formatBalance(agentInfo.collateralPool)}`);
         console.log(`    Collected fees: ${await fassetBR.formatBalance(agentInfo.collateralPool)}`);
-        //
+        // vault underlying
+        console.log(`Agent vault underlying (${underlyingBR.symbol}) address: ${agentInfo.underlyingAddressString}`);
+        console.log(`    Actual balance: ${await underlyingBR.formatBalance(agentInfo.underlyingAddressString)}`);
+        console.log(`    Tracked balance: ${underlyingBR.format(toBN(agentInfo.underlyingBalanceUBA))}`);
+        console.log(`    Required balance: ${underlyingBR.format(toBN(agentInfo.requiredUnderlyingBalanceUBA))}`);
+        console.log(`    Free balance: ${underlyingBR.format(toBN(agentInfo.freeUnderlyingBalanceUBA))}`);
+        // data for agent owner
         if (ownerUnderlyingAddress) {
             console.log(`Agent owner management address: ${agentInfo.ownerManagementAddress}`);
             console.log(`    Balance: ${await nativeBR.formatBalance(agentInfo.ownerManagementAddress)}`);
             console.log(`    Balance: ${await vaultBR.formatBalance(agentInfo.ownerManagementAddress)}`);
+            //
             console.log(`Agent owner work address: ${agentInfo.ownerWorkAddress}`);
             console.log(`    Balance: ${await formatCollateralAt(poolNativeCollateral, agentInfo.ownerWorkAddress)}`);
             console.log(`    Balance: ${await formatCollateralAt(air.vaultCollateral, agentInfo.ownerWorkAddress)}`);
-            console.log(`Agent owner underlying address: ${ownerUnderlyingAddress}`);
+            //
+            console.log(`Agent owner underlying (${underlyingBR.symbol}) address: ${ownerUnderlyingAddress}`);
             console.log(`    Balance: ${await underlyingBR.formatBalance(ownerUnderlyingAddress)}`);
         }
     }
+
 }
 
 type ColumnType = [title: string, width: number, align: "l" | "r"];
