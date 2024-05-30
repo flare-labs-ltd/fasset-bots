@@ -5,13 +5,13 @@ import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
-import { AgentEntity, AgentMintingState, AgentRedemptionState } from "../../src/entities/agent";
+import { AgentEntity } from "../../src/entities/agent";
 import { AgentStatus, AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, POOL_COLLATERAL_RESERVE_FACTOR, QUERY_WINDOW_SECONDS, checkedCast, maxBN, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, MAX_BIPS, checkedCast, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
@@ -19,7 +19,8 @@ import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { AgentMintingState, AgentRedemptionState } from "../../src/entities/common";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -499,7 +500,9 @@ describe("Agent bot tests", () => {
 
     it("Should check collateral ratio after price changes", async () => {
         const spyTop = spy.on(agentBot.collateralManagement, "checkAgentForCollateralRatiosAndTopUp");
-        // one inital price check must happen
+        // reset transientStorage to force priceEvent check
+        agentBot.transientStorage.lastPriceReaderEventBlock = -1;
+        agentBot.transientStorage.waitingForLatestBlockProofSince = BN_ZERO;
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         expect(spyTop).to.have.been.called.exactly(1);
@@ -678,7 +681,7 @@ describe("Agent bot tests", () => {
         const agentInfo = await agentBot.agent.getAgentInfo()
         const minNative = toBN(agentInfo.totalPoolCollateralNATWei)
             .sub(toBN(agentInfo.freePoolCollateralNATWei))
-            .muln(POOL_COLLATERAL_RESERVE_FACTOR)
+            .muln(agentBot.agentBotSettings.poolCollateralReserveFactor);
         const deposit = ownerBalance.sub(minNative)
         await agentB.buyCollateralPoolTokens(deposit);
         // send notifications: top up failed and low balance on ownerAddress

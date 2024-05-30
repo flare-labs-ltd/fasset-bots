@@ -99,15 +99,14 @@ export class InfoBotCommands {
     async printSystemInfo() {
         const fAsset = this.context.fAsset;
         const assetManager = this.context.assetManager;
-        const settings = await assetManager.getSettings();
-        const symbol = await fAsset.symbol();
-        console.log(`FAsset: ${await fAsset.name()} (${symbol}) at ${fAsset.address}`);
+        const fassetBR = await TokenBalances.fasset(this.context);
+        console.log(`FAsset: ${await fAsset.name()} (${fassetBR.symbol}) at ${fAsset.address}`);
         console.log(`Asset manager: ${assetManager.address}`);
-        const mintedWei = await fAsset.totalSupply();
-        const minted = Number(mintedWei) / Number(settings.assetUnitUBA);
-        const lotSizeUBA = await this.getLotSize(settings);
+        const mintedWei = await fassetBR.totalSupply();
+        const lotSizeUBA = await this.getLotSize();
         const mintedLots = Number(mintedWei) / lotSizeUBA;
-        console.log(`Minted: ${minted.toFixed(2)} ${symbol}  (${mintedLots.toFixed(2)} lots)`);
+        console.log(`Lot size: ${fassetBR.format(lotSizeUBA)}`);
+        console.log(`Minted: ${fassetBR.format(mintedWei)}  (${mintedLots.toFixed(6)} lots)`);
     }
 
     async printAvailableAgents() {
@@ -318,7 +317,7 @@ export class InfoBotCommands {
         const underlyingBR = await TokenBalances.fassetUnderlyingToken(this.context);
         const vaultBR = air.vaultCollateral.balanceReader;
         const poolBR = air.poolCollateral.balanceReader;
-        const poolTokenBR = await TokenBalances.erc20(await air.collateralPoolToken());
+        const poolTokenBR = air.poolTokenBalanceReader;
         //
         const poolNativeCollateral = new CollateralPriceCalculator(agentInfo, air.poolCollateral.price, nativeBR, ZERO_ADDRESS);
         //
@@ -328,7 +327,7 @@ export class InfoBotCommands {
         console.log(`    FAsset token: ${fassetBR.symbol}`);
         console.log(`    Underlying token: ${underlyingBR.symbol}`);
         console.log(`    Vault collateral token: ${air.vaultCollateral.currency.symbol}`);
-        console.log(`    Collateral pool token: ${await air.collateralPoolToken().then(tok => tok.symbol())}`);
+        console.log(`    Collateral pool token: ${poolTokenBR.symbol}`);
         //
         // const
         console.log("Network exchange rates:");

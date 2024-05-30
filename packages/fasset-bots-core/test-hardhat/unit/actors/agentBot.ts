@@ -1,10 +1,12 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBot } from "../../../src/actors/AgentBot";
+import { AgentBotSettings } from "../../../src/config";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity, AgentMinting, AgentMintingState, AgentRedemption, AgentRedemptionState } from "../../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting } from "../../../src/entities/agent";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockChain } from "../../../src/mock/MockChain";
@@ -14,20 +16,24 @@ import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MINUTES, ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
+import { AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState } from "../../../src/entities/common";
 use(spies);
+use(chaiAsPromised);
 
 const randomUnderlyingAddress = "RANDOM_UNDERLYING";
 
 describe("Agent bot unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
+    let agentBotSettings: AgentBotSettings;
     let orm: ORM;
     let ownerAddress: string;
     let ownerUnderlyingAddress: string;
@@ -40,6 +46,7 @@ describe("Agent bot unit tests", () => {
     async function initialize() {
         orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        agentBotSettings = testAgentBotSettings.xrp;
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
@@ -73,7 +80,7 @@ describe("Agent bot unit tests", () => {
     it("Should read agent bot from entity", async () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
+        const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
     });
@@ -82,7 +89,7 @@ describe("Agent bot unit tests", () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         await context.agentOwnerRegistry.setWorkAddress(ZERO_ADDRESS, { from: ownerAddress });
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await expectRevert(AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports), `Management address ${ownerAddress} has no registered work address.`);
+        await expectRevert(AgentBot.fromEntity(context, agentBotSettings, agentEnt, ownerUnderlyingAddress, testNotifierTransports), `Management address ${ownerAddress} has no registered work address.`);
     });
 
     it("Should run readUnhandledEvents", async () => {
@@ -98,30 +105,38 @@ describe("Agent bot unit tests", () => {
         expect(spyTop).to.have.been.called.twice;
     });
 
-    it("Should top up underlying - failed", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
-        const spyBalance = spy.on(agentBot.notifier, "sendLowUnderlyingAgentBalanceFailed");
-        const topUpAmount = balance.addn(1);
-        await agentBot.underlyingManagement.underlyingTopUp(toBN(topUpAmount), toBN(1));
-        expect(spyBalance).to.have.been.called.once;
-    });
-
     it("Should top up underlying", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyBalance0 = spy.on(agentBot.notifier, "sendLowUnderlyingAgentBalance");
+        const spyBalance0 = spy.on(agentBot.underlyingManagement, "createAgentUnderlyingPayment");
         const spyBalance1 = spy.on(agentBot.notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
+        const spyBalance2 = spy.on(agentBot.underlyingManagement.notifier, "sendConfirmWithdrawUnderlying");
         const balance = await context.blockchainIndexer.chain.getBalance(ownerUnderlyingAddress);
-        await agentBot.underlyingManagement.underlyingTopUp(toBN(balance), toBN(1));
+        await agentBot.underlyingManagement.underlyingTopUp(orm.em, toBN(balance).sub(context.chainInfo.minimumAccountBalance));
+        chain.mine(chain.finalizationBlocks + 1);
         expect(spyBalance0).to.have.been.called.once;
         expect(spyBalance1).to.have.been.called.once;
+        const topUpPayment0 = await orm.em.findOneOrFail(AgentUnderlyingPayment, { type: AgentUnderlyingPaymentType.TOP_UP }  as FilterQuery<AgentUnderlyingPayment>, { orderBy: { id: ('DESC') } });
+        expect(topUpPayment0.state).to.equal(AgentUnderlyingPaymentState.PAID);
+        // run agent's steps until underlying payment process is finished
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if underlying payment is done
+            orm.em.clear();
+            const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, { txHash: topUpPayment0.txHash }  as FilterQuery<AgentUnderlyingPayment> );
+            console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
+            if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
+        }
+        expect(spyBalance2).to.have.been.called.once;
     });
 
     it("Should prove EOA address", async () => {
         const spyEOA = spy.on(AgentBot, "proveEOAaddress");
         const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
         await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
-        await createTestAgentBot(contextEOAProof, orm, ownerAddress);
+        await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress)).to.eventually.be.rejectedWith(/^Not enough funds to prove EOAaddress/).and.be.an.instanceOf(Error);
         expect(spyEOA).to.have.been.called.once;
     });
 
@@ -278,6 +293,43 @@ describe("Agent bot unit tests", () => {
         expect(spyProof).to.have.been.called.once;
     });
 
+    it("Should not receive proof 3 - not finalized", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
+        // create redemption
+        const rd = orm.em.create(AgentRedemption, {
+            state: AgentRedemptionState.REQUESTED_PROOF,
+            agentAddress: agentBot.agent.vaultAddress,
+            requestId: "003",
+            paymentAddress: "",
+            valueUBA: toBN(0),
+            feeUBA: toBN(0),
+            paymentReference: "",
+            lastUnderlyingBlock: toBN(0),
+            lastUnderlyingTimestamp: toBN(0),
+            proofRequestRound: 1,
+            proofRequestData: "",
+        });
+        await agentBot.redemption.checkConfirmPayment(rd);
+        expect(spyProof).to.have.been.called.once;
+    });
+
+    it("Should not receive proof 4 - not finalized", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
+        // create underlying payment
+        const up = orm.em.create(AgentUnderlyingPayment, {
+            state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
+            type: AgentUnderlyingPaymentType.TOP_UP,
+            agentAddress: agentBot.agent.vaultAddress,
+            txHash: "hash",
+            proofRequestRound: 1,
+            proofRequestData: "data",
+        });
+        await agentBot.underlyingManagement.checkConfirmPayment(up);
+        expect(spyProof).to.have.been.called.once;
+    });
+
     it("Should not receive proof 1 - no proof", async () => {
         await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
@@ -356,6 +408,23 @@ describe("Agent bot unit tests", () => {
         expect(spyProof).to.have.been.called.once;
     });
 
+    it("Should not receive proof 5 - no proof", async () => {
+        await context.attestationProvider.requestConfirmedBlockHeightExistsProof(await attestationWindowSeconds(context.assetManager));
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyProof = spy.on(agentBot.notifier, "sendAgentUnderlyingPaymentNoProofObtained");
+        // create underlying payment
+        const up = orm.em.create(AgentUnderlyingPayment, {
+            state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
+            type: AgentUnderlyingPaymentType.TOP_UP,
+            agentAddress: agentBot.agent.vaultAddress,
+            txHash: "hash",
+            proofRequestRound: 0,
+            proofRequestData: "data",
+        });
+        await agentBot.underlyingManagement.checkConfirmPayment(up);
+        expect(spyProof).to.have.been.called.once;
+    });
+
     it("Should destruct agent", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
@@ -397,86 +466,55 @@ describe("Agent bot unit tests", () => {
     it("Should update agent settings and catch it if update expires", async () => {
         const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // announce updates
         const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
-        const validAtPoolFeeShareBIPS = await agentBot.agent.announceAgentSettingUpdate("poolFeeShareBIPS", 4100);
-        const validAtBuyFAssetByAgentFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("buyFAssetByAgentFactorBIPS", 8000);
-        agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = validAtBuyFAssetByAgentFactorBIPS;
-        agentEnt.agentSettingUpdateValidAtFeeBIPS = validAtFeeBIPS;
-        agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAtPoolFeeShareBIPS;
-        await orm.em.persist(agentEnt).flush();
+        const updateSettingFee = orm.em.create(AgentUpdateSetting, {
+            agent: await agentBot.fetchAgentEntity(orm.em),
+            name: AgentSettingName.FEE,
+            state: AgentUpdateSettingState.WAITING,
+            validAt: validAtFeeBIPS
+        });
+        await orm.em.persist(updateSettingFee).flush();
         // not yet allowed
         await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eq(validAtFeeBIPS)).to.be.true;
-        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).eq(validAtPoolFeeShareBIPS)).to.be.true;
-        expect(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).eq(validAtBuyFAssetByAgentFactorBIPS)).to.be.true;
+        expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.WAITING);
         // allowed
-        await time.increaseTo(validAtPoolFeeShareBIPS);
+        await time.increaseTo(updateSettingFee.validAt);
         await agentBot.handleTimelockedProcesses(orm.em);
-        //announce update of other settings
-        const validAtPoolTopupTokenPriceFactorBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 9000);
-        agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAtPoolTopupTokenPriceFactorBIPS;
-        const validAtPoolTopupCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolTopupCollateralRatioBIPS", 23000);
-        agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = validAtPoolTopupCollateralRatioBIPS;
-        await orm.em.persist(agentEnt).flush();
-        // not yet allowed
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).eq(validAtPoolTopupTokenPriceFactorBIPS)).to.be.true;
-        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).eq(validAtPoolTopupCollateralRatioBIPS)).to.be.true;
-        // allowed
-        await time.increaseTo(validAtPoolTopupCollateralRatioBIPS);
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).eqn(0)).to.be.true;
-        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).eqn(0)).to.be.true;
-        // announce more updates
-        const validAtMintingVaultCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("mintingVaultCollateralRatioBIPS", 17800);
-        agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = validAtMintingVaultCollateralRatioBIPS;
-        const validAtMintingPoolCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("mintingPoolCollateralRatioBIPS", 25000);
-        agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = validAtMintingPoolCollateralRatioBIPS;
-        await orm.em.persist(agentEnt).flush();
-        // not yet allowed
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).eq(validAtMintingVaultCollateralRatioBIPS)).to.be.true;
-        expect(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).eq(validAtMintingPoolCollateralRatioBIPS)).to.be.true;
-        // allowed
-        await time.increaseTo(validAtMintingPoolCollateralRatioBIPS);
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS.eqn(0)).to.be.true;
-        expect(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS.eqn(0)).to.be.true;
-        // announce another update
-        const validAtPoolExitCollateralRatioBIPS = await agentBot.agent.announceAgentSettingUpdate("poolExitCollateralRatioBIPS", 25000);
-        agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = validAtPoolExitCollateralRatioBIPS;
-        // not yet allowed
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).eq(validAtPoolExitCollateralRatioBIPS)).to.be.true;
-        // allowed
-        await time.increaseTo(validAtPoolExitCollateralRatioBIPS);
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS.eqn(0)).to.be.true;
+        expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.DONE);
         // announce and try to update an expired update
         const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
-        agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt2;
-        await orm.em.persist(agentEnt).flush();
+        const updateSettingPoolTopup = orm.em.create(AgentUpdateSetting, {
+            agent: await agentBot.fetchAgentEntity(orm.em),
+            name: AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR,
+            state: AgentUpdateSettingState.WAITING,
+            validAt: validAt2
+        });
+        await orm.em.persist(updateSettingPoolTopup).flush();
         // cannot update, update expired
         await time.increaseTo(validAt2.add(invalidUpdateSeconds));
         await agentBot.handleTimelockedProcesses(orm.em);
-        expect(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.eqn(0)).to.be.true;
+        expect(updateSettingPoolTopup.state).to.be.eq(AgentUpdateSettingState.DONE)
     });
 
     it("Should update agent settings and catch it if error thrown", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         const feeBIPS = toBN((await agentBot.agent.getAgentInfo()).feeBIPS);
         //Announce updates
         const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", feeBIPS.muln(10));
-        agentEnt.agentSettingUpdateValidAtFeeBIPS = validAtFeeBIPS;
-        await orm.em.persist(agentEnt).flush();
-        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eqn(0)).to.be.false;
+        const updateSettingFee = orm.em.create(AgentUpdateSetting, {
+            agent: await agentBot.fetchAgentEntity(orm.em),
+            name: AgentSettingName.FEE,
+            state: AgentUpdateSettingState.WAITING,
+            validAt: validAtFeeBIPS
+        });
+
+        await orm.em.persist(updateSettingFee).flush();
+        expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.WAITING);
         //allowed
         await time.increaseTo(validAtFeeBIPS);
         await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).eqn(0)).to.be.true;
+        expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.DONE);
     });
 
     it("Should exit available", async () => {
@@ -494,7 +532,7 @@ describe("Agent bot unit tests", () => {
         expect(agentEnt.exitAvailableAllowedAtTimestamp.eqn(0)).to.be.true;
     });
 
-    it("Should run handleAgentsWaitingsAndCleanUp and change nothing", async () => {
+    it("Should run handleTimelockedProcesses and change nothing", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         expect(agentEnt.waitingForDestructionCleanUp).to.be.false;
@@ -549,7 +587,9 @@ describe("Agent bot unit tests", () => {
         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         await orm.em.persist(agentEnt).flush();
         // pay
-        const tx = await agentBot.agent.performUnderlyingWithdrawal(resp.paymentReference, 100, "SomeRandomUnderlyingAddress");
+        const paymentAmount = toBN(100);
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, paymentAmount);
+        const tx = await agentBot.agent.performPayment("SomeRandomUnderlyingAddress", paymentAmount, resp.paymentReference);
         agentEnt.underlyingWithdrawalConfirmTransaction = tx;
         // confirmation not yet allowed
         await agentBot.handleTimelockedProcesses(orm.em);
@@ -569,7 +609,7 @@ describe("Agent bot unit tests", () => {
         const poolFee = amountUBA.mul(toBN(agentSettings.feeBIPS)).mul(toBN(agentSettings.poolFeeShareBIPS));
 
         const allAmountUBA = amountUBA.add(poolFee);
-        context.blockchainIndexer.chain.mint(randomUnderlyingAddress, allAmountUBA);
+        await fundUnderlying(context, randomUnderlyingAddress, allAmountUBA);
         // self mint
         const transactionHash = await agentBot.agent.wallet.addTransaction(
             randomUnderlyingAddress,
@@ -801,5 +841,29 @@ describe("Agent bot unit tests", () => {
         expect(toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).eqn(0)).to.be.true;
         const poolTokensBalance = (await agentBot.agent.getAgentInfo()).totalAgentPoolTokensWei;
         expect(poolTokensBalance).to.eq(amount.toString());
+    });
+
+    it("Should not do next underlying payment step due to invalid underlying payment state", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyLog = spy.on(console, "error");
+        // create underlying payment with invalid state
+        const up = orm.em.create(AgentUnderlyingPayment, {
+            state: "invalid" as AgentUnderlyingPaymentState,
+            type: AgentUnderlyingPaymentType.TOP_UP,
+            agentAddress: agentBot.agent.vaultAddress,
+            txHash: "hash",
+            proofRequestRound: 1,
+            proofRequestData: "data",
+        });
+        await orm.em.persistAndFlush(up);
+        await agentBot.underlyingManagement.nextUnderlyingPaymentStep(orm.em, up.id);
+        expect(spyLog).to.have.been.called.once;
+    });
+
+    it("Should not do next underlying payment step due to underlying payment not found in db", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyLog = spy.on(console, "error");
+        await agentBot.underlyingManagement.nextUnderlyingPaymentStep(orm.em, 1000);
+        expect(spyLog).to.have.been.called.once;
     });
 });

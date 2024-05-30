@@ -1,6 +1,6 @@
 {
     "name": "@flarelabs/simple-wallet",
-    "version": "1.0.0",
+    "version": "1.0.0-beta.6",
     "description": "Fasset bots simple wallet",
     "engines": {
         "node": ">=14.6.0"

@@ -1368,6 +1368,42 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@flarelabs/fasset-liquidator@workspace:packages/fasset-liquidator":
+  version: 0.0.0-use.local
+  resolution: "@flarelabs/fasset-liquidator@workspace:packages/fasset-liquidator"
+  dependencies:
+    "@nomicfoundation/hardhat-chai-matchers": ^2.0.2
+    "@nomicfoundation/hardhat-ethers": ^3.0.4
+    "@nomicfoundation/hardhat-network-helpers": ^1.0.9
+    "@nomicfoundation/hardhat-toolbox": ^3.0.0
+    "@nomicfoundation/hardhat-verify": ^1.1.1
+    "@openzeppelin/contracts": ^4.9.3
+    "@typechain/ethers-v6": ^0.4.0
+    "@typechain/hardhat": ^8.0.3
+    "@types/chai": ^4.3.6
+    "@types/dotenv": ^8.2.0
+    "@types/mocha": ^10.0.1
+    "@types/node": ^20.5.7
+    blazeswap: "git+https://github.com/kuco23/blazeswap.git#main"
+    chai: ^4.3.10
+    chalk: 4.1.2
+    commander: ^11.1.0
+    cross-env: ^7.0.3
+    dotenv: ^16.3.1
+    ethers: ^6.7.1
+    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.7"
+    hardhat: 2.20.1
+    hardhat-gas-reporter: ^1.0.9
+    mocha: ^10.3.0
+    rimraf: ^5.0.1
+    solidity-coverage: ^0.8.5
+    ts-node: ^10.9.1
+    tsx: ^4.7.1
+    typechain: ^8.2.0
+    typescript: ^4.6.3
+  languageName: unknown
+  linkType: soft
+
 "@flarelabs/simple-wallet@workspace:*, @flarelabs/simple-wallet@workspace:packages/simple-wallet":
   version: 0.0.0-use.local
   resolution: "@flarelabs/simple-wallet@workspace:packages/simple-wallet"
@@ -8686,50 +8722,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fasset-liquidator@workspace:packages/fasset-liquidator":
+"fasset-bots-monorepo@workspace:.":
   version: 0.0.0-use.local
-  resolution: "fasset-liquidator@workspace:packages/fasset-liquidator"
+  resolution: "fasset-bots-monorepo@workspace:."
   dependencies:
-    "@nomicfoundation/hardhat-chai-matchers": ^2.0.2
-    "@nomicfoundation/hardhat-ethers": ^3.0.4
-    "@nomicfoundation/hardhat-network-helpers": ^1.0.9
-    "@nomicfoundation/hardhat-toolbox": ^3.0.0
-    "@nomicfoundation/hardhat-verify": ^1.1.1
-    "@openzeppelin/contracts": ^4.9.3
-    "@typechain/ethers-v6": ^0.4.0
-    "@typechain/hardhat": ^8.0.3
-    "@types/chai": ^4.3.6
-    "@types/dotenv": ^8.2.0
-    "@types/mocha": ^10.0.1
-    "@types/node": ^20.5.7
-    blazeswap: "git+https://github.com/kuco23/blazeswap.git#main"
-    chai: ^4.3.10
-    chalk: 4.1.2
-    commander: ^11.1.0
-    cross-env: ^7.0.3
-    dotenv: ^16.3.1
-    ethers: ^6.7.1
-    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.6"
-    hardhat: 2.20.1
-    hardhat-gas-reporter: ^1.0.9
-    mocha: ^10.3.0
-    rimraf: ^5.0.1
-    solidity-coverage: ^0.8.5
-    ts-node: ^10.9.1
-    tsx: ^4.7.1
-    typechain: ^8.2.0
-    typescript: ^4.6.3
+    "@goldstack/utils-typescript-references": 0.3.9
+    "@istanbuljs/nyc-config-typescript": 1.0.2
+    "@types/mocha": 10.0.6
+    "@types/rewire": 2.5.30
+    "@typescript-eslint/eslint-plugin": 6.7.3
+    "@typescript-eslint/parser": 6.7.3
+    dotenv: 16.3.1
+    eslint: 8.50.0
+    eslint-plugin-node: 11.1.0
+    mocha: 10.2.0
+    nyc: 15.1.0
+    rimraf: 5.0.5
+    source-map-support: 0.5.21
+    ts-node: 10.9.1
+    typescript: 5.2.2
   languageName: unknown
   linkType: soft
 
-"fasset@git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.6":
-  version: 1.0.0-beta.6
-  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=45807b3eae4c31836bcad14490da432192acf59b"
+"fasset@git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.7":
+  version: 1.0.0-beta.7
+  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=2592a74f6cbd51d64f1e449a4a094a37d68f378d"
   dependencies:
     "@flarenetwork/state-connector-protocol": 1.0.0-beta.3
     "@openzeppelin/contracts": 4.9.2
     flare-smart-contracts: "git+https://gitlab.com/flarenetwork/flare-smart-contracts.git#flare-distribution-to-delegators"
-  checksum: af3a6002bb237f79b3b91fe5fd501c0b4ac7e77739a7fb3085fe9f03fa32d36178e2459754b1d3ce40e50f20b5220464f3291442b77023522ed72b4e9a315b39
+  checksum: fa82d8a2d9c69c9988c687978995f8a364a749099e5e8c2310455f778cb70448dae72585dc891250a0ccf09443d9c87d905c0b0370b7f5d1a8c15d195f84bcda
   languageName: node
   linkType: hard
 
@@ -15105,28 +15127,6 @@ __metadata:
   checksum: 3db4dfe5c793f40ac7e0be689a1f75d05e6f2ca0c66189aeb62adab8c436b857ab4420a419251ee60370d41d957a55698fc5e23ab1e1b41715f33217bc4bb558
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@goldstack/utils-typescript-references": 0.3.9
-    "@istanbuljs/nyc-config-typescript": 1.0.2
-    "@types/mocha": 10.0.6
-    "@types/rewire": 2.5.30
-    "@typescript-eslint/eslint-plugin": 6.7.3
-    "@typescript-eslint/parser": 6.7.3
-    dotenv: 16.3.1
-    eslint: 8.50.0
-    eslint-plugin-node: 11.1.0
-    mocha: 10.2.0
-    nyc: 15.1.0
-    rimraf: 5.0.5
-    source-map-support: 0.5.21
-    ts-node: 10.9.1
-    typescript: 5.2.2
-  languageName: unknown
-  linkType: soft
 
 "run-async@npm:^2.2.0, run-async@npm:^2.4.0":
   version: 2.4.1

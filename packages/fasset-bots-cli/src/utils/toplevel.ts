@@ -1,6 +1,7 @@
 import { CommandLineError, logger } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import path from "path";
+import { programVersion } from "./program";
 
 const toplevelRunFinalizers: Array<() => Promise<void>> = [];
 
@@ -18,6 +19,7 @@ export function toplevelRun(main: () => Promise<void>) {
     } catch (error) {
         logger.info(`***** EXECUTING: ${process.argv.join(" ")}`);
     }
+    logger.info(`***** Version: ${programVersion()}`)
     logger.info(`***** ${scriptInfo} starting...`);
     runWithFinalizers(main)
         .then(() => {

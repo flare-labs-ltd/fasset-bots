@@ -1,4 +1,4 @@
-import { resolveInFassetBotsCore, squashSpace, stripIndent } from "@flarelabs/fasset-bots-core/utils";
+import { resolveFromPackageRoot, resolveInFassetBotsCore, squashSpace, stripIndent } from "@flarelabs/fasset-bots-core/utils";
 import { Command } from "commander";
 import fs from "fs";
 import os from "os";
@@ -60,6 +60,7 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
     }
 
     const program = new Command();
+    program.version(programVersion());
     program.addOption(createConfigOption());
     program.addOption(createSecretsOption());
     if (fassets === "single_fasset") {
@@ -76,6 +77,18 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
         return resolveInFassetBotsCore(`run-config/${config}-${suffix}.json`);
     }
     return config;
+}
+
+let _programVersion: string | undefined;
+
+export function programVersion() {
+    if (_programVersion == undefined) {
+        const mainFileDir = require.main?.filename ? path.dirname(require.main?.filename) : __dirname;
+        const packageFile = resolveFromPackageRoot(mainFileDir, "package.json");
+        const packageJson = JSON.parse(fs.readFileSync(packageFile).toString()) as { version?: string };
+        _programVersion = packageJson.version ?? "---";
+    }
+    return _programVersion;
 }
 
 function defaultSecretsPath() {

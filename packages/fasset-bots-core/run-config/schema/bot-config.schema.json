@@ -2,6 +2,60 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "additionalProperties": false,
     "definitions": {
+        "AgentBotFassetSettingsJson": {
+            "additionalProperties": false,
+            "properties": {
+                "minimumFreeUnderlyingBalance": {
+                    "description": "The amount of underlying currency on woner's underlying address, below which the address should be topped-up,\nto prevent negative free underlying balance after redemptions.",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                    "type": "string"
+                },
+                "recommendedOwnerBalance": {
+                    "description": "The amount of underlying currency on woner's underlying address, below which an alert is triggered.",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "minimumFreeUnderlyingBalance",
+                "recommendedOwnerBalance"
+            ],
+            "type": "object"
+        },
+        "AgentBotSettingsJson": {
+            "additionalProperties": false,
+            "properties": {
+                "fAssets": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AgentBotFassetSettingsJson"
+                    },
+                    "description": "Per FAsset settings.",
+                    "type": "object"
+                },
+                "liquidationPreventionFactor": {
+                    "description": "Minimum amount of collateral to topup vault to, to prevent liquidation.\nRelative to collateral's CCB CR.",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                    "type": "string"
+                },
+                "poolCollateralReserveFactor": {
+                    "description": "The threshold for NAT on owner's work address, below which alert is triggered.\nRelative to required pool collateral for current minted amount.",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                    "type": "string"
+                },
+                "vaultCollateralReserveFactor": {
+                    "description": "The threshold for USDC/WETH/... on owner's work address, below which alert is triggered.\nRelative to required vault collateral for current minted amount.",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "fAssets",
+                "liquidationPreventionFactor",
+                "poolCollateralReserveFactor",
+                "vaultCollateralReserveFactor"
+            ],
+            "type": "object"
+        },
         "ApiNotifierConfig": {
             "additionalProperties": false,
             "properties": {
@@ -37,9 +91,6 @@
                     "type": "string"
                 },
                 "priceChangeEmitter": {
-                    "type": "string"
-                },
-                "recommendedOwnerBalance": {
                     "type": "string"
                 },
                 "symbol": {
@@ -159,6 +210,9 @@
         "$schema": {
             "type": "string"
         },
+        "agentBotSettings": {
+            "$ref": "#/definitions/AgentBotSettingsJson"
+        },
         "apiNotifierConfigs": {
             "items": {
                 "$ref": "#/definitions/ApiNotifierConfig"
@@ -221,6 +275,7 @@
         }
     },
     "required": [
+        "agentBotSettings",
         "fAssets",
         "loopDelay",
         "nativeChainInfo",

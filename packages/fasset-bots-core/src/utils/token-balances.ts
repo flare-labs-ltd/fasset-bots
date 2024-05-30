@@ -1,4 +1,4 @@
-import { IERC20MetadataInstance } from "../../typechain-truffle";
+import { IERC20MetadataInstance, IICollateralPoolInstance } from "../../typechain-truffle";
 import { IAssetAgentContext, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
@@ -48,14 +48,22 @@ export namespace TokenBalances {
 
     export async function agentPoolCollateral(context: IAssetAgentContext, agentVaultAddress: string) {
         const agentInfo = await context.assetManager.getAgentInfo(agentVaultAddress);
-        const pool = await CollateralPool.at(agentInfo.collateralPool);
-        const wnat = await IERC20.at(await pool.wNat());
-        return TokenBalances.erc20(wnat);
+        return await poolCollateral(agentInfo.collateralPool);
     }
 
     export async function agentCollateralPoolToken(context: IAssetAgentContext, agentVaultAddress: string) {
         const agentInfo = await context.assetManager.getAgentInfo(agentVaultAddress);
-        const pool = await CollateralPool.at(agentInfo.collateralPool);
+        return await collateralPoolToken(agentInfo.collateralPool);
+    }
+
+    export async function poolCollateral(collateralPool: IICollateralPoolInstance | string) {
+        const pool = typeof collateralPool === "string" ? await CollateralPool.at(collateralPool) : collateralPool;
+        const wnat = await IERC20.at(await pool.wNat());
+        return TokenBalances.erc20(wnat);
+    }
+
+    export async function collateralPoolToken(collateralPool: IICollateralPoolInstance | string) {
+        const pool = typeof collateralPool === "string" ? await CollateralPool.at(collateralPool) : collateralPool;
         const poolToken = await IERC20.at(await pool.poolToken());
         return TokenBalances.erc20(poolToken);
     }

@@ -1,4 +1,3 @@
-import { NullableToNonNullable } from "./helpers";
 import { logger } from "./logger";
 
 /**
@@ -35,7 +34,7 @@ export function assertCmd(condition: boolean, errorMessage: string): asserts con
  * Check if value is non-null and throw otherwise.
  * Returns guaranteed non-null value.
  */
-export function requireNotNullCmd<T>(x: T, errorMessage: string): NullableToNonNullable<T> {
+export function requireNotNullCmd<T>(x: T, errorMessage: string): NonNullable<T> {
     if (x != null) return x as NonNullable<T>;
     throw new CommandLineError(errorMessage);
 }

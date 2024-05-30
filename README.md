@@ -2,19 +2,19 @@
 
 ## FAsset bots
 
-The automated system of [FAsset system](https://docs.flare.network/tech/fassets/), which is a protocol for bridging assets from non-smart contract chains to Flare/Songbird. FAsset bots allow setting up several bots (such as agent, challenger, liquidator) and automate actions to events that require quick reactions (such as collateral reservation, minting, redemption, low collateral ratio, price change).
+The [FAsset system](https://docs.flare.network/tech/fassets/) is a protocol that bridges assets from non-smart contract chains to Flare/Songbird. It includes bots that automate actions for various roles (agent, challenger, liquidator) in response to events that need quick reactions, such as collateral reservation, minting, redemption, low collateral ratio, and price changes.
 
 ## Actors in FAsset system
 
--   [_Agent_](./docs/actors/agent.md): main player in the FAsset system.
--   [_Challenger_](./docs/actors/challenger.md): essential player for maintaining the FAsset system healthy.
--   [_Liquidator_](./docs/actors/liquidator.md): player who liquidates bad agents.
--   [_SystemKeeper_](./docs/actors/systemKeeper.md): player who makes sure that FAsset system is in order (opens and closes liquidations).
--   [_TimeKeeper_](./docs/actors/timeKeeper.md): underlying block maintenance (proves and updates it). Should be running to prevent current block being too outdated, which gives too short time for minting or redemption payment.
+-   [_Agent_](./docs/actors/agent.md): The main player in the FAsset system.
+-   [_Challenger_](./docs/actors/challenger.md): Ensures the health of the FAsset system.
+-   [_Liquidator_](./docs/actors/liquidator.md): Liquidates bad agents.
+-   [_SystemKeeper_](./docs/actors/systemKeeper.md): Keeps the FAsset system in order by opening and closing liquidations.
+-   [_TimeKeeper_](./docs/actors/timeKeeper.md): Maintains the underlying block by proving and updating it to prevent the current block from being too outdated, which would otherwise shorten the time for minting or redemption payments.
 
 ## Install
 
-Clone this repository `fasset-bots` and enter `fasset-bots` directory.
+Clone this repository `fasset-bots` and enter the `fasset-bots` directory.
 
     git clone git@gitlab.com:flarenetwork/fasset-bots.git
     cd fassets-bots
@@ -33,47 +33,47 @@ Install `fasset-bots`
 
 [Follow this step by step guide to setup an Agent Bot for XRP on Testnet](./docs/setup.md)
 
-Configurations: 
+Configurations:
 
--  Generate default agent settings file, which will be used to generate new agent. You can also use default one provided in [`agent-settings-config.json`](./run-config/agent-settings-config.json). See [configuration and example](./docs/config.md#agent-default-settings).
+- Generate default agent settings file, which will be used to generate new agent. You can also use default one provided in [`agent-settings-config.json`](./run-config/agent-settings-config.json). See [configuration and example](./docs/config.md#agent-default-settings).
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#agent-bot-run-config).
 
--   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
+-  Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
--   Generate `secrets.json` file in root folder. `secrets.json`. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#agent-bot-secrets-file)
+- Generate `secrets.json` file in root folder. `secrets.json`. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#agent-bot-secrets-file)
 
 ### Challenger
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#challenger-run-config).
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#challenger-run-config).
 
--   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
+- Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
--   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
 ### Liquidator
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
+- Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
--   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
 ### System keeper
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#liquidator-and-system-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
+- Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
--   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
 ### Time keeper
 
--   Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config).
+- Generate run config file. See [configuration](./docs/config.md#run-config) and [example](./docs/config.md#time-keeper-run-config).
 
--   Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
+- Create `.env` file in root folder and add variable `FASSET_BOT_CONFIG`. See [configuration and example](./docs/config.md#env).
 
--   Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
+- Generate `secrets.json` file in root folder. See [configuration](./docs/config.md#secrets-file) and [example](./docs/config.md#challenger-bot-secrets-file)
 
 ## How to run
 

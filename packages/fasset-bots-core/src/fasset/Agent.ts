@@ -4,17 +4,19 @@ import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance
 import { AgentAvailable, AgentDestroyed, AllEvents, AvailableAgentExited, IIAssetManagerInstance, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/IIAssetManager";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralPrice } from "../state/CollateralPrice";
+import { TokenPriceReader } from "../state/TokenPrice";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { getAgentSettings } from "../utils/fasset-helpers";
+import { checkUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
 import { BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
-import { AgentInfo, AgentSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
-import { CollateralDataFactory } from "./CollateralData";
+import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
 import { PaymentReference } from "./PaymentReference";
+
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -87,16 +89,16 @@ export class Agent {
         return await this.assetManager.getCollateralType(CollateralClass.POOL, await this.assetManager.getWNat());
     }
 
-    async getVaultCollateralPrice(): Promise<CollateralPrice> {
-        const settings = await this.assetManager.getSettings();
-        const collateralDataFactory = await CollateralDataFactory.create(settings);
-        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getVaultCollateral());
+    async getVaultCollateralPrice(settings?: AssetManagerSettings): Promise<CollateralPrice> {
+        settings ??= await this.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        return await CollateralPrice.forCollateral(priceReader, settings, await this.getVaultCollateral());
     }
 
-    async getPoolCollateralPrice(): Promise<CollateralPrice> {
-        const settings = await this.assetManager.getSettings();
-        const collateralDataFactory = await CollateralDataFactory.create(settings);
-        return await CollateralPrice.forCollateral(collateralDataFactory.priceReader, settings, await this.getPoolCollateral());
+    async getPoolCollateralPrice(settings?: AssetManagerSettings): Promise<CollateralPrice> {
+        settings ??= await this.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        return await CollateralPrice.forCollateral(priceReader, settings, await this.getPoolCollateral());
     }
 
     /**
@@ -247,7 +249,7 @@ export class Agent {
      * @returns transaction hash
      */
     async performTopupPayment(amount: BNish, underlyingAddress: string): Promise<string> {
-        return await this.wallet.addTransaction(underlyingAddress, this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address));
+        return await this.performPayment(this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address), underlyingAddress);
     }
 
     /**
@@ -266,17 +268,6 @@ export class Agent {
     async announceUnderlyingWithdrawal(): Promise<EventArgs<UnderlyingWithdrawalAnnounced>> {
         const res = await this.assetManager.announceUnderlyingWithdrawal(this.agentVault.address, { from: this.owner.workAddress });
         return requiredEventArgs(res, "UnderlyingWithdrawalAnnounced");
-    }
-
-    /**
-     * Performs underlying withdrawal
-     * @param paymentReference payment reference from announce underlying withdrawal
-     * @param amount amount to be withdrawn
-     * @param underlyingAddress destination underlying address
-     * @returns transaction hash
-     */
-    async performUnderlyingWithdrawal(paymentReference: string, amount: BNish, underlyingAddress: string): Promise<string> {
-        return await this.wallet.addTransaction(this.underlyingAddress, underlyingAddress, amount, paymentReference);
     }
 
     /**
@@ -317,8 +308,9 @@ export class Agent {
      * @param options instance of TransactionOptionsWithFee
      * @returns transaction hash
      */
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, options?: TransactionOptionsWithFee) {
-        return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, options);
+    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
+        await this.enoughUnderlyingFunds(paymentSourceAddress, paymentDestinationAddress, paymentAmount);
+        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 
     /**
@@ -375,5 +367,15 @@ export class Agent {
      */
     async upgradeWNatContract(): Promise<void> {
         await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.owner.workAddress });
+    }
+
+    async enoughUnderlyingFunds(sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<void> {
+        const enoughFunds = await checkUnderlyingFunds(this.context, sourceUnderlyingAddress, destinationUnderlyingAddress, amount);
+        if (enoughFunds) {
+            return;
+        }  else {
+            logger.error(`Agent ${this.vaultAddress} run into error while performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.`)
+            throw new Error(`Not enough funds on underlying address ${sourceUnderlyingAddress}`);
+        }
     }
 }

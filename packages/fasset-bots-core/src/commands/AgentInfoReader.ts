@@ -3,27 +3,9 @@ import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AgentInfo, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { TokenPriceReader } from "../state/TokenPrice";
-import { TokenBalances, artifacts } from "../utils";
+import { TokenBalances } from "../utils";
 import { TokenBalance } from "../utils/TokenBalance";
 import { MAX_BIPS, maxBN, toBN } from "../utils/helpers";
-
-const CollateralPool = artifacts.require("CollateralPool");
-const CollateralPoolToken = artifacts.require("CollateralPoolToken");
-
-const lazyMap = new WeakMap<object, Map<string, any>>();
-
-export async function memoize<T>(parent: object, key: string, generate: () => Promise<T>): Promise<T> {
-    let storage = lazyMap.get(parent);
-    if (storage == undefined) {
-        storage = new Map();
-        lazyMap.set(parent, storage);
-    }
-    if (!storage.has(key)) {
-        const value = await generate();
-        storage.set(key, value);
-    }
-    return storage.get(key);
-}
 
 export class AgentInfoReader {
     constructor(
@@ -34,6 +16,7 @@ export class AgentInfoReader {
         public info: AgentInfo,
         public vaultCollateral: CollateralPriceCalculator,
         public poolCollateral: CollateralPriceCalculator,
+        public poolTokenBalanceReader: TokenBalance,
     ) {}
 
     static async create(assetManager: IIAssetManagerInstance, agentVault: string) {
@@ -44,23 +27,12 @@ export class AgentInfoReader {
         const poolCollateralType = await assetManager.getCollateralType(CollateralClass.POOL, await assetManager.getWNat());
         const vaultCollateral = await CollateralPriceCalculator.create(tokenPriceReader, settings, agentInfo, vaultCollateralType, agentVault);
         const poolCollateral = await CollateralPriceCalculator.create(tokenPriceReader, settings, agentInfo, poolCollateralType, agentInfo.collateralPool);
-        return new AgentInfoReader(assetManager, agentVault, settings, tokenPriceReader, agentInfo, vaultCollateral, poolCollateral);
+        const poolTokenBalance = await TokenBalances.collateralPoolToken(agentInfo.collateralPool);
+        return new AgentInfoReader(assetManager, agentVault, settings, tokenPriceReader, agentInfo, vaultCollateral, poolCollateral, poolTokenBalance);
     }
 
     lotSizeUBA() {
         return toBN(this.settings.lotSizeAMG).mul(toBN(this.settings.assetMintingGranularityUBA));
-    }
-
-    async collateralPool() {
-        return await memoize(this, "collateralPool", () => CollateralPool.at(this.info.collateralPool));
-    }
-
-    async collateralPoolToken() {
-        return await memoize(this, "collateralPoolToken", async () => {
-            const pool = await this.collateralPool();
-            const tokenAddress = await pool.poolToken();
-            return await CollateralPoolToken.at(tokenAddress);
-        });
     }
 
     backedUBA() {
@@ -84,12 +56,18 @@ export class CollateralPriceCalculator {
         return new CollateralPriceCalculator(agentInfo, price, balanceReader, collateralHolderAddress);
     }
 
+    collateralClass() {
+        return Number(this.price.collateral.collateralClass) as CollateralClass;
+    }
+
     minCRBips() {
         return toBN(this.price.collateral.minCollateralRatioBIPS);
     }
 
     mintingCRBips() {
-        return maxBN(toBN(this.price.collateral.minCollateralRatioBIPS), toBN(this.agentInfo.mintingVaultCollateralRatioBIPS));
+        const mintingCR = this.collateralClass() === CollateralClass.VAULT ?
+            this.agentInfo.mintingVaultCollateralRatioBIPS : this.agentInfo.mintingPoolCollateralRatioBIPS;
+        return maxBN(toBN(this.price.collateral.minCollateralRatioBIPS), toBN(mintingCR));
     }
 
     mintingCollateralRequired(amountUBA: BN) {
@@ -97,11 +75,6 @@ export class CollateralPriceCalculator {
     }
 
     async holderBalance() {
-        return await memoize(this, "holderBalance", () => this.balanceReader.balance(this.collateralHolderAddress));
-    }
-
-    async freeCollateral(backedAmountUBA: BN) {
-        const balance = await this.holderBalance();
-        return balance.sub(this.mintingCollateralRequired(backedAmountUBA));
+        return await this.balanceReader.balance(this.collateralHolderAddress);
     }
 }

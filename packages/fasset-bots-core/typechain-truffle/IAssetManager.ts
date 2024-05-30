@@ -2328,6 +2328,11 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  isPoolTokenSuffixReserved(
+    _suffix: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   liquidate: {
     (
       _agentVault: string,
@@ -4880,6 +4885,11 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    isPoolTokenSuffixReserved(
+      _suffix: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     liquidate: {
       (

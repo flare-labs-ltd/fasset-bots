@@ -6,6 +6,7 @@ import { Liquidator } from "../../src/actors/Liquidator";
 import { SystemKeeper } from "../../src/actors/SystemKeeper";
 import { TimeKeeper } from "../../src/actors/TimeKeeper";
 import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
+import { AgentBotSettings } from "../../src/config";
 import { AgentVaultInitSettings } from "../../src/config/AgentVaultInitSettings";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
@@ -15,7 +16,7 @@ import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../..
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
-import { TestChainInfo, testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { TestChainInfo, TestChainType, testAgentBotSettings, testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
@@ -62,6 +63,7 @@ describe("Fuzzing tests", () => {
     const liquidators: Liquidator[] = [];
     let challenger: Challenger;
     let chainInfo: TestChainInfo;
+    let agentBotSettings: AgentBotSettings;
     let chain: MockChain;
     let eventFormatter: EventFormatter;
     let runner: FuzzingRunner;
@@ -71,7 +73,8 @@ describe("Fuzzing tests", () => {
         accounts = await web3.eth.getAccounts();
         governance = accounts[1];
         // create context
-        chainInfo = testChainInfo[CHAIN as keyof typeof testChainInfo] ?? assert.fail(`Invalid chain ${CHAIN}`);
+        chainInfo = testChainInfo[CHAIN as TestChainType] ?? assert.fail(`Invalid chain ${CHAIN}`);
+        agentBotSettings = testAgentBotSettings[CHAIN as TestChainType];
         context = await createTestAssetContext(governance, chainInfo);
         chain = context.blockchainIndexer.chain as MockChain;
         // create interceptor
@@ -98,7 +101,7 @@ describe("Fuzzing tests", () => {
             const options = createAgentOptions();
             const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
             const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
-            const botCliCommands = new AgentBotCommands(context, owner, ownerUnderlyingAddress, orm, notifiers);
+            const botCliCommands = new AgentBotCommands(context, agentBotSettings, owner, ownerUnderlyingAddress, orm, notifiers);
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
             agentBots.push(fuzzingAgentBot);
             eventFormatter.addAddress(`BOT_${i}`, fuzzingAgentBot.agentBot.agent.vaultAddress);

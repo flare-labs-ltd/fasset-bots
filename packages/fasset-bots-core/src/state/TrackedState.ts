@@ -16,6 +16,9 @@ import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
 
 export const MAX_EVENT_HANDLE_RETRY = 10;
 export const SLEEP_MS_BEFORE_RETRY = 1000;
+export const MAX_AGENT_FETCH_RETRY = 10;
+export const SLEEP_MS_BEFORE_AGENT_FETCH_RETRY = 1000;
+export const MAX_AGENT_FETCH_BATCH_SIZE = 20;
 
 export class TrackedState {
     static deepCopyWithObjectCreate = true;
@@ -45,17 +48,8 @@ export class TrackedState {
     // event decoder
     eventDecoder = new Web3ContractEventDecoder({ priceChangeEmitter: this.context.priceChangeEmitter, assetManager: this.context.assetManager });
 
-    /**
-     * Create and initialize TrackedState
-     */
-    static async create(context: IAssetNativeChainContext, currentEventBlock: number) {
-        const trackedState = new TrackedState(context, currentEventBlock);
-        await trackedState.initialize();
-        return trackedState;
-    }
-
     // async initialization part
-    async initialize(): Promise<void> {
+    async initialize(withAgents: boolean = false): Promise<void> {
         // reset state if initialize was used for reinitialization
         this.agents = new Map();
         this.agentsByUnderlying = new Map();
@@ -80,6 +74,34 @@ export class TrackedState {
         // prices
         [this.prices, this.trustedPrices] = await this.getPrices();
         logger.info(`Tracked State is successfully initialized.`);
+        // agents
+        if (withAgents) {
+            await this.registerInitialAgents();
+        }
+    }
+
+    async registerInitialAgents(): Promise<void> {
+        let retries = 0;
+        let start = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            try {
+                const { 0: newAgents, 1: totalLength } = await this.context.assetManager.getAllAgents(start, start + MAX_AGENT_FETCH_BATCH_SIZE);
+                for (const agent of newAgents) {
+                    await this.getAgentTriggerAdd(agent);
+                }
+                start += MAX_AGENT_FETCH_BATCH_SIZE;
+                if (toBN(totalLength).lten(start)) break;
+            } catch (error) {
+                logger.error(`Error registering initial agents: ${error}`);
+                await sleep(SLEEP_MS_BEFORE_RETRY);
+                if (retries >= MAX_AGENT_FETCH_RETRY) {
+                    logger.error(`Failed to fetch agents after ${retries} retries.`);
+                    break;
+                }
+                retries += 1;
+            }
+        }
     }
 
     async getPrices(): Promise<[Prices, Prices]> {

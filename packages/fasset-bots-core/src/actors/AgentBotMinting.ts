@@ -3,7 +3,7 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { CollateralReserved } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
-import { AgentMinting, AgentMintingState } from "../entities/agent";
+import { AgentMinting } from "../entities/agent";
 import { Agent } from "../fasset/Agent";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
@@ -13,6 +13,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
+import { AgentMintingState } from "../entities/common";
 
 export class AgentBotMinting {
     static deepCopyWithObjectCreate = true;
@@ -117,6 +118,7 @@ export class AgentBotMinting {
                         console.error(`Minting state: ${minting.state} not supported`);
                         logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId}.`);
                 }
+                await em.persistAndFlush(minting);
             })
             .catch((error) => {
                 console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
@@ -180,8 +182,9 @@ export class AgentBotMinting {
     async handleExpiredMinting(minting: AgentMinting, proof: ConfirmedBlockHeightExists.Proof) {
         logger.info(`Agent ${this.agent.vaultAddress} is calling 'unstickMinting' ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
         const settings = await this.context.assetManager.getSettings();
-        const natPriceConverter = await this.agent.getPoolCollateralPrice();
-        const burnNats = natPriceConverter.convertUBAToTokenWei(toBN(minting.valueUBA)).mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
+        const natPriceConverter = await this.agent.getPoolCollateralPrice(settings);
+        const burnNats = natPriceConverter.convertUBAToTokenWei(toBN(minting.valueUBA))
+            .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
         // TODO what to do if owner does not have enough nat
         await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), {
             from: this.agent.owner.workAddress,
@@ -257,7 +260,6 @@ export class AgentBotMinting {
             logger.info(`Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             const nonPaymentProof = proof;
             await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.owner.workAddress });
-            minting.state = AgentMintingState.DONE;
             await this.mintingExecuted(minting, true);
             logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(nonPaymentProof))}.`);
             await this.notifier.sendMintingDefaultSuccess(minting.requestId);

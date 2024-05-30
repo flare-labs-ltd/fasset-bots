@@ -1,6 +1,7 @@
 import { FormattedString } from "../formatting";
-import { BNish } from "../helpers";
+import { BNish, HOURS } from "../helpers";
 import { BaseNotifier, BotType, NotifierTransport } from "./BaseNotifier";
+import { NotifierThrottlingConfigs } from "./NotifierTransports";
 
 export enum AgentNotificationKey {
     // agent status and settings,
@@ -51,12 +52,14 @@ export enum AgentNotificationKey {
     LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE",
     LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS",
     LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS",
-    CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT",
+    CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL",
     CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT",
     ACTIVE_WITHDRAWAL = "ACTIVE WITHDRAWAL",
     NO_ACTIVE_WITHDRAWAL = "NO ACTIVE WITHDRAWAL",
-    ANNOUNCE_WITHDRAW_UNDERLYING = "ANNOUNCE UNDERLYING WITHDRAWAL",
     WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL",
+    UNDERLYING_PAYMENT_PAID = "UNDERLYING PAYMENT",
+    UNDERLYING_PAYMENT_PROOF = " UNDERLYING PAYMENT PROOF REQUESTED",
+    UNDERLYING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR UNDERLYING PAYMENT",
     // pool
     BUY_POOL_TOKENS = "BUY POOL TOKENS",
     VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT",
@@ -72,6 +75,10 @@ export enum AgentNotificationKey {
     UNRESOLVED_EVENT = "EVENT IN DATABASE NOT FOUND ON CHAIN - SKIPPED",
 }
 
+export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
+    [AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE]: { duration: 6 * HOURS, addressInKey: false },
+    [AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE]: { duration: 6 * HOURS, addressInKey: false },
+};
 
 export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     constructor(address: string, transports: NotifierTransport[]) {
@@ -169,20 +176,6 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.danger(
             AgentNotificationKey.POOL_COLLATERAL_TOP_UP_FAILED,
             `Agent ${this.address} POOL could not be automatically topped up with collateral ${value} due to price changes.`
-        );
-    }
-
-    async sendLowUnderlyingAgentBalanceFailed(freeUnderlyingBalanceUBA: FormattedString) {
-        await this.danger(
-            AgentNotificationKey.LOW_AGENT_FREE_UNDERLYING_BALANCE,
-            `Agent ${this.address} has low freeUnderlyingBalance ${freeUnderlyingBalanceUBA} and could not be topped up.`
-        );
-    }
-
-    async sendLowUnderlyingAgentBalance(amount: FormattedString) {
-        await this.info(
-            AgentNotificationKey.LOW_AGENT_FREE_UNDERLYING_BALANCE,
-            `Agent ${this.address} was automatically topped up with underlying ${amount}.`
         );
     }
 
@@ -293,8 +286,8 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.AGENT_ANNOUNCE_DESTROY, `Agent ${this.address} successfully announced its DESTRUCTION.`);
     }
 
-    async sendConfirmWithdrawUnderlying() {
-        await this.info(AgentNotificationKey.CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying withdrawal was successfully confirmed.`);
+    async sendConfirmWithdrawUnderlying(type: string) {
+        await this.info(AgentNotificationKey.CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
     }
 
     async sendCancelWithdrawUnderlying() {
@@ -336,15 +329,8 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.NO_ACTIVE_WITHDRAWAL, `Agent ${this.address} has NO active underlying withdrawal announcement.`);
     }
 
-    async sendAnnounceUnderlyingWithdrawal(paymentReference: string) {
-        await this.info(
-            AgentNotificationKey.ANNOUNCE_WITHDRAW_UNDERLYING,
-            `Agent ${this.address} announced underlying withdrawal with payment reference ${paymentReference}.`
-        );
-    }
-
-    async sendUnderlyingWithdrawalPerformed(txHash: string) {
-        await this.info(AgentNotificationKey.WITHDRAW_UNDERLYING, `Agent ${this.address} withdrew underlying with transaction ${txHash}.`);
+    async sendUnderlyingWithdrawalPerformed(txHash: string, paymentReference: string) {
+        await this.info(AgentNotificationKey.WITHDRAW_UNDERLYING, `Agent ${this.address} withdrew underlying with transaction ${txHash} and payment reference ${paymentReference}.`);
     }
 
     async sendMintingExecuted(requestId: BNish) {
@@ -420,5 +406,24 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
             AgentNotificationKey.WITHDRAWAL_FAILED,
             `Agent ${this.address} could not withdrew ${type} collateral of ${amount}.`
         );
+    }
+
+    async sendAgentUnderlyingPaymentCreated(txHash: string, type: string) {
+        await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txHash}.`);
+    }
+
+    async sendAgentUnderlyingPaymentRequestPaymentProof(txHash: string, type: string) {
+        await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PROOF, `Payment proof for underlying ${type} payment ${txHash} was requested for ${this.address}.`);
+    }
+
+    async sendAgentUnderlyingPaymentNoProofObtained(txHash: string, type: string, roundId: number, requestData: string) {
+        await this.danger(
+            AgentNotificationKey.UNDERLYING_NO_PROOF_OBTAINED,
+            `Agent ${this.address} cannot obtain proof for underlying ${type} payment ${txHash} in round ${roundId} with requested data ${requestData}.`
+        );
+    }
+
+    async sendSettingsUpdateStarted(settingName: string, validAt: string) {
+        await this.info(AgentNotificationKey.AGENT_SETTING_UPDATE, `Agent ${this.address} started setting ${settingName} that is valid at ${validAt}.`);
     }
 }

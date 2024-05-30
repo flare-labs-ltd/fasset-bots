@@ -1,7 +1,7 @@
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
 import { EM } from "../../src/config/orm";
-import { AgentRedemption, AgentRedemptionState } from "../../src/entities/agent";
+import { AgentRedemption } from "../../src/entities/agent";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
@@ -10,6 +10,7 @@ import { MAX_BIPS, checkedCast, toBN } from "../../src/utils/helpers";
 import { coinFlip, getLotSize, randomBN, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
 import { formatBN } from "../../src/utils/formatting";
 import { FuzzingRunner } from "./FuzzingRunner";
+import { AgentRedemptionState } from "../../src/entities/common";
 
 export class FuzzingAgentBot {
     constructor(
@@ -105,11 +106,11 @@ export class FuzzingAgentBot {
         const amount = randomBN(toBN(agentInfo.freeUnderlyingBalanceUBA));
         if (amount.isZero()) return;
         // announce
-        const reference = await this.botCliCommands.announceUnderlyingWithdrawal(this.agentBot.agent.vaultAddress);
-        if (coinFlip(0.8) && reference) {
-            const txHash = await this.botCliCommands.performUnderlyingWithdrawal(this.agentBot.agent.vaultAddress, amount.toString(), this.ownerUnderlyingAddress, reference);
-            await this.botCliCommands.confirmUnderlyingWithdrawal(this.agentBot.agent.vaultAddress, txHash);
-        } else if (reference) {
+        const resp = await this.agentBot.agent.announceUnderlyingWithdrawal();
+        if (coinFlip(0.8) && resp.paymentReference) {
+            const txHash = await this.agentBot.agent.performPayment(this.ownerUnderlyingAddress, amount.toString(), resp.paymentReference);
+            await this.agentBot.agent.confirmUnderlyingWithdrawal(txHash);
+        } else if (resp.paymentReference) {
             // cancel withdrawal
             await this.botCliCommands.cancelUnderlyingWithdrawal(this.agentBot.agent.vaultAddress);
         }

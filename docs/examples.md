@@ -110,29 +110,20 @@ Environment successfully initialized.
 Agent 0x97204bd339e5e33acc7675dea5593f254BD8476C has 5499950 free underlying.
 ```
 
-2. Announce underlying withdrawal for agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_. The result is payment reference that is needed to perform withdrawal.
+2. Withdraw underlying for agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_ to underlying address _rJw8FSdzzuPM1zqJLEFxVbpCaQVxqb4vRW_ with amount _1.499950 testXRP_.
 
 ```console
-$ yarn agent-bot announceUnderlyingWithdrawal 0x97204bd339e5e33acc7675dea5593f254BD8476C -f FtestXRP
-Initializing environment...
-Environment successfully initialized.
-ANNOUNCE UNDERLYING WITHDRAWAL: Agent 0x97204bd339e5e33acc7675dea5593f254BD8476C announced underlying withdrawal with payment reference 0x4642505266410003000000000000000000000000000000000000000000000030.
-```
-
-3. Perform underlying withdrawal for agent _0x97204bd339e5e33acc7675dea5593f254BD8476C_ to underlying address _rJw8FSdzzuPM1zqJLEFxVbpCaQVxqb4vRW_ with amount _1.499950 testXRP_ and payment reference _0x4642505266410003000000000000000000000000000000000000000000000030_.
-
-```console
-$ yarn agent-bot performUnderlyingWithdrawal 0x97204bd339e5e33acc7675dea5593f254BD8476C 1499950 rJw8FSdzzuPM1zqJLEFxVbpCaQVxqb4vRW 0x4642505266410003000000000000000000000000000000000000000000000030 -f FtestXRP
+$ yarn agent-bot withdrawUnderlying 0x97204bd339e5e33acc7675dea5593f254BD8476C 1499950 rJw8FSdzzuPM1zqJLEFxVbpCaQVxqb4vRW -f FtestXRP
 Initializing environment...
 Environment successfully initialized.
 UNDERLYING WITHDRAWAL: Agent 0x97204bd339e5e33acc7675dea5593f254BD8476C withdrew underlying with transaction F350744FD0C76973E1A1A91968EDC8B13670F5F13770B876B5B9E10934CDC0FC.
 ```
 
-4. Confirm underlying withdrawal
-   Underlying withdrawal will be automatically confirmed via running script [`run-agent.ts`](./src/run/run-agent.ts) and owner will get notified.
+3. Confirm underlying withdrawal
+   Underlying withdrawal will be automatically confirmed via running script [`run-agent.ts`](./src/run/run-agent.ts) using AgentUnderlyingPayment flow.
 
 ```console
-CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT: Agent's 0x97204bd339e5e33acc7675dea5593f254BD8476C underlying withdrawal was successfully confirmed.
+CONFIRM UNDERLYING WITHDRAWAL ANNOUNCEMENT: Agent's 0x97204bd339e5e33acc7675dea5593f254BD8476C underlying withdrawal payment was successfully confirmed.
 ```
 
 ## How to create underlying account?
