@@ -2,9 +2,10 @@ import { WALLET } from "@flarelabs/simple-wallet";
 import crypto from "node:crypto";
 import Web3 from "web3";
 import { ChainId } from "../underlying-chain/ChainId";
-import { requireNotNull } from "../utils";
+import { CommandLineError, requireNotNull } from "../utils";
 import { loadConfigFile } from "./config-file-loader";
 import { ChainAccount, SecretsFile } from "./config-files/SecretsFile";
+import { ICreateWalletResponse } from "../../../simple-wallet/src/interfaces/WriteWalletRpcInterface";
 
 export type SecretsUser = "user" | "agent" | "other";
 
@@ -14,9 +15,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
         const result: { [key: string]: ChainAccount } = {};
         result.native = generateNativeAccount();
         for (const chainName of chainNames) {
-            const chainId = ChainId.from(chainName);
-            const walletClient = createStubWalletClient(chainId);
-            const underlyingAccount = walletClient.createWallet();
+            const underlyingAccount = generateUnderlyingAccount(chainName);
             result[chainName] = {
                 address: underlyingAccount.address,
                 private_key: underlyingAccount.privateKey,
@@ -59,6 +58,12 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     return secrets;
 }
 
+export function generateUnderlyingAccount(chainName: string): ICreateWalletResponse {
+    const chainId = ChainId.from(chainName);
+    const walletClient = createStubWalletClient(chainId);
+    return walletClient.createWallet();
+}
+
 function createStubWalletClient(chainId: ChainId) {
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
         return new WALLET.BTC({
@@ -82,6 +87,6 @@ function createStubWalletClient(chainId: ChainId) {
             inTestnet: chainId === ChainId.testXRP ? true : false,
         }); // XrpMccCreate
     } else {
-        throw new Error(`SourceId ${chainId} not supported.`);
+        throw new CommandLineError(`Chain name ${chainId} not supported.`);
     }
 }

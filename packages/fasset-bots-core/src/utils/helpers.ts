@@ -373,3 +373,11 @@ export function randomChoice<K>(array: K[]): K | undefined {
     if (array.length === 0) return undefined;
     return array[Math.floor(Math.random() * array.length)];
 }
+
+export function iteratorToArray<K>(iter: Iterable<K>): Array<K> {
+    const ret = [];
+    for (let elt of iter) {
+        ret.push(elt);
+    }
+    return ret;
+}

@@ -93,7 +93,7 @@ export class TrackedState {
                 start += MAX_AGENT_FETCH_BATCH_SIZE;
                 if (toBN(totalLength).lten(start)) break;
             } catch (error) {
-                logger.error(`Error fetching agents: ${error}`);
+                logger.error(`Error registering initial agents: ${error}`);
                 await sleep(SLEEP_MS_BEFORE_RETRY);
                 if (retries >= MAX_AGENT_FETCH_RETRY) {
                     logger.error(`Failed to fetch agents after ${retries} retries.`);

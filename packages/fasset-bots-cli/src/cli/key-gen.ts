@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { SecretsUser, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { SecretsUser, generateSecrets, generateUnderlyingAccount } from "@flarelabs/fasset-bots-core";
 import { createSha256Hash, generateRandomHexString, logger, squashSpace } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
@@ -87,6 +87,16 @@ program
     .action(async () => {
         const password = generateRandomHexString(32);
         console.log(password);
+    });
+
+program
+    .command("createAccount")
+    .description("create new addres/private key pair on the underlying chain")
+    .argument("<chainName>", "chain name, e.g. XRP or testXRP")
+    .action(async (chainName: string) => {
+        const account = generateUnderlyingAccount(chainName);
+        console.log("Address:", account.address);
+        console.log("Private key:", account.privateKey);
     });
 
 toplevelRun(async () => {
