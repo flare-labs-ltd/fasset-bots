@@ -4,7 +4,7 @@ import BN from "bn.js";
 import { Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { EM } from "../config/orm";
-import { AgentEntity, AgentUnderlyingPaymentType } from "../entities/agent";
+import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { PaymentReference } from "../fasset/PaymentReference";
@@ -30,6 +30,8 @@ import { AgentBotRedemption } from "./AgentBotRedemption";
 import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 import { checkUnderlyingFunds } from "../utils/fasset-helpers";
+import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
+import { AgentUnderlyingPaymentType } from "../entities/common";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -81,6 +83,7 @@ export class AgentBot {
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
     collateralManagement = new AgentBotCollateralManagement(this.agent, this.notifier, this.tokens);
     underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.notifier, this.ownerUnderlyingAddress, this.tokens);
+    updateSetting = new AgentBotUpdateSettings(this.agent, this.notifier);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -465,7 +468,7 @@ export class AgentBot {
      */
     async handleTimelockedProcesses(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
-        logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleTimelockedProcesses'.`);
         const latestTimestamp = await latestBlockTimestampBN();
         await this.handleWaitForCollateralWithdrawal(rootEm, latestTimestamp);
         await this.handleWaitForPoolTokenRedemption(rootEm, latestTimestamp);
@@ -473,7 +476,7 @@ export class AgentBot {
         await this.handleWaitAgentExitAvailable(rootEm, latestTimestamp);
         await this.handleUnderlyingWithdrawal(rootEm, latestTimestamp);
         await this.handleAgentCloseProcess(rootEm);
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleAgentsWaitingsAndCleanUp'.`);
+        logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleTimelockedProcesses'.`);
     }
 
 
@@ -524,107 +527,19 @@ export class AgentBot {
 
     // Agent settings update
     private async handleWaitForAgentSettingUpdate(rootEm: EM, latestTimestamp: BN) {
-        const readAgentEnt = await this.fetchAgentEntity(rootEm);
-        //Agent update feeBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(readAgentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
-                });
+        try {
+            const openUpdateSettings = await this.updateSetting.openUpdateSettingIds(rootEm);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open update settings #${openUpdateSettings.length}.`);
+            for (const us of openUpdateSettings) {
+                if (this.stopRequested()) return;
+                await this.updateSetting.nextUpdateSettingStep(rootEm, us.id, latestTimestamp);
             }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
+        } catch (error) {
+            console.error(`Error while handling open redemptions for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open redemptions:`, error);
         }
-        //Agent update poolFeeShareBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(readAgentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS),
-                "poolFeeShareBIPS",
-                latestTimestamp
-            );
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
-                });
-            }
-        }
-        //Agent update mintingVaultCollateralRatioBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(readAgentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS),
-                "mintingVaultCollateralRatioBIPS",
-                latestTimestamp
-            );
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
-                });
-            }
-        }
-        //Agent update mintingPoolCollateralRatioBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(readAgentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS),
-                "mintingPoolCollateralRatioBIPS",
-                latestTimestamp
-            );
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
-                });
-            }
-        }
-        //Agent update buyFAssetByAgentFactorBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(readAgentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS),
-                "buyFAssetByAgentFactorBIPS",
-                latestTimestamp
-            );
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
-                });
-            }
-        }
-        //Agent update poolExitCollateralRatioBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(readAgentEnt.agentSettingUpdateValidAtPoolExitCrBIPS),
-                "poolExitCollateralRatioBIPS",
-                latestTimestamp
-            );
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
-                });
-            }
-        }
-        //Agent update poolTopupCollateralRatioBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS),
-                "poolTopupCollateralRatioBIPS",
-                latestTimestamp
-            );
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
-                });
-            }
-        }
-        //Agent update poolTopupTokenPriceFactorBIPS
-        if (toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(
-                toBN(readAgentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS),
-                "poolTopupTokenPriceFactorBIPS",
-                latestTimestamp
-            );
-            if (updatedOrExpired) {
-                await this.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
-                });
-            }
-        }
+
     }
 
     private async handleUnderlyingWithdrawal(rootEm: EM, latestTimestamp: BN) {
@@ -714,35 +629,6 @@ export class AgentBot {
             }
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot withdraw ${type} collateral. Allowed at ${withdrawValidAt}. Current ${latestTimestamp}.`);
-        }
-        return false;
-    }
-
-    /**
-     * AgentBot tries to update agent setting
-     * @param settingValidAt setting update valid at
-     * @param settingsName
-     * @param latestTimestamp
-     * @returns true if settings was updated or valid time expired
-     */
-    async updateAgentSettings(settingValidAt: BN, settingsName: string, latestTimestamp: BN): Promise<boolean> {
-        logger.info(`Agent ${this.agent.vaultAddress} is waiting for ${settingsName} agent setting update.`);
-        // agent waiting for setting update
-        if (toBN(settingValidAt).lte(latestTimestamp)) {
-            // agent can update setting
-            try {
-                await this.agent.executeAgentSettingUpdate(settingsName);
-                await this.notifier.sendAgentSettingsUpdate(settingsName);
-                return true;
-            } catch (error) {
-                if (errorIncluded(error, ["update not valid anymore"])) {
-                    await this.notifier.sendAgentCannotUpdateSettingExpired(settingsName);
-                    return true;
-                }
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${settingsName}:`, error);
-            }
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot update agent setting ${settingsName}. Allowed at ${settingValidAt}. Current ${latestTimestamp}.`);
         }
         return false;
     }

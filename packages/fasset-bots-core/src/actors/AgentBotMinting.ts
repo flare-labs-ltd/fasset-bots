@@ -3,7 +3,7 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { CollateralReserved } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
-import { AgentMinting, AgentMintingState } from "../entities/agent";
+import { AgentMinting } from "../entities/agent";
 import { Agent } from "../fasset/Agent";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
@@ -13,6 +13,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
+import { AgentMintingState } from "../entities/common";
 
 export class AgentBotMinting {
     static deepCopyWithObjectCreate = true;

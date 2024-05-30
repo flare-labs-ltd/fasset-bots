@@ -359,9 +359,15 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
-    it("Should send confirm underlying withdrawaf", async () => {
+    it("Should send confirm underlying withdrawal", async () => {
         const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
         await notifier.sendConfirmWithdrawUnderlying("type");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send setting update started", async () => {
+        const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
+        await notifier.sendSettingsUpdateStarted("name", "validAt");
         expect(spySend).to.have.been.called.once;
     });
 });

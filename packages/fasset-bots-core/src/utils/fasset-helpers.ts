@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerEvents, IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
@@ -57,7 +58,7 @@ export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceUn
     const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
     const senderBalance = await balanceReader.balance(sourceUnderlyingAddress);
     const transactionFee = await context.wallet.getTransactionFee();
-    const requiredBalance = toBN(amount).add(context.chainInfo.minimumAccountBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
+    const requiredBalance = requiredAddressBalance(amount, context.chainInfo.minimumAccountBalance, transactionFee);
     if (senderBalance.gte(requiredBalance)) {
         return true;
     }  else {
@@ -65,4 +66,8 @@ export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceUn
         Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}`);
         return false;
     }
+}
+
+export function requiredAddressBalance(amount: BNish, minimumBalance: BN, transactionFee: BN) {
+    return toBN(amount).add(minimumBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
 }

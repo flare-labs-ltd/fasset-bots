@@ -6,11 +6,12 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 import { EM } from "../config/orm";
-import { AgentUnderlyingPayment, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/agent";
+import { AgentUnderlyingPayment } from "../entities/agent";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
 export class AgentBotUnderlyingManagement {
     constructor(public agent: Agent, public notifier: AgentNotifier, public ownerUnderlyingAddress: string, public tokens: AgentTokenBalances) {}
 
@@ -87,9 +88,8 @@ export class AgentBotUnderlyingManagement {
     }
 
     /**
-     * Returns underlying payment with state other than DONE.
+     * Returns underlying payments with state other than DONE.
      * @param em entity manager
-     * @param onlyIds if true, only AgentUnderlyingPayment's entity ids are return
      * @return list of AgentUnderlyingPayment's instances
      */
     async openUnderlyingPaymentIds(em: EM): Promise<AgentUnderlyingPayment[]> {

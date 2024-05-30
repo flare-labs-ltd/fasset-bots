@@ -2,12 +2,14 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { ChainId, InfoBotCommands } from "@flarelabs/fasset-bots-core";
-import { BotConfigFile, Secrets, createBlockchainWalletHelper, loadAgentConfigFile, loadConfigFile, loadContracts, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currency, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd } from "@flarelabs/fasset-bots-core/utils";
+import { BotConfigFile, BotFAssetInfo, Secrets, createBlockchainWalletHelper, loadAgentConfigFile, loadConfigFile, loadContracts, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
+import { BN_ZERO, CommandLineError, Currency, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, requiredAddressBalance, requireNotNull, requireNotNullCmd, toBN } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress } from "../utils/validation";
+import { BlockchainWalletHelper } from "../../../fasset-bots-core/src/underlying-chain/BlockchainWalletHelper";
+import BN from "bn.js";
 
 const ERC20 = artifacts.require("IERC20Metadata");
 
@@ -28,10 +30,11 @@ program
         const config = loadConfigFile(options.config);
         const [_, fassetSymbol] = findToken(config, token);
         assertNotNullCmd(fassetSymbol, `Invalid underlying token ${token}`);
-        const wallet = await setupContext(fassetSymbol);
-        const fassetInfo = config.fAssets[fassetSymbol];
+        const { wallet, fassetInfo } = await setupContext(fassetSymbol);
         const currency = new Currency(fassetInfo.tokenSymbol, fassetInfo.tokenDecimals);
         const amountBN = currency.parse(amount);
+        const minBN = currency.parse(fassetInfo.minimumAccountBalance ? fassetInfo.minimumAccountBalance.toString() : BN_ZERO.toString());
+        await enoughUnderlyingFunds(wallet, from, amountBN, minBN);
         const tx = await wallet.addTransaction(from, to, amountBN, reference);
         console.log(tx);
     });
@@ -83,7 +86,10 @@ program
     .argument("<amount>", "amount to send")
     .argument("[reference]", "payment reference")
     .action(async (from: string, to: string, amount: string, reference: string | null, cmdOptions: { fasset: string }) => {
-        const wallet = await setupContext(cmdOptions.fasset);
+        const { wallet, fassetInfo } = await setupContext(cmdOptions.fasset);
+        const currency = new Currency(fassetInfo.tokenSymbol, fassetInfo.tokenDecimals);
+        const minBN = currency.parse(fassetInfo.minimumAccountBalance ? fassetInfo.minimumAccountBalance.toString() : BN_ZERO.toString());
+        await enoughUnderlyingFunds(wallet, from, toBN(amount), minBN);
         const tx = await wallet.addTransaction(from, to, amount, reference);
         console.log(tx);
     });
@@ -108,7 +114,7 @@ function findToken(config: BotConfigFile, symbol: string): [type: "nat" | "fasse
     return ["erc20"];
 }
 
-async function setupContext(fAssetSymbol: string) {
+async function setupContext(fAssetSymbol: string): Promise<{ wallet: BlockchainWalletHelper, fassetInfo: BotFAssetInfo}> {
     console.log(chalk.cyan("Initializing wallet..."));
     const options: { config: string; secrets: string } = program.opts();
     const secrets = Secrets.load(options.secrets);
@@ -127,5 +133,16 @@ async function setupContext(fAssetSymbol: string) {
     const chainId = ChainId.from(chainConfig.chainId);
     const walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, chainConfig.walletUrl, runConfig.walletOptions);
     console.log(chalk.cyan("Wallet initialized."));
-    return walletHelper;
+    return { wallet: walletHelper, fassetInfo: chainConfig };
+}
+
+async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddress: string, amount: BN, minimumBalance: BN): Promise<void> {
+    const senderBalance = await wallet.getBalance(sourceAddress);
+    const fee = await wallet.getTransactionFee();
+    const requiredBalance = requiredAddressBalance(amount, minimumBalance, fee);
+    if (senderBalance.gte(requiredBalance)) {
+        return ;
+    } else {
+        throw new CommandLineError("Not enough funds in ${sourceAddress}.")
+    }
 }

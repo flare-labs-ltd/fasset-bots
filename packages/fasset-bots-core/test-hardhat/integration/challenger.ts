@@ -2,7 +2,6 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
-import { AgentRedemptionState } from "../../src/entities/agent";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
@@ -20,6 +19,7 @@ import { fundUnderlying, performRedemptionPayment } from "../../test/test-utils/
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { AgentRedemptionState } from "../../src/entities/common";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
