@@ -1,13 +1,13 @@
 import "dotenv/config";
 
-import { AddressValidity, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
 import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
@@ -21,7 +21,7 @@ import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, ZERO_ADDRESS, ZERO_BYTES32, errorIncluded, maxBN, requireNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, errorIncluded, maxBN, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -40,6 +40,7 @@ export class AgentBotCommands {
 
     constructor(
         public context: IAssetAgentContext,
+        public agentBotSettings: AgentBotSettings,
         public owner: OwnerAddressPair,
         public ownerUnderlyingAddress: string,
         public orm: ORM,
@@ -84,7 +85,7 @@ export class AgentBotCommands {
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
-        return new AgentBotCommands(context, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
+        return new AgentBotCommands(context, chainConfig.agentBotSettings, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
     }
 
     notifierFor(agentVault: string) {
@@ -130,7 +131,8 @@ export class AgentBotCommands {
             ]);
             console.log(`Creating agent bot...`);
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
-            const agentBot = await AgentBot.create(this.orm.em, this.context, this.owner, this.ownerUnderlyingAddress, addressValidityProof, agentBotSettings, this.notifiers);
+            const agentBot = await AgentBot.create(this.orm.em, this.context, this.agentBotSettings, this.owner, this.ownerUnderlyingAddress,
+                addressValidityProof, agentBotSettings, this.notifiers);
             await this.notifierFor(agentBot.agent.vaultAddress).sendAgentCreated();
             console.log(`Agent bot created.`);
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
@@ -532,7 +534,7 @@ export class AgentBotCommands {
      */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; readAgentEnt: AgentEntity }> {
         const readAgentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(this.context, readAgentEnt, this.ownerUnderlyingAddress, this.notifiers);
+        const agentBot = await AgentBot.fromEntity(this.context, this.agentBotSettings, readAgentEnt, this.ownerUnderlyingAddress, this.notifiers);
         return { agentBot, readAgentEnt };
     }
 
@@ -626,42 +628,17 @@ export class AgentBotCommands {
         await agentBot.agent.upgradeWNatContract();
     }
 
-    // HACK - until fasset-v2 support pool token validity check, exploit the fact that token validation is the first thing in createAgentVault call
-    private async validateCollateralPoolTokenSuffix(suffix: string) {
-        const fakeAddressProof: AddressValidity.Proof = {
-            data: {
-                attestationType: "0x4164647265737356616c69646974790000000000000000000000000000000000",
-                lowestUsedTimestamp: "0xffffffffffffffff",
-                requestBody: { addressStr: ZERO_ADDRESS },
-                responseBody: { isValid: false, standardAddress: ZERO_ADDRESS, standardAddressHash: ZERO_BYTES32 },
-                sourceId: "0x7465737458525000000000000000000000000000000000000000000000000000",
-                votingRound: "0",
-            },
-            merkleProof: [],
-        };
-        const fakeSettings: AgentSettings = {
-            poolTokenSuffix: suffix,
-            vaultCollateralToken: ZERO_ADDRESS,
-            feeBIPS: "0",
-            poolFeeShareBIPS: "0",
-            buyFAssetByAgentFactorBIPS: "0",
-            mintingPoolCollateralRatioBIPS: "0",
-            mintingVaultCollateralRatioBIPS: "0",
-            poolExitCollateralRatioBIPS: "0",
-            poolTopupCollateralRatioBIPS: "0",
-            poolTopupTokenPriceFactorBIPS: "0",
-        };
-        try {
-            await this.context.assetManager.createAgentVault.call(fakeAddressProof, fakeSettings, { from: this.owner.workAddress });
-        } catch (e: unknown) {
-            if (errorIncluded(e, ["suffix already reserved"])) {
-                throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
-            } else if (errorIncluded(e, ["invalid character in suffix"])) {
-                throw new CommandLineError(`Collateral pool token suffix "${suffix}" contains invalid characters.`);
-            } else if (errorIncluded(e, ["address validity not proved"])) {
-                return; // the expected error
-            }
-            logger.warn(`Unknown error validating pool suffix "${suffix}":`, e);
+    async validateCollateralPoolTokenSuffix(suffix: string) {
+        const maxLength = 20;
+        if (suffix.length >= maxLength) {
+            throw new CommandLineError(`Collateral pool token suffix "${suffix}" is too long - maximum length is ${maxLength - 1}.`);
+        }
+        const validSyntax = /^[A-Z0-9-]+$/.test(suffix) && !suffix.startsWith("-") && !suffix.endsWith("-");
+        if (!validSyntax) {
+            throw new CommandLineError(`Collateral pool token suffix can contain only characters 'A'-'Z', '0'-'9' and '-', and cannot start or end with '-'.`);
+        }
+        if (await this.context.assetManager.isPoolTokenSuffixReserved(suffix)) {
+            throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
         }
     }
 }

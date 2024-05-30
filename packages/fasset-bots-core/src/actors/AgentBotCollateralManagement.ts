@@ -1,8 +1,9 @@
 import BN from "bn.js";
+import { AgentBotSettings } from "../config";
 import { Agent } from "../fasset/Agent";
 import { AgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
-import { BN_ZERO, CCB_LIQUIDATION_PREVENTION_FACTOR, MAX_BIPS, POOL_COLLATERAL_RESERVE_FACTOR, VAULT_COLLATERAL_RESERVE_FACTOR, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentTokenBalances } from "./AgentTokenBalances";
@@ -10,6 +11,7 @@ import { AgentTokenBalances } from "./AgentTokenBalances";
 export class AgentBotCollateralManagement {
     constructor(
         public agent: Agent,
+        public agentBotSettings: AgentBotSettings,
         public notifier: AgentNotifier,
         public tokens: AgentTokenBalances,
     ) {}
@@ -34,7 +36,7 @@ export class AgentBotCollateralManagement {
 
     async checkForVaultCollateralTopup(agentInfo: AgentInfo) {
         const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
-        const requiredCrVaultCollateralBIPS = toBN(vaultCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredCrVaultCollateralBIPS = toBN(vaultCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(this.agentBotSettings.liquidationPreventionFactor);
         const requiredTopUpVaultCollateral = await this.requiredTopUp(requiredCrVaultCollateralBIPS, agentInfo, vaultCollateralPrice);
         if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
             const requiredTopUpF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
@@ -52,7 +54,7 @@ export class AgentBotCollateralManagement {
 
     async checkForPoolCollateralTopup(agentInfo: AgentInfo) {
         const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
-        const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(CCB_LIQUIDATION_PREVENTION_FACTOR);
+        const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(this.agentBotSettings.liquidationPreventionFactor);
         const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
         if (requiredTopUpPool.gt(BN_ZERO)) {
             const requiredTopUpF = await this.tokens.poolCollateral.format(requiredTopUpPool);
@@ -107,11 +109,11 @@ export class AgentBotCollateralManagement {
 
     private ownerNativeLowBalance(agentInfo: AgentInfo): BN {
         const lockedPoolCollateral = toBN(agentInfo.totalPoolCollateralNATWei).sub(toBN(agentInfo.freePoolCollateralNATWei));
-        return lockedPoolCollateral.muln(POOL_COLLATERAL_RESERVE_FACTOR);
+        return lockedPoolCollateral.muln(this.agentBotSettings.poolCollateralReserveFactor);
     }
 
     private ownerVaultCollateralLowBalance(agentInfo: AgentInfo): BN {
         const lockedVaultCollateral = toBN(agentInfo.totalVaultCollateralWei).sub(toBN(agentInfo.freeVaultCollateralWei));
-        return lockedVaultCollateral.muln(VAULT_COLLATERAL_RESERVE_FACTOR);
+        return lockedVaultCollateral.muln(this.agentBotSettings.vaultCollateralReserveFactor);
     }
 }

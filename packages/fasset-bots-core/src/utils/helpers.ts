@@ -14,8 +14,6 @@ export type Modify<T, R> = Omit<T, keyof R> & R;
 
 export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
-export type NullableToNonNullable<T> = undefined extends T ? NonNullable<T> : null extends T ? NonNullable<T> : unknown;
-
 export const BN_ZERO = new BN(0);
 export const BN_ONE: BN = Web3.utils.toBN(1);
 export const BN_TEN: BN = Web3.utils.toBN(10);
@@ -28,15 +26,6 @@ export const MINUTES = 60;
 export const HOURS = 60 * MINUTES;
 export const DAYS = 24 * HOURS;
 export const WEEKS = 7 * DAYS;
-
-export const CCB_LIQUIDATION_PREVENTION_FACTOR = 1.2;
-export const NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR = 1.2;
-// factors of locked collaterals that a healthy agent owner would need to own as their reserves
-// (seperate for each agent vault)
-export const VAULT_COLLATERAL_RESERVE_FACTOR = 0.1;
-export const POOL_COLLATERAL_RESERVE_FACTOR = 0.1;
-
-export const QUERY_WINDOW_SECONDS = 86400;
 
 export const MAX_UINT256 = toBN(1).shln(256).subn(1);
 
@@ -78,7 +67,7 @@ export function isNotNull<T>(x: T): x is NonNullable<T> {
  * Check if value is non-null and throw otherwise.
  * Returns guaranteed non-null value.
  */
-export function requireNotNull<T>(x: T, errorMessage?: string): NullableToNonNullable<T> {
+export function requireNotNull<T>(x: T, errorMessage?: string): NonNullable<T> {
     if (x != null) return x as any;
     throw new Error(errorMessage ?? "Value is null or undefined");
 }

@@ -19,6 +19,17 @@
             "walletUrl": "https://s.altnet.rippletest.net:51234"
         }
     },
+    "agentBotSettings": {
+        "liquidationPreventionFactor": "1.2",
+        "vaultCollateralReserveFactor": "0.1",
+        "poolCollateralReserveFactor": "0.1",
+        "fAssets": {
+            "FtestXRP": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "0.01"
+            }
+        }
+    },
     "ormOptions": {
         "dbName": "fasset-bots-coston.db",
         "debug": false,

@@ -1,7 +1,7 @@
 import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
-import { Secrets } from "../config";
+import { AgentBotSettings, Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
@@ -71,6 +71,7 @@ export class AgentBot {
 
     constructor(
         public agent: Agent,
+        public agentBotSettings: AgentBotSettings,
         public notifier: AgentNotifier,
         public owner: OwnerAddressPair,
         public ownerUnderlyingAddress: string,
@@ -81,9 +82,9 @@ export class AgentBot {
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
-    collateralManagement = new AgentBotCollateralManagement(this.agent, this.notifier, this.tokens);
-    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.notifier, this.ownerUnderlyingAddress, this.tokens);
     updateSetting = new AgentBotUpdateSettings(this.agent, this.notifier);
+    collateralManagement = new AgentBotCollateralManagement(this.agent, this.agentBotSettings, this.notifier, this.tokens);
+    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.agentBotSettings, this.notifier, this.ownerUnderlyingAddress, this.tokens);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -120,6 +121,7 @@ export class AgentBot {
     static async create(
         rootEm: EM,
         context: IAssetAgentContext,
+        agentBotSettings: AgentBotSettings,
         owner: OwnerAddressPair,
         ownerUnderlyingAddress: string,
         addressValidityProof: AddressValidity.Proof,
@@ -150,7 +152,7 @@ export class AgentBot {
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
 
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
+            return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
     }
 
     /**
@@ -183,6 +185,7 @@ export class AgentBot {
      */
     static async fromEntity(
         context: IAssetAgentContext,
+        agentBotSettings: AgentBotSettings,
         agentEntity: AgentEntity,
         ownerUnderlyingAddress: string,
         notifierTransports: NotifierTransport[]
@@ -205,7 +208,7 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
     }
 
     static underlyingAddress(secrets: Secrets, chainId: ChainId) {
@@ -224,7 +227,9 @@ export class AgentBot {
         try {
             const reference = owner.managementAddress;
             const enoughFunds = await checkUnderlyingFunds(context, ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount);
-            if (!enoughFunds) throw Error;
+            if (!enoughFunds) {
+                throw new Error(`Not enough funds on underlying address ${ownerUnderlyingAddress}`);
+            }
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */

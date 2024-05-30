@@ -7,7 +7,7 @@ describe("Scoped runner unit tests", () => {
 
     async function notImplemented(scope: EventScope): Promise<void> {
         try {
-            throw Error(errorMessage);
+            throw new Error(errorMessage);
         } catch (e) {
             scope.exitOnExpectedError(e, [], "AGENT", "");
         }

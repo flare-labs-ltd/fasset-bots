@@ -4,6 +4,7 @@ import { assert, expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBot } from "../../../src/actors/AgentBot";
+import { AgentBotSettings } from "../../../src/config";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting } from "../../../src/entities/agent";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
@@ -15,7 +16,7 @@ import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MINUTES, ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
-import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
+import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
@@ -32,6 +33,7 @@ const randomUnderlyingAddress = "RANDOM_UNDERLYING";
 describe("Agent bot unit tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
+    let agentBotSettings: AgentBotSettings;
     let orm: ORM;
     let ownerAddress: string;
     let ownerUnderlyingAddress: string;
@@ -44,6 +46,7 @@ describe("Agent bot unit tests", () => {
     async function initialize() {
         orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
+        agentBotSettings = testAgentBotSettings.xrp;
         chain = checkedCast(context.blockchainIndexer.chain, MockChain);
         // chain tunning
         chain.finalizationBlocks = 0;
@@ -77,7 +80,7 @@ describe("Agent bot unit tests", () => {
     it("Should read agent bot from entity", async () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBot = await AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
+        const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
     });
@@ -86,7 +89,7 @@ describe("Agent bot unit tests", () => {
         const agentBotBefore = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         await context.agentOwnerRegistry.setWorkAddress(ZERO_ADDRESS, { from: ownerAddress });
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBotBefore.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await expectRevert(AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports), `Management address ${ownerAddress} has no registered work address.`);
+        await expectRevert(AgentBot.fromEntity(context, agentBotSettings, agentEnt, ownerUnderlyingAddress, testNotifierTransports), `Management address ${ownerAddress} has no registered work address.`);
     });
 
     it("Should run readUnhandledEvents", async () => {

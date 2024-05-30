@@ -11,14 +11,14 @@ import { MAX_EVENT_HANDLE_RETRY, TrackedState } from "../../../src/state/Tracked
 import { EventArgs } from "../../../src/utils/events/common";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, QUERY_WINDOW_SECONDS, ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
+import { BN_ZERO, MAX_BIPS, ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { fundUnderlying, performRedemptionPayment } from "../../../test/test-utils/test-helpers";
 import { AgentDestroyed, AgentVaultCreated } from "../../../typechain-truffle/IIAssetManager";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, fromAgentInfoToInitialAgentData, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { QUERY_WINDOW_SECONDS, createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, createTestRedeemer, fromAgentInfoToInitialAgentData, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 import { waitForTimelock } from "../../test-utils/new-asset-manager";
 use(chaiAsPromised);
 use(spies);

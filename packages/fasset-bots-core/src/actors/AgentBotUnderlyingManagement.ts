@@ -1,19 +1,27 @@
 import BN from "bn.js";
-import { Agent } from "../fasset/Agent";
-import { squashSpace } from "../utils/formatting";
-import { NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR, assertNotNull, toBN } from "../utils/helpers";
-import { logger } from "../utils/logger";
-import { AgentNotifier } from "../utils/notifier/AgentNotifier";
-import { AgentTokenBalances } from "./AgentTokenBalances";
+import { AgentBotSettings } from "../config";
 import { EM } from "../config/orm";
 import { AgentUnderlyingPayment } from "../entities/agent";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { Agent } from "../fasset/Agent";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
+import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { squashSpace } from "../utils/formatting";
+import { assertNotNull, toBN } from "../utils/helpers";
+import { logger } from "../utils/logger";
+import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
+import { AgentTokenBalances } from "./AgentTokenBalances";
+
 export class AgentBotUnderlyingManagement {
-    constructor(public agent: Agent, public notifier: AgentNotifier, public ownerUnderlyingAddress: string, public tokens: AgentTokenBalances) {}
+    constructor(
+        public agent: Agent,
+        public agentBotSettings: AgentBotSettings,
+        public notifier: AgentNotifier,
+        public ownerUnderlyingAddress: string,
+        public tokens: AgentTokenBalances
+    ) {}
 
     context = this.agent.context;
 
@@ -27,8 +35,9 @@ export class AgentBotUnderlyingManagement {
         logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
         logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee}.`);
-        if (freeUnderlyingBalance.lte(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR))) {
-            await this.underlyingTopUp(em, estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
+        if (freeUnderlyingBalance.lte(this.agentBotSettings.minimumFreeUnderlyingBalance)) {
+            const topupAmount = this.agentBotSettings.minimumFreeUnderlyingBalance.sub(freeUnderlyingBalance);
+            await this.underlyingTopUp(em, topupAmount);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
         }
@@ -53,8 +62,7 @@ export class AgentBotUnderlyingManagement {
 
     async checkForLowOwnerUnderlyingBalance() {
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
-        const estimatedFee = toBN(await this.context.wallet.getTransactionFee());
-        const expectedBalance = this.context.chainInfo.minimumAccountBalance.add(estimatedFee.muln(NEGATIVE_FREE_UNDERLYING_BALANCE_PREVENTION_FACTOR));
+        const expectedBalance = this.agentBotSettings.recommendedOwnerUnderlyingBalance;
         const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
         const expectedBalanceF = await this.tokens.underlying.format(expectedBalance);
         if (ownerUnderlyingBalance.lte(expectedBalance)) {

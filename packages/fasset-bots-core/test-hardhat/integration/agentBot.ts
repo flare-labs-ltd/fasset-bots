@@ -11,7 +11,7 @@ import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, POOL_COLLATERAL_RESERVE_FACTOR, QUERY_WINDOW_SECONDS, checkedCast, maxBN, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, MAX_BIPS, checkedCast, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
@@ -19,7 +19,7 @@ import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 import { AgentMintingState, AgentRedemptionState } from "../../src/entities/common";
 use(spies);
 
@@ -681,7 +681,7 @@ describe("Agent bot tests", () => {
         const agentInfo = await agentBot.agent.getAgentInfo()
         const minNative = toBN(agentInfo.totalPoolCollateralNATWei)
             .sub(toBN(agentInfo.freePoolCollateralNATWei))
-            .muln(POOL_COLLATERAL_RESERVE_FACTOR)
+            .muln(agentBot.agentBotSettings.poolCollateralReserveFactor);
         const deposit = ownerBalance.sub(minNative)
         await agentB.buyCollateralPoolTokens(deposit);
         // send notifications: top up failed and low balance on ownerAddress

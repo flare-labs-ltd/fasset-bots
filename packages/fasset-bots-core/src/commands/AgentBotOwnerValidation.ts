@@ -142,7 +142,7 @@ export class AgentBotOwnerValidation {
         this.reporter.log(`Verifying balance on owner's ${fassetInfo.chainId} address ${underlyingAddress}...`);
         const walletToken = await this.createWalletTokenBalance(fassetSymbol);
         const underlyingBalance = await walletToken.balance(underlyingAddress);
-        const underlyingRecBal = walletToken.parse(fassetInfo.recommendedOwnerBalance ?? "0");
+        const underlyingRecBal = walletToken.parse(this.configFile.agentBotSettings.fAssets[fassetSymbol].recommendedOwnerBalance ?? "0");
         const balanceFmt = walletToken.format(underlyingBalance);
         if (underlyingBalance.lt(underlyingRecBal)) {
             const recBalFmt = walletToken.format(underlyingRecBal);

@@ -2,12 +2,13 @@ import { expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { MockNotifierTransport } from "../../../src/mock/MockNotifierTransport";
-import { AgentNotificationKey, AgentNotifier } from "../../../src/utils/notifier/AgentNotifier";
+import { FormattedString, HOURS } from "../../../src/utils";
+import { AgentNotificationKey, AgentNotifier, agentNotifierThrottlingTimes } from "../../../src/utils/notifier/AgentNotifier";
 import { BotType, NotificationLevel } from "../../../src/utils/notifier/BaseNotifier";
 import { ChallengerNotifier } from "../../../src/utils/notifier/ChallengerNotifier";
 import { LiquidatorNotifier } from "../../../src/utils/notifier/LiquidatorNotifier";
+import { ConsoleNotifierTransport, NotifierThrottlingConfigs, ThrottlingNotifierTransport } from "../../../src/utils/notifier/NotifierTransports";
 import { FaultyNotifierTransport } from "../../test-utils/FaultyNotifierTransport";
-import { FormattedString } from "../../../src/utils";
 use(chaiAsPromised);
 use(spies);
 
@@ -366,8 +367,64 @@ describe("Notifier tests", () => {
     });
 
     it("Should send setting update started", async () => {
-        const spySend = spy.on(notifier, "sendConfirmWithdrawUnderlying");
+        const spySend = spy.on(notifier, "sendSettingsUpdateStarted");
         await notifier.sendSettingsUpdateStarted("name", "validAt");
         expect(spySend).to.have.been.called.once;
+    });
+
+    const testNotifierThrottlingTimes: NotifierThrottlingConfigs = {
+        [AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE]: { duration: 6 * HOURS, addressInKey: false },
+        [AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE]: { duration: 6 * HOURS, addressInKey: true },
+    };
+
+    it("notification should be throttled", async () => {
+        const transport = new ConsoleNotifierTransport();
+        const throttled = new ThrottlingNotifierTransport(transport, testNotifierThrottlingTimes);
+        const notifier = new AgentNotifier("agentVault", [throttled]);
+        const spySend = spy.on(transport, "send");
+        await notifier.sendLowBalanceOnOwnersAddress("agentOwner", "0.10" as FormattedString);
+        expect(spySend).to.have.been.called.once;
+        await notifier.sendLowBalanceOnOwnersAddress("agentOwner", "0.11" as FormattedString);
+        expect(spySend).to.have.been.called.once;
+        throttled.lastAlertAt[AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE] -= 6 * HOURS;
+        await notifier.sendLowBalanceOnOwnersAddress("agentOwner", "0.12" as FormattedString);
+        expect(spySend).to.have.been.called.exactly(2);
+    });
+
+    it("throttling should not depend on address in this case", async () => {
+        const transport = new ConsoleNotifierTransport();
+        const throttled = new ThrottlingNotifierTransport(transport, testNotifierThrottlingTimes);
+        const notifier1 = new AgentNotifier("agentVault1", [throttled]);
+        const notifier2 = new AgentNotifier("agentVault2", [throttled]);
+        const spySend = spy.on(transport, "send");
+        await notifier1.sendLowBalanceOnOwnersAddress("agentOwner", "0.10" as FormattedString);
+        await notifier2.sendLowBalanceOnOwnersAddress("agentOwner", "0.11" as FormattedString);
+        expect(spySend).to.have.been.called.once;
+        await notifier1.sendLowBalanceOnOwnersAddress("agentOwner", "0.12" as FormattedString);
+        await notifier2.sendLowBalanceOnOwnersAddress("agentOwner", "0.13" as FormattedString);
+        expect(spySend).to.have.been.called.once;
+        throttled.lastAlertAt[AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE] -= 6 * HOURS;
+        await notifier1.sendLowBalanceOnOwnersAddress("agentOwner", "0.14" as FormattedString);
+        await notifier2.sendLowBalanceOnOwnersAddress("agentOwner", "0.15" as FormattedString);
+        expect(spySend).to.have.been.called.exactly(2);
+    });
+
+    it("throttling should depend on address in this case", async () => {
+        const transport = new ConsoleNotifierTransport();
+        const throttled = new ThrottlingNotifierTransport(transport, testNotifierThrottlingTimes);
+        const notifier1 = new AgentNotifier("agentVault1", [throttled]);
+        const notifier2 = new AgentNotifier("agentVault2", [throttled]);
+        const spySend = spy.on(transport, "send");
+        await notifier1.sendLowBalanceOnUnderlyingOwnersAddress("agentOwner", "0.10" as FormattedString);
+        await notifier2.sendLowBalanceOnUnderlyingOwnersAddress("agentOwner", "0.11" as FormattedString);
+        expect(spySend).to.have.been.called.exactly(2);
+        await notifier1.sendLowBalanceOnUnderlyingOwnersAddress("agentOwner", "0.12" as FormattedString);
+        await notifier2.sendLowBalanceOnUnderlyingOwnersAddress("agentOwner", "0.13" as FormattedString);
+        expect(spySend).to.have.been.called.exactly(2);
+        throttled.lastAlertAt[`${AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE}-agentVault1`] -= 6 * HOURS;
+        throttled.lastAlertAt[`${AgentNotificationKey.LOW_OWNERS_UNDERLYING_BALANCE}-agentVault2`] -= 6 * HOURS;
+        await notifier1.sendLowBalanceOnUnderlyingOwnersAddress("agentOwner", "0.14" as FormattedString);
+        await notifier2.sendLowBalanceOnUnderlyingOwnersAddress("agentOwner", "0.15" as FormattedString);
+        expect(spySend).to.have.been.called.exactly(4);
     });
 });

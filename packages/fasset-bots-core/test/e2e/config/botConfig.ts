@@ -164,6 +164,7 @@ describe("Bot config tests", () => {
             botConfig.contractRetriever,
             symbol,
             chainInfo,
+            runConfig.agentBotSettings,
             botConfig.orm!.em,
             ATTESTATION_PROVIDER_URLS,
             OWNER_ADDRESS

@@ -2,11 +2,10 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
-import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
-import { createAgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
+import { AgentBotSettings } from "../../../src/config";
+import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
 import { IAssetAgentContext, IChallengerContext, ILiquidatorContext } from "../../../src/fasset-bots/IAssetBotContext";
-import { AgentVaultInitSettings } from "../../../src/config/AgentVaultInitSettings";
 import { Agent } from "../../../src/fasset/Agent";
 import { Minter } from "../../../src/mock/Minter";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -31,6 +30,7 @@ export async function createTestRedeemer(ctx: IAssetAgentContext, address: strin
 
 export async function createTestAgentBot(
     context: IAssetAgentContext,
+    agentBotSettings: AgentBotSettings,
     orm: ORM,
     ownerManagementAddress: string,
     ownerUnderlyingAddress: string,
@@ -44,8 +44,8 @@ export async function createTestAgentBot(
     console.log(`Creating agent bot...`);
     const settings = loadAgentSettings(defaultAgentConfigPath);
     settings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, settings);
-    return await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
+    const newVaultSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, settings);
+    return await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, newVaultSettings, notifiers);
 }
 
 export async function createTestChallenger(context: IChallengerContext, address: string, state: TrackedState): Promise<Challenger> {

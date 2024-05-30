@@ -21,6 +21,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentRedemptionState } from "../../../src/entities/common";
+import { TokenBalances } from "../../../src/utils";
 use(chaiAsPromised);
 use(spies);
 
@@ -246,15 +247,21 @@ describe("UserBot cli commands unit tests", () => {
     });
 
     it("Should enter and exit pool", async () => {
+        const natbr = await TokenBalances.evmNative(context);
         const poolAddress = agentBot.agent.collateralPool.address;
-        const amount = toBN(10000000000000000000);
+        const amount = natbr.parse("1000");
+        const startBalance = await natbr.balance(minterAddress);
         const enter = await poolUserBot.enterPool(poolAddress, amount);
         expect(enter.tokenHolder).to.eq(userBot.nativeAddress);
         expect(enter.amountNatWei.eq(amount)).to.be.true;
+        const balanceAfterEnter = await natbr.balance(minterAddress);
+        expect(balanceAfterEnter.lte(startBalance.sub(amount))).to.be.true;
         await time.increase(time.duration.days(1));
         const exit = await poolUserBot.exitPool(poolAddress, amount);
         expect(exit.tokenHolder).to.eq(userBot.nativeAddress);
         expect(exit.receivedNatWei.eq(amount)).to.be.true;
+        const balanceAfterExit = await natbr.balance(minterAddress);
+        expect(balanceAfterExit.gte(startBalance.sub(natbr.parse("1")))).to.be.true;  // expect gas take less than 1 NAT
     });
 
     it("Should write and read state data", async () => {
