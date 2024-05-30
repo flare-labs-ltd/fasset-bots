@@ -1,9 +1,9 @@
 import BN from "bn.js";
 import { AgentBotSettings } from "../config";
 import { Agent } from "../fasset/Agent";
-import { AgentInfo, AgentStatus, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentStatus, CollateralClass } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
-import { BN_ZERO, MAX_BIPS, MAX_UINT256, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentTokenBalances } from "./AgentTokenBalances";
@@ -33,7 +33,6 @@ export class AgentBotCollateralManagement {
         await this.checkOwnerVaultCollateralBalance(agentInfo);
         await this.checkOwnerNativeBalance(agentInfo);
         await this.checkIfCanEndLiquidation(agentInfo);
-        // TODO (Urška) check if liquidation can be ended
     }
 
     async checkForVaultCollateralTopup(agentInfo: AgentInfo) {
