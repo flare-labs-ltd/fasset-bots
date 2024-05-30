@@ -121,23 +121,22 @@ export class AgentBotCollateralManagement {
             const vaultCRBIPS = agentInfo.vaultCollateralRatioBIPS;
             const poolCRBIPS = agentInfo.poolCollateralRatioBIPS;
 
+            let minVaultCollateralRatio;
+            let minPoolCollateralRatio;
+
             if (currentStatus == AgentStatus.CCB) {
-                if(vaultCRBIPS.gte(toBN(vaultCollateral.minCollateralRatioBIPS)) &&
-                    poolCRBIPS.gte(toBN(poolCollateral.minCollateralRatioBIPS))) {
-                        await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.vaultAddress });
-                        logger.info(`Agent ${this.agent.vaultAddress} could not end liquidation after price change.`);
-                } else {
-                    logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
-                }
+                minVaultCollateralRatio = toBN(vaultCollateral.minCollateralRatioBIPS);
+                minPoolCollateralRatio = toBN(poolCollateral.minCollateralRatioBIPS);
+            } else {
+                minVaultCollateralRatio = toBN(vaultCollateral.safetyMinCollateralRatioBIPS);
+                minPoolCollateralRatio = toBN(poolCollateral.safetyMinCollateralRatioBIPS);
             }
-            if (currentStatus == AgentStatus.LIQUIDATION) {
-                if(vaultCRBIPS.gte(toBN(vaultCollateral.safetyMinCollateralRatioBIPS)) &&
-                    poolCRBIPS.gte(toBN(poolCollateral.safetyMinCollateralRatioBIPS))) {
-                        await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.vaultAddress });
-                        logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
-                } else {
-                    logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
-                }
+
+            if (vaultCRBIPS.gte(minVaultCollateralRatio) && poolCRBIPS.gte(minPoolCollateralRatio)) {
+                await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.vaultAddress });
+                logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
+            } else {
+                logger.info(`Agent ${this.agent.vaultAddress} could not end liquidation after price change.`);
             }
         } catch (error) {
             console.error(`Error while checking if agent can end liquidation for agent ${this.agent.vaultAddress}: ${error}`);
