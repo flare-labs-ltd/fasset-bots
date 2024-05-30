@@ -1,4 +1,4 @@
-import { AgentSettingName, AgentUpdateSettingState, AgentBotCommands, AgentEntity, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, AgentSettingName, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";

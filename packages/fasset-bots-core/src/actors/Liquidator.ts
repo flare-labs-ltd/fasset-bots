@@ -4,6 +4,7 @@ import { ILiquidatorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
+import { iteratorToArray } from "../utils";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
@@ -19,6 +20,7 @@ export class Liquidator extends ActorBase {
 
     notifier: LiquidatorNotifier;
     liquidationStrategy: LiquidationStrategy;
+    checkedInitialAgents: boolean = false
 
     constructor(
         public context: ILiquidatorContext,
@@ -54,6 +56,12 @@ export class Liquidator extends ActorBase {
      * It collects unhandled events on native chain, runs through them and handles them appropriately.
      */
     override async runStep(): Promise<void> {
+        if (!this.checkedInitialAgents) {
+            await Promise.all(iteratorToArray(this.state.agents.values()).map(async (agent) =>
+                await this.checkAgentForLiquidation(agent)
+            ));
+            this.checkedInitialAgents = true;
+        }
         await this.registerEvents();
     }
 
