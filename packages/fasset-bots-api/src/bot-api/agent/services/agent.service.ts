@@ -1,4 +1,4 @@
-import { AgentBotCommands, AgentEntity, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, AgentSettingName, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
@@ -14,7 +14,6 @@ import { allTemplate } from "../../common/VaultTemplates";
 import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
 import { EntityManager } from "@mikro-orm/core";
 import { Alert } from "../../common/entities/AlertDB";
-import { AgentSettingName, AgentUpdateSettingState } from "../../../../../fasset-bots-core/src/entities/common";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
