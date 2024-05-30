@@ -57,9 +57,14 @@ export class Liquidator extends ActorBase {
      */
     override async runStep(): Promise<void> {
         if (!this.checkedInitialAgents) {
-            await Promise.all(iteratorToArray(this.state.agents.values()).map(async (agent) =>
-                await this.checkAgentForLiquidation(agent)
-            ));
+            await Promise.all(iteratorToArray(this.state.agents.values()).map(async (agent) => {
+                try {
+                    await this.checkAgentForLiquidation(agent)
+                } catch (error) {
+                    console.error(`Error handling initial liquidation check for liquidator ${this.address}: ${error}`);
+                    logger.error(`Liquidator ${this.address} run into error while initially checking for liquidation status of agent ${agent.vaultAddress}:`, error);
+                }
+            }));
             this.checkedInitialAgents = true;
         }
         await this.registerEvents();

@@ -630,7 +630,7 @@ describe("Agent bot tests", () => {
         assert.equal(status2, AgentStatus.CCB);
         // run bot
         await agentBot.handleEvents(orm.em);
-        expect(spyConsole).to.have.been.called.exactly(5);
+        expect(spyConsole).to.have.been.called.exactly(6);
     });
 
     it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {
@@ -824,10 +824,5 @@ describe("Agent bot tests", () => {
             console.log(`Agent step ${i}, active = ${agentEnt.active}`);
             if (agentEnt.active === false) break;
         }
-    });
-
-    it.only("Should is called", async () => {
-        const agentInfo = await agentBot.agent.getAgentInfo()
-        console.log(agentInfo)
     });
 });
