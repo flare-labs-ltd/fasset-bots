@@ -1,7 +1,7 @@
 import { AgentBot } from "../../src/actors/AgentBot";
 import { AgentBotCommands } from "../../src/commands/AgentBotCommands";
 import { EM } from "../../src/config/orm";
-import { AgentRedemption, AgentRedemptionState } from "../../src/entities/agent";
+import { AgentRedemption } from "../../src/entities/agent";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
@@ -10,6 +10,7 @@ import { MAX_BIPS, checkedCast, toBN } from "../../src/utils/helpers";
 import { coinFlip, getLotSize, randomBN, randomChoice, randomInt } from "../test-utils/fuzzing-utils";
 import { formatBN } from "../../src/utils/formatting";
 import { FuzzingRunner } from "./FuzzingRunner";
+import { AgentRedemptionState } from "../../src/entities/common";
 
 export class FuzzingAgentBot {
     constructor(

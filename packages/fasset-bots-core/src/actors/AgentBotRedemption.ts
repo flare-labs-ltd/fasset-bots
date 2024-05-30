@@ -3,7 +3,7 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
-import { AgentRedemption, AgentRedemptionState } from "../entities/agent";
+import { AgentRedemption } from "../entities/agent";
 import { Agent } from "../fasset/Agent";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
@@ -15,6 +15,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
+import { AgentRedemptionState } from "../entities/common";
 
 export class AgentBotRedemption {
     static deepCopyWithObjectCreate = true;

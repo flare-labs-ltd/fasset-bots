@@ -1,8 +1,8 @@
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { AgentBotSettings } from "../config";
 import { EM } from "../config/orm";
-import { AgentUnderlyingPayment, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/agent";
+import { AgentUnderlyingPayment } from "../entities/agent";
+import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import { Agent } from "../fasset/Agent";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
@@ -11,6 +11,7 @@ import { assertNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
+import { AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 
 export class AgentBotUnderlyingManagement {
@@ -95,9 +96,8 @@ export class AgentBotUnderlyingManagement {
     }
 
     /**
-     * Returns underlying payment with state other than DONE.
+     * Returns underlying payments with state other than DONE.
      * @param em entity manager
-     * @param onlyIds if true, only AgentUnderlyingPayment's entity ids are return
      * @return list of AgentUnderlyingPayment's instances
      */
     async openUnderlyingPaymentIds(em: EM): Promise<AgentUnderlyingPayment[]> {

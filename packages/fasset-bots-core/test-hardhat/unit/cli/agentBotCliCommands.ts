@@ -7,7 +7,7 @@ import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity } from "../../../src/entities/agent";
+import { AgentEntity, AgentUpdateSetting } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain } from "../../../src/mock/MockChain";
 import { CommandLineError } from "../../../src/utils";
@@ -15,11 +15,12 @@ import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/u
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
-import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
+import { AgentSettingName, AgentUpdateSettingState } from "../../../src/entities/common";
 use(chaiAsPromised);
 use(spies);
 
@@ -232,38 +233,13 @@ describe("AgentBot cli commands unit tests", () => {
         const agent = await createAgent();
         // update feeBIPS
         await botCliCommands.updateAgentSetting(agent.vaultAddress, "feeBIPS", "1100");
-        const agentEnt1 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt1.agentSettingUpdateValidAtFeeBIPS).gtn(0)).to.be.true;
-        // update poolFeeShareBIPS
-        await botCliCommands.updateAgentSetting(agent.vaultAddress, "poolFeeShareBIPS", "4100");
-        const agentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt2.agentSettingUpdateValidAtPoolFeeShareBIPS).gtn(0)).to.be.true;
-        // update mintingVaultCollateralRatioBIPS
-        await botCliCommands.updateAgentSetting(agent.vaultAddress, "mintingVaultCollateralRatioBIPS", "1100");
-        const agentEnt3 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt3.agentSettingUpdateValidAtMintingVaultCrBIPS).gtn(0)).to.be.true;
-        // update mintingPoolCollateralRatioBIPS
-        await botCliCommands.updateAgentSetting(agent.vaultAddress, "mintingPoolCollateralRatioBIPS", "1100");
-        const agentEnt4 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt4.agentSettingUpdateValidAtMintingPoolCrBIPS).gtn(0)).to.be.true;
-        // update buyFAssetByAgentFactorBIPS
-        await botCliCommands.updateAgentSetting(agent.vaultAddress, "buyFAssetByAgentFactorBIPS", "9100");
-        const agentEnt5 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt5.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gtn(0)).to.be.true;
-        // update poolExitCollateralRatioBIPS
-        await botCliCommands.updateAgentSetting(agent.vaultAddress, "poolExitCollateralRatioBIPS", "1100");
-        const agentEnt6 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt6.agentSettingUpdateValidAtPoolExitCrBIPS).gtn(0)).to.be.true;
-        // update poolTopupCollateralRatioBIPS
-        await botCliCommands.updateAgentSetting(agent.vaultAddress, "poolTopupCollateralRatioBIPS", "1100");
-        const agentEnt7 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt7.agentSettingUpdateValidAtPoolTopupCrBIPS).gtn(0)).to.be.true;
-        // update poolTopupTokenPriceFactorBIPS
-        await botCliCommands.updateAgentSetting(agent.vaultAddress, "poolTopupTokenPriceFactorBIPS", "8800");
-        const agentEnt8 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEnt8.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gtn(0)).to.be.true;
+        const lastAdded = await orm.em.findOneOrFail(AgentUpdateSetting,  { agentAddress: agent.vaultAddress }  as FilterQuery<AgentUpdateSetting>, {orderBy: {id: ('DESC')}});
+        expect(lastAdded.state).to.eq(AgentUpdateSettingState.WAITING);
         // update invalid settings
-        await expect(botCliCommands.updateAgentSetting(agent.vaultAddress, "invalid", "8800")).to.eventually.be.rejectedWith(`invalid setting name`);
+        const invalidName = "invalid";
+        await expect(botCliCommands.updateAgentSetting(agent.vaultAddress, invalidName, "8800")).to.eventually.be.rejectedWith(
+            `Invalid setting name ${invalidName}. Valid names are: ${Object.values(AgentSettingName).join(', ')}`
+        );
     });
 
     it("Should get pool fees balance'", async () => {

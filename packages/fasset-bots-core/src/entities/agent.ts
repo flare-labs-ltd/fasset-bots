@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
-import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
+import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -81,32 +81,6 @@ export class AgentEntity {
     @Property({ type: BNType })
     exitAvailableAllowedAtTimestamp: BN = BN_ZERO;
 
-    // agent update settings
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtFeeBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolFeeShareBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtMintingVaultCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtMintingPoolCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolExitCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolTopupCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: BN = BN_ZERO;
-
     // redeem pool tokens
 
     @Property({ type: BNType })
@@ -144,6 +118,9 @@ export class AgentEntity {
     // not used - here just to keep the non-null contraint from breaking; delete column when we support migrations
     @Property({ columnType: "varchar(20)", default: "obtainedProof" })
     dailyProofState!: string;
+
+    @OneToMany(() => AgentUpdateSetting, updateSetting => updateSetting.agent)
+    updateSettings = new Collection<AgentUpdateSetting>(this);
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
@@ -308,30 +285,21 @@ export class AgentUnderlyingPayment {
     proofRequestData?: string;
 }
 
+@Entity()
+@Unique({ properties: ["name", "validAt"] })
+export class AgentUpdateSetting {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
 
-export enum AgentMintingState {
-    DONE = "done",
-    STARTED = "started",
-    REQUEST_NON_PAYMENT_PROOF = "requestedNonPaymentProof",
-    REQUEST_PAYMENT_PROOF = "requestedPaymentProof",
-}
+    @Property()
+    state!: AgentUpdateSettingState;
 
-export enum AgentRedemptionState {
-    DONE = "done",
-    STARTED = "started",
-    PAID = "paid",
-    REQUESTED_PROOF = "requestedProof",
-    NOT_REQUESTED_PROOF = "notRequestedProof",
-    REQUESTED_REJECTION_PROOF = "requestedRejectionProof",
-}
+    @Property()
+    name!: AgentSettingName;
 
-export enum AgentUnderlyingPaymentState {
-    PAID = "paid",
-    REQUESTED_PROOF = "requestedProof",
-    DONE = "done",
-}
+    @ManyToOne(() => AgentEntity, { fieldName: 'agentAddress', onDelete: 'CASCADE' })
+    agent!: AgentEntity;
 
-export enum AgentUnderlyingPaymentType {
-    TOP_UP = "top_up",
-    WITHDRAWAL = "withdrawal",
+    @Property({ type: BNType })
+    validAt!: BN;
 }

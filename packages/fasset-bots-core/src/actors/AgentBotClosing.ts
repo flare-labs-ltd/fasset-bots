@@ -29,42 +29,70 @@ export class AgentBotClosing {
     }
 
     async handleAgentCloseProcess(rootEm: EM) {
-        const readAgentEntAtBegining = await this.bot.fetchAgentEntity(rootEm);
-        const closingPhase = await this.closingPhase(readAgentEntAtBegining);
-        if (closingPhase === "CLEANUP") {
-            logger.info(`Agent ${this.agent.vaultAddress} is performing cleanup.`);
-            // withdraw and self close pool fees
-            await this.withdrawPoolFees();
-            // start or continue vault collateral withdrawal
+        try {
+            const readAgentEntAtBeginning = await this.bot.fetchAgentEntity(rootEm);
+            const closingPhase = await this.closingPhase(readAgentEntAtBeginning);
+            if (closingPhase === "CLEANUP") {
+                logger.info(`Agent ${this.agent.vaultAddress} is performing cleanup.`);
+                // withdraw and self close pool fees
+                await this.withdrawPoolFees();
+                // start or continue vault collateral withdrawal
+                await this.startOrWithdrawVaultCollateral(rootEm);
+                // start or continue pool token redemption
+                await this.startOrRedeemPoolTokens(rootEm);
+                // start closing (when everybody else has redeemed)
+                await this.startVaultDestroy(rootEm);
+                // log current cleanup status
+                await this.logClosingObstructions();
+            } else if (closingPhase === "DESTROYING") {
+                // destroy vault if possible
+                await this.destroyVaultWhenAllowed(rootEm);
+            }
+        } catch (error) {
+            console.error(`Error while handling agent close process for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling agent close process:`, error);
+        }
+    }
+
+    async startOrWithdrawVaultCollateral(rootEm: EM) {
+        try {
             const readAgentEntAtWithdrawal = await this.bot.fetchAgentEntity(rootEm);
             if (this.waitingCollateralWithdrawal(readAgentEntAtWithdrawal)) {
                 await this.performVaultCollateralWithdrawalWhenAllowed(rootEm);
             } else {
                 await this.startVaultCollateralWithdrawal(rootEm);
             }
-            // start or continue pool token redemption
+        } catch (error) {
+            console.error(`Error while starting or withdrawing vault collateral ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while starting or withdrawing vault collateral:`, error);
+        }
+    }
+
+    async startOrRedeemPoolTokens(rootEm: EM) {
+        try {
             const readAgentEntAtPTRedemption = await this.bot.fetchAgentEntity(rootEm);
             if (this.waitingPoolTokenRedemption(readAgentEntAtPTRedemption)) {
                 await this.performPoolTokenRedemptionWhenAllowed(rootEm);
             } else {
                 await this.startPoolTokenRedemption(rootEm);
             }
-            // start closing (when everybody else has redeemed)
-            await this.startVaultDestroy(rootEm);
-            // log current cleanup status
-            await this.logClosingObstructions();
-        } else if (closingPhase === "DESTROYING") {
-            // destroy vault if possible
-            await this.destroyVaultWhenAllowed(rootEm);
+        } catch (error) {
+            console.error(`Error while starting or redeeming pool tokens ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while starting or redeeming pool tokens:`, error);
         }
     }
 
     async withdrawPoolFees() {
-        const poolFeeBalance = await this.agent.poolFeeBalance();
-        if (poolFeeBalance.gt(BN_ZERO)) {
-            await this.agent.withdrawPoolFees(poolFeeBalance);
-            await this.agent.selfClose(poolFeeBalance);
-            logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${poolFeeBalance}.`);
+        try {
+            const poolFeeBalance = await this.agent.poolFeeBalance();
+            if (poolFeeBalance.gt(BN_ZERO)) {
+                await this.agent.withdrawPoolFees(poolFeeBalance);
+                await this.agent.selfClose(poolFeeBalance);
+                logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${poolFeeBalance}.`);
+            }
+        } catch (error) {
+            console.error(`Error while withdrawing pool fees for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while withdrawing pool fees:`, error);
         }
     }
 
@@ -137,38 +165,48 @@ export class AgentBotClosing {
     }
 
     async startVaultDestroy(rootEm: EM) {
-        const agentInfo = await this.agent.getAgentInfo();
-        const totalPoolTokens = toBN(await this.agent.collateralPoolToken.totalSupply());
-        const totalVaultCollateral = toBN(agentInfo.totalVaultCollateralWei);
-        const everythingClean = totalPoolTokens.eq(BN_ZERO) && totalVaultCollateral.eq(BN_ZERO) && this.hasNoBackedFAssets(agentInfo);
-        if (everythingClean) {
-            const destroyAllowedAt = await this.agent.announceDestroy();
-            await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
-                agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
-                agentEnt.waitingForDestructionCleanUp = false;
-            });
-            await this.notifier.sendAgentAnnounceDestroy();
-            logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
+        try {
+            const agentInfo = await this.agent.getAgentInfo();
+            const totalPoolTokens = toBN(await this.agent.collateralPoolToken.totalSupply());
+            const totalVaultCollateral = toBN(agentInfo.totalVaultCollateralWei);
+            const everythingClean = totalPoolTokens.eq(BN_ZERO) && totalVaultCollateral.eq(BN_ZERO) && this.hasNoBackedFAssets(agentInfo);
+            if (everythingClean) {
+                const destroyAllowedAt = await this.agent.announceDestroy();
+                await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                    agentEnt.waitingForDestructionTimestamp = destroyAllowedAt;
+                    agentEnt.waitingForDestructionCleanUp = false;
+                });
+                await this.notifier.sendAgentAnnounceDestroy();
+                logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
+            }
+        } catch (error) {
+            console.error(`Error while handling start vault destruction for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling start vault destruction:`, error);
         }
     }
 
     async destroyVaultWhenAllowed(rootEm: EM) {
-        const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
-        if (toBN(readAgentEnt.waitingForDestructionTimestamp).gt(BN_ZERO)) {
-            logger.info(`Agent ${this.agent.vaultAddress} is waiting for destruction.`);
-            // agent waiting for destruction
-            const latestTimestamp = await latestBlockTimestampBN();
-            if (toBN(readAgentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
-                // agent can be destroyed
-                await this.agent.destroy();
-                await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
-                    agentEnt.waitingForDestructionTimestamp = BN_ZERO;
-                });
-                await this.handleAgentDestroyed(rootEm);
-            } else {
-                const allowedIn = toBN(readAgentEnt.waitingForDestructionTimestamp).sub(latestTimestamp);
-                logger.info(`Agent ${this.agent.vaultAddress} cannot be destroyed yet. Allowed in ${allowedIn} seconds.`);
+        try {
+            const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
+            if (toBN(readAgentEnt.waitingForDestructionTimestamp).gt(BN_ZERO)) {
+                logger.info(`Agent ${this.agent.vaultAddress} is waiting for destruction.`);
+                // agent waiting for destruction
+                const latestTimestamp = await latestBlockTimestampBN();
+                if (toBN(readAgentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
+                    // agent can be destroyed
+                    await this.agent.destroy();
+                    await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.waitingForDestructionTimestamp = BN_ZERO;
+                    });
+                    await this.handleAgentDestroyed(rootEm);
+                } else {
+                    const allowedIn = toBN(readAgentEnt.waitingForDestructionTimestamp).sub(latestTimestamp);
+                    logger.info(`Agent ${this.agent.vaultAddress} cannot be destroyed yet. Allowed in ${allowedIn} seconds.`);
+                }
             }
+        } catch (error) {
+            console.error(`Error while destroying vault for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while destroying vault:`, error);
         }
     }
 

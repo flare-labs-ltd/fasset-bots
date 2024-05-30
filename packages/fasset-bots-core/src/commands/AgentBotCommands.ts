@@ -28,6 +28,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
+import { AgentSettingName } from "../entities/common";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -241,7 +242,7 @@ export class AgentBotCommands {
 
     /**
      * Announces agent's exit from available list. It marks in persistent state that exit from available list
-     * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     * has started and it is then handled in AgentBot.ts.
      * @param agentVault agent's vault address
      */
     async announceExitAvailableList(agentVault: string): Promise<void> {
@@ -281,7 +282,7 @@ export class AgentBotCommands {
 
     /**
      * Announces agent's withdrawal of vault collateral. It marks in persistent state that withdrawal of vault collateral
-     * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     * has started and it is then handled in AgentBot.ts.
      * @param agentVault agent's vault address
      * @param amount amount to be withdrawn
      */
@@ -314,7 +315,7 @@ export class AgentBotCommands {
 
     /**
      * Announces agent's pool token redemption. It marks in persistent state that redemption of pool tokens
-     * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     * has started and it is then handled in AgentBot.ts.
      * @param agentVault agent's vault address
      * @param amount amount to be redeemed
      */
@@ -385,67 +386,19 @@ export class AgentBotCommands {
 
     /**
      * Announces agent's settings update. It marks in persistent state that agent's settings update
-     * has started and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     * has started and it is then handled by AgentBot.ts.
      * @param agentVault agent's vault address
      * @param settingName
      * @param settingValue
      */
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
-        const { agentBot } = await this.getAgentBot(agentVault);
-        const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        switch (settingName) {
-            case "feeBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtFeeBIPS = validAt;
-                });
-                break;
-            }
-            case "poolFeeShareBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = validAt;
-                });
-                break;
-            }
-            case "mintingVaultCollateralRatioBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = validAt;
-                });
-                break;
-            }
-            case "mintingPoolCollateralRatioBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = validAt;
-                });
-                break;
-            }
-            case "buyFAssetByAgentFactorBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = validAt;
-                });
-                break;
-            }
-            case "poolExitCollateralRatioBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = validAt;
-                });
-                break;
-            }
-            case "poolTopupCollateralRatioBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = validAt;
-                });
-                break;
-            }
-            case "poolTopupTokenPriceFactorBIPS": {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = validAt;
-                });
-                break;
-            }
-            default: {
-                throw new CommandLineError(`Invalid setting name ${settingName}`);
-            }
+        const validName = Object.values(AgentSettingName).includes(settingName as AgentSettingName);
+        if (!validName) {
+            throw new CommandLineError(`Invalid setting name ${settingName}. Valid names are: ${Object.values(AgentSettingName).join(', ')}`);
         }
+        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
+        const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
+        await agentBot.updateSetting.createAgentUpdateSetting(this.orm.em, settingName, validAt, readAgentEnt);
         logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
         console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
     }
@@ -453,7 +406,7 @@ export class AgentBotCommands {
     /**
      * Starts agent's close vault process. Firstly, it exits available list if necessary.
      * Lastly it marks in persistent state that close vault process has started and it is then
-     * handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     * handled in AgentBot.ts.
      * @param agentVault agent's vault address
      */
     async closeVault(agentVault: string): Promise<void> {
@@ -498,7 +451,7 @@ export class AgentBotCommands {
     }
 
     /**
-     * Cancels agent's underlying withdrawal, if already allowed. Otherwise it marks in persistent state and it is then handled by method 'handleAgentsWaitingsAndCleanUp' in AgentBot.ts.
+     * Cancels agent's underlying withdrawal, if already allowed. Otherwise it marks in persistent state and it is then handled in AgentBot.ts.
      * @param agentVault agent's vault address
      */
     async cancelUnderlyingWithdrawal(agentVault: string): Promise<void> {

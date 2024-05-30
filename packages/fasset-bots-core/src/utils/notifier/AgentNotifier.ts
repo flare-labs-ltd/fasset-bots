@@ -422,4 +422,8 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
             `Agent ${this.address} cannot obtain proof for underlying ${type} payment ${txHash} in round ${roundId} with requested data ${requestData}.`
         );
     }
+
+    async sendSettingsUpdateStarted(settingName: string, validAt: string) {
+        await this.info(AgentNotificationKey.AGENT_SETTING_UPDATE, `Agent ${this.address} started setting ${settingName} that is valid at ${validAt}.`);
+    }
 }

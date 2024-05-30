@@ -14,6 +14,7 @@ import { allTemplate } from "../../common/VaultTemplates";
 import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
 import { EntityManager } from "@mikro-orm/core";
 import { Alert } from "../../common/entities/AlertDB";
+import { AgentSettingName, AgentUpdateSettingState } from "../../../../../fasset-bots-core/src/entities/common";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -220,6 +221,7 @@ export class AgentService {
         // get agent infos
         const query = cli.orm.em.createQueryBuilder(AgentEntity);
         const agentVaults = await query.where({ active: true }).getResultList();
+
         const agentInfos: AgentVaultStatus[] = [];
         for (const agent of agentVaults) {
             const agentInfo = await cli.context.assetManager.getAgentInfo(agent.vaultAddress);
@@ -227,17 +229,27 @@ export class AgentService {
                 vaultAddress: agent.vaultAddress,
                 poolCollateralRatioBIPS: agentInfo.poolCollateralRatioBIPS.toString(),
                 vaultCollateralRatioBIPS: agentInfo.vaultCollateralRatioBIPS.toString(),
-                agentSettingUpdateValidAtFeeBIPS: agent.agentSettingUpdateValidAtFeeBIPS.toString(),
-                agentSettingUpdateValidAtPoolFeeShareBIPS: agent.agentSettingUpdateValidAtPoolFeeShareBIPS.toString(),
-                agentSettingUpdateValidAtMintingVaultCrBIPS: agent.agentSettingUpdateValidAtMintingVaultCrBIPS.toString(),
-                agentSettingUpdateValidAtMintingPoolCrBIPS: agent.agentSettingUpdateValidAtMintingPoolCrBIPS.toString(),
-                agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: agent.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS.toString(),
-                agentSettingUpdateValidAtPoolExitCrBIPS: agent.agentSettingUpdateValidAtPoolExitCrBIPS.toString(),
-                agentSettingUpdateValidAtPoolTopupCrBIPS: agent.agentSettingUpdateValidAtPoolTopupCrBIPS.toString(),
-                agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: agent.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.toString()
+                agentSettingUpdateValidAtFeeBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.FEE),
+                agentSettingUpdateValidAtPoolFeeShareBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_FEE_SHARE),
+                agentSettingUpdateValidAtMintingVaultCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.MINTING_VAULT_CR),
+                agentSettingUpdateValidAtMintingPoolCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.MINTING_POOL_CR),
+                agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.BUY_FASSET_FACTOR),
+                agentSettingUpdateValidAtPoolExitCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_EXIT_CR),
+                agentSettingUpdateValidAtPoolTopupCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_TOP_UP_CR),
+                agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)
             })
         }
         return agentInfos
+    }
+
+    getUpdateSettingValidAtTimestamp(agent: AgentEntity, settingName: AgentSettingName): string {
+        const found = agent.updateSettings.getItems().find(setting =>
+            setting.name == settingName && setting.state === AgentUpdateSettingState.WAITING);
+            if (found) {
+                return found.validAt.toString();
+            } else {
+                return BN_ZERO.toString();
+            }
     }
 
     async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<ExtendedAgentVaultInfo> {
@@ -452,10 +464,10 @@ export class AgentService {
             // For each vault calculate needed info
             for (const vault of agentVaults) {
                 let updating = false;
-                if (toBN(vault.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO) ||
-                toBN(vault.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO) ||
-                toBN(vault.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO) ||
-                toBN(vault.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
+                if (toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.FEE)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_FEE_SHARE)).gt(BN_ZERO) ||
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_VAULT_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_POOL_CR)).gt(BN_ZERO) ||
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.BUY_FASSET_FACTOR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_EXIT_CR)).gt(BN_ZERO) ||
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)).gt(BN_ZERO)) {
                     updating = true;
                 }
                 const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
