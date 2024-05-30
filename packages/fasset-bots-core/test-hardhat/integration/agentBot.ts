@@ -6,12 +6,12 @@ import spies from "chai-spies";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
 import { AgentEntity } from "../../src/entities/agent";
-import { AgentStatus, AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
+import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, checkedCast, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, MAX_BIPS, ZERO_ADDRESS, checkedCast, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
@@ -21,6 +21,7 @@ import { TestAssetBotContext, createTestAssetContext } from "../test-utils/creat
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 import { AgentMintingState, AgentRedemptionState } from "../../src/entities/common";
+import { PaymentReference } from "../../src/fasset/PaymentReference";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -171,7 +172,7 @@ describe("Agent bot tests", () => {
         await agentBot.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
-        assert.equal(mintingDone.state, "done");
+        assert.equal(mintingDone.state, AgentMintingState.DONE);
         // check that executing minting after calling mintingPaymentDefault will revert
         const txHash = await minter.performMintingPayment(crt);
         chain.mine(chain.finalizationBlocks + 1);
@@ -629,7 +630,7 @@ describe("Agent bot tests", () => {
         assert.equal(status2, AgentStatus.CCB);
         // run bot
         await agentBot.handleEvents(orm.em);
-        expect(spyConsole).to.have.been.called.exactly(5);
+        expect(spyConsole).to.have.been.called.exactly(6);
     });
 
     it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {
@@ -770,5 +771,58 @@ describe("Agent bot tests", () => {
         //Expect agent destruction announcement not to be active
         expect(agentBotEnt.waitingForDestructionCleanUp).to.be.true;
         expect(toBN(agentBotEnt.waitingForDestructionTimestamp).eqn(0)).to.be.true;
+    });
+
+    it("Should mint all available lots, agent bot is turned off until redemption default is called", async () => {
+        // vaultCollateralToken
+        const vaultCollateralType = await agentBot.agent.getVaultCollateral();
+        const vaultCollateralToken = await IERC20.at(vaultCollateralType.token);
+        // mint
+        const freeLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, freeLots.toNumber(), orm, chain);
+        // check all lots are minted
+        const freeLotsAfter = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        expect(toBN(freeLotsAfter).eqn(0)).to.be.true;
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // redeemer balance of vault collateral should be 0
+        const redBal0 = await vaultCollateralToken.balanceOf(redeemer.address);
+        expect(redBal0.eqn(0)).to.be.true;
+        //request redemption
+        const [rdReqs] = await redeemer.requestRedemption(freeLots);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // skip time so the payment will expire on underlying chain and execute redemption default
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
+        chain.mine(Number(rdReq.lastUnderlyingBlock));
+        const paymentAmount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
+        const proof = await redeemer.obtainNonPaymentProof(redeemer.underlyingAddress, rdReq.paymentReference, paymentAmount,
+            rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp);
+        const res = await redeemer.executePaymentDefault(PaymentReference.decodeId(rdReq.paymentReference), proof, ZERO_ADDRESS);
+        // redeemer balance of vault collateral should be > 0
+        const redBal1 = await vaultCollateralToken.balanceOf(redeemer.address);
+        expect(redBal1.eq(res.redeemedVaultCollateralWei)).to.be.true;
+        // close agent (first exit available)
+        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+        await time.increaseTo(exitAllowedAt);
+        await agentBot.agent.exitAvailable();
+        // close
+        await agentBot.updateAgentEntity(orm.em, async (agentEnt) => {
+            agentEnt.waitingForDestructionCleanUp = true;
+        });
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if agent is not active
+            orm.em.clear();
+            const agentEnt = await agentBot.fetchAgentEntity(orm.em)
+            console.log(`Agent step ${i}, active = ${agentEnt.active}`);
+            if (agentEnt.active === false) break;
+        }
     });
 });

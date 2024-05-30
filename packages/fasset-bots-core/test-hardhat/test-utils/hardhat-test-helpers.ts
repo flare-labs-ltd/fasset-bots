@@ -5,7 +5,7 @@ import { copyORM, isRegisteredORM } from "../../test/test-utils/create-test-orm"
 /**
  * Like Hardhat's `loadFixture`, but copies the returned variables, with special handling for ORM.
  * @param fixture the the initialization function.
- *  Must not be an anonimous function, otherwise it will be called every time instead of creating a snapshot.
+ *  Must not be an anonymous function, otherwise it will be called every time instead of creating a snapshot.
  * @returns The (copy of) variables returned by `fixture`.
  */
 export async function loadFixtureCopyVars<T extends object>(fixture: () => Promise<T>): Promise<T> {

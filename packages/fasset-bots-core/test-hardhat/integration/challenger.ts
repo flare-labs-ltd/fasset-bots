@@ -5,13 +5,12 @@ import { ORM } from "../../src/config/orm";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
-import { MockIndexer } from "../../src/mock/MockIndexer";
 import { TrackedState } from "../../src/state/TrackedState";
 import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
 import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet, SpentReceivedObject, TransactionOptionsWithFee, UTXO } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { fail, sleep, toBN } from "../../src/utils/helpers";
+import { sleep, toBN } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
@@ -361,8 +360,6 @@ describe("Challenger tests", () => {
         assert(argsFailed.failureReason, "not redeemer's address");
         assert(endBalanceRedeemer.sub(startBalanceRedeemer), String(argsDefault.redeemedCollateralWei));
         assert(startBalanceAgent.sub(endBalanceAgent), String(argsDefault.redeemedCollateralWei));
-        // set chain fee back to default
-        // chain.requiredFee = toBN(0);
     });
 
     it("Should catch 'RedemptionPaymentBlocked' event", async () => {
