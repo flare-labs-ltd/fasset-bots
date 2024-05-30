@@ -118,10 +118,8 @@ export class AgentBotCollateralManagement {
 
             const vaultCollateral = await this.agent.getVaultCollateral();
             const poolCollateral = await this.agent.getPoolCollateral();
-            const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
-            const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
-            const vaultCRBIPS = await this.collateralRatioBIPS(agentInfo, vaultCollateralPrice);
-            const poolCRBIPS = await this.collateralRatioBIPS(agentInfo, poolCollateralPrice);
+            const vaultCRBIPS = agentInfo.vaultCollateralRatioBIPS;
+            const poolCRBIPS = agentInfo.poolCollateralRatioBIPS;
 
             if (currentStatus == AgentStatus.CCB) {
                 if(vaultCRBIPS.gte(toBN(vaultCollateral.minCollateralRatioBIPS)) &&
@@ -156,22 +154,12 @@ export class AgentBotCollateralManagement {
      * @return required amount for top up to reach healthy collateral ratio
      */
     private async requiredTopUp(requiredCrBIPS: BN, agentInfo: AgentInfo, cp: CollateralPrice): Promise<BN> {
-        const { totalCollateralWei, backingCollateralWei } = await this.totalAndBackingCollateral(agentInfo, cp);
-        const requiredCollateral = backingCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
-        return requiredCollateral.sub(totalCollateralWei);
-    }
-
-    private async totalAndBackingCollateral(agentInfo: AgentInfo, cp: CollateralPrice): Promise<{ totalCollateralWei: BN, backingCollateralWei: BN }> {
         const redeemingUBA = Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.redeemingUBA : agentInfo.poolRedeemingUBA;
-        const totalCollateralWei = toBN(Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei);
+        const balance = toBN(Number(cp.collateral.collateralClass) == CollateralClass.VAULT ? agentInfo.totalVaultCollateralWei : agentInfo.totalPoolCollateralNATWei);
         const totalUBA = toBN(agentInfo.mintedUBA).add(toBN(agentInfo.reservedUBA)).add(toBN(redeemingUBA));
         const backingCollateralWei = cp.convertUBAToTokenWei(totalUBA);
-        return { totalCollateralWei, backingCollateralWei};
-    }
-
-    private async collateralRatioBIPS(agentInfo: AgentInfo, cp: CollateralPrice) {
-        const c = await this.totalAndBackingCollateral(agentInfo, cp);
-        return c.totalCollateralWei.muln(MAX_BIPS).div(c.backingCollateralWei);
+        const requiredCollateral = backingCollateralWei.mul(requiredCrBIPS).divn(MAX_BIPS);
+        return requiredCollateral.sub(balance);
     }
 
     private ownerNativeLowBalance(agentInfo: AgentInfo): BN {
