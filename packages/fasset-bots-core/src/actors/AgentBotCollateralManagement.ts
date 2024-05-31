@@ -118,8 +118,8 @@ export class AgentBotCollateralManagement {
 
             const vaultCollateral = await this.agent.getVaultCollateral();
             const poolCollateral = await this.agent.getPoolCollateral();
-            const vaultCRBIPS = agentInfo.vaultCollateralRatioBIPS;
-            const poolCRBIPS = agentInfo.poolCollateralRatioBIPS;
+            const vaultCRBIPS = toBN(agentInfo.vaultCollateralRatioBIPS);
+            const poolCRBIPS = toBN(agentInfo.poolCollateralRatioBIPS);
 
             let minVaultCollateralRatio;
             let minPoolCollateralRatio;
