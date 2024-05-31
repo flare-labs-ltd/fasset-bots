@@ -150,15 +150,17 @@ Actions in [AgentBot.ts](./src/actors/AgentBot.ts) and [BotCliCommands.ts](./src
 - Please reach out to our Team Members on Telegram for TestUSDC/TestUSDT tokens
 
 -   Testnet XRP
-    -   https://yusufsahinhamza.github.io/xrp-testnet-faucet/ - 980 XRP (not limited per day)
+    -   https://faucet.tequ.dev
+    -   https://test.bithomp.com/faucet
     -   https://xrpl.org/xrp-testnet-faucet.html - 1000 XRP (not really a faucet, because it generates new address each time)
 
 -   Coston
-    -   https://coston1-faucet.towolabs.com/ - 100 CFLR per account per day
+    -   https://faucet.flare.network - 100 CFLR per account per day
 
 
 ### Other usefull webclients
 
+-   [Testnet XRP Explorer](https://testnet.xrpl.org/)
+-   [Coston Explorer](https://coston-explorer.flare.network/)
 -   [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#).
 -   [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
--   [Testnet XRP Explorer](https://testnet.xrpl.org/)

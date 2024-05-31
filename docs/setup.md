@@ -86,7 +86,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 
 4. In `secrets.json`, the `owner.testXRP.address` field is the underlying test-XRP account that pays the underlying chain's transaction fees. Activate your underlying XRP account by sending at least 100 test-XRP to it. You can use one of the the XRP testnet faucets:
 
-   * [first option](https://yusufsahinhamza.github.io/xrp-testnet-faucet/)
+   * [first option](https://faucet.tequ.dev/)
    * [second option](https://test.bithomp.com/faucet/).
 
 5. Create the agent specifying the Fasset and agent settings. Please keep in mind that this operation can take a while.

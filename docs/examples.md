@@ -8,7 +8,7 @@
 yarn key-gen generateSecrets --agent MANAGEMENT_ADDRESS --user -o secrets.json
 ```
 
-where MANAGEMENT_ADDRESS is your adress from Metamask.
+where MANAGEMENT_ADDRESS is your address from Metamask.
 
 2. Assign work address to your owner: connect Coston block explorer to your metamask, find contract `AgentOwnerRegistry` and execute `setWorkAddress` with address owner.native.address from generated secrets.json.
 
