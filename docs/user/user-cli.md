@@ -1,14 +1,12 @@
 # User command line tool
 
-The name of the user script is currently `user-bot`. (For Vika: The script name may change before release.)
+The name of the user script is `user-bot`.
 
 The script doesn't support Metamask or ledgers; all the private keys must be stored on disk. Therefore it is only safe to use for test currencies.
 
-The script has a number of subcomands, which can be listed by calling `user-bot help`.
+The script has a number of subcommands, which can be listed by calling `yarn user-bot help`.
 
 ## Installing the bot
-
-(For Vika: currently you need access to the private repositories `fasset-bots` and `simple-wallet` to do this. But for pubic release the repos will probably become public, so I won't write about this.)
 
 For now, the bot is obtained by cloning the `fasset-bots` git repository.
 
