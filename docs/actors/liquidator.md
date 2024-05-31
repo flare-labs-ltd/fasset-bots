@@ -1,6 +1,6 @@
 # LiquidatorBot
 
-File [Liquidator.ts](../../src/actors/Liquidator.ts) contains framework for such actor in FAsset system.
+File [Liquidator.ts](../../packages/fasset-bots-core/src/actors/Liquidator.ts) contains framework for such actor in FAsset system.
 
 ### Initialization
 

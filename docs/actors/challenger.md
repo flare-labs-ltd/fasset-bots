@@ -2,7 +2,7 @@
 
 Challenger is essential for maintaining the FAsset system healthy. Challenger's role is to trigger any unhealthy state and to get paid in return. System funds (Agent's vault collateral) will be utilised to pay a challenger that correctly report an unhealthy state.
 
-File [Challenger.ts](../../src/actors/Challenger.ts) contains framework for such actor in FAsset system.
+File [Challenger.ts](../../packages/fasset-bots-core/src/actors/Challenger.ts) contains framework for such actor in FAsset system.
 
 ### Initialization
 
