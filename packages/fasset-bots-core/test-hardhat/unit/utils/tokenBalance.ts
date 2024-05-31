@@ -1,4 +1,4 @@
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import { Agent } from "../../../src/fasset/Agent";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Currencies } from "../../../src/utils";
@@ -8,6 +8,8 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgent } from "../../test-utils/helpers";
+import { CollateralType } from "../../../src/fasset/AssetManagerTypes";
+import { POOL_TOKEN_DECIMALS } from "../../../test/test-utils/collateral-data/CollateralData";
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
 
@@ -34,7 +36,7 @@ describe("TokenBalance unit tests", () => {
         ({ context, chain, agent } = await loadFixtureCopyVars(initialize));
     });
 
-    describe("Currency decimal conversion", () => {
+    describe("Currencies", () => {
         it("Should create currency converter for fasset", async () => {
             const converter = await Currencies.fasset(context);
             const amount = converter.parse("3.15");
@@ -63,6 +65,13 @@ describe("TokenBalance unit tests", () => {
             assert.equal(formatted, "1.2340");
             const formattedU = converter.format(toBNExp("1.234", 18), { decimals: 4, padRight: true });
             assert.equal(formattedU, "1.2340 WNAT");
+        });
+
+        it("Should create tokens", async () => {
+            const underlying = await Currencies.fassetUnderlyingToken(context);
+            expect(underlying.symbol).to.eq(context.chainInfo.symbol);
+            const pool = await Currencies.agentCollateralPoolToken(context, agent.vaultAddress);
+            expect(pool.decimals).to.eq(POOL_TOKEN_DECIMALS);
         });
     });
 });

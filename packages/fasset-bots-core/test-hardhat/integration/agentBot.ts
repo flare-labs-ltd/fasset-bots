@@ -5,7 +5,7 @@ import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
-import { AgentEntity } from "../../src/entities/agent";
+import { AgentEntity, AgentMinting } from "../../src/entities/agent";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../../src/fasset/AssetManagerTypes";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
@@ -213,7 +213,11 @@ describe("Agent bot tests", () => {
     });
 
     it("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
-        // create collateral reservation
+        // create multiple collateral reservations
+        const num = 10;
+        for (let i = 0; i < num; i++) {
+            await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        }
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
@@ -224,10 +228,13 @@ describe("Agent bot tests", () => {
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // run step
         await agentBot.runStep(orm.em);
-        // check if minting is done
+        // check if mintings are done
         orm.em.clear();
-        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
-        assert.equal(mintingDone.state, AgentMintingState.DONE);
+        const query = orm.em.createQueryBuilder(AgentMinting);
+        const mintings = await query.where({ agentAddress: agentBot.agent.vaultAddress }).andWhere({ state: AgentMintingState.DONE }).getResultList();
+        for (const mint of mintings) {
+            assert.equal(mint.state, AgentMintingState.DONE);
+        }
     });
 
     it("Should perform unstick minting - minter pays and time expires in indexer", async () => {
