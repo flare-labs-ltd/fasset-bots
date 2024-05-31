@@ -500,7 +500,7 @@ export class AgentBotCommands {
         if (raw) {
             await this.infoBot().printRawAgentInfo(agentVault);
         } else {
-            await this.infoBot().printAgentInfo(agentVault, this.ownerUnderlyingAddress);
+            await this.infoBot().printAgentInfo(agentVault, this.owner, this.ownerUnderlyingAddress);
         }
     }
 
