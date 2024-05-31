@@ -4,13 +4,14 @@ import { Liquidator } from "../../../src/actors/Liquidator";
 import { MockTrackedState } from "../../../src/mock/MockTrackedState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { ScopedRunner } from "../../../src/utils/events/ScopedRunner";
-import { sleep } from "../../../src/utils/helpers";
+import { checkedCast, sleep } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createTestAgent } from "../../test-utils/helpers";
+import { createTestAgent, createTestAgentAndMakeAvailable, createTestMinter } from "../../test-utils/helpers";
+import { MockChain } from "../../../src/mock/MockChain";
 use(spies);
 
 describe("Liquidator unit tests", () => {
@@ -22,6 +23,7 @@ describe("Liquidator unit tests", () => {
     let ownerAddress: string;
     let runner: ScopedRunner;
     let state: TrackedState;
+    let chain: MockChain;
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -33,6 +35,7 @@ describe("Liquidator unit tests", () => {
     async function initialize() {
         context = await createTestAssetContext(governance, testChainInfo.xrp);
         trackedStateContext = getTestAssetTrackedStateContext(context);
+        chain = checkedCast(trackedStateContext.blockchainIndexer.chain, MockChain);
         runner = new ScopedRunner();
         const lastBlock = await web3.eth.getBlockNumber();
         state = new TrackedState(trackedStateContext, lastBlock);
@@ -66,8 +69,15 @@ describe("Liquidator unit tests", () => {
 
     it("Should not handle full liquidation - error", async () => {
         const spyConsole = spy.on(console, "error");
-        const agent = await createTestAgent(context, ownerAddress);
+        // create actors
+        const agent = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const liquidator = new Liquidator(context, runner, liquidatorAddress, state, testNotifierTransports);
+        const minter = await createTestMinter(context, liquidatorAddress, chain);
+        // mint to liquidator address to be able to liquidate
+        const crt = await minter.reserveCollateral(agent.vaultAddress, 200);
+        const txHash0 = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash0);
         // change address to invoke error later
         expect(liquidator.address).to.eq(liquidatorAddress);
         await liquidator.handleFullLiquidationStarted(agent.vaultAddress);
