@@ -48,16 +48,18 @@ program
         const options: { config: string; secrets: string } = program.opts();
         const config = loadConfigFile(options.config);
         const [type, fassetSymbol] = findToken(config, token);
-        validateAddress(address, `Address ${address}`);
         if (type === "nat") {
+            validateAddress(address, `Address ${address}`);
             const bot = await InfoBotCommands.create(options.secrets, options.config, undefined);
             const balance = await TokenBalances.evmNative(bot.context);
             console.log(await balance.formatBalance(address));
         } else if (type === "fasset") {
+            validateAddress(address, `Address ${address}`);
             const bot = await InfoBotCommands.create(options.secrets, options.config, fassetSymbol);
             const balance = await TokenBalances.fasset(bot.context);
             console.log(await balance.formatBalance(address));
         } else if (type === "erc20") {
+            validateAddress(address, `Address ${address}`);
             const secrets = Secrets.load(options.secrets);
             const config = loadConfigFile(options.config);
             const apiKey = secrets.optional("apiKey.native_rpc");
