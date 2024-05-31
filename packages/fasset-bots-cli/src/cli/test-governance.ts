@@ -6,10 +6,10 @@ import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarela
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
 import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync, createReadStream } from "fs";
-import csv from 'csv-parser';
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress, validateDecimal } from "../utils/validation";
+import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
 import type { OptionValues } from "commander";
 
 const FakeERC20 = artifacts.require("FakeERC20");
@@ -78,29 +78,30 @@ program
 program
     .command("openBetaAgentRegister")
     .description("whitelist and fund agents with CFLR and fake collateral tokens (used for open-beta)")
-    .argument("agentsCsv", "path to CSV file with agent addresses and information")
-    .option("--usdc <amountUsdc>", "amount of testUSDC tokens minted to each user", "1000")
-    .option("--usdt <amountUsdt>", "amount of testUSDT tokens minted to each user", "1000")
-    .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0.5")
-    .action(async (agentsCsv: string, _options: OptionValues) => {
+    .option("--usdc <amountUsdc>", "amount of testUSDC tokens minted to each user", "0")
+    .option("--usdt <amountUsdt>", "amount of testUSDT tokens minted to each user", "0")
+    .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0")
+    .action(async (_options: OptionValues) => {
         const options: { config: string; secrets: string } = program.opts();
-        createReadStream(agentsCsv).pipe(csv()).on('data', async (data) => {
+        const registrationApi = new OpenBetaAgentRegistrationTransport(Secrets.load(options.secrets));
+        const unFundedAgents = await registrationApi.getUnfundedAgents();
+        for (const agent of unFundedAgents) {
             try {
-                if (data.sent_answer !== '1') return;
-                await whitelistAndDescribeAgent(options.secrets, options.config, data.agent_address, data.name, data.description, data.icon_url);
-                if (toBN(_options.usdc).gtn(0)) {
-                    await mintFakeTokens(options.secrets, options.config, "testUSDC", data.address, _options.usdc);
+                await whitelistAndDescribeAgent(options.secrets, options.config, agent.management_address, agent.tg_user_name, agent.description, agent.icon_url);
+                if (Number(_options.usdc) >= 0) {
+                    await mintFakeTokens(options.secrets, options.config, "testUSDC", agent.management_address, _options.usdc);
                 }
-                if (toBN(_options.usdt).gtn(0)) {
-                    await mintFakeTokens(options.secrets, options.config, "testUSDT", data.address, _options.usdt);
+                if (Number(_options.usdt) >= 0) {
+                    await mintFakeTokens(options.secrets, options.config, "testUSDT", agent.management_address, _options.usdt);
                 }
-                if (toBN(_options.eth).gtn(0)) {
-                    await mintFakeTokens(options.secrets, options.config, "testETH", data.address, _options.eth);
+                if (Number(_options.eth) >= 0) {
+                    await mintFakeTokens(options.secrets, options.config, "testETH", agent.management_address, _options.eth);
                 }
+                await registrationApi.confirmFundedAgent(agent.management_address);
             } catch (e) {
-                console.error(`Error with handling agent ${data.id} ${data.name}: ${e}`);
+                console.error(`Error with handling agent ${agent.tg_user_name}: ${e}`);
             }
-        });
+        }
     });
 
 toplevelRun(async () => {
