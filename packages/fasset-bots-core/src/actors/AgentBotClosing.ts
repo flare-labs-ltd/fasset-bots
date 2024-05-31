@@ -211,6 +211,7 @@ export class AgentBotClosing {
     }
 
     async handleAgentDestroyed(rootEm: EM) {
+        await this.agent.emptyAgentUnderlying(this.bot.ownerUnderlyingAddress);
         await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
             agentEnt.active = false;
         });
