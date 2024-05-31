@@ -1,9 +1,8 @@
 # AgentBot
 
-Agent is the main player in the FAsset system. Agent supplies collateral that is backing minted FAssets. Agent operate against minters and redeemers. Minter pays the Agent in underlying asset for the right to utilise Agent's collateral for minting. In this process underlying assets (BTC, XRP, ...) are paid and FAssets (FBTC, FXRP, ...) are minted on top of native chain.
-A redeemer does the opposite. It sends FAssets to the system, system burns those FAssets and redeemer receives the underlying asset in return.
+Agent is the main player in the FAsset system. It supplies collateral that is backing minted FAssets and operates against minters and redeemers. Minter pays the Agent in the underlying asset, such as BTC or XRP, to utilise Agent's collateral for minting FAssets like FBTC and FXRP on the native chain. Conversely, redeemer sends FAssets to the system, prompting the system to burn those FAssets and return the underlying asset to the redeemer.
 
-File [AgentBot.ts](../../src/actors/AgentBot.ts) contains framework for such bot AgentBot in FAsset system.
+File [AgentBot.ts](../../packages/fasset-bots-core/src/actors/AgentBot.ts) contains framework for such bot AgentBot in FAsset system.
 
 ## AgentBot Automation
 

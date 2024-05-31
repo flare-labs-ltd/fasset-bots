@@ -91,7 +91,7 @@ program
 
 program
     .command("createAccount")
-    .description("create new addres/private key pair on the underlying chain")
+    .description("create new address/private key pair on the underlying chain")
     .argument("<chainName>", "chain name, e.g. XRP or testXRP")
     .action(async (chainName: string) => {
         const account = generateUnderlyingAccount(chainName);
