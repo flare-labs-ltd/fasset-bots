@@ -275,8 +275,7 @@ async function validateUnderlyingBalance(minterBot: UserBotCommands, numberOfLot
     const requiredBalance = mintBalance.add(minterBot.context.chainInfo.minimumAccountBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
     validate(userBalance.gte(requiredBalance),
         squashSpace`User does not have enough ${balanceReader.symbol} available.
-                    Available ${balanceReader.format(userBalance)},
-                    required ${balanceReader.format(requiredBalance)}. Minting will probably fail.`);
+                    Available ${balanceReader.format(userBalance)}, required ${balanceReader.format(requiredBalance)}.`);
 }
 
 async function getPoolAddress(bot: PoolUserBotCommands, poolAddressOrTokenSymbol: string) {

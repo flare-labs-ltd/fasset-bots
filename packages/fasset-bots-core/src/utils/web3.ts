@@ -60,8 +60,8 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     contractSettings.waitFor = { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } };
     contractSettings.addressLocks = new FilesystemAddressLocks({
         lockDir: path.resolve(os.tmpdir(), "fasset/locks"),
-        waitTimeoutMS: 120_000,
-        lockExpirationMS: 300_000,
+        waitTimeoutMS: 180_000,
+        lockExpirationMS: 180_000,
     });
     contractSettings.resubmitTransaction = [
         { afterMS: 30_000, priceFactor: 1.2 },
