@@ -82,21 +82,21 @@ export const testChainInfo: Record<TestChainType, TestChainInfo> = {
 };
 
 export const testAgentBotSettings: Record<string, AgentBotSettings> = {
-    "ETH": {
+    "FETH": {
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
         minimumFreeUnderlyingBalance: toBNExp(0.01, 18),
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 18),
     },
-    "BTC": {
+    "FBTC": {
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
         minimumFreeUnderlyingBalance: toBNExp(0.001, 8),
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 8),
     },
-    "XRP": {
+    "FXRP": {
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,

@@ -44,7 +44,7 @@ describe("TokenBalance unit tests", () => {
             const formatted = converter.formatValue(toBN(1234000), { decimals: 4, padRight: true });
             assert.equal(formatted, "1.2340");
             const formattedU = converter.format(toBN(1234000), { decimals: 4, padRight: true });
-            assert.equal(formattedU, "1.2340 XRP");
+            assert.equal(formattedU, "1.2340 FXRP");
         });
 
         it("Should create currency converter for vault currency (testUSDC)", async () => {

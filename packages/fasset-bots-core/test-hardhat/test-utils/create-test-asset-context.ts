@@ -164,6 +164,8 @@ type CreateTestAssetContextOptions = {
     useFaultyWallet?: boolean;
     chain?: MockChain;
     stateConnectorClient?: MockStateConnectorClient;
+    fassetName?: string;
+    fassetSymbol?: string;
 };
 
 export async function createTestAssetContext(
@@ -209,7 +211,8 @@ export async function createTestAssetContext(
     const settings = createTestAssetManagerSettings(contracts, options.customParameters ?? parameters, chainInfo, options.requireEOAAddressProof);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, options.assetManagerControllerAddress ?? assetManagerController,
-        `F${chainInfo.name}`, `F${chainInfo.symbol}`, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
+        options.fassetName ?? `F${chainInfo.name}`, options.fassetSymbol ?? `F${chainInfo.symbol}`,
+        chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
     // indexer
     const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
     // return context
