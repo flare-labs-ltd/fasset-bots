@@ -17,7 +17,7 @@ import type { BaseContracts } from './utils/interfaces/contracts'
 
 const provider = new JsonRpcProvider("http://127.0.0.1:8545/")
 
-// two accounts funded with FtestXRP and CFLR
+// two accounts funded with FTestXRP and CFLR
 const SIGNER_PRIVATE_KEY = process.env.PRIVATE_KEY!
 
 describe("Uniswap V2 manipulation", () => {

@@ -69,12 +69,12 @@ describe("Toplevel runner and commands integration test", () => {
         parameterFile: "./fasset-config/coston/f-testxrp.json",
     };
 
-    const fakeXrpChainInfo: TestChainInfo = {
+    const simCoinXChainInfo: TestChainInfo = {
         ...testXrpChainInfo,
-        name: "Fake XRP",
-        symbol: "fakeXRP",
+        name: "SimCoinX",
+        symbol: "simCoinX",
         startPrice: 0.60,
-        parameterFile: "./fasset-config/coston/f-fakexrp.json",
+        parameterFile: "./fasset-config/coston/f-simcoinx.json",
     };
 
     const agentBotSettings: AgentBotSettings = {
@@ -85,7 +85,7 @@ describe("Toplevel runner and commands integration test", () => {
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
     };
 
-    const testChainInfos = [testXrpChainInfo, fakeXrpChainInfo];
+    const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];
 
     async function waitForEvent(contract: Truffle.ContractInstance, fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
         const sleepTime = 100;

@@ -20,7 +20,7 @@ import type { FakeERC20, Liquidator } from "../../types"
 const USDC_BALANCE = BigInt(100_000_000) * WeiPerEther
 // agent to liquidate
 const AGENT_ADDRESS = "0x6A3fad5275938549302C26678A487BfC5F9D8ba5"
-// governance is funded with FfakeXRP and CFLR, can mint USDC and set price reader prices
+// governance is funded with FSimCoinX and CFLR, can mint USDC and set price reader prices
 const GOVERNANCE_PVK = process.env.GOVERNANCE_PRIVATE_KEY!
 
 const provider = new JsonRpcProvider("http://127.0.0.1:8545/")

@@ -18,7 +18,7 @@ NOTE: The command `user-bot` must also be run with `yarn` prefix i.e. `yarn user
 
 ## Common arguments
 
-The script has one mandatory common argument `-f <fasset_symbol>` (except for subcommand `generateSecrets`). Argument `<fasset_symbol>` can currently have values `FtestXRP` and `FfakeXRP`. It is mandatory for all subcommands except `generateSecrets`.
+The script has one mandatory common argument `-f <fasset_symbol>` (except for subcommand `generateSecrets`). Argument `<fasset_symbol>` can currently have values `FTestXRP` and `FSimCoinX`. It is mandatory for all subcommands except `generateSecrets`.
 
 There are also two optional common arguments:
 
@@ -49,11 +49,11 @@ The minting is executed with command
 
 e.g., for minting 3 lots:
 
-    user-bot -f FtestXRP mint 3
+    user-bot -f FTestXRP mint 3
 
 or by using a specific agent:
 
-    user-bot -f FtestXRP mint -a 0xe7548D6180007be8e6c2FF87Cad4B592d7E7EBFb 3
+    user-bot -f FTestXRP mint -a 0xe7548D6180007be8e6c2FF87Cad4B592d7E7EBFb 3
 
 This should perform the complete minting process and transfer the minted FAssets to the user's address.
 
@@ -65,7 +65,7 @@ For minting against a specific agent, the user must first obtain the list of pub
 
 e.g.
 
-    user-bot -f FtestXRP agents
+    user-bot -f FTestXRP agents
 
 This prints the list of agent addresses, and for each agent the maximum number of lots they can mint and the fee.
 
@@ -77,7 +77,7 @@ If something goes wrong after the underlyng payment has been made (e.g. loss of 
 
 e.g.
 
-    user-bot -f FtestXRP mintExecute 305
+    user-bot -f FTestXRP mintExecute 305
 
 The `minting_id` is printed when the minting is started, but can also be queried with the command
 
@@ -93,7 +93,7 @@ Redemption is performed by the command
 
 e.g, to redeem 3 lots
 
-    user-bot -f FtestXRP redeem 3
+    user-bot -f FTestXRP redeem 3
 
 After making requests and burning the fassets, the script ends. It may take an hour or more for the redemption to be completed, i.e. for the underlying funds to arrive to the user address.
 
@@ -113,7 +113,7 @@ For redemptions in status `DEFAULT`, the user should trigger the default payment
 
 e.g.
 
-    user-bot -f FtestXRP redemptionDefault 208
+    user-bot -f FTestXRP redemptionDefault 208
 
 ## Collateral pool providers
 
@@ -125,7 +125,7 @@ where `pool_id` is the pool token symbol and `amount` is the amount in CFLR to p
 
 e.g.
 
-    user-bot -f FtestXRP enterPool TXRP-AGENTBOB-2 1000
+    user-bot -f FTestXRP enterPool TXRP-AGENTBOB-2 1000
 
 To exit the pool, which transfers collateral and the proportional amouint of pool FAsset fees to the user's account, execute
 
@@ -133,11 +133,11 @@ To exit the pool, which transfers collateral and the proportional amouint of poo
 
 e.g.
 
-    user-bot -f FtestXRP exitPool TXRP-AGENTBOB-2 500
+    user-bot -f FTestXRP exitPool TXRP-AGENTBOB-2 500
 
 or
 
-    user-bot -f FtestXRP exitPool TXRP-AGENTBOB-2 all
+    user-bot -f FTestXRP exitPool TXRP-AGENTBOB-2 all
 
 To list all the pool holdings by the user for some FAsset type execute
 
@@ -145,7 +145,7 @@ To list all the pool holdings by the user for some FAsset type execute
 
 e.g.
 
-    user-bot -f FtestXRP poolHoldings
+    user-bot -f FTestXRP poolHoldings
 
 To list all teh available pools for some FAsset type, together with statistics, execute
 
@@ -153,4 +153,4 @@ To list all teh available pools for some FAsset type, together with statistics, 
 
 e.g.
 
-    user-bot -f FtestXRP pools
+    user-bot -f FTestXRP pools

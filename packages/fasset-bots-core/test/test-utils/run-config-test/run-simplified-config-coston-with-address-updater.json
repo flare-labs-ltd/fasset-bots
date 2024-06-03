@@ -9,7 +9,7 @@
         "readLogsChunkSize": 10
     },
     "fAssets": {
-        "FtestXRP": {
+        "FTestXRP": {
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
@@ -23,7 +23,7 @@
         "vaultCollateralReserveFactor": "0.1",
         "poolCollateralReserveFactor": "0.1",
         "fAssets": {
-            "FtestXRP": {
+            "FTestXRP": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "0.01"
             }

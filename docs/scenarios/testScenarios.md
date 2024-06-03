@@ -5,7 +5,7 @@
 Preconditions:
 - [Properly configure Challenger bot](https://gitlab.com/flarenetwork/fasset-bots/-/blob/master/README.md#challenger).
 - [Properly configure Agent bot](https://gitlab.com/flarenetwork/fasset-bots/-/blob/master/README.md#agent-bot).
-- Choose Fasset (e.g. `FtestXRP`) and use it in challenger bot script and later in agent's cli commands.
+- Choose Fasset (e.g. `FTestXRP`) and use it in challenger bot script and later in agent's cli commands.
 - Choose default challenge strategy (i.e. in challenger's run-config, there should not be variable `challengeStrategy`).
 
 ### Challenge illegal payment
@@ -62,15 +62,15 @@ Agent part:
 Preconditions:
 - [Properly configure Liquidator bot](https://gitlab.com/flarenetwork/fasset-bots/-/blob/master/README.md#liquidator).
 - [Properly configure Agent bot](https://gitlab.com/flarenetwork/fasset-bots/-/blob/master/README.md#agent-bot).
-- Choose Fasset `FfakeXRP` and use it in liquidator bot script and later in agent's cli commands.
+- Choose Fasset `FSimCoinX` and use it in liquidator bot script and later in agent's cli commands.
 - Choose default liquidation strategy (i.e. in liquidator's run-config, there should not be variable `liquidationStrategy`).
 
 ###  Liquidate agent due to price changes:
 Liquidator part:
-- Select appropriate constants (`LIQUIDATOR_ADDRESS`, `LIQUIDATOR_PRIVATE_KEY`, `FASSET_BOT_CONFIG` and `fAssetSymbol = 'FfakeXRP'`) in `src/run/run-liquidator.ts`.
+- Select appropriate constants (`LIQUIDATOR_ADDRESS`, `LIQUIDATOR_PRIVATE_KEY`, `FASSET_BOT_CONFIG` and `fAssetSymbol = 'FSimCoinX'`) in `src/run/run-liquidator.ts`.
 - Build project `yarn build`.
 - Run liquidator script `node dist/src/run/run-liquidator.js`.
 - Optionally mint against available agents with liquidator address to get some Fassets. (Without Fassets liquidator will still change agent's status to LIQUIDATION).
 
 Agent part:
-- Wait for Fasset developers to create agent and environment to manipulate with prices. Once prices on `fakeXRP` will be manipulated, `PriceEpochFinalized` event will get triggered and picked up by run liquidator script.
+- Wait for Fasset developers to create agent and environment to manipulate with prices. Once prices on `SimCoinX` will be manipulated, `PriceEpochFinalized` event will get triggered and picked up by run liquidator script.

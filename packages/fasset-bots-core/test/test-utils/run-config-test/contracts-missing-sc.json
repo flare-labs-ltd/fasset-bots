@@ -253,18 +253,18 @@
         "address": "0xf3Ac549Bc139a0d44Ee4E54063F0e8558fDC07ba"
     },
     {
-        "name": "AssetManager_FtestXRP",
+        "name": "AssetManager_FTestXRP",
         "contractName": "AssetManager.sol",
         "address": "0x78c5b6289642Af6f47526E3D845395c9a53b3E6B"
     },
     {
-        "name": "FtestXRP",
+        "name": "FTestXRP",
         "contractName": "FAsset.sol",
         "address": "0xA86379bC8644Ce1919cc750844E819c0a2cD28dB",
         "mustSwitchToProduction": true
     },
     {
-        "name": "AddressValidator_FtestXRP",
+        "name": "AddressValidator_FTestXRP",
         "contractName": "RippleAddressValidator.sol",
         "address": "0x75e59c0434ADdE605033313D01df992f3ac43Ece"
     },
@@ -274,18 +274,18 @@
         "address": "0x4B63A5045b8ac1b726C7E71A3dDa25A1bDeEa135"
     },
     {
-        "name": "AssetManager_FfakeXRP",
+        "name": "AssetManager_FSimCoinX",
         "contractName": "AssetManager.sol",
         "address": "0x6EDbc084b01e8851a9Ebe8d96DA6A7E33628aB4e"
     },
     {
-        "name": "FfakeXRP",
+        "name": "FSimCoinX",
         "contractName": "FAsset.sol",
         "address": "0x3F38Daa70175430cdA64a83943e12e155eD75706",
         "mustSwitchToProduction": true
     },
     {
-        "name": "AddressValidator_FfakeXRP",
+        "name": "AddressValidator_FSimCoinX",
         "contractName": "RippleAddressValidator.sol",
         "address": "0xe2b4b320ea04Ab61E2145073dFD7619247547Eae"
     }

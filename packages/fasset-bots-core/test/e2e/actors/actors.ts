@@ -33,7 +33,7 @@ import { testNotifierTransports } from "../../test-utils/testNotifierTransports"
 use(chaiAsPromised);
 use(spies);
 
-const fAssetSymbol = "FtestXRP";
+const fAssetSymbol = "FTestXRP";
 
 describe("Actor tests - coston", () => {
     let accounts: string[];

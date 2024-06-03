@@ -166,7 +166,7 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
         "readLogsChunkSize": 10
     },
     "fAssets": {
-        "FtestXRP": {
+        "FTestXRP": {
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
@@ -299,7 +299,7 @@ Underlying addresses `owner.[chainId].address` and private keys and `owner.[chai
 `yarn agent-bot createUnderlyingAccount -f <fassetSymbol>`
 
 Example:
-`yarn agent-bot createUnderlyingAccount -f FtestXRP`
+`yarn agent-bot createUnderlyingAccount -f FTestXRP`
 
 Variable `wallet.encryption_password` should be at least 16 characters long. It can be generated via command
 

@@ -8,12 +8,12 @@ use(chaiAsPromised);
 describe("InfoBot cli commands unit tests", () => {
 
     it("Should create InfoBot", async () => {
-        const infoBot1 = await InfoBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FfakeXRP");
+        const infoBot1 = await InfoBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FSimCoinX");
         expect(infoBot1.context.assetManager.address).to.not.eq(ZERO_ADDRESS);
-        expect(await infoBot1.context.fAsset.symbol()).to.eq("FfakeXRP");
+        expect(await infoBot1.context.fAsset.symbol()).to.eq("FSimCoinX");
         const infoBot2 = await InfoBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, undefined);
         expect(infoBot2.context.assetManager.address).to.not.eq(ZERO_ADDRESS);
-        expect(await infoBot2.context.fAsset.symbol()).to.eq("FtestXRP");
+        expect(await infoBot2.context.fAsset.symbol()).to.eq("FTestXRP");
     });
 
     it("Should not create InfoBot", async () => {

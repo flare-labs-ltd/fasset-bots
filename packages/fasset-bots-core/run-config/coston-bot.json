@@ -12,7 +12,7 @@
         "faucet": "https://faucet.flare.network"
     },
     "fAssets": {
-        "FtestXRP": {
+        "FTestXRP": {
             "chainId": "testXRP",
             "name": "Test XRP",
             "symbol": "testXRP",
@@ -23,10 +23,10 @@
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/"
         },
-        "FfakeXRP": {
+        "FSimCoinX": {
             "chainId": "testXRP",
-            "name": "Fake XRP",
-            "symbol": "fakeXRP",
+            "name": "SimCoinX",
+            "symbol": "simCoinX",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
@@ -41,11 +41,11 @@
         "vaultCollateralReserveFactor": "0.1",
         "poolCollateralReserveFactor": "0.1",
         "fAssets": {
-            "FtestXRP": {
+            "FTestXRP": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "0.01"
             },
-            "FfakeXRP": {
+            "FSimCoinX": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "0.01"
             }

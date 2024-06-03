@@ -77,7 +77,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 1. Prepare agent settings file
 
     ```console
-    yarn agent-bot -f FtestXRP create --prepare
+    yarn agent-bot -f FTestXRP create --prepare
     ```
 
 2. Choose the suffix for your agent's collateral pool and fill in the `poolTokenSuffix` field. The suffix should include only upper-case letters, numbers, and `-` symbols in-between. For example, `MY-ALPHA-AGENT-1`.
@@ -92,7 +92,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 5. Create the agent specifying the Fasset and agent settings. Please keep in mind that this operation can take a while.
 
     ```console
-    yarn agent-bot -f FtestXRP create tmp.agent-settings.json
+    yarn agent-bot -f FTestXRP create tmp.agent-settings.json
     ```
 
 6. To make your newly created agent public, it needs to hold enough collateral to mint one lot (currently set to 10) of FXRP. This means its agent vault contract needs to be funded with the two collaterals (CFLR and a stablecoin or wrapped ETH) primarily held by your `owner.native.address`.
@@ -100,7 +100,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
     3.1 The first one is the vault collateral, chosen by you previously. It can be deposited using the command:
 
     ```console
-    yarn agent-bot depositVaultCollateral <agentVaultAddress> <amount> --fasset FtestXRP
+    yarn agent-bot depositVaultCollateral <agentVaultAddress> <amount> --fasset FTestXRP
     ```
 
     Note that `amount` is specified in the base unit of the chosen collateral. For example, if choosing USDC, it having 6 decimals, means inputting `amount` of 5.1 USDC will be treated as 5100000 in their subunit.
@@ -108,7 +108,7 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
     3.2 Then you need to deposit CFLR, which is done by buying collateral pool tokens using this command:
 
     ```console
-    yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> --fasset FtestXRP
+    yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount> --fasset FTestXRP
     ```
 
     Again note that `amount` is specified in the base unit of CFLR. So, it having 18 decimals, means inputting `amount` of 1000.1 CLFR will be treated as 1000100000000000000000 of the subunit (Wei).
@@ -116,13 +116,13 @@ The server or virtual machine requires a minimum of 2 CPUs and 4GB RAM. If the d
 7. Register your agent as available to the network. Note that your agent owner's Flare account has to be whitelisted. Otherwise, it will fail. Execute this command to register your agent:
 
     ```console
-    yarn agent-bot enter <agentVaultAddress> --fasset FtestXRP
+    yarn agent-bot enter <agentVaultAddress> --fasset FTestXRP
     ```
 
 8. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command.
 
     ```console
-    yarn user-bot agents --fasset FtestXRP
+    yarn user-bot agents --fasset FTestXRP
     ```
 
 ## Run the agent bot
@@ -141,17 +141,17 @@ We also provide the `systemd` services for running the bot as a daemon. For this
 
 2. Fund the user wallet with testnet XRP. You can use the XRP testnet [faucet](https://yusufsahinhamza.github.io/xrp-testnet-faucet/). Please keep in mind that agents take a minting fee.
 
-3. Mint the FtestXRP by running the command:
+3. Mint the FTestXRP by running the command:
 
     ```console
-    yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FtestXRP --secrets secrets.json
+    yarn user-bot mint -a <agentVaultAddress> <amountLots> --fasset FTestXRP --secrets secrets.json
     ```
 
     Example:
     Note: It might take a while to approve payments and get prices.
 
     ```console
-    $ yarn user-bot mint -a 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FtestXRP
+    $ yarn user-bot mint -a 0x97204bd339e5e33acc7675dea5593f254BD8476C 1 -f FTestXRP
     Initializing environment...
     Environment successfully initialized.
     Reserving collateral...
@@ -172,24 +172,24 @@ We also provide the `systemd` services for running the bot as a daemon. For this
 4. If minting fails, you can execute the verification again, providing the payment identifier that you got when minting. In this example, it is `18455`.
 
    ```console
-   yarn user-bot mintExecute PAYMENT_ID -f FtestXRP -s secrets.json
+   yarn user-bot mintExecute PAYMENT_ID -f FTestXRP -s secrets.json
    ```
 
 ## Redeeming
 
 1. Fund the user wallet with some CFLR that you can find in the `secrets.json` file under `user.native_address`. You can get the CFLR tokens from the [faucet](https://faucet.towolabs.com/). Please keep in mind that a redemption fee is paid out to agents to cover their underlying transaction fees.
 
-2. Redeem the FtestXRP by running the command:
+2. Redeem the FTestXRP by running the command:
 
     ```console
-    yarn user-bot redeem <amountLots> -f FtestXRP --secrets secrets.json
+    yarn user-bot redeem <amountLots> -f FTestXRP --secrets secrets.json
     ```
 
     Example:
     note: It might take a while to get payment proofs and prices.
 
     ```console
-    $ yarn user-bot redeem 1 -f FtestXRP
+    $ yarn user-bot redeem 1 -f FTestXRP
     Initializing environment...
     Environment successfully initialized.
     Asking for redemption of 1 lots
