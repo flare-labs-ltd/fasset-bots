@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
 import { loadConfigFile, updateConfigFilePaths, validateAgentConfigFile, validateConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
-import { COSTON_CONTRACTS_EXTENDS_1, COSTON_CONTRACTS_EXTENDS_2, COSTON_CONTRACTS_INVALID, COSTON_CONTRACTS_LOOP_1, COSTON_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
+import { COSTON_CONFIG_EXTENDS_1, COSTON_CONFIG_EXTENDS_2, COSTON_CONFIG_INVALID, COSTON_CONFIG_LOOP_1, COSTON_RUN_CONFIG_CONTRACTS } from "../../test-utils/test-bot-config";
 import { resolveInFassetBotsCore } from "../../../src/utils";
 use(chaiAsPromised);
 
@@ -23,14 +23,14 @@ describe("config file loader tests", () => {
     });
 
     it("Should load config file with extends", async () => {
-        const configFile = loadConfigFile(COSTON_CONTRACTS_EXTENDS_1);
+        const configFile = loadConfigFile(COSTON_CONFIG_EXTENDS_1);
         expect(configFile.contractsJsonFile).eq(resolveInFassetBotsCore("fasset-deployment/coston.json"));
         expect(configFile.assetManagerController).eq("0x82Ddf05b6e530260866E619a59d41D358412C466");
         expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
     });
 
     it("Should load config file with extends - 2 level", async () => {
-        const configFile = loadConfigFile(COSTON_CONTRACTS_EXTENDS_2);
+        const configFile = loadConfigFile(COSTON_CONFIG_EXTENDS_2);
         expect(configFile.contractsJsonFile).eq(resolveInFassetBotsCore("fasset-deployment/coston.json"));
         expect(configFile.assetManagerController).eq("0x82Ddf05b6e530260866E619a59d41D358412C466");
         expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
@@ -40,12 +40,12 @@ describe("config file loader tests", () => {
     });
 
     it("Should not load config file - schema validation", async () => {
-        expect(() => loadConfigFile(COSTON_CONTRACTS_INVALID))
+        expect(() => loadConfigFile(COSTON_CONFIG_INVALID))
             .to.throw(/Invalid bot config JSON format: *must have required property/);
     });
 
     it("Should not load config file - extends loop", async () => {
-        expect(() => loadConfigFile(COSTON_CONTRACTS_LOOP_1))
+        expect(() => loadConfigFile(COSTON_CONFIG_LOOP_1))
             .to.throw(/Circular config file dependency/);
     });
 
