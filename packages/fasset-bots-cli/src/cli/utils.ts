@@ -88,7 +88,11 @@ program
     .argument("<amount>", "amount to send")
     .argument("[reference]", "payment reference")
     .action(async (from: string, to: string, amount: string, reference: string | null, cmdOptions: { fasset: string }) => {
-        const { wallet, fassetInfo } = await setupContext(cmdOptions.fasset);
+        const options: { config: string } = program.opts();
+        const config = loadConfigFile(options.config);
+        const [_, fassetSymbol] = findToken(config, cmdOptions.fasset);
+        assertNotNullCmd(fassetSymbol, `Invalid fasset symbol ${cmdOptions.fasset}`);
+        const { wallet, fassetInfo } = await setupContext(fassetSymbol);
         const currency = new Currency(fassetInfo.tokenSymbol, fassetInfo.tokenDecimals);
         const minBN = currency.parse(fassetInfo.minimumAccountBalance ? fassetInfo.minimumAccountBalance.toString() : BN_ZERO.toString());
         await enoughUnderlyingFunds(wallet, from, toBN(amount), minBN);

@@ -1,3 +1,4 @@
+import { loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { resolveFromPackageRoot, resolveInFassetBotsCore, squashSpace, stripIndent } from "@flarelabs/fasset-bots-core/utils";
 import { Command } from "commander";
 import fs from "fs";
@@ -44,8 +45,22 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
             .makeOptionMandatory();
     }
 
+    function normalizeFAssetNameCase(configFName: string, fasset: string) {
+        try {
+            const configFile = loadConfigFile(configFName);
+            for (const fassetKey of Object.keys(configFile.fAssets)) {
+                if (fassetKey.toLowerCase() === fasset.toLowerCase()) {
+                    return fassetKey;
+                }
+            }
+        } catch (error) {
+            // ignore errors loading config file - will be reported later
+        }
+        return fasset;
+    }
+
     function verifyFilesExist() {
-        const options: { config: string; secrets: string; } = program.opts();
+        const options: { config: string; secrets: string; fasset?: string; } = program.opts();
         // check config file
         if (!fs.existsSync(options.config)) {
             program.error(`Config file ${options.config} does not exist.`);
@@ -56,6 +71,10 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
             program.error(stripIndent`Secrets file ${options.secrets} does not exist. To create new secrets file, please execute
                                           yarn key-gen generateSecrets ${userOpts[user] ?? ""} -o "${options.secrets}"
                                       and edit the file as instructed by generateSecrets.`);
+        }
+        // make -f option effectively case-insensitive
+        if (options.fasset) {
+            program.setOptionValue("fasset", normalizeFAssetNameCase(options.config, options.fasset));
         }
     }
 
