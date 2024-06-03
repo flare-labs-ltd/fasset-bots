@@ -168,8 +168,9 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
     "fAssets": {
         "FTestXRP": {
             "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
+            "tokenName": "Test XRP",
+            "tokenSymbol": "testXRP",
+            "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"
         }

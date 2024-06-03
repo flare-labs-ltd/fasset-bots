@@ -11,8 +11,7 @@
     "fAssets": {
         "FTestXRP": {
             "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
+            "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",

@@ -18,7 +18,7 @@ describe("config file loader tests", () => {
         const configFile = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         expect(configFile.contractsJsonFile).eq(resolveInFassetBotsCore("fasset-deployment/coston.json"));
         expect(configFile.assetManagerController).eq(undefined);
-        expect(configFile.fAssets.FTestXRP.symbol).eq("testXRP");
+        expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
         expect(configFile.ormOptions?.dbName).matches(/fasset-bots-coston\.[0-9a-fA-F]{8}\.db/)
     });
 
@@ -26,14 +26,14 @@ describe("config file loader tests", () => {
         const configFile = loadConfigFile(COSTON_CONTRACTS_EXTENDS_1);
         expect(configFile.contractsJsonFile).eq(resolveInFassetBotsCore("fasset-deployment/coston.json"));
         expect(configFile.assetManagerController).eq("0x82Ddf05b6e530260866E619a59d41D358412C466");
-        expect(configFile.fAssets.FTestXRP.symbol).eq("testXRP");
+        expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
     });
 
     it("Should load config file with extends - 2 level", async () => {
         const configFile = loadConfigFile(COSTON_CONTRACTS_EXTENDS_2);
         expect(configFile.contractsJsonFile).eq(resolveInFassetBotsCore("fasset-deployment/coston.json"));
         expect(configFile.assetManagerController).eq("0x82Ddf05b6e530260866E619a59d41D358412C466");
-        expect(configFile.fAssets.FTestXRP.symbol).eq("testXRP");
+        expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
         expect(configFile.fAssets.FTestXRP.walletUrl).eq("https://my.wallet.xyz");
         expect(configFile.fAssets.Fnothing).eq(undefined);  // cannot override unknown fasset
         expect(configFile.ormOptions?.dbName).eq("fasset-bots-coston.82Ddf05b.db")

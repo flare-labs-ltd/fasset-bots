@@ -189,8 +189,8 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
     const decimals = Number(settings.assetDecimals);
     return {
         chainId: chainId,
-        name: fassetInfo.name,
-        symbol: fassetInfo.symbol,
+        name: fassetInfo.tokenName,
+        symbol: fassetInfo.tokenSymbol,
         decimals: decimals,
         amgDecimals: Number(settings.assetMintingDecimals),
         requireEOAProof: settings.requireEOAAddressProof,

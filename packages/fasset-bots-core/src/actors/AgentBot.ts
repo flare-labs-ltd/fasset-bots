@@ -139,7 +139,7 @@ export class AgentBot {
         // save state
         const agentEntity = new AgentEntity();
         agentEntity.chainId = context.chainInfo.chainId.sourceId;
-        agentEntity.chainSymbol = context.chainInfo.symbol;
+        agentEntity.fassetSymbol = await context.fAsset.symbol();
         agentEntity.ownerAddress = agent.owner.managementAddress;
         agentEntity.vaultAddress = agent.vaultAddress;
         agentEntity.underlyingAddress = agent.underlyingAddress;

@@ -209,7 +209,7 @@ export async function createTestAssetContext(
     const settings = createTestAssetManagerSettings(contracts, options.customParameters ?? parameters, chainInfo, options.requireEOAAddressProof);
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, options.assetManagerControllerAddress ?? assetManagerController,
-        chainInfo.name, chainInfo.symbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
+        `F${chainInfo.name}`, `F${chainInfo.symbol}`, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
     // indexer
     const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
     // return context
