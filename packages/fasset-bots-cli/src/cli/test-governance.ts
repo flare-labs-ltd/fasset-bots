@@ -154,17 +154,18 @@ async function finalizeAgenOpenBetaRegistration(config: string, secrets: string,
     amountNat: string, amountUsdt: string, amountUsdc: string, amountEth: string
 ) {
     const registrationApi = new OpenBetaAgentRegistrationTransport(Secrets.load(secrets));
-    const unFundedAgents = await registrationApi.getUnfundedAgents();
+    const unFundedAgents = await registrationApi.unfinalizedRegistrations();
     for (const agent of unFundedAgents) {
         try {
-            await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.tg_user_name, agent.description, agent.icon_url);
-            if (Number(amountNat) >= 0) await transferNatFromDeployer(secrets, config, amountNat, agent.management_address)
-            if (Number(amountUsdc) >= 0) await mintFakeTokens(secrets, config, "testUSDC", agent.management_address, amountUsdc);
-            if (Number(amountUsdt) >= 0) await mintFakeTokens(secrets, config, "testUSDT", agent.management_address, amountUsdt);
-            if (Number(amountEth) >= 0) await mintFakeTokens(secrets, config, "testETH", agent.management_address, amountEth);
-            await registrationApi.confirmFundedAgent(agent.management_address);
+            await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
+            if (Number(amountNat) > 0) await transferNatFromDeployer(secrets, config, amountNat, agent.management_address)
+            if (Number(amountUsdc) > 0) await mintFakeTokens(secrets, config, "testUSDC", agent.management_address, amountUsdc);
+            if (Number(amountUsdt) > 0) await mintFakeTokens(secrets, config, "testUSDT", agent.management_address, amountUsdt);
+            if (Number(amountEth) > 0) await mintFakeTokens(secrets, config, "testETH", agent.management_address, amountEth);
+            await registrationApi.finalizeRegistration(agent.management_address);
+            console.log(`Agent ${agent.agent_name} registeration finalized`)
         } catch (e) {
-            console.error(`Error with handling agent ${agent.tg_user_name}: ${e}`);
+            console.error(`Error with handling agent ${agent.agent_name}: ${e}`);
         }
     }
 }
