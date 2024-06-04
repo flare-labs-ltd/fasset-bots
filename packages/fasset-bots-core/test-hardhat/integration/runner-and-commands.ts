@@ -18,7 +18,6 @@ import { testNotifierTransports } from "../../test/test-utils/testNotifierTransp
 import { FakeERC20Instance, Truffle } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { readFileSync } from "fs";
 
 const StateConnector = artifacts.require("StateConnectorMock");
 
@@ -110,8 +109,7 @@ describe("Toplevel runner and commands integration test", () => {
     }
 
     async function createUserCommands(context: IAssetAgentContext) {
-        const fassetSymbol = await context.fAsset.symbol();
-        return new UserBotCommands(context, fassetSymbol, userAddress, userUnderlyingAddress, "./test-data");
+        return new UserBotCommands(context, context.fAssetSymbol, userAddress, userUnderlyingAddress, "./test-data");
     }
 
     before(async () => {
@@ -130,19 +128,14 @@ describe("Toplevel runner and commands integration test", () => {
         // secrets
         secrets = createTestSecrets(testChainInfos.map(ci => ci.chainId), ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
         // create contexts
-        let firstFAsset: string;
         for (const chainInfo of testChainInfos) {
-            const parameters = JSON.parse(readFileSync(chainInfo.parameterFile!).toString());
-            const fassetName = parameters.fAssetName;
-            const fassetSymbol = parameters.fAssetSymbol;
-            firstFAsset ??= fassetSymbol;
             const chain = await getOrCreateAsync(chains, chainInfo.chainId, () => createTestChain(chainInfo));
-            const context = await createTestAssetContext(accounts[0], chainInfo, { contracts, chain, stateConnectorClient, fassetName, fassetSymbol });
-            contexts.set(fassetSymbol, context);
-            agentBotSettingsMap.set(fassetSymbol, agentBotSettings);
+            const context = await createTestAssetContext(accounts[0], chainInfo, { contracts, chain, stateConnectorClient });
+            contexts.set(context.fAssetSymbol, context);
+            agentBotSettingsMap.set(context.fAssetSymbol, agentBotSettings);
         }
         // set work address mapping
-        const context0 = contexts.get(firstFAsset!)!;
+        const context0 = firstValue(contexts)!;
         await context0.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay }));

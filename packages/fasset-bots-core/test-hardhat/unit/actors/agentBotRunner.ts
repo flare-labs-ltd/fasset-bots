@@ -31,7 +31,7 @@ describe("Agent bot runner tests", () => {
         orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
-        contexts.set(await context.fAsset.symbol(), context);
+        contexts.set(context.fAssetSymbol, context);
         return { orm, context, contexts };
     }
 
