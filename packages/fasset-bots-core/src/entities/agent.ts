@@ -18,7 +18,7 @@ export class AgentEntity {
     chainId!: string;
 
     @Property()
-    chainSymbol!: string;
+    fassetSymbol!: string;
 
     // This is management address, which is immutable. The actuasl address used in all trabsactions will be the work address,
     // which is mutable and not recorded in the database. It can be obtained from chain by calling `agentOwnerRegistry.getWorkAddress(ownerAddress)`.

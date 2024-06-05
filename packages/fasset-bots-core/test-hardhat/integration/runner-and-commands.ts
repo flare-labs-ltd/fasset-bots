@@ -69,12 +69,10 @@ describe("Toplevel runner and commands integration test", () => {
         parameterFile: "./fasset-config/coston/f-testxrp.json",
     };
 
-    const fakeXrpChainInfo: TestChainInfo = {
+    const simCoinXChainInfo: TestChainInfo = {
         ...testXrpChainInfo,
-        name: "Fake XRP",
-        symbol: "fakeXRP",
         startPrice: 0.60,
-        parameterFile: "./fasset-config/coston/f-fakexrp.json",
+        parameterFile: "./fasset-config/coston/f-simcoinx.json",
     };
 
     const agentBotSettings: AgentBotSettings = {
@@ -85,7 +83,7 @@ describe("Toplevel runner and commands integration test", () => {
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
     };
 
-    const testChainInfos = [testXrpChainInfo, fakeXrpChainInfo];
+    const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];
 
     async function waitForEvent(contract: Truffle.ContractInstance, fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
         const sleepTime = 100;
@@ -111,8 +109,7 @@ describe("Toplevel runner and commands integration test", () => {
     }
 
     async function createUserCommands(context: IAssetAgentContext) {
-        const fassetSymbol = await context.fAsset.symbol();
-        return new UserBotCommands(context, fassetSymbol, userAddress, userUnderlyingAddress, "./test-data");
+        return new UserBotCommands(context, context.fAssetSymbol, userAddress, userUnderlyingAddress, "./test-data");
     }
 
     before(async () => {
@@ -134,11 +131,11 @@ describe("Toplevel runner and commands integration test", () => {
         for (const chainInfo of testChainInfos) {
             const chain = await getOrCreateAsync(chains, chainInfo.chainId, () => createTestChain(chainInfo));
             const context = await createTestAssetContext(accounts[0], chainInfo, { contracts, chain, stateConnectorClient });
-            contexts.set(chainInfo.symbol, context);
-            agentBotSettingsMap.set(chainInfo.symbol, agentBotSettings);
+            contexts.set(context.fAssetSymbol, context);
+            agentBotSettingsMap.set(context.fAssetSymbol, agentBotSettings);
         }
         // set work address mapping
-        const context0 = contexts.get(testChainInfos[0].symbol)!;
+        const context0 = firstValue(contexts)!;
         await context0.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay }));

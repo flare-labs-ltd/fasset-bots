@@ -12,7 +12,7 @@ use(chaiAsPromised);
 use(spies);
 
 const fassetBotConfig = TEST_FASSET_BOT_CONFIG;
-const fAssetSymbol = "FtestXRP";
+const fAssetSymbol = "FTestXRP";
 
 describe("AgentBot cli commands unit tests", () => {
     let secrets: Secrets;

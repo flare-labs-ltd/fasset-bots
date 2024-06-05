@@ -54,7 +54,7 @@ program
 program
     .command("coston-beta").description("methods regarding used dex")
     .argument("action <adjust-dex|remove-liquidity|wrap-wnat|unwrap-wnat>", "action to perform")
-    .option("-f, --f-asset <fTestXRP>", "address of the relevant f-asset", "FtestXRP")
+    .option("-f, --f-asset <fTestXRP>", "address of the relevant f-asset", "FTestXRP")
     .option("-s, --slippage <bips>", "slippage applied to all of the registered pools (in bips)")
     .option("-v, --volume <bigint>", "amount of token whose swap produces the given slippage")
     .option("-m, --max-spend-ratio <number>", "maximum ratio of the balance willing to spend in this tx")
@@ -63,7 +63,7 @@ program
         const opts = { ..._opts, ...program.opts() }
         const assetManager = getAssetManagerAddress(opts.network, opts.fAsset)
         const liquidityPools = getDexPools(opts.network, opts.fAsset)
-        // target swapping to test xrp (or fake xrp later)
+        // target swapping to test xrp (or sim coin x later)
         const manipulator = await DexManipulator.create(opts.network, process.env.RPC_URL!, assetManager, process.env.PRIVATE_KEY!)
         if (action === "adjust-dex") {
             if (Number(opts.slippage === undefined + opts.volume === undefined) == 1) {

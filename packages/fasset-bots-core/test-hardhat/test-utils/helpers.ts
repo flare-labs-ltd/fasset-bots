@@ -64,7 +64,7 @@ export async function createTestAgentBot(
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
     const agentVaultSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentVaultSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    const agentBotSettings = requireNotNull(testAgentBotSettings[context.chainInfo.symbol]);
+    const agentBotSettings = requireNotNull(testAgentBotSettings[context.fAssetSymbol]);
     const agentBot = await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, agentVaultSettings, notifiers);
     agentBot.timekeeper = { latestProof: undefined };
     return agentBot;

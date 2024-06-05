@@ -94,6 +94,8 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
     if (/^\w+$/.test(config)) {
         const suffix = user === "user" ? "user" : "bot";
         return resolveInFassetBotsCore(`run-config/${config}-${suffix}.json`);
+    } else if (/^[\w-]+$/.test(config)) {
+        return resolveInFassetBotsCore(`run-config/${config}.json`);
     }
     return config;
 }

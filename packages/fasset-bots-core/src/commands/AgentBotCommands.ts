@@ -488,7 +488,7 @@ export class AgentBotCommands {
         const query = this.orm.em.createQueryBuilder(AgentEntity);
         const listOfAgents = await query.where({ active: true }).getResultList();
         for (const agent of listOfAgents) {
-            console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, ChainSymbol: ${agent.chainSymbol}, Current event block: ${agent.currentEventBlock} `);
+            console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, FAsset: ${agent.fassetSymbol}, Current event block: ${agent.currentEventBlock} `);
         }
     }
 

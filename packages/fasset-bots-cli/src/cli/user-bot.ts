@@ -253,9 +253,8 @@ program
             const burned = formatFixed(exited.burnedTokensWei, 18);
             const collateral = formatFixed(exited.receivedNatWei, 18);
             const fassets = formatFixed(exited.receviedFAssetFeesUBA, fassetDecimals);
-            const fassetSymbol = await bot.context.fAsset.symbol();
             console.log(`Burned ${burned} pool tokens.`);
-            console.log(`Received ${collateral} CFLR collateral and ${fassets} ${fassetSymbol} fasset fees.`);
+            console.log(`Received ${collateral} CFLR collateral and ${fassets} ${bot.context.fAssetSymbol} fasset fees.`);
         } catch (error) {
             translateError(error, {
                 "token share is zero": "Token amount must be greater than 0",

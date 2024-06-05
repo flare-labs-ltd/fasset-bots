@@ -19,7 +19,7 @@ export class AgentBotRunner {
 
     constructor(
         public secrets: Secrets,
-        public contexts: Map<string, IAssetAgentContext>,   // map [chain token symbol] => context
+        public contexts: Map<string, IAssetAgentContext>,   // map [fasset symbol] => context
         public settings: Map<string, AgentBotSettings>,
         public orm: ORM,
         public loopDelay: number,
@@ -72,17 +72,17 @@ export class AgentBotRunner {
             this.checkForWorkAddressChange();
             if (this.stopLoop()) break;
             try {
-                const context = this.contexts.get(agentEntity.chainSymbol);
+                const context = this.contexts.get(agentEntity.fassetSymbol);
                 if (context == null) {
-                    console.warn(`Invalid chain symbol ${agentEntity.chainSymbol}`);
-                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid token symbol ${agentEntity.chainSymbol}.`);
+                    console.warn(`Invalid fasset symbol ${agentEntity.fassetSymbol}`);
+                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid token symbol ${agentEntity.fassetSymbol}.`);
                     continue;
                 }
-                const agentBotSettings = requireNotNull(this.settings.get(agentEntity.chainSymbol));    // cannot be missing - see create()
+                const agentBotSettings = requireNotNull(this.settings.get(agentEntity.fassetSymbol));    // cannot be missing - see create()
                 const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
                 const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
                 agentBot.runner = this;
-                agentBot.timekeeper = this.timekeeperService.get(context.chainInfo.symbol);
+                agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
                 agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
@@ -117,9 +117,9 @@ export class AgentBotRunner {
         const settings: Map<string, AgentBotSettings> = new Map();
         for (const chainConfig of botConfig.fAssets.values()) {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
-            contexts.set(assetContext.chainInfo.symbol, assetContext);
-            settings.set(assetContext.chainInfo.symbol, chainConfig.agentBotSettings);
-            logger.info(`Owner's ${ownerAddress} AgentBotRunner set context for token ${chainConfig.chainInfo.symbol} on chain ${assetContext.chainInfo.chainId}`);
+            contexts.set(chainConfig.fAssetSymbol, assetContext);
+            settings.set(chainConfig.fAssetSymbol, chainConfig.agentBotSettings);
+            logger.info(`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol} on chain ${assetContext.chainInfo.chainId}`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);

@@ -17,6 +17,7 @@ export type IPriceChangeEmitterEvents = import("../../typechain-truffle/IPriceCh
 export type AgentOwnerRegistryEvents = import("../../typechain-truffle/AgentOwnerRegistry").AllEvents;
 
 export interface IAssetNativeChainContext {
+    fAssetSymbol: string;
     nativeChainInfo: NativeChainInfo;
     priceChangeEmitter: ContractWithEvents<IPriceChangeEmitterInstance, IPriceChangeEmitterEvents>;
     wNat: ContractWithEvents<WNatInstance, WNatEvents>;

@@ -134,7 +134,7 @@ export class InfoBotCommands {
     async printPools() {
         logger.info(`InfoBot started fetching pools.`);
         const settings = await this.context.assetManager.getSettings();
-        const fassetSymbol = await this.context.fAsset.symbol();
+        const fassetSymbol = this.context.fAssetSymbol;
         const agents = await this.getAvailableAgents();
         const printer = new ColumnPrinter([
             ["Pool address", 42, "l"],

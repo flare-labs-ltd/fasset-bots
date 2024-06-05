@@ -16,8 +16,8 @@ import type { PoolConfig } from "./utils/uniswap-v2/dex-manipulator"
 
 
 const RPC_URL = "http://127.0.0.1:8545/"
-// asset manager address for FtestXRP
-// two accounts funded with FtestXRP and CFLR
+// asset manager address for FTestXRP
+// two accounts funded with FTestXRP and CFLR
 const SIGNER_PRIVATE_KEY = process.env.PRIVATE_KEY!
 
 const MAX_PRICE_ERROR = PRICE_PRECISION / BigInt(1e5) // price is accurate to 5 decimals (so FTSOs prices are not affected)
@@ -26,8 +26,8 @@ const MAX_TOKEN_LOSS_BIPS = 1 // expect to lose at most .01% of the invested bal
 
 // test environment configuration
 const COSTON_FTSO_SYMBOLS = FTSO_SYMBOLS["coston"]
-const ASSET_MANAGER = ASSET_MANAGER_ADDRESSES["coston"]["FtestXRP"]
-const COSTON_DEX_POOLS = DEX_POOLS["coston"]["FtestXRP"]
+const ASSET_MANAGER = ASSET_MANAGER_ADDRESSES["coston"]["FTestXRP"]
+const COSTON_DEX_POOLS = DEX_POOLS["coston"]["FTestXRP"]
 
 // slippage config where swapping 1e6 = 1 TEST_XRP should result in 10% slippage
 // this way the added reserves should require at most 100 TEST_XRP (deficient token)

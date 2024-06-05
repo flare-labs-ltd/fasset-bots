@@ -10,7 +10,7 @@ describe("AgentBot", () => {
     function createAgent(): AgentEntity {
         const agent = new AgentEntity();
         agent.chainId = "0x";
-        agent.chainSymbol = "symbol";
+        agent.fassetSymbol = "symbol";
         agent.ownerAddress = "0x";
         agent.vaultAddress = "0x";
         agent.underlyingAddress = "0x";

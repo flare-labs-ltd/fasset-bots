@@ -17,7 +17,7 @@ export class TimeKeeperService {
     static async create(config: KeeperBotConfig, timekeeperAddress: string, timing: TimekeeperTimingConfig) {
         const contexts: Map<string, ITimekeeperContext> = new Map();
         for (const chain of config.fAssets.values()) {
-            const symbol = chain.chainInfo.symbol;
+            const symbol = chain.fAssetSymbol;
             if (!contexts.has(symbol)) {
                 const context = await createTimekeeperContext(config, chain);
                 contexts.set(symbol, context);
@@ -41,8 +41,8 @@ export class TimeKeeperService {
     }
 
     startAll() {
-        for (const chainId of this.contexts.keys()) {
-            this.start(chainId);
+        for (const fassetSymbol of this.contexts.keys()) {
+            this.start(fassetSymbol);
         }
     }
 

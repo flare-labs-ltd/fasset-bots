@@ -454,7 +454,7 @@ export class AgentService {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
             const query = cli.orm.em.createQueryBuilder(AgentEntity);
             // Get agent vaults for fasset from database
-            const agentVaults = await query.where({ chainSymbol: config.fAssets[fasset].symbol }).getResultList();
+            const agentVaults = await query.where({ fassetSymbol: fasset }).getResultList();
             if (agentVaults.length == 0){
                 break;
             }

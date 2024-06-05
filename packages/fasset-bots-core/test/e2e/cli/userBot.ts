@@ -22,9 +22,9 @@ describe("UserBot cli commands unit tests", () => {
     });
 
     it("Should create UserBot", async () => {
-        const userBot1 = await PoolUserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP");
+        const userBot1 = await PoolUserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FTestXRP");
         expect(userBot1.nativeAddress).to.eq(userAddress);
-        const userBot2 = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FfakeXRP", userDataDir);
+        const userBot2 = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FSimCoinX", userDataDir);
         expect(userBot2.nativeAddress).to.eq(userAddress);
         expect(userBot2.underlyingAddress).to.not.eq(ZERO_ADDRESS);
     });
@@ -36,14 +36,14 @@ describe("UserBot cli commands unit tests", () => {
     });
 
     it("Should get infoBot", async () => {
-        const userBot = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP", userDataDir);
+        const userBot = await UserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FTestXRP", userDataDir);
         const infoBot = userBot.infoBot();
-        expect(await infoBot.context.fAsset.symbol()).to.eq("FtestXRP");
+        expect(await infoBot.context.fAsset.symbol()).to.eq("FTestXRP");
     });
 
     it("Should get infoBot - pool user", async () => {
-        const userBot = await PoolUserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FtestXRP");
+        const userBot = await PoolUserBotCommands.create(TEST_SECRETS, TEST_FASSET_BOT_CONFIG, "FTestXRP");
         const infoBot = userBot.infoBot();
-        expect(await infoBot.context.fAsset.symbol()).to.eq("FtestXRP");
+        expect(await infoBot.context.fAsset.symbol()).to.eq("FTestXRP");
     });
 });
