@@ -14,3 +14,5 @@ export { ChainId } from "./underlying-chain/ChainId";
 export { AgentEntity } from "./entities/agent";
 export { AgentSettingName, AgentUpdateSettingState } from "./entities/common";
 export { ApiNotifierTransport } from "./utils/notifier/NotifierTransports";
+export { BlockchainWalletHelper } from "./underlying-chain/BlockchainWalletHelper";
+export * from "./underlying-chain/WalletKeys";
