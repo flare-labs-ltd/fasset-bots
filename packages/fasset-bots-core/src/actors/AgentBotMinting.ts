@@ -8,12 +8,13 @@ import { Agent } from "../fasset/Agent";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { EventArgs } from "../utils/events/common";
-import { MAX_BIPS, assertNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, assertNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { AgentMintingState } from "../entities/common";
+import { ITransaction, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 
 export class AgentBotMinting {
     static deepCopyWithObjectCreate = true;
@@ -157,21 +158,34 @@ export class AgentBotMinting {
             // time for payment expired on underlying
             logger.info(`Agent ${this.agent.vaultAddress} waited that time for underlying payment expired for minting ${minting.requestId}.`);
             const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference);
-            /* istanbul ignore else */
-            if (txs.length === 1) {
+            const successfulTxs = txs.filter(tx => this.isSuccessfulPayment(minting, tx));
+            if (successfulTxs.length >= 1) {
+                const tx = successfulTxs[0];
+                const txHash = tx.hash;
                 // corner case: minter pays and doesn't execute minting
                 // check minter paid -> request payment proof -> execute minting
-                const txHash = txs[0].hash;
-                // TODO is it ok to check first address in UTXO chains?
-                const sourceAddress = txs[0].inputs[0][0];
+                const sourceAddress = tx.inputs[0][0];
                 logger.info(`Agent ${this.agent.vaultAddress} found payment transaction ${txHash} for minting ${minting.requestId}.`);
                 await this.requestPaymentProofForMinting(minting, txHash, sourceAddress);
-            } else if (txs.length === 0) {
+            } else {
+                // just log failed transactions
+                for (const tx of txs) {
+                    logger.info(`Agent ${this.agent.vaultAddress} found FAILED payment transaction ${tx.hash} for minting ${minting.requestId}.`);
+                }
                 // minter did not pay -> request non payment proof -> unstick minting
-                logger.info(`Agent ${this.agent.vaultAddress} did NOT found payment transaction for minting ${minting.requestId}.`);
+                logger.info(`Agent ${this.agent.vaultAddress} did NOT find successful payment transactions for minting ${minting.requestId}.`);
                 await this.requestNonPaymentProofForMinting(minting);
             }
         }
+    }
+
+    isSuccessfulPayment(minting: AgentMinting, tx: ITransaction) {
+        const targetAmount = tx.outputs
+            .filter(([dst, amount]) => dst === minting.agentUnderlyingAddress)
+            .reduce((x, [dst, amount]) => x.add(toBN(amount)), BN_ZERO);
+        return tx.status === TX_SUCCESS
+            && targetAmount.gte(minting.valueUBA.add(minting.feeUBA))
+            && tx.reference === minting.paymentReference;
     }
 
     /**
