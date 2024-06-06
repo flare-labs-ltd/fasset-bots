@@ -21,7 +21,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentRedemptionState } from "../../../src/entities/common";
-import { TokenBalances, emptyUnderlyingFunds } from "../../../src/utils";
+import { TokenBalances } from "../../../src/utils";
 use(chaiAsPromised);
 use(spies);
 
