@@ -10,7 +10,7 @@ import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chai
 import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { checkUnderlyingFunds, emptyUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
+import { checkUnderlyingOrEvmNativeFunds, emptyUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
 import { BN_ZERO, BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -309,7 +309,7 @@ export class Agent {
      * @returns transaction hash
      */
     async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
-        await this.enoughUnderlyingFunds(paymentSourceAddress, paymentDestinationAddress, paymentAmount);
+        await checkUnderlyingOrEvmNativeFunds(this.context, paymentSourceAddress, paymentDestinationAddress, paymentAmount);
         return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 
@@ -381,15 +381,5 @@ export class Agent {
         const txHAsh = await this.wallet.addTransaction(this.underlyingAddress, destinationAddress, amountBN, null);
         logger.info(`Agent ${this.vaultAddress} withdrew all all funds on underlying ${this.underlyingAddress} with transaction ${txHAsh}.`)
         return;
-    }
-
-    async enoughUnderlyingFunds(sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<void> {
-        const enoughFunds = await checkUnderlyingFunds(this.context, sourceUnderlyingAddress, destinationUnderlyingAddress, amount);
-        if (enoughFunds) {
-            return;
-        }  else {
-            logger.error(`Agent ${this.vaultAddress} run into error while performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.`)
-            throw new Error(`Not enough funds on underlying address ${sourceUnderlyingAddress}`);
-        }
     }
 }

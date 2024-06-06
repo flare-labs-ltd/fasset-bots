@@ -5,11 +5,11 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
+import { BNish, MAX_BIPS, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
-import { checkEvmNativeFunds, checkUnderlyingFunds } from "../utils/fasset-helpers";
+import { checkUnderlyingOrEvmNativeFunds } from "../utils/fasset-helpers";
 
 export class Minter {
     static deepCopyWithObjectCreate = true;
@@ -43,14 +43,16 @@ export class Minter {
 
     async reserveCollateral(agent: string, lots: BNish, executorAddress?: string, executorFeeNatWei?: BNish) {
         const agentInfo = await this.assetManager.getAgentInfo(agent);
+        const settings = await this.assetManager.getSettings();
         const crFee = await this.getCollateralReservationFee(lots);
         const executor = executorAddress ? executorAddress : ZERO_ADDRESS;
         const totalNatFee = executor != ZERO_ADDRESS ? crFee.add(toBN(requireNotNull(executorFeeNatWei, "executor fee required if executor used"))) : crFee;
         // check funds before reserveCollateral
-        const enoughFunds = await checkEvmNativeFunds(this.context, this.address, totalNatFee);
-        if (!enoughFunds) {
-            throw new Error(`Not enough funds on evm native address ${this.address}`);
-        }
+        await checkUnderlyingOrEvmNativeFunds(this.context, this.address, "", totalNatFee, false);
+        const lotSizeUBA = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const lotAmount =  toBN(lots).mul(lotSizeUBA);
+        const mintPayment = lotAmount.add(lotAmount.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS));
+        await checkUnderlyingOrEvmNativeFunds(this.context, this.underlyingAddress, "", mintPayment, true);
         const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, { from: this.address, value: totalNatFee });
         return requiredEventArgs(res, 'CollateralReserved');
     }
@@ -98,10 +100,7 @@ export class Minter {
     }
 
     async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null): Promise<string> {
-        const enoughFunds = await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAddress, paymentAmount);
-        if (!enoughFunds) {
-            throw new Error(`Not enough funds on underlying address ${this.underlyingAddress}`);
-        }
+        await checkUnderlyingOrEvmNativeFunds(this.context, this.underlyingAddress, paymentAddress, paymentAmount);
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference);
     }
 }
