@@ -9,6 +9,7 @@ import { BNish, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helper
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
+import { checkEvmNativeFunds, checkUnderlyingFunds } from "../utils/fasset-helpers";
 
 export class Minter {
     static deepCopyWithObjectCreate = true;
@@ -45,6 +46,11 @@ export class Minter {
         const crFee = await this.getCollateralReservationFee(lots);
         const executor = executorAddress ? executorAddress : ZERO_ADDRESS;
         const totalNatFee = executor != ZERO_ADDRESS ? crFee.add(toBN(requireNotNull(executorFeeNatWei, "executor fee required if executor used"))) : crFee;
+        // check funds before reserveCollateral
+        const enoughFunds = await checkEvmNativeFunds(this.context, this.address, totalNatFee);
+        if (!enoughFunds) {
+            throw new Error(`Not enough funds on evm native address ${this.address}`);
+        }
         const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, { from: this.address, value: totalNatFee });
         return requiredEventArgs(res, 'CollateralReserved');
     }
@@ -92,6 +98,10 @@ export class Minter {
     }
 
     async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null): Promise<string> {
+        const enoughFunds = await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAddress, paymentAmount);
+        if (!enoughFunds) {
+            throw new Error(`Not enough funds on underlying address ${this.underlyingAddress}`);
+        }
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference);
     }
 }

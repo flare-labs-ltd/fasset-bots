@@ -80,3 +80,15 @@ export async function emptyUnderlyingFunds(context: IAssetAgentContext, sourceUn
     const emptyBalance = toBN(senderBalance).sub(minimumBalance).sub(transactionFee.muln(TRANSACTION_FEE_FACTOR));
     return emptyBalance;
 }
+
+export async function checkEvmNativeFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish): Promise<boolean> {
+    const balanceReader = await TokenBalances.evmNative(context);
+    const senderBalance = await balanceReader.balance(sourceAddress);
+    const requiredBalance = toBN(amount);
+    if (senderBalance.gte(requiredBalance)) {
+        return true;
+    }  else {
+        logger.error(`Cannot performing evm native payment from ${sourceAddress}. Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}`);
+        return false;
+    }
+}
