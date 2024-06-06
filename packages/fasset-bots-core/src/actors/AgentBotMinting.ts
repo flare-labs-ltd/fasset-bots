@@ -185,7 +185,7 @@ export class AgentBotMinting {
             .reduce((x, [dst, amount]) => x.add(toBN(amount)), BN_ZERO);
         return tx.status === TX_SUCCESS
             && targetAmount.gte(minting.valueUBA.add(minting.feeUBA))
-            && tx.reference === minting.paymentReference;
+            && tx.reference?.toLowerCase() === minting.paymentReference?.toLowerCase();
     }
 
     /**
