@@ -10,7 +10,7 @@ import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chai
 import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { checkUnderlyingOrEvmNativeFunds, emptyUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
+import { checkUnderlyingFunds, emptyUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
 import { BN_ZERO, BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -309,7 +309,7 @@ export class Agent {
      * @returns transaction hash
      */
     async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
-        await checkUnderlyingOrEvmNativeFunds(this.context, paymentSourceAddress, paymentDestinationAddress, paymentAmount);
+        await checkUnderlyingFunds(this.context, paymentSourceAddress,paymentAmount, paymentDestinationAddress);
         return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 

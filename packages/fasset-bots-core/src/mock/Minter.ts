@@ -9,7 +9,7 @@ import { BNish, MAX_BIPS, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../ut
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
-import { checkUnderlyingOrEvmNativeFunds } from "../utils/fasset-helpers";
+import { checkEvmNativeFunds, checkUnderlyingFunds } from "../utils/fasset-helpers";
 
 export class Minter {
     static deepCopyWithObjectCreate = true;
@@ -48,11 +48,11 @@ export class Minter {
         const executor = executorAddress ? executorAddress : ZERO_ADDRESS;
         const totalNatFee = executor != ZERO_ADDRESS ? crFee.add(toBN(requireNotNull(executorFeeNatWei, "executor fee required if executor used"))) : crFee;
         // check funds before reserveCollateral
-        await checkUnderlyingOrEvmNativeFunds(this.context, this.address, "", totalNatFee, false);
+        await checkEvmNativeFunds(this.context, this.address, totalNatFee);
         const lotSizeUBA = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
         const lotAmount =  toBN(lots).mul(lotSizeUBA);
         const mintPayment = lotAmount.add(lotAmount.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS));
-        await checkUnderlyingOrEvmNativeFunds(this.context, this.underlyingAddress, "", mintPayment, true);
+        await checkUnderlyingFunds(this.context, this.underlyingAddress, mintPayment);
         const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, { from: this.address, value: totalNatFee });
         return requiredEventArgs(res, 'CollateralReserved');
     }
@@ -100,7 +100,7 @@ export class Minter {
     }
 
     async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null): Promise<string> {
-        await checkUnderlyingOrEvmNativeFunds(this.context, this.underlyingAddress, paymentAddress, paymentAmount);
+        await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAmount, paymentAddress);
         return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference);
     }
 }

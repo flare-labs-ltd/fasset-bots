@@ -11,7 +11,7 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError, TokenBalances, checkUnderlyingOrEvmNativeFunds } from "../utils";
+import { CommandLineError, TokenBalances, checkUnderlyingFunds } from "../utils";
 import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
@@ -164,7 +164,7 @@ export class AgentBot {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const smallest_amount = 1;
-        await checkUnderlyingOrEvmNativeFunds(context, underlyingAddress, underlyingAddress, smallest_amount);
+        await checkUnderlyingFunds(context, underlyingAddress, smallest_amount, underlyingAddress);
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, smallest_amount, reference);
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
@@ -221,7 +221,7 @@ export class AgentBot {
         const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
         try {
             const reference = owner.managementAddress;
-            await checkUnderlyingOrEvmNativeFunds(context, ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount);
+            await checkUnderlyingFunds(context, ownerUnderlyingAddress, starterAmount, vaultUnderlyingAddress);
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */

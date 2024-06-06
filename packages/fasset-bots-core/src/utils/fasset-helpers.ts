@@ -67,20 +67,26 @@ export async function emptyUnderlyingFunds(context: IAssetAgentContext, sourceUn
     return emptyBalance;
 }
 
-export async function checkUnderlyingOrEvmNativeFunds(context: IAssetAgentContext, sourceAddress: string, destinationAddress: string, amount: BNish,  underlying: boolean = true): Promise<void> {
-    let balanceReader;
-    if (underlying) {
-        balanceReader = await TokenBalances.fassetUnderlyingToken(context);
-    } else {
-        balanceReader = await TokenBalances.evmNative(context);
-    }
+export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress?: string): Promise<void> {
+    const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
     const senderBalance = await balanceReader.balance(sourceAddress);
-    const transactionFee = underlying ? await context.wallet.getTransactionFee() : toBN(0);
-    const minAccountBalance = underlying ? context.chainInfo.minimumAccountBalance : toBN(0);
+    const transactionFee = await context.wallet.getTransactionFee();
+    const minAccountBalance = context.chainInfo.minimumAccountBalance;
     const requiredBalance = requiredAddressBalance(amount, minAccountBalance, transactionFee);
     if (!senderBalance.gte(requiredBalance)) {
-        logger.error(`Cannot performing ${underlying ? "underlying" : "evm native"} payment from ${sourceAddress} to ${destinationAddress}.
+        logger.error(`Cannot performing underlying payment from ${sourceAddress}${destinationAddress ? ` to ${destinationAddress},`: "."}.
         Available ${balanceReader.format(senderBalance)} ${balanceReader.symbol}. Required ${balanceReader.format(requiredBalance)} ${balanceReader.symbol}.`);
-        throw new Error(`Not enough funds on ${underlying ? "underlying" : "evm native"} address ${sourceAddress}`);
+        throw new Error(`Not enough funds on underlying address ${sourceAddress}`);
+    }
+}
+
+export async function checkEvmNativeFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress?: string): Promise<void> {
+    const balanceReader = await TokenBalances.evmNative(context);
+    const senderBalance = await balanceReader.balance(sourceAddress);
+    const requiredBalance = toBN(amount);
+    if (!senderBalance.gte(requiredBalance)) {
+        logger.error(`Cannot performing evm native payment from ${sourceAddress} to ${destinationAddress}.
+        Available ${balanceReader.format(senderBalance)} ${balanceReader.symbol}. Required ${balanceReader.format(requiredBalance)} ${balanceReader.symbol}.`);
+        throw new Error(`Not enough funds on evm native address ${sourceAddress}`);
     }
 }
