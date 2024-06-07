@@ -23,7 +23,7 @@ export namespace Currencies {
         return TokenBalances.collateralType(collateral);
     }
 
-    export function fasset(context: IAssetAgentContext) {
+    export function fasset(context: IAssetNativeChainContext) {
         return TokenBalances.fasset(context);
     }
 
