@@ -84,7 +84,19 @@ program
     .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0")
     .action(async (_options: OptionValues) => {
         const options: { config: string; secrets: string } = program.opts();
-        await finalizeAgenOpenBetaRegistration(options.config, options.secrets, _options.nat, _options.usdt, _options.usdc, _options.eth)
+        await finalizeAgenOpenBetaRegistration(options.secrets, options.config, _options.nat, _options.usdt, _options.usdc, _options.eth)
+    });
+program
+    .command("openBetaAgentFund")
+    .description("fund agents with CFLR and fake collateral tokens (used for open-beta)")
+    .argument("recipient <address>", "recipient's address")
+    .option("--nat <amountNat>", "amount of NAT tokens sent to each user", "0")
+    .option("--usdc <amountUsdc>", "amount of testUSDC tokens minted to each user", "0")
+    .option("--usdt <amountUsdt>", "amount of testUSDT tokens minted to each user", "0")
+    .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0")
+    .action(async (recipient: string, _options: OptionValues) => {
+        const options: { config: string; secrets: string } = program.opts();
+        await distributeTokensToAddress(options.secrets, options.config, recipient, _options.nat, _options.usdt, _options.usdc, _options.eth)
     });
 
 toplevelRun(async () => {
@@ -149,25 +161,33 @@ async function addCollateralToken(secretsFile: string, configFileName: string, p
     await controller.addCollateralType(assetManagers, collateralType, { from: deployerAddress });
 }
 
-async function finalizeAgenOpenBetaRegistration(config: string, secrets: string,
+async function finalizeAgenOpenBetaRegistration(secrets: string, config: string,
     amountNat: string, amountUsdt: string, amountUsdc: string, amountEth: string
 ) {
     const registrationApi = new OpenBetaAgentRegistrationTransport(Secrets.load(secrets));
     const unFundedAgents = await registrationApi.unfinalizedRegistrations();
     for (const agent of unFundedAgents) {
         try {
-            if (Number(amountNat) > 0) await transferNatFromDeployer(secrets, config, amountNat, agent.management_address)
+            await distributeTokensToAddress(secrets, config, agent.management_address, amountNat, amountUsdt, amountUsdc, amountEth)
             await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
-            if (Number(amountUsdc) > 0) await mintFakeTokens(secrets, config, "testUSDC", agent.management_address, amountUsdc);
-            if (Number(amountUsdt) > 0) await mintFakeTokens(secrets, config, "testUSDT", agent.management_address, amountUsdt);
-            if (Number(amountEth) > 0) await mintFakeTokens(secrets, config, "testETH", agent.management_address, amountEth);
             await registrationApi.finalizeRegistration(agent.management_address);
-            console.log(`Agent ${agent.agent_name} registeration finalized`)
+            console.log(`Agent ${agent.agent_name} registration finalized`)
         } catch (e) {
             console.error(`Error with handling agent ${agent.agent_name}: ${e}`);
         }
     }
 }
+
+async function distributeTokensToAddress(
+    secrets: string, config: string, recipient: string,
+    amountNat: string, amountUsdt: string, amountUsdc: string, amountEth: string
+) {
+    if (Number(amountNat) > 0) await transferNatFromDeployer(secrets, config, amountNat, recipient)
+    if (Number(amountUsdc) > 0) await mintFakeTokens(secrets, config, "testUSDC", recipient, amountUsdc);
+    if (Number(amountUsdt) > 0) await mintFakeTokens(secrets, config, "testUSDT", recipient, amountUsdt);
+    if (Number(amountEth) > 0) await mintFakeTokens(secrets, config, "testETH", recipient, amountEth);
+}
+
 
 function addressFromParameter(contracts: ChainContracts, addressOrName: string) {
     if (addressOrName.startsWith("0x")) return addressOrName;
