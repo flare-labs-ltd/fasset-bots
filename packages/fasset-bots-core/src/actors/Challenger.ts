@@ -67,7 +67,7 @@ export class Challenger extends ActorBase {
         logger.info(`Challenger ${address} initialized asset context.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(context, lastBlock);
-        await trackedState.initialize();
+        await trackedState.initialize(true);
         const blockHeight = await context.blockchainIndexer.getBlockHeight();
         logger.info(`Challenger ${address} initialized tracked state.`);
         return new Challenger(context, new ScopedRunner(), address, trackedState, blockHeight, config.notifiers);

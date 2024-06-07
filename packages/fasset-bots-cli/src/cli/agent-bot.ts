@@ -252,39 +252,16 @@ program
     });
 
 program
-    .command("announceUnderlyingWithdrawal")
-    .description("announce underlying withdrawal and get needed payment reference")
-    .argument("<agentVaultAddress>")
-    .action(async (agentVault: string) => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.announceUnderlyingWithdrawal(agentVault);
-    });
-
-program
-    .command("performUnderlyingWithdrawal")
-    .description("perform underlying withdrawal and get needed transaction hash")
+    .command("withdrawUnderlying")
+    .description("announce and perform underlying withdrawal and get transaction hash")
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .argument("<destinationAddress>")
-    .argument("<paymentReference>")
-    .action(async (agentVault: string, amount: string, destinationAddress: string, paymentReference: string) => {
-        validateDecimal(amount, "amount", { strictMin: 0 });
+    .action(async (agentVault: string, amount: string, destinationAddress: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.fasset(cli.context);
-        await cli.performUnderlyingWithdrawal(agentVault, currency.parse(amount), destinationAddress, paymentReference);
-    });
-
-program
-    .command("confirmUnderlyingWithdrawal")
-    .description("confirm underlying withdrawal with transaction hash")
-    .argument("<agentVaultAddress>")
-    .argument("<txHash>")
-    .action(async (agentVault: string, txHash: string) => {
-        const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.confirmUnderlyingWithdrawal(agentVault, txHash);
+        await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddress);
     });
 
 program
@@ -308,7 +285,7 @@ program
 
 program
     .command("delegatePoolCollateral")
-    .description("delegate pool collateral, where <bips> is basis points (1/100 of one percent)")
+    .description("delegate pool collateral, where <share> is decimal number (e.g. 0.3) or percentage (e.g. 30%)")
     .argument("<agentVaultAddress>")
     .argument("<recipient>")
     .argument("<share>", "vote power share as decimal number (e.g. 0.3) or percentage (e.g. 30%)")

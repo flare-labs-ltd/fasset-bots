@@ -1,10 +1,10 @@
 # TimeKeeperBot
 
-Time keeper proves that underlying block with given number and timestamp exists and updates the current underlying block info if the provided data is higher. This bot should be used by **minters** before minting and by **agents** regularly to prevent current block being too outdated, which gives too short time for minting or redemption payment.
+The Time Keeper proves that the underlying block with a given number and timestamp exists and updates the current underlying block info if the provided data is higher. **Minters** should use this bot regularly before minting and by **agents** to prevent the current block being too outdated, which gives too short time for minting or redemption payment.
 
-File [TimeKeeper.ts](../src/actors/TimeKeeper.ts) contains framework for such actor in FAsset system.
+File [TimeKeeper.ts](../../packages/fasset-bots-core/src/actors/TimeKeeper.ts) contains a framework for such an actor in the FAsset system.
 
-### Initialization
+## Initialization
 
 The constructor takes in **address** (native address) and **asset context** (IAssetActorContext) as inputs:
 
@@ -18,4 +18,4 @@ The constructor takes in **address** (native address) and **asset context** (IAs
 
 ## TimeKeeperBot Automation
 
-The **run** method is responsible for managing proofs and updates. It set a recurring task of proving and updating underlying blocks every minute.
+The **run** method in TimeKeeperBot Automation is responsible for managing proofs and updates. It sets a recurring task of proving and updating underlying blocks every minute, ensuring the system's data is always current.

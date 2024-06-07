@@ -10,7 +10,7 @@ import { Challenger } from "../../../src/actors/Challenger";
 import { Liquidator } from "../../../src/actors/Liquidator";
 import { SystemKeeper } from "../../../src/actors/SystemKeeper";
 import { TimeKeeperService } from "../../../src/actors/TimeKeeperService";
-import { AgentBotConfig, BotFAssetConfigWithIndexer, BotFAssetConfigWithWallet, KeeperBotConfig, Secrets } from "../../../src/config";
+import { AgentBotConfig, AgentBotSettings, BotFAssetAgentConfig, BotFAssetConfigWithIndexer, KeeperBotConfig, Secrets } from "../../../src/config";
 import { AgentVaultInitSettings, createAgentVaultInitSettings, loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { createBotConfig } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
@@ -33,7 +33,7 @@ import { testNotifierTransports } from "../../test-utils/testNotifierTransports"
 use(chaiAsPromised);
 use(spies);
 
-const fAssetSymbol = "FtestXRP";
+const fAssetSymbol = "FTestXRP";
 
 describe("Actor tests - coston", () => {
     let accounts: string[];
@@ -53,7 +53,7 @@ describe("Actor tests - coston", () => {
     let challengerAddress: string;
     let liquidatorAddress: string;
     let systemKeeperAddress: string;
-    let chainConfigAgent: BotFAssetConfigWithWallet;
+    let chainConfigAgent: BotFAssetAgentConfig;
     let chainConfigActor: BotFAssetConfigWithIndexer;
     // newly create agents that are destroyed after these tests
     const destroyAgentsAfterTests: string[] = [];
@@ -86,16 +86,16 @@ describe("Actor tests - coston", () => {
     });
 
     after(async () => {
-        await cleanUp(context, orm, ownerAddress, ownerUnderlyingAddress, destroyAgentsAfterTests);
+        await cleanUp(context, chainConfigAgent.agentBotSettings, orm, ownerAddress, ownerUnderlyingAddress, destroyAgentsAfterTests);
     });
 
     itIf(enableSlowTests())("Should create agent bot and announce destroy", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, COSTON_TEST_AGENT_SETTINGS);
+        const agentBot = await createTestAgentBot(context, chainConfigAgent.agentBotSettings, orm, ownerAddress, ownerUnderlyingAddress, COSTON_TEST_AGENT_SETTINGS);
         expect(agentBot.agent.underlyingAddress).is.not.null;
         expect(agentBot.agent.owner.managementAddress).to.eq(ownerAddress);
         // read from entity
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const agentBotFromEnt = await AgentBot.fromEntity(context, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
+        const agentBotFromEnt = await AgentBot.fromEntity(context, chainConfigAgent.agentBotSettings, agentEnt, ownerUnderlyingAddress, testNotifierTransports);
         expect(agentBotFromEnt.agent.underlyingAddress).is.not.null;
         expect(agentBotFromEnt.agent.owner.managementAddress).to.eq(ownerAddress);
         // sort of clean up
@@ -106,7 +106,9 @@ describe("Actor tests - coston", () => {
     it("Should create agent bot runner", async () => {
         const contexts: Map<string, IAssetAgentContext> = new Map();
         contexts.set(context.chainInfo.symbol, context);
-        const agentBotRunner = new AgentBotRunner(secrets, contexts, orm, 5, testNotifierTransports, testTimekeeperService);
+        const settings: Map<string, AgentBotSettings> = new Map();
+        settings.set(context.chainInfo.symbol, chainConfigAgent.agentBotSettings);
+        const agentBotRunner = new AgentBotRunner(secrets, contexts, settings, orm, 5, testNotifierTransports, testTimekeeperService);
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });

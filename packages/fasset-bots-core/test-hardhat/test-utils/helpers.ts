@@ -20,15 +20,15 @@ import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, ZERO_ADDRESS, toBN, toBNExp } from "../../src/utils/helpers";
+import { BNish, ZERO_ADDRESS, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { testAgentBotSettings, testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { fundUnderlying } from "../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
-import { ChainId } from "../../src/underlying-chain/ChainId";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -41,6 +41,7 @@ const depositNat = toBNExp(1_000_000, 18);
 const depositUnderlying = toBNExp(1_000_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
 export const DEFAULT_POOL_TOKEN_SUFFIX: () => string = () => "POOL-TOKEN-" + Math.floor(Math.random() * 10_000);
+export const QUERY_WINDOW_SECONDS = 86400;
 
 export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
     assert.deepStrictEqual(web3DeepNormalize(x), web3DeepNormalize(y), message);
@@ -58,12 +59,13 @@ export async function createTestAgentBot(
     await automaticallySetWorkAddress(context, autoSetWorkAddress, ownerManagementAddress);
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     ownerUnderlyingAddress ??= `underlying_${ownerManagementAddress}`;
-    context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, depositUnderlying);
+    await fundUnderlying(context, ownerUnderlyingAddress, depositUnderlying);
     const vaultUnderlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
-    const agentBotSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
-    agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    const agentBot = await AgentBot.create(orm.em, context, owner, ownerUnderlyingAddress, addressValidityProof, agentBotSettings, notifiers);
+    const agentVaultSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+    agentVaultSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
+    const agentBotSettings = requireNotNull(testAgentBotSettings[context.fAssetSymbol]);
+    const agentBot = await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, agentVaultSettings, notifiers);
     agentBot.timekeeper = { latestProof: undefined };
     return agentBot;
 }
@@ -109,7 +111,9 @@ export async function createTestAgent(
     const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentBotSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const addressValidityProof = await context.attestationProvider.proveAddressValidity(underlyingAddress);
-    return await Agent.create(context, owner, addressValidityProof, agentBotSettings);
+    const agent = await Agent.create(context, owner, addressValidityProof, agentBotSettings);
+    await fundUnderlying(context, agent.underlyingAddress, context.chainInfo.minimumAccountBalance);
+    return agent;
 }
 
 async function automaticallySetWorkAddress(context: TestAssetBotContext, autoSetWorkAddress: boolean, ownerManagementAddress: string) {
@@ -134,7 +138,8 @@ export function createTestAgentBotRunner(
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
-    return new AgentBotRunner(secrets, contexts, orm, loopDelay, notifiers, testTimekeeperService);
+    const testAgentBotSettingsMap = new Map(Object.entries(testAgentBotSettings));
+    return new AgentBotRunner(secrets, contexts, testAgentBotSettingsMap, orm, loopDelay, notifiers, testTimekeeperService);
 }
 
 export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {

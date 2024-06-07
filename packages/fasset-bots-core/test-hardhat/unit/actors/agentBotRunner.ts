@@ -1,7 +1,6 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { expect, spy, use } from "chai";
 import spies from "chai-spies";
-import { ChainId } from "../../../src";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
 import { web3 } from "../../../src/utils/web3";
@@ -32,7 +31,7 @@ describe("Agent bot runner tests", () => {
         orm = await createTestOrm();
         context = await createTestAssetContext(accounts[0], testChainInfo.xrp);
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
-        contexts.set(context.chainInfo.symbol, context);
+        contexts.set(context.fAssetSymbol, context);
         return { orm, context, contexts };
     }
 

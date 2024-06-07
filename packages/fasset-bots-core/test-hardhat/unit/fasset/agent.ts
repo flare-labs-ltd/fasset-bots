@@ -9,6 +9,7 @@ import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 use(spies);
 
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -124,6 +125,7 @@ describe("Agent unit tests", () => {
     it("Should perform and confirm top up", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         const spyAgent = spy.on(agent.assetManager, "confirmTopupPayment");
+        await fundUnderlying(context, agent.underlyingAddress, context.chainInfo.minimumAccountBalance);
         const tx = await agent.performTopupPayment(1, underlyingAddress);
         chain.mine(chain.finalizationBlocks + 1);
         await agent.confirmTopupPayment(tx);
@@ -133,18 +135,9 @@ describe("Agent unit tests", () => {
     it("Should announce, perform and confirm underlying withdrawal", async () => {
         const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
         const resAnnounce = await agent.announceUnderlyingWithdrawal();
-        const tx = await agent.performUnderlyingWithdrawal(resAnnounce.paymentReference, 1, underlyingAddress);
-        chain.mine(chain.finalizationBlocks + 1);
-        const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
-        await time.increase(skipTime);
-        const resConfirm = await agent.confirmUnderlyingWithdrawal(tx);
-        expect(resConfirm.agentVault).to.eq(agent.vaultAddress);
-    });
-
-    it("Should announce, perform and confirm underlying withdrawal", async () => {
-        const agent = await createTestAgent(context, ownerAddress, underlyingAddress);
-        const resAnnounce = await agent.announceUnderlyingWithdrawal();
-        const tx = await agent.performUnderlyingWithdrawal(resAnnounce.paymentReference, 1, underlyingAddress);
+        // mint funds first
+        await fundUnderlying(context, agent.underlyingAddress, context.chainInfo.minimumAccountBalance);
+        const tx = await agent.performPayment(underlyingAddress, 1, resAnnounce.paymentReference);
         chain.mine(chain.finalizationBlocks + 1);
         const skipTime = (await context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds;
         await time.increase(skipTime);

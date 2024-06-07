@@ -11,10 +11,10 @@ export const COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER = "./test/test-utils/r
 export const AGENT_DEFAULT_CONFIG_PATH = "./run-config/agent-settings-config.json";
 export const COSTON_CONTRACTS_MISSING_SC = "./test/test-utils/run-config-test/contracts-missing-sc.json";
 export const COSTON_CONTRACTS_MISSING_VERIFIER = "./test/test-utils/run-config-test/contracts-missing-verifier.json";
-export const COSTON_CONTRACTS_EXTENDS_1 = "./test/test-utils/run-config-test/run-config-extend-coston-1.json";
-export const COSTON_CONTRACTS_EXTENDS_2 = "./test/test-utils/run-config-test/run-config-extend-coston-2.json";
-export const COSTON_CONTRACTS_LOOP_1 = "./test/test-utils/run-config-test/run-config-extend-loop-1.json";
-export const COSTON_CONTRACTS_INVALID = "./test/test-utils/run-config-test/run-config-coston-invalid.json";
+export const COSTON_CONFIG_EXTENDS_1 = "./test/test-utils/run-config-test/run-config-extend-coston-1.json";
+export const COSTON_CONFIG_EXTENDS_2 = "./test/test-utils/run-config-test/run-config-extend-coston-2.json";
+export const COSTON_CONFIG_LOOP_1 = "./test/test-utils/run-config-test/run-config-extend-loop-1.json";
+export const COSTON_CONFIG_INVALID = "./test/test-utils/run-config-test/run-config-coston-invalid.json";
 
 export const INDEXER_URL_XRP: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 export const ATTESTATION_PROVIDER_URLS: string[] = [

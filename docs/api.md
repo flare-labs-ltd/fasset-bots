@@ -2,7 +2,13 @@
 
 ## Setup and run
 
-Configuration and environment file must be provided, before running APIs. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#env) for more.
+Note: before running agent bot must be set up.
+
+Run with `yarn start_agent_api` or `yarn start_agent_api_debug`.
+
+Swagger is locally running at http://localhost:1234/api-doc.
+
+<!-- Configuration and environment file must be provided, before running APIs. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#env) for more.
 
 Api key and its hash can be generated via command `yarn key-gen createApiKeyAndHash`. See more [here](./cli.md#cli-key);
 

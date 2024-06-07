@@ -207,13 +207,16 @@ export async function createTestAssetContext(
     const parameterFilename = chainInfo.parameterFile ?? `./fasset-config/hardhat/f-${chainInfo.symbol.toLowerCase()}.json`;
     const parameters = JSON.parse(fs.readFileSync(parameterFilename).toString());
     const settings = createTestAssetManagerSettings(contracts, options.customParameters ?? parameters, chainInfo, options.requireEOAAddressProof);
+    const fAssetName = parameters.fAssetName ?? `F${chainInfo.name}`;
+    const fAssetSymbol = parameters.fAssetSymbol ?? `F${chainInfo.symbol}`;
     // web3DeepNormalize is required when passing structs, otherwise BN is incorrectly serialized
     const [assetManager, fAsset] = await newAssetManager(governance, options.assetManagerControllerAddress ?? assetManagerController,
-        chainInfo.name, chainInfo.symbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
+        fAssetName, fAssetSymbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
     // indexer
     const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
     // return context
     return {
+        fAssetSymbol,
         nativeChainInfo: testNativeChainInfo,
         chainInfo,
         blockchainIndexer,
@@ -260,6 +263,7 @@ export function createTestSecrets(chains: ChainId[], ownerManagementAddress: str
 
 export function getTestAssetTrackedStateContext(context: TestAssetBotContext, useCustomStrategy: boolean = false): TestAssetTrackedStateContext {
     return {
+        fAssetSymbol: context.fAssetSymbol,
         nativeChainInfo: context.nativeChainInfo,
         blockchainIndexer: context.blockchainIndexer,
         attestationProvider: context.attestationProvider,

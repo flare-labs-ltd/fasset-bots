@@ -1,6 +1,6 @@
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { AgentBotCommands, AgentBotRunner, ChainId, TimeKeeperService, UserBotCommands } from "../../src";
-import { AgentSettingsConfig, Secrets } from "../../src/config";
+import { AgentBotSettings, AgentSettingsConfig, Secrets } from "../../src/config";
 import { ORM } from "../../src/config/orm";
 import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
@@ -31,6 +31,7 @@ describe("Toplevel runner and commands integration test", () => {
     let userAddress: string;
     const userUnderlyingAddress = "user_underlying_1";
     let contexts: Map<string, TestAssetBotContext> = new Map();
+    let agentBotSettingsMap: Map<string, AgentBotSettings> = new Map();
     let chains: Map<ChainId, MockChain> = new Map();
     let secrets: Secrets;
     let timekeeperService: TimeKeeperService;
@@ -59,7 +60,6 @@ describe("Toplevel runner and commands integration test", () => {
         decimals: 6,
         amgDecimals: 6,
         minimumAccountBalance: toBNExp(10, 6),
-        recommendedOwnerBalance: toBNExp(50, 6),
         startPrice: 0.53,
         blockTime: 2,
         finalizationBlocks: 3,
@@ -69,15 +69,21 @@ describe("Toplevel runner and commands integration test", () => {
         parameterFile: "./fasset-config/coston/f-testxrp.json",
     };
 
-    const fakeXrpChainInfo: TestChainInfo = {
+    const simCoinXChainInfo: TestChainInfo = {
         ...testXrpChainInfo,
-        name: "Fake XRP",
-        symbol: "fakeXRP",
         startPrice: 0.60,
-        parameterFile: "./fasset-config/coston/f-fakexrp.json",
+        parameterFile: "./fasset-config/coston/f-simcoinx.json",
     };
 
-    const testChainInfos = [testXrpChainInfo, fakeXrpChainInfo];
+    const agentBotSettings: AgentBotSettings = {
+        liquidationPreventionFactor: 1.2,
+        vaultCollateralReserveFactor: 0.1,
+        poolCollateralReserveFactor: 0.1,
+        minimumFreeUnderlyingBalance: toBNExp(12, 6),
+        recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
+    };
+
+    const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];
 
     async function waitForEvent(contract: Truffle.ContractInstance, fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
         const sleepTime = 100;
@@ -99,12 +105,11 @@ describe("Toplevel runner and commands integration test", () => {
 
     function createAgentCommands(context: IAssetAgentContext) {
         const ownerAddressPair = new OwnerAddressPair(ownerManagementAddress, ownerWorkAddress);
-        return new AgentBotCommands(context, ownerAddressPair, ownerUnderlyingAddress, orm, testNotifierTransports);
+        return new AgentBotCommands(context, agentBotSettings, ownerAddressPair, ownerUnderlyingAddress, orm, testNotifierTransports);
     }
 
     async function createUserCommands(context: IAssetAgentContext) {
-        const fassetSymbol = await context.fAsset.symbol();
-        return new UserBotCommands(context, fassetSymbol, userAddress, userUnderlyingAddress, "./test-data");
+        return new UserBotCommands(context, context.fAssetSymbol, userAddress, userUnderlyingAddress, "./test-data");
     }
 
     before(async () => {
@@ -126,15 +131,16 @@ describe("Toplevel runner and commands integration test", () => {
         for (const chainInfo of testChainInfos) {
             const chain = await getOrCreateAsync(chains, chainInfo.chainId, () => createTestChain(chainInfo));
             const context = await createTestAssetContext(accounts[0], chainInfo, { contracts, chain, stateConnectorClient });
-            contexts.set(chainInfo.symbol, context);
+            contexts.set(context.fAssetSymbol, context);
+            agentBotSettingsMap.set(context.fAssetSymbol, agentBotSettings);
         }
         // set work address mapping
-        const context0 = contexts.get(testChainInfos[0].symbol)!;
+        const context0 = firstValue(contexts)!;
         await context0.agentOwnerRegistry.setWorkAddress(ownerWorkAddress, { from: ownerManagementAddress });
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay }));
         // agent bot runner
-        botRunner = new AgentBotRunner(secrets, contexts, orm, loopDelay, testNotifierTransports, timekeeperService);
+        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService);
         // currencies
         const usdc = context0.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc);
@@ -152,11 +158,11 @@ describe("Toplevel runner and commands integration test", () => {
         }
         //
         console.log("Context created.");
-        return { orm, contexts, chains, timekeeperService, botRunner };
+        return { orm, contexts, agentBotSettingsMap, chains, timekeeperService, botRunner };
     }
 
     beforeEach(async () => {
-        ({ orm, contexts, chains, timekeeperService, botRunner } = await loadFixtureCopyVars(initialize));
+        ({ orm, contexts, agentBotSettingsMap, chains, timekeeperService, botRunner } = await loadFixtureCopyVars(initialize));
         // start runners in background
         console.log("Starting the bots...");
         timekeeperService.startAll();

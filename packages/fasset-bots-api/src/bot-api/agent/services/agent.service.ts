@@ -1,4 +1,4 @@
-import { AgentBotCommands, AgentEntity, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, AgentSettingName, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
@@ -120,31 +120,12 @@ export class AgentService {
         await cli.exitAvailableList(agentVaultAddress);
     }
 
-    async announceUnderlyingWithdrawal(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentUnderlying> {
+    async withdrawUnderlying(fAssetSymbol: string, agentVaultAddress: string, amount: string, destinationAddress: string,): Promise<AgentUnderlying> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const ref = await cli.announceUnderlyingWithdrawal(agentVaultAddress);
-        return {
-            paymentReference: ref,
-        };
-    }
-
-    async performUnderlyingWithdrawal(
-        fAssetSymbol: string,
-        agentVaultAddress: string,
-        amount: string,
-        destinationAddress: string,
-        paymentReference: string
-    ): Promise<AgentUnderlying> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const transactionHash = await cli.performUnderlyingWithdrawal(agentVaultAddress, amount, destinationAddress, paymentReference);
+        const transactionHash = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
         return {
             transactionHash,
         };
-    }
-
-    async confirmUnderlyingWithdrawal(fAssetSymbol: string, agentVaultAddress: string, transactionHash: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.confirmUnderlyingWithdrawal(agentVaultAddress, transactionHash);
     }
 
     async cancelUnderlyingWithdrawal(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
@@ -239,24 +220,36 @@ export class AgentService {
         // get agent infos
         const query = cli.orm.em.createQueryBuilder(AgentEntity);
         const agentVaults = await query.where({ active: true }).getResultList();
+
         const agentInfos: AgentVaultStatus[] = [];
         for (const agent of agentVaults) {
+            await agent.updateSettings.init()
             const agentInfo = await cli.context.assetManager.getAgentInfo(agent.vaultAddress);
             agentInfos.push({
                 vaultAddress: agent.vaultAddress,
                 poolCollateralRatioBIPS: agentInfo.poolCollateralRatioBIPS.toString(),
                 vaultCollateralRatioBIPS: agentInfo.vaultCollateralRatioBIPS.toString(),
-                agentSettingUpdateValidAtFeeBIPS: agent.agentSettingUpdateValidAtFeeBIPS.toString(),
-                agentSettingUpdateValidAtPoolFeeShareBIPS: agent.agentSettingUpdateValidAtPoolFeeShareBIPS.toString(),
-                agentSettingUpdateValidAtMintingVaultCrBIPS: agent.agentSettingUpdateValidAtMintingVaultCrBIPS.toString(),
-                agentSettingUpdateValidAtMintingPoolCrBIPS: agent.agentSettingUpdateValidAtMintingPoolCrBIPS.toString(),
-                agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: agent.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS.toString(),
-                agentSettingUpdateValidAtPoolExitCrBIPS: agent.agentSettingUpdateValidAtPoolExitCrBIPS.toString(),
-                agentSettingUpdateValidAtPoolTopupCrBIPS: agent.agentSettingUpdateValidAtPoolTopupCrBIPS.toString(),
-                agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: agent.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS.toString()
+                agentSettingUpdateValidAtFeeBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.FEE),
+                agentSettingUpdateValidAtPoolFeeShareBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_FEE_SHARE),
+                agentSettingUpdateValidAtMintingVaultCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.MINTING_VAULT_CR),
+                agentSettingUpdateValidAtMintingPoolCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.MINTING_POOL_CR),
+                agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.BUY_FASSET_FACTOR),
+                agentSettingUpdateValidAtPoolExitCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_EXIT_CR),
+                agentSettingUpdateValidAtPoolTopupCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_TOP_UP_CR),
+                agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)
             })
         }
         return agentInfos
+    }
+
+    getUpdateSettingValidAtTimestamp(agent: AgentEntity, settingName: AgentSettingName): string {
+        const found = agent.updateSettings.getItems().find(setting =>
+            setting.name == settingName && setting.state === AgentUpdateSettingState.WAITING);
+            if (found) {
+                return found.validAt.toString();
+            } else {
+                return BN_ZERO.toString();
+            }
     }
 
     async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<ExtendedAgentVaultInfo> {
@@ -461,7 +454,7 @@ export class AgentService {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
             const query = cli.orm.em.createQueryBuilder(AgentEntity);
             // Get agent vaults for fasset from database
-            const agentVaults = await query.where({ chainSymbol: config.fAssets[fasset].symbol }).getResultList();
+            const agentVaults = await query.where({ fassetSymbol: fasset }).getResultList();
             if (agentVaults.length == 0){
                 break;
             }
@@ -470,11 +463,12 @@ export class AgentService {
             const vaultsForFasset: VaultInfo[] = [];
             // For each vault calculate needed info
             for (const vault of agentVaults) {
+                await vault.updateSettings.init()
                 let updating = false;
-                if (toBN(vault.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO) ||
-                toBN(vault.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO) ||
-                toBN(vault.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO) ||
-                toBN(vault.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO) || toBN(vault.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
+                if (toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.FEE)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_FEE_SHARE)).gt(BN_ZERO) ||
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_VAULT_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_POOL_CR)).gt(BN_ZERO) ||
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.BUY_FASSET_FACTOR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_EXIT_CR)).gt(BN_ZERO) ||
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)).gt(BN_ZERO)) {
                     updating = true;
                 }
                 const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);

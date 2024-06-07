@@ -51,4 +51,8 @@ export class ERC20TokenBalance extends TokenBalance {
     balance(address: string) {
         return this.token.balanceOf(address);
     }
+
+    totalSupply() {
+        return this.token.totalSupply();
+    }
 }

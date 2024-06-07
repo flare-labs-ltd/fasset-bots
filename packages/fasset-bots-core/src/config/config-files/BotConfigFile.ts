@@ -18,15 +18,13 @@ export interface OrmConfigOptions {
 
 export interface BotFAssetInfo {
     chainId: string;
-    name: string;
-    symbol: string; // only used as database id
-    tokenSymbol: string;    // underlying token symbol
-    tokenDecimals: number;  // decimals for both underlying token and fasset
+    tokenName: string;       // underlying token name
+    tokenSymbol: string;     // underlying token symbol
+    tokenDecimals: number;   // decimals for both underlying token and fasset
     walletUrl?: string; // for agent bot and user
     indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
     minimumAccountBalance?: string; // only needed for XRP
-    recommendedOwnerBalance?: string;
     faucet?: string;
 }
 
@@ -62,6 +60,7 @@ export interface BotConfigFile {
     // notifierFile: string;
     loopDelay: number;
     nativeChainInfo: BotNativeChainInfo;
+    agentBotSettings: AgentBotSettingsJson;
     rpcUrl: string;
     attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
     prioritizeAddressUpdater: boolean;
@@ -75,11 +74,60 @@ export interface BotConfigFile {
     challengeStrategy?: BotStrategyDefinition; // only for challenge
 }
 
+export interface AgentBotFassetSettingsJson {
+    /**
+     * The amount of underlying currency on woner's underlying address, below which an alert is triggered.
+     * @pattern ^[0-9]+(\.[0-9]+)?$
+     */
+    recommendedOwnerBalance: string;
+
+    /**
+     * The amount of underlying currency on woner's underlying address, below which the address should be topped-up,
+     * to prevent negative free underlying balance after redemptions.
+     * @pattern ^[0-9]+(\.[0-9]+)?$
+     */
+    minimumFreeUnderlyingBalance: string;
+}
+
+export interface AgentBotSettingsJson {
+    /**
+     * Minimum amount of collateral to topup vault to, to prevent liquidation.
+     * Relative to collateral's CCB CR.
+     * @pattern ^[0-9]+(\.[0-9]+)?$
+     */
+    liquidationPreventionFactor: string;
+
+    /**
+     * The threshold for USDC/WETH/... on owner's work address, below which alert is triggered.
+     * Relative to required vault collateral for current minted amount.
+     * @pattern ^[0-9]+(\.[0-9]+)?$
+     */
+    vaultCollateralReserveFactor: string;
+
+    /**
+     * The threshold for NAT on owner's work address, below which alert is triggered.
+     * Relative to required pool collateral for current minted amount.
+     * @pattern ^[0-9]+(\.[0-9]+)?$
+     */
+    poolCollateralReserveFactor: string;
+
+    /**
+     * Per FAsset settings.
+     */
+    fAssets: { [fAssetSymbol: string]: AgentBotFassetSettingsJson };
+}
+
+export type AgentBotSettingsJsonOverride =
+    Partial<Omit<AgentBotSettingsJson, "fAssets">> & {
+        fAssets?: { [fAssetSymbol: string]: Partial<AgentBotFassetSettingsJson> };
+    };
+
 export type BotConfigFileOverride =
     Partial<Omit<BotConfigFile, "fAssets" | "nativeChainInfo">> & {
         extends: string;
         fAssets?: { [fAssetSymbol: string]: Partial<BotFAssetInfo> };
         nativeChainInfo?: Partial<BotNativeChainInfo>;
+        agentBotSettings?: AgentBotSettingsJsonOverride;
     };
 
 export type Schema_BotConfigFile = BotConfigFile & { $schema?: string };

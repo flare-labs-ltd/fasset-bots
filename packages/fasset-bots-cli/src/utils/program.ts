@@ -1,4 +1,5 @@
-import { resolveInFassetBotsCore, squashSpace, stripIndent } from "@flarelabs/fasset-bots-core/utils";
+import { loadConfigFile } from "@flarelabs/fasset-bots-core/config";
+import { resolveFromPackageRoot, resolveInFassetBotsCore, squashSpace, stripIndent } from "@flarelabs/fasset-bots-core/utils";
 import { Command } from "commander";
 import fs from "fs";
 import os from "os";
@@ -44,8 +45,22 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
             .makeOptionMandatory();
     }
 
+    function normalizeFAssetNameCase(configFName: string, fasset: string) {
+        try {
+            const configFile = loadConfigFile(configFName);
+            for (const fassetKey of Object.keys(configFile.fAssets)) {
+                if (fassetKey.toLowerCase() === fasset.toLowerCase()) {
+                    return fassetKey;
+                }
+            }
+        } catch (error) {
+            // ignore errors loading config file - will be reported later
+        }
+        return fasset;
+    }
+
     function verifyFilesExist() {
-        const options: { config: string; secrets: string; } = program.opts();
+        const options: { config: string; secrets: string; fasset?: string; } = program.opts();
         // check config file
         if (!fs.existsSync(options.config)) {
             program.error(`Config file ${options.config} does not exist.`);
@@ -57,9 +72,14 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
                                           yarn key-gen generateSecrets ${userOpts[user] ?? ""} -o "${options.secrets}"
                                       and edit the file as instructed by generateSecrets.`);
         }
+        // make -f option effectively case-insensitive
+        if (options.fasset) {
+            program.setOptionValue("fasset", normalizeFAssetNameCase(options.config, options.fasset));
+        }
     }
 
     const program = new Command();
+    program.version(programVersion());
     program.addOption(createConfigOption());
     program.addOption(createSecretsOption());
     if (fassets === "single_fasset") {
@@ -74,8 +94,22 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
     if (/^\w+$/.test(config)) {
         const suffix = user === "user" ? "user" : "bot";
         return resolveInFassetBotsCore(`run-config/${config}-${suffix}.json`);
+    } else if (/^[\w-]+$/.test(config)) {
+        return resolveInFassetBotsCore(`run-config/${config}.json`);
     }
     return config;
+}
+
+let _programVersion: string | undefined;
+
+export function programVersion() {
+    if (_programVersion == undefined) {
+        const mainFileDir = require.main?.filename ? path.dirname(require.main?.filename) : __dirname;
+        const packageFile = resolveFromPackageRoot(mainFileDir, "package.json");
+        const packageJson = JSON.parse(fs.readFileSync(packageFile).toString()) as { version?: string };
+        _programVersion = packageJson.version ?? "---";
+    }
+    return _programVersion;
 }
 
 function defaultSecretsPath() {

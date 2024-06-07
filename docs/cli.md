@@ -2,44 +2,46 @@
 
 ## Setup
 
-Configuration and environment file must be provided, before running cli commands. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#agent-bot-environment-file) for more.
+Note: before running agent bot must be set up.
 
 ## How to use
 
 Usage: `yarn agent-bot [command] <arg> -f [fAssetSymbol]`
 
-Available commands:
+Use: `yarn agent-bot help` to list available commands.
 
--   `create <poolTokenSuffix> -f [fAssetSymbol]` - create new agent vault; <poolTokenSuffix> has to be unique for each agent
--   `depositVaultCollateral <agentVault> <amount> -f [fAssetSymbol]` - deposit vault collateral to agent vault from owner's address";
--   `buyPoolCollateral <agentVault> <amount> -f [fAssetSymbol]` - add pool collateral and agent pool tokens
--   `enter <agentVault> -f [fAssetSymbol]` - enter available agent's list
--   `exit <agentVault> -f [fAssetSymbol]` - begin the process of exiting from available agent's list; exit will later be executed automatically by running agent bot
--   `executExit <agentVault> -f [fAssetSymbol]` - execute previously announced exit from available agent's list (only needed in special cases, since running bot does it automatically)
--   `info <agentVault> -f [fAssetSymbol]` - print agent info
--   `getAgentSettings <agentVault> -f [fAssetSymbol]` - print agent's settings
--   `updateAgentSetting <agentVault> <agentSettingName> <agentSettingValue> -f [fAssetSymbol]` - set agent's settings
--   `withdrawVaultCollateral <agentVault> <amount> -f [fAssetSymbol]` - begin vault collateral withdrawal process from agent's to owner’s address; withdrawal will later be executed automatically by running agent bot
--   `cancelVaultCollateralWithdrawal`- cancel vault collateral withdrawal process
--   `redeemCollateralPoolTokens <agentVault> <amount> -f [fAssetSymbol]` - begin collateral pool tokens redemption process from agent's to owner’s address; redemption will later be executed automatically by running agent bot
--   `cancelCollateralPoolTokenRedemption`- cancel pool tokens redemption process
--   `withdrawPoolFees <agentVault> <amount> -f [fAssetSymbol]` - withdraw pool fees from pool to owner's address
--   `poolFeesBalance <agentVault> -f [fAssetSymbol]` - pool fees balance of agent
--   `selfClose <agentVault> <amountUBA> -f [fAssetSymbol]` - self close agent vault with amountUBA of FAssets
--   `close <agentVault>` - begin the process of closing agent vault; all the steps required will later be performed automatically by running agent bot
--   `announceUnderlyingWithdrawal <agentVault> -f [fAssetSymbol]` - announce underlying withdrawal and get needed payment reference
--   `performUnderlyingWithdrawal <agentVault> <amount> <destinationAddress> <paymentReference> -f [fAssetSymbol]` - perform underlying withdrawal and get needed transaction hash
--   `confirmUnderlyingWithdrawal <agentVault> <transactionHash> -f [fAssetSymbol]` - confirm underlying withdrawal with transaction hash
--   `cancelUnderlyingWithdrawal <agentVault> -f [fAssetSymbol]` - cancel underlying withdrawal announcement
+Some of the available commands:
+
+-   `validateOwner -f [fAssetSymbol]` - validate the owner's settings and check the owner's addresses' balances
+-   `create -f [fAssetSymbol]` - create new agent vault;
+-   `depositCollaterals <agentVaultAddress> <lots> -f [fAssetSymbol]` - deposit enough vault and pool collateral to be able to mint given amount of lots;
+-   `depositVaultCollateral <agentVaultAddress> <amount> -f [fAssetSymbol]` - deposit vault collateral to agent vault from owner's address";
+-   `buyPoolCollateral <agentVaultAddress> <amount> -f [fAssetSymbol]` - add pool collateral and agent pool tokens
+-   `enter <agentVaultAddress> -f [fAssetSymbol]` - enter available agent's list
+-   `exit <agentVaultAddress> -f [fAssetSymbol]` - begin the process of exiting from available agent's list; exit will later be executed automatically by running agent bot
+-   `executeExit <agentVaultAddress> -f [fAssetSymbol]` - execute previously announced exit from available agent's list (only needed in special cases, since running bot does it automatically)
+-   `info <agentVaultAddress> -f [fAssetSymbol]` - print agent info
+-   `getAgentSettings <agentVaultAddress> -f [fAssetSymbol]` - print agent's settings
+-   `updateAgentSetting <agentVaultAddress> <agentSettingName> <agentSettingValue> -f [fAssetSymbol]` - set agent's settings
+-   `withdrawVaultCollateral <agentVaultAddress> <amount> -f [fAssetSymbol]` - begin vault collateral withdrawal process from agent's to owner’s address; withdrawal will later be executed automatically by running agent bot
+-   `cancelVaultCollateralWithdrawal <agentVaultAddress>`- cancel vault collateral withdrawal process
+-   `redeemCollateralPoolTokens <agentVaultAddress> <amount> -f [fAssetSymbol]` - begin collateral pool tokens redemption process from agent's to owner’s address; redemption will later be executed automatically by running agent bot
+-   `cancelCollateralPoolTokenRedemption <agentVaultAddress>`- cancel pool tokens redemption process
+-   `withdrawPoolFees <agentVaultAddress> <amount> -f [fAssetSymbol]` - withdraw pool fees from pool to owner's address
+-   `poolFeesBalance <agentVaultAddress> -f [fAssetSymbol]` - pool fees balance of agent
+-   `selfClose <agentVaultAddress> <amount> -f [fAssetSymbol]` - self close agent vault with amount of FAssets
+-   `close <agentVaultAddress>` - begin the process of closing agent vault; all the steps required will later be performed automatically by running agent bot
+-   `withdrawUnderlying <agentVaultAddress> <amount> <destinationAddress> -f [fAssetSymbol]` - announces and perform underlying withdrawal and get needed transaction hash
+-   `cancelUnderlyingWithdrawal <agentVaultAddress> -f [fAssetSymbol]` - cancel underlying withdrawal announcement
 -   `listAgents` - list active agent from persistent state
--   `delegatePoolCollateral <agentVault> <recipient> <bips> -f [fAssetSymbol]`- delegate pool collateral, where <bips> is basis points (1/100 of one percent)
--   `undelegatePoolCollateral <agentVault> -f [fAssetSymbol]`- undelegate pool collateral
+-   `delegatePoolCollateral <agentVaultAddress> <recipient> <share> -f [fAssetSymbol]`- delegate pool collateral, where <share> is decimal number (e.g. 0.3) or percentage (e.g. 30%)
+-   `undelegatePoolCollateral <agentVaultAddress> -f [fAssetSymbol]`- undelegate pool collateral
 -   `createUnderlyingAccount -f [fAssetSymbol]` - create underlying account
--   `freeVaultCollateral <agentVault>  -f [fAssetSymbol]` - get free vault collateral
--   `freePoolCollateral <agentVault>  -f [fAssetSymbol]` - get free pool collateral
--   `freeUnderlying <agentVault> -f [fAssetSymbol]` - get free underlying balance
--   `switchVaultCollateral <agentVault>  -f [fAssetSymbol]` - switch vault collateral
--   `upgradeWNat <agentVault>  -f [fAssetSymbol]` - upgrade WNat contract
+-   `freeVaultCollateral <agentVaultAddress>  -f [fAssetSymbol]` - get free vault collateral
+-   `freePoolCollateral <agentVaultAddress>  -f [fAssetSymbol]` - get free pool collateral
+-   `freeUnderlying <agentVaultAddress> -f [fAssetSymbol]` - get free underlying balance
+-   `switchVaultCollateral <agentVaultAddress>  -f [fAssetSymbol]` - switch vault collateral
+-   `upgradeWNat <agentVaultAddress>  -f [fAssetSymbol]` - upgrade WNat contract
 
 ### Agent's settings:
 
@@ -56,28 +58,48 @@ Available commands:
 
 ## How to use
 
-Usage: `yarn key-gen [command]`
+Usage: `yarn key-gen [command]`.
 
-Available commands:
+Use: `yarn key-gen help` to list available commands.
 
+Some of available commands:
+
+-   `generateSecrets [options]` - generate new secrets file
+    - `-c, --config <configFile>`: Config file path. If omitted, env var `FASSET_BOT_CONFIG` or `FASSET_USER_CONFIG` is used. If this is undefined, use embedded config.
+    - `-o, --output <outputFile>"`: The output file; if omitted, the secrets are printed to stdout.
+    - `--overwrite`: If enabled, the output file can be overwritten; otherwise it is an error if it already exists.
+    - `--user`: Generate secrets for user.
+    - `--agent <managementAddress>`: Generate secrets for agent; required argument is agent owner's management (cold) address.
+    - `--other`: Generate secrets for other bots (challenger, etc.).
 -   `createApiKeyAndHash` - create api key and its hash
 -   `createWalletEncryptionPassword` - create wallet encryption password
+-   `createAccount <chainName>` - create new address/private key pair on the underlying chain
 
 # CLI `user-bot`
 
 ## Setup
 
-Configuration and environment file must be provided, before running cli commands. See relevant user variables in [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#agent-bot-environment-file) for more.
+Note: before running user bot must be set up.
 
 ## How to use
 
-Usage: `yarn user-bot [command] <arg> -f [fAssetSymbol] -c [configFilePath]`
+Usage: `yarn user-bot [command] <arg> -f [fAssetSymbol]`
 
-Available commands:
+Use: `yarn user-bot help` to list available commands.
 
--   `agents -f [fAssetSymbol] -c [configFilePath]` - list available agents
--   `mint <agentVaultAddress> <amountLots> -f [fAssetSymbol] -c [configFilePath]` - mint the amount of FAssets in lots
--   `mintExecute <collateralReservationId> <transactionHash> <paymentAddress> -f [fAssetSymbol] -c [configFilePath]` - try to execute the minting that was paid but the execution failed
--   `redeem <amountLots> -f [fAssetSymbol] -c [configFilePath]` - trigger redemption
--   `redemptionDefault <amount> <reference> <firstBlock> <lastBlock> <lastTs> -f [fAssetSymbol] -c [configFilePath]` - get paid in collateral if the agent failed to pay redemption underlying
--   `info [agentVaultAddress] [--agents] -f [fAssetSymbol] -c [configFilePath]` - info about the system (with option `[--agents]` also info about agents is included) or an agent (when `[agentVaultAddress]` is provided)
+Some available commands:
+
+-   `info -f [fAssetSymbol]` - info about the system
+-   `agents -f [fAssetSymbol]` - list available agents
+-   `agentInfo <agentVaultAddress> -f [fAssetSymbol]` - info about an agent"
+-   `mint <agentVaultAddress> <numberOfLots> -f [fAssetSymbol]` - mint the number of FAssets in lots
+-   `mintExecute -f [fAssetSymbol]` - try to execute the minting that was paid but the execution failed
+-   `mintStatus -f [fAssetSymbol]` - list all open mintings
+-   `redeem <numberOfLots> -f [fAssetSymbol]` - trigger redemption
+-   `redemptionDefault redemptionDefault -f [fAssetSymbol]` - get paid in collateral if the agent failed to pay redemption underlying
+-   `redemptionStatus -f [fAssetSymbol]` - list all open redemptions
+-   `balance -f [fAssetSymbol]` - get user balances for relevant tokens
+-   `pools -f [fAssetSymbol]` - print the list of pools of public agents
+-   `poolHoldings -f [fAssetSymbol]` - print the amount of tokens the user owns per pool
+-   `enterPool -f [fAssetSymbol]` - enter a collateral pool with specified amount of collateral
+-   `exitPool -f [fAssetSymbol]` - exit a collateral pool for specified amount or all pool tokens

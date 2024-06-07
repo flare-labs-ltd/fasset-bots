@@ -9,14 +9,24 @@
         "readLogsChunkSize": 10
     },
     "fAssets": {
-        "FtestXRP": {
+        "FTestXRP": {
             "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
+            "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"
+        }
+    },
+    "agentBotSettings": {
+        "liquidationPreventionFactor": "1.2",
+        "vaultCollateralReserveFactor": "0.1",
+        "poolCollateralReserveFactor": "0.1",
+        "fAssets": {
+            "FTestXRP": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "0.01"
+            }
         }
     },
     "ormOptions": {
@@ -29,5 +39,5 @@
     "attestationProviderUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
     ],
-    "assetManagerController": "0x7D0B090aBc24fb29Ef5a783EECb9a6c6f81D68B1"
+    "assetManagerController": "0x1417bfE7Ad0c9963EE0D28f3B2c328aE02151cEb"
 }

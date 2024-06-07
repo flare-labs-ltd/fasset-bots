@@ -8,7 +8,6 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { UserBotCommands } from "../../../src/commands/UserBotCommands";
 import { PoolUserBotCommands } from "../../../src/commands/PoolUserBotCommands";
 import { ORM } from "../../../src/config/orm";
-import { AgentRedemptionState } from "../../../src/entities/agent";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
@@ -20,6 +19,9 @@ import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
+import { AgentRedemptionState } from "../../../src/entities/common";
+import { TokenBalances } from "../../../src/utils";
 use(chaiAsPromised);
 use(spies);
 
@@ -97,7 +99,18 @@ describe("UserBot cli commands unit tests", () => {
     after(function () {
         // clean up -  delete residual redeem files
         const fileList: string[] = [];
-        const dir = `${userDataDir}/${userBot.fAssetSymbol}-redeem/`;
+        const data: RedeemData = {
+            type: "redeem",
+            requestId: "",
+            amountUBA: "",
+            paymentReference: "",
+            firstUnderlyingBlock: "",
+            lastUnderlyingBlock: "",
+            lastUnderlyingTimestamp: "",
+            executorAddress: "",
+            createdAt: "",
+        };
+        const dir = createUserTestMintOrRedeemFile(data, false);
         fs.readdirSync(dir).forEach((file) => {
             const fullPath = path.join(dir, file);
             fileList.push(fullPath);
@@ -107,6 +120,12 @@ describe("UserBot cli commands unit tests", () => {
             fs.unlinkSync(file);
         }
     });
+
+    function createUserTestMintOrRedeemFile(data: MintData | RedeemData, filePath: boolean = true): string {
+        const folderPath = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-${data.type}/`;
+        if (filePath) return `${folderPath}${data.requestId}.json`;
+        else return folderPath
+    }
 
     it("Should update underlying block", async () => {
         const blockBefore = await context.assetManager.currentUnderlyingBlock();
@@ -119,7 +138,7 @@ describe("UserBot cli commands unit tests", () => {
 
     it("Should mint and redeem", async () => {
         const deposit = toBNExp(1_000_000, 6);
-        chain.mint(userBot.underlyingAddress, deposit);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         await userBot.mint(agentBot.agent.vaultAddress, 5, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
@@ -137,7 +156,7 @@ describe("UserBot cli commands unit tests", () => {
 
     it("Should mint and redeem and wait for redemption to be resolved", async () => {
         const deposit = toBNExp(1_000_000, 6);
-        chain.mint(userBot.underlyingAddress, deposit);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         await userBot.mint(agentBot.agent.vaultAddress, 2, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
@@ -181,7 +200,7 @@ describe("UserBot cli commands unit tests", () => {
         const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
         // mint
         const deposit = toBNExp(1_000_000, 6);
-        chain.mint(userBot.underlyingAddress, deposit);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         await userBot.mint(agentBot.agent.vaultAddress, 1, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
@@ -228,15 +247,21 @@ describe("UserBot cli commands unit tests", () => {
     });
 
     it("Should enter and exit pool", async () => {
+        const natbr = await TokenBalances.evmNative(context);
         const poolAddress = agentBot.agent.collateralPool.address;
-        const amount = toBN(10000000000000000000);
+        const amount = natbr.parse("1000");
+        const startBalance = await natbr.balance(minterAddress);
         const enter = await poolUserBot.enterPool(poolAddress, amount);
         expect(enter.tokenHolder).to.eq(userBot.nativeAddress);
         expect(enter.amountNatWei.eq(amount)).to.be.true;
+        const balanceAfterEnter = await natbr.balance(minterAddress);
+        expect(balanceAfterEnter.lte(startBalance.sub(amount))).to.be.true;
         await time.increase(time.duration.days(1));
         const exit = await poolUserBot.exitPool(poolAddress, amount);
         expect(exit.tokenHolder).to.eq(userBot.nativeAddress);
         expect(exit.receivedNatWei.eq(amount)).to.be.true;
+        const balanceAfterExit = await natbr.balance(minterAddress);
+        expect(balanceAfterExit.gte(startBalance.sub(natbr.parse("1")))).to.be.true;  // expect gas take less than 1 NAT
     });
 
     it("Should write and read state data", async () => {
@@ -295,7 +320,7 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename = createUserTestMintOrRedeemFile(mintData);
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();
@@ -317,7 +342,7 @@ describe("UserBot cli commands unit tests", () => {
             createdAt: userBot.timestampToDateString(timestamp),
         };
         userBot.writeState(mintData);
-        const newFilename = `${userDataDir}/${context.assetManagerController.address.slice(2, 10)}-${userBot.fAssetSymbol}-mint/${mintData.requestId}.json`;
+        const newFilename =createUserTestMintOrRedeemFile(mintData);
         const existBefore = existsSync(newFilename);
         expect(existBefore).to.be.true;
         await userBot.listMintings();
@@ -337,7 +362,7 @@ describe("UserBot cli commands unit tests", () => {
 
     it("Should reserve collateral", async () => {
         const deposit = toBNExp(1_000_000, 6);
-        chain.mint(userBot.underlyingAddress, deposit);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
         const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined);
@@ -355,7 +380,7 @@ describe("UserBot cli commands unit tests", () => {
         const executor = accounts[101];
         const fee = toBNExp(50, 6);
         const deposit = toBNExp(1_000_000, 6);
-        chain.mint(userBot.underlyingAddress, deposit);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
         const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, executor, fee);
@@ -375,7 +400,7 @@ describe("UserBot cli commands unit tests", () => {
         // vaultCollateralToken
         const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
         const deposit = toBNExp(1_000_000, 6);
-        chain.mint(userBot.underlyingAddress, deposit);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
         const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         await userBot.mint(agentBot.agent.vaultAddress, 1, false);
         const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);

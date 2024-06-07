@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
-import { ADDRESS_LENGTH, BYTES32_LENGTH } from "./common";
+import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -18,7 +18,7 @@ export class AgentEntity {
     chainId!: string;
 
     @Property()
-    chainSymbol!: string;
+    fassetSymbol!: string;
 
     // This is management address, which is immutable. The actuasl address used in all trabsactions will be the work address,
     // which is mutable and not recorded in the database. It can be obtained from chain by calling `agentOwnerRegistry.getWorkAddress(ownerAddress)`.
@@ -81,32 +81,6 @@ export class AgentEntity {
     @Property({ type: BNType })
     exitAvailableAllowedAtTimestamp: BN = BN_ZERO;
 
-    // agent update settings
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtFeeBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolFeeShareBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtMintingVaultCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtMintingPoolCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolExitCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolTopupCrBIPS: BN = BN_ZERO;
-
-    @Property({ type: BNType })
-    agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: BN = BN_ZERO;
-
     // redeem pool tokens
 
     @Property({ type: BNType })
@@ -144,6 +118,9 @@ export class AgentEntity {
     // not used - here just to keep the non-null contraint from breaking; delete column when we support migrations
     @Property({ columnType: "varchar(20)", default: "obtainedProof" })
     dailyProofState!: string;
+
+    @OneToMany(() => AgentUpdateSetting, updateSetting => updateSetting.agent)
+    updateSettings = new Collection<AgentUpdateSetting>(this);
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
@@ -277,18 +254,52 @@ export class Event {
     }
 }
 
-export enum AgentMintingState {
-    DONE = "done",
-    STARTED = "started",
-    REQUEST_NON_PAYMENT_PROOF = "requestedNonPaymentProof",
-    REQUEST_PAYMENT_PROOF = "requestedPaymentProof",
+
+@Entity()
+@Unique({ properties: ["txHash"] })
+export class AgentUnderlyingPayment {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property()
+    state!: AgentUnderlyingPaymentState;
+
+
+    @Property()
+    type!: AgentUnderlyingPaymentType;
+
+    @Property({ length: ADDRESS_LENGTH })
+    agentAddress!: string;
+
+    // 'PAID' state data
+
+    @Property({ nullable: true })
+    txHash!: string;
+
+    // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
+
+    @Property({ nullable: true })
+    proofRequestRound?: number;
+
+    @Property({ nullable: true, type: "text" })
+    proofRequestData?: string;
 }
 
-export enum AgentRedemptionState {
-    DONE = "done",
-    STARTED = "started",
-    PAID = "paid",
-    REQUESTED_PROOF = "requestedProof",
-    NOT_REQUESTED_PROOF = "notRequestedProof",
-    REQUESTED_REJECTION_PROOF = "requestedRejectionProof",
+@Entity()
+@Unique({ properties: ["name", "validAt"] })
+export class AgentUpdateSetting {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property()
+    state!: AgentUpdateSettingState;
+
+    @Property()
+    name!: AgentSettingName;
+
+    @ManyToOne(() => AgentEntity, { fieldName: 'agentAddress', onDelete: 'CASCADE' })
+    agent!: AgentEntity;
+
+    @Property({ type: BNType })
+    validAt!: BN;
 }

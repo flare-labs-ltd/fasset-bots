@@ -23,8 +23,14 @@ function findAddressIndex(ios: TxInputOutput[], address: string | null, defaultV
     for (let i = 0; i < ios.length; i++) {
         if (ios[i][0] === address) return i;
     }
-    logger.error(`Attestation helper error: address ${address} not used in transaction`);
-    throw new AttestationHelperError(`address ${address} not used in transaction`);
+    if (ios.length === 0 || (ios.length === 1 && ios[0][0] === "")) {
+        // special case needed e.g. for XRP failed transactions due to unactivated account
+        logger.warn(`Attestation helper error: address ${address} not used in transaction`);
+        return 0;
+    } else {
+        logger.error(`Attestation helper error: address ${address} not used in transaction`);
+        throw new AttestationHelperError(`address ${address} not used in transaction`);
+    }
 }
 
 export class AttestationHelper {

@@ -4,11 +4,13 @@ import "source-map-support/register";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBNExp } from "@flarelabs/fasset-bots-core/utils";
-import { readFileSync } from "fs";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { readFileSync, createReadStream } from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress, validateDecimal } from "../utils/validation";
+import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
+import type { OptionValues } from "commander";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
@@ -20,8 +22,8 @@ program.name("test-governance").description("Command line commands for governanc
 
 program
     .command("whitelistAgent")
-    .description("allow agent owner address to operate")
-    .argument("address", "owner's address")
+    .description("allow agent owner to operate")
+    .argument("address", "owner management address")
     .argument("name", "owner's name")
     .argument("description", "owner's description")
     .argument("[iconUrl]", "owner's icon url")
@@ -73,16 +75,45 @@ program
         });
     });
 
+program
+    .command("openBetaAgentRegister")
+    .description("whitelist and fund agents with CFLR and fake collateral tokens (used for open-beta)")
+    .option("--usdc <amountUsdc>", "amount of testUSDC tokens minted to each user", "0")
+    .option("--usdt <amountUsdt>", "amount of testUSDT tokens minted to each user", "0")
+    .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0")
+    .action(async (_options: OptionValues) => {
+        const options: { config: string; secrets: string } = program.opts();
+        const registrationApi = new OpenBetaAgentRegistrationTransport(Secrets.load(options.secrets));
+        const unFundedAgents = await registrationApi.getUnfundedAgents();
+        for (const agent of unFundedAgents) {
+            try {
+                await whitelistAndDescribeAgent(options.secrets, options.config, agent.management_address, agent.tg_user_name, agent.description, agent.icon_url);
+                if (Number(_options.usdc) >= 0) {
+                    await mintFakeTokens(options.secrets, options.config, "testUSDC", agent.management_address, _options.usdc);
+                }
+                if (Number(_options.usdt) >= 0) {
+                    await mintFakeTokens(options.secrets, options.config, "testUSDT", agent.management_address, _options.usdt);
+                }
+                if (Number(_options.eth) >= 0) {
+                    await mintFakeTokens(options.secrets, options.config, "testETH", agent.management_address, _options.eth);
+                }
+                await registrationApi.confirmFundedAgent(agent.management_address);
+            } catch (e) {
+                console.error(`Error with handling agent ${agent.tg_user_name}: ${e}`);
+            }
+        }
+    });
+
 toplevelRun(async () => {
     await program.parseAsync();
 });
 
-async function whitelistAndDescribeAgent(secretsFile: string, configFileName: string, ownerAddress: string, name: string, description: string, iconUrl: string) {
+async function whitelistAndDescribeAgent(secretsFile: string, configFileName: string, managementAddress: string, name: string, description: string, iconUrl: string) {
     const [secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const deployerAddress = secrets.required("deployer.address");
     const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
-    await agentOwnerRegistry.whitelistAndDescribeAgent(ownerAddress, name, description, iconUrl, { from: deployerAddress });
+    await agentOwnerRegistry.whitelistAndDescribeAgent(managementAddress, name, description, iconUrl, { from: deployerAddress });
 }
 
 async function isAgentWhitelisted(secretsFile: string, configFileName: string, ownerAddress: string): Promise<boolean> {

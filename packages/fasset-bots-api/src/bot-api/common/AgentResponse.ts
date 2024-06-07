@@ -15,7 +15,7 @@ export interface AgentBalance {
 
 export interface AgentUnderlying {
     paymentReference?: string | null;
-    transactionHash?: string;
+    transactionHash?: string | null;
     address?: string;
     privateKey?: string;
 }

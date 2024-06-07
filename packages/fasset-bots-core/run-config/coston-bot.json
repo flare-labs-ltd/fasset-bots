@@ -12,30 +12,41 @@
         "faucet": "https://faucet.flare.network"
     },
     "fAssets": {
-        "FtestXRP": {
+        "FTestXRP": {
             "chainId": "testXRP",
-            "name": "Test XRP",
-            "symbol": "testXRP",
+            "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
             "minimumAccountBalance": "10",
-            "recommendedOwnerBalance": "50",
             "faucet": "https://faucet.tequ.dev/"
         },
-        "FfakeXRP": {
+        "FSimCoinX": {
             "chainId": "testXRP",
-            "name": "Fake XRP",
-            "symbol": "fakeXRP",
+            "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
             "minimumAccountBalance": "10",
-            "recommendedOwnerBalance": "50",
             "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FakePriceReader"
+        }
+    },
+    "agentBotSettings": {
+        "liquidationPreventionFactor": "1.2",
+        "vaultCollateralReserveFactor": "0.1",
+        "poolCollateralReserveFactor": "0.1",
+        "fAssets": {
+            "FTestXRP": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "0.01"
+            },
+            "FSimCoinX": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "0.01"
+            }
         }
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
@@ -48,15 +59,9 @@
         "allowGlobalContext": true
     },
     "liquidationStrategy": {
-        "className": "DexLiquidationStrategy",
-        "config": {
-            "address": "0x250D1792DA9aBACEd6b16a47d6aedf4d2cbbaFeb"
-        }
+        "className": "DefaultLiquidationStrategy"
     },
     "challengeStrategy": {
-        "className": "DexChallengeStrategy",
-        "config": {
-            "address": "0xbDcCb53d655f541902De8cf04e68B6E7cE2D9Fa0"
-        }
+        "className": "DefaultChallengeStrategy"
     }
 }

@@ -63,7 +63,7 @@ export class AgentBotOwnerValidation {
     static async fromContext(context: IAssetAgentContext, secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
         const configFile = loadConfigFile(configFileName);
-        const fassets = new Map<string, FAssetInstance>([[await context.fAsset.symbol(), context.fAsset]]);
+        const fassets = new Map<string, FAssetInstance>([[context.fAssetSymbol, context.fAsset]]);
         return new AgentBotOwnerValidation(secrets, configFile, context.agentOwnerRegistry, fassets, reporter);
     }
 
@@ -142,7 +142,7 @@ export class AgentBotOwnerValidation {
         this.reporter.log(`Verifying balance on owner's ${fassetInfo.chainId} address ${underlyingAddress}...`);
         const walletToken = await this.createWalletTokenBalance(fassetSymbol);
         const underlyingBalance = await walletToken.balance(underlyingAddress);
-        const underlyingRecBal = walletToken.parse(fassetInfo.recommendedOwnerBalance ?? "0");
+        const underlyingRecBal = walletToken.parse(this.configFile.agentBotSettings.fAssets[fassetSymbol].recommendedOwnerBalance ?? "0");
         const balanceFmt = walletToken.format(underlyingBalance);
         if (underlyingBalance.lt(underlyingRecBal)) {
             const recBalFmt = walletToken.format(underlyingRecBal);

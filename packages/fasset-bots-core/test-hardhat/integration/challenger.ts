@@ -2,27 +2,24 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
-import { AgentRedemptionState } from "../../src/entities/agent";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
-import { MockIndexer } from "../../src/mock/MockIndexer";
 import { TrackedState } from "../../src/state/TrackedState";
 import { attestationProved } from "../../src/underlying-chain/AttestationHelper";
 import { TX_BLOCKED } from "../../src/underlying-chain/interfaces/IBlockChain";
 import { IBlockChainWallet, SpentReceivedObject, TransactionOptionsWithFee, UTXO } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
-import { fail, sleep, toBN } from "../../src/utils/helpers";
+import { sleep, toBN } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
-import { performRedemptionPayment } from "../../test/test-utils/test-helpers";
+import { fundUnderlying, performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { AgentRedemptionState } from "../../src/entities/common";
 use(spies);
-
-type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
 
 const IERC20 = artifacts.require("IERC20");
 const underlyingAddress: string = "UNDERLYING_ADDRESS";
@@ -71,9 +68,8 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         await challenger.runStep();
         // faucet underlying
-        if (!(context.blockchainIndexer instanceof MockIndexer)) fail("only for mock chains");
         const underlyingBalance = toBN(1000000000);
-        context.blockchainIndexer.chain.mint(agentBot.agent.underlyingAddress, underlyingBalance);
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, underlyingBalance);
         // perform illegal payment
         const underlyingAddress = "someUnderlyingAddress";
         await agentBot.agent.performPayment(underlyingAddress, underlyingBalance);
@@ -154,7 +150,9 @@ describe("Challenger tests", () => {
         }
         const agentStatus1 = await getAgentStatus(agentBot);
         assert.equal(agentStatus1, AgentStatus.NORMAL);
-        // repeat the same payment
+        // fund and repeat the same payment
+        const paymentAmount = reqs[0].valueUBA.sub(reqs[0].feeUBA);
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, paymentAmount);
         await performRedemptionPayment(agentBot.agent, reqs[0]);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {
@@ -236,7 +234,9 @@ describe("Challenger tests", () => {
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
         }
-        // repeat the same payment (already confirmed)
+        // fund and repeat the same payment (already confirmed)
+        const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, paymentAmount);
         await performRedemptionPayment(agentBot.agent, rdReq);
         // run challenger's and agent's steps until agent's status is FULL_LIQUIDATION
         for (let i = 0; ; i++) {
@@ -313,8 +313,7 @@ describe("Challenger tests", () => {
         // pay for redemption - wrong underlying address, also tweak redemption to trigger low underlying balance alert
         redemption.paymentAddress = minter.underlyingAddress;
         const agentBalance = await context.blockchainIndexer.chain.getBalance(agentBot.agent.underlyingAddress);
-        redemption.valueUBA = toBN(agentBalance);
-        chain.requiredFee = toBN(redemption.feeUBA);
+        redemption.valueUBA = toBN(agentBalance).sub(context.chainInfo.minimumAccountBalance);
         await agentBot.redemption.checkBeforeRedemptionPayment(redemption);
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available
@@ -409,10 +408,12 @@ describe("Challenger tests", () => {
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
         await challenger.runStep();
-        const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
+        const underlyingBalanceUBA = toBN((await agentBot.agent.getAgentInfo()).underlyingBalanceUBA).sub(context.chainInfo.minimumAccountBalance);
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
-        await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal.paymentReference, underlyingBalanceUBA, underlyingAddress);
+        await agentBot.agent.performPayment(underlyingAddress, underlyingBalanceUBA, underlyingWithdrawal.paymentReference);
+        // fund and perform payment
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, underlyingBalanceUBA);
         await agentBot.agent.performPayment("underlying", underlyingBalanceUBA);
         chain.mine(chain.finalizationBlocks + 1);
         // run challenger's steps until agent's status is FULL_LIQUIDATION
@@ -443,10 +444,12 @@ describe("Challenger tests", () => {
         const faultyContext = await createTestAssetContext(accounts[0], testChainInfo.xrp, { useAlwaysFailsProver: true });
         const challenger = await createTestChallenger(faultyContext, challengerAddress, state);
         await challenger.runStep();
-        const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
+        const underlyingBalanceUBA = toBN((await agentBot.agent.getAgentInfo()).underlyingBalanceUBA).sub(context.chainInfo.minimumAccountBalance);
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
-        await agentBot.agent.performUnderlyingWithdrawal(underlyingWithdrawal.paymentReference, underlyingBalanceUBA, underlyingAddress);
+        await agentBot.agent.performPayment(underlyingAddress, underlyingBalanceUBA, underlyingWithdrawal.paymentReference);
+        // fund first and perform payment
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, underlyingBalanceUBA);
         await agentBot.agent.performPayment("underlying", underlyingBalanceUBA);
         chain.mine(chain.finalizationBlocks + 1);
         await challenger.runStep();

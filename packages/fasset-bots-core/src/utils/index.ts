@@ -10,3 +10,4 @@ export * from "./token-balances";
 export * from "./currencies";
 export * from "./TokenBalance";
 export * from "./Currency";
+export * from "./fasset-helpers";

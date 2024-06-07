@@ -1,7 +1,7 @@
 import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
-import { Secrets } from "../config";
+import { AgentBotSettings, Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
@@ -11,11 +11,11 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError } from "../utils";
+import { CommandLineError, TokenBalances } from "../utils";
 import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
-import { BN_ZERO, BNish, DAYS, MINUTES, XRP_ACTIVATE_BALANCE, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -29,6 +29,9 @@ import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
 import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+import { checkUnderlyingFunds } from "../utils/fasset-helpers";
+import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
+import { AgentUnderlyingPaymentType } from "../entities/common";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -54,6 +57,8 @@ export const PERFORM_DAILY_TASKS_EVERY = 1 * DAYS;
  * It cannot be stored directly in AgentBot class, because that is re-created on every loop of AgentBotRunner.
  */
 export class AgentBotTransientStorage {
+    static deepCopyWithObjectCreate = true;
+
     // used by AgentBotEventReader.checkForPriceChangeEvents to track the last block for which PriceFinalized event was called
     lastPriceReaderEventBlock = -1;
 
@@ -66,6 +71,7 @@ export class AgentBot {
 
     constructor(
         public agent: Agent,
+        public agentBotSettings: AgentBotSettings,
         public notifier: AgentNotifier,
         public owner: OwnerAddressPair,
         public ownerUnderlyingAddress: string,
@@ -76,8 +82,9 @@ export class AgentBot {
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
-    collateralManagement = new AgentBotCollateralManagement(this.agent, this.notifier, this.tokens);
-    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.notifier, this.ownerUnderlyingAddress, this.tokens);
+    updateSetting = new AgentBotUpdateSettings(this.agent, this.notifier);
+    collateralManagement = new AgentBotCollateralManagement(this.agent, this.agentBotSettings, this.notifier, this.tokens);
+    underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.agentBotSettings, this.notifier, this.ownerUnderlyingAddress, this.tokens);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -114,6 +121,7 @@ export class AgentBot {
     static async create(
         rootEm: EM,
         context: IAssetAgentContext,
+        agentBotSettings: AgentBotSettings,
         owner: OwnerAddressPair,
         ownerUnderlyingAddress: string,
         addressValidityProof: AddressValidity.Proof,
@@ -129,22 +137,22 @@ export class AgentBot {
         const lastBlock = await web3.eth.getBlockNumber();
         const agent = await Agent.create(context, owner, addressValidityProof, agentSettingsConfig);
         // save state
-        return await rootEm.transactional(async (em) => {
-            const agentEntity = new AgentEntity();
-            agentEntity.chainId = context.chainInfo.chainId.sourceId;
-            agentEntity.chainSymbol = context.chainInfo.symbol;
-            agentEntity.ownerAddress = agent.owner.managementAddress;
-            agentEntity.vaultAddress = agent.vaultAddress;
-            agentEntity.underlyingAddress = agent.underlyingAddress;
-            agentEntity.active = true;
-            agentEntity.currentEventBlock = lastBlock + 1;
-            agentEntity.collateralPoolAddress = agent.collateralPool.address;
-            em.persist(agentEntity);
-            logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
-                underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
-            const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-            return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
-        });
+        const agentEntity = new AgentEntity();
+        agentEntity.chainId = context.chainInfo.chainId.sourceId;
+        agentEntity.fassetSymbol = context.fAssetSymbol;
+        agentEntity.ownerAddress = agent.owner.managementAddress;
+        agentEntity.vaultAddress = agent.vaultAddress;
+        agentEntity.underlyingAddress = agent.underlyingAddress;
+        agentEntity.active = true;
+        agentEntity.currentEventBlock = lastBlock + 1;
+        agentEntity.collateralPoolAddress = agent.collateralPool.address;
+        await rootEm.persistAndFlush(agentEntity);
+
+        logger.info(squashSpace`Agent ${agent.vaultAddress} was created by owner ${agent.owner},
+            underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
+
+        const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
+            return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
     }
 
     /**
@@ -156,7 +164,13 @@ export class AgentBot {
     static async proveEOAaddress(context: IAssetAgentContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
-        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, 1, reference);
+        const smallest_amount = 1;
+        const enoughFunds = await checkUnderlyingFunds(context, underlyingAddress, underlyingAddress, smallest_amount);
+        if (!enoughFunds) {
+            logger.error(`Not enough funds to prove EOAaddress ${underlyingAddress}`)
+            throw new Error(`Not enough funds to prove EOAaddress ${underlyingAddress}`);
+        }
+        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, smallest_amount, reference);
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(web3DeepNormalize(proof), { from: owner.workAddress });
@@ -171,6 +185,7 @@ export class AgentBot {
      */
     static async fromEntity(
         context: IAssetAgentContext,
+        agentBotSettings: AgentBotSettings,
         agentEntity: AgentEntity,
         ownerUnderlyingAddress: string,
         notifierTransports: NotifierTransport[]
@@ -193,7 +208,7 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
     }
 
     static underlyingAddress(secrets: Secrets, chainId: ChainId) {
@@ -201,26 +216,31 @@ export class AgentBot {
     }
 
     /**
-     * Activates agent's underlying XRP account by depositing 10 XRP from owner's underlying.
+     * Activates agent's underlying account.
      * @param context fasset agent bot context
      * @param vaultUnderlyingAddress agent's underlying address
      */
     static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
+        const starterAmount = context.chainInfo.minimumAccountBalance;
+        if (starterAmount == BN_ZERO) return;
+        const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
         try {
-            if (![ChainId.XRP, ChainId.testXRP].includes(context.chainInfo.chainId)) return;
-            const starterAmount = XRP_ACTIVATE_BALANCE;
             const reference = owner.managementAddress;
+            const enoughFunds = await checkUnderlyingFunds(context, ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount);
+            if (!enoughFunds) {
+                throw new Error(`Not enough funds on underlying address ${ownerUnderlyingAddress}`);
+            }
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
             if (!transaction || transaction?.status != TX_SUCCESS) {
-                throw new Error(`Could not activate or verify new XRP account with transaction ${txHash}`);
+                throw new Error(`Could not activate or verify new ${balanceReader.symbol} account with transaction ${txHash}`);
             }
             logger.info(`Owner ${owner} activated underlying address ${vaultUnderlyingAddress} with transaction ${txHash}.`);
         } catch (error) {
             logger.error(`Owner ${owner} couldn't activate underlying address ${vaultUnderlyingAddress}:`, error);
-            throw new CommandLineError(squashSpace`Could not activate or verify new agent vault's XRP account.
-                Note that the owner's XRP account ${ownerUnderlyingAddress} requires at least ${2 * Number(XRP_ACTIVATE_BALANCE) * 1e-6 + 1} XRP to activate the new account.`);
+            throw new CommandLineError(squashSpace`Could not activate or verify new agent vault's ${balanceReader.symbol}  account.
+                Note that the owner's ${balanceReader.symbol}  account ${ownerUnderlyingAddress} requires at least ${2 * Number(starterAmount) * 1e-6 + 1} ${balanceReader.symbol}  to activate the new account.`);
         }
     }
 
@@ -240,6 +260,7 @@ export class AgentBot {
         await this.handleOpenRedemptions(rootEm);
         await this.handleOpenMintings(rootEm);
         await this.handleTimelockedProcesses(rootEm);
+        await this.handleOpenUnderlyingPayments(rootEm);
         await this.handleDailyTasks(rootEm);
     }
 
@@ -297,7 +318,7 @@ export class AgentBot {
             await this.notifier.sendLiquidationWasPerformed(await this.tokens.fAsset.format(event.args.valueUBA));
         } else if (eventIs(event, this.context.assetManager, "UnderlyingBalanceTooLow")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'UnderlyingBalanceTooLow' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendFullLiquidationAlert(event.args.agentVault);
+            await this.notifier.sendFullLiquidationAlert();
         } else if (eventIs(event, this.context.assetManager, "DuplicatePaymentConfirmed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'DuplicatePaymentConfirmed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash1, event.args.transactionHash2);
@@ -311,26 +332,54 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleOpenMintings(rootEm: EM): Promise<void> {
-        const openMintings = await this.minting.openMintings(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
-        for (const rd of openMintings) {
-            if (this.stopRequested()) return;
-            await this.minting.nextMintingStep(rootEm, rd.id);
+        try {
+            const openMintings = await this.minting.openMintings(rootEm, true);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
+            for (const rd of openMintings) {
+                if (this.stopRequested()) return;
+                await this.minting.nextMintingStep(rootEm, rd.id);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open mintings.`);
+        } catch (error) {
+            console.error(`Error while handling open mintings for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open mintings:`, error);
         }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open mintings.`);
     }
 
     /**
      * @param rootEm entity manager
      */
     async handleOpenRedemptions(rootEm: EM): Promise<void> {
-        const openRedemptions = await this.redemption.openRedemptions(rootEm, true);
-        logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
-        for (const rd of openRedemptions) {
-            if (this.stopRequested()) return;
-            await this.redemption.nextRedemptionStep(rootEm, rd.id);
+        try {
+            const openRedemptions = await this.redemption.openRedemptions(rootEm, true);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open redemptions #${openRedemptions.length}.`);
+            for (const rd of openRedemptions) {
+                if (this.stopRequested()) return;
+                await this.redemption.nextRedemptionStep(rootEm, rd.id);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
+        } catch (error) {
+            console.error(`Error while handling open redemptions for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open redemptions:`, error);
         }
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
+    }
+
+    /**
+     * @param rootEm entity manager
+     */
+    async handleOpenUnderlyingPayments(rootEm: EM): Promise<void> {
+        try {
+            const openUnderlyingPayments = await this.underlyingManagement.openUnderlyingPaymentIds(rootEm);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open underlying payments #${openUnderlyingPayments.length}.`);
+            for (const up of openUnderlyingPayments) {
+                if (this.stopRequested()) return;
+                await this.underlyingManagement.nextUnderlyingPaymentStep(rootEm, up.id);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open underlying payments.`);
+        } catch (error) {
+            console.error(`Error while handling open underlying payments for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open underlying payments:`, error);
+        }
     }
 
     /**
@@ -338,16 +387,23 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
-        if (this.stopRequested()) return;
-        const agentEnt = await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        const timestamp = await latestBlockTimestampBN();
-        if (timestamp.sub(agentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
-        const blockHeightProof = await this.getUnderlyingBlockHeightProof();
-        if (blockHeightProof == null) return;
-        logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
-        await this.checkForClaims();
-        agentEnt.dailyTasksTimestamp = toBN(timestamp);
-        await rootEm.persistAndFlush(agentEnt);
+        try {
+            if (this.stopRequested()) return;
+            const readAgentEnt = await this.fetchAgentEntity(rootEm)
+            const timestamp = await latestBlockTimestampBN();
+            if (timestamp.sub(readAgentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
+            const blockHeightProof = await this.getUnderlyingBlockHeightProof();
+            if (blockHeightProof == null) return;
+            logger.info(`Agent ${this.agent.vaultAddress} is handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
+            await this.checkForClaims();
+            await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                agentEnt.dailyTasksTimestamp = toBN(timestamp);
+            });
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling daily tasks with block heigh exists proof in round ${blockHeightProof.data.votingRound} for block ${blockHeightProof.data.requestBody.blockNumber}.`);
+        } catch (error) {
+            console.error(`Error while handling daily tasks for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling daily tasks:`, error);
+        }
     }
 
     /**
@@ -417,131 +473,131 @@ export class AgentBot {
      */
     async handleTimelockedProcesses(rootEm: EM): Promise<void> {
         if (this.stopRequested()) return;
-        logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleAgentsWaitingsAndCleanUp'.`);
-        await rootEm.transactional(async (em) => {
-            const agentEnt: AgentEntity = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-            const latestTimestamp = await latestBlockTimestampBN();
-            await this.handleWaitForCollateralWithdrawal(agentEnt, latestTimestamp);
-            await this.handleWaitForPoolTokenRedemption(agentEnt, latestTimestamp);
-            await this.handleWaitForAgentSettingUpdate(agentEnt, latestTimestamp);
-            await this.handleWaitAgentExitAvailable(agentEnt, latestTimestamp);
-            await this.handleUnderlyingWithdrawal(agentEnt, latestTimestamp);
-            await this.handleAgentCloseProcess(agentEnt);
-            em.persist(agentEnt);
-        });
-        logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleAgentsWaitingsAndCleanUp'.`);
+        logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleTimelockedProcesses'.`);
+        const latestTimestamp = await latestBlockTimestampBN();
+        await this.handleWaitForCollateralWithdrawal(rootEm, latestTimestamp);
+        await this.handleWaitForPoolTokenRedemption(rootEm, latestTimestamp);
+        await this.handleWaitForAgentSettingUpdate(rootEm, latestTimestamp);
+        await this.handleWaitAgentExitAvailable(rootEm, latestTimestamp);
+        await this.handleUnderlyingWithdrawal(rootEm, latestTimestamp);
+        await this.handleAgentCloseProcess(rootEm);
+        logger.info(`Agent ${this.agent.vaultAddress} finished handling 'handleTimelockedProcesses'.`);
     }
 
-    private async handleAgentCloseProcess(agentEnt: AgentEntity) {
-        const closingHandler = new AgentBotClosing(this, agentEnt);
-        await closingHandler.handleAgentCloseProcess();
+
+    private async handleAgentCloseProcess(rootEm: EM) {
+        const closingHandler = new AgentBotClosing(this);
+        await closingHandler.handleAgentCloseProcess(rootEm);
     }
 
-    async handleWaitForCollateralWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (toBN(agentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const allowedAt = toBN(agentEnt.withdrawalAllowedAtTimestamp);
-            const amount = toBN(agentEnt.withdrawalAllowedAtAmount);
-            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
-            if (successOrExpired) {
-                agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
-                agentEnt.withdrawalAllowedAtAmount = "";
+    async handleWaitForCollateralWithdrawal(rootEm: EM, latestTimestamp: BN) {
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            if (toBN(readAgentEnt.withdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+                const allowedAt = toBN(readAgentEnt.withdrawalAllowedAtTimestamp);
+                const amount = toBN(readAgentEnt.withdrawalAllowedAtAmount);
+                const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.VAULT);
+                if (successOrExpired) {
+                    await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.withdrawalAllowedAtTimestamp = BN_ZERO;
+                        agentEnt.withdrawalAllowedAtAmount = "";
+                    });
+                }
             }
+        } catch (error) {
+            console.error(`Error while handling wait for collateral withdrawal for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling wait for collateral withdrawal during handleTimelockedProcesses:`, error);
         }
     }
 
-    async handleWaitForPoolTokenRedemption(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
-            const allowedAt = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
-            const amount = toBN(agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
-            const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
-            if (successOrExpired) {
-                agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
-                agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+    async handleWaitForPoolTokenRedemption(rootEm: EM, latestTimestamp: BN) {
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            if (toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp).gt(BN_ZERO)) {
+                const allowedAt = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp);
+                const amount = toBN(readAgentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount);
+                const successOrExpired = await this.withdrawCollateral(allowedAt, amount, latestTimestamp, ClaimType.POOL);
+                if (successOrExpired) {
+                    await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
+                        agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
+                    });
+                }
             }
+        } catch (error) {
+            console.error(`Error while handling wait for pool token redemption for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling wait for pool token redemption during handleTimelockedProcesses:`, error);
         }
     }
 
     // Agent settings update
-    private async handleWaitForAgentSettingUpdate(agentEnt: AgentEntity, latestTimestamp: BN) {
-        //Agent update feeBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtFeeBIPS), "feeBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtFeeBIPS = BN_ZERO;
+    private async handleWaitForAgentSettingUpdate(rootEm: EM, latestTimestamp: BN) {
+        try {
+            const openUpdateSettings = await this.updateSetting.openUpdateSettingIds(rootEm);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open update settings #${openUpdateSettings.length}.`);
+            for (const us of openUpdateSettings) {
+                if (this.stopRequested()) return;
+                await this.updateSetting.nextUpdateSettingStep(rootEm, us.id, latestTimestamp);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open redemptions.`);
+        } catch (error) {
+            console.error(`Error while handling open redemptions for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open redemptions:`, error);
         }
-        //Agent update poolFeeShareBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS), "poolFeeShareBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolFeeShareBIPS = BN_ZERO;
-        }
-        //Agent update mintingVaultCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS), "mintingVaultCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingVaultCrBIPS = BN_ZERO;
-        }
-        //Agent update mintingPoolCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS), "mintingPoolCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtMintingPoolCrBIPS = BN_ZERO;
-        }
-        //Agent update buyFAssetByAgentFactorBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS), "buyFAssetByAgentFactorBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS = BN_ZERO;
-        }
-        //Agent update poolExitCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS), "poolExitCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolExitCrBIPS = BN_ZERO;
-        }
-        //Agent update poolTopupCollateralRatioBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS), "poolTopupCollateralRatioBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupCrBIPS = BN_ZERO;
-        }
-        //Agent update poolTopupTokenPriceFactorBIPS
-        if (toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS).gt(BN_ZERO)) {
-            const updatedOrExpired = await this.updateAgentSettings(toBN(agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS), "poolTopupTokenPriceFactorBIPS", latestTimestamp);
-            if (updatedOrExpired) agentEnt.agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS = BN_ZERO;
-        }
+
     }
 
-    private async handleUnderlyingWithdrawal(agentEnt: AgentEntity, latestTimestamp: BN) {
-        // confirm underlying withdrawal
-        if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
-            logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
-            // agent waiting for underlying withdrawal
-            if (agentEnt.underlyingWithdrawalConfirmTransaction.length) {
-                const settings = await this.context.assetManager.getSettings();
-                const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
-                if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                    // agent can confirm underlying withdrawal
-                    await this.agent.confirmUnderlyingWithdrawal(agentEnt.underlyingWithdrawalConfirmTransaction);
-                    await this.notifier.sendConfirmWithdrawUnderlying();
-                    logger.info(`Agent ${this.agent.vaultAddress} confirmed underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                    agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                } else {
-                    const withdrawalAllowedAt = toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
-                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${withdrawalAllowedAt}. Current ${latestTimestamp}.`);
+    private async handleUnderlyingWithdrawal(rootEm: EM, latestTimestamp: BN) {
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            // confirm underlying withdrawal
+            if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
+                logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
+                // agent waiting for underlying withdrawal
+                if (readAgentEnt.underlyingWithdrawalConfirmTransaction.length) {
+                    const settings = await this.context.assetManager.getSettings();
+                    const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
+                    if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                        // agent can confirm underlying withdrawal
+                        await this.underlyingManagement.createAgentUnderlyingPayment(rootEm, readAgentEnt.underlyingWithdrawalConfirmTransaction, AgentUnderlyingPaymentType.WITHDRAWAL);
+                        await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                            agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                            agentEnt.underlyingWithdrawalConfirmTransaction = ""
+                        });
+                    } else {
+                        const withdrawalAllowedAt = toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds);
+                        logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal. Allowed at ${withdrawalAllowedAt}. Current ${latestTimestamp}.`);
+                    }
                 }
             }
+        } catch(error) {
+            console.error(`Error while handling underlying withdrawal for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling underlying withdrawal during handleTimelockedProcesses:`, error);
         }
-        // cancel underlying withdrawal
-        if (agentEnt.underlyingWithdrawalWaitingForCancelation) {
-            logger.info(`Agent ${this.agent.vaultAddress} is waiting for canceling underlying withdrawal.`);
-            const settings = await this.context.assetManager.getSettings();
-            const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
-            if (toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
-                // agent can confirm cancel withdrawal announcement
-                await this.agent.cancelUnderlyingWithdrawal();
-                await this.notifier.sendCancelWithdrawUnderlying();
-                logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${agentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                agentEnt.underlyingWithdrawalConfirmTransaction = "";
-                agentEnt.underlyingWithdrawalWaitingForCancelation = false;
-            } else {
-                logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            // cancel underlying withdrawal
+            if (readAgentEnt.underlyingWithdrawalWaitingForCancelation) {
+                logger.info(`Agent ${this.agent.vaultAddress} is waiting for canceling underlying withdrawal.`);
+                const settings = await this.context.assetManager.getSettings();
+                const announcedUnderlyingConfirmationMinSeconds = toBN(settings.announcedUnderlyingConfirmationMinSeconds);
+                if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+                    // agent can confirm cancel withdrawal announcement
+                    await this.agent.cancelUnderlyingWithdrawal();
+                    await this.notifier.sendCancelWithdrawUnderlying();
+                    logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                    await this.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
+                        agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                        agentEnt.underlyingWithdrawalWaitingForCancelation = false;
+                    });
+                } else {
+                    logger.info(`Agent ${this.agent.vaultAddress} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp)}. Current ${latestTimestamp}.`);
+                }
             }
+        } catch(error) {
+            console.error(`Error while handling underlying cancelation for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling underlying cancelation during handleTimelockedProcesses:`, error);
         }
     }
 
@@ -583,46 +639,25 @@ export class AgentBot {
     }
 
     /**
-     * AgentBot tries to update agent setting
-     * @param settingValidAt setting update valid at
-     * @param settingsName
-     * @param latestTimestamp
-     * @returns true if settings was updated or valid time expired
-     */
-    async updateAgentSettings(settingValidAt: BN, settingsName: string, latestTimestamp: BN): Promise<boolean> {
-        logger.info(`Agent ${this.agent.vaultAddress} is waiting for ${settingsName} agent setting update.`);
-        // agent waiting for setting update
-        if (toBN(settingValidAt).lte(latestTimestamp)) {
-            // agent can update setting
-            try {
-                await this.agent.executeAgentSettingUpdate(settingsName);
-                await this.notifier.sendAgentSettingsUpdate(settingsName);
-                return true;
-            } catch (error) {
-                if (errorIncluded(error, ["update not valid anymore"])) {
-                    await this.notifier.sendAgentCannotUpdateSettingExpired(settingsName);
-                    return true;
-                }
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${settingsName}:`, error);
-            }
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot update agent setting ${settingsName}. Allowed at ${settingValidAt}. Current ${latestTimestamp}.`);
-        }
-        return false;
-    }
-
-    /**
      * AgentBot exits available if already allowed
      * @param agentEnt agent entity
      */
-    async handleWaitAgentExitAvailable(agentEnt: AgentEntity, latestTimestamp: BN) {
-        if (this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
-        await this.exitAvailable(agentEnt);
+    async handleWaitAgentExitAvailable(rootEm: EM, latestTimestamp: BN) {
+        try {
+            const readAgentEnt = await this.fetchAgentEntity(rootEm);
+            if (this.announcementStatus(readAgentEnt.exitAvailableAllowedAtTimestamp, latestTimestamp) !== "ALLOWED") return;
+            await this.exitAvailable(rootEm);
+        } catch (error) {
+            console.error(`Error while handling wait for agent exit available for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling wait for agent exit available during handleTimelockedProcesses:`, error);
+        }
     }
 
-    async exitAvailable(agentEnt: AgentEntity) {
+    async exitAvailable(rootEm: EM) {
         await this.agent.exitAvailable();
-        agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+        await this.updateAgentEntity(rootEm, async (agentEnt) => {
+            agentEnt.exitAvailableAllowedAtTimestamp = BN_ZERO;
+        });
         await this.notifier.sendAgentExitedAvailable();
         logger.info(`Agent ${this.agent.vaultAddress} exited available list.`);
     }
@@ -635,16 +670,16 @@ export class AgentBot {
     async getExitAvailableProcessStatus(agentEnt: AgentEntity) {
         const agentInfo = await this.agent.getAgentInfo();
         if (!agentInfo.publiclyAvailable) return "EXITED";
-        return this.anouncementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
+        return this.announcementStatus(agentEnt.exitAvailableAllowedAtTimestamp, await latestBlockTimestampBN());
     }
 
     /**
-     * Return status of any action requiring announcement (wwthdrawal, exit, etc.)
-     * @param actionAllowedAt the saved timestamp of ehen the action is allowed
+     * Return status of any action requiring announcement (withdrawal, exit, etc.)
+     * @param actionAllowedAt the saved timestamp of when the action is allowed
      * @param currentTimestamp the current timestamp
      * @returns current status: NOT_ANNOUNCED -> WAITING -> ALLOWED
      */
-    anouncementStatus(actionAllowedAt: BNish, currentTimestamp: BN) {
+    announcementStatus(actionAllowedAt: BNish, currentTimestamp: BN) {
         actionAllowedAt = toBN(actionAllowedAt);
         if (actionAllowedAt.eq(BN_ZERO)) return "NOT_ANNOUNCED";
         if (actionAllowedAt.gt(currentTimestamp)) return "WAITING";
@@ -705,7 +740,27 @@ export class AgentBot {
      * @param vaultAddress agent's vault address
      */
     async handleAgentDestroyed(em: EM): Promise<void> {
-        const agentEnt = await em.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        await new AgentBotClosing(this, agentEnt).handleAgentDestroyed();
+        await new AgentBotClosing(this).handleAgentDestroyed(em);
+    }
+
+    /**
+     * Updates AgentEntity within a transactional context.
+     * @param rootEm root EntityManager to manage the database context
+     * @param modify asynchronous callback function that performs modifications on the retrieved AgentEntity
+     */
+    async updateAgentEntity(rootEm: EM, modify: (agentEnt: AgentEntity) => Promise<void>): Promise<void> {
+        await rootEm.transactional(async (em) => {
+            const agentEnt: AgentEntity = await this.fetchAgentEntity(rootEm);
+            await modify(agentEnt);
+            await em.persistAndFlush(agentEnt);
+        });
+    }
+
+    /**
+     * Fetches AgentEntity
+     * @param rootEm root EntityManager to manage the database context
+     */
+    async fetchAgentEntity(rootEm: EM): Promise<AgentEntity> {
+        return await rootEm.findOneOrFail(AgentEntity, { vaultAddress: this.agent.vaultAddress } as FilterQuery<AgentEntity>, { refresh: true });
     }
 }

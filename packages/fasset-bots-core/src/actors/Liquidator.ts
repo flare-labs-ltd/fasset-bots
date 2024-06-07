@@ -4,6 +4,7 @@ import { ILiquidatorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
+import { iteratorToArray } from "../utils";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
@@ -19,6 +20,7 @@ export class Liquidator extends ActorBase {
 
     notifier: LiquidatorNotifier;
     liquidationStrategy: LiquidationStrategy;
+    checkedInitialAgents: boolean = false
 
     constructor(
         public context: ILiquidatorContext,
@@ -44,7 +46,7 @@ export class Liquidator extends ActorBase {
         logger.info(`Liquidator ${address} initialized asset context.`);
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(context, lastBlock);
-        await trackedState.initialize();
+        await trackedState.initialize(true);
         logger.info(`Liquidator ${address} initialized tracked state.`);
         return new Liquidator(context, new ScopedRunner(), address, trackedState, config.notifiers);
     }
@@ -62,6 +64,8 @@ export class Liquidator extends ActorBase {
      */
     async registerEvents(): Promise<void> {
         try {
+            // initially check if any agents can be liquidated
+            await this.initialLiquidationStatusCheck();
             // Native chain events and update state events
             logger.info(`Liquidator ${this.address} started reading unhandled native events.`);
             const events = await this.state.readUnhandledEvents();
@@ -105,14 +109,14 @@ export class Liquidator extends ActorBase {
     }
 
     async checkAllAgentsForLiquidation(): Promise<void> {
-        for (const agent of this.state.agents.values()) {
+        await Promise.all(iteratorToArray(this.state.agents.values()).map(async (agent) => {
             try {
                 await this.checkAgentForLiquidation(agent);
             } catch (error) {
                 console.error(`Error with agent ${agent.vaultAddress}: ${error}`);
                 logger.error(`Liquidator ${this.address} found error with agent ${agent.vaultAddress}:`, error);
             }
-        }
+        }));
     }
 
     /**
@@ -133,9 +137,27 @@ export class Liquidator extends ActorBase {
     }
 
     private async liquidateAgent(agent: TrackedAgentState): Promise<void> {
+        if (!await this.hasEnoughBalanceToStartLiquidation()) {
+            logger.info(`Liquidator ${this.address} does not have enough FAssets to liquidate agent ${agent.vaultAddress}.`);
+            console.log(`Liquidator ${this.address} does not have enough FAssets to liquidate agent ${agent.vaultAddress}.`)
+            return;
+        }
         await this.liquidationStrategy.liquidate(agent);
         logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
         await this.notifier.sendAgentLiquidated(agent.vaultAddress);
         console.log(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
     }
-}
+
+    private async hasEnoughBalanceToStartLiquidation(): Promise<boolean> {
+        // TODO: check if balance is larger or equal to 1 AMG
+        const balance = await this.context.fAsset.balanceOf(this.address);
+        return balance.gtn(0);
+    }
+
+    private async initialLiquidationStatusCheck() {
+        if (!this.checkedInitialAgents) {
+            await this.checkAllAgentsForLiquidation();
+            this.checkedInitialAgents = true;
+        }
+    }
+ }

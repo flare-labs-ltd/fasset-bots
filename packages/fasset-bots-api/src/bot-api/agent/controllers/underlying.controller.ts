@@ -15,35 +15,15 @@ import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor
 export class UnderlyingController {
     constructor(private readonly agentService: AgentService) {}
 
-    @Get("withdraw/announce/:fAssetSymbol/:agentVaultAddress")
+    @Get("withdraw/:fAssetSymbol/:agentVaultAddress/:amount/:destinationAddress")
     @HttpCode(200)
-    public async announceUnderlyingWithdrawal(
-        @Param("fAssetSymbol") fAssetSymbol: string,
-        @Param("agentVaultAddress") agentVaultAddress: string
-    ): Promise<ApiResponseWrapper<AgentUnderlying>> {
-        return handleApiResponse(this.agentService.announceUnderlyingWithdrawal(fAssetSymbol, agentVaultAddress));
-    }
-
-    @Get("withdraw/perform/:fAssetSymbol/:agentVaultAddress/:amount/:destinationAddress/:paymentReference")
-    @HttpCode(200)
-    public async performUnderlyingWithdrawal(
+    public async withdrawUnderlying(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
         @Param("amount") amount: string,
         @Param("destinationAddress") destinationAddress: string,
-        @Param("paymentReference") paymentReference: string
     ): Promise<ApiResponseWrapper<AgentUnderlying>> {
-        return handleApiResponse(this.agentService.performUnderlyingWithdrawal(fAssetSymbol, agentVaultAddress, amount, destinationAddress, paymentReference));
-    }
-
-    @Post("withdraw/confirm/:fAssetSymbol/:agentVaultAddress/:transactionHash")
-    @HttpCode(200)
-    public async confirmUnderlyingWithdrawal(
-        @Param("fAssetSymbol") fAssetSymbol: string,
-        @Param("agentVaultAddress") agentVaultAddress: string,
-        @Param("transactionHash") transactionHash: string
-    ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.confirmUnderlyingWithdrawal(fAssetSymbol, agentVaultAddress, transactionHash));
+        return handleApiResponse(this.agentService.withdrawUnderlying(fAssetSymbol, agentVaultAddress, amount, destinationAddress));
     }
 
     @Post("withdraw/cancel/:fAssetSymbol/:agentVaultAddress")

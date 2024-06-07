@@ -61,18 +61,50 @@ describe("Liquidator tests", () => {
         const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
         // mock price changes
         await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
+        liquidator.checkedInitialAgents = true;
         // check collateral ratio after price changes
         await liquidator.runStep();
         expect(spyLiquidation).to.have.been.called.once;
     });
 
-    it("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
+    it("Should not liquidate agent when status from normal -> liquidation after price changes (liquidator have no fassets)", async () => {
         const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
+        // create collateral reservation, perform minting and run liquidation trigger
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
+        liquidator.checkedInitialAgents = true;
+        await liquidator.runStep();
+        // check agent status
+        const status1 = await getAgentStatus(agentBot);
+        assert.equal(status1, AgentStatus.NORMAL);
+        // change prices
+        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
+        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        // FAsset balance
+        const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
+        // mock price changes and run liquidation trigger
+        await context.ftsoManager.mockFinalizePriceEpoch();
+        await liquidator.runStep();
+        // check agent status -> did not change as liquidator has not fassets to liquidate
+        const status3 = await getAgentStatus(agentBot);
+        assert.equal(status3, AgentStatus.NORMAL);
+        // FAsset balance
+        const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
+        // no burned FAssets, liquidator does not have FAssets
+        expect(fBalanceBefore.eq(fBalanceAfter)).to.be.true;
+        expect(fBalanceBefore.eqn(0)).to.be.true;
+    });
+
+
+    it("Should liquidate agent when status from normal -> liquidation after price changes", async () => {
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, liquidatorAddress, chain);
         const spyLiquidation = spy.on(agentBot.notifier, "sendLiquidationStartAlert");
         // create collateral reservation, perform minting and run liquidation trigger
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
+        liquidator.checkedInitialAgents = true;
         await liquidator.runStep();
         // check agent status
         const status1 = await getAgentStatus(agentBot);
@@ -93,9 +125,8 @@ describe("Liquidator tests", () => {
         // send notification
         await agentBot.runStep(orm.em);
         expect(spyLiquidation).to.have.been.called.once;
-        // nothing is burned, liquidator does not have FAssets
-        expect(fBalanceBefore.eq(fBalanceAfter)).to.be.true;
-        expect(fBalanceBefore.eqn(0)).to.be.true;
+        // burned FAssets
+        expect(fBalanceBefore.gt(fBalanceAfter)).to.be.true;
     });
 
     it("Should check collateral ratio after minting execution", async () => {
@@ -164,21 +195,6 @@ describe("Liquidator tests", () => {
         // check collateral ratio after minting execution
         await liquidator.runStep();
         expect(spyMinting).to.have.been.called.once;
-    });
-
-    it("Should not check collateral ratio after price changes - faulty function", async () => {
-        const lastBlock = await web3.eth.getBlockNumber();
-        const mockState = new MockTrackedState(trackedStateContext, lastBlock, state);
-        await mockState.initialize();
-        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, mockState);
-        const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress);
-        await mockState.getAgentTriggerAdd(agentBot.agent.vaultAddress);
-        // mock price changes
-        await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
-        // check collateral ratio after price changes
-        await liquidator.runStep();
-        expect(spyLiquidation).to.have.been.called.once;
     });
 
     it("Should catch full liquidation", async () => {
