@@ -199,7 +199,7 @@ async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddre
     const fee = await wallet.getTransactionFee();
     const requiredBalance = requiredAddressBalance(amount, minimumBalance, fee);
     if (senderBalance.gte(requiredBalance)) {
-        return ;
+        return;
     } else {
         throw new CommandLineError("Not enough funds in ${sourceAddress}.")
     }

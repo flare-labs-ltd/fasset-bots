@@ -78,7 +78,6 @@ program
         validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set.");
         validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set.");
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
-        await validateUnderlyingBalance(minterBot, numberOfLots);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(numberOfLots)));
         validate(agentVault != null, "No agent with enough free lots available.");
         try {
@@ -265,17 +264,6 @@ program
             });
         }
     });
-
-async function validateUnderlyingBalance(minterBot: UserBotCommands, numberOfLots: string) {
-    const balanceReader = await TokenBalances.fassetUnderlyingToken(minterBot.context);
-    const userBalance = await balanceReader.balance(minterBot.underlyingAddress);
-    const mintBalance = toBN(numberOfLots).mul(await minterBot.infoBot().getLotSizeBN());
-    const transactionFee = await minterBot.context.wallet.getTransactionFee();
-    const requiredBalance = mintBalance.add(minterBot.context.chainInfo.minimumAccountBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
-    validate(userBalance.gte(requiredBalance),
-        squashSpace`User does not have enough ${balanceReader.symbol} available.
-                    Available ${balanceReader.format(userBalance)}, required ${balanceReader.format(requiredBalance)}.`);
-}
 
 async function getPoolAddress(bot: PoolUserBotCommands, poolAddressOrTokenSymbol: string) {
     return Web3.utils.isAddress(poolAddressOrTokenSymbol)
