@@ -1,16 +1,17 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
-import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
+import { AgentBotCommands, CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
+import { BotConfig, BotConfigFile, ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { readFileSync, createReadStream } from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress, validateDecimal } from "../utils/validation";
 import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
 import type { OptionValues } from "commander";
+import { SecretsFile } from "../../../fasset-bots-core/src/config/config-files/SecretsFile";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
@@ -78,30 +79,13 @@ program
 program
     .command("openBetaAgentRegister")
     .description("whitelist and fund agents with CFLR and fake collateral tokens (used for open-beta)")
+    .option("--nat <amountNat>", "amount of NAT tokens sent to each user", "0")
     .option("--usdc <amountUsdc>", "amount of testUSDC tokens minted to each user", "0")
     .option("--usdt <amountUsdt>", "amount of testUSDT tokens minted to each user", "0")
     .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0")
     .action(async (_options: OptionValues) => {
         const options: { config: string; secrets: string } = program.opts();
-        const registrationApi = new OpenBetaAgentRegistrationTransport(Secrets.load(options.secrets));
-        const unFundedAgents = await registrationApi.getUnfundedAgents();
-        for (const agent of unFundedAgents) {
-            try {
-                await whitelistAndDescribeAgent(options.secrets, options.config, agent.management_address, agent.tg_user_name, agent.description, agent.icon_url);
-                if (Number(_options.usdc) >= 0) {
-                    await mintFakeTokens(options.secrets, options.config, "testUSDC", agent.management_address, _options.usdc);
-                }
-                if (Number(_options.usdt) >= 0) {
-                    await mintFakeTokens(options.secrets, options.config, "testUSDT", agent.management_address, _options.usdt);
-                }
-                if (Number(_options.eth) >= 0) {
-                    await mintFakeTokens(options.secrets, options.config, "testETH", agent.management_address, _options.eth);
-                }
-                await registrationApi.confirmFundedAgent(agent.management_address);
-            } catch (e) {
-                console.error(`Error with handling agent ${agent.tg_user_name}: ${e}`);
-            }
-        }
+        await finalizeAgenOpenBetaRegistration(options.config, options.secrets, _options.nat, _options.usdt, _options.usdc, _options.eth)
     });
 
 toplevelRun(async () => {
@@ -166,6 +150,26 @@ async function addCollateralToken(secretsFile: string, configFileName: string, p
     await controller.addCollateralType(assetManagers, collateralType, { from: deployerAddress });
 }
 
+async function finalizeAgenOpenBetaRegistration(config: string, secrets: string,
+    amountNat: string, amountUsdt: string, amountUsdc: string, amountEth: string
+) {
+    const registrationApi = new OpenBetaAgentRegistrationTransport(Secrets.load(secrets));
+    const unFundedAgents = await registrationApi.unfinalizedRegistrations();
+    for (const agent of unFundedAgents) {
+        try {
+            await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
+            if (Number(amountNat) > 0) await transferNatFromDeployer(secrets, config, amountNat, agent.management_address)
+            if (Number(amountUsdc) > 0) await mintFakeTokens(secrets, config, "testUSDC", agent.management_address, amountUsdc);
+            if (Number(amountUsdt) > 0) await mintFakeTokens(secrets, config, "testUSDT", agent.management_address, amountUsdt);
+            if (Number(amountEth) > 0) await mintFakeTokens(secrets, config, "testETH", agent.management_address, amountEth);
+            await registrationApi.finalizeRegistration(agent.management_address);
+            console.log(`Agent ${agent.agent_name} registeration finalized`)
+        } catch (e) {
+            console.error(`Error with handling agent ${agent.agent_name}: ${e}`);
+        }
+    }
+}
+
 function addressFromParameter(contracts: ChainContracts, addressOrName: string) {
     if (addressOrName.startsWith("0x")) return addressOrName;
     const contract = contracts[addressOrName];
@@ -183,4 +187,19 @@ async function initEnvironment(secretsFile: string, configFile: string) {
         throw new Error("Invalid address/private key pair");
     }
     return [secrets, config] as const;
+}
+
+async function transferNatFromDeployer(secretsFile: string, configFile: string, amount: string, toAddress: string) {
+    const [secrets, config] = await initEnvironment(secretsFile, configFile);
+    const deployerPrivateKey = secrets.required("deployer.private_key");
+    const apiKey = secrets.required("apiKey.native_rpc");
+    await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), [deployerPrivateKey], null);
+    const deployerAddress = secrets.required("deployer.address");
+    await web3.eth.sendTransaction({
+        from: deployerAddress,
+        to: toAddress,
+        value: toBNExp(amount, 18).toString(),
+        gas: '21000',
+        gasPrice: 2.5e10 // 250 Gwei
+    });
 }
