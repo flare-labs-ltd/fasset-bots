@@ -74,7 +74,8 @@ export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAd
     const minAccountBalance = context.chainInfo.minimumAccountBalance;
     const requiredBalance = requiredAddressBalance(amount, minAccountBalance, transactionFee);
     if (!senderBalance.gte(requiredBalance)) {
-        logger.error(`Cannot performing underlying payment from ${sourceAddress}${destinationAddress ? ` to ${destinationAddress},`: "."}.
+        const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
+        logger.error(`Cannot perform underlying payment from ${sourceAddress}${destinationInfo}.
         Available ${balanceReader.format(senderBalance)} ${balanceReader.symbol}. Required ${balanceReader.format(requiredBalance)} ${balanceReader.symbol}.`);
         throw new Error(`Not enough funds on underlying address ${sourceAddress}`);
     }
@@ -85,7 +86,8 @@ export async function checkEvmNativeFunds(context: IAssetAgentContext, sourceAdd
     const senderBalance = await balanceReader.balance(sourceAddress);
     const requiredBalance = toBN(amount);
     if (!senderBalance.gte(requiredBalance)) {
-        logger.error(`Cannot performing evm native payment from ${sourceAddress} to ${destinationAddress}.
+        const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
+        logger.error(`Cannot perform evm native payment from ${sourceAddress}${destinationInfo}
         Available ${balanceReader.format(senderBalance)} ${balanceReader.symbol}. Required ${balanceReader.format(requiredBalance)} ${balanceReader.symbol}.`);
         throw new Error(`Not enough funds on evm native address ${sourceAddress}`);
     }
