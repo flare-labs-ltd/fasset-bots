@@ -12,6 +12,7 @@ import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { AgentInfoReader, CollateralPriceCalculator } from "./AgentInfoReader";
+import { OwnerAddressPair } from "../fasset/Agent";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
@@ -133,7 +134,7 @@ export class InfoBotCommands {
     async printPools() {
         logger.info(`InfoBot started fetching pools.`);
         const settings = await this.context.assetManager.getSettings();
-        const fassetSymbol = await this.context.fAsset.symbol();
+        const fassetSymbol = this.context.fAssetSymbol;
         const agents = await this.getAvailableAgents();
         const printer = new ColumnPrinter([
             ["Pool address", 42, "l"],
@@ -289,7 +290,7 @@ export class InfoBotCommands {
      * Get agent info (nicely formatted, with info about underlying and owner addresses)
      * @param agentVault agent's vault address
      */
-    async printAgentInfo(vaultAddress: string, ownerUnderlyingAddress?: string) {
+    async printAgentInfo(vaultAddress: string, owner?: OwnerAddressPair, ownerUnderlyingAddress?: string) {
         assertCmd(isAssetAgentContext(this.context), "Cannot use printAgentInfo for this setup");
         function formatBackedAmount(amountUBA: BNish) {
             const lots = toBN(amountUBA).div(air.lotSizeUBA());
@@ -376,17 +377,21 @@ export class InfoBotCommands {
         console.log(`    Required balance: ${underlyingBR.format(toBN(agentInfo.requiredUnderlyingBalanceUBA))}`);
         console.log(`    Free balance: ${underlyingBR.format(toBN(agentInfo.freeUnderlyingBalanceUBA))}`);
         // data for agent owner
-        if (ownerUnderlyingAddress) {
-            console.log(`Agent owner management address: ${agentInfo.ownerManagementAddress}`);
-            console.log(`    Balance: ${await nativeBR.formatBalance(agentInfo.ownerManagementAddress)}`);
-            console.log(`    Balance: ${await vaultBR.formatBalance(agentInfo.ownerManagementAddress)}`);
-            //
-            console.log(`Agent owner work address: ${agentInfo.ownerWorkAddress}`);
-            console.log(`    Balance: ${await formatCollateralAt(poolNativeCollateral, agentInfo.ownerWorkAddress)}`);
-            console.log(`    Balance: ${await formatCollateralAt(air.vaultCollateral, agentInfo.ownerWorkAddress)}`);
-            //
-            console.log(`Agent owner underlying (${underlyingBR.symbol}) address: ${ownerUnderlyingAddress}`);
-            console.log(`    Balance: ${await underlyingBR.formatBalance(ownerUnderlyingAddress)}`);
+        if (owner && ownerUnderlyingAddress) {
+            if (owner.managementAddress === agentInfo.ownerManagementAddress) {
+                console.log(`Agent owner management address: ${agentInfo.ownerManagementAddress}`);
+                console.log(`    Balance: ${await nativeBR.formatBalance(agentInfo.ownerManagementAddress)}`);
+                console.log(`    Balance: ${await vaultBR.formatBalance(agentInfo.ownerManagementAddress)}`);
+                //
+                console.log(`Agent owner work address: ${agentInfo.ownerWorkAddress}`);
+                console.log(`    Balance: ${await formatCollateralAt(poolNativeCollateral, agentInfo.ownerWorkAddress)}`);
+                console.log(`    Balance: ${await formatCollateralAt(air.vaultCollateral, agentInfo.ownerWorkAddress)}`);
+                //
+                console.log(`Agent owner underlying (${underlyingBR.symbol}) address: ${ownerUnderlyingAddress}`);
+                console.log(`    Balance: ${await underlyingBR.formatBalance(ownerUnderlyingAddress)}`);
+            } else {
+                console.log(`Agent vault owned by agent owner with management address ${agentInfo.ownerManagementAddress}`);
+            }
         }
     }
 

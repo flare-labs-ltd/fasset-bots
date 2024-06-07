@@ -87,17 +87,14 @@
                 "minimumAccountBalance": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
-                },
                 "priceChangeEmitter": {
-                    "type": "string"
-                },
-                "symbol": {
                     "type": "string"
                 },
                 "tokenDecimals": {
                     "type": "number"
+                },
+                "tokenName": {
+                    "type": "string"
                 },
                 "tokenSymbol": {
                     "type": "string"
@@ -108,9 +105,8 @@
             },
             "required": [
                 "chainId",
-                "name",
-                "symbol",
                 "tokenDecimals",
+                "tokenName",
                 "tokenSymbol"
             ],
             "type": "object"

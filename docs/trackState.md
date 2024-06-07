@@ -1,6 +1,6 @@
 # TrackedState
 
-Files [TrackedState](../src/state/TrackedState.ts) and [TrackedAgentState](../src/state/TrackedAgentState.ts) contain framework for non-persistent state tracking.
+Files [TrackedState](../packages/fasset-bots-core/src/state/TrackedState.ts) and [TrackedAgentState](../packages/fasset-bots-core/src/state/TrackedAgentState.ts) contain framework for non-persistent state tracking.
 
 TrackedState represents non-persistent state that monitors native events and calculates and sets specific variables essential for the _challenger_ and _liquidator_ to respond appropriately.
 

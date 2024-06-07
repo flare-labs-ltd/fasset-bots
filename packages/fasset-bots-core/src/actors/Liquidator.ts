@@ -56,12 +56,6 @@ export class Liquidator extends ActorBase {
      * It collects unhandled events on native chain, runs through them and handles them appropriately.
      */
     override async runStep(): Promise<void> {
-        if (!this.checkedInitialAgents) {
-            await Promise.all(iteratorToArray(this.state.agents.values()).map(async (agent) =>
-                await this.checkAgentForLiquidation(agent)
-            ));
-            this.checkedInitialAgents = true;
-        }
         await this.registerEvents();
     }
 
@@ -70,6 +64,8 @@ export class Liquidator extends ActorBase {
      */
     async registerEvents(): Promise<void> {
         try {
+            // initially check if any agents can be liquidated
+            await this.initialLiquidationStatusCheck();
             // Native chain events and update state events
             logger.info(`Liquidator ${this.address} started reading unhandled native events.`);
             const events = await this.state.readUnhandledEvents();
@@ -113,14 +109,14 @@ export class Liquidator extends ActorBase {
     }
 
     async checkAllAgentsForLiquidation(): Promise<void> {
-        for (const agent of this.state.agents.values()) {
+        await Promise.all(iteratorToArray(this.state.agents.values()).map(async (agent) => {
             try {
                 await this.checkAgentForLiquidation(agent);
             } catch (error) {
                 console.error(`Error with agent ${agent.vaultAddress}: ${error}`);
                 logger.error(`Liquidator ${this.address} found error with agent ${agent.vaultAddress}:`, error);
             }
-        }
+        }));
     }
 
     /**
@@ -157,4 +153,11 @@ export class Liquidator extends ActorBase {
         const balance = await this.context.fAsset.balanceOf(this.address);
         return balance.gtn(0);
     }
-}
+
+    private async initialLiquidationStatusCheck() {
+        if (!this.checkedInitialAgents) {
+            await this.checkAllAgentsForLiquidation();
+            this.checkedInitialAgents = true;
+        }
+    }
+ }

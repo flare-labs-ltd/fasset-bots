@@ -155,6 +155,13 @@ describe("testXRP blockchain tests via indexer", () => {
         }
     });
 
+    it.skip("find a transaction", async () => {
+        const txs = await blockchainIndexerClient.getTransactionsByReference("0x4642505266410001000000000000000000000000000000000000000000000e63");
+        console.log(JSON.stringify(txs, null, 4));
+        const txs2 = await blockchainIndexerClient.getTransactionsByReference("0x464250526641000100000000000000000000000000000000000000000000072f");
+        console.log(JSON.stringify(txs2, null, 4));
+    });
+
     it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockchainIndexerClient.getTransaction(txHash);
         expect(txHash.toUpperCase()).to.be.eq(retrievedTransaction?.hash.toUpperCase());

@@ -51,7 +51,7 @@ export async function addExternalAgentVault(
         newAgent.vaultAddress = agentVaultAddress;
         newAgent.collateralPoolAddress = agentInfo.collateralPool;
         newAgent.chainId = assetContext.chainInfo.chainId.sourceId;
-        newAgent.chainSymbol = assetContext.chainInfo.symbol;
+        newAgent.fassetSymbol = await assetContext.fAsset.symbol();
         newAgent.ownerAddress = ownerAddress;
         newAgent.underlyingAddress = agentInfo.underlyingAddressString;
         newAgent.active = active;

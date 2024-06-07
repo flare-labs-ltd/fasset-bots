@@ -254,9 +254,8 @@ program
             const burned = formatFixed(exited.burnedTokensWei, 18);
             const collateral = formatFixed(exited.receivedNatWei, 18);
             const fassets = formatFixed(exited.receviedFAssetFeesUBA, fassetDecimals);
-            const fassetSymbol = await bot.context.fAsset.symbol();
             console.log(`Burned ${burned} pool tokens.`);
-            console.log(`Received ${collateral} CFLR collateral and ${fassets} ${fassetSymbol} fasset fees.`);
+            console.log(`Received ${collateral} CFLR collateral and ${fassets} ${bot.context.fAssetSymbol} fasset fees.`);
         } catch (error) {
             translateError(error, {
                 "token share is zero": "Token amount must be greater than 0",
@@ -276,8 +275,7 @@ async function validateUnderlyingBalance(minterBot: UserBotCommands, numberOfLot
     const requiredBalance = mintBalance.add(minterBot.context.chainInfo.minimumAccountBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
     validate(userBalance.gte(requiredBalance),
         squashSpace`User does not have enough ${balanceReader.symbol} available.
-                    Available ${balanceReader.format(userBalance)},
-                    required ${balanceReader.format(requiredBalance)}. Minting will probably fail.`);
+                    Available ${balanceReader.format(userBalance)}, required ${balanceReader.format(requiredBalance)}.`);
 }
 
 async function getPoolAddress(bot: PoolUserBotCommands, poolAddressOrTokenSymbol: string) {

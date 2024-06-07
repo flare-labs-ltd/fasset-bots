@@ -68,6 +68,7 @@ export async function createNativeContext(config: BotConfig, chainConfig: BotFAs
     const assetManager = chainConfig.assetManager;
     const settings = await assetManager.getSettings();
     return {
+        fAssetSymbol: chainConfig.fAssetSymbol,
         nativeChainInfo: config.nativeChainInfo,
         addressUpdater: retriever.addressUpdater,
         assetManagerController: retriever.assetManagerController,

@@ -63,7 +63,7 @@ export class AgentBotOwnerValidation {
     static async fromContext(context: IAssetAgentContext, secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
         const configFile = loadConfigFile(configFileName);
-        const fassets = new Map<string, FAssetInstance>([[await context.fAsset.symbol(), context.fAsset]]);
+        const fassets = new Map<string, FAssetInstance>([[context.fAssetSymbol, context.fAsset]]);
         return new AgentBotOwnerValidation(secrets, configFile, context.agentOwnerRegistry, fassets, reporter);
     }
 

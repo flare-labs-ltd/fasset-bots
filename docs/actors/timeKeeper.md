@@ -2,7 +2,7 @@
 
 Time keeper proves that underlying block with given number and timestamp exists and updates the current underlying block info if the provided data is higher. This bot should be used by **minters** before minting and by **agents** regularly to prevent current block being too outdated, which gives too short time for minting or redemption payment.
 
-File [TimeKeeper.ts](../src/actors/TimeKeeper.ts) contains framework for such actor in FAsset system.
+File [TimeKeeper.ts](../../packages/fasset-bots-core/src/actors/TimeKeeper.ts) contains framework for such actor in FAsset system.
 
 ### Initialization
 

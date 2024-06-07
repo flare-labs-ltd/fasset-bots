@@ -2,7 +2,7 @@
     "$schema": "../../../run-config/schema/bot-config-override.schema.json",
     "extends": "./run-config-extend-coston-1.json",
     "fAssets": {
-        "FtestXRP": {
+        "FTestXRP": {
             "walletUrl": "https://my.wallet.xyz"
         },
         "Fnothing": {

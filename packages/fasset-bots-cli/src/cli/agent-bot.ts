@@ -285,7 +285,7 @@ program
 
 program
     .command("delegatePoolCollateral")
-    .description("delegate pool collateral, where <bips> is basis points (1/100 of one percent)")
+    .description("delegate pool collateral, where <share> is decimal number (e.g. 0.3) or percentage (e.g. 30%)")
     .argument("<agentVaultAddress>")
     .argument("<recipient>")
     .argument("<share>", "vote power share as decimal number (e.g. 0.3) or percentage (e.g. 30%)")

@@ -10,7 +10,7 @@ import { requireNotNull } from "../../../src/utils";
 use(spies);
 
 const fassetBotConfig = TEST_FASSET_BOT_CONFIG;
-const fAssetSymbol = "FtestXRP";
+const fAssetSymbol = "FTestXRP";
 
 describe("AgentBotOwnerValidation cli commands unit tests", () => {
     let secrets: Secrets;

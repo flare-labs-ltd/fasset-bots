@@ -372,7 +372,7 @@ export class AgentController {
                 status: { type: 'string', example: 'OK' },
                 data: {
                     type: 'array',
-                    example: ["FtestXRP", "FfakeXRP"]
+                    example: ["FTestXRP", "FSimCoinX"]
                 }
             }
         }

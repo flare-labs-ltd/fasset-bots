@@ -18,10 +18,9 @@ export interface OrmConfigOptions {
 
 export interface BotFAssetInfo {
     chainId: string;
-    name: string;
-    symbol: string; // only used as database id
-    tokenSymbol: string;    // underlying token symbol
-    tokenDecimals: number;  // decimals for both underlying token and fasset
+    tokenName: string;       // underlying token name
+    tokenSymbol: string;     // underlying token symbol
+    tokenDecimals: number;   // decimals for both underlying token and fasset
     walletUrl?: string; // for agent bot and user
     indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')

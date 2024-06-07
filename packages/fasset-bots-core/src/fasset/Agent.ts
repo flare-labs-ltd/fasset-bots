@@ -10,8 +10,8 @@ import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chai
 import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { checkUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
-import { BNish, expectErrors, toBN } from "../utils/helpers";
+import { checkUnderlyingFunds, emptyUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
+import { BN_ZERO, BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
@@ -367,6 +367,20 @@ export class Agent {
      */
     async upgradeWNatContract(): Promise<void> {
         await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.owner.workAddress });
+    }
+
+    async emptyAgentUnderlying(destinationAddress: string): Promise<void> {
+        const amountBN = await emptyUnderlyingFunds(this.context, this.underlyingAddress);
+        if (amountBN.lte(BN_ZERO)) {
+            const logMessage = amountBN.lt(BN_ZERO)
+                ? `Agent ${this.vaultAddress} cannot withdraw all funds from underlying ${this.underlyingAddress}.`
+                : `Agent ${this.vaultAddress} has no underlying funds on underlying ${this.underlyingAddress}.`;
+            logger[amountBN.lt(BN_ZERO) ? 'error' : 'info'](logMessage);
+            return;
+        }
+        const txHAsh = await this.wallet.addTransaction(this.underlyingAddress, destinationAddress, amountBN, null);
+        logger.info(`Agent ${this.vaultAddress} withdrew all all funds on underlying ${this.underlyingAddress} with transaction ${txHAsh}.`)
+        return;
     }
 
     async enoughUnderlyingFunds(sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<void> {
