@@ -13,7 +13,7 @@ const ERC20 = artifacts.require("IERC20Metadata");
 
 const program = programWithCommonOptions("user", "all_fassets");
 
-program.name("utils").description("Command line blockchain helpers");
+program.name("tokens").description("Command line token balance and transfer");
 
 program
     .command("transfer")
