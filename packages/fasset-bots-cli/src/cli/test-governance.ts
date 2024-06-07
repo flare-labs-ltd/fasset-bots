@@ -157,8 +157,8 @@ async function finalizeAgenOpenBetaRegistration(config: string, secrets: string,
     const unFundedAgents = await registrationApi.unfinalizedRegistrations();
     for (const agent of unFundedAgents) {
         try {
-            await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
             if (Number(amountNat) > 0) await transferNatFromDeployer(secrets, config, amountNat, agent.management_address)
+            await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
             if (Number(amountUsdc) > 0) await mintFakeTokens(secrets, config, "testUSDC", agent.management_address, amountUsdc);
             if (Number(amountUsdt) > 0) await mintFakeTokens(secrets, config, "testUSDT", agent.management_address, amountUsdt);
             if (Number(amountEth) > 0) await mintFakeTokens(secrets, config, "testETH", agent.management_address, amountEth);
@@ -195,11 +195,12 @@ async function transferNatFromDeployer(secretsFile: string, configFile: string, 
     const apiKey = secrets.required("apiKey.native_rpc");
     await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), [deployerPrivateKey], null);
     const deployerAddress = secrets.required("deployer.address");
+    const gasPrice = await web3.eth.getGasPrice();
     await web3.eth.sendTransaction({
         from: deployerAddress,
         to: toAddress,
         value: toBNExp(amount, 18).toString(),
-        gas: '21000',
-        gasPrice: 2.5e10 // 250 Gwei
+        gas: '2000000',
+        gasPrice: gasPrice // 250 Gwei
     });
 }
