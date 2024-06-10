@@ -1,32 +1,39 @@
-# Run agent as a systemd service
+# Run agent as a `systemd` Service
 
-All the examples are for `agent-bot` service. For other services, just change `agent-bot` to the service name.
+All the examples are for the `agent-bot` service.
+Change `agent-bot` to the service name you want to run for other services, for instance, `liquidator-bot.`
 
 1. Fix the service files  in this directory:
 
-    * replace `/home/fasset-bots/fasset-bots` with the `fasset-bots` checkout directory
-    * set `User` and `Group` to the user under which the service should run
-    * if necessary, change the path to `node` in `ExecStart`
+    * replace `/home/fasset-bots/fasset-bots` with the `fasset-bots` checkout directory;
+    * set `User` and `Group` to the user under which the service should run;
+    * change the path to `node` in `ExecStart` if necessary.
 
-2. Copy the `.service` files for services that you want to run to `/etc/systemd/system`.
+2. Copy the `.service` files for services you want to run to `/etc/systemd/system`.
 
 3. Run `sudo systemctl daemon-reload`, so that the system detects new services.
 
-4. Now you can start (or stop) services by executing e.g.
-```
-sudo systemctl start agent-bot
-```
+4. Now you can start (or stop) services by executing:
 
-5. To make services start automatically at boot time, execute
-```
-sudo systemctl enable agent-bot
-```
+   ```console
+   sudo systemctl start agent-bot
+   ```
 
-6. To view the console output use command
-```
-sudo journalctl -fu agent-bot.service
-```
-This will follow the output. To show the past output in `less`, call instead
-```
-sudo journalctl -eu agent-bot.service
-```
+5. To make services start automatically at boot time, execute:
+
+   ```console
+   sudo systemctl enable agent-bot
+   ```
+
+6. To view the console output, use command:
+
+   ```console
+   sudo journalctl -fu agent-bot.service
+   ```
+
+    This will follow the output.
+    To show the past output in `less`, call instead
+
+   ```console
+   sudo journalctl -eu agent-bot.service
+   ```
