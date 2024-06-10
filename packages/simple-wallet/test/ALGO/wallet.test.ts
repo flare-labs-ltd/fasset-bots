@@ -3,7 +3,7 @@ import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletRpcInterf
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import type { AlgoRpcConfig } from "../../src/interfaces/WriteWalletRpcInterface";
-import { toBN, toNumber } from "../../src/utils/utils";
+import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
 use(chaiAsPromised);
 
 const ALGOMccConnectionTest: AlgoRpcConfig = {

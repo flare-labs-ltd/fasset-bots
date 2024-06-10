@@ -92,26 +92,6 @@ export function requireEnv(name: string) {
    throw new Error(`Environment value ${name} not defined`);
 }
 
-/**
- * Helper wrapper to convert number to BN
- * @param x number expressed in any reasonable type
- * @returns same number as BN
- */
-export function toBN(x: BN | number | string): BN {
-   if (BN.isBN(x)) return x;
-   return Web3Utils.toBN(x);
-}
-
-/**
- * Helper wrapper to convert BN, BigNumber or plain string to number. May lose precision, so use it for tests only.
- * @param x number expressed in any reasonable type
- * @returns same number as Number
- */
-export function toNumber(x: BN | number | string) {
-   if (typeof x === "number") return x;
-   return Number(x);
-}
-
 export function excludeNullFields<T>(dict: Record<string, T>): Record<string, NonNullable<T>> {
    const result: Record<string, NonNullable<T>> = {};
    for (const [key, val] of Object.entries(dict)) {

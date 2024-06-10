@@ -31,6 +31,16 @@ export interface WriteWalletRpcInterface {
       maxFee?: BN,
       sequence?: number
    ): Promise<any>;
+
+   deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
 }
 
 export interface ICreateWalletResponse {

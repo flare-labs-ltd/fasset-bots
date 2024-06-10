@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { algo_ensure_data, bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHex, prefix0x, requireEnv, stuckTransactionConstants, toBN, toNumber, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
+import { algo_ensure_data, bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHex, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
+import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
 
 const BTCMccConnectionTest = {
    url: process.env.BTC_URL ?? "",

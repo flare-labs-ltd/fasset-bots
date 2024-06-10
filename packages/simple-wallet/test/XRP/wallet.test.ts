@@ -6,7 +6,8 @@ use(chaiAsPromised);
 import { encode } from "xrpl";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
-import { toBN } from "../../src/utils/utils";
+import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
+import { toBN, toBNExp } from "../../../fasset-bots-core/dist/src/utils/helpers";
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
@@ -31,10 +32,10 @@ const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const entropyBase = "my_xrp_test_wallet";
 const entropyBasedAddress = "rMeXpc8eokNRCTVtCMjFqTKdyRezkYJAi1";
 
-const amountToSendDropsFirst = toBN(100000);
-const amountToSendDropsSecond = toBN(50000);
-const feeInDrops = toBN(15);
-const maxFeeInDrops = toBN(12);
+const amountToSendDropsFirst = toBNExp(0.1, XRP_DECIMAL_PLACES);
+const amountToSendDropsSecond = toBNExp(0.05, XRP_DECIMAL_PLACES);
+const feeInDrops = toBNExp(0.000015, 6);
+const maxFeeInDrops = toBNExp(0.000012, 6);
 const sequence = 54321;
 
 let wClient: WALLET.XRP;
@@ -204,5 +205,20 @@ describe("Xrp wallet tests", () => {
          }))
       })
    }) */
+
+   it("Should create and delete account", async () => {
+      const toDelete = wClient.createWallet();
+      expect(toDelete.address).to.not.be.null;
+      expect(WAValidator.validate(toDelete.address, "XRP", "testnet")).to.be.true;
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
+      const toSendInDrops = toBN(20000000); // 20 XPR
+      // fund toDelete account
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
+      const balance = await wClient.getAccountBalance(toDelete.address);
+      // delete toDelete account
+      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address);
+      const balance2 = await wClient.getAccountBalance(toDelete.address);
+   });
 
 });

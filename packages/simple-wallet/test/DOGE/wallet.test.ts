@@ -4,7 +4,8 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import { toBN } from "../../src/utils/utils";
+import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { BTC_LTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 const DOGEMccConnectionTest = {
    url: process.env.DOGE_URL ?? "",
    username: "",
@@ -20,9 +21,10 @@ const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 const targetMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
 const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
 
-const amountToSendInSatoshi = toBN(150000000);
-const feeInSatoshi = toBN(200000000);
-const maxFeeInSatoshi = toBN(150000000);
+const DOGE_DECIMAL_PLACES = BTC_LTC_DOGE_DEC_PLACES;
+const amountToSendInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);
+const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
+const maxFeeInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);
 
 let wClient: WALLET.DOGE;
 let fundedWallet: ICreateWalletResponse;
@@ -61,7 +63,7 @@ describe("Dogecoin wallet tests", () => {
    });
 
    it("Should lock and execute multiple transactions from the same address", async () => {
-      const lowFee = toBN(2000000);
+      const lowFee = toBNExp(0.04, DOGE_DECIMAL_PLACES);
       const note = "50000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const balanceBefore = await wClient.getAccountBalance(targetAddress);

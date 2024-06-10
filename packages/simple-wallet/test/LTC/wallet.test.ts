@@ -4,7 +4,8 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import { toBN } from "../../src/utils/utils";
+import { BTC_LTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
+import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
 
 const LTCMccConnectionTest = {
    url: process.env.LTC_URL ?? "",
@@ -18,9 +19,9 @@ const fundedAddress = "n1Dugv8YbnKQbinGwWKQGkpRwqqHbo2zD4";
 const targetMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
 const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
 
-const amountToSendInSatoshi = toBN(110000);
-const feeInSatoshi = toBN(120000);
-const maxFeeInSatoshi = toBN(110000);
+const amountToSendInSatoshi = toBNExp(0.0011, BTC_LTC_DOGE_DEC_PLACES);
+const feeInSatoshi = toBNExp(0.0012, BTC_LTC_DOGE_DEC_PLACES);
+const maxFeeInSatoshi = toBNExp(0.0011, BTC_LTC_DOGE_DEC_PLACES);
 
 let wClient: WALLET.LTC;
 let fundedWallet: ICreateWalletResponse;

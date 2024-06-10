@@ -7,10 +7,11 @@ import * as litecore from "bitcore-lib-ltc";
 import * as dogecore from "bitcore-lib-doge";
 import BIP32Factory from "bip32";
 import { generateMnemonic, mnemonicToSeedSync } from "bip39";
-import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, getTimeLockForAddress, sleepMs, stuckTransactionConstants, toBN, toNumber, wallet_utxo_ensure_data } from "../utils/utils";
+import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, getTimeLockForAddress, sleepMs, stuckTransactionConstants, wallet_utxo_ensure_data } from "../utils/utils";
 import {
    ChainType,
    DEFAULT_RATE_LIMIT_OPTIONS,
+   DOGE_DUST_AMOUNT,
 } from "../utils/constants";
 import type { BaseRpcConfig } from "../interfaces/WriteWalletRpcInterface";
 import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWalletRpcInterface } from "../interfaces/WriteWalletRpcInterface";
@@ -21,6 +22,7 @@ const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
+import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
 
 export abstract class BtcishWalletImplementation implements WriteWalletRpcInterface {
    inTestnet: boolean;
@@ -117,7 +119,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
     * @returns {BN} - current transaction/network fee in satoshis
     */
    async getCurrentTransactionFee(): Promise<BN> {
-      const averageTxSize = 500; //kb
+      const averageTxSize = 500; //b
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          // https://github.com/bitpay/bitcore/blob/master/packages/bitcore-lib-doge/lib/transaction/transaction.js
          return toBN((100000000 * averageTxSize) / 1000);
@@ -183,6 +185,16 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
       return { txId: res.data.txid };
    }
 
+   /**
+    * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN} amountInSatoshi
+    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInSatoshi
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
    async executeLockedSignedTransactionAndWait(
       source: string,
       privateKey: string,
@@ -194,6 +206,9 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    ): Promise<ISubmitTransactionResponse> {
       await this.checkIfCanSubmitFromAddress(source);
       try {
+         if (amountInSatoshi.lten(0)) {
+            amountInSatoshi = (await this.getAccountBalance(source)).sub(await this.getCurrentTransactionFee()).sub(DOGE_DUST_AMOUNT);
+         }
          const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
          this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInSatoshi ? maxFeeInSatoshi : null });
          const tx_blob = await this.signTransaction(transaction, privateKey);
@@ -204,6 +219,27 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
          this.addressLocks.delete(source);
       }
    }
+
+   /**
+    * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInSatoshi
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
+   async deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      feeInSatoshi?: BN,
+      note?: string,
+      maxFeeInSatoshi?: BN
+   ): Promise<ISubmitTransactionResponse> {
+      return await this.executeLockedSignedTransactionAndWait(source, privateKey, destination, toBN(0), feeInSatoshi, note, maxFeeInSatoshi);
+   }
+
    ///////////////////////////////////////////////////////////////////////////////////////
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////

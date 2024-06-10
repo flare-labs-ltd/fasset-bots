@@ -6,7 +6,7 @@ import xrpl, { convertStringToHex, encodeForSigning, Wallet as xrplWallet, encod
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
 import { generateMnemonic } from "bip39";
-import { excludeNullFields, sleepMs, bytesToHex, isValidHex, prefix0x, xrp_ensure_data, toBN, getTimeLockForAddress, stuckTransactionConstants } from "../utils/utils";
+import { excludeNullFields, sleepMs, bytesToHex, isValidHex, prefix0x, xrp_ensure_data, getTimeLockForAddress, stuckTransactionConstants } from "../utils/utils";
 import {
    ChainType,
    DEFAULT_RATE_LIMIT_OPTIONS_XRP,
@@ -15,6 +15,7 @@ import {
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletRpcInterface, RippleRpcConfig } from "../interfaces/WriteWalletRpcInterface";
 import BN from "bn.js";
+import { toBN } from "@flarelabs/fasset-bots-core/utils";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
@@ -25,7 +26,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    chainType: ChainType;
    inTestnet: boolean;
    client: AxiosInstance;
-   addressLocks = new Map<string, { tx: xrpl.Payment | null; maxFee: BN | null }>();
+   addressLocks = new Map<string, { tx: xrpl.Payment | xrpl.AccountDelete | null; maxFee: BN | null }>();
    blockOffset: number;
    timeoutAddressLock: number;
    maxRetries: number;
@@ -119,17 +120,19 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    /**
     * @returns {BN} - current transaction/network fee in drops
     */
-   async getCurrentTransactionFee(): Promise<BN> {
+   async getCurrentTransactionFee(isPayment: boolean = true): Promise<BN> {
       //https://xrpl.org/transaction-cost.html#server_info
       const serverInfo = (await this.getServerInfo()).result.info;
       /* istanbul ignore next */
-      let baseFee = serverInfo.validated_ledger?.base_fee_xrp;
+      // AccountDelete: transaction must pay a special transaction cost equal to at least the owner reserve for one item (currently 2 XRP).
+      // https://xrpl.org/docs/concepts/accounts/reserves
+      let baseFee = isPayment ? serverInfo.validated_ledger?.base_fee_xrp : serverInfo.validated_ledger?.reserve_inc_xrp;
       /* istanbul ignore if */
       if (!baseFee) {
          throw Error("Could not get base_fee_xrp from server_info");
       }
       /* istanbul ignore next */
-      if (serverInfo.load_factor) {
+      if (isPayment && serverInfo.load_factor) {
          baseFee *= serverInfo.load_factor;
       }
       return toBN(xrpl__typeless.xrpToDrops(this.roundUpXrpToDrops(baseFee)));
@@ -143,7 +146,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
     * @param {number|undefined} sequence
-    * @returns {Object} - XRP payment transaction object
+    * @returns {Object} - XRP Payment or AccountDelete transaction object
     */
    async preparePaymentTransaction(
       source: string,
@@ -153,20 +156,31 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       note?: string,
       maxFeeInDrops?: BN,
       sequence?: number
-   ): Promise<xrpl.Payment> {
-      const tr: xrpl.Payment = {
-         TransactionType: "Payment",
-         Destination: destination.toString(),
-         Amount: amountInDrops.toString(),
-         Account: source,
-      };
+   ): Promise<xrpl.Payment | xrpl.AccountDelete> {
+      const isPayment = amountInDrops.gtn(0);
+      let tr;
+      if (isPayment) {
+         tr = {
+            TransactionType: "Payment",
+            Destination: destination.toString(),
+            Amount: amountInDrops.toString(),
+            Account: source,
+         } as xrpl.Payment;
+      } else {
+         tr = {
+            TransactionType: "AccountDelete",
+            Destination: destination.toString(),
+            Account: source,
+         } as xrpl.AccountDelete;
+      }
+
       if (!sequence) {
          tr.Sequence = await this.getAccountSequence(source);
       } else {
          tr.Sequence = sequence;
       }
       if (!feeInDrops) {
-         tr.Fee = (await this.getCurrentTransactionFee()).toString();
+         tr.Fee = (await this.getCurrentTransactionFee(isPayment)).toString();
       } else {
          tr.Fee = feeInDrops.toString();
       }
@@ -216,7 +230,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
     * @param {string} source
     * @param {string} privateKey
     * @param {string} destination
-    * @param {BN} amountInDrops
+    * @param {BN} amountInDrops - if amountInDrops == 0 => AccountDelete transaction will be created
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
@@ -244,6 +258,28 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       } finally {
          this.addressLocks.delete(source);
       }
+   }
+
+   /**
+    * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|undefined} feeInDrops - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInDrops
+    * @param {number|undefined} sequence
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
+   async deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      feeInDrops?: BN,
+      note?: string,
+      maxFeeInDrops?: BN,
+      sequence?: number
+   ): Promise<ISubmitTransactionResponse> {
+      return await this.executeLockedSignedTransactionAndWait(source, privateKey, destination, toBN(0), feeInDrops, note, maxFeeInDrops, sequence);
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////
