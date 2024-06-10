@@ -1408,36 +1408,37 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@flarelabs/simple-wallet@workspace:packages/simple-wallet"
   dependencies:
-    "@types/bitcore-lib": ^0.15.3
+    "@flarelabs/fasset-bots-core": "workspace:*"
+    "@types/bitcore-lib": 0.15.6
     "@types/bn.js": 5.1.5
-    "@types/bs58check": ^2.1.0
+    "@types/bs58check": 2.1.0
     "@types/chai": 4.3.6
     "@types/chai-as-promised": 7.1.6
-    "@types/elliptic": ^6.4.14
+    "@types/elliptic": 6.4.14
     "@types/node": 20.7.0
-    "@types/tiny-secp256k1": ^2.0.1
-    algosdk: ^2.3.0
+    "@types/tiny-secp256k1": 2.0.1
+    algosdk: 2.3.0
     axios: 1.5.1
-    axios-retry: ^3.8.0
-    bip32: ^3.0.1
-    bip39: ^3.0.4
-    bitcoinjs-lib: ^6.0.2
-    bitcore-lib: ^8.25.36
-    bitcore-lib-doge: ^8.25.36
-    bitcore-lib-ltc: ^8.25.36
+    axios-retry: 3.8.0
+    bip32: 3.0.1
+    bip39: 3.0.4
+    bitcoinjs-lib: 6.1.5
+    bitcore-lib: 10.0.36
+    bitcore-lib-doge: ^10.0.36
+    bitcore-lib-ltc: 10.0.36
     bn.js: 5.2.1
-    bs58check: ^3.0.1
+    bs58check: 3.0.1
     chai: 4.3.8
     chai-as-promised: 7.1.1
     dotenv: 16.3.1
-    elliptic: ^6.5.4
-    fast-safe-stringify: ^2.1.1
+    elliptic: 6.5.4
+    fast-safe-stringify: 2.1.1
     rewire: 7.0.0
     ripple-address-codec: 4.2.4
     ripple-binary-codec: 1.4.2
-    ripple-keypairs: ^2.0.0
+    ripple-keypairs: 2.0.0
     source-map-support: 0.5.21
-    tiny-secp256k1: ^2.2.1
+    tiny-secp256k1: 2.2.1
     typescript: 5.2.2
     wallet-address-validator: ^0.2.4
     web3-utils: 1.10.2
@@ -3351,7 +3352,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/bitcore-lib@npm:^0.15.3":
+"@types/bitcore-lib@npm:0.15.6":
   version: 0.15.6
   resolution: "@types/bitcore-lib@npm:0.15.6"
   dependencies:
@@ -3397,12 +3398,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/bs58check@npm:^2.1.0":
-  version: 2.1.2
-  resolution: "@types/bs58check@npm:2.1.2"
+"@types/bs58check@npm:2.1.0":
+  version: 2.1.0
+  resolution: "@types/bs58check@npm:2.1.0"
   dependencies:
     "@types/node": "*"
-  checksum: 694abff5059e22f08f9466a5c727db5f4b9a2c9754962013de1c03408c78182864adc3f730c7f6788fb70fc29db669cfd51b4789f394c729a7b253d9e66aca11
+  checksum: 1a54c922b45d0ea6b945cd4700195b58484b488abb8f75ea4882939bbef58bb7351fb0e203bb9e98d242d7abb8e10182277158b60dac97c4b5d422206ab91b86
   languageName: node
   linkType: hard
 
@@ -3495,12 +3496,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/elliptic@npm:^6.4.14":
-  version: 6.4.18
-  resolution: "@types/elliptic@npm:6.4.18"
+"@types/elliptic@npm:6.4.14":
+  version: 6.4.14
+  resolution: "@types/elliptic@npm:6.4.14"
   dependencies:
     "@types/bn.js": "*"
-  checksum: c27613c530fb95441e5e6b456c8c9bc26568ca14c546aae6d7c1d8d46869f79a2272feaef266ac00bdb68b2671e6351ed01b91b82266eac30ca9092720825d16
+  checksum: d5a64f540e0ed4b74a12dfa5cc88c0aa7b531eab3b7a9fab17948ffbfc6e01814230e63d7417ce1b607dbd8b5d70e1b64f5afac632deabf96e44875aaac0ae1b
   languageName: node
   linkType: hard
 
@@ -3702,6 +3703,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:11.11.6":
+  version: 11.11.6
+  resolution: "@types/node@npm:11.11.6"
+  checksum: 075f1c011cf568e49701419acbcb55c24906b3bb5a34d9412a3b88f228a7a78401a5ad4d3e1cd6855c99aaea5ef96e37fc86ca097e50f06da92cf822befc1fff
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:18.15.13":
   version: 18.15.13
   resolution: "@types/node@npm:18.15.13"
@@ -3889,7 +3897,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/tiny-secp256k1@npm:^2.0.1":
+"@types/tiny-secp256k1@npm:2.0.1":
   version: 2.0.1
   resolution: "@types/tiny-secp256k1@npm:2.0.1"
   dependencies:
@@ -4561,12 +4569,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"algosdk@npm:^2.3.0":
-  version: 2.7.0
-  resolution: "algosdk@npm:2.7.0"
+"algosdk@npm:2.3.0":
+  version: 2.3.0
+  resolution: "algosdk@npm:2.3.0"
   dependencies:
     algo-msgpack-with-bigint: ^2.1.1
     buffer: ^6.0.3
+    cross-fetch: ^3.1.5
     hi-base32: ^0.5.1
     js-sha256: ^0.9.0
     js-sha3: ^0.8.0
@@ -4574,7 +4583,7 @@ __metadata:
     json-bigint: ^1.0.0
     tweetnacl: ^1.0.3
     vlq: ^2.0.4
-  checksum: 688fbf6f4bf18be4787fe13fa9414b7c3a98178e6ea34a925711b69535ff07f98d6b569e6d0bdb5ff38e3de2bcf5239493b1a4c693ec3c34f435599658b41fe6
+  checksum: cbb31ff42b5320b263fbb56037f370c4008083f61b85d5465bdef8ca9ab8dfc3820cda2dbb3b4123ab98f939b81822ff5c789e8980ee4b5c9114603952290212
   languageName: node
   linkType: hard
 
@@ -5060,13 +5069,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios-retry@npm:^3.8.0":
-  version: 3.9.1
-  resolution: "axios-retry@npm:3.9.1"
+"axios-retry@npm:3.8.0":
+  version: 3.8.0
+  resolution: "axios-retry@npm:3.8.0"
   dependencies:
     "@babel/runtime": ^7.15.4
     is-retry-allowed: ^2.2.0
-  checksum: 44e574ad559e4ee638e735662e9b9fcb69a1da6652adc3a75ca4b060e0fd40bdd7ac718e7743f51c0dad54149a6f3c09109275bf90298042542e80a17740a4e5
+  checksum: 448d951b971ccd35eaedc0f10ff1129a6bf2b3dfe13ce57749809bd37975332ae0e906ea4e67a41c9c98215bb1bf8a554e6880f1272419c758f91e4d68ca6b55
   languageName: node
   linkType: hard
 
@@ -5248,6 +5257,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bip32@npm:3.0.1":
+  version: 3.0.1
+  resolution: "bip32@npm:3.0.1"
+  dependencies:
+    "@types/node": 10.12.18
+    bs58check: ^2.1.1
+    create-hash: ^1.2.0
+    create-hmac: ^1.1.7
+    typeforce: ^1.11.5
+    wif: ^2.0.6
+  checksum: 466402a538a9e74fbef35569f98a88256beac3f12e212b053f3d48a471ac0a1c61ca34746cab64a201a8ce10ca9cf136ddb6ece7ffe66d6865f54ea1ae202ef1
+  languageName: node
+  linkType: hard
+
 "bip32@npm:^2.0.6":
   version: 2.0.6
   resolution: "bip32@npm:2.0.6"
@@ -5263,17 +5286,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bip32@npm:^3.0.1":
-  version: 3.1.0
-  resolution: "bip32@npm:3.1.0"
+"bip39@npm:3.0.4":
+  version: 3.0.4
+  resolution: "bip39@npm:3.0.4"
   dependencies:
-    bs58check: ^2.1.1
-    create-hash: ^1.2.0
-    create-hmac: ^1.1.7
-    ripemd160: ^2.0.2
-    typeforce: ^1.11.5
-    wif: ^2.0.6
-  checksum: 55bdc5dcae6cf83c000262cee9df912fe3012eeb000ff7cff72547e52442b7a779e93e7a19affbaa105d22f8d95299f8964edb2912f11a2bdd7b31433a7b5bad
+    "@types/node": 11.11.6
+    create-hash: ^1.1.0
+    pbkdf2: ^3.0.9
+    randombytes: ^2.0.1
+  checksum: 79ce1600a03d1ba5053bdd4e6323f9463ec340764c7e52918b6c6b9dca81221940f2d9a65656447f108f9bc2c8d9ae8df319cca83bbd1dad63f53ef2768d9bae
   languageName: node
   linkType: hard
 
@@ -5286,7 +5307,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bitcoinjs-lib@npm:^6.0.2":
+"bitcoinjs-lib@npm:6.1.5":
   version: 6.1.5
   resolution: "bitcoinjs-lib@npm:6.1.5"
   dependencies:
@@ -5300,9 +5321,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bitcore-lib-doge@npm:^8.25.36":
-  version: 8.25.46
-  resolution: "bitcore-lib-doge@npm:8.25.46"
+"bitcore-lib-doge@npm:^10.0.36":
+  version: 10.0.36
+  resolution: "bitcore-lib-doge@npm:10.0.36"
   dependencies:
     bn.js: =4.11.8
     bs58: ^4.0.1
@@ -5311,13 +5332,13 @@ __metadata:
     inherits: =2.0.1
     lodash: ^4.17.20
     scryptsy: 2.1.0
-  checksum: 5ee38d80a6da19b76f909188bb8d0697b35b994ce91c2be2ba37315998a4afea08343b6c2d80aeaa4a6ceded1afe623e4b925d2545b359bf4bd96c6ade8be342
+  checksum: 24f99e5ee107bc4ee39e18ea138e23fb6bc48f35da56efa8b3f285ffe90c1d5e84067b2767ed304435cec6a3dc841ca9ed488f30ccb5e62a7cebf5adbce77c7e
   languageName: node
   linkType: hard
 
-"bitcore-lib-ltc@npm:^8.25.36":
-  version: 8.25.46
-  resolution: "bitcore-lib-ltc@npm:8.25.46"
+"bitcore-lib-ltc@npm:10.0.36":
+  version: 10.0.36
+  resolution: "bitcore-lib-ltc@npm:10.0.36"
   dependencies:
     bech32: =2.0.0
     bn.js: =4.11.8
@@ -5327,13 +5348,13 @@ __metadata:
     inherits: =2.0.1
     lodash: ^4.17.20
     scryptsy: 2.1.0
-  checksum: 48fa0c669f6a5ebf2209760cc77d12870f312c58290024cb23e3095e89ab5cd26ab5242245ed4a0228bc9b4097341f220a523fc990ed0b5a00d1e6eaa7235c94
+  checksum: 7c2198afb72c147cec4105cf9dfbc9fc377c7e9e252b92c57bff6205346a7d114ab31a2562aded0a78c08875730a1528f8909d8d34787957c569c0e5d4c3c2e6
   languageName: node
   linkType: hard
 
-"bitcore-lib@npm:^8.25.36":
-  version: 8.25.47
-  resolution: "bitcore-lib@npm:8.25.47"
+"bitcore-lib@npm:10.0.36":
+  version: 10.0.36
+  resolution: "bitcore-lib@npm:10.0.36"
   dependencies:
     bech32: =2.0.0
     bip-schnorr: =0.6.4
@@ -5343,7 +5364,7 @@ __metadata:
     elliptic: ^6.5.3
     inherits: =2.0.1
     lodash: ^4.17.20
-  checksum: 7200fa6ddbb3f608442c324f6e1960a3f31d20015cb890d9ee8a5127619f746e798aaeecdc23bd28f00849ae3da0ecc3e8aa34d38be1b1fec07c20335ee1994a
+  checksum: bac5b134f0411333a804a491336f2d3b93ef55f7771bc463ee4ee2f99f539e7c3353230ad49abed6b78c688d862ca36f8110cd40b92fb6ec2468f67ebdfab496
   languageName: node
   linkType: hard
 
@@ -5620,6 +5641,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bs58check@npm:3.0.1, bs58check@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "bs58check@npm:3.0.1"
+  dependencies:
+    "@noble/hashes": ^1.2.0
+    bs58: ^5.0.0
+  checksum: dbbecc7a09f3836e821149266c864c4bbd545539cea43c35f23f4c3c46b54c86c52b65d224b9ea2e916fa6d93bd2ce9fac5b6c6bfcf19621a9c209a5602f71c8
+  languageName: node
+  linkType: hard
+
 "bs58check@npm:<3.0.0, bs58check@npm:^2.1.1, bs58check@npm:^2.1.2":
   version: 2.1.2
   resolution: "bs58check@npm:2.1.2"
@@ -5628,16 +5659,6 @@ __metadata:
     create-hash: ^1.1.0
     safe-buffer: ^5.1.2
   checksum: 43bdf08a5dd04581b78f040bc4169480e17008da482ffe2a6507327bbc4fc5c28de0501f7faf22901cfe57fbca79cbb202ca529003fedb4cb8dccd265b38e54d
-  languageName: node
-  linkType: hard
-
-"bs58check@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "bs58check@npm:3.0.1"
-  dependencies:
-    "@noble/hashes": ^1.2.0
-    bs58: ^5.0.0
-  checksum: dbbecc7a09f3836e821149266c864c4bbd545539cea43c35f23f4c3c46b54c86c52b65d224b9ea2e916fa6d93bd2ce9fac5b6c6bfcf19621a9c209a5602f71c8
   languageName: node
   linkType: hard
 
@@ -6890,7 +6911,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cross-fetch@npm:^3.1.4":
+"cross-fetch@npm:^3.1.4, cross-fetch@npm:^3.1.5":
   version: 3.1.8
   resolution: "cross-fetch@npm:3.1.8"
   dependencies:
@@ -8818,7 +8839,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-safe-stringify@npm:2.1.1, fast-safe-stringify@npm:^2.1.1":
+"fast-safe-stringify@npm:2.1.1":
   version: 2.1.1
   resolution: "fast-safe-stringify@npm:2.1.1"
   checksum: a851cbddc451745662f8f00ddb622d6766f9bd97642dabfd9a405fb0d646d69fc0b9a1243cbf67f5f18a39f40f6fa821737651ff1bceeba06c9992ca2dc5bd3d
@@ -14063,7 +14084,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pbkdf2@npm:^3.0.17, pbkdf2@npm:^3.0.3":
+"pbkdf2@npm:^3.0.17, pbkdf2@npm:^3.0.3, pbkdf2@npm:^3.0.9":
   version: 3.1.2
   resolution: "pbkdf2@npm:3.1.2"
   dependencies:
@@ -15093,6 +15114,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ripple-keypairs@npm:2.0.0":
+  version: 2.0.0
+  resolution: "ripple-keypairs@npm:2.0.0"
+  dependencies:
+    "@noble/curves": ^1.0.0
+    "@xrplf/isomorphic": ^1.0.0
+    ripple-address-codec: ^5.0.0
+  checksum: 51c54811594f7f4c90ad93c261b75f408fdeb6f07fcff7877dd1d847d50087ee6d69e864b21d126994a1b25bda0b442057a4e241b5b68508376ddffee3cfd0fd
+  languageName: node
+  linkType: hard
+
 "ripple-keypairs@npm:^1.1.4":
   version: 1.3.1
   resolution: "ripple-keypairs@npm:1.3.1"
@@ -15103,17 +15135,6 @@ __metadata:
     hash.js: ^1.0.3
     ripple-address-codec: ^4.3.1
   checksum: 833023584d38df528de3fa706dae18ea3c6058c1770d0a076547e2ecfa8e597c80d74090fd083a4cbffcd67b2486d6bf606f6dae405583a628d88f07200d82e1
-  languageName: node
-  linkType: hard
-
-"ripple-keypairs@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "ripple-keypairs@npm:2.0.0"
-  dependencies:
-    "@noble/curves": ^1.0.0
-    "@xrplf/isomorphic": ^1.0.0
-    ripple-address-codec: ^5.0.0
-  checksum: 51c54811594f7f4c90ad93c261b75f408fdeb6f07fcff7877dd1d847d50087ee6d69e864b21d126994a1b25bda0b442057a4e241b5b68508376ddffee3cfd0fd
   languageName: node
   linkType: hard
 
@@ -16594,12 +16615,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tiny-secp256k1@npm:*, tiny-secp256k1@npm:^2.2.1":
+"tiny-secp256k1@npm:*":
   version: 2.2.3
   resolution: "tiny-secp256k1@npm:2.2.3"
   dependencies:
     uint8array-tools: 0.0.7
   checksum: f7a74a1fceacab39d268907cd84798d3a07f3de2e00ba2557a043316ef45298d9acc96fb1614d72c728c3e512ecfef985b0fbd43b7fdb789fd9901df983e3e44
+  languageName: node
+  linkType: hard
+
+"tiny-secp256k1@npm:2.2.1":
+  version: 2.2.1
+  resolution: "tiny-secp256k1@npm:2.2.1"
+  dependencies:
+    uint8array-tools: 0.0.7
+  checksum: 89b6cef4020e6d0c39bca5607ac73ba97a9172724574e09c46dc43443d99d03084774342c29e4f9c4af1b78e6357332e2f5551169957475d4c041575f5b98828
   languageName: node
   linkType: hard
 
