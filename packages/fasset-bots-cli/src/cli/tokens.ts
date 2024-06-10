@@ -1,9 +1,15 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { BlockchainWalletHelper, ChainId, DBWalletKeys } from "@flarelabs/fasset-bots-core";
-import { BotConfigFile, BotFAssetInfo, ChainAccount, Secrets, createBlockchainWalletHelper, createBotConfig, createNativeContext, loadConfigFile, loadContracts, overrideAndCreateOrm } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, requireNotNull, requiredAddressBalance, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BlockchainWalletHelper, ChainId, DBWalletKeys, VerificationPrivateApiClient } from "@flarelabs/fasset-bots-core";
+import {
+    BotConfigFile, BotFAssetInfo, ChainAccount, Secrets, createBlockchainWalletHelper, createBotConfig, createNativeContext,
+    loadConfigFile, loadContracts, overrideAndCreateOrm
+} from "@flarelabs/fasset-bots-core/config";
+import {
+    CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, logger,
+    requireNotNull, requiredAddressBalance, toBN, web3
+} from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -29,40 +35,36 @@ program
         const config = loadConfigFile(options.config);
         const secrets = Secrets.load(options.secrets);
         const token = findToken(config, tokenSymbol);
-        let account = getAccountFromSecrets(secrets, token, from);
-        if (account == null) {
-            validateAddressForType(token, from);
-            account = await getAccountFromDBWallet(config, secrets, from);
-        }
-        validateAddressForType(token, to);
+        const accountFrom = await getAccount(config, secrets, token, from);
+        const addressTo = await getAddress(secrets, token, to);
         if (token.type === "nat") {
-            await initializeWeb3(config, secrets, [account]);
+            await initializeWeb3(config, secrets, [accountFrom]);
             const currency = new Currency(config.nativeChainInfo.tokenSymbol, 18);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
-            await web3.eth.sendTransaction({ from: account.address, to: to, value: String(amountNat), gas: 100_000 });
+            await web3.eth.sendTransaction({ from: accountFrom.address, to: addressTo, value: String(amountNat), gas: 100_000 });
         } else if (token.type === "erc20") {
-            await initializeWeb3(config, secrets, [account]);
+            await initializeWeb3(config, secrets, [accountFrom]);
             const tokenContract = await ERC20.at(token.address);
             const currency = await Currencies.erc20(tokenContract);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
-            await tokenContract.transfer(to, amountNat, { from: account.address });
+            await tokenContract.transfer(addressTo, amountNat, { from: accountFrom.address });
         } else if (token.type === "fasset") {
-            await initializeWeb3(config, secrets, [account]);
+            await initializeWeb3(config, secrets, [accountFrom]);
             const botConfig = await createBotConfig("common", secrets, config);
             const context = await createNativeContext(botConfig, requireNotNull(botConfig.fAssets.get(token.fassetSymbol)));
             const currency = await Currencies.fasset(context);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
-            await context.fAsset.transfer(to, amountNat, { from: account.address });
+            await context.fAsset.transfer(addressTo, amountNat, { from: accountFrom.address });
         } else if (token.type === "underlying") {
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
             const wallet = createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(chainInfo.walletUrl));
-            await wallet.addExistingAccount(account.address, account.private_key);
+            await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
             const minBN = currency.parse(token.chainInfo.minimumAccountBalance ?? "0");
             await enoughUnderlyingFunds(wallet, from, amountNat, minBN);
-            await wallet.addTransaction(account.address, to, amountNat, cmdOptions.reference ?? null);
+            await wallet.addTransaction(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
         }
     });
 
@@ -73,12 +75,12 @@ program
     .argument("<token>", "token symbol, e.g. FLR or XRP or FXRP (case insensitive; can be native token of one of the supported networks or an fasset)")
     .argument("<address>", "address on the network of the token")
     .option("-b, --baseUnit", "print amount in base unit of the token (wei / drops / satoshi); otherwise it is in whole tokens with decimals")
-    .action(async (tokenSymbol: string, address: string, cmdOptions: { baseUnit?: boolean }) => {
+    .action(async (tokenSymbol: string, addressOrKey: string, cmdOptions: { baseUnit?: boolean }) => {
         const options: { config: string; secrets: string } = program.opts();
         const config = loadConfigFile(options.config);
         const secrets = Secrets.load(options.secrets);
         const token = findToken(config, tokenSymbol);
-        validateAddressForType(token, address);
+        const address = await getAddress(secrets, token, addressOrKey);
         if (token.type === "nat") {
             await initializeWeb3(config, secrets, []);
             const balance = new EVMNativeTokenBalance(config.nativeChainInfo.tokenSymbol, 18);
@@ -145,6 +147,26 @@ async function initializeWeb3(config: BotConfigFile, secrets: Secrets, accounts:
     await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), privateKeys, null);
 }
 
+async function getAccount(config: BotConfigFile, secrets: Secrets, token: TokenType, addressOrKey: string) {
+    let account = getAccountFromSecrets(secrets, token, addressOrKey);
+    const address = account != null ? account.address : addressOrKey;
+    await validateAddressForToken(secrets, token, address);
+    if (account == null) {
+        account = await getAccountFromDBWallet(config, secrets, addressOrKey);
+    }
+    if (account == null) {
+        throw new CommandLineError(`Could not find private key for account '${addressOrKey}'`);
+    }
+    return account;
+}
+
+async function getAddress(secrets: Secrets, token: TokenType, addressOrKey: string) {
+    const account = getAccountFromSecrets(secrets, token, addressOrKey);
+    const address = account != null ? account.address : addressOrKey;
+    await validateAddressForToken(secrets, token, address);
+    return address;
+}
+
 function getAccountFromSecrets(secrets: Secrets, token: TokenType, addressOrKey: string): ChainAccount | null {
     const accounts = extractAccountsFromSecrets(secrets, token);
     for (const [key, account] of Object.entries(accounts)) {
@@ -157,39 +179,65 @@ function getAccountFromSecrets(secrets: Secrets, token: TokenType, addressOrKey:
 
 function extractAccountsFromSecrets(secrets: Secrets, token: TokenType) {
     const result: Record<string, ChainAccount> = {};
-    if (token.type === "underlying") {
-        const ownerAccount = secrets.data.owner?.[token.chainInfo.tokenSymbol];
-        if (ownerAccount) result.owner = ownerAccount;
-        const userAccount = secrets.data.user?.[token.chainInfo.tokenSymbol];
-        if (userAccount) result.user = userAccount;
-    } else {
-        for (const [key, acc] of Object.entries(secrets.data)) {
-            if (isChainAccount(acc)) result[key] = acc;
+    for (const [userKey, userAccounts] of Object.entries(secrets.data)) {
+        if (token.type !== "underlying" && isChainAccount(userAccounts)) {
+            // native accounts can be on toplevel, e.g. `secrets.liquidator`
+            result[userKey] = userAccounts;
+        } else {
+            // check for account of the form `secrets.<userKey>.<type>` e.g. `secrets.user.native` or `secrets.owner.testXRP`
+            const tokenAccountKey = token.type === "underlying" ? token.chainInfo.tokenSymbol : "native";
+            const account = (userAccounts as Record<string, unknown>)[tokenAccountKey];
+            if (isChainAccount(account)) {
+                result[userKey] = account;
+            }
         }
-        const ownerAccount = secrets.data.owner?.native;
-        if (ownerAccount) result.owner = ownerAccount;
-        const userAccount = secrets.data.user?.native;
-        if (userAccount) result.user = userAccount;
     }
     return result;
 }
 
 function isChainAccount(rec: any): rec is ChainAccount {
-    return rec && typeof rec.address === "string" && typeof rec.private_key === "string";
+    return typeof rec === "object" && rec != null && typeof rec.address === "string" && typeof rec.private_key === "string";
 }
 
-async function getAccountFromDBWallet(config: BotConfigFile, secrets: Secrets, address: string): Promise<ChainAccount> {
-    assertNotNullCmd(config.ormOptions, "'from' account private key not found in options and no database config found to search in db wallet");
-    const orm = await overrideAndCreateOrm(config.ormOptions, secrets.data.database);
-    assertNotNullCmd(secrets.data.wallet, "'from' account private key not found in options and no wallet password found to search in db wallet");
-    const walletKeys = new DBWalletKeys(orm.em, secrets.data.wallet.encryption_password);
-    const privateKey = await walletKeys.getKey(address);
-    assertNotNullCmd(privateKey, `private key for address ${address}`);
-    return { address, private_key: privateKey };
+async function getAccountFromDBWallet(config: BotConfigFile, secrets: Secrets, address: string): Promise<ChainAccount | null> {
+    try {
+        const ormOptions = config.ormOptions;
+        const walletPassword = secrets.data.wallet?.encryption_password;
+        if (ormOptions && walletPassword) {
+            const databaseAccount = secrets.data.database;
+            const orm = await overrideAndCreateOrm({ ...ormOptions, schemaUpdate: "none" }, databaseAccount);
+            const walletKeys = new DBWalletKeys(orm.em, walletPassword);
+            const privateKey = await walletKeys.getKey(address);
+            if (privateKey) {
+                return { address, private_key: privateKey };
+            }
+            logger.error(`No private key for account '${address}' in database wallet.`);
+        } else if (!ormOptions) {
+            logger.error(`No database config found to search in db wallet while looking for account '${address}'.`);
+        } else if (!walletPassword) {
+            logger.error(`No wallet password found to search in db wallet for account '${address}'.`);
+        }
+    } catch (error) {
+        logger.error(`Error searching for account private key for ${address} in database wallet:`, error);
+    }
+    return null;
 }
 
-function validateAddressForType(token: TokenType, address: string) {
-    if (token.type !== "underlying") {
+async function validateAddressForToken(secrets: Secrets, token: TokenType, address: string) {
+    if (token.type === "underlying") {
+        const chainId = ChainId.from(token.chainInfo.chainId);
+        assertNotNullCmd(token.chainInfo.indexerUrl, `Missing indexerUrl for chain ${chainId}`);
+        assertNotNullCmd(secrets.data.apiKey.indexer, `Missing indexer api key in secrets`);
+        const verificationClient = new VerificationPrivateApiClient(token.chainInfo.indexerUrl, secrets.data.apiKey.indexer);
+        const result = await verificationClient.checkAddressValidity(chainId.sourceId, address)
+            .catch(e => {
+                logger.error(`Error validating address ${address} on chain ${chainId}`);
+                return null;
+            });
+        if (result?.isValid === false) {
+            throw new CommandLineError(`Address "${address}" has invalid format for chain ${chainId}`);
+        }
+    } else {
         validateAddress(address, `Address ${address}`);
     }
 }
