@@ -84,7 +84,7 @@ program
     .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0")
     .action(async (_options: OptionValues) => {
         const options: { config: string; secrets: string } = program.opts();
-        await finalizeAgenOpenBetaRegistration(options.secrets, options.config, _options.nat, _options.usdt, _options.usdc, _options.eth)
+        await finalizeAgentOpenBetaRegistration(options.secrets, options.config, _options.nat, _options.usdt, _options.usdc, _options.eth)
     });
 program
     .command("openBetaAgentFund")
@@ -161,12 +161,12 @@ async function addCollateralToken(secretsFile: string, configFileName: string, p
     await controller.addCollateralType(assetManagers, collateralType, { from: deployerAddress });
 }
 
-async function finalizeAgenOpenBetaRegistration(secrets: string, config: string,
+async function finalizeAgentOpenBetaRegistration(secrets: string, config: string,
     amountNat: string, amountUsdt: string, amountUsdc: string, amountEth: string
 ) {
     const registrationApi = new OpenBetaAgentRegistrationTransport(Secrets.load(secrets));
-    const unFundedAgents = await registrationApi.unfinalizedRegistrations();
-    for (const agent of unFundedAgents) {
+    const unfinalizedAgents = await registrationApi.unfinalizedRegistrations();
+    for (const agent of unfinalizedAgents) {
         try {
             await distributeTokensToAddress(secrets, config, agent.management_address, amountNat, amountUsdt, amountUsdc, amountEth)
             await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
