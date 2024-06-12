@@ -1312,8 +1312,8 @@ __metadata:
     fake-price-reader: dist/src/cli/fake-price-reader.js
     key-gen: dist/src/cli/key-gen.js
     test-governance: dist/src/cli/test-governance.js
+    tokens: dist/src/cli/tokens.js
     user-bot: dist/src/cli/user-bot.js
-    utils: dist/src/cli/utils.js
   languageName: unknown
   linkType: soft
 

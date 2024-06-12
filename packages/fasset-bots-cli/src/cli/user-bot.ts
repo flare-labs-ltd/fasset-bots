@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { InfoBotCommands, PoolUserBotCommands, UserBotCommands } from "@flarelabs/fasset-bots-core";
 import { Secrets } from "@flarelabs/fasset-bots-core/config";
-import { TRANSACTION_FEE_FACTOR, TokenBalances, formatFixed, squashSpace, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { TokenBalances, formatFixed, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import os from "os";
 import path from "path";
@@ -17,8 +17,7 @@ const program = programWithCommonOptions("user", "single_fasset");
 program.name("user-bot").description("Command line commands for FAsset user (minter, redeemer, or collateral pool provider)");
 
 program.addOption(
-    program.createOption("-d, --dir <userDataDir>", squashSpace`Directory where minting and redemption state files will be stored. If not provided,
-        the environment variable FASSET_USER_DATA_DIR is used, if set. Default is <USER_HOME>/fasset.`)
+    program.createOption("-d, --dir <userDataDir>", `directory where minting and redemption state files will be stored`)
         .env("FASSET_USER_DATA_DIR")
         .default(path.resolve(os.homedir(), "fasset"))
 );

@@ -63,6 +63,9 @@ export class AgentBotTransientStorage {
 
     // used by getUnderlyingBlockHeightProof to detect when the wait is too long and agent has to be notified
     waitingForLatestBlockProofSince = BN_ZERO;
+
+    // the block when outdated agent was last reported
+    lastOutdatedEventReported = 0;
 }
 
 export class AgentBot {
