@@ -4,6 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import type { AlgoRpcConfig } from "../../src/interfaces/WriteWalletRpcInterface";
 import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
+import algosdk from "algosdk";
 use(chaiAsPromised);
 
 const ALGOMccConnectionTest: AlgoRpcConfig = {
@@ -38,6 +39,7 @@ describe("Algo wallet tests", () => {
    });
 
    it("Should create, sign and submit transaction", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, undefined, "Just submit");
       const signed = await wClient.signTransaction(tr, fundedWallet.privateKey);
       const submit = await wClient.submitTransaction(signed);
@@ -45,6 +47,7 @@ describe("Algo wallet tests", () => {
    });
 
    it("Should create, sign, submit transaction", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const balanceBefore = await wClient.getAccountBalance(targetAddress);
       const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, undefined, "Submit and wait");
       const signed = await wClient.signTransaction(tr, fundedWallet.privateKey);
@@ -56,19 +59,22 @@ describe("Algo wallet tests", () => {
    });
 
    it("Should create transaction without note", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO);
       expect(typeof tr).to.equal("object");
    });
 
    it("Should create transaction with custom fee", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, feeInMicroALGO, "Just create");
       expect(tr.fee).to.equal(toNumber(feeInMicroALGO));
       expect(tr.flatFee).to.be.true;
    });
 
    it("Should not create transaction: maxFee > fee", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, feeInMicroALGO, "Just create", maxFeeInMicroAlgo))
-         .to.eventually.be.rejectedWith(`/Transaction is not prepared: maxFee ${maxFeeInMicroAlgo.toString()} is higher than fee/`);
+         .to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFeeInMicroAlgo.toString()} is higher than fee ${feeInMicroALGO.toString()}`);
    });
 
    it("Should receive fee", async () => {
