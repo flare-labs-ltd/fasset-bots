@@ -141,10 +141,17 @@ export class Agent {
      * @param amountTokenWei amount to be deposited in wei
      */
     async depositVaultCollateral(amountTokenWei: BNish) {
-        const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
-        const vaultCollateralToken = await IERC20.at(vaultCollateralTokenAddress);
-        await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.owner.workAddress });
-        return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.owner.workAddress });
+        const vaultCollateral = await this.getVaultCollateral();
+        return await this.depositTokensToVault(vaultCollateral.token, amountTokenWei);
+    }
+
+    /**
+     * Deposits any ERC20 tokens to agents vault.
+     */
+    async depositTokensToVault(tokenAddress: string, amountTokenWei: BNish) {
+        const token = await IERC20.at(tokenAddress);
+        await token.approve(this.vaultAddress, amountTokenWei, { from: this.owner.workAddress });
+        return await this.agentVault.depositCollateral(tokenAddress, amountTokenWei, { from: this.owner.workAddress });
     }
 
     /**
@@ -360,6 +367,21 @@ export class Agent {
      */
     async switchVaultCollateral(token: string): Promise<void> {
         await this.assetManager.switchVaultCollateral(this.vaultAddress, token, { from: this.owner.workAddress });
+    }
+
+    /**
+     * Calculate the amount of new tokens needed to replace the old tokens in vault.
+     */
+    async calculateVaultCollateralReplacementAmount(token: string) {
+        const oldCollateral = await this.getVaultCollateral();
+        const newCollateral = await this.context.assetManager.getCollateralType(CollateralClass.VAULT, token);
+        const settings = await this.context.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        const oldPrice = await priceReader.getPrice(oldCollateral.tokenFtsoSymbol);
+        const newPrice = await priceReader.getPrice(newCollateral.tokenFtsoSymbol);
+        const oldToken = await IERC20.at(oldCollateral.token);
+        const oldBalance = await oldToken.balanceOf(this.vaultAddress);
+        return oldBalance.mul(oldPrice.price).div(newPrice.price);
     }
 
     /**
