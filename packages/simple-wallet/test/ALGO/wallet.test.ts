@@ -68,7 +68,7 @@ describe("Algo wallet tests", () => {
 
    it("Should not create transaction: maxFee > fee", async () => {
       await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, feeInMicroALGO, "Just create", maxFeeInMicroAlgo))
-         .to.eventually.be.rejected;
+         .to.eventually.be.rejectedWith(`/Transaction is not prepared: maxFee ${maxFeeInMicroAlgo.toString()} is higher than fee/`);
    });
 
    it("Should receive fee", async () => {

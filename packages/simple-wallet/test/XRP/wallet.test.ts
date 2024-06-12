@@ -127,7 +127,9 @@ describe("Xrp wallet tests", () => {
    });
 
    it("Should receive fee", async () => {
-      const fee = await wClient.getCurrentTransactionFee();
+      const feeP = await wClient.getCurrentTransactionFee({ isPayment: true });
+      expect(feeP).not.to.be.null;
+      const fee = await wClient.getCurrentTransactionFee({ isPayment: false });
       expect(fee).not.to.be.null;
    });
 
@@ -192,7 +194,7 @@ describe("Xrp wallet tests", () => {
 
    /* describe("congested network tests", () => {
       const ntx = 1;
-      it.only("Should create sign and send transactions in a congested network", async () => {
+      it("Should create sign and send transactions in a congested network", async () => {
          await Promise.all(Array(ntx).fill(0).map(async (_, i) => {
             console.log(`i: ` + (await wClient.getCurrentTransactionFee()).toString())
             fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
@@ -206,19 +208,21 @@ describe("Xrp wallet tests", () => {
       })
    }) */
 
-   it("Should create and delete account", async () => {
+   // Running this takes cca 20 min, as account can only be deleted
+   // if account sequence + DELETE_ACCOUNT_OFFSET < ledger number
+   it.skip("Should create and delete account", async () => {
       const toDelete = wClient.createWallet();
       expect(toDelete.address).to.not.be.null;
       expect(WAValidator.validate(toDelete.address, "XRP", "testnet")).to.be.true;
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
-      const toSendInDrops = toBN(20000000); // 20 XPR
+      const toSendInDrops = toBNExp(20,6); // 20 XPR
       // fund toDelete account
       await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
       const balance = await wClient.getAccountBalance(toDelete.address);
       // delete toDelete account
       await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address);
       const balance2 = await wClient.getAccountBalance(toDelete.address);
+      expect(balance.gt(balance2));
    });
-
 });

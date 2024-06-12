@@ -4,8 +4,8 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
+import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
-import { BTC_LTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 const DOGEMccConnectionTest = {
    url: process.env.DOGE_URL ?? "",
    username: "",
@@ -84,11 +84,17 @@ describe("Dogecoin wallet tests", () => {
    it("Should not create transaction: maxFee > fee", async () => {
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
-         .eventually.be.rejected;
+         .eventually.be.rejectedWith(`Transaction is not prepared: fee ${feeInSatoshi.toString()} is higher than maxFee ${maxFeeInSatoshi.toString()}`);
+   });
+
+   it("Should not create transaction: amount = dust amount", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note", maxFeeInSatoshi)).to
+         .eventually.be.rejectedWith(`Will not prepare transaction for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
    });
 
    it("Should receive fee", async () => {
-      const fee = await wClient.getCurrentTransactionFee();
+      const fee = await wClient.getCurrentTransactionFee({source: fundedAddress, amount: amountToSendInSatoshi, destination: targetAddress});
       expect(fee).not.to.be.null;
    });
 
@@ -103,5 +109,21 @@ describe("Dogecoin wallet tests", () => {
       await expect(wClient.tryToResubmitTransaction(txHash, source, "", 1, 1))
          .to.eventually.be.rejectedWith(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`)
          .and.be.an.instanceOf(Error);
+   });
+
+   it("Should create and delete account", async () => {
+      const toDelete = wClient.createWallet();
+      expect(toDelete.address).to.not.be.null;
+      expect(WAValidator.validate(toDelete.address, "DOGE", "testnet")).to.be.true;
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      expect(WAValidator.validate(fundedWallet.address, "DOGE", "testnet")).to.be.true;
+      // fund toDelete account
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
+      const balance = await wClient.getAccountBalance(toDelete.address);
+      // delete toDelete account
+      const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
+      const balance2 = await wClient.getAccountBalance(toDelete.address);
+      expect(balance.gt(balance2));
    });
 });

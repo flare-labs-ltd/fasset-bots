@@ -59,7 +59,7 @@ describe("Bitcoin wallet tests", () => {
    });
 
    it("Should receive fee", async () => {
-      const fee = await wClient.getCurrentTransactionFee();
+      const fee = await wClient.getCurrentTransactionFee({source: fundedAddress, amount: amountToSendSatoshi, destination: targetAddress});
       expect(fee).not.to.be.null;
    });
 });

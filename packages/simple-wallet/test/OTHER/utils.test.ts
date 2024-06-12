@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { algo_ensure_data, bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHex, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
+import { algo_ensure_data, bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
-import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
+import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils"
 
 const BTCMccConnectionTest = {
    url: process.env.BTC_URL ?? "",
@@ -127,9 +127,9 @@ describe("Util tests", () => {
       expect(isValid1).to.be.true;
       const isValid2 = isValidBytes32Hex(invalid);
       expect(isValid2).to.be.false;
-      const isValid3 = isValidHex(valid);
+      const isValid3 = isValidHexString(valid);
       expect(isValid3).to.be.true;
-      const isValid4 = isValidHex(invalid);
+      const isValid4 = isValidHexString(invalid);
       expect(isValid4).to.be.false;
    });
 

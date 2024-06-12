@@ -43,24 +43,43 @@ Examples for **creating a wallet**, **preparing transaction**, **signing transac
 Implemented functions:
 
 ```javascript
-createWallet(): ICreateWalletResponse;
-createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse;
+   createWallet(): ICreateWalletResponse;
+   createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse;
 
-getAccountBalance(account: string): Promise<number>;
-getCurrentTransactionFee(): Promise<number>;
+   getAccountBalance(account: string): Promise<BN>;
+   getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
-preparePaymentTransaction(
-   source: string,
-   destination: string,
-   amount: number,
-   fee?: number,
-   note?: string,
-   maxFee?: number,
-   sequence?: number
-): Promise<any>;
-signTransaction(transaction: any, privateKey: string): Promise<string>;
-submitTransaction(signedTx: string): Promise<any>;
-submitTransactionAndWait(signedTx: string): Promise<any>;
+   preparePaymentTransaction(
+      source: string,
+      destination: string,
+      amount: BN | null,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
+   signTransaction(transaction: any, privateKey: string): Promise<string>;
+   submitTransaction(signedTx: string): Promise<any>;
+   executeLockedSignedTransactionAndWait(
+      source: string,
+      privateKey: string,
+      destination: string,
+      amount: BN | null,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
+
+   deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
 ```
 
 ## Tests
@@ -169,4 +188,3 @@ const newAccount = wClient();
 // Log wallet details
 console.log(newAccount); // => { address: <address>, mnemonic: <mnemonic>, privateKey: <privateKey>, publicKey: <publicKey> }
 ```
-

@@ -79,11 +79,11 @@ export function prefix0x(tx: string) {
 }
 
 export function isValidBytes32Hex(address: string) {
-   return /^0x[0-9a-fA-F]{64}$/i.test(address);
+   return /^(0x|0X)?[0-9a-fA-F]{64}$/i.test(address);
 }
 
-export function isValidHex(address: string) {
-   return /^0x[0-9a-fA-F]+$/i.test(address);
+export function isValidHexString(maybeHexString: string) {
+   return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
 }
 
 export function requireEnv(name: string) {

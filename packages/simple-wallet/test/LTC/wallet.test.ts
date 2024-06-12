@@ -46,7 +46,7 @@ describe("Litecoin wallet tests", () => {
 
    it("Should submit transaction", async () => {
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const fee = await wClient.getCurrentTransactionFee();
+      const fee = await wClient.getCurrentTransactionFee({source: fundedWallet.address, amount: amountToSendInSatoshi, destination: targetAddress});
       const submitted = await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
       expect(typeof submitted).to.equal("object");
    });
@@ -64,7 +64,23 @@ describe("Litecoin wallet tests", () => {
    });
 
    it("Should receive fee", async () => {
-      const fee = await wClient.getCurrentTransactionFee();
+      const fee = await wClient.getCurrentTransactionFee({source: fundedAddress, amount: amountToSendInSatoshi, destination: targetAddress});
       expect(fee).not.to.be.null;
+   });
+
+   it("Should create and delete account", async () => {
+      const toDelete = wClient.createWallet();
+      expect(toDelete.address).to.not.be.null;
+      expect(WAValidator.validate(toDelete.address, "LTC", "testnet")).to.be.true;
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      expect(WAValidator.validate(fundedWallet.address, "LTC", "testnet")).to.be.true;
+      // fund toDelete account
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
+      const balance = await wClient.getAccountBalance(toDelete.address);
+      // delete toDelete account
+      const note = "deadc000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
+      const balance2 = await wClient.getAccountBalance(toDelete.address);
+      expect(balance.gt(balance2));
    });
 });
