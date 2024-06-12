@@ -1424,7 +1424,7 @@ __metadata:
     bip39: 3.0.4
     bitcoinjs-lib: 6.1.5
     bitcore-lib: 10.0.36
-    bitcore-lib-doge: ^10.0.36
+    bitcore-lib-doge: 10.0.36
     bitcore-lib-ltc: 10.0.36
     bn.js: 5.2.1
     bs58check: 3.0.1
@@ -5321,7 +5321,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bitcore-lib-doge@npm:^10.0.36":
+"bitcore-lib-doge@npm:10.0.36":
   version: 10.0.36
   resolution: "bitcore-lib-doge@npm:10.0.36"
   dependencies:
