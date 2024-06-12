@@ -202,20 +202,17 @@
   {
     "name": "testUSDC",
     "contractName": "FakeERC20.sol",
-    "address": "0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6",
-    "mustSwitchToProduction": true
+    "address": "0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6"
   },
   {
     "name": "testUSDT",
     "contractName": "FakeERC20.sol",
-    "address": "0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5",
-    "mustSwitchToProduction": true
+    "address": "0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5"
   },
   {
     "name": "testETH",
     "contractName": "FakeERC20.sol",
-    "address": "0x17c3E6318cb45B4267998940d7D65BA95A32954F",
-    "mustSwitchToProduction": true
+    "address": "0x17c3E6318cb45B4267998940d7D65BA95A32954F"
   },
   {
     "name": "SCProofVerifier",
