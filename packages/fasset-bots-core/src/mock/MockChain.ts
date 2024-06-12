@@ -218,6 +218,14 @@ export class MockChainWallet implements IBlockChainWallet {
 
     constructor(public chain: MockChain) {}
 
+    async deleteAccount(from: string, to: string, reference: string | null, options?: TransactionOptionsWithFee | undefined): Promise<any> {
+        const value = toBN(await this.getBalance(from));
+        const fee = toBN(await this.getTransactionFee());
+        const transaction = this.createTransaction(from, to, value.sub(fee), reference, options);
+        this.chain.addTransaction(transaction);
+        return transaction.hash;
+    }
+
     async getBalance(address: string): Promise<BN> {
         return this.chain.balances[address] ?? BN_ZERO;
     }
