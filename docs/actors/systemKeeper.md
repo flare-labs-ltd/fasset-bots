@@ -1,10 +1,10 @@
 # SystemKeeperBot
 
-System keeper works is in a way similar as Liquidator. It tracks the same events on native chain. After each event it checks Agent's position and either starts or ends liquidation process.
+System Keeper works similarly to Liquidator. It tracks the same events on the native chain. After each event, it checks the Agent's position and starts or ends the liquidation process.
 
-File [SystemKeeper.ts](../../packages/fasset-bots-core/src/actors/SystemKeeper.ts) contains framework for such actor in FAsset system.
+The file [SystemKeeper.ts](../../packages/fasset-bots-core/src/actors/SystemKeeper.ts) contains a framework for such an actor in the FAsset system.
 
-### Initialization
+## Initialization
 
 Initially, the constructor takes in **runner** (ScopedRunner), **address** (native address), **state** (TrackedState) as inputs:
 
@@ -20,15 +20,15 @@ Initially, the constructor takes in **runner** (ScopedRunner), **address** (nati
 
 The **runStep** method is responsible for managing all relevant Agent events and comprises:
 
--   **registerEvents**
+- **registerEvents**
 
 ### registerEvents
 
 Initially, it triggers event handling in **parent** (TrackedState) with method **readUnhandledEvents**.
 
-Secondly, it checks following events:
+Secondly, it checks the following events:
 
--   **PriceEpochFinalized**:
-    -   verifies whether liquidation for any agent should be initiated or terminated based on their recently calculated collateral ratios
--   **MintingExecuted**:
-    -   verifies whether liquidation for agent should be initiated or terminated based on its recently calculated collateral ratios
+- **PriceEpochFinalized**:
+  - verifies whether liquidation for any agent should be initiated or terminated based on their recently calculated collateral ratios
+- **MintingExecuted**:
+  - verifies whether liquidation for Agent should be initiated or terminated based on its recently calculated collateral ratios

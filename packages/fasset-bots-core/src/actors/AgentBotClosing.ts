@@ -1,8 +1,8 @@
 import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
-import { latestBlockTimestampBN, squashSpace } from "../utils";
-import { BN_ZERO, toBN } from "../utils/helpers";
+import { TokenBalances, latestBlockTimestampBN, squashSpace } from "../utils";
+import { BN_ZERO, minBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentBot, ClaimType } from "./AgentBot";
 
@@ -34,8 +34,10 @@ export class AgentBotClosing {
             const closingPhase = await this.closingPhase(readAgentEntAtBeginning);
             if (closingPhase === "CLEANUP") {
                 logger.info(`Agent ${this.agent.vaultAddress} is performing cleanup.`);
-                // withdraw and self close pool fees
+                // withdraw pool fees
                 await this.withdrawPoolFees();
+                // self close minted fassets with fassets on agent's address
+                await this.selfCloseFAssets();
                 // start or continue vault collateral withdrawal
                 await this.startOrWithdrawVaultCollateral(rootEm);
                 // start or continue pool token redemption
@@ -87,12 +89,30 @@ export class AgentBotClosing {
             const poolFeeBalance = await this.agent.poolFeeBalance();
             if (poolFeeBalance.gt(BN_ZERO)) {
                 await this.agent.withdrawPoolFees(poolFeeBalance);
-                await this.agent.selfClose(poolFeeBalance);
-                logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${poolFeeBalance}.`);
+                const br = await TokenBalances.fasset(this.context);
+                logger.info(`Agent ${this.agent.vaultAddress} withdrew and self closed pool fees ${br.format(poolFeeBalance)}.`);
             }
         } catch (error) {
             console.error(`Error while withdrawing pool fees for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while withdrawing pool fees:`, error);
+        }
+    }
+
+    async selfCloseFAssets() {
+        try {
+            const br = await TokenBalances.fasset(this.context);
+            const ownerFAssetBalance = await br.balance(this.bot.owner.workAddress);
+            const agentInfo = await this.agent.getAgentInfo();
+            const minted = toBN(agentInfo.mintedUBA);
+            const closeAmount = minBN(ownerFAssetBalance, minted);
+            if (closeAmount.gt(BN_ZERO)) {
+                await this.agent.selfClose(closeAmount);
+                const remaining = minted.sub(closeAmount);
+                logger.info(`Agent ${this.agent.vaultAddress} self closed fassets ${br.format(closeAmount)}, remains minted ${br.format(remaining)}`);
+            }
+        } catch (error) {
+            console.error(`Error while self closing ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error self closing:`, error);
         }
     }
 

@@ -2,8 +2,8 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
-import { Secrets, loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import { Secrets, loadAgentSettings, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
+import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
@@ -356,12 +356,28 @@ program
     .command("switchVaultCollateral")
     .description("switch vault collateral")
     .argument("<agentVaultAddress>")
-    .argument("<token>")
-    .action(async (agentVault: string, token: string) => {
+    .argument("<token>", "token name or address")
+    .option("--deposit", "automatically deposit the amount of new tokens, equivalent to the amount of old tokens in the vault")
+    .action(async (agentVault: string, token: string, cmdOptions: { deposit?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.switchVaultCollateral(agentVault, token);
+        token = getContractByName(options.config, token);
+        if (cmdOptions.deposit) {
+            await cli.depositAndSwitchVaultCollateral(agentVault, token);
+        } else {
+            await cli.switchVaultCollateral(agentVault, token);
+        }
     });
+
+function getContractByName(config: string, nameOrAddress: string) {
+    if (nameOrAddress.startsWith("0x")) {
+        return nameOrAddress;
+    }
+    const configFile = loadConfigFile(config);
+    const contracts = loadContracts(requireNotNullCmd(configFile.contractsJsonFile, "Contracts are required to get contract by name"));
+    const contract = requireNotNullCmd(contracts[nameOrAddress], `Missing contract ${nameOrAddress}`);
+    return contract.address;
+}
 
 program
     .command("upgradeWNat")

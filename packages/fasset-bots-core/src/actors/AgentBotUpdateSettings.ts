@@ -2,11 +2,11 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentUpdateSetting } from "../entities/agent";
+import { AgentUpdateSettingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
-import { AgentUpdateSettingState } from "../entities/common";
 
 export class AgentBotUpdateSettings {
     static deepCopyWithObjectCreate = true;
@@ -36,6 +36,7 @@ export class AgentBotUpdateSettings {
             } as RequiredEntityData<AgentUpdateSetting>,
             { persist: true }
         );
+        await rootEm.flush();
         await this.notifier.sendSettingsUpdateStarted(settingName, settingValidAt.toString());
         logger.info(`Agent ${this.agent.vaultAddress} started setting ${settingName} update valid at ${settingValidAt.toString()}.`);
     }
@@ -76,7 +77,6 @@ export class AgentBotUpdateSettings {
                             `Agent ${this.agent.vaultAddress} run into update setting state ${updateSetting.state} not supported for update setting ${updateSetting.name}.`
                         );
                 }
-                await em.persistAndFlush(AgentUpdateSetting);
             })
             .catch((error) => {
                 console.error(`Error handling next update setting  step for update setting ${id} agent ${this.agent.vaultAddress}: ${error}`);

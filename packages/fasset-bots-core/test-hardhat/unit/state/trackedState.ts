@@ -606,7 +606,8 @@ describe("Tracked state tests", () => {
         const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const agentVaultCollateral = await agentB.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
-        newCollateral.token = (await FakeERC20.new(accounts[0], "New Token", "NT", 6)).address;
+        const governanceSettingsAddress = await context.assetManagerController.governanceSettings();
+        newCollateral.token = (await FakeERC20.new(governanceSettingsAddress, accounts[0], "New Token", "NT", 6)).address;
         newCollateral.tokenFtsoSymbol = "XRP";
         newCollateral.assetFtsoSymbol = "testUSDC";
         await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });

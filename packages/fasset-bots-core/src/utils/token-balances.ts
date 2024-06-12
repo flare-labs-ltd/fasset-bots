@@ -17,7 +17,10 @@ export namespace TokenBalances {
         return new WalletTokenBalance(walletClient, symbol, decimals);
     }
 
-    export async function erc20(token: IERC20MetadataInstance) {
+    export async function erc20(token: IERC20MetadataInstance | string) {
+        if (typeof token === "string") {
+            token = await IERC20.at(token);
+        }
         const symbol = await token.symbol();
         const decimals = Number(await token.decimals());
         return new ERC20TokenBalance(token, symbol, decimals);

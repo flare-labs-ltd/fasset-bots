@@ -16,11 +16,12 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
-import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
+import { TestAssetBotContext, createTestAssetContext, ftsoUsdcInitialPrice, ftsoUsdtInitialPrice } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentSettingName, AgentUpdateSettingState } from "../../../src/entities/common";
+import { CollateralClass } from "../../../src";
 use(chaiAsPromised);
 use(spies);
 
@@ -357,7 +358,8 @@ describe("AgentBot cli commands unit tests", () => {
         const agent = await createAgent();
         const agentVaultCollateral = await agent.getVaultCollateral();
         const newCollateral = Object.assign({}, agentVaultCollateral);
-        newCollateral.token = (await FakeERC20.new(accounts[0], "New Token", "NT", 6)).address;
+        const governanceSettingsAddress = await context.assetManagerController.governanceSettings();
+        newCollateral.token = (await FakeERC20.new(governanceSettingsAddress, accounts[0], "New Token", "NT", 6)).address;
         newCollateral.tokenFtsoSymbol = "XRP";
         newCollateral.assetFtsoSymbol = "testUSDC";
         await context.assetManagerController.addCollateralType([context.assetManager.address], newCollateral, { from: governance });
@@ -374,6 +376,32 @@ describe("AgentBot cli commands unit tests", () => {
         await botCliCommands.switchVaultCollateral(agent.agentVault.address, newCollateral.token);
         const agentVaultCollateralNew = await agent.getVaultCollateral();
         expect(agentVaultCollateralNew.token).to.eq(newCollateral.token);
+    });
+
+    it("Should switch vault collateral and auto deposit amount", async () => {
+        const agent = await createAgent();
+        await context.stablecoins.usdc.mintAmount(ownerAddress, toBNExp(100, 6), { from: governance });
+        await agent.depositVaultCollateral(toBNExp(100, 6));
+        const agentVaultCollateral = await agent.getVaultCollateral();
+        const usdt = context.stablecoins.usdt;
+        const depositAmount = await agent.calculateVaultCollateralReplacementAmount(usdt.address);
+        expect(Number(depositAmount)).to.be.approximately(100e6 * ftsoUsdcInitialPrice / ftsoUsdtInitialPrice, 1);
+        // deprecate
+        const settings = await context.assetManager.getSettings();
+        await context.assetManagerController.deprecateCollateralType(
+            [context.assetManager.address],
+            agentVaultCollateral.collateralClass,
+            agentVaultCollateral.token,
+            settings.tokenInvalidationTimeMinSeconds,
+            { from: governance }
+        );
+        // switch collateral
+        await context.stablecoins.usdt.mintAmount(ownerAddress, depositAmount, { from: governance });
+        await botCliCommands.depositAndSwitchVaultCollateral(agent.agentVault.address, usdt.address);
+        const agentVaultCollateralNew = await agent.getVaultCollateral();
+        expect(agentVaultCollateralNew.token).to.eq(usdt.address);
+        const newBalance = await usdt.balanceOf(agent.vaultAddress);
+        expect(Number(newBalance)).to.be.equal(Number(depositAmount));
     });
 
     it("Should upgrade WNat", async () => {

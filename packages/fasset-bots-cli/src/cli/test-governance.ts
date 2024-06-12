@@ -5,12 +5,12 @@ import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
 import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import type { OptionValues } from "commander";
 import { readFileSync } from "fs";
+import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress, validateDecimal } from "../utils/validation";
-import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
-import type { OptionValues } from "commander";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");

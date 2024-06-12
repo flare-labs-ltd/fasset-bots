@@ -14,6 +14,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { Secrets } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
+import { AgentSettingName } from "../entities/common";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -28,7 +29,6 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
-import { AgentSettingName } from "../entities/common";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -616,6 +616,16 @@ export class AgentBotCommands {
      */
     async switchVaultCollateral(agentVault: string, token: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
+        await agentBot.agent.switchVaultCollateral(token);
+    }
+
+    /**
+     * Switch vault collateral, but before that deposit the equivalent amount as the current balance.
+     */
+    async depositAndSwitchVaultCollateral(agentVault: string, token: string): Promise<void> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const amountToDeposit = await agentBot.agent.calculateVaultCollateralReplacementAmount(token);
+        await agentBot.agent.depositTokensToVault(token, amountToDeposit);
         await agentBot.agent.switchVaultCollateral(token);
     }
 
