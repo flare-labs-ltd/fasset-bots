@@ -43,24 +43,43 @@ Examples for **creating a wallet**, **preparing transaction**, **signing transac
 Implemented functions:
 
 ```javascript
-createWallet(): ICreateWalletResponse;
-createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse;
+   createWallet(): ICreateWalletResponse;
+   createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse;
 
-getAccountBalance(account: string): Promise<number>;
-getCurrentTransactionFee(): Promise<number>;
+   getAccountBalance(account: string): Promise<BN>;
+   getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
-preparePaymentTransaction(
-   source: string,
-   destination: string,
-   amount: number,
-   fee?: number,
-   note?: string,
-   maxFee?: number,
-   sequence?: number
-): Promise<any>;
-signTransaction(transaction: any, privateKey: string): Promise<string>;
-submitTransaction(signedTx: string): Promise<any>;
-submitTransactionAndWait(signedTx: string): Promise<any>;
+   preparePaymentTransaction(
+      source: string,
+      destination: string,
+      amount: BN | null,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
+   signTransaction(transaction: any, privateKey: string): Promise<string>;
+   submitTransaction(signedTx: string): Promise<any>;
+   executeLockedSignedTransactionAndWait(
+      source: string,
+      privateKey: string,
+      destination: string,
+      amount: BN | null,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
+
+   deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
 ```
 
 ## Tests
@@ -103,50 +122,47 @@ For account to be activated some minimum balance should be satisfied.
 
 ## Testnet faucets
 
+https://docs.lmnl.app/docs/testnet-faucets-guide
+
 #### ALGO:
-- [https://testnet.algoexplorer.io/dispenser](https://testnet.algoexplorer.io/dispenser) - 10 ALGO
-- [https://dispenser.testnet.aws.algodev.network](https://dispenser.testnet.aws.algodev.network/) - 5 ALGO
-- [https://bank.testnet.algorand.network](https://bank.testnet.algorand.network/) - 10 ALGO
+- https://dispenser.testnet.aws.algodev.network - 5 ALGO
+- https://bank.testnet.algorand.network - 10 ALGO
 
 #### BTC:
-- [https://testnet-faucet.com/btc-testnet](https://testnet-faucet.com/btc-testnet/) - cca 0.00075 BTC per hour
-- [https://bitcoinfaucet.uo1.net](https://bitcoinfaucet.uo1.net/) - 0.0007 BTC per hour
+- https://bitcoinfaucet.uo1.net - 0.0007 BTC per hour
 
 #### DOGE:
-- [https://testnet-faucet.com/doge-testnet](https://testnet-faucet.com/doge-testnet/) - cca 100 DOGE per hour
-- [https://shibe.technology](https://shibe.technology/) - 100 DOGE par day
-- [https://doge-faucet-testnet.ggcorp.fr](https://doge-faucet-testnet.ggcorp.fr/) - 5x 100 DOGE per hour
+- https://dogecoin-faucet.ruan.dev - 1000 DOGE per hour (locked on address)
 
 #### LTC:
-- [https://testnet-faucet.com/ltc-testnet](https://testnet-faucet.com/ltc-testnet/) - cca 0.25 LTC per hour
-- [http://litecointf.salmen.website](http://litecointf.salmen.website/) - 1 LTC per hour
+- http://litecointf.salmen.website - 1.5 LTC per hour (locked at the network level)
 
 #### XRP:
-- [https://yusufsahinhamza.github.io/xrp-testnet-faucet](https://yusufsahinhamza.github.io/xrp-testnet-faucet/) - 980 XRP
-- [https://xrpl.org/xrp-testnet-faucet.html](https://xrpl.org/xrp-testnet-faucet.html) - 1000 XRP (they generate the address)
+- https://test.bithomp.com/faucet - 1000 XRP
+- https://xrpl.org/xrp-testnet-faucet.html - 1000 XRP (they generate the address)
 
 ## Blockchain explorers
 Following are some of mainnet and testnet explorers:
 
 #### ALGO:
-- Mainnet explorer: [https://algoexplorer.io](https://algoexplorer.io)
-- Testnet explorer: [https://testnet.algoexplorer.io](https://testnet.algoexplorer.io)
+- Mainnet explorer: https://explorer.perawallet.app
+- Testnet explorer: https://testnet.explorer.perawallet.app
 
 #### BTC:
-- Mainnet explorer: [https://sochain.com/btc](https://sochain.com/btc)
-- Testnet explorer: [https://sochain.com/testnet/btc](https://sochain.com/testnet/btc)
+- Mainnet explorer: https://sochain.com/btc
+- Testnet explorer: https://sochain.com/testnet/btc
 
 #### DOGE:
-- Mainnet explorer: [https://sochain.com/doge](https://sochain.com/doge)
-- Testnet explorer: [https://sochain.com/testnet/doge](https://sochain.com/testnet/doge)
+- Mainnet explorer: https://sochain.com/doge
+- Testnet explorer: https://sochain.com/testnet/doge
 
 #### LTC:
-- Mainnet explorer: [https://sochain.com/ltc](https://sochain.com/ltc)
-- Testnet explorer: [https://sochain.com/testnet/ltc](https://sochain.com/testnet/ltc)
+- Mainnet explorer: https://sochain.com/ltc
+- Testnet explorer: https://sochain.com/testnet/ltc
 
 #### XRP:
-- Mainnet explorer: [https://livenet.xrpl.org](https://livenet.xrpl.org/)
-- Testnet explorer: [https://testnet.xrpl.org](https://testnet.xrpl.org/)
+- Mainnet explorer: https://livenet.xrpl.org/
+- Testnet explorer: https://testnet.xrpl.org/
 
 ## Basic use
 
@@ -169,4 +185,3 @@ const newAccount = wClient();
 // Log wallet details
 console.log(newAccount); // => { address: <address>, mnemonic: <mnemonic>, privateKey: <privateKey>, publicKey: <publicKey> }
 ```
-

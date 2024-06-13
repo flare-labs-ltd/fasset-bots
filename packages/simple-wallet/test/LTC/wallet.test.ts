@@ -4,7 +4,8 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import { toBN } from "../../src/utils/utils";
+import { BTC_LTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
+import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
 
 const LTCMccConnectionTest = {
    url: process.env.LTC_URL ?? "",
@@ -18,9 +19,9 @@ const fundedAddress = "n1Dugv8YbnKQbinGwWKQGkpRwqqHbo2zD4";
 const targetMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
 const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
 
-const amountToSendInSatoshi = toBN(110000);
-const feeInSatoshi = toBN(120000);
-const maxFeeInSatoshi = toBN(110000);
+const amountToSendInSatoshi = toBNExp(0.0011, BTC_LTC_DOGE_DEC_PLACES);
+const feeInSatoshi = toBNExp(0.0012, BTC_LTC_DOGE_DEC_PLACES);
+const maxFeeInSatoshi = toBNExp(0.0011, BTC_LTC_DOGE_DEC_PLACES);
 
 let wClient: WALLET.LTC;
 let fundedWallet: ICreateWalletResponse;
@@ -45,7 +46,7 @@ describe("Litecoin wallet tests", () => {
 
    it("Should submit transaction", async () => {
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const fee = await wClient.getCurrentTransactionFee();
+      const fee = await wClient.getCurrentTransactionFee({source: fundedWallet.address, amount: amountToSendInSatoshi, destination: targetAddress});
       const submitted = await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
       expect(typeof submitted).to.equal("object");
    });
@@ -63,7 +64,23 @@ describe("Litecoin wallet tests", () => {
    });
 
    it("Should receive fee", async () => {
-      const fee = await wClient.getCurrentTransactionFee();
+      const fee = await wClient.getCurrentTransactionFee({source: fundedAddress, amount: amountToSendInSatoshi, destination: targetAddress});
       expect(fee).not.to.be.null;
+   });
+
+   it("Should create and delete account", async () => {
+      const toDelete = wClient.createWallet();
+      expect(toDelete.address).to.not.be.null;
+      expect(WAValidator.validate(toDelete.address, "LTC", "testnet")).to.be.true;
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      expect(WAValidator.validate(fundedWallet.address, "LTC", "testnet")).to.be.true;
+      // fund toDelete account
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
+      const balance = await wClient.getAccountBalance(toDelete.address);
+      // delete toDelete account
+      const note = "deadc000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
+      const balance2 = await wClient.getAccountBalance(toDelete.address);
+      expect(balance.gt(balance2));
    });
 });

@@ -3,6 +3,7 @@ import { toBN, unPrefix0x } from "../utils/helpers";
 import { IWalletKeys } from "./WalletKeys";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
+import { FeeParams } from "../../../simple-wallet/src/interfaces/WriteWalletRpcInterface";
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(
@@ -30,6 +31,24 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         }
     }
 
+    async deleteAccount(
+        sourceAddress: string,
+        targetAddress: string,
+        reference: string | null,
+        options?: TransactionOptionsWithFee
+    ): Promise<string> {
+        const fee = undefined;
+        const maxFee = options?.maxFee ? toBN(options.maxFee) : undefined;
+        const note = reference ? unPrefix0x(reference) : undefined;
+        const privateKey = await this.walletKeys.getKey(sourceAddress);
+        if (privateKey) {
+            const submit = await this.walletClient.deleteAccount(sourceAddress, privateKey, targetAddress, fee, note, maxFee);
+            return submit.txId;
+        } else {
+            throw new Error(`Cannot find address ${sourceAddress}`);
+        }
+    }
+
     async addMultiTransaction(): Promise<string> {
         throw new Error("Method not implemented.");
     }
@@ -50,8 +69,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         return toBN(balance);
     }
 
-    async getTransactionFee(): Promise<BN> {
-        const fee = await this.walletClient.getCurrentTransactionFee();
+    async getTransactionFee(params: FeeParams): Promise<BN> {
+        const fee = await this.walletClient.getCurrentTransactionFee(params);
         return toBN(fee);
     }
 }

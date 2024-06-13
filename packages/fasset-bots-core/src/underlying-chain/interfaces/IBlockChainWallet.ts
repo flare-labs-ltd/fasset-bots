@@ -1,4 +1,5 @@
 import type BN from "bn.js";
+import { FeeParams } from "../../../../simple-wallet/src/interfaces/WriteWalletRpcInterface";
 
 type NumberLike = BN | number | string;
 
@@ -50,5 +51,13 @@ export interface IBlockChainWallet {
     getBalance(address: string): Promise<BN>;
 
     // Return the current or estimated transaction fee on the chain.
-    getTransactionFee(): Promise<BN>;
+    getTransactionFee(params: FeeParams): Promise<BN>;
+
+    // Delete XRP account or empty funds on UTXO chain.
+    deleteAccount(
+        sourceAddress: string,
+        targetAddress: string,
+        reference: string | null,
+        options?: TransactionOptionsWithFee
+    ): Promise<any>;
 }

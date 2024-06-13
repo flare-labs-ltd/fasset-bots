@@ -7,12 +7,19 @@ import * as litecore from "bitcore-lib-ltc";
 import * as dogecore from "bitcore-lib-doge";
 import BIP32Factory from "bip32";
 import { generateMnemonic, mnemonicToSeedSync } from "bip39";
-import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, getTimeLockForAddress, sleepMs, stuckTransactionConstants, toBN, toNumber, wallet_utxo_ensure_data } from "../utils/utils";
+import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, getTimeLockForAddress, sleepMs, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
 import {
+   BTC_LTC_DUST_AMOUNT,
+   BTC_LTC_FEE_PER_KB,
    ChainType,
    DEFAULT_RATE_LIMIT_OPTIONS,
+   DOGE_DUST_AMOUNT,
+   DOGE_FEE_PER_KB,
+   UTXO_INPUT_SIZE,
+   UTXO_OUTPUT_SIZE,
+   UTXO_OVERHEAD_SIZE,
 } from "../utils/constants";
-import type { BaseRpcConfig } from "../interfaces/WriteWalletRpcInterface";
+import type { BaseRpcConfig, UTXOFeeParams } from "../interfaces/WriteWalletRpcInterface";
 import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWalletRpcInterface } from "../interfaces/WriteWalletRpcInterface";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
@@ -21,6 +28,8 @@ const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
+import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
+
 
 export abstract class BtcishWalletImplementation implements WriteWalletRpcInterface {
    inTestnet: boolean;
@@ -114,50 +123,55 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    }
 
    /**
+    * @param {UTXOFeeParams} params - basic data needed to estimate fee
     * @returns {BN} - current transaction/network fee in satoshis
     */
-   async getCurrentTransactionFee(): Promise<BN> {
-      const averageTxSize = 500; //kb
-      if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-         // https://github.com/bitpay/bitcore/blob/master/packages/bitcore-lib-doge/lib/transaction/transaction.js
-         return toBN((100000000 * averageTxSize) / 1000);
-      } else {
-         // https://github.com/bitpay/bitcore/blob/master/packages/bitcore-lib-ltc/lib/transaction/transaction.js
-         // https://github.com/bitpay/bitcore/blob/master/packages/bitcore-lib/lib/transaction/transaction.js
-         return toBN((100000 * averageTxSize) / 1000);
-      }
+   async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
+      const tx = await this.preparePaymentTransaction(params.source, params.destination, params.amount);
+      return toBN(tx.getFee());
    }
 
    /**
     * @param {string} source
     * @param {string} destination
-    * @param {BN} amountInSatoshi
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
     * @param {BN|undefined} feeInSatoshi - automatically set if undefined
-    * @param {string} note
+    * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInSatoshi
     * @returns {Object} - BTC/DOGE/LTC transaction object
     */
    async preparePaymentTransaction(
       source: string,
       destination: string,
-      amountInSatoshi: BN,
+      amountInSatoshi: BN | null,
       feeInSatoshi?: BN,
       note?: string,
       maxFeeInSatoshi?: BN
    ): Promise<bitcore.Transaction> {
-      const utxos = await this.fetchUTXOs(source);
+      const isPayment = amountInSatoshi != null;
       const core = this.getCore();
+      const utxos = await this.fetchUTXOs(source, amountInSatoshi, this.getEstimatedNumberOfOutputs(amountInSatoshi, note));
+
+      if (amountInSatoshi == null) {
+         const estimateFee = this.getEstimateFee(utxos.length);
+         amountInSatoshi = (await this.getAccountBalance(source)).sub(estimateFee);
+      }
+      if (amountInSatoshi.lte(this.getDustAmount())) {
+         throw new Error(`Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${this.getDustAmount().toString()}`)
+      }
+
       const tr = new core.Transaction()
          .from(utxos.map((utxo) => new UnspentOutput(utxo)))
-         .to(destination, toNumber(amountInSatoshi))
-         .change(source);
-      // Default fee is 1 DOGE, 0.001 LTC and 0.001 BTC according to bitcore-lib libraries
+         .to(destination, toNumber(amountInSatoshi));
+      if (isPayment) {
+         tr.change(source);
+      }
       if (feeInSatoshi) {
          tr.fee(toNumber(feeInSatoshi));
       }
       this.checkFeeRestriction(toBN(tr.getFee()), maxFeeInSatoshi);
       if (note) {
-         tr.addData(Buffer.from(note, "hex"));
+         tr.addData(Buffer.from(unPrefix0x(note), "hex"));
       }
       tr.enableRBF();
       return tr;
@@ -183,11 +197,21 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
       return { txId: res.data.txid };
    }
 
+   /**
+    * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInSatoshi
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
    async executeLockedSignedTransactionAndWait(
       source: string,
       privateKey: string,
       destination: string,
-      amountInSatoshi: BN,
+      amountInSatoshi: BN | null,
       feeInSatoshi?: BN,
       note?: string,
       maxFeeInSatoshi?: BN
@@ -204,6 +228,27 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
          this.addressLocks.delete(source);
       }
    }
+
+   /**
+    * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInSatoshi
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
+   async deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      feeInSatoshi?: BN,
+      note?: string,
+      maxFeeInSatoshi?: BN
+   ): Promise<ISubmitTransactionResponse> {
+      return await this.executeLockedSignedTransactionAndWait(source, privateKey, destination, null, feeInSatoshi, note, maxFeeInSatoshi);
+   }
+
    ///////////////////////////////////////////////////////////////////////////////////////
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
@@ -227,10 +272,12 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    /**
     * Retrieves unspent transactions in format accepted by transaction
     * @param {string} address
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param {number} estimatedNumOfOutputs
     * @returns {Object[]}
     */
-   async fetchUTXOs(address: string): Promise<UTXO[]> {
-      const utxos = (await this.listUnspent(address)).filter((utxo) => utxo.mintHeight >= 0);
+   async fetchUTXOs(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<UTXO[]> {
+      const utxos = await this.listUnspent(address, amountInSatoshi, estimatedNumOfOutputs);
       return utxos.map((utxo) => ({
          txid: utxo.mintTxid,
          satoshis: utxo.value,
@@ -243,12 +290,29 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    /**
     * Retrieves unspent transactions
     * @param {string} address
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param {number} estimatedNumOfOutputs
     * @returns {Object[]}
     */
-   async listUnspent(address: string): Promise<any[]> {
+   async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
       const res = await this.client.get(`/address/${address}/?unspent=true`);
       wallet_utxo_ensure_data(res);
-      return res.data;
+      const allUTXOs =  (res.data as any[]).filter((utxo) => utxo.mintHeight >= 0).sort((a, b) => a.value - b.value);
+      if (amountInSatoshi == null) {
+         return allUTXOs;
+      }
+      const neededUTXOs = [];
+      let sum = 0;
+      for (const utxo of allUTXOs) {
+         neededUTXOs.push(utxo);
+         sum += utxo.value;
+         const est_fee = this.getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
+         // multiply estimated fee by 2 to ensure enough funds TODO: is it enough?
+         if (toBN(sum).gt(amountInSatoshi.add(est_fee.muln(2)))) {
+            return neededUTXOs;
+         }
+      }
+      return allUTXOs;
    }
 
    async getCurrentBlockHeight(): Promise<number> {
@@ -262,6 +326,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
     * @param {string} txHash
     * @param {string} source
     * @param {string} privateKey
+    * @param {number} submittedBlockHeight
     * @param {string} retry
     * @returns {Object} - containing transaction id tx_id and optional result
     */
@@ -313,7 +378,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
 
    checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
       if (maxFee && fee.gt(maxFee)) {
-         throw Error(`Transaction is not prepared: fee ${fee} is higher than maxFee ${maxFee.toString()}`);
+         throw Error(`Transaction is not prepared: fee ${fee.toString()} is higher than maxFee ${maxFee.toString()}`);
       }
    }
 
@@ -322,6 +387,38 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
          return dogecore;
       } else if (this.chainType === ChainType.LTC || this.chainType === ChainType.testLTC) {
          return litecore;
-      } else return bitcore;
+      } else {
+         return bitcore;
+      }
+   }
+
+   getDustAmount(): BN {
+      if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
+         return DOGE_DUST_AMOUNT;
+      } else {
+         return BTC_LTC_DUST_AMOUNT;
+      }
+   }
+
+   /**
+    * @returns default fee per byte
+    */
+   getDefaultFeePerB(): BN {
+      if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
+         return DOGE_FEE_PER_KB.divn(1000);
+      } else {
+         return BTC_LTC_FEE_PER_KB.divn(1000);
+      }
+   }
+
+   getEstimateFee(inputLength: number, outputLength: number = 2): BN {
+      return this.getDefaultFeePerB().muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
+   }
+
+   getEstimatedNumberOfOutputs(amountInSatoshi:BN | null, note?: string) {
+      if (amountInSatoshi == null && note) return 2; // destination and note
+      if (amountInSatoshi == null && !note) return 1; // destination
+      if (note) return 3; // destination, change (returned funds) and note
+      return 2; // destination and change
    }
 }
