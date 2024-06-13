@@ -123,7 +123,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    }
 
    /**
-    * @param {data} - basic data needed to estimate fee
+    * @param {UTXOFeeParams} params - basic data needed to estimate fee
     * @returns {BN} - current transaction/network fee in satoshis
     */
    async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
@@ -134,9 +134,9 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    /**
     * @param {string} source
     * @param {string} destination
-    * @param {BN} amountInSatoshi
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
     * @param {BN|undefined} feeInSatoshi - automatically set if undefined
-    * @param {string} note
+    * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInSatoshi
     * @returns {Object} - BTC/DOGE/LTC transaction object
     */
@@ -149,8 +149,8 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
       maxFeeInSatoshi?: BN
    ): Promise<bitcore.Transaction> {
       const isPayment = amountInSatoshi != null;
-      const utxos = await this.fetchUTXOs(source, amountInSatoshi);
       const core = this.getCore();
+      const utxos = await this.fetchUTXOs(source, amountInSatoshi, this.getEstimatedNumberOfOutputs(amountInSatoshi, note));
 
       if (amountInSatoshi == null) {
          const estimateFee = this.getEstimateFee(utxos.length);
@@ -201,7 +201,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
     * @param {string} source
     * @param {string} privateKey
     * @param {string} destination
-    * @param {BN} amountInSatoshi
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
     * @param {BN|undefined} feeInSatoshi - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInSatoshi
@@ -272,10 +272,12 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    /**
     * Retrieves unspent transactions in format accepted by transaction
     * @param {string} address
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param {number} estimatedNumOfOutputs
     * @returns {Object[]}
     */
-   async fetchUTXOs(address: string, amountInSatoshi: BN | null): Promise<UTXO[]> {
-      const utxos = await this.listUnspent(address, amountInSatoshi);
+   async fetchUTXOs(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<UTXO[]> {
+      const utxos = await this.listUnspent(address, amountInSatoshi, estimatedNumOfOutputs);
       return utxos.map((utxo) => ({
          txid: utxo.mintTxid,
          satoshis: utxo.value,
@@ -288,9 +290,11 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
    /**
     * Retrieves unspent transactions
     * @param {string} address
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param {number} estimatedNumOfOutputs
     * @returns {Object[]}
     */
-   async listUnspent(address: string, amountInSatoshi: BN | null): Promise<any[]> {
+   async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
       const res = await this.client.get(`/address/${address}/?unspent=true`);
       wallet_utxo_ensure_data(res);
       const allUTXOs =  (res.data as any[]).filter((utxo) => utxo.mintHeight >= 0).sort((a, b) => a.value - b.value);
@@ -302,7 +306,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
       for (const utxo of allUTXOs) {
          neededUTXOs.push(utxo);
          sum += utxo.value;
-         const est_fee = this.getEstimateFee(neededUTXOs.length);
+         const est_fee = this.getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
          // multiply estimated fee by 2 to ensure enough funds TODO: is it enough?
          if (toBN(sum).gt(amountInSatoshi.add(est_fee.muln(2)))) {
             return neededUTXOs;
@@ -322,6 +326,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
     * @param {string} txHash
     * @param {string} source
     * @param {string} privateKey
+    * @param {number} submittedBlockHeight
     * @param {string} retry
     * @returns {Object} - containing transaction id tx_id and optional result
     */
@@ -408,5 +413,12 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
 
    getEstimateFee(inputLength: number, outputLength: number = 2): BN {
       return this.getDefaultFeePerB().muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
+   }
+
+   getEstimatedNumberOfOutputs(amountInSatoshi:BN | null, note?: string) {
+      if (amountInSatoshi == null && note) return 2; // destination and note
+      if (amountInSatoshi == null && !note) return 1; // destination
+      if (note) return 3; // destination, change (returned funds) and note
+      return 2; // destination and change
    }
 }

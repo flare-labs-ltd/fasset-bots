@@ -42,7 +42,7 @@ export class AlgoWalletImplementation implements WriteWalletRpcInterface {
       });
    }
 
-   deleteAccount(account: string): Promise<void> {
+   async deleteAccount(): Promise<void> {
       throw new Error("Method not implemented.");
    }
 

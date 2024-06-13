@@ -4,7 +4,6 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import type { AlgoRpcConfig } from "../../src/interfaces/WriteWalletRpcInterface";
 import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
-import algosdk from "algosdk";
 use(chaiAsPromised);
 
 const ALGOMccConnectionTest: AlgoRpcConfig = {

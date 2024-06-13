@@ -119,7 +119,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    }
 
    /**
-    * @param {isPayment} - differentiate between Payment and AccountDelete transaction types
+    * @param {XRPFeeParams} params - differentiate between Payment and AccountDelete transaction types
     * @returns {BN} - current transaction/network fee in drops
     */
    async getCurrentTransactionFee(params: XRPFeeParams): Promise<BN> {
@@ -143,7 +143,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    /**
     * @param {string} source
     * @param {string} destination
-    * @param {BN} amountInDrops
+    * @param {BN|null} amountInDrops - if null => AccountDelete transaction will be created
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
@@ -206,7 +206,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    /**
     * @param {Object} transaction
     * @param {string} privateKey
-    * @returns {Object}
+    * @returns {string}
     */
    async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<string> {
       const publicKey = this.getPublicKeyFromPrivateKey(privateKey, transaction.Account);
@@ -238,7 +238,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
     * @param {string} source
     * @param {string} privateKey
     * @param {string} destination
-    * @param {BN} amountInDrops - if amountInDrops == 0 => AccountDelete transaction will be created
+    * @param {BN|null} amountInDrops - if null => AccountDelete transaction will be created
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
