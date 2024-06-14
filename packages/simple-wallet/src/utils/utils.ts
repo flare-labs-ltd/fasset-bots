@@ -1,6 +1,4 @@
 import safeStringify from "fast-safe-stringify";
-import BN from "bn.js";
-import Web3Utils from "web3-utils";
 import {
    BTC_LEDGER_CLOSE_TIME_MS,
    BTC_MAINNET,

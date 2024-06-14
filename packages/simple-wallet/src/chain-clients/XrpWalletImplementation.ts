@@ -7,6 +7,7 @@ const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
 import { generateMnemonic } from "bip39";
 import { excludeNullFields, sleepMs, bytesToHex, prefix0x, xrp_ensure_data, getTimeLockForAddress, stuckTransactionConstants, isValidHexString } from "../utils/utils";
+import { toBN } from "../utils/bnutils";
 import {
    ChainType,
    DEFAULT_RATE_LIMIT_OPTIONS_XRP,
@@ -16,7 +17,6 @@ import {
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletRpcInterface, RippleRpcConfig, XRPFeeParams } from "../interfaces/WriteWalletRpcInterface";
 import BN from "bn.js";
-import { toBN } from "@flarelabs/fasset-bots-core/utils";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");

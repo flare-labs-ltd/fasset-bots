@@ -8,6 +8,7 @@ import * as dogecore from "bitcore-lib-doge";
 import BIP32Factory from "bip32";
 import { generateMnemonic, mnemonicToSeedSync } from "bip39";
 import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, getTimeLockForAddress, sleepMs, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
+import { toBN, toNumber } from "../utils/bnutils";
 import {
    BTC_LTC_DUST_AMOUNT,
    BTC_LTC_FEE_PER_KB,
@@ -28,7 +29,6 @@ const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
-import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
 
 
 export abstract class BtcishWalletImplementation implements WriteWalletRpcInterface {

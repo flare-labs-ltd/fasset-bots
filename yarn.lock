@@ -1408,7 +1408,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@flarelabs/simple-wallet@workspace:packages/simple-wallet"
   dependencies:
-    "@flarelabs/fasset-bots-core": "workspace:*"
     "@types/bitcore-lib": 0.15.6
     "@types/bn.js": 5.1.5
     "@types/bs58check": 2.1.0

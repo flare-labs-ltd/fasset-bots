@@ -5,7 +5,8 @@ import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
-import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { toBNExp } from "../../src/utils/bnutils";
+
 const DOGEMccConnectionTest = {
    url: process.env.DOGE_URL ?? "",
    username: "",
