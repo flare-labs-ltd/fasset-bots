@@ -7,9 +7,6 @@
             "packages/*"
         ]
     },
-    "engines": {
-        "node": ">=16.10.0"
-    },
     "scripts": {
         "---------BUILD---SCRIPTS": "",
         "clean": "rimraf -g dist \"packages/*/{dist,coverage,.nyc_output}\" \"packages/fasset-liquidator/{artifacts,cache,types}\"",
