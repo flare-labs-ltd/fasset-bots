@@ -466,8 +466,8 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       if (currentValidLedger > lastBlockNumber) {
          if (retry <= this.maxRetries) {
             const newTransaction = transaction;
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const newFee = (retry < this.maxRetries || this.lastResortFeeInDrops === undefined)
+               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                ? toBN(newTransaction.Fee!).muln(this.feeIncrease)
                : toBN(this.lastResortFeeInDrops);
             newTransaction.LastLedgerSequence = currentValidLedger + this.blockOffset;
