@@ -78,7 +78,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
         const block = await retry(this.getTransactionBlockFromIndexer.bind(this), [txHash], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
+        // logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
         return block;
     }
 
@@ -138,7 +138,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getBlockAt(blockNumber: number): Promise<IBlock | null> {
         const block = await retry(this.getBlockAtFromIndexer.bind(this), [blockNumber], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
+        // logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
         return block;
     }
 
@@ -167,7 +167,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getBlockHeight(): Promise<number> {
         const blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved block height: ${blockHeight}`);
+        // logger.info(`Block chain indexer helper: retrieved block height: ${blockHeight}`);
         return blockHeight;
     }
 

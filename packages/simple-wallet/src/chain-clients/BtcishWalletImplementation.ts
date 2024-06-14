@@ -264,7 +264,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
             this.addressLocks.set(address, { tx: null, maxFee: null });
             return;
          }
-         await sleepMs(1000);
+         await sleepMs(100);
       }
       throw new Error(`Timeout waiting to obtain confirmed transaction from address ${address}`);
    }
