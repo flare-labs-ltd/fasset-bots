@@ -95,19 +95,19 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
 
       const node = bip32.fromSeed(seed, actualNetwork);
       const path = actualNetwork.bip32Path;
-      const child = node.derivePath(path);
+      const child0 = node.derivePath(path);
       //node.neutered().toBase58()//xpublic_key
       //node.toBase58()//xprivate_key
       const payload = Buffer.allocUnsafe(21);
       payload.writeUInt8(actualNetwork.pubKeyHash, 0);
-      const hash = bitcoin.crypto.hash160(child.publicKey);
+      const hash = bitcoin.crypto.hash160(child0.publicKey);
       hash.copy(payload, 1);
       const address = bs58check.encode(payload);
 
       return {
          address: address as string,
          mnemonic: mnemonic,
-         privateKey: child.toWIF(),
+         privateKey: child0.toWIF(),
          // publicKey: child.publicKey
       };
    }
@@ -295,7 +295,7 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
     * @returns {Object[]}
     */
    async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
-      const res = await this.client.get(`/address/${address}/?unspent=true`);
+      const res = await this.client.get(`/address/${address}?unspent=true`);
       wallet_utxo_ensure_data(res);
       const allUTXOs =  (res.data as any[]).filter((utxo) => utxo.mintHeight >= 0).sort((a, b) => a.value - b.value);
       if (amountInSatoshi == null) {
