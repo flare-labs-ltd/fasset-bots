@@ -103,10 +103,12 @@ export class Liquidator extends ActorBase {
         const after = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
         const diff = toBN(before.mintedUBA).sub(toBN(after.mintedUBA));
         const cur = await Currencies.fasset(this.context);
-        logger.info(squashSpace`Liquidator ${this.address} liquidated agent ${agent.vaultAddress} for ${cur.format(diff)}.
+        const message = squashSpace`Liquidator ${this.address} liquidated agent ${agent.vaultAddress} for ${cur.format(diff)}.
             Minted before: ${cur.format(before.mintedUBA)}, after: ${cur.format(after.mintedUBA)}.
             Vault CR before: ${formatFixed(toBN(before.vaultCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.vaultCollateralRatioBIPS), 4)}.
-            Pool CR before: ${formatFixed(toBN(before.poolCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.poolCollateralRatioBIPS), 4)}.`);
+            Pool CR before: ${formatFixed(toBN(before.poolCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.poolCollateralRatioBIPS), 4)}.`;
+        logger.info(message);
+        console.log(message);
     }
 
     /**

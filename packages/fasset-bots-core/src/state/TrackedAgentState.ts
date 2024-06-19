@@ -303,14 +303,22 @@ export class TrackedAgentState {
         return totalCollateralWei.muln(MAX_BIPS).div(backingCollateralWei);
     }
 
-    collateralRatioBIPS(collateral: CollateralType): BN {
+    isCollateralValid(collateral: CollateralType, timestamp: BN) {
+        const validUntil = toBN(collateral.validUntil);
+        return validUntil.eq(BN_ZERO) || validUntil.gte(timestamp);
+    }
+
+    collateralRatioBIPS(collateral: CollateralType, timestamp: BN): BN {
+        if (!this.isCollateralValid(collateral, timestamp)) {
+            return BN_ZERO;
+        }
         const ratio = this.collateralRatioForPriceBIPS(this.parent.prices, collateral);
         const ratioFromTrusted = this.collateralRatioForPriceBIPS(this.parent.trustedPrices, collateral);
         return maxBN(ratio, ratioFromTrusted);
     }
 
     private possibleLiquidationTransitionForCollateral(collateral: CollateralType, timestamp: BN): AgentStatus {
-        const cr = this.collateralRatioBIPS(collateral);
+        const cr = this.collateralRatioBIPS(collateral, timestamp);
         const settings = this.parent.settings;
         if (this.status === AgentStatus.NORMAL) {
             if (cr.lt(toBN(collateral.ccbMinCollateralRatioBIPS))) {

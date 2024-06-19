@@ -2,10 +2,10 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
-import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
+import { AgentStatus, CollateralClass } from "../../src/fasset/AssetManagerTypes";
 import { MockChain } from "../../src/mock/MockChain";
 import { TrackedState } from "../../src/state/TrackedState";
-import { checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { DAYS, MAX_BIPS, checkedCast, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
@@ -249,6 +249,59 @@ describe("Liquidator tests", () => {
         expect(String(fBalanceBefore)).not.eq("0");
         expect(String(fBalanceAfter)).eq("0");
         expect(cBalanceAfter.gt(cBalanceBefore)).to.be.true;
+    });
+
+    it("Should liquidate agent due to collateral token invalidation", async () => {
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[81]);
+        // vaultCollateralToken
+        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await liquidator.runStep();
+        // check agent status
+        const status1 = await getAgentStatus(agentBot);
+        assert.equal(status1, AgentStatus.NORMAL);
+        // perform minting
+        const lots = 3000;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await agentBot.runStep(orm.em);
+        const txHash0 = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        const minted = await minter.executeMinting(crt, txHash0);
+        await agentBot.runStep(orm.em);
+        // invalidate token
+        await context.assetManagerController.deprecateCollateralType([context.assetManager.address], CollateralClass.VAULT, context.stablecoins.usdc.address, 1 * DAYS);
+        await time.increase(1 * DAYS);
+        await time.advanceBlock();
+        // liquidator "buys" f-assets
+        const poolFees = await agentBot.agent.poolFeeBalance();
+        await agentBot.agent.withdrawPoolFees(poolFees, liquidator.address);
+        await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
+        // FAsset and collateral balance
+        const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const cBalanceBefore = await vaultCollateralToken.balanceOf(liquidatorAddress);
+        const wnBalanceBefore = await context.wNat.balanceOf(liquidatorAddress);
+        // liquidate agent
+        await liquidator.runStep();
+        // check agent status
+        await agentBot.runStep(orm.em);
+        // FAsset and collateral balance
+        const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const cBalanceAfter = await vaultCollateralToken.balanceOf(liquidatorAddress);
+        const wnBalanceAfter = await context.wNat.balanceOf(liquidatorAddress);
+        // check FAsset and cr balance
+        const info = await agentBot.agent.getAgentInfo();
+        const settings = await context.assetManager.getSettings();
+        expect(String(info.mintedUBA)).eq("0");
+        expect(String(fBalanceBefore)).not.eq("0");
+        expect(String(fBalanceAfter)).eq("0");
+        expect(cBalanceAfter.eq(cBalanceBefore)).to.be.true;
+        // all liquidator payment should be in pool collateral
+        const price = state.prices.get({ collateralClass: CollateralClass.POOL, token: context.wNat.address });
+        const received = wnBalanceAfter.sub(wnBalanceBefore);
+        const shouldReceive = price.convertUBAToTokenWei(fBalanceBefore)
+            .mul(toBN(settings.liquidationCollateralFactorBIPS[0])).divn(MAX_BIPS);
+        expect(String(received)).eq(String(shouldReceive));
     });
 
     it("Should catch full liquidation", async () => {
