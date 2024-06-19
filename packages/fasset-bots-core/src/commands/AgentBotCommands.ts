@@ -651,4 +651,9 @@ export class AgentBotCommands {
             throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
         }
     }
+
+    async makeIllegalPayment(agentVault: string,  destination: string, amount: string | BN): Promise<void> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        await agentBot.agent.performPayment(destination, amount);
+    }
 }
