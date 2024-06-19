@@ -126,23 +126,27 @@ program
     .argument("<numberOfLots>")
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
-    .action(async (numberOfLots: string, cmdOptions: { executor?: string, executorFee?: string }) => {
+    .option("--repeat <number>", "repeat redemption this many times")
+    .action(async (numberOfLots: string, cmdOptions: { executor?: string, executorFee?: string, repeat?: string }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         validateInteger(numberOfLots, "Number of lots", { min: 1 });
         validateAddress(cmdOptions.executor, "Executor address");
         validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set.");
         validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set.");
-        try {
-            if (cmdOptions.executor && cmdOptions.executorFee) {
-                await redeemerBot.redeem(numberOfLots, cmdOptions.executor, cmdOptions.executorFee);
-            } else {
-                await redeemerBot.redeem(numberOfLots);
+        validate(!cmdOptions.repeat || Number(cmdOptions.repeat) > 0, "Option repeat must be a positive number.");
+        for (let _ = 0; _ < Number(cmdOptions.repeat); _++) {
+            try {
+                if (cmdOptions.executor && cmdOptions.executorFee) {
+                    await redeemerBot.redeem(numberOfLots, cmdOptions.executor, cmdOptions.executorFee);
+                } else {
+                    await redeemerBot.redeem(numberOfLots);
+                }
+            } catch (error) {
+                translateError(error, {
+                    "f-asset balance too low": `User account does not hold ${numberOfLots} lots of ${options.fasset}.`
+                });
             }
-        } catch (error) {
-            translateError(error, {
-                "f-asset balance too low": `User account does not hold ${numberOfLots} lots of ${options.fasset}.`
-            });
         }
     });
 
