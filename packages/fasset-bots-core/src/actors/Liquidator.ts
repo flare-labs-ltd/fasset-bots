@@ -1,13 +1,12 @@
+import BN from "bn.js";
 import { BotConfig, BotFAssetConfig, createLiquidatorContext } from "../config";
-import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
+import { ActorBase } from "../fasset-bots/ActorBase";
 import { ILiquidatorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
-import { iteratorToArray } from "../utils";
+import { BN_ZERO, Currencies, formatFixed, squashSpace, toBN } from "../utils";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
-import { eventIs } from "../utils/events/truffle";
-import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { LiquidatorNotifier } from "../utils/notifier/LiquidatorNotifier";
@@ -20,7 +19,6 @@ export class Liquidator extends ActorBase {
 
     notifier: LiquidatorNotifier;
     liquidationStrategy: LiquidationStrategy;
-    checkedInitialAgents: boolean = false
 
     constructor(
         public context: ILiquidatorContext,
@@ -56,108 +54,75 @@ export class Liquidator extends ActorBase {
      * It collects unhandled events on native chain, runs through them and handles them appropriately.
      */
     override async runStep(): Promise<void> {
-        await this.registerEvents();
+        await this.handleEvents();
     }
+
+    handlingEvents: boolean = false;
 
     /**
      * Performs appropriate actions according to received native events and underlying transactions.
      */
-    async registerEvents(): Promise<void> {
+    async handleEvents(): Promise<void> {
+        if (this.handlingEvents) return;
+        this.handlingEvents = true;
         try {
-            // initially check if any agents can be liquidated
-            await this.initialLiquidationStatusCheck();
             // Native chain events and update state events
             logger.info(`Liquidator ${this.address} started reading unhandled native events.`);
-            const events = await this.state.readUnhandledEvents();
+            await this.state.readUnhandledEvents();
             logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
-            for (const event of events) {
-                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
-                    logger.info(`Liquidator ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
-                    await this.checkAllAgentsForLiquidation();
-                } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
-                    logger.info(`Liquidator ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
-                    await this.handleMintingExecuted(event.args.agentVault);
-                } else if (eventIs(event, this.context.assetManager, "FullLiquidationStarted")) {
-                    logger.info(`Liquidator ${this.address} received event 'FullLiquidationStarted' with data ${formatArgs(event.args)}.`);
-                    await this.handleFullLiquidationStarted(event.args.agentVault);
-                }
-            }
+            // perform liquidations
+            await this.performLiquidations();
         } catch (error) {
-            console.error(`Error handling events for liquidator ${this.address}: ${error}`);
-            logger.error(`Liquidator ${this.address} run into error while handling events:`, error);
+            console.error(`Error handling events and performing liquidations for liquidator ${this.address}: ${error}`);
+            logger.error(`Liquidator ${this.address} run into error while handling events and performing liquidations:`, error);
+        } finally {
+            this.handlingEvents = false;
         }
     }
 
-    /**
-     * @param args event's MintingExecuted arguments
-     */
-    async handleMintingExecuted(agentVault: string): Promise<void> {
-        const agent = await this.state.getAgentTriggerAdd(agentVault);
-        this.runner.startThread(async (scope) => {
-            await this.checkAgentForLiquidation(agent).catch((e) => scope.exitOnExpectedError(e, [], ActorBaseKind.LIQUIDATOR, this.address));
-        });
-    }
-
-    /**
-     * @param args event's FullLiquidationStarted arguments
-     */
-    async handleFullLiquidationStarted(agentVault: string): Promise<void> {
-        const agent = await this.state.getAgentTriggerAdd(agentVault);
-        this.runner.startThread(async (scope) => {
-            await this.liquidateAgent(agent).catch((e) => scope.exitOnExpectedError(e, [], ActorBaseKind.LIQUIDATOR, this.address));
-        });
-    }
-
-    async checkAllAgentsForLiquidation(): Promise<void> {
-        await Promise.all(iteratorToArray(this.state.agents.values()).map(async (agent) => {
-            try {
-                await this.checkAgentForLiquidation(agent);
-            } catch (error) {
-                console.error(`Error with agent ${agent.vaultAddress}: ${error}`);
-                logger.error(`Liquidator ${this.address} found error with agent ${agent.vaultAddress}:`, error);
+    async performLiquidations() {
+        const timestamp = await latestBlockTimestampBN();
+        const liquidatingAgents = Array.from(this.state.agents.values())
+            .filter(agent => this.checkAgentForLiquidation(agent, timestamp));
+        if (liquidatingAgents.length > 0) {
+            logger.info(`Liquidator ${this.address} performing liquidation on ${liquidatingAgents.length} agents.`);
+            // sort by decreasing minted amount
+            liquidatingAgents.sort((a, b) => -a.mintedUBA.cmp(b.mintedUBA));
+            for (const agent of liquidatingAgents) {
+                if (agent.mintedUBA.eq(BN_ZERO)) continue;
+                const fbalance = await this.context.fAsset.balanceOf(this.address);
+                if (fbalance.eq(BN_ZERO)) break;
+                await this.liquidateAgent(agent);
             }
-        }));
+        }
+    }
+
+    async liquidateAgent(agent: TrackedAgentState) {
+        const before = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
+        await this.liquidationStrategy.liquidate(agent);
+        const after = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
+        const diff = toBN(before.mintedUBA).sub(toBN(after.mintedUBA));
+        const cur = await Currencies.fasset(this.context);
+        logger.info(squashSpace`Liquidator ${this.address} liquidated agent ${agent.vaultAddress} for ${cur.format(diff)}.
+            Minted before: ${cur.format(before.mintedUBA)}, after: ${cur.format(after.mintedUBA)}.
+            Vault CR before: ${formatFixed(toBN(before.vaultCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.vaultCollateralRatioBIPS), 4)}.
+            Pool CR before: ${formatFixed(toBN(before.poolCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.poolCollateralRatioBIPS), 4)}.`);
     }
 
     /**
      * Checks if agent's status. If status is LIQUIDATION, then liquidate agent with all of the liquidator's fAssets.
      * @param agent instance of TrackedAgentState
      */
-    private async checkAgentForLiquidation(agent: TrackedAgentState): Promise<void> {
-        logger.info(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);
-        console.log(`Liquidator ${this.address} started checking agent ${agent.vaultAddress} for liquidation.`);
-        const timestamp = await latestBlockTimestampBN();
+    checkAgentForLiquidation(agent: TrackedAgentState, timestamp: BN) {
+        if (agent.status === AgentStatus.LIQUIDATION || agent.status === AgentStatus.FULL_LIQUIDATION) {
+            return true;
+        }
         const newStatus = agent.possibleLiquidationTransition(timestamp);
-        console.log(`Agent ${agent.vaultAddress} has status ${newStatus}.`);
         if (newStatus === AgentStatus.LIQUIDATION) {
-            await this.liquidateAgent(agent);
+            logger.info(`Liquidator ${this.address} found that agent ${agent.vaultAddress} has liquidation status.`);
+            return true;
         }
-        logger.info(`Liquidator ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
-        console.log(`Liquidator ${this.address} finished checking agent ${agent.vaultAddress} for liquidation.`);
-    }
-
-    private async liquidateAgent(agent: TrackedAgentState): Promise<void> {
-        if (!await this.hasEnoughBalanceToStartLiquidation()) {
-            logger.info(`Liquidator ${this.address} does not have enough FAssets to liquidate agent ${agent.vaultAddress}.`);
-            console.log(`Liquidator ${this.address} does not have enough FAssets to liquidate agent ${agent.vaultAddress}.`)
-            return;
-        }
-        await this.liquidationStrategy.liquidate(agent);
-        logger.info(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
-        await this.notifier.sendAgentLiquidated(agent.vaultAddress);
-        console.log(`Liquidator ${this.address} liquidated agent ${agent.vaultAddress}.`);
-    }
-
-    private async hasEnoughBalanceToStartLiquidation(): Promise<boolean> {
-        // TODO: check if balance is larger or equal to 1 AMG
-        const balance = await this.context.fAsset.balanceOf(this.address);
-        return balance.gtn(0);
-    }
-
-    private async initialLiquidationStatusCheck() {
-        if (!this.checkedInitialAgents) {
-            await this.checkAllAgentsForLiquidation();
-            this.checkedInitialAgents = true;
-        }
+        // not in liquidation
+        return false;
     }
  }
