@@ -1,17 +1,16 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotCommands, CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
-import { BotConfig, BotConfigFile, ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
+import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
+import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
 import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
-import { readFileSync, createReadStream } from "fs";
+import { readFileSync } from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress, validateDecimal } from "../utils/validation";
 import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
 import type { OptionValues } from "commander";
-import { SecretsFile } from "../../../fasset-bots-core/src/config/config-files/SecretsFile";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");

@@ -1,6 +1,7 @@
 import { EM } from "../config/orm";
 import { Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
+import { DAYS, blockTimestamp, latestBlockTimestamp, squashSpace } from "../utils";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
@@ -41,7 +42,9 @@ export class AgentBotEventReader {
         logger.info(`Agent ${this.agentVaultAddress} started reading native events FROM block ${readAgentEnt.currentEventBlock}`);
         // get all logs for this agent
         const nci = this.context.nativeChainInfo;
-        const lastBlock = Math.min(readAgentEnt.currentEventBlock + maximumBlocks, await this.lastFinalizedBlock());
+        const lastFinalizedBlock = await this.lastFinalizedBlock();
+        await this.reportOutdatedAgent(readAgentEnt.currentEventBlock, lastFinalizedBlock, maximumBlocks);
+        const lastBlock = Math.min(readAgentEnt.currentEventBlock + maximumBlocks, lastFinalizedBlock);
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
         for (let lastBlockRead = readAgentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
@@ -59,6 +62,23 @@ export class AgentBotEventReader {
         // sort events first by their block numbers, then internally by their event index
         events.sort(eventOrder);
         return [events, lastBlock];
+    }
+
+    async reportOutdatedAgent(startBlock: number, lastFinalizedBlock: number, maximumBlocks: number, reportEvery: number = 50_000) {
+        if (lastFinalizedBlock - startBlock > maximumBlocks) {
+            if (startBlock - this.bot.transientStorage.lastOutdatedEventReported >= reportEvery) {
+                const blkTimestamp = await blockTimestamp(startBlock);
+                const timestamp = await latestBlockTimestamp();
+                const days = (timestamp - blkTimestamp) / DAYS;
+                await this.notifier.sendAgentBehindOnEventHandling(lastFinalizedBlock - startBlock, days);
+                this.bot.transientStorage.lastOutdatedEventReported = startBlock;
+            }
+        } else {
+            if (this.bot.transientStorage.lastOutdatedEventReported !== 0) {
+                await this.notifier.sendAgentEventHandlingCaughtUp();
+                this.bot.transientStorage.lastOutdatedEventReported = 0;
+            }
+        }
     }
 
     /**

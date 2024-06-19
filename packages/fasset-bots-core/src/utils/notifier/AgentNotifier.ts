@@ -1,4 +1,4 @@
-import { FormattedString } from "../formatting";
+import { FormattedString, squashSpace } from "../formatting";
 import { BNish, HOURS } from "../helpers";
 import { BaseNotifier, BotType, NotifierTransport } from "./BaseNotifier";
 import { NotifierThrottlingConfigs } from "./NotifierTransports";
@@ -73,6 +73,8 @@ export enum AgentNotificationKey {
     // other
     DAILY_TASK_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR DAILY TASK",
     UNRESOLVED_EVENT = "EVENT IN DATABASE NOT FOUND ON CHAIN - SKIPPED",
+    AGENT_BEHIND_ON_EVENT_HANDLING = "AGENT BEHIND ON EVENT HANDLING",
+    AGENT_EVENT_HANDLING_CAUGHT_UP = "AGENT EVENT HANDLING CAUGHT UP",
 }
 
 export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
@@ -425,5 +427,18 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendSettingsUpdateStarted(settingName: string, validAt: string) {
         await this.info(AgentNotificationKey.AGENT_SETTING_UPDATE, `Agent ${this.address} started setting ${settingName} that is valid at ${validAt}.`);
+    }
+
+    async sendAgentBehindOnEventHandling(blocks: number, days: number) {
+        await this.danger(AgentNotificationKey.AGENT_BEHIND_ON_EVENT_HANDLING,
+            squashSpace`Agent ${this.address} is ${blocks} blocks or ${days.toFixed(2)} days behind in reading events.
+                        Normal operation will continue when all events are processed, which may take some time.`
+        );
+    }
+
+    async sendAgentEventHandlingCaughtUp() {
+        await this.info(AgentNotificationKey.AGENT_EVENT_HANDLING_CAUGHT_UP,
+            `Agent ${this.address} has caught up with latest events. Normal processing will proceed.`
+        );
     }
 }

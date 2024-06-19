@@ -11,7 +11,7 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError, TokenBalances } from "../utils";
+import { CommandLineError, TokenBalances, checkUnderlyingFunds } from "../utils";
 import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
@@ -29,7 +29,6 @@ import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
 import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentTokenBalances } from "./AgentTokenBalances";
-import { checkUnderlyingFunds } from "../utils/fasset-helpers";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentUnderlyingPaymentType } from "../entities/common";
 
@@ -64,6 +63,9 @@ export class AgentBotTransientStorage {
 
     // used by getUnderlyingBlockHeightProof to detect when the wait is too long and agent has to be notified
     waitingForLatestBlockProofSince = BN_ZERO;
+
+    // the block when outdated agent was last reported
+    lastOutdatedEventReported = 0;
 }
 
 export class AgentBot {
@@ -165,11 +167,7 @@ export class AgentBot {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const smallest_amount = 1;
-        const enoughFunds = await checkUnderlyingFunds(context, underlyingAddress, underlyingAddress, smallest_amount);
-        if (!enoughFunds) {
-            logger.error(`Not enough funds to prove EOAaddress ${underlyingAddress}`)
-            throw new Error(`Not enough funds to prove EOAaddress ${underlyingAddress}`);
-        }
+        await checkUnderlyingFunds(context, underlyingAddress, smallest_amount, underlyingAddress);
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, smallest_amount, reference);
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
@@ -226,10 +224,7 @@ export class AgentBot {
         const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
         try {
             const reference = owner.managementAddress;
-            const enoughFunds = await checkUnderlyingFunds(context, ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount);
-            if (!enoughFunds) {
-                throw new Error(`Not enough funds on underlying address ${ownerUnderlyingAddress}`);
-            }
+            await checkUnderlyingFunds(context, ownerUnderlyingAddress, starterAmount, vaultUnderlyingAddress);
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */

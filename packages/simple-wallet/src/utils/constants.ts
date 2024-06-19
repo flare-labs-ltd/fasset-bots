@@ -1,3 +1,4 @@
+import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import { RateLimitOptions } from "../interfaces/WriteWalletRpcInterface";
 
 export const LOCK_ADDRESS_FACTOR = 1.2;
@@ -101,8 +102,34 @@ export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
 };
 
 // Approximate times between blocks, in milliseconds
-export const BTC_LEDGER_CLOSE_TIME_MS = 600000;
-export const LTC_LEDGER_CLOSE_TIME_MS = 150000;
-export const DOGE_LEDGER_CLOSE_TIME_MS = 60000;
-export const ALGO_LEDGER_CLOSE_TIME_MS = 5000;
-export const XRP_LEDGER_CLOSE_TIME_MS = 4000;
+export const BTC_LEDGER_CLOSE_TIME_MS = 600000; // 10min
+export const LTC_LEDGER_CLOSE_TIME_MS = 150000; // 2.5min
+export const DOGE_LEDGER_CLOSE_TIME_MS = 60000; // 60s
+export const ALGO_LEDGER_CLOSE_TIME_MS = 5000; // 5s
+export const XRP_LEDGER_CLOSE_TIME_MS = 4000; // 4s
+
+// Number of decimal places
+export const BTC_LTC_DOGE_DEC_PLACES = 8;
+export const XRP_DECIMAL_PLACES = 6;
+
+// Minimum amount for an output for it not to be considered a dust output
+// https://github.com/dogecoin/dogecoin/blob/a758fa798217ea7c12e08224596dc0ae9c03b2a8/doc/fee-recommendation.md
+export const DOGE_DUST_AMOUNT = toBNExp(0.01, BTC_LTC_DOGE_DEC_PLACES); // 0.01 DOGE
+// https://github.com/bitpay/bitcore/blob/fbc6b5b4a42d84a49a403c2fb5f47116074d089a/packages/bitcore-lib/lib/transaction/transaction.js#L66
+export const BTC_LTC_DUST_AMOUNT = toBNExp(0.00000546, BTC_LTC_DOGE_DEC_PLACES);
+
+// https://xrpl.org/docs/concepts/accounts/deleting-accounts/#requirements
+export const DELETE_ACCOUNT_OFFSET = 256;
+
+// https://bitcoinops.org/en/tools/calc-size/
+export const UTXO_INPUT_SIZE = 134;
+export const UTXO_OUTPUT_SIZE = 34;
+export const UTXO_OVERHEAD_SIZE = 10;
+
+// UTXO default fee per kb
+// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+// https://github.com/dogecoin/dogecoin/blob/0b46a40ed125d7bf4b5a485b91350bc8bdc48fc8/doc/man/dogecoin-qt.1
+export const DOGE_FEE_PER_KB = toBNExp(1, BTC_LTC_DOGE_DEC_PLACES);
+// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-ltc/lib/transaction/transaction.js#L81
+// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib/lib/transaction/transaction.js#L80
+export const BTC_LTC_FEE_PER_KB = toBNExp(0.001, BTC_LTC_DOGE_DEC_PLACES);

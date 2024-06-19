@@ -57,7 +57,7 @@ describe("AgentBotOwnerValidation cli commands unit tests", () => {
         const spyConsole = spy.on(console, "log");
         const botOwnerVAlidation = await createOwnerValidation();
         await botOwnerVAlidation.validateOwnerNativeAddresses();
-        expect(spyConsole).to.be.called.exactly(9);
+        expect(spyConsole).to.be.called.exactly(7);
     });
 
     it("Should validateForFAsset", async () => {
@@ -71,7 +71,7 @@ describe("AgentBotOwnerValidation cli commands unit tests", () => {
         const spyConsole = spy.on(console, "log");
         const botOwnerVAlidation = await createOwnerValidation();
         await botOwnerVAlidation.validate([fAssetSymbol]);
-        expect(spyConsole).to.be.called.exactly(12);
+        expect(spyConsole).to.be.called.exactly(10);
     });
 
     it("Should validate address", async () => {

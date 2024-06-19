@@ -136,7 +136,7 @@ describe("Agent bot unit tests", () => {
         const spyEOA = spy.on(AgentBot, "proveEOAaddress");
         const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
         await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
-        await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress)).to.eventually.be.rejectedWith(/^Not enough funds to prove EOAaddress/).and.be.an.instanceOf(Error);
+        await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress)).to.eventually.be.rejectedWith(/^Not enough funds on underlying address/).and.be.an.instanceOf(Error);
         expect(spyEOA).to.have.been.called.once;
     });
 

@@ -105,9 +105,9 @@ export async function createTestChainContracts(governance: string, updateExecuto
     await wNat.setWriteVpContract(vpContract.address, { from: governance });
     await wNat.setReadVpContract(vpContract.address, { from: governance });
     // create stablecoins
-    const testUSDC = await FakeERC20.new(governance, "Test USDCoin", "testUSDC", 6);
-    const testUSDT = await FakeERC20.new(governance, "Test Tether", "testUSDT", 6);
-    const testETH = await FakeERC20.new(governance, "Test Ethereum", "testETH", 18);
+    const testUSDC = await FakeERC20.new(governanceSettings.address, governance, "Test USDCoin", "testUSDC", 6);
+    const testUSDT = await FakeERC20.new(governanceSettings.address, governance, "Test Tether", "testUSDT", 6);
+    const testETH = await FakeERC20.new(governanceSettings.address, governance, "Test Ethereum", "testETH", 18);
     // create ftso registry
     const ftsoRegistry = await FtsoRegistryMock.new();
     // await ftsoRegistry.addFtso(natFtso.address);

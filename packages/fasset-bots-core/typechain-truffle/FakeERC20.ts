@@ -9,7 +9,8 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 
 export interface FakeERC20Contract extends Truffle.Contract<FakeERC20Instance> {
   "new"(
-    _minter: string,
+    _governanceSettings: string,
+    _initialGovernance: string,
     _name: string,
     _symbol: string,
     _decimals: number | BN | string,
@@ -29,6 +30,50 @@ export interface Approval {
   };
 }
 
+export interface GovernanceCallTimelocked {
+  name: "GovernanceCallTimelocked";
+  args: {
+    encodedCall: string;
+    encodedCallHash: string;
+    allowedAfterTimestamp: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface GovernanceInitialised {
+  name: "GovernanceInitialised";
+  args: {
+    initialGovernance: string;
+    0: string;
+  };
+}
+
+export interface GovernedProductionModeEntered {
+  name: "GovernedProductionModeEntered";
+  args: {
+    governanceSettings: string;
+    0: string;
+  };
+}
+
+export interface TimelockedGovernanceCallCanceled {
+  name: "TimelockedGovernanceCallCanceled";
+  args: {
+    encodedCallHash: string;
+    0: string;
+  };
+}
+
+export interface TimelockedGovernanceCallExecuted {
+  name: "TimelockedGovernanceCallExecuted";
+  args: {
+    encodedCallHash: string;
+    0: string;
+  };
+}
+
 export interface Transfer {
   name: "Transfer";
   args: {
@@ -41,7 +86,14 @@ export interface Transfer {
   };
 }
 
-export type AllEvents = Approval | Transfer;
+export type AllEvents =
+  | Approval
+  | GovernanceCallTimelocked
+  | GovernanceInitialised
+  | GovernedProductionModeEntered
+  | TimelockedGovernanceCallCanceled
+  | TimelockedGovernanceCallExecuted
+  | Transfer;
 
 export interface FakeERC20Instance extends Truffle.ContractInstance {
   allowance(
@@ -97,6 +149,24 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  cancelGovernanceCall: {
+    (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   decreaseAllowance: {
@@ -122,6 +192,28 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  executeGovernanceCall: {
+    (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _encodedCall: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   increaseAllowance: {
     (
       spender: string,
@@ -144,6 +236,34 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
+
+  initialise: {
+    (
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  isExecutor(
+    _address: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
 
   mintAmount: {
     (
@@ -168,14 +288,23 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  minter(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
   name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   supportsInterface(
     _interfaceId: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
+
+  switchToProductionMode: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
 
   symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -285,6 +414,24 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    cancelGovernanceCall: {
+      (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     decreaseAllowance: {
@@ -310,6 +457,28 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    executeGovernanceCall: {
+      (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _encodedCall: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     increaseAllowance: {
       (
         spender: string,
@@ -332,6 +501,34 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    initialise: {
+      (
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    isExecutor(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     mintAmount: {
       (
@@ -356,14 +553,23 @@ export interface FakeERC20Instance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    minter(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     supportsInterface(
       _interfaceId: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
+
+    switchToProductionMode: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
 
     symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
