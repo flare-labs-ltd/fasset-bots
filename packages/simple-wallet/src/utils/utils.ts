@@ -1,6 +1,4 @@
 import safeStringify from "fast-safe-stringify";
-import BN from "bn.js";
-import Web3Utils from "web3-utils";
 import {
    BTC_LEDGER_CLOSE_TIME_MS,
    BTC_MAINNET,
@@ -79,37 +77,17 @@ export function prefix0x(tx: string) {
 }
 
 export function isValidBytes32Hex(address: string) {
-   return /^0x[0-9a-fA-F]{64}$/i.test(address);
+   return /^(0x|0X)?[0-9a-fA-F]{64}$/i.test(address);
 }
 
-export function isValidHex(address: string) {
-   return /^0x[0-9a-fA-F]+$/i.test(address);
+export function isValidHexString(maybeHexString: string) {
+   return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
 }
 
 export function requireEnv(name: string) {
    const value = process.env[name];
    if (value != null) return value;
    throw new Error(`Environment value ${name} not defined`);
-}
-
-/**
- * Helper wrapper to convert number to BN
- * @param x number expressed in any reasonable type
- * @returns same number as BN
- */
-export function toBN(x: BN | number | string): BN {
-   if (BN.isBN(x)) return x;
-   return Web3Utils.toBN(x);
-}
-
-/**
- * Helper wrapper to convert BN, BigNumber or plain string to number. May lose precision, so use it for tests only.
- * @param x number expressed in any reasonable type
- * @returns same number as Number
- */
-export function toNumber(x: BN | number | string) {
-   if (typeof x === "number") return x;
-   return Number(x);
 }
 
 export function excludeNullFields<T>(dict: Record<string, T>): Record<string, NonNullable<T>> {

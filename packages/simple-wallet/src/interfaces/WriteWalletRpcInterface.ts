@@ -8,12 +8,12 @@ export interface WriteWalletRpcInterface {
    createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse;
 
    getAccountBalance(account: string): Promise<BN>;
-   getCurrentTransactionFee(): Promise<BN>;
+   getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
    preparePaymentTransaction(
       source: string,
       destination: string,
-      amount: BN,
+      amount: BN | null,
       fee?: BN,
       note?: string,
       maxFee?: BN,
@@ -25,7 +25,17 @@ export interface WriteWalletRpcInterface {
       source: string,
       privateKey: string,
       destination: string,
-      amount: BN,
+      amount: BN | null,
+      fee?: BN,
+      note?: string,
+      maxFee?: BN,
+      sequence?: number
+   ): Promise<any>;
+
+   deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
       fee?: BN,
       note?: string,
       maxFee?: BN,
@@ -52,6 +62,18 @@ export interface UTXO {
    satoshis: number;
    confirmations: number;
 }
+
+export interface XRPFeeParams {
+   isPayment: boolean;
+}
+
+export interface UTXOFeeParams {
+   source: string;
+   destination: string;
+   amount: BN | null;
+}
+
+export type FeeParams = XRPFeeParams | UTXOFeeParams;
 
 export interface RateLimitOptions {
    maxRequests?: number;

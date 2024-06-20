@@ -194,7 +194,7 @@ export class Challenger extends ActorBase {
      */
     checkForIllegalTransaction(transaction: ITransaction, agent: TrackedAgentState): void {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
-        console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
+        // console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for illegal transaction ${transaction.hash}.`);
         const transactionValid =
             PaymentReference.isValid(transaction.reference) &&
             (this.isValidRedemptionReference(agent, transaction.reference) || this.isValidAnnouncedPaymentReference(agent, transaction.reference));
@@ -229,7 +229,7 @@ export class Challenger extends ActorBase {
      */
     checkForDoublePayment(transaction: ITransaction, agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
-        console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
+        // console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
         if (!PaymentReference.isValid(transaction.reference)) return; // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
         if (existingHash && existingHash != transaction.hash) {
@@ -266,7 +266,7 @@ export class Challenger extends ActorBase {
      */
     checkForNegativeFreeBalance(agent: TrackedAgentState) {
         logger.info(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for free negative balance for agent ${agent.vaultAddress}.`);
-        console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for free negative balance for agent ${agent.vaultAddress}.`);
+        // console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for free negative balance for agent ${agent.vaultAddress}.`);
         const agentTransactions = this.unconfirmedTransactions.get(agent.vaultAddress);
         if (agentTransactions == null) return;
         // extract the spent value for each transaction

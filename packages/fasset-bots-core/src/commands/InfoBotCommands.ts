@@ -4,15 +4,15 @@ import { Secrets, createBotConfig } from "../config";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext, isAssetAgentContext } from "../config/create-asset-context";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
+import { OwnerAddressPair } from "../fasset/Agent";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { formatFixed } from "../utils/formatting";
-import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, randomChoice, toBN } from "../utils/helpers";
+import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, randomChoice, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { AgentInfoReader, CollateralPriceCalculator } from "./AgentInfoReader";
-import { OwnerAddressPair } from "../fasset/Agent";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
@@ -72,12 +72,24 @@ export class InfoBotCommands {
 
     async findBestAgent(minAvailableLots: BN): Promise<string | undefined> {
         const agents = await this.getAvailableAgents();
-        const eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
+        let eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
         if (eligible.length === 0) return undefined;
-        eligible.sort((a, b) => -toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
-        const lowestFee = toBN(eligible[0].feeBIPS);
-        eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
-        return randomChoice(eligible)?.agentVault;
+        eligible.sort((a, b) => toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
+        while (eligible.length > 0) {
+            const lowestFee = toBN(eligible[0].feeBIPS);
+            let optimal = eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
+            while (optimal.length > 0) {
+                const agentVault = requireNotNull(randomChoice(optimal)).agentVault;  // list must be nonempty
+                const info = await this.context.assetManager.getAgentInfo(agentVault);
+                // console.log(`agent ${agentVault} status ${info.status}`);
+                if (Number(info.status) === AgentStatus.NORMAL) {
+                    return agentVault;
+                }
+                // agent is in liquidation or something, remove it and try another
+                optimal = optimal.filter(a => a.agentVault !== agentVault);
+                eligible = eligible.filter(a => a.agentVault !== agentVault);
+            }
+        }
     }
 
     /**

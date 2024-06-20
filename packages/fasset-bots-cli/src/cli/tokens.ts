@@ -63,7 +63,7 @@ program
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
             const minBN = currency.parse(token.chainInfo.minimumAccountBalance ?? "0");
-            await enoughUnderlyingFunds(wallet, from, amountNat, minBN);
+            await enoughUnderlyingFunds(wallet, accountFrom.address, addressTo, amountNat, minBN);
             await wallet.addTransaction(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
         }
     });
@@ -242,9 +242,9 @@ async function validateAddressForToken(secrets: Secrets, token: TokenType, addre
     }
 }
 
-async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddress: string, amount: BN, minimumBalance: BN): Promise<void> {
+async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddress: string, destinationAddress: string, amount: BN, minimumBalance: BN): Promise<void> {
     const senderBalance = await wallet.getBalance(sourceAddress);
-    const fee = await wallet.getTransactionFee();
+    const fee = await wallet.getTransactionFee({source: sourceAddress, amount: amount, destination: destinationAddress, isPayment: true});
     const requiredBalance = requiredAddressBalance(amount, minimumBalance, fee);
     if (senderBalance.gte(requiredBalance)) {
         return;

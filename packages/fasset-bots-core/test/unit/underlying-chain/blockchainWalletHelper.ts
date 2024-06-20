@@ -73,7 +73,7 @@ describe("testXRP wallet tests", () => {
     });
 
     it("Should get transaction fee", async () => {
-        const fee = await walletHelper.getTransactionFee();
+        const fee = await walletHelper.getTransactionFee({isPayment: true});
         expect(fee.gtn(0));
     });
 });

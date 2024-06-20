@@ -285,7 +285,7 @@ export class AgentService {
             return;
         }
         */
-        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000))
+        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000), Date.now());
         await this.deleteExpiredAlerts();
         await this.em.persistAndFlush(alert);
     }
@@ -298,10 +298,16 @@ export class AgentService {
         await this.em.flush();
       }
 
-    async getAlerts(): Promise<PostAlert[]> {
+    async getAlerts(): Promise<any[]> {
         const alertRepository = this.em.getRepository(Alert);
         const alerts = (await alertRepository.findAll()) as Alert[];
-        const postAlerts: any[] = alerts.map((alert: any) => JSON.parse(alert.alert));
+        const postAlerts: any[] = alerts.map((alert: Alert) => {
+            return {
+              alert: JSON.parse(alert.alert as any),
+              date: alert.date
+            };
+          });
+
         return postAlerts;
     }
 
@@ -480,7 +486,8 @@ export class AgentService {
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
                     vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), 6, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
-                    agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
+                    agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
+                    collateralToken: info.vaultCollateralToken};
                 vaultsForFasset.push(vaultInfo);
             }
             if (vaultsForFasset.length != 0)
