@@ -1,4 +1,4 @@
-import { AgentBotCommands, AgentEntity, AgentSettingName, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
@@ -481,12 +481,35 @@ export class AgentService {
                 const vaultCR = Number(info.vaultCollateralRatioBIPS) / MAX_BIPS;
                 const poolCR = Number(info.poolCollateralRatioBIPS) / MAX_BIPS;
                 const mintedAmount = Number(info.mintedUBA) / Number(settings.assetUnitUBA);
+                let status = `Healthy`;
+                switch (Number(info.status)) {
+                    case AgentStatus.NORMAL: {
+                        status = `Healthy`;
+                        break;
+                    }
+                    case AgentStatus.CCB: {
+                        status = `CCB`;
+                        break;
+                    }
+                    case AgentStatus.LIQUIDATION: {
+                        status = `Liquidating`;
+                        break;
+                    }
+                    case AgentStatus.FULL_LIQUIDATION: {
+                        status = `Liquidating`;
+                        break;
+                    }
+                    case AgentStatus.DESTROYING: {
+                        status = `Closing`;
+                        break;
+                    }
+                }
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
                     vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), 6, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
-                    collateralToken: info.vaultCollateralToken};
+                    collateralToken: info.vaultCollateralToken, health: status};
                 vaultsForFasset.push(vaultInfo);
             }
             if (vaultsForFasset.length != 0)

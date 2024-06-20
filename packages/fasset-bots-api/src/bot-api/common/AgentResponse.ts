@@ -69,6 +69,7 @@ export interface VaultInfo {
     poolAmount: string;
     agentCPTs: string;
     collateralToken: string;
+    health: string;
 }
 
 export interface AllVaults {
