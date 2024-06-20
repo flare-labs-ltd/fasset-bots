@@ -306,8 +306,7 @@ export class AgentService {
               alert: JSON.parse(alert.alert as any),
               date: alert.date
             };
-          });
-
+        });
         return postAlerts;
     }
 
@@ -479,8 +478,8 @@ export class AgentService {
                 }
                 const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
                 const mintedLots = Number(info.mintedUBA) / lotSize;
-                const vaultCR = Number(info.mintingVaultCollateralRatioBIPS) / MAX_BIPS;
-                const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
+                const vaultCR = Number(info.vaultCollateralRatioBIPS) / MAX_BIPS;
+                const poolCR = Number(info.poolCollateralRatioBIPS) / MAX_BIPS;
                 const mintedAmount = Number(info.mintedUBA) / Number(settings.assetUnitUBA);
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
