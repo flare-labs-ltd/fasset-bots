@@ -74,13 +74,14 @@ export class InfoBotCommands {
         const agents = await this.getAvailableAgents();
         let eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
         if (eligible.length === 0) return undefined;
-        eligible.sort((a, b) => -toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
+        eligible.sort((a, b) => toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
         while (eligible.length > 0) {
             const lowestFee = toBN(eligible[0].feeBIPS);
             let optimal = eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
             while (optimal.length > 0) {
                 const agentVault = requireNotNull(randomChoice(optimal)).agentVault;  // list must be nonempty
                 const info = await this.context.assetManager.getAgentInfo(agentVault);
+                // console.log(`agent ${agentVault} status ${info.status}`);
                 if (Number(info.status) === AgentStatus.NORMAL) {
                     return agentVault;
                 }
