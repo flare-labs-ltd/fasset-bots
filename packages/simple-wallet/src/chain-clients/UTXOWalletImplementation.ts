@@ -31,7 +31,7 @@ const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
 
 
-export abstract class BtcishWalletImplementation implements WriteWalletRpcInterface {
+export abstract class UTXOWalletImplementation implements WriteWalletRpcInterface {
    inTestnet: boolean;
    client: AxiosInstance;
    addressLocks = new Map<string, { tx: bitcore.Transaction | null; maxFee: BN | null }>();
@@ -295,9 +295,13 @@ export abstract class BtcishWalletImplementation implements WriteWalletRpcInterf
     * @returns {Object[]}
     */
    async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
-      const res = await this.client.get(`/address/${address}?unspent=true`);
+      const res = await this.client.get(`/address/${address}?unspent=true&excludeconflicting=true`);
       wallet_utxo_ensure_data(res);
-      const allUTXOs =  (res.data as any[]).filter((utxo) => utxo.mintHeight >= 0).sort((a, b) => a.value - b.value);
+      // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
+      // utxo.mintHeight > -3 => excludeConflicting
+      const allUTXOs =  (res.data as any[]).filter((utxo) => utxo.mintHeight > -3).sort((a, b) => a.value - b.value);
+      console.log("----------- allUTXOs -----------");
+      console.log(allUTXOs)
       if (amountInSatoshi == null) {
          return allUTXOs;
       }
