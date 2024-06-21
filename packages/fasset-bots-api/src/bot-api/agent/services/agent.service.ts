@@ -198,6 +198,9 @@ export class AgentService {
         const collateralTypes = await cli.context.assetManager.getCollateralTypes();
         const collaterals = [];
         for (const collateralType of collateralTypes) {
+            if (Number(collateralType.validUntil) != 0){
+                continue;
+              }
             const symbol = collateralType.tokenFtsoSymbol;
             const token = await IERC20.at(collateralType.token);
             const balance = await token.balanceOf(cli.owner.workAddress);
@@ -435,6 +438,9 @@ export class AgentService {
             const collateralTypes = await cli.context.assetManager.getCollateralTypes();
             const collateralTokens: CollateralTemplate[] = [];
             for (const collateralType of collateralTypes) {
+                if (Number(collateralType.validUntil) != 0){
+                    continue;
+                  }
                 const symbol = collateralType.tokenFtsoSymbol;
                 const collateralClass = collateralType.collateralClass;
                 if (collateralClass == toBN(2)) {
