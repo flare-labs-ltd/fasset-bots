@@ -230,7 +230,7 @@ program
 
 program
     .command("selfClose")
-    .description("self close agent vault with amountUBA of FAssets")
+    .description("self close agent vault with amount of FAssets")
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {

@@ -78,6 +78,7 @@ program
 program
     .command("openBetaAgentRegister")
     .description("whitelist and fund agents with CFLR and fake collateral tokens (used for open-beta)")
+    .option("--nat <amountNat>", "amount of NAT tokens sent to each user", "0")
     .option("--usdc <amountUsdc>", "amount of testUSDC tokens minted to each user", "0")
     .option("--usdt <amountUsdt>", "amount of testUSDT tokens minted to each user", "0")
     .option("--eth <amountEth>", "amount of testETH tokens minted to each user", "0")

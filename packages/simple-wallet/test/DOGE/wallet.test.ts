@@ -5,7 +5,8 @@ import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
-import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { toBNExp } from "../../src/utils/bnutils";
+
 const DOGEMccConnectionTest = {
    url: process.env.DOGE_URL ?? "",
    username: "",
@@ -20,6 +21,14 @@ const fundedMnemonic = "once marine attract scorpion track summer choice hamster
 const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
 const targetMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
 const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
+
+// zeroth derivative is fundedAddress
+// first derivative using fundedMnemonic by using bip32Path: "m/44'/3'/1'"
+// {
+//    address: 'nr9YSnQKPprLq2ZFFnKJZR3ZgfUFu2Goro',
+//    mnemonic: 'once marine attract scorpion track summer choice hamster',
+//    privateKey: 'ckzzFoCjnLv9Div59fpwXtvCpUxEwhiHQWEGV6nEsLQfWUDs6h4J'
+//  }
 
 const DOGE_DECIMAL_PLACES = BTC_LTC_DOGE_DEC_PLACES;
 const amountToSendInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);

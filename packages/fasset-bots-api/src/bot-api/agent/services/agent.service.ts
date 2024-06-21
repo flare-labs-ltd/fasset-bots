@@ -1,6 +1,6 @@
-import { AgentBotCommands, AgentEntity, AgentSettingName, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -285,7 +285,7 @@ export class AgentService {
             return;
         }
         */
-        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000))
+        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000), Date.now());
         await this.deleteExpiredAlerts();
         await this.em.persistAndFlush(alert);
     }
@@ -298,10 +298,15 @@ export class AgentService {
         await this.em.flush();
       }
 
-    async getAlerts(): Promise<PostAlert[]> {
+    async getAlerts(): Promise<any[]> {
         const alertRepository = this.em.getRepository(Alert);
         const alerts = (await alertRepository.findAll()) as Alert[];
-        const postAlerts: any[] = alerts.map((alert: any) => JSON.parse(alert.alert));
+        const postAlerts: any[] = alerts.map((alert: Alert) => {
+            return {
+              alert: JSON.parse(alert.alert as any),
+              date: alert.date
+            };
+        });
         return postAlerts;
     }
 
@@ -449,6 +454,10 @@ export class AgentService {
     async getAgentVaults(): Promise<any> {
         const config = loadConfigFile(FASSET_BOT_CONFIG)
         const allVaults: AllVaults[] = [];
+        function formatCR(bips: BNish) {
+            if (String(bips) === "10000000000") return "<inf>";
+            return formatFixed(toBN(bips), 4);
+        }
         // eslint-disable-next-line guard-for-in
         for (const fasset in config.fAssets) {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
@@ -473,14 +482,38 @@ export class AgentService {
                 }
                 const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
                 const mintedLots = Number(info.mintedUBA) / lotSize;
-                const vaultCR = Number(info.mintingVaultCollateralRatioBIPS) / MAX_BIPS;
-                const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
+                const vaultCR = formatCR(info.vaultCollateralRatioBIPS);
+                const poolCR = formatCR(info.poolCollateralRatioBIPS);
                 const mintedAmount = Number(info.mintedUBA) / Number(settings.assetUnitUBA);
+                let status = `Healthy`;
+                switch (Number(info.status)) {
+                    case AgentStatus.NORMAL: {
+                        status = `Healthy`;
+                        break;
+                    }
+                    case AgentStatus.CCB: {
+                        status = `CCB`;
+                        break;
+                    }
+                    case AgentStatus.LIQUIDATION: {
+                        status = `Liquidating`;
+                        break;
+                    }
+                    case AgentStatus.FULL_LIQUIDATION: {
+                        status = `Liquidating`;
+                        break;
+                    }
+                    case AgentStatus.DESTROYING: {
+                        status = `Closing`;
+                        break;
+                    }
+                }
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
                     vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), 6, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
-                    agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
+                    agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
+                    collateralToken: info.vaultCollateralToken, health: status};
                 vaultsForFasset.push(vaultInfo);
             }
             if (vaultsForFasset.length != 0)

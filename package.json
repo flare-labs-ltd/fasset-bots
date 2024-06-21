@@ -1,14 +1,11 @@
 {
     "name": "fasset-bots-monorepo",
-    "version": "1.0.0-beta.8",
+    "version": "1.0.0-beta.9",
     "private": true,
     "workspaces": {
         "packages": [
             "packages/*"
         ]
-    },
-    "engines": {
-        "node": ">=16.10.0"
     },
     "scripts": {
         "---------BUILD---SCRIPTS": "",

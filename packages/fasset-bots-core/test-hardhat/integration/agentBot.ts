@@ -81,7 +81,7 @@ describe("Agent bot tests", () => {
     it("Management address should not work for sending from server", async () => {
         await web3.eth.sendTransaction({ from: ownerAddress, to: accounts[0], value: "1", gas: 100000 });
         await expectRevert(web3.eth.sendTransaction({ from: ownerManagementAddress, to: accounts[0], value: "1", gas: 100000 }),
-            "unknown account");
+            "Unknown account");
     });
 
     it("Should perform minting", async () => {

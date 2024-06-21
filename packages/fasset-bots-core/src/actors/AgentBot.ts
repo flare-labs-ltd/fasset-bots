@@ -688,7 +688,7 @@ export class AgentBot {
      * @returns proved attestation provider data
      */
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ConfirmedBlockHeightExists.Proof | "NOT_EXPIRED" | "WAITING_PROOF"> {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
+        // logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
         // try to get proof whether payment/non-payment proofs have expired
         const proof = await this.getUnderlyingBlockHeightProof();
         if (proof) {
@@ -698,7 +698,7 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CANNOT be obtained from indexer.`);
                 return proof;
             } else {
-                logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
+                // logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
                 return "NOT_EXPIRED";
             }
         }

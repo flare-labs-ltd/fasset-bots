@@ -2,11 +2,11 @@ import axios, { AxiosInstance } from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import algosdk from "algosdk";
 import { sleepMs, stringToUint8Arr, uint8ArrToString, algo_ensure_data, excludeNullFields } from "../utils/utils";
+import { toBN, toNumber } from "../utils/bnutils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, ALGO_LEDGER_CLOSE_TIME_MS } from "../utils/constants";
 import type { ICreateWalletResponse, ISubmitTransactionResponse, WriteWalletRpcInterface } from "../interfaces/WriteWalletRpcInterface";
 import type { AlgoRpcConfig } from "../interfaces/WriteWalletRpcInterface";
 import BN from "bn.js";
-import { toBN, toNumber } from "@flarelabs/fasset-bots-core/utils";
 
 function algoResponseValidator(responseCode: number) {
    // allow any response, process them later in mcc
