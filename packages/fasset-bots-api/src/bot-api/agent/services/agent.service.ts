@@ -1,6 +1,6 @@
 import { AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -454,6 +454,10 @@ export class AgentService {
     async getAgentVaults(): Promise<any> {
         const config = loadConfigFile(FASSET_BOT_CONFIG)
         const allVaults: AllVaults[] = [];
+        function formatCR(bips: BNish) {
+            if (String(bips) === "10000000000") return "<inf>";
+            return formatFixed(toBN(bips), 4);
+        }
         // eslint-disable-next-line guard-for-in
         for (const fasset in config.fAssets) {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
@@ -478,8 +482,8 @@ export class AgentService {
                 }
                 const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
                 const mintedLots = Number(info.mintedUBA) / lotSize;
-                const vaultCR = Number(info.vaultCollateralRatioBIPS) / MAX_BIPS;
-                const poolCR = Number(info.poolCollateralRatioBIPS) / MAX_BIPS;
+                const vaultCR = formatCR(info.vaultCollateralRatioBIPS);
+                const poolCR = formatCR(info.poolCollateralRatioBIPS);
                 const mintedAmount = Number(info.mintedUBA) / Number(settings.assetUnitUBA);
                 let status = `Healthy`;
                 switch (Number(info.status)) {
