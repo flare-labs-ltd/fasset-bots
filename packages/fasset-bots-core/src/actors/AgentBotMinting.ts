@@ -279,7 +279,15 @@ export class AgentBotMinting {
             await this.notifier.sendMintingDefaultSuccess(minting.requestId);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            await this.notifier.sendMintingDefaultFailure(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
+            // wait for one more round and then reset to state STARTED, which will eventually resubmit request
+            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(minting.proofRequestRound + 1);
+            if (oneMoreRoundFinalized) {
+                await this.notifier.sendMintingDefaultFailure(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
+                logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining non payment proof for minting ${minting.requestId}.`);
+                minting.state = AgentMintingState.STARTED;
+                minting.proofRequestRound = undefined;
+                minting.proofRequestData = undefined;
+            }
         }
     }
 
@@ -305,7 +313,15 @@ export class AgentBotMinting {
             logger.info(`Agent ${this.agent.vaultAddress} executed minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for minting ${minting.requestId} with in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
+            // wait for one more round and then reset to state STARTED, which will eventually resubmit request
+            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(minting.proofRequestRound + 1);
+            if (oneMoreRoundFinalized) {
+                await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
+                logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining payment proof for minting ${minting.requestId}.`);
+                minting.state = AgentMintingState.STARTED;
+                minting.proofRequestRound = undefined;
+                minting.proofRequestData = undefined;
+            }
         }
     }
 }

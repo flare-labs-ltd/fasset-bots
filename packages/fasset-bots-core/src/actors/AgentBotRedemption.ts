@@ -240,8 +240,16 @@ export class AgentBotRedemption {
         } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain address validation proof for redemption ${redemption.requestId}
                 in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
-                redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
+            // wait for one more round and then reset to state STARTED, which will eventually resubmit request
+            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(redemption.proofRequestRound + 1);
+            if (oneMoreRoundFinalized) {
+                await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
+                    redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
+                logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining address validation proof for redemption ${redemption.requestId}.`);
+                redemption.state = AgentRedemptionState.STARTED;
+                redemption.proofRequestRound = undefined;
+                redemption.proofRequestData = undefined;
+            }
         }
     }
 
@@ -321,7 +329,15 @@ export class AgentBotRedemption {
             logger.info(`Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
+            // wait for one more round and then reset to state PAID, which will eventually resubmit request
+            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(redemption.proofRequestRound + 1);
+            if (oneMoreRoundFinalized) {
+                await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
+                logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining proof of payment for redemption ${redemption.requestId}.`);
+                redemption.state = AgentRedemptionState.PAID;
+                redemption.proofRequestRound = undefined;
+                redemption.proofRequestData = undefined;
+            }
         }
     }
 }

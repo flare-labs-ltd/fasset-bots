@@ -22,6 +22,7 @@ import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 import { AgentMintingState, AgentRedemptionState } from "../../src/entities/common";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
+import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -211,6 +212,123 @@ describe("Agent bot tests", () => {
         const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
+
+    it("Should perform minting - minter pays, agent execute minting; needs to retry state connector payment request", async () => {
+        // create collateral reservation
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        // should have an open minting
+        orm.em.clear();
+        let mintings = await agentBot.minting.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const mintingStarted = mintings[0];
+        assert.equal(mintingStarted.state, AgentMintingState.STARTED);
+        // pay for minting
+        await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        // skip time so the payment will expire on underlying chain
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
+        chain.mine(Number(crt.lastUnderlyingBlock));
+        // get time proof
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        // handle again
+        await agentBot.handleOpenMintings(orm.em);
+        orm.em.clear();
+        // should have one open minting with state 'requestedPaymentProof'
+        mintings = await agentBot.minting.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const mintingRequestedPaymentProof = mintings[0];
+        assert.equal(mintingRequestedPaymentProof.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
+        // remove the proof
+        const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
+        delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[mintingRequestedPaymentProof.proofRequestData!];
+        // check if minting is done
+        await agentBot.handleOpenMintings(orm.em);
+        orm.em.clear();
+        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        assert.equal(mintingDone.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
+        // after one more state connector round, the minitng should be reset to started
+        scClient.rounds.push([]);
+        await scClient.finalizeRound();
+        // check minting status
+        await agentBot.handleOpenMintings(orm.em);
+        orm.em.clear();
+        const mintingRestart = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        assert.equal(mintingRestart.state, AgentMintingState.STARTED);
+        // handle again
+        await agentBot.handleOpenMintings(orm.em);
+        orm.em.clear();
+        // should have one open minting with state 'requestedPaymentProof'
+        mintings = await agentBot.minting.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const mintingRequestedPaymentProof2 = mintings[0];
+        assert.equal(mintingRequestedPaymentProof2.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
+        // check if minting is done
+        await agentBot.handleOpenMintings(orm.em);
+        orm.em.clear();
+        const mintingDone2 = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        assert.equal(mintingDone2.state, AgentMintingState.DONE);
+    });
+
+    it("Should perform minting and redemption; needs to retry state connector payment request in redemption", async () => {
+        // perform minting
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        await time.advanceBlock();
+        chain.mine();
+        // request redemption
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // detect redemption request and pay
+        await agentBot.runStep(orm.em);
+        // check redemption state
+        orm.em.clear();
+        let redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemption.state, AgentRedemptionState.PAID);
+        chain.mine(5);
+        // submit proof
+        await agentBot.handleOpenRedemptions(orm.em);
+        orm.em.clear();
+        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
+        // remove the proof
+        const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
+        delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[redemption.proofRequestData!];
+        // redemption status should be stuck
+        await agentBot.handleOpenRedemptions(orm.em);
+        orm.em.clear();
+        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
+        // after one more state connector round, the minitng should be reset to paid
+        scClient.rounds.push([]);
+        await scClient.finalizeRound();
+        // check minting status
+        await agentBot.handleOpenRedemptions(orm.em);
+        orm.em.clear();
+        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemption.state, AgentRedemptionState.PAID);
+        // handle again
+        await agentBot.handleOpenRedemptions(orm.em);
+        orm.em.clear();
+        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
+        // and now it should be done
+        await agentBot.handleOpenRedemptions(orm.em);
+        orm.em.clear();
+        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemption.state, AgentRedemptionState.DONE);
+     });
 
     it("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
         // create multiple collateral reservations

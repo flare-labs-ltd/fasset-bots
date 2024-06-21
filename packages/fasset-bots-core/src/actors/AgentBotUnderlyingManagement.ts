@@ -129,9 +129,8 @@ export class AgentBotUnderlyingManagement {
                         break;
                     default:
                         console.error(`Underlying payment state: ${underlyingPayment.state} not supported`);
-                        logger.error(
-                            `Agent ${this.agent.vaultAddress} run into underlying payment state ${underlyingPayment.state} not supported for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`
-                        );
+                        logger.error(squashSpace`Agent ${this.agent.vaultAddress} run into underlying payment state ${underlyingPayment.state} not supported
+                            for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`);
                 }
                 await em.persistAndFlush(underlyingPayment);
             })
@@ -146,9 +145,7 @@ export class AgentBotUnderlyingManagement {
      * @param underlyingPayment AgentUnderlyingPayment entity
      */
     async checkPaymentProofAvailable(underlyingPayment: AgentUnderlyingPayment): Promise<void> {
-        logger.info(
-            `Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} is available.`
-        );
+        logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} is available.`);
         assertNotNull(underlyingPayment.txHash);
         const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
@@ -163,9 +160,7 @@ export class AgentBotUnderlyingManagement {
      * @param underlyingPayment AgentUnderlyingPayment entity
      */
     async requestPaymentProof(underlyingPayment: AgentUnderlyingPayment): Promise<void> {
-        logger.info(
-            squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`
-        );
+        logger.info(`Agent ${this.agent.vaultAddress} is sending request for payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`);
         assertNotNull(underlyingPayment.txHash);
         const request = await this.context.attestationProvider.requestPaymentProof(
             underlyingPayment.txHash,
@@ -180,9 +175,7 @@ export class AgentBotUnderlyingManagement {
                 proofRequestRound ${request.round}, proofRequestData ${request.data}`);
         } else {
             // else cannot prove request yet
-            logger.info(
-                `Agent ${this.agent.vaultAddress} cannot yet request payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`
-            );
+            logger.info(`Agent ${this.agent.vaultAddress} cannot yet request payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`);
         }
     }
 
@@ -193,49 +186,41 @@ export class AgentBotUnderlyingManagement {
      * @param underlying payment AgentUnderlyingPayment entity
      */
     async checkConfirmPayment(underlyingPayment: AgentUnderlyingPayment): Promise<void> {
-        logger.info(
-            `Agent ${this.agent.vaultAddress} is trying to obtain payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`
-        );
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
+            in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
         assertNotNull(underlyingPayment.proofRequestRound);
         assertNotNull(underlyingPayment.proofRequestData);
         const proof = await this.context.attestationProvider.obtainPaymentProof(underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData);
         if (proof === AttestationNotProved.NOT_FINALIZED) {
-            logger.info(
-                `Agent ${this.agent.vaultAddress}: proof not yet finalized for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`
-            );
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
+                in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
             return;
         }
         if (attestationProved(proof)) {
-            logger.info(
-                `Agent ${this.agent.vaultAddress} obtained payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`
-            );
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
+                in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
             const paymentProof = proof;
             if (underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP) {
-                await this.context.assetManager.confirmTopupPayment(web3DeepNormalize(paymentProof), this.agent.vaultAddress, {
-                    from: this.agent.owner.workAddress,
-                });
+                await this.context.assetManager.confirmTopupPayment(web3DeepNormalize(paymentProof), this.agent.vaultAddress, { from: this.agent.owner.workAddress });
             } else {
-                await this.context.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(paymentProof), this.agent.vaultAddress, {
-                    from: this.agent.owner.workAddress,
-                });
+                await this.context.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(paymentProof), this.agent.vaultAddress, { from: this.agent.owner.workAddress });
             }
             underlyingPayment.state = AgentUnderlyingPaymentState.DONE;
             await this.notifier.sendConfirmWithdrawUnderlying(underlyingPayment.type);
-            logger.info(
-                `Agent ${this.agent.vaultAddress} confirmed underlying ${underlyingPayment.type} payment ${
-                    underlyingPayment.txHash
-                } with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`
-            );
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} confirmed underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
+                with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
-            logger.info(
-                `Agent ${this.agent.vaultAddress} cannot obtain payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`
-            );
-            await this.notifier.sendAgentUnderlyingPaymentNoProofObtained(
-                underlyingPayment.txHash,
-                underlyingPayment.type,
-                underlyingPayment.proofRequestRound,
-                underlyingPayment.proofRequestData
-            );
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
+                in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
+            // wait for one more round and then reset to state PAID, which will eventually resubmit request
+            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(underlyingPayment.proofRequestRound + 1);
+            if (oneMoreRoundFinalized) {
+                await this.notifier.sendAgentUnderlyingPaymentNoProofObtained(underlyingPayment.txHash, underlyingPayment.type, underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData);
+                logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining payment proof for underlying payment ${underlyingPayment.txHash}.`);
+                underlyingPayment.state = AgentUnderlyingPaymentState.PAID;
+                underlyingPayment.proofRequestRound = undefined;
+                underlyingPayment.proofRequestData = undefined;
+            }
         }
     }
 }
