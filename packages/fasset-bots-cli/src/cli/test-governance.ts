@@ -50,7 +50,7 @@ program
     .argument("amount", "amount (token)")
     .action(async (symbol: string, address: string, amount: string) => {
         const options: { config: string; secrets: string } = program.opts();
-        await mintFakeTokens(options.secrets, options.config, symbol, address, amount);
+        await transferFakeTokens(options.secrets, options.config, symbol, address, amount);
     });
 
 program
@@ -125,7 +125,7 @@ async function isAgentWhitelisted(secretsFile: string, configFileName: string, o
     return agentOwnerRegistry.isWhitelisted(ownerAddress);
 }
 
-async function mintFakeTokens(secretsFile: string, configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
+async function transferFakeTokens(secretsFile: string, configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
     const [secrets, config] = await initEnvironment(secretsFile, configFileName);
     validateDecimal(amount, "Invalid amount");
     validateAddress(recipientAddress, `Invalid recipient address ${recipientAddress}`);
@@ -135,7 +135,7 @@ async function mintFakeTokens(secretsFile: string, configFileName: string, token
     const token = await FakeERC20.at(tokenAddres);
     const decimals = Number(await token.decimals());
     const amountBN = toBNExp(amount, decimals);
-    await token.mintAmount(recipientAddress, amountBN, { from: deployerAddress });
+    await token.transfer(recipientAddress, amountBN, { from: deployerAddress });
 }
 
 async function runOnAssetManagerController(secretsFile: string, configFileName: string, method: (controller: AssetManagerControllerInstance, assetManagers: string[]) => Promise<void>) {
@@ -204,9 +204,9 @@ async function distributeTokensToAddress(
     amountNat: string, amountUsdt: string, amountUsdc: string, amountEth: string
 ) {
     if (Number(amountNat) > 0) await transferNatFromDeployer(secrets, config, amountNat, recipient)
-    if (Number(amountUsdc) > 0) await mintFakeTokens(secrets, config, "testUSDC", recipient, amountUsdc);
-    if (Number(amountUsdt) > 0) await mintFakeTokens(secrets, config, "testUSDT", recipient, amountUsdt);
-    if (Number(amountEth) > 0) await mintFakeTokens(secrets, config, "testETH", recipient, amountEth);
+    if (Number(amountUsdc) > 0) await transferFakeTokens(secrets, config, "testUSDC", recipient, amountUsdc);
+    if (Number(amountUsdt) > 0) await transferFakeTokens(secrets, config, "testUSDT", recipient, amountUsdt);
+    if (Number(amountEth) > 0) await transferFakeTokens(secrets, config, "testETH", recipient, amountEth);
 }
 
 
