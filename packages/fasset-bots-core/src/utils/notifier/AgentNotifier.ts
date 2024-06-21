@@ -367,7 +367,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     async sendMintingDefaultFailure(requestId: BNish, roundId: number, requestData: string) {
         await this.danger(
             AgentNotificationKey.MINTING_DEFAULT_FAILED,
-            `Agent ${this.address} could obtain non-payment proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
+            `Agent ${this.address} could not obtain non-payment proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
         );
     }
 
