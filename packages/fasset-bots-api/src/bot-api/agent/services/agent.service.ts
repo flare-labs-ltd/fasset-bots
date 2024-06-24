@@ -318,6 +318,11 @@ export class AgentService {
         return secrets.required("owner.native.address");
     }
 
+    async getAgentManagementAddress(): Promise<string> {
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        return secrets.required("owner.management.address");
+    }
+
     async getFassetSymbols(): Promise<string[]> {
         const config = loadConfigFile(FASSET_BOT_CONFIG)
         const fassets: string[] = [];
