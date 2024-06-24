@@ -140,13 +140,14 @@ export class AgentBotRedemption {
         }
     }
 
+    // temp disabled
     async handleExpiredRedemption(rd: AgentRedemption, proof: ConfirmedBlockHeightExists.Proof) {
-        logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-        // corner case - agent did not pay
-        await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
-        rd.state = AgentRedemptionState.DONE;
-        await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
-        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
+        // logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
+        // // corner case - agent did not pay
+        // await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
+        // rd.state = AgentRedemptionState.DONE;
+        // await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
+        // logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
     }
 
     /**
