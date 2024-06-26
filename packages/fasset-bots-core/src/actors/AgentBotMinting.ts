@@ -265,7 +265,11 @@ export class AgentBotMinting {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
         assertNotNull(minting.proofRequestRound);
         assertNotNull(minting.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound, minting.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(minting.proofRequestRound, minting.proofRequestData)
+            .catch(e => {
+                logger.error(`Error obtaining non-payment proof for minting ${minting.requestId}:`, e);
+                return null;
+            });
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             return;
@@ -300,7 +304,11 @@ export class AgentBotMinting {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
         assertNotNull(minting.proofRequestRound);
         assertNotNull(minting.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound, minting.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(minting.proofRequestRound, minting.proofRequestData)
+            .catch(e => {
+                logger.error(`Error obtaining payment proof for minting ${minting.requestId}:`, e);
+                return null;
+            });
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             return;

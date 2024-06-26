@@ -190,7 +190,11 @@ export class AgentBotUnderlyingManagement {
             in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
         assertNotNull(underlyingPayment.proofRequestRound);
         assertNotNull(underlyingPayment.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainPaymentProof(underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData)
+            .catch(e => {
+                logger.error(`Error obtaining payment proof for underlying payment:`, e);
+                return null;
+            });
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
                 in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);

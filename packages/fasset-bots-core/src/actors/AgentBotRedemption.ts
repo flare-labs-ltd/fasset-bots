@@ -231,7 +231,11 @@ export class AgentBotRedemption {
             in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
         assertNotNull(redemption.proofRequestRound);
         assertNotNull(redemption.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound, redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound, redemption.proofRequestData)
+            .catch(e => {
+                logger.error(`Error obtaining address validity proof for redemption ${redemption.requestId}:`, e);
+                return null;
+            });
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for address validation for redemption
                 ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
@@ -330,7 +334,11 @@ export class AgentBotRedemption {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
         assertNotNull(redemption.proofRequestRound);
         assertNotNull(redemption.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound, redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound, redemption.proofRequestData)
+            .catch(e => {
+                logger.error(`Error obtaining payment proof for redemption ${redemption.requestId}:`, e);
+                return null;
+            });
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             return;
