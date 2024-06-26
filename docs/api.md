@@ -128,6 +128,20 @@ Run with `yarn start_agent_api` or `yarn start_agent_api_debug`.
 
 Swagger is locally running at http://localhost:1234/api-doc.
 
+## Setting up agent UI
+Clone the Agent UI repo.
+Go to master branch. In “src” directory create .env file and paste needed enviromental variables:
+```env
+##The walletconnect project ID is available in flare fasset telegram support group
+WALLETCONNECT_PROJECT_ID=PROJECT_ID
+#This is the default url that the backend will be available on.
+API_URL=http://localhost:1234/api
+```
+Here the API_URL is the URL where the fasset-bots are deployed. To run the app, move into the “src” folder na run:
+`Run npm install`
+`Run npm run dev`
+Open http://localhost:3000 with your browser to see the result
+
 <!-- Configuration and environment file must be provided, before running APIs. See [Agent bot configuration](./config.md#agent-bot-configuration-file) and [Agent bot environment](./config.md#env) for more.
 
 Api key and its hash can be generated via command `yarn key-gen createApiKeyAndHash`. See more [here](./cli.md#cli-key);
