@@ -422,7 +422,7 @@ export class AgentService {
                     reject('Internal server error');
                 }
                 else{
-                    resolve(stdout.toLowerCase().indexOf("yarn run-agent") > -1);
+                    resolve(stdout.toLowerCase().indexOf("run-agent") > -1);
                 }
             });
         });
