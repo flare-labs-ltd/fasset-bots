@@ -38,6 +38,7 @@ export enum AgentNotificationKey {
     REDEMPTION_CONFLICTING_ADDRESS_VALIDITY_PROOF_OBTAINED = "CONFLICTING ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION",
     REDEMPTION_STARTED = "REDEMPTION STARTED",
     REDEMPTION_PAID = "REDEMPTION PAID",
+    REDEMPTION_PAYMENT_FAILED = "REDEMPTION PAYMENT FAILED",
     REDEMPTION_PAYMENT_PROOF = "REDEMPTION PAYMENT PROOF REQUESTED",
     // collateral
     AGENT_COLLATERAL_TOP_UP = "AGENT'S COLLATERAL TOP UP",
@@ -382,6 +383,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendRedemptionPaid(requestId: BNish) {
         await this.info(AgentNotificationKey.REDEMPTION_PAID, `Redemption ${requestId} was paid for ${this.address}.`);
+    }
+
+    async sendRedemptionPaymentFailed(requestId: BNish) {
+        await this.danger(AgentNotificationKey.REDEMPTION_PAYMENT_FAILED, `Redemption ${requestId} payment failed for ${this.address}. It will not be retried.`);
     }
 
     async sendRedemptionRequestPaymentProof(requestId: BNish) {

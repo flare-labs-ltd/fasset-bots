@@ -491,7 +491,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
-        for (let i = 0; ; i++) {
+        for (let i = 0; i < 50; i++) {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();

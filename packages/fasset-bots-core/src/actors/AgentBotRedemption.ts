@@ -125,6 +125,10 @@ export class AgentBotRedemption {
             case AgentRedemptionState.STARTED:
                 await this.checkBeforeRedemptionPayment(redemption);
                 break;
+            case AgentRedemptionState.PAYING:
+                // payment failed, do nothing for now
+                // later we could check the state on chain / in mempool and if there is nothing, retry
+                break;
             case AgentRedemptionState.PAID:
                 await this.checkPaymentProofAvailable(redemption);
                 break;
@@ -179,14 +183,23 @@ export class AgentBotRedemption {
     async payForRedemption(redemption: AgentRedemption) {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId}.`);
         const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
-        // !!! TODO: what if there are too little funds on underlying address to pay for fee?
-        const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
-        redemption.txHash = txHash;
-        redemption.state = AgentRedemptionState.PAID;
-        await this.notifier.sendRedemptionPaid(redemption.requestId);
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
-            with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
-            ${redemption.paymentReference}, amount ${paymentAmount}.`);
+        // !!! TODO: this is a hack, setting state to PAYING should be in separate transaction.
+        // Also, this may increase number of unpaid redemptions (but it prevents full liquidation).
+        // Better solution should be found.
+        redemption.state = AgentRedemptionState.PAYING;
+        try {
+            // TODO: what if there are too little funds on underlying address to pay for fee?
+            const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+            redemption.txHash = txHash;
+            redemption.state = AgentRedemptionState.PAID;
+            await this.notifier.sendRedemptionPaid(redemption.requestId);
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
+                with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
+                ${redemption.paymentReference}, amount ${paymentAmount}.`);
+        } catch (error) {
+            logger.error(`Error trying to pay for redemption ${redemption.requestId}:`, error);
+            await this.notifier.sendRedemptionPaymentFailed(redemption.requestId);
+        }
     }
 
     async redeemerAddressValid(underlyingAddress: string) {
