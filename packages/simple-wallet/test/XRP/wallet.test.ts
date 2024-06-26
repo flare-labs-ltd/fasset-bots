@@ -7,7 +7,8 @@ import { encode } from "xrpl";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
 import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
-import { toBN, toBNExp } from "../../../fasset-bots-core/dist/src/utils/helpers";
+import { toBN, toBNExp } from "../../src/utils/bnutils";
+
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 

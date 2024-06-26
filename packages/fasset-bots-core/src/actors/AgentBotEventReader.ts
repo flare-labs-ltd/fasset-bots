@@ -1,7 +1,7 @@
 import { EM } from "../config/orm";
 import { Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { DAYS, blockTimestamp, latestBlockTimestamp, squashSpace } from "../utils";
+import { DAYS, blockTimestamp, latestBlockTimestamp } from "../utils";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";

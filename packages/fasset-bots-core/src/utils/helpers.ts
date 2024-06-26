@@ -376,7 +376,7 @@ export function randomChoice<K>(array: K[]): K | undefined {
 
 export function iteratorToArray<K>(iter: Iterable<K>): Array<K> {
     const ret = [];
-    for (let elt of iter) {
+    for (const elt of iter) {
         ret.push(elt);
     }
     return ret;

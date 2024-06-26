@@ -8,18 +8,27 @@ export interface AgentRegistrationSubmission {
     icon_url: string;
 }
 
-export class OpenBetaAgentRegistrationTransport extends ApiNotifierTransport {
+export class AgentRegistrationTransport extends ApiNotifierTransport {
 
-    constructor(secrets: Secrets) {
-        const apiUrl = secrets.required('openBeta.registrationApiUrl');
-        const apiKey = secrets.required('openBeta.registrationApiKey');
+    constructor(secrets: Secrets, beta: "open" | "closed") {
+        const secretsKey = beta === "open" ? 'openBeta' : 'closedBeta';
+        const apiUrl = secrets.required(`${secretsKey}.registrationApiUrl`);
+        const apiKey = secrets.required(`${secretsKey}.registrationApiKey`);
         super(apiUrl, apiKey);
     }
 
-    async unfinalizedRegistrations(): Promise<AgentRegistrationSubmission[]> {
-        const resp = await this.client.get(`/approved_unregistered`);
+    async awaitingFinalization(): Promise<AgentRegistrationSubmission[]> {
+        return this.submissions(1);
+    }
+
+    async finalizedRegistrations(): Promise<AgentRegistrationSubmission[]> {
+        return this.submissions(2);
+    }
+
+    async submissions(status: number): Promise<AgentRegistrationSubmission[]> {
+        const resp = await this.client.get(`/submission`, { params: { status } });
         if (resp.status !== 200)
-            throw Error(`Unable to fetch unfunded agents due to ${resp.statusText}`);
+            throw Error(`Unable to fetch submissions due to ${resp.statusText}`);
         return resp.data.data;
     }
 

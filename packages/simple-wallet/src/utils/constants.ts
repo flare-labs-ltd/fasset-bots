@@ -1,5 +1,5 @@
-import { toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import { RateLimitOptions } from "../interfaces/WriteWalletRpcInterface";
+import { toBNExp } from "./bnutils";
 
 export const LOCK_ADDRESS_FACTOR = 1.2;
 

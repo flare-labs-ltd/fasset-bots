@@ -1,4 +1,4 @@
-import { WALLET } from "@flarelabs/simple-wallet";
+import { WALLET, WalletClient } from "@flarelabs/simple-wallet";
 import crypto from "node:crypto";
 import Web3 from "web3";
 import { ChainId } from "../underlying-chain/ChainId";
@@ -64,7 +64,7 @@ export function generateUnderlyingAccount(chainName: string): ICreateWalletRespo
     return walletClient.createWallet();
 }
 
-function createStubWalletClient(chainId: ChainId) {
+function createStubWalletClient(chainId: ChainId): WalletClient {
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
         return new WALLET.BTC({
             url: "",
