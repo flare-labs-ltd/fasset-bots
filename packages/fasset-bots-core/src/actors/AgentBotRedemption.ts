@@ -105,7 +105,7 @@ export class AgentBotRedemption {
                 const expirationProof = await this.redemptionExpirationProof(redemption);
                 if (typeof expirationProof === "object") {
                     await this.handleExpiredRedemption(redemption, expirationProof);
-                } else if (expirationProof === "NOT_EXPIRED") {
+                } else {
                     await this.handleOpenRedemption(redemption);
                 }
                 await em.persistAndFlush(redemption);
