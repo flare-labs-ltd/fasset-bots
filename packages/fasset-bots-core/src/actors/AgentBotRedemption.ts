@@ -105,7 +105,7 @@ export class AgentBotRedemption {
                 const expirationProof = await this.redemptionExpirationProof(redemption);
                 if (typeof expirationProof === "object") {
                     await this.handleExpiredRedemption(redemption, expirationProof);
-                } else if (expirationProof === "NOT_EXPIRED") {
+                } else {
                     await this.handleOpenRedemption(redemption);
                 }
                 await em.persistAndFlush(redemption);
@@ -125,6 +125,10 @@ export class AgentBotRedemption {
             case AgentRedemptionState.STARTED:
                 await this.checkBeforeRedemptionPayment(redemption);
                 break;
+            case AgentRedemptionState.PAYING:
+                // payment failed, do nothing for now
+                // later we could check the state on chain / in mempool and if there is nothing, retry
+                break;
             case AgentRedemptionState.PAID:
                 await this.checkPaymentProofAvailable(redemption);
                 break;
@@ -140,13 +144,14 @@ export class AgentBotRedemption {
         }
     }
 
+    // temp disabled
     async handleExpiredRedemption(rd: AgentRedemption, proof: ConfirmedBlockHeightExists.Proof) {
-        logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-        // corner case - agent did not pay
-        await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
-        rd.state = AgentRedemptionState.DONE;
-        await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
-        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
+        // logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
+        // // corner case - agent did not pay
+        // await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
+        // rd.state = AgentRedemptionState.DONE;
+        // await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
+        // logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
     }
 
     /**
@@ -178,14 +183,23 @@ export class AgentBotRedemption {
     async payForRedemption(redemption: AgentRedemption) {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId}.`);
         const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
-        // !!! TODO: what if there are too little funds on underlying address to pay for fee?
-        const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
-        redemption.txHash = txHash;
-        redemption.state = AgentRedemptionState.PAID;
-        await this.notifier.sendRedemptionPaid(redemption.requestId);
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
-            with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
-            ${redemption.paymentReference}, amount ${paymentAmount}.`);
+        // !!! TODO: this is a hack, setting state to PAYING should be in separate transaction.
+        // Also, this may increase number of unpaid redemptions (but it prevents full liquidation).
+        // Better solution should be found.
+        redemption.state = AgentRedemptionState.PAYING;
+        try {
+            // TODO: what if there are too little funds on underlying address to pay for fee?
+            const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+            redemption.txHash = txHash;
+            redemption.state = AgentRedemptionState.PAID;
+            await this.notifier.sendRedemptionPaid(redemption.requestId);
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
+                with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
+                ${redemption.paymentReference}, amount ${paymentAmount}.`);
+        } catch (error) {
+            logger.error(`Error trying to pay for redemption ${redemption.requestId}:`, error);
+            await this.notifier.sendRedemptionPaymentFailed(redemption.requestId);
+        }
     }
 
     async redeemerAddressValid(underlyingAddress: string) {
@@ -217,7 +231,11 @@ export class AgentBotRedemption {
             in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
         assertNotNull(redemption.proofRequestRound);
         assertNotNull(redemption.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound, redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainAddressValidityProof(redemption.proofRequestRound, redemption.proofRequestData)
+            .catch(e => {
+                logger.error(`Error obtaining address validity proof for redemption ${redemption.requestId}:`, e);
+                return null;
+            });
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress}: proof not yet finalized for address validation for redemption
                 ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
@@ -240,8 +258,16 @@ export class AgentBotRedemption {
         } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain address validation proof for redemption ${redemption.requestId}
                 in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
-                redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
+            // wait for one more round and then reset to state STARTED, which will eventually resubmit request
+            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(redemption.proofRequestRound + 1);
+            if (oneMoreRoundFinalized) {
+                await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
+                    redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
+                logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining address validation proof for redemption ${redemption.requestId}.`);
+                redemption.state = AgentRedemptionState.STARTED;
+                redemption.proofRequestRound = undefined;
+                redemption.proofRequestData = undefined;
+            }
         }
     }
 
@@ -308,7 +334,11 @@ export class AgentBotRedemption {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
         assertNotNull(redemption.proofRequestRound);
         assertNotNull(redemption.proofRequestData);
-        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound, redemption.proofRequestData);
+        const proof = await this.context.attestationProvider.obtainPaymentProof(redemption.proofRequestRound, redemption.proofRequestData)
+            .catch(e => {
+                logger.error(`Error obtaining payment proof for redemption ${redemption.requestId}:`, e);
+                return null;
+            });
         if (proof === AttestationNotProved.NOT_FINALIZED) {
             logger.info(`Agent ${this.agent.vaultAddress}: proof not yet finalized for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             return;
@@ -321,7 +351,15 @@ export class AgentBotRedemption {
             logger.info(`Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
+            // wait for one more round and then reset to state PAID, which will eventually resubmit request
+            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(redemption.proofRequestRound + 1);
+            if (oneMoreRoundFinalized) {
+                await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
+                logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining proof of payment for redemption ${redemption.requestId}.`);
+                redemption.state = AgentRedemptionState.PAID;
+                redemption.proofRequestRound = undefined;
+                redemption.proofRequestData = undefined;
+            }
         }
     }
 }

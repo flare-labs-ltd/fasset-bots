@@ -13,6 +13,7 @@ export enum AgentMintingState {
 export enum AgentRedemptionState {
     DONE = "done",
     STARTED = "started",
+    PAYING = "paying",
     PAID = "paid",
     REQUESTED_PROOF = "requestedProof",
     NOT_REQUESTED_PROOF = "notRequestedProof",

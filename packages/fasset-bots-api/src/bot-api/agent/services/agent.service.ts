@@ -198,6 +198,9 @@ export class AgentService {
         const collateralTypes = await cli.context.assetManager.getCollateralTypes();
         const collaterals = [];
         for (const collateralType of collateralTypes) {
+            if (Number(collateralType.validUntil) != 0){
+                continue;
+              }
             const symbol = collateralType.tokenFtsoSymbol;
             const token = await IERC20.at(collateralType.token);
             const balance = await token.balanceOf(cli.owner.workAddress);
@@ -315,6 +318,11 @@ export class AgentService {
         return secrets.required("owner.native.address");
     }
 
+    async getAgentManagementAddress(): Promise<string> {
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        return secrets.required("owner.management.address");
+    }
+
     async getFassetSymbols(): Promise<string[]> {
         const config = loadConfigFile(FASSET_BOT_CONFIG)
         const fassets: string[] = [];
@@ -414,7 +422,7 @@ export class AgentService {
                     reject('Internal server error');
                 }
                 else{
-                    resolve(stdout.toLowerCase().indexOf("yarn run-agent") > -1);
+                    resolve(stdout.toLowerCase().indexOf("run-agent") > -1);
                 }
             });
         });
@@ -435,6 +443,9 @@ export class AgentService {
             const collateralTypes = await cli.context.assetManager.getCollateralTypes();
             const collateralTokens: CollateralTemplate[] = [];
             for (const collateralType of collateralTypes) {
+                if (Number(collateralType.validUntil) != 0){
+                    continue;
+                  }
                 const symbol = collateralType.tokenFtsoSymbol;
                 const collateralClass = collateralType.collateralClass;
                 if (collateralClass == toBN(2)) {
@@ -446,6 +457,25 @@ export class AgentService {
             collaterals.push(collateral);
         }
         return collaterals;
+    }
+
+
+    async getAgentVaultInfoFull(agentVaultAddress: string, cli: AgentBotCommands): Promise<ExtendedAgentVaultInfo> {
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const collateralToken = await cli.context.assetManager.getCollateralType(2,info.vaultCollateralToken);
+        const agentVaultInfo: any = {};
+        const pool = await CollateralPool.at(info.collateralPool);
+        const poolToken = await IERC20Metadata.at(await pool.poolToken());
+        const tokenSymbol = await poolToken.symbol();
+        for (const key of Object.keys(info)) {
+            if (!isNaN(parseInt(key))) continue;
+            const value = info[key as keyof typeof info];
+            const modified = (typeof value === "boolean") ? value : value.toString();
+            agentVaultInfo[key as keyof typeof info] = modified;
+        }
+        agentVaultInfo.vaultCollateralToken = collateralToken.tokenFtsoSymbol;
+        agentVaultInfo.poolSuffix = tokenSymbol;
+        return agentVaultInfo;
     }
 
     /*
@@ -461,6 +491,7 @@ export class AgentService {
         // eslint-disable-next-line guard-for-in
         for (const fasset in config.fAssets) {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
+            const collateralTypes = await cli.context.assetManager.getCollateralTypes();
             const query = cli.orm.em.createQueryBuilder(AgentEntity);
             // Get agent vaults for fasset from database
             const agentVaults = await query.where({ fassetSymbol: fasset }).getResultList();
@@ -480,7 +511,7 @@ export class AgentService {
                 toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)).gt(BN_ZERO)) {
                     updating = true;
                 }
-                const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
+                const info = await this.getAgentVaultInfoFull(vault.vaultAddress, cli);
                 const mintedLots = Number(info.mintedUBA) / lotSize;
                 const vaultCR = formatCR(info.vaultCollateralRatioBIPS);
                 const poolCR = formatCR(info.poolCollateralRatioBIPS);
@@ -508,9 +539,11 @@ export class AgentService {
                         break;
                     }
                 }
+                const collateral : any = collateralTypes.find(item => item.tokenFtsoSymbol === info.vaultCollateralToken);
+                const collateralToken = await IERC20.at(collateral.token);
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
-                    vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), 6, { decimals: 3, groupDigits: true, groupSeparator: "," }),
+                    vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), Number(await collateralToken.decimals()), { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     collateralToken: info.vaultCollateralToken, health: status};

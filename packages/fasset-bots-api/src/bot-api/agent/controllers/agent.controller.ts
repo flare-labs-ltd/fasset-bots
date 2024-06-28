@@ -468,4 +468,21 @@ export class AgentController {
     ): Promise<ApiResponseWrapper<any>> {
         return handleApiResponse(this.agentService.generateSecrets());
     }
+
+    @Get("managementAddress")
+    //@UseGuards(AuthGuard("api-key"))
+    @ApiOkResponse({
+        description: 'Example of successful response.',
+        schema: {
+            type: 'object',
+            properties: {
+                status: { type: 'string', example: 'OK' },
+                data: { type: 'string', example: '0x1D2047b54667e527d689a3319961e9B8FaE43462' }
+            }
+        }
+    })
+    public async getAgentManagementAddress(
+    ): Promise<ApiResponseWrapper<string>> {
+        return handleApiResponse(this.agentService.getAgentManagementAddress());
+    }
 }
