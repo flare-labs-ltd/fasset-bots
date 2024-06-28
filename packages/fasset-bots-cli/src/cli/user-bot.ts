@@ -135,7 +135,7 @@ program
         validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set.");
         validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set.");
         validate(!cmdOptions.repeat || Number(cmdOptions.repeat) > 0, "Option repeat must be a positive number.");
-        for (let _ = 0; _ < Number(cmdOptions.repeat); _++) {
+        for (let _ = 0; _ < Number(cmdOptions.repeat ?? 1); _++) {
             try {
                 if (cmdOptions.executor && cmdOptions.executorFee) {
                     await redeemerBot.redeem(numberOfLots, cmdOptions.executor, cmdOptions.executorFee);
