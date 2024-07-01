@@ -68,6 +68,32 @@ export interface AgentInCCB {
   };
 }
 
+export interface AgentPing {
+  name: "AgentPing";
+  args: {
+    agentVault: string;
+    sender: string;
+    query: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface AgentPingResponse {
+  name: "AgentPingResponse";
+  args: {
+    agentVault: string;
+    owner: string;
+    query: BN;
+    response: string;
+    0: string;
+    1: string;
+    2: BN;
+    3: string;
+  };
+}
+
 export interface AgentSettingChangeAnnounced {
   name: "AgentSettingChangeAnnounced";
   args: {
@@ -668,6 +694,8 @@ export type AllEvents =
   | AgentDestroyAnnounced
   | AgentDestroyed
   | AgentInCCB
+  | AgentPing
+  | AgentPingResponse
   | AgentSettingChangeAnnounced
   | AgentSettingChanged
   | AgentVaultCreated
@@ -713,6 +741,56 @@ export type AllEvents =
   | VaultCollateralWithdrawalAnnounced;
 
 export interface IAssetManagerInstance extends Truffle.ContractInstance {
+  agentPing: {
+    (
+      _agentVault: string,
+      _query: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _query: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _query: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _query: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  agentPingResponse: {
+    (
+      _agentVault: string,
+      _query: number | BN | string,
+      _response: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _query: number | BN | string,
+      _response: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _query: number | BN | string,
+      _response: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _query: number | BN | string,
+      _response: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   announceAgentPoolTokenRedemption: {
     (
       _agentVault: string,
@@ -3269,6 +3347,56 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
   };
 
   methods: {
+    agentPing: {
+      (
+        _agentVault: string,
+        _query: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _query: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _query: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _query: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    agentPingResponse: {
+      (
+        _agentVault: string,
+        _query: number | BN | string,
+        _response: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _query: number | BN | string,
+        _response: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _query: number | BN | string,
+        _response: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _query: number | BN | string,
+        _response: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     announceAgentPoolTokenRedemption: {
       (
         _agentVault: string,
