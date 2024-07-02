@@ -26,6 +26,14 @@ export class AgentBotUpdateSettings {
      * @param readAgentEnt
      */
     async createAgentUpdateSetting(rootEm: EM, settingName: string, settingValidAt: BN, readAgentEnt: AgentEntity): Promise<void> {
+        const settingAlreadyUpdating = await rootEm.getRepository(AgentUpdateSetting)
+            .findOne({ name: settingName, state: AgentUpdateSettingState.WAITING } as FilterQuery<AgentUpdateSetting>);
+        // Set previous setting request as Done, as it will be overwritten on smart contract.
+        if(settingAlreadyUpdating) {
+            settingAlreadyUpdating.state = AgentUpdateSettingState.DONE;
+            await rootEm.flush();
+        }
+
         rootEm.create(
             AgentUpdateSetting,
             {
@@ -41,7 +49,7 @@ export class AgentBotUpdateSettings {
         logger.info(`Agent ${this.agent.vaultAddress} started setting ${settingName} update valid at ${settingValidAt.toString()}.`);
     }
 
-    /**TODO
+    /**
      * Returns update settings with state other than DONE.
      * @param em entity manager
      * @return list of AgentUpdateSetting's instances
@@ -114,7 +122,7 @@ export class AgentBotUpdateSettings {
                 await this.notifier.sendAgentSettingsUpdate(updateSetting.name);
                 return true;
             } catch (error) {
-                if (errorIncluded(error, ["update not valid anymore"])) {
+                if (errorIncluded(error, ["update not valid anymore", "no pending update"])) {
                     await this.notifier.sendAgentCannotUpdateSettingExpired(updateSetting.name);
                     return true;
                 }
