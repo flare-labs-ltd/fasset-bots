@@ -11,7 +11,7 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError, TokenBalances, checkUnderlyingFunds } from "../utils";
+import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion } from "../utils";
 import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
@@ -320,6 +320,9 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash);
+        } else if (eventIs(event, this.context.assetManager, "AgentPing")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentPing' with data ${formatArgs(event.args)}.`);
+            await this.handleAgentPing(event.args.query);
         }
     }
 
@@ -736,6 +739,13 @@ export class AgentBot {
      */
     async handleAgentDestroyed(em: EM): Promise<void> {
         await new AgentBotClosing(this).handleAgentDestroyed(em);
+    }
+
+    async handleAgentPing(query: BNish) {
+        if (Number(query) === 0) {
+            const data = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
+            await this.agent.agentPingResponse(query, data);
+        }
     }
 
     /**

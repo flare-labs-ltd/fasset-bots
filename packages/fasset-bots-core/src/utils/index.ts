@@ -11,3 +11,4 @@ export * from "./currencies";
 export * from "./TokenBalance";
 export * from "./Currency";
 export * from "./fasset-helpers";
+export * from "./program-version";
