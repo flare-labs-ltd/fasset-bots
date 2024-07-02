@@ -962,7 +962,7 @@ describe("Agent bot tests", () => {
         return eventDecoder.decodeEvents(rawEvents);
     }
 
-    it.only("Should respond to agent ping", async () => {
+    it("Should respond to agent ping", async () => {
         const fromBlock = await web3.eth.getBlockNumber();
         await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0);
         await agentBot.runStep(orm.em);
