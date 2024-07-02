@@ -430,11 +430,11 @@ describe("Agent bot tests", () => {
         // agentBot stores redemption
         await agentBot.runStep(orm.em);
         const redemptionStarted = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionStarted.state, AgentRedemptionState.STARTED);
+        assert.equal(redemptionStarted.state, AgentRedemptionState.UNPAID);
         // agentBot doesn't pay for redemption - expired on underlying
         await agentBot.runStep(orm.em);
         const redemptionNotPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionNotPaid.state, AgentRedemptionState.STARTED);
+        assert.equal(redemptionNotPaid.state, AgentRedemptionState.UNPAID);
     });
 
     it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {
@@ -459,7 +459,12 @@ describe("Agent bot tests", () => {
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // get time proof
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
-        // run step
+        // first step wil set state to UNPAID
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const redemptionUnpaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemptionUnpaid.state, AgentRedemptionState.UNPAID);
+        // second step should expire
         await agentBot.runStep(orm.em);
         // check redemption
         orm.em.clear();

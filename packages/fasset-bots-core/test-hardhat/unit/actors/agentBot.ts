@@ -1,4 +1,4 @@
-import { FilterQuery } from "@mikro-orm/core";
+import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -865,5 +865,37 @@ describe("Agent bot unit tests", () => {
         const spyLog = spy.on(console, "error");
         await agentBot.underlyingManagement.nextUnderlyingPaymentStep(orm.em, 1000);
         expect(spyLog).to.have.been.called.once;
+    });
+
+    it("Should properly order redemptions by priority", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const states = Object.values(AgentRedemptionState);
+        let countStarted = 0;
+        for (let i = 0; i < 20; i++) {
+            const rd = orm.em.create(
+                AgentRedemption,
+                {
+                    state: states[i % states.length],
+                    agentAddress: agentBot.agent.vaultAddress,
+                    requestId: toBN(i),
+                    paymentAddress: "payment_address_" + i,
+                    valueUBA: toBN(1000 + i),
+                    feeUBA: toBN(100 + i),
+                    paymentReference: "reefrence_" + i,
+                    lastUnderlyingBlock: toBN(100),
+                    lastUnderlyingTimestamp: toBN(100),
+                } as RequiredEntityData<AgentRedemption>,
+                { persist: true }
+            );
+            if (rd.state === AgentRedemptionState.STARTED) countStarted++;
+        }
+        await orm.em.flush();
+        orm.em.clear();
+        // check
+        const M = 5;
+        agentBot.redemption.handleMaxNonPriorityRedemptions = M;
+        const redemptions = await agentBot.redemption.openRedemptions(orm.em, true);
+        // console.log(redemptions);
+        assert.equal(redemptions.length, countStarted + M);
     });
 });

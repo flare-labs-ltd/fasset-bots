@@ -28,6 +28,8 @@ export class AgentBotRedemption {
 
     context = this.agent.context;
 
+    handleMaxNonPriorityRedemptions = 100;
+
     /**
      * Stores received redemption request as redemption in persistent state.
      * @param em entity manager
@@ -79,17 +81,40 @@ export class AgentBotRedemption {
 
     /**
      * Returns minting with state other than DONE.
+     * If there are too many redemptions, prioritize those in state STARTED.
      * @param em entity manager
      * @param onlyIds if true, only AgentRedemption's entity ids are return
      * * @return list of AgentRedemption's instances
      */
     async openRedemptions(em: EM, onlyIds: boolean): Promise<AgentRedemption[]> {
         let query = em.createQueryBuilder(AgentRedemption);
-        if (onlyIds) query = query.select("id");
-        return await query
+        if (onlyIds) query = query.select(["id", "state"]);
+        const list = await query
             .where({ agentAddress: this.agent.vaultAddress })
             .andWhere({ $not: { state: AgentRedemptionState.DONE } })
             .getResultList();
+        const priorityDict = this.orderPriorityDict();
+        const getPriority = (rd: AgentRedemption) => priorityDict[rd.state] ?? 1000;
+        list.sort((a, b) => getPriority(a) - getPriority(b));
+        // return all in state started plus handleMaxNonPriorityRedemptions at most
+        let count = 0;
+        while (count < list.length && list[count].state === AgentRedemptionState.STARTED) count++;
+        return list.slice(0, count + this.handleMaxNonPriorityRedemptions);
+    }
+
+    orderPriorityDict() {
+        const priorities = [
+            AgentRedemptionState.STARTED,
+            AgentRedemptionState.REQUESTED_REJECTION_PROOF,
+            AgentRedemptionState.PAID,
+            AgentRedemptionState.REQUESTED_PROOF,
+            // the others will get very low priority
+        ];
+        const result: Record<string, number> = {};
+        for (let i = 0; i < priorities.length; i++) {
+            result[priorities[i]] = i;
+        }
+        return result;
     }
 
     /**
@@ -102,12 +127,7 @@ export class AgentBotRedemption {
             .transactional(async (em) => {
                 const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
                 logger.info(`Agent ${this.agent.vaultAddress} is handling open redemption ${redemption.requestId} in state ${redemption.state}.`);
-                const expirationProof = await this.redemptionExpirationProof(redemption);
-                if (typeof expirationProof === "object") {
-                    await this.handleExpiredRedemption(redemption, expirationProof);
-                } else {
-                    await this.handleOpenRedemption(redemption);
-                }
+                await this.handleOpenRedemption(redemption);
                 await em.persistAndFlush(redemption);
             })
             .catch((error) => {
@@ -121,6 +141,15 @@ export class AgentBotRedemption {
     }
 
     async handleOpenRedemption(redemption: AgentRedemption) {
+        // speedup - never need to expire redemption in state STARTED
+        if (redemption.state !== AgentRedemptionState.STARTED) {
+            const expirationProof = await this.redemptionExpirationProof(redemption);
+            if (typeof expirationProof === "object") {
+                await this.handleExpiredRedemption(redemption, expirationProof);
+                return;
+            }
+        }
+        // redemption hasn't expired yet
         switch (redemption.state) {
             case AgentRedemptionState.STARTED:
                 await this.checkBeforeRedemptionPayment(redemption);
@@ -128,6 +157,9 @@ export class AgentBotRedemption {
             case AgentRedemptionState.PAYING:
                 // payment failed, do nothing for now
                 // later we could check the state on chain / in mempool and if there is nothing, retry
+                break;
+            case AgentRedemptionState.UNPAID:
+                // bot didn't manage to pay in time - do nothing and it will be expired after 24h
                 break;
             case AgentRedemptionState.PAID:
                 await this.checkPaymentProofAvailable(redemption);
@@ -175,6 +207,7 @@ export class AgentBotRedemption {
                 Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock}
                 with timestamp ${redemption.lastUnderlyingTimestamp}. Current block is ${lastBlock.number}
                 with timestamp ${lastBlock.timestamp}.`);
+            redemption.state = AgentRedemptionState.UNPAID;
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in checkBeforeRedemptionPayment for ${redemption.requestId}.`);
         }

@@ -41,7 +41,6 @@ export class AgentBotRunner {
             while (!this.stopLoop()) {
                 await this.runStep();
                 if (this.stopLoop()) break;
-                await sleep(this.loopDelay);
             }
         } finally {
             this.running = false;
