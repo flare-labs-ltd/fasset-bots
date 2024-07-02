@@ -742,9 +742,13 @@ export class AgentBot {
     }
 
     async handleAgentPing(query: BNish) {
-        if (Number(query) === 0) {
-            const data = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
-            await this.agent.agentPingResponse(query, data);
+        try {
+            if (Number(query) === 0) {
+                const data = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
+                await this.agent.agentPingResponse(query, data);
+            }
+        } catch (error) {
+            logger.error(`Error responding to ping for agent ${this.agent.vaultAddress}`, error);
         }
     }
 
