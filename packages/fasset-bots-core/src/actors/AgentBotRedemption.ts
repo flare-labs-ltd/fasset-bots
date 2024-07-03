@@ -28,7 +28,7 @@ export class AgentBotRedemption {
 
     context = this.agent.context;
 
-    handleMaxNonPriorityRedemptions = 100;
+    handleMaxNonPriorityRedemptions = 50;
 
     /**
      * Stores received redemption request as redemption in persistent state.
