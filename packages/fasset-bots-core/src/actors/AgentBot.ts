@@ -286,19 +286,16 @@ export class AgentBot {
             await this.redemption.redemptionStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionDefault")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer);
+            await this.redemption.redemptionDefault(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId);
-            await this.notifier.sendRedemptionWasPerformed(event.args.requestId, event.args.redeemer);
+            await this.redemption.redemptionPerformed(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId);
-            await this.notifier.sendRedemptionFailed(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
+            await this.redemption.redemptionPaymentFailed(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId);
-            await this.notifier.sendRedemptionBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
+            await this.redemption.redemptionPaymentBlocked(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
             await this.handleAgentDestroyed(em);

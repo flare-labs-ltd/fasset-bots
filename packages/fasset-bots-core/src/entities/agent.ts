@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
-import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
+import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -220,6 +220,12 @@ export class AgentRedemption {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    @Property({ nullable: true })
+    defaulted?: boolean;
+
+    @Property({ nullable: true })
+    finalState?: AgentRedemptionFinalState;
 }
 
 @Entity()

@@ -1,7 +1,7 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
+import { RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { AgentRedemption } from "../entities/agent";
 import { Agent } from "../fasset/Agent";
@@ -15,7 +15,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
-import { AgentRedemptionState } from "../entities/common";
+import { AgentRedemptionFinalState, AgentRedemptionState } from "../entities/common";
 
 export class AgentBotRedemption {
     static deepCopyWithObjectCreate = true;
@@ -53,6 +53,33 @@ export class AgentBotRedemption {
         );
         await this.notifier.sendRedemptionStarted(request.requestId);
         logger.info(`Agent ${this.agent.vaultAddress} started redemption ${request.requestId}.`);
+    }
+
+    async redemptionPerformed(em: EM, args: EventArgs<RedemptionPerformed>) {
+        const redemption = await this.findRedemption(em, args.requestId);
+        redemption.finalState = AgentRedemptionFinalState.PERFORMED;
+        await this.redemptionFinished(em, args.requestId);
+        await this.notifier.sendRedemptionWasPerformed(args.requestId, args.redeemer);
+    }
+
+    async redemptionPaymentFailed(em: EM, args: EventArgs<RedemptionPaymentFailed>) {
+        const redemption = await this.findRedemption(em, args.requestId);
+        redemption.finalState = AgentRedemptionFinalState.FAILED;
+        await this.redemptionFinished(em, args.requestId);
+        await this.notifier.sendRedemptionFailed(args.requestId.toString(), args.transactionHash, args.redeemer, args.failureReason);
+    }
+
+    async redemptionPaymentBlocked(em: EM, args: EventArgs<RedemptionPaymentBlocked>) {
+        const redemption = await this.findRedemption(em, args.requestId);
+        redemption.finalState = AgentRedemptionFinalState.BLOCKED;
+        await this.redemptionFinished(em, args.requestId);
+        await this.notifier.sendRedemptionBlocked(args.requestId.toString(), args.transactionHash, args.redeemer);
+    }
+
+    async redemptionDefault(em: EM, args: EventArgs<RedemptionDefault>) {
+        const redemption = await this.findRedemption(em, args.requestId);
+        redemption.defaulted = true;
+        await this.notifier.sendRedemptionDefaulted(args.requestId.toString(), args.redeemer);
     }
 
     /**
@@ -173,6 +200,7 @@ export class AgentBotRedemption {
         // corner case - agent did not pay
         await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
         rd.state = AgentRedemptionState.DONE;
+        rd.finalState = AgentRedemptionFinalState.EXPIRED;
         await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
         logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
     }
@@ -270,6 +298,7 @@ export class AgentBotRedemption {
                     ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
                 await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
                 redemption.state = AgentRedemptionState.DONE;
+                redemption.finalState = AgentRedemptionFinalState.REJECTED;
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} rejected redemption ${redemption.requestId}
                     with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
             } else {
