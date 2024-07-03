@@ -17,7 +17,8 @@ import {
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletInterface, RippleWalletConfig, XRPFeeParams } from "../interfaces/WriteWalletInterface";
 import BN from "bn.js";
-import { ORM } from "../config/orm";
+import { ORM, createTransactionEntity, fetchTransactionEntity, getReplacedTransactionHash, updateTransactionEntity } from "../orm/orm";
+import { TransactionStatus } from "../entity/transaction";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
@@ -264,6 +265,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops ? maxFeeInDrops : null });
          const tx_blob = await this.signTransaction(transaction, privateKey);
          const submitResp = await this.submitTransaction(tx_blob);
+         // save tx in db
+         await createTransactionEntity(this.orm, source, destination, submitResp.txId);
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
          return await this.waitForTransaction(submitResp.txId, submitResp.result!, source, privateKey);
       } finally {
@@ -291,6 +294,14 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       sequence?: number
    ): Promise<ISubmitTransactionResponse> {
       return await this.executeLockedSignedTransactionAndWait(source, privateKey, destination, null, feeInDrops, note, maxFeeInDrops, sequence);
+   }
+
+   /**
+    * @param {string} transactionHash
+    * @returns {string} - transactionHash or replaced transactionHash
+    */
+   async getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
+      return getReplacedTransactionHash(this.orm, transactionHash);
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////
@@ -418,10 +429,16 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          if (txResp.data.result.error === "txnNotFound") {
             return await this.tryToResubmitTransaction(txHash, submissionResult, source, privateKey, retry);
          }
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_FAILED;
+         });
          throw new Error(`waitForTransaction: ` + txResp.data.result.error + ` Submission result: ${submissionResult}.`);
       }
-      if (txResp.data.result.validated) {
-         // Transaction completed
+      if (txResp.data.result.validated) { // Transaction completed
+         // update tx in db
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+         });
          return { txId: txResp.data.result.hash };
       }
       return await this.tryToResubmitTransaction(txHash, submissionResult, source, privateKey, retry);
@@ -479,7 +496,13 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             this.addressLocks.set(source, { tx: newTransaction, maxFee: res.maxFee });
             const blob = await this.signTransaction(newTransaction, privateKey);
             const submit = await this.submitTransaction(blob);
-            // TODO store replacement
+            // store new tx and mark replacement
+            await createTransactionEntity(this.orm, transaction.Account, transaction.Destination, submit.txId);
+            const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
+            await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+               txEnt.replaced_by = newTxEnt;
+               txEnt.status = TransactionStatus.TX_REPLACED;
+            });
             retry++;
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             return this.waitForTransaction(submit.txId, submit.result!, source, privateKey, retry);
@@ -500,4 +523,5 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    private roundUpXrpToDrops(amount: number): number {
       return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
    }
+
 }

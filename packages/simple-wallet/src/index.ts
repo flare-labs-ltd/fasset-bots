@@ -4,7 +4,7 @@ import { DogeWalletImplementation } from "./chain-clients/DogeWalletImplementati
 import { LtcWalletImplementation } from "./chain-clients/LtcWalletImplementation";
 import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation";
 import type { AlgoWalletConfig, BitcoinWalletConfig, DogecoinWalletConfig, LitecoinWalletConfig, RippleWalletConfig } from "./interfaces/WriteWalletInterface";
-import { initializeMikroORM } from "./config/mikro-orm.config";
+import { initializeMikroORM } from "./orm/mikro-orm.config";
 
 export type { WalletClient, WalletCreate } from "./types";
 export type { StuckTransaction } from "./interfaces/WriteWalletInterface";

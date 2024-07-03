@@ -7,7 +7,7 @@ import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, ALGO_LEDGER_CLOSE_TIME_MS } from
 import type { ICreateWalletResponse, ISubmitTransactionResponse, WriteWalletInterface } from "../interfaces/WriteWalletInterface";
 import type { AlgoWalletConfig } from "../interfaces/WriteWalletInterface";
 import BN from "bn.js";
-import { ORM } from "../config/orm";
+import { ORM } from "../orm/orm";
 
 function algoResponseValidator(responseCode: number) {
    // allow any response, process them later in mcc
@@ -148,6 +148,10 @@ export class AlgoWalletImplementation implements WriteWalletInterface {
       const res = await this.algodClient.post("/v2/transactions", signedTxArr);
       algo_ensure_data(res);
       return res.data;
+   }
+
+   getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
+      throw new Error("Method not implemented.");
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////

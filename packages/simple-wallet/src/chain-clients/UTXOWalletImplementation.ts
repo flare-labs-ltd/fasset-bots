@@ -29,7 +29,7 @@ const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
-import { ORM } from "../config/orm";
+import { ORM } from "../orm/orm";
 
 export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    inTestnet: boolean;
@@ -242,6 +242,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       maxFeeInSatoshi?: BN
    ): Promise<ISubmitTransactionResponse> {
       return await this.executeLockedSignedTransactionAndWait(source, privateKey, destination, null, feeInSatoshi, note, maxFeeInSatoshi);
+   }
+
+   getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
+      throw new Error("Method not implemented.");
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////

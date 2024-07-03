@@ -1,13 +1,10 @@
 import { Entity, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
-import { ADDRESS_LENGTH, BYTES32_LENGTH, ChainType } from "../utils/constants";
+import { ADDRESS_LENGTH, BYTES32_LENGTH } from "../utils/constants";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
     @PrimaryKey({ autoincrement: true })
     id!: number;
-
-    @Property()
-    chain!: keyof typeof ChainType;
 
     @Property({ length: ADDRESS_LENGTH })//TODO
     source!: string;
@@ -33,5 +30,4 @@ export enum TransactionStatus {
     TX_SENT = -1,
     TX_SUCCESS = 0,
     TX_FAILED = 1,
-    TX_BLOCKED = 2,
 }

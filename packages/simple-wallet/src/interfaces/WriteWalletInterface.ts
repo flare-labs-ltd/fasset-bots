@@ -41,6 +41,8 @@ export interface WriteWalletInterface {
       maxFee?: BN,
       sequence?: number
    ): Promise<any>;
+
+   getReplacedOrTransactionHash(transactionHash: string): Promise<string>;
 }
 
 export interface ICreateWalletResponse {
