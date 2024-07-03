@@ -210,13 +210,14 @@ export async function createCRAndPerformMinting(minter: Minter, vaultAddress: st
     return await minter.executeMinting(crt, txHash0);
 }
 
-export async function createCRAndPerformMintingAndRunSteps(minter: Minter, agentBot: AgentBot, lots: number, orm: ORM, chain: MockChain): Promise<void> {
+export async function createCRAndPerformMintingAndRunSteps(minter: Minter, agentBot: AgentBot, lots: number, orm: ORM, chain: MockChain) {
     const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
     await agentBot.runStep(orm.em);
     const txHash0 = await minter.performMintingPayment(crt);
     chain.mine(chain.finalizationBlocks + 1);
-    await minter.executeMinting(crt, txHash0);
+    const result = await minter.executeMinting(crt, txHash0);
     await agentBot.runStep(orm.em);
+    return result;
 }
 
 export async function getAgentStatus(agentBot: AgentBot): Promise<number> {

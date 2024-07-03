@@ -26,6 +26,7 @@ import { Test1FacetContract } from "./Test1Facet";
 import { Test2FacetContract } from "./Test2Facet";
 import { AgentCollateralFacetContract } from "./AgentCollateralFacet";
 import { AgentInfoFacetContract } from "./AgentInfoFacet";
+import { AgentPingFacetContract } from "./AgentPingFacet";
 import { AgentSettingsFacetContract } from "./AgentSettingsFacet";
 import { AgentVaultAndPoolSupportFacetContract } from "./AgentVaultAndPoolSupportFacet";
 import { AgentVaultManagementFacetContract } from "./AgentVaultManagementFacet";
@@ -95,6 +96,7 @@ import { SCProofVerifierContract } from "./SCProofVerifier";
 import { ISCProofVerifierContract } from "./ISCProofVerifier";
 import { StateConnectorMockContract } from "./StateConnectorMock";
 import { IAgentOwnerRegistryContract } from "./IAgentOwnerRegistry";
+import { IAgentPingContract } from "./IAgentPing";
 import { IAgentVaultContract } from "./IAgentVault";
 import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
@@ -174,6 +176,7 @@ export type * from "./types";
       require(name: "Test2Facet"): Test2FacetContract;
       require(name: "AgentCollateralFacet"): AgentCollateralFacetContract;
       require(name: "AgentInfoFacet"): AgentInfoFacetContract;
+      require(name: "AgentPingFacet"): AgentPingFacetContract;
       require(name: "AgentSettingsFacet"): AgentSettingsFacetContract;
       require(
         name: "AgentVaultAndPoolSupportFacet"
@@ -265,6 +268,7 @@ export type * from "./types";
       require(name: "ISCProofVerifier"): ISCProofVerifierContract;
       require(name: "StateConnectorMock"): StateConnectorMockContract;
       require(name: "IAgentOwnerRegistry"): IAgentOwnerRegistryContract;
+      require(name: "IAgentPing"): IAgentPingContract;
       require(name: "IAgentVault"): IAgentVaultContract;
       require(name: "IAssetManager"): IAssetManagerContract;
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
@@ -367,6 +371,10 @@ export {
   AgentInfoFacetContract,
   AgentInfoFacetInstance,
 } from "./AgentInfoFacet";
+export {
+  AgentPingFacetContract,
+  AgentPingFacetInstance,
+} from "./AgentPingFacet";
 export {
   AgentSettingsFacetContract,
   AgentSettingsFacetInstance,
@@ -586,6 +594,7 @@ export {
   IAgentOwnerRegistryContract,
   IAgentOwnerRegistryInstance,
 } from "./IAgentOwnerRegistry";
+export { IAgentPingContract, IAgentPingInstance } from "./IAgentPing";
 export { IAgentVaultContract, IAgentVaultInstance } from "./IAgentVault";
 export { IAssetManagerContract, IAssetManagerInstance } from "./IAssetManager";
 export {

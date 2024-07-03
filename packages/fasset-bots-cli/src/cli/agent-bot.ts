@@ -9,6 +9,7 @@ import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 import { validateDecimal, validateInteger } from "../utils/validation";
+import BN from "bn.js";
 
 const program = programWithCommonOptions("agent", "single_fasset");
 
@@ -209,13 +210,20 @@ program
     .command("withdrawPoolFees")
     .description("withdraw pool fees from pool to owner's address")
     .argument("<agentVaultAddress>")
-    .argument("<amount>")
-    .action(async (agentVault: string, amount: string) => {
+    .argument("[amount]", "amount of fassets, default is withdraw all fees")
+    .action(async (agentVault: string, amount?: string) => {
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const currency = await Currencies.fasset(cli.context);
-        await cli.withdrawPoolFees(agentVault, currency.parse(amount));
+        let amountUBA: BN;
+        if (amount) {
+            const currency = await Currencies.fasset(cli.context);
+            amountUBA = currency.parse(amount);
+        } else {
+            const { agentBot } = await cli.getAgentBot(agentVault);
+            amountUBA = await agentBot.agent.poolFeeBalance();
+        }
+        await cli.withdrawPoolFees(agentVault, amountUBA);
     });
 
 program
@@ -230,7 +238,7 @@ program
 
 program
     .command("selfClose")
-    .description("self close agent vault with amountUBA of FAssets")
+    .description("self close agent vault with amount of FAssets")
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {

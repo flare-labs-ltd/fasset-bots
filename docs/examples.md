@@ -244,18 +244,18 @@ ADDRESS                                     MAX_LOTS     FEE
 
 ## How to list agent info?
 
-1. List detail agent info for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_.
+1. List detail agent info for agent _0xC095bDa1A8151926C18965C4bC161579474c6003_.
 
 ### User command
 
 ```console
-$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FTestXRP
+$ yarn agent-bot info 0xC095bDa1A8151926C18965C4bC161579474c6003 -f FTestXRP
 ```
 
 ### Agent command
 
 ```console
-$ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FTestXRP
+$ yarn agent-bot info 0xC095bDa1A8151926C18965C4bC161579474c6003 -f FTestXRP
 ```
 
 ### Result
@@ -263,44 +263,49 @@ $ yarn user-bot info 0x5bc0886D3117507C779BD8c6240eb1C396385223 -f FTestXRP
 ```console
 Initializing environment...
 Environment successfully initialized.
-status: NORMAL
-ownerManagementAddress: 0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073
-ownerWorkAddress: 0x0000000000000000000000000000000000000000
-collateralPool: 0x280b8D365082ecEE206F8ac91f8f648a7cAEf2eD
-underlyingAddressString: rNKzFmzr4D5gjrKaHwPn4efJwq8GuHfx3Q
-publiclyAvailable: true
-fee: 10.00%
-poolFeeShare: 41.00%
-vaultCollateralToken: 0xC06496FA0551bf4996fb5Df876cBcC6F1d836460
-mintingVaultCollateralRatio: 1.680
-mintingPoolCollateralRatio: 2.400
-freeCollateralLots: 1
-totalVaultCollateral: 50000.00 USDC
-freeVaultCollateral: 50000.00 USDC
-vaultCollateralRatio: 1000000.000
-totalPoolCollateral: 4500.00 NAT
-freePoolCollateral: 4500.00 NAT
-poolCollateralRatio: 1000000.000
-totalAgentPoolTokens: 4500.00 POOLTOK
-announcedVaultCollateralWithdrawal: 0.00 USDC
-announcedPoolTokensWithdrawal: 0.00 POOLTOK
-freeAgentPoolTokens: 4500.00 POOLTOK
-minted: 0.00 FTestXRP  (0.00 lots)
-reserved: 0.00 FTestXRP  (0.00 lots)
-redeeming: 0.00 FTestXRP  (0.00 lots)
-poolRedeeming: 0.00 FTestXRP  (0.00 lots)
-dust: 0.00 FTestXRP  (0.00 lots)
-ccbStartTimestamp: 0
-liquidationStartTimestamp: 0
-maxLiquidationAmount: 0.00 FTestXRP  (0.00 lots)
-liquidationPaymentFactorVault: 0.00%
-liquidationPaymentFactorPool: 0.00%
-underlyingBalance: 0.00 FTestXRP  (0.00 lots)
-requiredUnderlyingBalance: 0.00 FTestXRP  (0.00 lots)
-freeUnderlyingBalance: 0.00 FTestXRP  (0.00 lots)
-announcedUnderlyingWithdrawalId: 0
-buyFAssetByAgentFactor: 90.00%
-poolExitCollateralRatio: 2.600
-poolTopupCollateralRatio: 2.200
-poolTopupTokenPriceFactor: 80.00%
+Tokens:
+    Native token: CFLR
+    Wrapped native token: WCFLR
+    FAsset token: FTestXRP
+    Underlying token: testXRP
+    Vault collateral token: testETH
+    Collateral pool token: FCPT-TXRP-FLARE-SPACE-1A
+Network exchange rates:
+    CFLR/USD: 0.01167
+    testETH/USD: 3851.64333
+    testXRP/USD: 0.5262
+Agent mint and collateral:
+    Status: healthy
+    Public: true
+    Free lots: 3249
+    Minted: 40140.12 FTestXRP  (2007 lots)
+    Reserved: 0 FTestXRP  (0 lots)
+    Redeeming: 0 FTestXRP  (0 lots)
+    Vault CR: 7.8137  (minCR=1.4, mintingCR=1.6)
+    Pool CR: 6.2858  (minCR=2, mintingCR=2.4)
+    Free vault collateral: 34.074892429633956569 testETH  (7794 lots)
+    Free pool collateral: 7033153.082698383375798272 WCFLR  (3249 lots)
+Lots:
+    Lot size: 20 testXRP
+    Lot vault collateral: 0.004371744358790356 testETH
+    Lot pool collateral: 2164.318766066838046272 CFLR
+Agent address (vault): 0xC095bDa1A8151926C18965C4bC161579474c6003
+    Balance: 42.84900806191980645 testETH
+    Balance: 11376953.832107123735695416 FCPT-TXRP-FLARE-SPACE-1A
+Agent collateral pool: 0x60ab7E4f0dd60A0Fb9D888B7e9f9Dce49c3bAa95
+    Balance: 11376953.832107123735695416 WCFLR
+    Collected fees: 80.12 FTestXRP
+Agent vault underlying (testXRP) address: rn9FvYL9uVeTnWDWn2YN2uGeVUMXrWddvR
+    Actual balance: 40270.3 testXRP
+    Tracked balance: 40260.3 testXRP
+    Required balance: 40140.12 testXRP
+    Free balance: 120.18 testXRP
+Agent owner management address: 0x1D2047b54667e527d689a3319961e9B8FaE43462
+    Balance: 1702670.957594590745779559 CFLR
+    Balance: 0.008 testETH
+Agent owner work address: 0xD3Ebbadb9616Bb2D1723e1C0cfd556ed51C0f6f8
+    Balance: 957732.481165784290892971 CFLR  (442 lots)
+    Balance: 5.525958635115080942 testETH  (1264 lots)
+Agent owner underlying (testXRP) address: r3rep182VUoYCCNFqdCyNhbKzS3phQDwU
+    Balance: 489959.12441 testXRP
 ```

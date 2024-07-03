@@ -133,7 +133,7 @@ export class AgentBotCollateralManagement {
             }
 
             if (vaultCRBIPS.gte(minVaultCollateralRatio) && poolCRBIPS.gte(minPoolCollateralRatio)) {
-                await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.vaultAddress });
+                await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.owner.workAddress });
                 logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
             } else {
                 logger.info(`Agent ${this.agent.vaultAddress} could not end liquidation after price change.`);

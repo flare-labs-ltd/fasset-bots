@@ -21,7 +21,7 @@ echo "***** Building fasset... ****************************************"
 cd ${fassetsdir}
 yarn
 yarn clean
-yarn compile
+yarn hardhat compile && yarn typechain-prepare && yarn typechain-truffle-v5
 
 echo "***** Building liquidator... ****************************************"
 cd ${liquidatordir}
@@ -33,6 +33,8 @@ echo "***** Copying artifacts... **************************************"
 # copy fasset artifacts
 cd ${fassetsdir}/artifacts
 find -name '*.json' -not -name '*.dbg.json' -not -path './build-info/*' -not -path './cache/*' -not -path './flattened/*' | xargs cp -t ${projdir}/artifacts --parents
+cd ${fassetsdir}
+yarn typechain-after
 
 # copy liquidator artifacts
 cd ${liquidatordir}/artifacts
@@ -59,7 +61,7 @@ bash scripts/rename-and-update-artifacts.sh
 echo "***** Copying config... *****************************************"
 cd ${fassetsdir}/deployment/deploys
 cp -R . ${projdir}/fasset-deployment
-rm -f ${projdir}/fasset-deployment/hardhat.*
+rm -f ${projdir}/fasset-deployment/hardhat*
 
 # copy deploy configs
 cd ${fassetsdir}/deployment/config

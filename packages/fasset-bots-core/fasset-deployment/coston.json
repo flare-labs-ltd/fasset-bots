@@ -242,12 +242,12 @@
   {
     "name": "CollateralPoolFactory",
     "contractName": "CollateralPoolFactory.sol",
-    "address": "0x702D73fCB2AE3d3faf54c496F5a4499aA12DBe4D"
+    "address": "0x4d321c850FF60dc807307792b6ef01334cF864cc"
   },
   {
     "name": "CollateralPoolTokenFactory",
     "contractName": "CollateralPoolTokenFactory.sol",
-    "address": "0xe5C3B2085f219FfF6d22C5C0694d55e5519CaA53"
+    "address": "0xED5414f2b60a96a6be213371E5C42efEAC4213FA"
   },
   {
     "name": "AssetManagerController",
@@ -322,7 +322,7 @@
   {
     "name": "RedemptionDefaultsFacet",
     "contractName": "RedemptionDefaultsFacet.sol",
-    "address": "0x783812bfbD8D009A91E2F861c3daf105baf25FB9"
+    "address": "0xAb2d645431F61804CDF80A511294Ab0eb064e2b8"
   },
   {
     "name": "LiquidationFacet",
@@ -383,5 +383,10 @@
     "name": "SystemStateManagementFacet",
     "contractName": "SystemStateManagementFacet.sol",
     "address": "0x7F9918B5c7A7914748Ceb6174Ffc71bAC46E6346"
+  },
+  {
+    "name": "AgentPingFacet",
+    "contractName": "AgentPingFacet.sol",
+    "address": "0x70b1152f934Ddf108635b9d11f83466e693846e8"
   }
 ]

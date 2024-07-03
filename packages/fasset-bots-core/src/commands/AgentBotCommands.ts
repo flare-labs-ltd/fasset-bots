@@ -234,7 +234,10 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async enterAvailableList(agentVault: string): Promise<void> {
-        const { agentBot } = await this.getAgentBot(agentVault);
+        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
+        if (readAgentEnt.waitingForDestructionCleanUp || readAgentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
+            throw new CommandLineError("Agent is closing, cannot re-enter.");
+        }
         await agentBot.agent.makeAvailable();
         await this.notifierFor(agentVault).sendAgentEnteredAvailable();
         logger.info(`Agent ${agentVault} entered available list.`);
@@ -399,8 +402,9 @@ export class AgentBotCommands {
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
         await agentBot.updateSetting.createAgentUpdateSetting(this.orm.em, settingName, validAt, readAgentEnt);
-        logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
-        console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
+        const validAtStr = new Date(Number(validAt) * 1000).toString();
+        logger.info(`Agent ${agentVault} announced agent settings update for ${settingName}. It will take effect after ${validAtStr} (timestamp ${validAt}).`);
+        console.log(`Agent ${agentVault} announced agent settings update for ${settingName}. It will take effect after ${validAtStr}.`);
     }
 
     /**
