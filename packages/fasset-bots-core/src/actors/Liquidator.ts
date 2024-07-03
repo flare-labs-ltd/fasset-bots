@@ -89,9 +89,17 @@ export class Liquidator extends ActorBase {
             // sort by decreasing minted amount
             liquidatingAgents.sort((a, b) => -a.mintedUBA.cmp(b.mintedUBA));
             for (const agent of liquidatingAgents) {
-                if (agent.mintedUBA.eq(BN_ZERO)) continue;
+                if (agent.mintedUBA.eq(BN_ZERO)) {
+                    logger.info(`Liquidator ${this.address} tried to liquidate ${agent.vaultAddress} with zero minted amount.`);
+                    console.log(`Liquidator ${this.address} tried to liquidate ${agent.vaultAddress} with zero minted amount.`);
+                    continue;
+                }
                 const fbalance = await this.context.fAsset.balanceOf(this.address);
-                if (fbalance.eq(BN_ZERO)) break;
+                if (fbalance.eq(BN_ZERO)) {
+                    logger.info(`Liquidator ${this.address} has zero fAsset balance, cannot liquidate ${agent.vaultAddress}.`);
+                    console.log(`Liquidator ${this.address} has zero fAsset balance, cannot liquidate ${agent.vaultAddress}.`);
+                    break;
+                }
                 await this.liquidateAgent(agent);
             }
         }
