@@ -6,6 +6,7 @@ export interface AgentRegistrationSubmission {
     agent_name: string;
     description: string;
     icon_url: string;
+    user_address?: string;
 }
 
 export class AgentRegistrationTransport extends ApiNotifierTransport {

@@ -14,6 +14,7 @@ import type { OptionValues } from "commander";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
+const UserWhitelist = artifacts.require("Whitelist")
 const AssetManagerController = artifacts.require("AssetManagerController");
 
 const program = programWithCommonOptions("util", "all_fassets");
@@ -118,6 +119,13 @@ async function whitelistAndDescribeAgent(secretsFile: string, configFileName: st
     await agentOwnerRegistry.whitelistAndDescribeAgent(managementAddress, name, description, iconUrl, { from: deployerAddress });
 }
 
+async function whitelistUser(secretsFile: string, configFileName: string, address: string) {
+    const [secrets, config] = await initEnvironment(secretsFile, configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const deployerAddress = secrets.required("deployer.address");
+    const agentOwnerRegistry = await UserWhitelist.at(contracts["UserWhitelist"]!.address);
+    await agentOwnerRegistry.addAddressToWhitelist(address, { from: deployerAddress });
+}
 async function isAgentWhitelisted(secretsFile: string, configFileName: string, ownerAddress: string): Promise<boolean> {
     const [_secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
@@ -191,6 +199,7 @@ async function finalizeAgentClosedBetaRegistration(secrets: string, config: stri
     for (const agent of unfinalizedAgents) {
         try {
             await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
+            await whitelistUser(secrets, config, agent.user_address!);
             await registrationApi.finalizeRegistration(agent.management_address);
             console.log(`Agent ${agent.agent_name} closed-beta registration finalized`);
         } catch (e) {
