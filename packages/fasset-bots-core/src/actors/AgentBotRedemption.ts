@@ -93,8 +93,7 @@ export class AgentBotRedemption {
             .where({ agentAddress: this.agent.vaultAddress })
             .andWhere({ $not: { state: AgentRedemptionState.DONE } })
             .getResultList();
-        const priorityDict = this.orderPriorityDict();
-        const getPriority = (rd: AgentRedemption) => priorityDict[rd.state] ?? 1000;
+        const getPriority = (rd: AgentRedemption) => this.handlingPriorityDict[rd.state] ?? 1000;
         list.sort((a, b) => getPriority(a) - getPriority(b));
         // return all in state started plus handleMaxNonPriorityRedemptions at most
         let count = 0;
@@ -102,19 +101,11 @@ export class AgentBotRedemption {
         return list.slice(0, count + this.handleMaxNonPriorityRedemptions);
     }
 
-    orderPriorityDict() {
-        const priorities = [
-            AgentRedemptionState.STARTED,
-            AgentRedemptionState.REQUESTED_REJECTION_PROOF,
-            AgentRedemptionState.PAID,
-            AgentRedemptionState.REQUESTED_PROOF,
-            // the others will get very low priority
-        ];
-        const result: Record<string, number> = {};
-        for (let i = 0; i < priorities.length; i++) {
-            result[priorities[i]] = i;
-        }
-        return result;
+    handlingPriorityDict: Partial<Record<AgentRedemptionState, number>> = {
+        [AgentRedemptionState.STARTED]: 0,
+        [AgentRedemptionState.REQUESTED_REJECTION_PROOF]: 1,
+        [AgentRedemptionState.PAID]: 2,
+        [AgentRedemptionState.REQUESTED_PROOF]: 2,
     }
 
     /**
