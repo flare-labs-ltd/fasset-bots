@@ -234,7 +234,10 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async enterAvailableList(agentVault: string): Promise<void> {
-        const { agentBot } = await this.getAgentBot(agentVault);
+        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
+        if (readAgentEnt.waitingForDestructionCleanUp || readAgentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
+            throw new CommandLineError("Agent is closing, cannot re-enter.");
+        }
         await agentBot.agent.makeAvailable();
         await this.notifierFor(agentVault).sendAgentEnteredAvailable();
         logger.info(`Agent ${agentVault} entered available list.`);

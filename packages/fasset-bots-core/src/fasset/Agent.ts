@@ -401,4 +401,8 @@ export class Agent {
             return;
         }
     }
+
+    async agentPingResponse(query: BNish, response: string) {
+        await this.assetManager.agentPingResponse(this.vaultAddress, query, response, { from: this.owner.workAddress });
+    }
 }

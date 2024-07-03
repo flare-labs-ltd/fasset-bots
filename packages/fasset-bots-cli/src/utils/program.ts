@@ -1,5 +1,5 @@
 import { loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { resolveFromPackageRoot, resolveInFassetBotsCore, stripIndent } from "@flarelabs/fasset-bots-core/utils";
+import { programVersion, resolveInFassetBotsCore, stripIndent } from "@flarelabs/fasset-bots-core/utils";
 import { Command } from "commander";
 import fs from "fs";
 import os from "os";
@@ -102,18 +102,6 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
         return resolveInFassetBotsCore(`run-config/${config}.json`);
     }
     return config;
-}
-
-let _programVersion: string | undefined;
-
-export function programVersion() {
-    if (_programVersion == undefined) {
-        const mainFileDir = require.main?.filename ? path.dirname(require.main?.filename) : __dirname;
-        const packageFile = resolveFromPackageRoot(mainFileDir, "package.json");
-        const packageJson = JSON.parse(fs.readFileSync(packageFile).toString()) as { version?: string };
-        _programVersion = packageJson.version ?? "---";
-    }
-    return _programVersion;
 }
 
 function defaultSecretsPath() {

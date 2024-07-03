@@ -3,26 +3,30 @@ import { expectRevert, time } from "@openzeppelin/test-helpers";
 import BN from "bn.js";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
+import { BlockNumber } from "web3-core";
 import { AgentBot } from "../../src/actors/AgentBot";
 import { ORM } from "../../src/config/orm";
 import { AgentEntity, AgentMinting } from "../../src/entities/agent";
-import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../../src/fasset/AssetManagerTypes";
+import { AgentMintingState, AgentRedemptionState } from "../../src/entities/common";
+import { AgentStatus, AssetManagerSettings } from "../../src/fasset/AssetManagerTypes";
+import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
+import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { Redeemer } from "../../src/mock/Redeemer";
+import { programVersion } from "../../src/utils";
+import { Web3ContractEventDecoder } from "../../src/utils/events/Web3ContractEventDecoder";
+import { filterEventList } from "../../src/utils/events/truffle";
 import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../src/utils/fasset-helpers";
 import { BN_ZERO, MAX_BIPS, ZERO_ADDRESS, checkedCast, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
-import { AgentOwnerRegistryInstance } from "../../typechain-truffle";
+import { AgentOwnerRegistryInstance, Truffle } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
-import { AgentMintingState, AgentRedemptionState } from "../../src/entities/common";
-import { PaymentReference } from "../../src/fasset/PaymentReference";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -426,11 +430,11 @@ describe("Agent bot tests", () => {
         // agentBot stores redemption
         await agentBot.runStep(orm.em);
         const redemptionStarted = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionStarted.state, AgentRedemptionState.STARTED);
+        assert.equal(redemptionStarted.state, AgentRedemptionState.UNPAID);
         // agentBot doesn't pay for redemption - expired on underlying
         await agentBot.runStep(orm.em);
         const redemptionNotPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionNotPaid.state, AgentRedemptionState.STARTED);
+        assert.equal(redemptionNotPaid.state, AgentRedemptionState.UNPAID);
     });
 
     it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {
@@ -455,7 +459,12 @@ describe("Agent bot tests", () => {
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // get time proof
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
-        // run step
+        // first step wil set state to UNPAID
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const redemptionUnpaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        assert.equal(redemptionUnpaid.state, AgentRedemptionState.UNPAID);
+        // second step should expire
         await agentBot.runStep(orm.em);
         // check redemption
         orm.em.clear();
@@ -949,5 +958,23 @@ describe("Agent bot tests", () => {
             console.log(`Agent step ${i}, active = ${agentEnt.active}`);
             if (agentEnt.active === false) break;
         }
+    });
+
+    async function readEventsFrom(contract: Truffle.ContractInstance, fromBlock: BlockNumber) {
+        const toBlock = await web3.eth.getBlockNumber();
+        const eventDecoder = new Web3ContractEventDecoder({ contract });
+        const rawEvents = await web3.eth.getPastLogs({ address: contract.address, fromBlock, toBlock });
+        return eventDecoder.decodeEvents(rawEvents);
+    }
+
+    it("Should respond to agent ping", async () => {
+        const fromBlock = await web3.eth.getBlockNumber();
+        await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0);
+        await agentBot.runStep(orm.em);
+        const allEvents = await readEventsFrom(context.assetManager, fromBlock);
+        const events = filterEventList(allEvents, context.assetManager, "AgentPingResponse");
+        assert.equal(events.length, 1);
+        const response = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
+        assert.equal(events[0].args.response, response);
     });
 });

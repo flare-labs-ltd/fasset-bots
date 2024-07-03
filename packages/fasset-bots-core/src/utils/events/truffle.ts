@@ -1,5 +1,5 @@
 import { Truffle } from "../../../typechain-truffle";
-import { EventSelector, ExtractEvent, ExtractedEventArgs, BaseEvent } from "./common";
+import { EventSelector, ExtractEvent, ExtractedEventArgs, BaseEvent, EvmEvent } from "./common";
 
 // truffle typed event filtering
 
@@ -23,6 +23,10 @@ export function eventIs<C extends Truffle.ContractInstance, E extends EventSelec
 
 export function filterEvents<E extends EventSelector, N extends E["name"]>(response: Truffle.TransactionResponse<E>, name: N): TruffleExtractEvent<E, N>[] {
     return response.logs.filter((e) => e.event === name) as any;
+}
+
+export function filterEventList<C extends Truffle.ContractInstance, E extends EventSelector, N extends E["name"]>(list: EvmEvent[], source: ContractWithEvents<C, E>, eventName: N): TruffleExtractEvent<E, N>[] {
+    return list.filter((e) => eventIs(e, source, eventName)) as any;
 }
 
 export function findEvent<E extends EventSelector, N extends E["name"]>(response: Truffle.TransactionResponse<E>, name: N): TruffleExtractEvent<E, N> | undefined {
