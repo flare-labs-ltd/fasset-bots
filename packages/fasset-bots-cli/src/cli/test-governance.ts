@@ -50,7 +50,7 @@ program
     .argument("amount", "amount (token)")
     .action(async (symbol: string, address: string, amount: string) => {
         const options: { config: string; secrets: string } = program.opts();
-        await transferFakeTokens(options.secrets, options.config, symbol, address, amount);
+        await mintOrTransferFakeTokens(options.secrets, options.config, symbol, address, amount);
     });
 
 program
@@ -123,6 +123,24 @@ async function isAgentWhitelisted(secretsFile: string, configFileName: string, o
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
     return agentOwnerRegistry.isWhitelisted(ownerAddress);
+}
+
+async function mintOrTransferFakeTokens(secretsFile: string, configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
+    const [secrets, config] = await initEnvironment(secretsFile, configFileName);
+    validateDecimal(amount, "Invalid amount");
+    validateAddress(recipientAddress, `Invalid recipient address ${recipientAddress}`);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const deployerAddress = secrets.required("deployer.address");
+    const tokenAddres = requireNotNullCmd(contracts[tokenSymbol], `Invalid token symbol ${tokenSymbol}`).address;
+    const token = await FakeERC20.at(tokenAddres);
+    const decimals = Number(await token.decimals());
+    const amountBN = toBNExp(amount, decimals);
+    try {
+        await token.mintAmount(recipientAddress, amountBN, { from: deployerAddress });
+    } catch (error) {
+        console.log("Cannot mint, transfering from deployer address...");
+        await token.transfer(recipientAddress, amountBN, { from: deployerAddress });
+    }
 }
 
 async function transferFakeTokens(secretsFile: string, configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
