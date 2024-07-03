@@ -1,10 +1,10 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletRpcInterface";
+import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
+import { BTC_LTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 
 const DOGEMccConnectionTest = {
@@ -14,7 +14,7 @@ const DOGEMccConnectionTest = {
    inTestnet: true,
    stuckTransactionOptions: {
       blockOffset: 1
-   }
+   },
 };
 
 const fundedMnemonic = "once marine attract scorpion track summer choice hamster";
@@ -39,8 +39,8 @@ let wClient: WALLET.DOGE;
 let fundedWallet: ICreateWalletResponse;
 
 describe("Dogecoin wallet tests", () => {
-   before(() => {
-      wClient = new WALLET.DOGE(DOGEMccConnectionTest);
+   before(async () => {
+      wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
    });
 
    it("Should create account", async () => {
@@ -64,24 +64,21 @@ describe("Dogecoin wallet tests", () => {
       expect(typeof signed).to.equal("string");
    });
 
-   it("Should timeout on waiting for address to be unlocked", async () => {
+   it("Should create, sign and submit transaction", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, undefined, note);
+      const blob = await wClient.signTransaction(tr, fundedWallet.privateKey as string);
+      const submit = await wClient.submitTransaction(blob);
+      expect(typeof submit).to.equal("object");
+   });
+
+   // Lock is not used anymore in utxo
+   it.skip("Should timeout on waiting for address to be unlocked", async () => {
       void wClient.checkIfCanSubmitFromAddress(targetAddress);
       await expect(wClient.checkIfCanSubmitFromAddress(targetAddress))
          .to.eventually.be.rejectedWith(`Timeout waiting to obtain confirmed transaction from address ${targetAddress}`)
          .and.be.an.instanceOf(Error);
-   });
-
-   it("Should lock and execute multiple transactions from the same address", async () => {
-      const lowFee = toBNExp(0.04, DOGE_DECIMAL_PLACES);
-      const note = "50000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const balanceBefore = await wClient.getAccountBalance(targetAddress);
-      const balanceBefore1 = await wClient.getAccountBalance(fundedWallet.address);
-      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, lowFee, note);
-      const balanceAfter = await wClient.getAccountBalance(targetAddress);
-      const balanceAfter1 = await wClient.getAccountBalance(fundedWallet.address);
-      expect(balanceBefore.lt(balanceAfter)).to.be.true;
-      expect(balanceBefore1.gt(balanceAfter1)).to.be.true;
    });
 
    it("Should create transaction with custom fee", async () => {

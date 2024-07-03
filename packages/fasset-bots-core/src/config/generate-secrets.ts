@@ -5,7 +5,7 @@ import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError, requireNotNull } from "../utils";
 import { loadConfigFile } from "./config-file-loader";
 import { ChainAccount, SecretsFile } from "./config-files/SecretsFile";
-import { ICreateWalletResponse } from "../../../simple-wallet/src/interfaces/WriteWalletRpcInterface";
+import { ICreateWalletResponse } from "../../../simple-wallet/src/interfaces/WriteWalletInterface";
 
 export type SecretsUser = "user" | "agent" | "other";
 

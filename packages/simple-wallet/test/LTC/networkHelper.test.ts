@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { LTC_MAINNET, LTC_TESTNET } from "../../src/utils/constants";
+import { ChainType, LTC_MAINNET, LTC_TESTNET } from "../../src/utils/constants";
 import { getCurrentNetwork } from "../../src/utils/utils";
 
 describe("Litecoin network helper tests", () => {
@@ -10,7 +10,7 @@ describe("Litecoin network helper tests", () => {
          username: "",
          password: "",
       };
-      const wClient: WALLET.LTC = new WALLET.LTC(LTCMccConnectionMain);
+      const wClient: WALLET.LTC = await WALLET.LTC.initialize(LTCMccConnectionMain);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(LTC_MAINNET);
    });
@@ -22,7 +22,7 @@ describe("Litecoin network helper tests", () => {
          password: "",
          inTestnet: true,
       };
-      const wClient: WALLET.LTC = new WALLET.LTC(LTCMccConnectionTest);
+      const wClient: WALLET.LTC = await WALLET.LTC.initialize(LTCMccConnectionTest);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(LTC_TESTNET);
    });

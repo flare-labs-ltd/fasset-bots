@@ -20,8 +20,8 @@ import {
    UTXO_OUTPUT_SIZE,
    UTXO_OVERHEAD_SIZE,
 } from "../utils/constants";
-import type { BaseRpcConfig, UTXOFeeParams } from "../interfaces/WriteWalletRpcInterface";
-import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWalletRpcInterface } from "../interfaces/WriteWalletRpcInterface";
+import type { BaseWalletConfig, UTXOFeeParams } from "../interfaces/WriteWalletInterface";
+import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWalletInterface } from "../interfaces/WriteWalletInterface";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -29,9 +29,9 @@ const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
+import { ORM } from "../config/orm";
 
-
-export abstract class UTXOWalletImplementation implements WriteWalletRpcInterface {
+export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
    addressLocks = new Map<string, { tx: bitcore.Transaction | null; maxFee: BN | null }>();
@@ -39,8 +39,9 @@ export abstract class UTXOWalletImplementation implements WriteWalletRpcInterfac
    timeoutAddressLock: number;
    maxRetries: number;
    feeIncrease: number;
+   orm!: ORM;
 
-   constructor(public chainType: ChainType, createConfig: BaseRpcConfig) {
+   constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
       const createAxiosConfig: AxiosRequestConfig = {
          baseURL: createConfig.url,
@@ -216,17 +217,11 @@ export abstract class UTXOWalletImplementation implements WriteWalletRpcInterfac
       note?: string,
       maxFeeInSatoshi?: BN
    ): Promise<ISubmitTransactionResponse> {
-      await this.checkIfCanSubmitFromAddress(source);
-      try {
-         const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
-         this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInSatoshi ? maxFeeInSatoshi : null });
-         const tx_blob = await this.signTransaction(transaction, privateKey);
-         const submitResp = await this.submitTransaction(tx_blob);
-         const submittedBlockHeight = await this.getCurrentBlockHeight();
-         return await this.waitForTransaction(submitResp.txId, source, privateKey, submittedBlockHeight);
-      } finally {
-         this.addressLocks.delete(source);
-      }
+      const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
+      const tx_blob = await this.signTransaction(transaction, privateKey);
+      const submitResp = await this.submitTransaction(tx_blob);
+      const submittedBlockHeight = await this.getCurrentBlockHeight();
+      return await this.waitForTransaction(submitResp.txId, source, privateKey, submittedBlockHeight);
    }
 
    /**
@@ -253,7 +248,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletRpcInterfac
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
 
-   /**
+   /** NOT USED
     * Waits if previous transaction from address is still processing. If wait is too long it throws.
     * @param {string} address
     */
@@ -300,8 +295,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletRpcInterfac
       // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
       // utxo.mintHeight > -3 => excludeConflicting
       const allUTXOs =  (res.data as any[]).filter((utxo) => utxo.mintHeight > -3).sort((a, b) => a.value - b.value);
-      console.log("----------- allUTXOs -----------");
-      console.log(allUTXOs)
       if (amountInSatoshi == null) {
          return allUTXOs;
       }

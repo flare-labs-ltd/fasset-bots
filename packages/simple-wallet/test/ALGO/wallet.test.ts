@@ -1,14 +1,14 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletRpcInterface";
+import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import type { AlgoRpcConfig } from "../../src/interfaces/WriteWalletRpcInterface";
+import type { AlgoWalletConfig } from "../../src/interfaces/WriteWalletInterface";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 use(chaiAsPromised);
 
-const ALGOMccConnectionTest: AlgoRpcConfig = {
+const ALGOMccConnectionTest: AlgoWalletConfig = {
    url: process.env.ALGO_ALGOD_URL ?? "",
-   apiTokenKey: process.env.ALGO_ALGOD_TOKEN ?? ""
+   apiTokenKey: process.env.ALGO_ALGOD_TOKEN ?? "",
 };
 
 let wClient: WALLET.ALGO;
@@ -24,8 +24,8 @@ const feeInMicroALGO = toBN(1500);
 const maxFeeInMicroAlgo = toBN(1200);
 
 describe("Algo wallet tests", () => {
-   before(() => {
-      wClient = new WALLET.ALGO(ALGOMccConnectionTest);
+   before(async () => {
+      wClient = await WALLET.ALGO.initialize(ALGOMccConnectionTest);
    });
 
    it("Should create account", async () => {

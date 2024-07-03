@@ -3,7 +3,7 @@ import { toBN, unPrefix0x } from "../utils/helpers";
 import { IWalletKeys } from "./WalletKeys";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
-import { FeeParams } from "../../../simple-wallet/src/interfaces/WriteWalletRpcInterface";
+import { FeeParams } from "../../../simple-wallet/src/interfaces/WriteWalletInterface";
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(

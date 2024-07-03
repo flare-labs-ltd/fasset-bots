@@ -1,7 +1,7 @@
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 
-export interface WriteWalletRpcInterface {
+export interface WriteWalletInterface {
    chainType: ChainType;
 
    createWallet(): ICreateWalletResponse;
@@ -90,7 +90,9 @@ export interface StuckTransaction {
    lastResortFee?: number; // fee to use when all retries fail
 }
 
-export interface BaseRpcConfig {
+export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
+
+export interface BaseWalletConfig {
    url: string;
    inTestnet?: boolean;
    apiTokenKey?: string;
@@ -100,8 +102,8 @@ export interface BaseRpcConfig {
    stuckTransactionOptions?: StuckTransaction;
 }
 
-export type RippleRpcConfig = BaseRpcConfig;
-export type BitcoinRpcConfig = BaseRpcConfig;
-export type LitecoinRpcConfig = BaseRpcConfig;
-export type DogecoinRpcConfig = BaseRpcConfig;
-export type AlgoRpcConfig = BaseRpcConfig;
+export type RippleWalletConfig = BaseWalletConfig;
+export type BitcoinWalletConfig = BaseWalletConfig;
+export type LitecoinWalletConfig = BaseWalletConfig;
+export type DogecoinWalletConfig = BaseWalletConfig;
+export type AlgoWalletConfig = BaseWalletConfig;

@@ -1,10 +1,11 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletRpcInterface";
+import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { toBN } from "../../src/utils/bnutils";
+import { ChainType } from "../../src/utils/constants";
 
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
@@ -14,7 +15,7 @@ const BTCMccConnectionTest = {
    username: "",
    password: "",
    apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",
-   inTestnet: true
+   inTestnet: true,
 };
 
 const fundedMnemonic = "depart mixed miss smart enjoy ladder deputy sport chair risk dismiss few";
@@ -30,8 +31,8 @@ let wClient: WALLET.BTC;
 let fundedWallet: ICreateWalletResponse;
 
 describe("Bitcoin wallet tests", () => {
-   before(() => {
-      wClient = new WALLET.BTC(BTCMccConnectionTest);
+   before(async () => {
+      wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
    });
 
    it("Should create account", async () => {

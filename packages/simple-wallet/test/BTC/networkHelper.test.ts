@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { BTC_MAINNET, BTC_TESTNET } from "../../src/utils/constants";
+import { BTC_MAINNET, BTC_TESTNET, ChainType } from "../../src/utils/constants";
 import { getCurrentNetwork } from "../../src/utils/utils";
 
 describe("Bitcoin network helper tests", () => {
@@ -13,7 +13,7 @@ describe("Bitcoin network helper tests", () => {
             timeoutMs: 15000,
          },
       };
-      const wClient: WALLET.BTC = new WALLET.BTC(BTCMccConnectionMain);
+      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionMain);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_MAINNET);
    });
@@ -25,7 +25,7 @@ describe("Bitcoin network helper tests", () => {
          password: "",
          inTestnet: true,
       };
-      const wClient: WALLET.BTC = new WALLET.BTC(BTCMccConnectionTest);
+      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_TESTNET);
    });
@@ -37,7 +37,7 @@ describe("Bitcoin network helper tests", () => {
          password: "password",
          inTestnet: true,
       };
-      const wClient: WALLET.BTC = new WALLET.BTC(BTCMccConnectionTest);
+      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
       expect(wClient.client.defaults.auth).to.not.be.undefined;
    });
 });

@@ -3,39 +3,65 @@ import { BtcWalletImplementation } from "./chain-clients/BtcWalletImplementation
 import { DogeWalletImplementation } from "./chain-clients/DogeWalletImplementation";
 import { LtcWalletImplementation } from "./chain-clients/LtcWalletImplementation";
 import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation";
-import type { AlgoRpcConfig, BaseRpcConfig } from "./interfaces/WriteWalletRpcInterface";
+import type { AlgoWalletConfig, BitcoinWalletConfig, DogecoinWalletConfig, LitecoinWalletConfig, RippleWalletConfig } from "./interfaces/WriteWalletInterface";
+import { initializeMikroORM } from "./config/mikro-orm.config";
 
 export type { WalletClient, WalletCreate } from "./types";
-export type { StuckTransaction } from "./interfaces/WriteWalletRpcInterface";
+export type { StuckTransaction } from "./interfaces/WriteWalletInterface";
 
 export module WALLET {
    export class XRP extends XrpWalletImplementation {
-      constructor(options: BaseRpcConfig) {
+      constructor(options: RippleWalletConfig) {
          super(options);
+      }
+      static async initialize (createConfig: RippleWalletConfig) {
+         const wallet = new XrpWalletImplementation(createConfig);
+         wallet.orm = await initializeMikroORM();
+         return wallet;
       }
    }
 
    export class ALGO extends AlgoWalletImplementation {
-      constructor(options: AlgoRpcConfig) {
+      constructor(options: AlgoWalletConfig) {
          super(options);
+      }
+      static async initialize (createConfig: AlgoWalletConfig) {
+         const wallet = new AlgoWalletImplementation(createConfig);
+         wallet.orm = await initializeMikroORM();
+         return wallet;
       }
    }
 
    export class LTC extends LtcWalletImplementation {
-      constructor(options: BaseRpcConfig) {
+      constructor(options: LitecoinWalletConfig) {
          super(options);
+      }
+      static async initialize(createConfig: LitecoinWalletConfig) {
+         const wallet = new LtcWalletImplementation(createConfig);
+         wallet.orm = await initializeMikroORM();
+         return wallet;
       }
    }
 
    export class BTC extends BtcWalletImplementation {
-      constructor(options: BaseRpcConfig) {
+      constructor(options: BitcoinWalletConfig) {
          super(options);
+      }
+      static async initialize(createConfig: BitcoinWalletConfig) {
+         const wallet = new BtcWalletImplementation(createConfig);
+         wallet.orm = await initializeMikroORM();
+         return wallet;
       }
    }
 
    export class DOGE extends DogeWalletImplementation {
-      constructor(options: BaseRpcConfig) {
+      constructor(options: DogecoinWalletConfig) {
          super(options);
+      }
+      static async initialize(createConfig: DogecoinWalletConfig) {
+         const wallet = new DogeWalletImplementation(createConfig);
+         wallet.orm = await initializeMikroORM();
+         return wallet;
       }
    }
 }

@@ -8,7 +8,7 @@ const BTCMccConnectionTest = {
    url: process.env.BTC_URL ?? "",
    username: "",
    password: "",
-   inTestnet: true
+   inTestnet: true,
 };
 const invalidChainType = "0x494e56414c494400000000000000000000000000000000000000000000000000" as ChainType;
 
@@ -72,7 +72,7 @@ describe("Util tests", () => {
    });
 
    it("Should fail if unsupported network", async () => {
-      const wClient = new WALLET.BTC(BTCMccConnectionTest);
+      const wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
       wClient.chainType = invalidChainType;
       const fn = () => {
          return getCurrentNetwork(wClient.chainType);

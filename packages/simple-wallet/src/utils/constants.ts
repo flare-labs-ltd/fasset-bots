@@ -1,4 +1,4 @@
-import { RateLimitOptions } from "../interfaces/WriteWalletRpcInterface";
+import { RateLimitOptions } from "../interfaces/WriteWalletInterface";
 import { toBNExp } from "./bnutils";
 
 export const LOCK_ADDRESS_FACTOR = 1.2;
@@ -20,6 +20,16 @@ export enum ChainType {
    testALGO = "0x74657374414c474f000000000000000000000000000000000000000000000000",
    testLTC = "0x746573744c544300000000000000000000000000000000000000000000000000",
    // ... make sure IDs are the same as in Flare attestation providers
+}
+
+// For storing ChainType in db in readable form
+const chainTypeLookup: { [key: string]: string } = {};
+Object.keys(ChainType).forEach(key => {
+    const value = (ChainType as any)[key];
+    chainTypeLookup[value] = key;
+});
+export function getChainTypeFromValue(value: string): string | undefined {
+    return chainTypeLookup[value];
 }
 
 // From
@@ -122,7 +132,7 @@ export const BTC_LTC_DUST_AMOUNT = toBNExp(0.00000546, BTC_LTC_DOGE_DEC_PLACES);
 export const DELETE_ACCOUNT_OFFSET = 256;
 
 // https://bitcoinops.org/en/tools/calc-size/
-export const UTXO_INPUT_SIZE = 134;
+export const UTXO_INPUT_SIZE = 134; //148?
 export const UTXO_OUTPUT_SIZE = 34;
 export const UTXO_OVERHEAD_SIZE = 10;
 
@@ -133,3 +143,8 @@ export const DOGE_FEE_PER_KB = toBNExp(1, BTC_LTC_DOGE_DEC_PLACES);
 // https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-ltc/lib/transaction/transaction.js#L81
 // https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib/lib/transaction/transaction.js#L80
 export const BTC_LTC_FEE_PER_KB = toBNExp(0.001, BTC_LTC_DOGE_DEC_PLACES);
+
+
+//
+export const ADDRESS_LENGTH = 42;
+export const BYTES32_LENGTH = 64;

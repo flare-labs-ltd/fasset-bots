@@ -13,7 +13,7 @@ import {
    LTC_TESTNET,
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "./constants";
-import { StuckTransaction } from "../interfaces/WriteWalletRpcInterface";
+import { StuckTransaction } from "../interfaces/WriteWalletInterface";
 
 function MccError(error: any) {
    try {

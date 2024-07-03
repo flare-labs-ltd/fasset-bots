@@ -1,5 +1,5 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse, RippleRpcConfig } from "../../src/interfaces/WriteWalletRpcInterface";
+import { ICreateWalletResponse, RippleWalletConfig } from "../../src/interfaces/WriteWalletInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
@@ -12,7 +12,7 @@ import { toBN, toBNExp } from "../../src/utils/bnutils";
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
-const XRPMccConnectionTest: RippleRpcConfig = {
+const XRPMccConnectionTest: RippleWalletConfig = {
    url: process.env.XRP_URL ?? "",
    username: "",
    password: "",
@@ -23,7 +23,7 @@ const XRPMccConnectionTest: RippleRpcConfig = {
    },
    rateLimitOptions: {
       timeoutMs: 60000,
-   }
+   },
 };
 
 const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
@@ -43,8 +43,8 @@ let wClient: WALLET.XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
 
 describe("Xrp wallet tests", () => {
-   before(() => {
-      wClient = new WALLET.XRP(XRPMccConnectionTest);
+   before(async () => {
+      wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
    });
 
    it("Should create account", async () => {

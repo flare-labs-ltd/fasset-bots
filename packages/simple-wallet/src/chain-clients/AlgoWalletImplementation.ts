@@ -4,21 +4,23 @@ import algosdk from "algosdk";
 import { sleepMs, stringToUint8Arr, uint8ArrToString, algo_ensure_data, excludeNullFields } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, ALGO_LEDGER_CLOSE_TIME_MS } from "../utils/constants";
-import type { ICreateWalletResponse, ISubmitTransactionResponse, WriteWalletRpcInterface } from "../interfaces/WriteWalletRpcInterface";
-import type { AlgoRpcConfig } from "../interfaces/WriteWalletRpcInterface";
+import type { ICreateWalletResponse, ISubmitTransactionResponse, WriteWalletInterface } from "../interfaces/WriteWalletInterface";
+import type { AlgoWalletConfig } from "../interfaces/WriteWalletInterface";
 import BN from "bn.js";
+import { ORM } from "../config/orm";
 
 function algoResponseValidator(responseCode: number) {
    // allow any response, process them later in mcc
    return responseCode >= 200 && responseCode < 600;
 }
 
-export class AlgoWalletImplementation implements WriteWalletRpcInterface {
+export class AlgoWalletImplementation implements WriteWalletInterface {
    chainType: ChainType;
    inTestnet: boolean;
    algodClient: AxiosInstance;
+   orm!: ORM;
 
-   constructor(createConfig: AlgoRpcConfig) {
+   constructor(createConfig: AlgoWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
       this.chainType = ChainType.ALGO;
       const client = axios.create({

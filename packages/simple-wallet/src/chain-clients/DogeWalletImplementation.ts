@@ -1,9 +1,9 @@
 import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { ChainType } from "../utils/constants";
-import type { DogecoinRpcConfig } from "../interfaces/WriteWalletRpcInterface";
+import type { DogecoinWalletConfig } from "../interfaces/WriteWalletInterface";
 
 export class DogeWalletImplementation extends UTXOWalletImplementation {
-   constructor(options: DogecoinRpcConfig) {
+   constructor(options: DogecoinWalletConfig) {
       super(options.inTestnet ? ChainType.testDOGE : ChainType.DOGE, options);
    }
 }

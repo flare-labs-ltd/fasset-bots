@@ -15,15 +15,16 @@ import {
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
-import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletRpcInterface, RippleRpcConfig, XRPFeeParams } from "../interfaces/WriteWalletRpcInterface";
+import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletInterface, RippleWalletConfig, XRPFeeParams } from "../interfaces/WriteWalletInterface";
 import BN from "bn.js";
+import { ORM } from "../config/orm";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
 
 const DROPS_PER_XRP = 1000000.0
 
-export class XrpWalletImplementation implements WriteWalletRpcInterface {
+export class XrpWalletImplementation implements WriteWalletInterface {
    chainType: ChainType;
    inTestnet: boolean;
    client: AxiosInstance;
@@ -33,8 +34,9 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
    maxRetries: number;
    feeIncrease: number;
    lastResortFeeInDrops?: number;
+   orm!: ORM;
 
-   constructor(createConfig: RippleRpcConfig) {
+   constructor(createConfig: RippleWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
 
@@ -231,6 +233,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
       });
       xrp_ensure_data(res.data);
       const txHash = xrplHashes.hashSignedTx(res.data.result.tx_blob);
+      // TODO save original tx
       return { txId: txHash, result: res.data.result.engine_result };
    }
 
@@ -476,6 +479,7 @@ export class XrpWalletImplementation implements WriteWalletRpcInterface {
             this.addressLocks.set(source, { tx: newTransaction, maxFee: res.maxFee });
             const blob = await this.signTransaction(newTransaction, privateKey);
             const submit = await this.submitTransaction(blob);
+            // TODO store replacement
             retry++;
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             return this.waitForTransaction(submit.txId, submit.result!, source, privateKey, retry);

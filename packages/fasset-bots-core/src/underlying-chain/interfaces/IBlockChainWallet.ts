@@ -1,5 +1,5 @@
 import type BN from "bn.js";
-import { FeeParams } from "../../../../simple-wallet/src/interfaces/WriteWalletRpcInterface";
+import { FeeParams } from "../../../../simple-wallet/src/interfaces/WriteWalletInterface";
 
 type NumberLike = BN | number | string;
 
