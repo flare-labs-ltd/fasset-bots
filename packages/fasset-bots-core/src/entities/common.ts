@@ -21,6 +21,14 @@ export enum AgentRedemptionState {
     REQUESTED_REJECTION_PROOF = "requestedRejectionProof",
 }
 
+export enum AgentRedemptionFinalState {
+    REJECTED = "rejected",
+    PERFORMED = "performed",
+    FAILED = "failed",
+    BLOCKED = "blocked",
+    EXPIRED = "expired",
+}
+
 export enum AgentUnderlyingPaymentState {
     PAID = "paid",
     REQUESTED_PROOF = "requestedProof",
