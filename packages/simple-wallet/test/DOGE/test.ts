@@ -52,12 +52,12 @@ describe("Dogecoin TEST tests", () => {
       console.log("UTXO0")
       const utxos0 = await wClient.fetchUTXOs(fundedWallet.address, amountToSendInSatoshi, 3);
       console.log(utxos0)
-      const tx = await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note);
+      const tx = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note);
       console.log(tx);
       console.log("sleeping...")
       await sleepMs(10000)
       const note1 = "20000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const tx1 = await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress2, amountToSendInSatoshi, undefined, note1);
+      const tx1 = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress2, amountToSendInSatoshi, undefined, note1);
       console.log(tx1);
       console.log("UTXO1")
       const utxos1 = await wClient.fetchUTXOs(fundedWallet.address, null, 0);
@@ -78,7 +78,7 @@ describe("Dogecoin TEST tests", () => {
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       expect(WAValidator.validate(fundedWallet.address, "DOGE", "testnet")).to.be.true;
       // fund toDelete account
-      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
+      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
       const balance = await wClient.getAccountBalance(toDelete.address);
       // delete toDelete account
       const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";

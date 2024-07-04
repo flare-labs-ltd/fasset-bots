@@ -43,7 +43,7 @@ describe("Bitcoin wallet tests", () => {
       console.log("UTXO0")
       const utxos0 = await wClient.fetchUTXOs(fundedWallet.address, amountToSendInSatoshi, 3);
       console.log(utxos0)
-      const tx = await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note);
+      const tx = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note);
       console.log(tx);
       console.log("UTXO1")
       const utxos1 = await wClient.fetchUTXOs(fundedWallet.address, null, 0);
