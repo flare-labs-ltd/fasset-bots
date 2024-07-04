@@ -4,8 +4,12 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import { BTC_LTC_DOGE_DEC_PLACES, ChainType } from "../../src/utils/constants";
+import { BTC_LTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
+import rewire from "rewire";
+
+const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/UTXOWalletImplementation");
+const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("UTXOWalletImplementation");
 
 const LTCMccConnectionTest = {
    url: process.env.LTC_URL ?? "",
@@ -45,21 +49,24 @@ describe("Litecoin wallet tests", () => {
    });
 
    it("Should submit transaction", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const fee = await wClient.getCurrentTransactionFee({source: fundedWallet.address, amount: amountToSendInSatoshi, destination: targetAddress});
-      const submitted = await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
+      const rewired = new rewiredUTXOWalletImplementationClass(LTCMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const fee = await rewired.getCurrentTransactionFee({source: fundedWallet.address, amount: amountToSendInSatoshi, destination: targetAddress});
+      const submitted = await rewired.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
       expect(typeof submitted).to.equal("object");
    });
 
    it("Should create transaction with custom fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note");
+      const rewired = new rewiredUTXOWalletImplementationClass(LTCMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
    });
 
    it("Should not create transaction: maxFee > fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
+      const rewired = new rewiredUTXOWalletImplementationClass(LTCMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
          .be.rejected;
    });
 
@@ -70,18 +77,19 @@ describe("Litecoin wallet tests", () => {
 
    // TODO: Internal Server Error: txn-mempool-conflict
    it.skip("Should create and delete account", async () => {
-      const toDelete = wClient.createWallet();
+      const rewired = new rewiredUTXOWalletImplementationClass(LTCMccConnectionTest);
+      const toDelete = rewired.createWallet();
       expect(toDelete.address).to.not.be.null;
       expect(WAValidator.validate(toDelete.address, "LTC", "testnet")).to.be.true;
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       expect(WAValidator.validate(fundedWallet.address, "LTC", "testnet")).to.be.true;
       // fund toDelete account
-      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
-      const balance = await wClient.getAccountBalance(toDelete.address);
+      await rewired.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
+      const balance = await rewired.getAccountBalance(toDelete.address);
       // delete toDelete account
       const note = "deadc000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
-      const balance2 = await wClient.getAccountBalance(toDelete.address);
+      await rewired.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
+      const balance2 = await rewired.getAccountBalance(toDelete.address);
       expect(balance.gt(balance2));
    });
 });

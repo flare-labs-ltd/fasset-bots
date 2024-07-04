@@ -134,6 +134,60 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
 
    /**
     * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInSatoshi
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
+   async prepareAndExecuteTransaction(
+      source: string,
+      privateKey: string,
+      destination: string,
+      amountInSatoshi: BN | null,
+      feeInSatoshi?: BN,
+      note?: string,
+      maxFeeInSatoshi?: BN
+   ): Promise<ISubmitTransactionResponse> {
+      const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
+      const tx_blob = await this.signTransaction(transaction, privateKey);
+      const submitResp = await this.submitTransaction(tx_blob);
+      const submittedBlockHeight = await this.getCurrentBlockHeight();
+      return await this.waitForTransaction(submitResp.txId, source, privateKey, submittedBlockHeight);
+   }
+
+   /**
+    * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInSatoshi
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
+   async deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      feeInSatoshi?: BN,
+      note?: string,
+      maxFeeInSatoshi?: BN
+   ): Promise<ISubmitTransactionResponse> {
+      return await this.prepareAndExecuteTransaction(source, privateKey, destination, null, feeInSatoshi, note, maxFeeInSatoshi);
+   }
+
+   getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
+      throw new Error("Method not implemented.");
+   }
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+   // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////
+
+   /**
+    * @param {string} source
     * @param {string} destination
     * @param {BN|null} amountInSatoshi - if null => empty all funds
     * @param {BN|undefined} feeInSatoshi - automatically set if undefined
@@ -141,7 +195,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {BN|undefined} maxFeeInSatoshi
     * @returns {Object} - BTC/DOGE/LTC transaction object
     */
-   async preparePaymentTransaction(
+   private async preparePaymentTransaction(
       source: string,
       destination: string,
       amountInSatoshi: BN | null,
@@ -183,7 +237,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {string} - hex string
     */
-   async signTransaction(transaction: bitcore.Transaction, privateKey: string): Promise<string> {
+   private async signTransaction(transaction: bitcore.Transaction, privateKey: string): Promise<string> {
       const signed = transaction.sign(privateKey).serialize();
       return signed;
    }
@@ -192,80 +246,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {string} signedTx
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async submitTransaction(signedTx: string): Promise<ISubmitTransactionResponse> {
+   private async submitTransaction(signedTx: string): Promise<ISubmitTransactionResponse> {
       const res = await this.client.post(`/tx/send`, { rawTx: signedTx });
       wallet_utxo_ensure_data(res);
       return { txId: res.data.txid };
-   }
-
-   /**
-    * @param {string} source
-    * @param {string} privateKey
-    * @param {string} destination
-    * @param {BN|null} amountInSatoshi - if null => empty all funds
-    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
-    * @param {string|undefined} note
-    * @param {BN|undefined} maxFeeInSatoshi
-    * @returns {Object} - containing transaction id tx_id and optional result
-    */
-   async executeLockedSignedTransactionAndWait(
-      source: string,
-      privateKey: string,
-      destination: string,
-      amountInSatoshi: BN | null,
-      feeInSatoshi?: BN,
-      note?: string,
-      maxFeeInSatoshi?: BN
-   ): Promise<ISubmitTransactionResponse> {
-      const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
-      const tx_blob = await this.signTransaction(transaction, privateKey);
-      const submitResp = await this.submitTransaction(tx_blob);
-      const submittedBlockHeight = await this.getCurrentBlockHeight();
-      return await this.waitForTransaction(submitResp.txId, source, privateKey, submittedBlockHeight);
-   }
-
-   /**
-    * @param {string} source
-    * @param {string} privateKey
-    * @param {string} destination
-    * @param {BN|undefined} feeInSatoshi - automatically set if undefined
-    * @param {string|undefined} note
-    * @param {BN|undefined} maxFeeInSatoshi
-    * @returns {Object} - containing transaction id tx_id and optional result
-    */
-   async deleteAccount(
-      source: string,
-      privateKey: string,
-      destination: string,
-      feeInSatoshi?: BN,
-      note?: string,
-      maxFeeInSatoshi?: BN
-   ): Promise<ISubmitTransactionResponse> {
-      return await this.executeLockedSignedTransactionAndWait(source, privateKey, destination, null, feeInSatoshi, note, maxFeeInSatoshi);
-   }
-
-   getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
-      throw new Error("Method not implemented.");
-   }
-
-   ///////////////////////////////////////////////////////////////////////////////////////
-   // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
-   ///////////////////////////////////////////////////////////////////////////////////////
-
-   /** NOT USED
-    * Waits if previous transaction from address is still processing. If wait is too long it throws.
-    * @param {string} address
-    */
-   async checkIfCanSubmitFromAddress(address: string): Promise<void> {
-      const start = new Date().getTime();
-      while (new Date().getTime() - start < this.timeoutAddressLock) {
-         if (!this.addressLocks.get(address)) {
-            this.addressLocks.set(address, { tx: null, maxFee: null });
-            return;
-         }
-         await sleepMs(100);
-      }
-      throw new Error(`Timeout waiting to obtain confirmed transaction from address ${address}`);
    }
 
    /**
@@ -293,7 +277,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {number} estimatedNumOfOutputs
     * @returns {Object[]}
     */
-   async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
+   private async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
       const res = await this.client.get(`/address/${address}?unspent=true&excludeconflicting=true`);
       wallet_utxo_ensure_data(res);
       // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
@@ -331,7 +315,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {string} retry
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async waitForTransaction(txHash: string, source: string, privateKey: string, submittedBlockHeight: number, retry: number = 0): Promise<ISubmitTransactionResponse> {
+   private async waitForTransaction(txHash: string, source: string, privateKey: string, submittedBlockHeight: number, retry: number = 0): Promise<ISubmitTransactionResponse> {
       await sleepMs(getAvgBlockTime(this.chainType));
       const txResp = await this.client.get(`/tx/${txHash}`);
       wallet_utxo_ensure_data(txResp);
@@ -349,7 +333,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {number} retry
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async tryToResubmitTransaction(txHash: string, source: string, privateKey: string, submittedBlockHeight: number, retry: number): Promise<ISubmitTransactionResponse> {
+   private async tryToResubmitTransaction(txHash: string, source: string, privateKey: string, submittedBlockHeight: number, retry: number): Promise<ISubmitTransactionResponse> {
       const res = this.addressLocks.get(source);
       const transaction = res?.tx;
       if (!transaction) {
@@ -377,13 +361,13 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return this.waitForTransaction(txHash, source, privateKey, submittedBlockHeight, retry);
    }
 
-   checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
+   private checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
       if (maxFee && fee.gt(maxFee)) {
          throw Error(`Transaction is not prepared: fee ${fee.toString()} is higher than maxFee ${maxFee.toString()}`);
       }
    }
 
-   getCore(): typeof bitcore {
+   private getCore(): typeof bitcore {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return dogecore;
       } else if (this.chainType === ChainType.LTC || this.chainType === ChainType.testLTC) {
@@ -393,7 +377,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       }
    }
 
-   getDustAmount(): BN {
+   private getDustAmount(): BN {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return DOGE_DUST_AMOUNT;
       } else {
@@ -404,7 +388,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    /**
     * @returns default fee per byte
     */
-   getDefaultFeePerB(): BN {
+   private getDefaultFeePerB(): BN {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return DOGE_FEE_PER_KB.divn(1000);
       } else {
@@ -412,11 +396,11 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       }
    }
 
-   getEstimateFee(inputLength: number, outputLength: number = 2): BN {
+   private getEstimateFee(inputLength: number, outputLength: number = 2): BN {
       return this.getDefaultFeePerB().muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
    }
 
-   getEstimatedNumberOfOutputs(amountInSatoshi:BN | null, note?: string) {
+   private getEstimatedNumberOfOutputs(amountInSatoshi:BN | null, note?: string) {
       if (amountInSatoshi == null && note) return 2; // destination and note
       if (amountInSatoshi == null && !note) return 1; // destination
       if (note) return 3; // destination, change (returned funds) and note

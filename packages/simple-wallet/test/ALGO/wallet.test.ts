@@ -4,7 +4,11 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import type { AlgoWalletConfig } from "../../src/interfaces/WriteWalletInterface";
 import { toBN, toNumber } from "../../src/utils/bnutils";
+import rewire from "rewire";
 use(chaiAsPromised);
+
+const rewiredAlgoWalletImplementation = rewire("../../src/chain-clients/AlgoWalletImplementation");
+const rewiredAlgoWalletImplementationClass = rewiredAlgoWalletImplementation.__get__("AlgoWalletImplementation");
 
 const ALGOMccConnectionTest: AlgoWalletConfig = {
    url: process.env.ALGO_ALGOD_URL ?? "",
@@ -38,41 +42,46 @@ describe("Algo wallet tests", () => {
    });
 
    it("Should create, sign and submit transaction", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, undefined, "Just submit");
-      const signed = await wClient.signTransaction(tr, fundedWallet.privateKey);
-      const submit = await wClient.submitTransaction(signed);
+      const rewired = new rewiredAlgoWalletImplementationClass(ALGOMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, undefined, "Just submit");
+      const signed = await rewired.signTransaction(tr, fundedWallet.privateKey);
+      const submit = await rewired.submitTransaction(signed);
       expect(tr.txID()).to.equal(submit.txId);
    });
 
    it("Should create, sign, submit transaction", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const balanceBefore = await wClient.getAccountBalance(targetAddress);
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, undefined, "Submit and wait");
-      const signed = await wClient.signTransaction(tr, fundedWallet.privateKey);
-      const submit = await wClient.submitTransaction(signed);
-      await wClient.waitForTransaction(submit.txId);
-      const balanceAfter = await wClient.getAccountBalance(targetAddress);
+      const rewired = new rewiredAlgoWalletImplementationClass(ALGOMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const balanceBefore = await rewired.getAccountBalance(targetAddress);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, undefined, "Submit and wait");
+      const signed = await rewired.signTransaction(tr, fundedWallet.privateKey);
+      const submit = await rewired.submitTransaction(signed);
+      await rewired.waitForTransaction(submit.txId);
+      const balanceAfter = await rewired.getAccountBalance(targetAddress);
       expect(balanceBefore.lt(balanceAfter)).to.be.true;
       expect(typeof submit).to.equal("object");
    });
 
    it("Should create transaction without note", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO);
+      const rewired = new rewiredAlgoWalletImplementationClass(ALGOMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO);
       expect(typeof tr).to.equal("object");
    });
 
    it("Should create transaction with custom fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, feeInMicroALGO, "Just create");
+      const rewired = new rewiredAlgoWalletImplementationClass(ALGOMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, feeInMicroALGO, "Just create");
       expect(tr.fee).to.equal(toNumber(feeInMicroALGO));
       expect(tr.flatFee).to.be.true;
    });
 
    it("Should not create transaction: maxFee > fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, feeInMicroALGO, "Just create", maxFeeInMicroAlgo))
+      const rewired = new rewiredAlgoWalletImplementationClass(ALGOMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInMicroALGO, feeInMicroALGO, "Just create", maxFeeInMicroAlgo))
          .to.eventually.be.rejectedWith(`Transaction is not prepared: maxFee ${maxFeeInMicroAlgo.toString()} is higher than fee ${feeInMicroALGO.toString()}`);
    });
 
@@ -82,6 +91,7 @@ describe("Algo wallet tests", () => {
    });
 
    it("Should return 'Method not implemented'", async () => {
-      await expect(wClient.executeLockedSignedTransactionAndWait()).to.eventually.be.rejectedWith('Method not implemented.');
+      const rewired = new rewiredAlgoWalletImplementationClass(ALGOMccConnectionTest);
+      await expect(rewired.executeLockedSignedTransactionAndWait()).to.eventually.be.rejectedWith('Method not implemented.');
    });
 });

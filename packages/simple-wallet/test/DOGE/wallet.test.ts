@@ -6,6 +6,10 @@ use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
+import rewire from "rewire";
+
+const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/UTXOWalletImplementation");
+const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("UTXOWalletImplementation");
 
 const DOGEMccConnectionTest = {
    url: process.env.DOGE_URL ?? "",
@@ -58,44 +62,41 @@ describe("Dogecoin wallet tests", () => {
    });
 
    it("Should create and sign transaction", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const transaction = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi);
-      const signed = await wClient.signTransaction(transaction, fundedWallet.privateKey as string);
+      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi);
+      const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey as string);
       expect(typeof signed).to.equal("string");
    });
 
    it("Should create, sign and submit transaction", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, undefined, note);
-      const blob = await wClient.signTransaction(tr, fundedWallet.privateKey as string);
-      const submit = await wClient.submitTransaction(blob);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, undefined, note);
+      const blob = await rewired.signTransaction(tr, fundedWallet.privateKey as string);
+      const submit = await rewired.submitTransaction(blob);
       expect(typeof submit).to.equal("object");
    });
 
-   // Lock is not used anymore in utxo
-   it.skip("Should timeout on waiting for address to be unlocked", async () => {
-      void wClient.checkIfCanSubmitFromAddress(targetAddress);
-      await expect(wClient.checkIfCanSubmitFromAddress(targetAddress))
-         .to.eventually.be.rejectedWith(`Timeout waiting to obtain confirmed transaction from address ${targetAddress}`)
-         .and.be.an.instanceOf(Error);
-   });
-
    it("Should create transaction with custom fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note");
+      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
    });
 
    it("Should not create transaction: maxFee > fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
+      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
          .eventually.be.rejectedWith(`Transaction is not prepared: fee ${feeInSatoshi.toString()} is higher than maxFee ${maxFeeInSatoshi.toString()}`);
    });
 
    it("Should not create transaction: amount = dust amount", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note", maxFeeInSatoshi)).to
+      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note", maxFeeInSatoshi)).to
          .eventually.be.rejectedWith(`Will not prepare transaction for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
    });
 
@@ -110,26 +111,28 @@ describe("Dogecoin wallet tests", () => {
    });
 
    it("Should not try to resubmit - transaction for source", async () => {
+      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
       const txHash = "txHash";
       const source = "source";
-      await expect(wClient.tryToResubmitTransaction(txHash, source, "", 1, 1))
+      await expect(rewired.tryToResubmitTransaction(txHash, source, "", 1, 1))
          .to.eventually.be.rejectedWith(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`)
          .and.be.an.instanceOf(Error);
    });
 
    it("Should create and delete account", async () => {
-      const toDelete = wClient.createWallet();
+      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      const toDelete = rewired.createWallet();
       expect(toDelete.address).to.not.be.null;
       expect(WAValidator.validate(toDelete.address, "DOGE", "testnet")).to.be.true;
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       expect(WAValidator.validate(fundedWallet.address, "DOGE", "testnet")).to.be.true;
       // fund toDelete account
-      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
-      const balance = await wClient.getAccountBalance(toDelete.address);
+      await rewired.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
+      const balance = await rewired.getAccountBalance(toDelete.address);
       // delete toDelete account
       const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
-      const balance2 = await wClient.getAccountBalance(toDelete.address);
+      await rewired.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
+      const balance2 = await rewired.getAccountBalance(toDelete.address);
       expect(balance.gt(balance2));
    });
 });

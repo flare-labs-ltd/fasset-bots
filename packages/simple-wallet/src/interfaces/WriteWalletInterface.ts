@@ -10,18 +10,7 @@ export interface WriteWalletInterface {
    getAccountBalance(account: string): Promise<BN>;
    getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
-   preparePaymentTransaction(
-      source: string,
-      destination: string,
-      amount: BN | null,
-      fee?: BN,
-      note?: string,
-      maxFee?: BN,
-      sequence?: number
-   ): Promise<any>;
-   signTransaction(transaction: any, privateKey: string): Promise<string>;
-   submitTransaction(signedTx: string): Promise<any>;
-   executeLockedSignedTransactionAndWait(
+   prepareAndExecuteTransaction(
       source: string,
       privateKey: string,
       destination: string,

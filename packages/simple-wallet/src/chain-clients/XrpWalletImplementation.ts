@@ -145,6 +145,76 @@ export class XrpWalletImplementation implements WriteWalletInterface {
 
    /**
     * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|null} amountInDrops - if null => AccountDelete transaction will be created
+    * @param {BN|undefined} feeInDrops - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInDrops
+    * @param {number|undefined} sequence
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
+   async prepareAndExecuteTransaction(
+      source: string,
+      privateKey: string,
+      destination: string,
+      amountInDrops: BN | null,
+      feeInDrops?: BN,
+      note?: string,
+      maxFeeInDrops?: BN,
+      sequence?: number
+   ): Promise<ISubmitTransactionResponse> {
+      await this.checkIfCanSubmitFromAddress(source);
+      try {
+         const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence);
+         this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops ? maxFeeInDrops : null });
+         const tx_blob = await this.signTransaction(transaction, privateKey);
+         const submitResp = await this.submitTransaction(tx_blob);
+         // save tx in db
+         await createTransactionEntity(this.orm, source, destination, submitResp.txId);
+         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+         return await this.waitForTransaction(submitResp.txId, submitResp.result!, source, privateKey);
+      } finally {
+         this.addressLocks.delete(source);
+      }
+   }
+
+   /**
+    * @param {string} source
+    * @param {string} privateKey
+    * @param {string} destination
+    * @param {BN|undefined} feeInDrops - automatically set if undefined
+    * @param {string|undefined} note
+    * @param {BN|undefined} maxFeeInDrops
+    * @param {number|undefined} sequence
+    * @returns {Object} - containing transaction id tx_id and optional result
+    */
+   async deleteAccount(
+      source: string,
+      privateKey: string,
+      destination: string,
+      feeInDrops?: BN,
+      note?: string,
+      maxFeeInDrops?: BN,
+      sequence?: number
+   ): Promise<ISubmitTransactionResponse> {
+      return await this.prepareAndExecuteTransaction(source, privateKey, destination, null, feeInDrops, note, maxFeeInDrops, sequence);
+   }
+
+   /**
+    * @param {string} transactionHash
+    * @returns {string} - transactionHash or replaced transactionHash
+    */
+   async getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
+      return getReplacedTransactionHash(this.orm, transactionHash);
+   }
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+   // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////
+
+   /**
+    * @param {string} source
     * @param {string} destination
     * @param {BN|null} amountInDrops - if null => AccountDelete transaction will be created
     * @param {BN|undefined} feeInDrops - automatically set if undefined
@@ -153,7 +223,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {number|undefined} sequence
     * @returns {Object} - XRP Payment or AccountDelete transaction object
     */
-   async preparePaymentTransaction(
+   private async preparePaymentTransaction(
       source: string,
       destination: string,
       amountInDrops: BN | null,
@@ -211,7 +281,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {string}
     */
-   async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<string> {
+   private async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<string> {
       const publicKey = this.getPublicKeyFromPrivateKey(privateKey, transaction.Account);
       const transactionToSign = { ...transaction };
       transactionToSign.SigningPubKey = publicKey;
@@ -224,7 +294,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {string} tx_blob
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async submitTransaction(tx_blob: string): Promise<ISubmitTransactionResponse> {
+   private async submitTransaction(tx_blob: string): Promise<ISubmitTransactionResponse> {
       const params = {
          tx_blob: tx_blob,
       };
@@ -237,76 +307,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       // TODO save original tx
       return { txId: txHash, result: res.data.result.engine_result };
    }
-
-   /**
-    * @param {string} source
-    * @param {string} privateKey
-    * @param {string} destination
-    * @param {BN|null} amountInDrops - if null => AccountDelete transaction will be created
-    * @param {BN|undefined} feeInDrops - automatically set if undefined
-    * @param {string|undefined} note
-    * @param {BN|undefined} maxFeeInDrops
-    * @param {number|undefined} sequence
-    * @returns {Object} - containing transaction id tx_id and optional result
-    */
-   async executeLockedSignedTransactionAndWait(
-      source: string,
-      privateKey: string,
-      destination: string,
-      amountInDrops: BN | null,
-      feeInDrops?: BN,
-      note?: string,
-      maxFeeInDrops?: BN,
-      sequence?: number
-   ): Promise<ISubmitTransactionResponse> {
-      await this.checkIfCanSubmitFromAddress(source);
-      try {
-         const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence);
-         this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops ? maxFeeInDrops : null });
-         const tx_blob = await this.signTransaction(transaction, privateKey);
-         const submitResp = await this.submitTransaction(tx_blob);
-         // save tx in db
-         await createTransactionEntity(this.orm, source, destination, submitResp.txId);
-         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-         return await this.waitForTransaction(submitResp.txId, submitResp.result!, source, privateKey);
-      } finally {
-         this.addressLocks.delete(source);
-      }
-   }
-
-   /**
-    * @param {string} source
-    * @param {string} privateKey
-    * @param {string} destination
-    * @param {BN|undefined} feeInDrops - automatically set if undefined
-    * @param {string|undefined} note
-    * @param {BN|undefined} maxFeeInDrops
-    * @param {number|undefined} sequence
-    * @returns {Object} - containing transaction id tx_id and optional result
-    */
-   async deleteAccount(
-      source: string,
-      privateKey: string,
-      destination: string,
-      feeInDrops?: BN,
-      note?: string,
-      maxFeeInDrops?: BN,
-      sequence?: number
-   ): Promise<ISubmitTransactionResponse> {
-      return await this.executeLockedSignedTransactionAndWait(source, privateKey, destination, null, feeInDrops, note, maxFeeInDrops, sequence);
-   }
-
-   /**
-    * @param {string} transactionHash
-    * @returns {string} - transactionHash or replaced transactionHash
-    */
-   async getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
-      return getReplacedTransactionHash(this.orm, transactionHash);
-   }
-
-   ///////////////////////////////////////////////////////////////////////////////////////
-   // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
-   ///////////////////////////////////////////////////////////////////////////////////////
 
    /**
     * @returns {number} - ledger index of the latest validated ledger
@@ -413,7 +413,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {string} retry
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async waitForTransaction(
+   private async waitForTransaction(
       txHash: string,
       submissionResult: string,
       source: string,
@@ -448,7 +448,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * Waits if previous transaction from address is still processing. If wait is too long it throws.
     * @param {string} address
     */
-   async checkIfCanSubmitFromAddress(address: string): Promise<void> {
+   private async checkIfCanSubmitFromAddress(address: string): Promise<void> {
       const start = new Date().getTime();
       while (new Date().getTime() - start < this.timeoutAddressLock) {
          if (!this.addressLocks.has(address)) {
@@ -468,7 +468,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async tryToResubmitTransaction(
+   private async tryToResubmitTransaction(
       txHash: string,
       submissionResult: string,
       source: string,
@@ -514,7 +514,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       return this.waitForTransaction(txHash, submissionResult, source, privateKey, retry);
    }
 
-   checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
+   private checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
       if (maxFee && fee.gt(maxFee)) {
          throw Error(`Transaction is not prepared: fee ${fee} is higher than maxFee ${maxFee.toString()}`);
       }

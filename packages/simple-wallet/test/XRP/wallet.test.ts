@@ -8,6 +8,8 @@ import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
 import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
+import { createTransactionEntity } from "../../src/orm/orm";
+import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
@@ -83,17 +85,19 @@ describe("Xrp wallet tests", () => {
    });
 
    it("Should create, sign and submit transaction", async () => {
-      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
+      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsFirst, undefined, note);
-      const blob = await wClient.signTransaction(tr, fundedWallet.privateKey as string);
-      const submit = await wClient.submitTransaction(blob);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsFirst, undefined, note);
+      const blob = await rewired.signTransaction(tr, fundedWallet.privateKey as string);
+      const submit = await rewired.submitTransaction(blob);
       expect(typeof submit).to.equal("object");
    });
 
    it("Should create transaction with sequence and fee", async () => {
-      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const tr = await wClient.preparePaymentTransaction(
+      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
+      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const tr = await rewired.preparePaymentTransaction(
          fundedWallet.address,
          targetAddress,
          amountToSendDropsSecond,
@@ -106,8 +110,9 @@ describe("Xrp wallet tests", () => {
    });
 
    it("Should not submit unsigned transaction", async () => {
-      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const tr = await wClient.preparePaymentTransaction(
+      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
+      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const tr = await rewired.preparePaymentTransaction(
          fundedWallet.address,
          targetAddress,
          amountToSendDropsSecond,
@@ -117,12 +122,13 @@ describe("Xrp wallet tests", () => {
          sequence
       );
       const serialized = encode(tr);
-      await expect(wClient.submitTransaction(serialized)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
+      await expect(rewired.submitTransaction(serialized)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
    });
 
    it("Should not create transaction: fee > maxFee", async () => {
-      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops))
+      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
+      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops))
          .to.eventually.be.rejectedWith(`Transaction is not prepared: fee ${feeInDrops} is higher than maxFee ${maxFeeInDrops}`)
          .and.be.an.instanceOf(Error);
    });
@@ -139,17 +145,21 @@ describe("Xrp wallet tests", () => {
       expect(index).not.to.be.null;
    });
 
-   it("Should not find transaction", async () => {
+   it.only("Should not find transaction", async () => {
       const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
+      rewired.orm = await initializeMikroORM("simple-wallet_xrp.db");
+      const txHash = "TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX"
+      await createTransactionEntity(rewired.orm, "", "", "TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX");
       await expect(rewired.waitForTransaction("TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX", "tesSUCCESS"))
          .to.eventually.be.rejectedWith(`waitForTransaction: notImpl Submission result: tesSUCCESS`)
          .and.be.an.instanceOf(Error);
    });
 
    it("Should timeout on waiting for address to be unlocked", async () => {
+      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
       const address = "rhNMdXAuUQGmaPmYBj84f9zaEyq9qXFwfs"; // secret=sEd7pKYYVphXge4My2q98M6BPJTPUPk
-      void wClient.checkIfCanSubmitFromAddress(address);
-      await expect(wClient.checkIfCanSubmitFromAddress(address))
+      void rewired.checkIfCanSubmitFromAddress(address);
+      await expect(rewired.checkIfCanSubmitFromAddress(address))
          .to.eventually.be.rejectedWith(`Timeout waiting to obtain confirmed transaction from address ${address}`)
          .and.be.an.instanceOf(Error);
    });
@@ -159,7 +169,7 @@ describe("Xrp wallet tests", () => {
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
       const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
-      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
+      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
       const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
       const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
       expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).subn(10)));
@@ -171,7 +181,7 @@ describe("Xrp wallet tests", () => {
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
       const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
-      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
+      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee);
       const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
       const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
       expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).subn(wClient.lastResortFeeInDrops!)));
@@ -181,14 +191,15 @@ describe("Xrp wallet tests", () => {
    it("Should not replace transactions with low fee - no retries left", async () => {
       const lowFee = toBN(1);
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      await expect(wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee, undefined, maxFeeInDrops))
+      await expect(wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee, undefined, maxFeeInDrops))
          .to.eventually.be.rejected.and.be.an.instanceOf(Error);
    });
 
    it("Should not try to resubmit - transaction for source", async () => {
+      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
       const txHash = "txHash";
       const source = "source";
-      await expect(wClient.tryToResubmitTransaction(txHash, "", source, "", 1))
+      await expect(rewired.tryToResubmitTransaction(txHash, "", source, "", 1))
          .to.eventually.be.rejectedWith(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`)
          .and.be.an.instanceOf(Error);
    });
@@ -219,7 +230,7 @@ describe("Xrp wallet tests", () => {
       expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
       const toSendInDrops = toBNExp(20,6); // 20 XPR
       // fund toDelete account
-      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
+      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
       const balance = await wClient.getAccountBalance(toDelete.address);
       // delete toDelete account
       await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address);

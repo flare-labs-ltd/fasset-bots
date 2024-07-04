@@ -14,9 +14,9 @@ export module WALLET {
       constructor(options: RippleWalletConfig) {
          super(options);
       }
-      static async initialize (createConfig: RippleWalletConfig) {
+      static async initialize(createConfig: RippleWalletConfig) {
          const wallet = new XrpWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
+         wallet.orm = await initializeMikroORM("simple-wallet_xrp.db");
          return wallet;
       }
    }
@@ -25,9 +25,9 @@ export module WALLET {
       constructor(options: AlgoWalletConfig) {
          super(options);
       }
-      static async initialize (createConfig: AlgoWalletConfig) {
+      static async initialize(createConfig: AlgoWalletConfig) {
          const wallet = new AlgoWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
+         wallet.orm = await initializeMikroORM("simple-wallet_algo.db");
          return wallet;
       }
    }
@@ -38,7 +38,7 @@ export module WALLET {
       }
       static async initialize(createConfig: LitecoinWalletConfig) {
          const wallet = new LtcWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
+         wallet.orm = await initializeMikroORM("simple-wallet_ltc.db");
          return wallet;
       }
    }
@@ -49,7 +49,7 @@ export module WALLET {
       }
       static async initialize(createConfig: BitcoinWalletConfig) {
          const wallet = new BtcWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
+         wallet.orm = await initializeMikroORM("simple-wallet_btc.db");
          return wallet;
       }
    }
@@ -60,7 +60,7 @@ export module WALLET {
       }
       static async initialize(createConfig: DogecoinWalletConfig) {
          const wallet = new DogeWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
+         wallet.orm = await initializeMikroORM("simple-wallet_doge.db");
          return wallet;
       }
    }

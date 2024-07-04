@@ -5,6 +5,10 @@ import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { toBN } from "../../src/utils/bnutils";
+import rewire from "rewire";
+
+const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/UTXOWalletImplementation");
+const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("UTXOWalletImplementation");
 
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
@@ -47,14 +51,16 @@ describe("Bitcoin wallet tests", () => {
    });
 
    it("Should create transaction with custom fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
+      const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
    });
 
    it("Should not create transaction: maxFee > fee", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      await expect(wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
+      const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
+      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
          .be.rejected;
    });
 

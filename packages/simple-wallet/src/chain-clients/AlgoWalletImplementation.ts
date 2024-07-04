@@ -48,7 +48,7 @@ export class AlgoWalletImplementation implements WriteWalletInterface {
       throw new Error("Method not implemented.");
    }
 
-   async executeLockedSignedTransactionAndWait(): Promise<any> {
+   async prepareAndExecuteTransaction(): Promise<any> {
       throw new Error("Method not implemented.");
    }
 
@@ -106,7 +106,7 @@ export class AlgoWalletImplementation implements WriteWalletInterface {
     * @param {BN|undefined} maxFeeInMicroAlgos - fee per byte
     * @returns {Object} - ALGO transaction object
     */
-   async preparePaymentTransaction(
+   private async preparePaymentTransaction(
       source: string,
       destination: string,
       amountInMicroAlgos: BN,
@@ -133,7 +133,7 @@ export class AlgoWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {string}
     */
-   async signTransaction(transaction: algosdk.Transaction, privateKey: string): Promise<string> {
+   private async signTransaction(transaction: algosdk.Transaction, privateKey: string): Promise<string> {
       const secretKey = stringToUint8Arr(privateKey);
       const tx = uint8ArrToString(transaction.signTxn(secretKey));
       return tx;
@@ -143,7 +143,7 @@ export class AlgoWalletImplementation implements WriteWalletInterface {
     * @param {string} signedTx
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async submitTransaction(signedTx: string): Promise<ISubmitTransactionResponse> {
+   private async submitTransaction(signedTx: string): Promise<ISubmitTransactionResponse> {
       const signedTxArr = stringToUint8Arr(signedTx);
       const res = await this.algodClient.post("/v2/transactions", signedTxArr);
       algo_ensure_data(res);
@@ -191,7 +191,7 @@ export class AlgoWalletImplementation implements WriteWalletInterface {
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    /* istanbul ignore next */
-   async waitForTransaction(txHash: string): Promise<ISubmitTransactionResponse> {
+   private async waitForTransaction(txHash: string): Promise<ISubmitTransactionResponse> {
       await sleepMs(ALGO_LEDGER_CLOSE_TIME_MS);
       const txResp = await this.algodClient.get(`/v2/transactions/pending/${txHash}`);
       algo_ensure_data(txResp);
