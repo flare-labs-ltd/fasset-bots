@@ -34,7 +34,7 @@ export async function updateSchema(orm: ORM, update: SchemaUpdate = "full"): Pro
     }
 }
 
-export async function createTransactionEntity(orm: ORM, source: string, destination: string, txHash:string, confirmations: number = 0): Promise<void> {
+export async function createTransactionEntity(orm: ORM, transaction: any, source: string, destination: string, txHash:string, confirmations: number = 0): Promise<void> {
     orm.em.create(
         TransactionEntity,
         {
@@ -42,7 +42,8 @@ export async function createTransactionEntity(orm: ORM, source: string, destinat
             destination: destination,
             transactionHash: txHash,
             status: TransactionStatus.TX_SENT,
-            confirmations: confirmations
+            confirmations: confirmations,
+            raw: Buffer.from(JSON.stringify(transaction))
         } as RequiredEntityData<TransactionEntity>,
     );
     await orm.em.flush();

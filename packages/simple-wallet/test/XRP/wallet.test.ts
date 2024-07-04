@@ -129,7 +129,7 @@ describe("Xrp wallet tests", () => {
       const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
       fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops))
-         .to.eventually.be.rejectedWith(`Transaction is not prepared: fee ${feeInDrops} is higher than maxFee ${maxFeeInDrops}`)
+         .to.eventually.be.rejectedWith(`Fee ${feeInDrops} is higher than maxFee ${maxFeeInDrops}`)
          .and.be.an.instanceOf(Error);
    });
 
@@ -149,7 +149,7 @@ describe("Xrp wallet tests", () => {
       const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
       rewired.orm = await initializeMikroORM("simple-wallet_xrp.db");
       const txHash = "TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX"
-      await createTransactionEntity(rewired.orm, "", "", txHash);
+      await createTransactionEntity(rewired.orm, {}, "", "", txHash);
       await expect(rewired.waitForTransaction(txHash, "tesSUCCESS"))
          .to.eventually.be.rejectedWith(`waitForTransaction: notImpl Submission result: tesSUCCESS`)
          .and.be.an.instanceOf(Error);
@@ -188,11 +188,11 @@ describe("Xrp wallet tests", () => {
       expect(balanceTargetAfter.eq(balanceTargetBefore.add(amountToSendDropsSecond)));
    });
 
-   it("Should not replace transactions with low fee - no retries left", async () => {
+   it("Should not replace transactions with low fee - fee to high", async () => {
       const lowFee = toBN(1);
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       await expect(wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee, undefined, maxFeeInDrops))
-         .to.eventually.be.rejected.and.be.an.instanceOf(Error);
+         .to.eventually.be.rejectedWith(`Fee ${XRPMccConnectionTest.stuckTransactionOptions?.lastResortFee} is higher than maxFee ${maxFeeInDrops}`).and.be.an.instanceOf(Error);
    });
 
    it("Should not try to resubmit - transaction for source", async () => {

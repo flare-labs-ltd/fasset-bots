@@ -171,7 +171,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          const tx_blob = await this.signTransaction(transaction, privateKey);
          const submitResp = await this.submitTransaction(tx_blob);
          // save tx in db
-         await createTransactionEntity(this.orm, source, destination, submitResp.txId);
+         await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId);
          // send transaction to chain, but do not wait for result, immediately return txHash
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
          return await this.waitForTransaction(submitResp.txId, submitResp.result!, source, privateKey);
@@ -497,7 +497,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             const blob = await this.signTransaction(newTransaction, privateKey);
             const submit = await this.submitTransaction(blob);
             // store new tx and mark replacement
-            await createTransactionEntity(this.orm, transaction.Account, transaction.Destination, submit.txId);
+            await createTransactionEntity(this.orm, transaction, transaction.Account, transaction.Destination, submit.txId);
             const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
             await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
                txEnt.replaced_by = newTxEnt;
@@ -507,6 +507,9 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             return this.waitForTransaction(submit.txId, submit.result!, source, privateKey, retry);
          }
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_NOT_ACCEPTED;
+         });
          throw new Error(
             `waitForTransaction: transaction ${txHash} is not going to be accepted. Latest valid ledger ${currentValidLedger} is greater than transaction.LastLedgerSequence ${lastBlockNumber}`
          );
@@ -516,7 +519,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
 
    private checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
       if (maxFee && fee.gt(maxFee)) {
-         throw Error(`Transaction is not prepared: fee ${fee} is higher than maxFee ${maxFee.toString()}`);
+         throw Error(`Fee ${fee.toString()} is higher than maxFee ${maxFee.toString()}`);
       }
    }
 

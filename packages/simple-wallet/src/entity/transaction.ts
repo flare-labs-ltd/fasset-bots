@@ -21,8 +21,17 @@ export class TransactionEntity {
     @Property()
     confirmations!: number;
 
+    @Property({ columnType: 'blob' })
+    raw!: Buffer;
+
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity;
+
+    @Property({ onCreate: () => new Date() })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date() })
+    updatedAt: Date = new Date();
 }
 
 export enum TransactionStatus {
@@ -30,4 +39,5 @@ export enum TransactionStatus {
     TX_SENT = -1,
     TX_SUCCESS = 0,
     TX_FAILED = 1,
+    TX_NOT_ACCEPTED = 2
 }

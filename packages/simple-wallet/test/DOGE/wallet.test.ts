@@ -90,7 +90,7 @@ describe("Dogecoin wallet tests", () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
-         .eventually.be.rejectedWith(`Transaction is not prepared: fee ${feeInSatoshi.toString()} is higher than maxFee ${maxFeeInSatoshi.toString()}`);
+         .eventually.be.rejectedWith(`Fee ${feeInSatoshi.toString()} is higher than maxFee ${maxFeeInSatoshi.toString()}`);
    });
 
    it("Should not create transaction: amount = dust amount", async () => {
