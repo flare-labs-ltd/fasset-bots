@@ -123,7 +123,7 @@ export class AlgoWalletImplementation implements WriteWalletInterface {
       if (maxFeeInMicroAlgos && suggestedParams.fee > toNumber(maxFeeInMicroAlgos)) {
          throw Error(`Transaction is not prepared: maxFee ${maxFeeInMicroAlgos.toString()} is higher than fee ${suggestedParams.fee.toString()}`);
       }
-      // TODO amountInMicroAlgos should be in BN
+      //TODO amountInMicroAlgos should be in BN
       const tr = algosdk.makePaymentTxnWithSuggestedParams(source, destination, toNumber(amountInMicroAlgos), undefined, preparedNote, suggestedParams);
       return tr;
    }

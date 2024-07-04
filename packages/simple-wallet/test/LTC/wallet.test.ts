@@ -75,7 +75,7 @@ describe("Litecoin wallet tests", () => {
       expect(fee).not.to.be.null;
    });
 
-   // TODO: Internal Server Error: txn-mempool-conflict
+   //TODO: Internal Server Error: txn-mempool-conflict
    it.skip("Should create and delete account", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(LTCMccConnectionTest);
       const toDelete = rewired.createWallet();

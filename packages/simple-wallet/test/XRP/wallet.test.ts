@@ -145,7 +145,7 @@ describe("Xrp wallet tests", () => {
       expect(index).not.to.be.null;
    });
 
-   it.only("Should not find transaction", async () => {
+   it("Should not find transaction", async () => {
       const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
       rewired.orm = await initializeMikroORM("simple-wallet_xrp.db");
       const txHash = "TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX"

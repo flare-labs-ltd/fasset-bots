@@ -167,11 +167,12 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       await this.checkIfCanSubmitFromAddress(source);
       try {
          const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence);
-         this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops ? maxFeeInDrops : null });
+         this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops || null });
          const tx_blob = await this.signTransaction(transaction, privateKey);
          const submitResp = await this.submitTransaction(tx_blob);
          // save tx in db
          await createTransactionEntity(this.orm, source, destination, submitResp.txId);
+         // send transaction to chain, but do not wait for result, immediately return txHash
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
          return await this.waitForTransaction(submitResp.txId, submitResp.result!, source, privateKey);
       } finally {
@@ -304,7 +305,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       });
       xrp_ensure_data(res.data);
       const txHash = xrplHashes.hashSignedTx(res.data.result.tx_blob);
-      // TODO save original tx
       return { txId: txHash, result: res.data.result.engine_result };
    }
 
