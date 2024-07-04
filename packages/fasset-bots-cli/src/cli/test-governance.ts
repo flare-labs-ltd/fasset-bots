@@ -5,12 +5,12 @@ import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
 import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import type { OptionValues } from "commander";
 import { readFileSync } from "fs";
 import { AgentRegistrationTransport } from "../utils/open-beta";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress, validateDecimal } from "../utils/validation";
-import type { OptionValues } from "commander";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
@@ -96,6 +96,7 @@ program
         const options: { config: string; secrets: string } = program.opts();
         await finalizeAgentOpenBetaRegistration(options.secrets, options.config, _options.nat, _options.usdt, _options.usdc, _options.eth)
     });
+
 program
     .command("openBetaAgentFund")
     .description("fund agents with CFLR and fake collateral tokens")
@@ -108,6 +109,7 @@ program
         const options: { config: string; secrets: string } = program.opts();
         await distributeTokensToAddress(options.secrets, options.config, recipient, _options.nat, _options.usdt, _options.usdc, _options.eth)
     });
+
 program
     .command("closedBetaAgentRegister")
     .description("whitelist all agents waiting for registration")
@@ -132,9 +134,10 @@ async function whitelistUser(secretsFile: string, configFileName: string, addres
     const [secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const deployerAddress = secrets.required("deployer.address");
-    const agentOwnerRegistry = await UserWhitelist.at(contracts["UserWhitelist"]!.address);
+    const agentOwnerRegistry = await UserWhitelist.at(requireNotNull(contracts["UserWhitelist"]).address);
     await agentOwnerRegistry.addAddressToWhitelist(address, { from: deployerAddress });
 }
+
 async function isAgentWhitelisted(secretsFile: string, configFileName: string, ownerAddress: string): Promise<boolean> {
     const [_secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
