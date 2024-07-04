@@ -4,16 +4,17 @@ import "source-map-support/register";
 import { CollateralClass, CollateralType } from "@flarelabs/fasset-bots-core";
 import { ChainContracts, Secrets, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
 import { AssetManagerControllerInstance } from "@flarelabs/fasset-bots-core/types";
-import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
-import { readFileSync, createReadStream } from "fs";
+import { artifacts, authenticatedHttpProvider, initWeb3, requireNotNull, requireNotNullCmd, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import type { OptionValues } from "commander";
+import { readFileSync } from "fs";
+import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress, validateDecimal } from "../utils/validation";
-import { OpenBetaAgentRegistrationTransport } from "../utils/open-beta";
-import type { OptionValues } from "commander";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
+const Whitelist = artifacts.require("Whitelist");
 const AssetManagerController = artifacts.require("AssetManagerController");
 
 const program = programWithCommonOptions("util", "all_fassets");
@@ -40,6 +41,15 @@ program
         const options: { config: string; secrets: string } = program.opts();
         const isWhitelisted = await isAgentWhitelisted(options.secrets, options.config, address);
         console.log(isWhitelisted);
+    });
+
+program
+    .command("whitelistUser")
+    .description("allow agent owner to operate")
+    .argument("address", "owner management address")
+    .action(async (address: string) => {
+        const options: { config: string; secrets: string } = program.opts();
+        await whitelistUser(options.secrets, options.config, address);
     });
 
 program
@@ -121,6 +131,14 @@ async function isAgentWhitelisted(secretsFile: string, configFileName: string, o
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
     return agentOwnerRegistry.isWhitelisted(ownerAddress);
+}
+
+async function whitelistUser(secretsFile: string, configFileName: string, address: string) {
+    const [secrets, config] = await initEnvironment(secretsFile, configFileName);
+    const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
+    const deployerAddress = secrets.required("deployer.address");
+    const userWhitelist = await Whitelist.at(contracts.AgentOwnerRegistry.address);
+    await userWhitelist.addAddressToWhitelist(address, { from: deployerAddress });
 }
 
 async function mintFakeTokens(secretsFile: string, configFileName: string, tokenSymbol: string, recipientAddress: string, amount: string): Promise<void> {
