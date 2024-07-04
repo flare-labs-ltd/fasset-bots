@@ -44,6 +44,15 @@ program
     });
 
 program
+    .command("whitelistUser")
+    .description("allow agent owner to operate")
+    .argument("address", "owner management address")
+    .action(async (address: string) => {
+        const options: { config: string; secrets: string } = program.opts();
+        await whitelistUser(options.secrets, options.config, address);
+    });
+
+program
     .command("mintFakeTokens")
     .description("mint fake tokens (fake versions of USDC or USDT on test networks)")
     .argument("symbol", "fake token symbol, e.g. testUSDC or testUSDT")
