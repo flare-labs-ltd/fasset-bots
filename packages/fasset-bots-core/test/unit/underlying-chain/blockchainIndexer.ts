@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import rewire from "rewire";
@@ -5,7 +6,8 @@ import { Secrets, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper } from "../../../src/config/BotConfig";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
-import { IBlockChain, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
+import { IBlockChain, ITransaction, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "../../../src/underlying-chain/interfaces/IBlockChain";
+import { web3DeepNormalize } from "../../../src/utils";
 import { BN_ZERO, toBN } from "../../../src/utils/helpers";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { receiveBlockAndTransaction } from "../../test-utils/test-helpers";
@@ -156,11 +158,27 @@ describe("testXRP blockchain tests via indexer", () => {
     });
 
     it.skip("find a transaction", async () => {
-        const txs = await blockchainIndexerClient.getTransactionsByReference("0x4642505266410001000000000000000000000000000000000000000000000e63");
-        console.log(JSON.stringify(txs, null, 4));
-        const txs2 = await blockchainIndexerClient.getTransactionsByReference("0x464250526641000100000000000000000000000000000000000000000000072f");
-        console.log(JSON.stringify(txs2, null, 4));
+        // const txs = await blockchainIndexerClient.getTransactionsByReference("0x4642505266410001000000000000000000000000000000000000000000000e63");
+        // console.log(JSON.stringify(txs, null, 4));
+        // const txs2 = await blockchainIndexerClient.getTransactionsByReference("0x464250526641000100000000000000000000000000000000000000000000072f");
+        // console.log(JSON.stringify(txs2, null, 4));
+        const txs = await blockchainIndexerClient.getTransactionsByReference("0x464250526641000100000000000000000000000000000000000000000000b35d");
+        console.log(JSON.stringify(web3DeepNormalize(txs), null, 4));
+        const minting = { agentUnderlyingAddress: "rpnVrn2xZwTppv8xuy6hCjwaRP2QsY3fZo", valueUBA: toBN("40000000"), feeUBA: toBN("200000"), paymentReference: "0x464250526641000100000000000000000000000000000000000000000000b35d" };
+        console.log(isSuccessfulPayment(minting, txs[0]));
     });
+
+    function isSuccessfulPayment(minting: { agentUnderlyingAddress: string, valueUBA: BN, feeUBA: BN, paymentReference: string }, tx: ITransaction) {
+        const targetAmount = tx.outputs
+            .filter(([dst, amount]) => dst === minting.agentUnderlyingAddress)
+            .reduce((x, [dst, amount]) => x.add(toBN(amount)), BN_ZERO);
+        console.log(tx.status, TX_SUCCESS);
+        console.log("" + targetAmount, "" + minting.valueUBA.add(minting.feeUBA));
+        console.log(tx.reference, minting.paymentReference);
+        return tx.status === TX_SUCCESS
+            && targetAmount.gte(minting.valueUBA.add(minting.feeUBA))
+            && tx.reference?.toLowerCase() === minting.paymentReference?.toLowerCase();
+    }
 
     it("Should retrieve transaction", async () => {
         const retrievedTransaction = await blockchainIndexerClient.getTransaction(txHash);

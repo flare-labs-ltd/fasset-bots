@@ -6,7 +6,9 @@ use(chaiAsPromised);
 import { encode } from "xrpl";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
-import { toBN } from "../../src/utils/utils";
+import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
+import { toBN, toBNExp } from "../../src/utils/bnutils";
+
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
@@ -31,10 +33,10 @@ const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
 const entropyBase = "my_xrp_test_wallet";
 const entropyBasedAddress = "rMeXpc8eokNRCTVtCMjFqTKdyRezkYJAi1";
 
-const amountToSendDropsFirst = toBN(100000);
-const amountToSendDropsSecond = toBN(50000);
-const feeInDrops = toBN(15);
-const maxFeeInDrops = toBN(12);
+const amountToSendDropsFirst = toBNExp(0.1, XRP_DECIMAL_PLACES);
+const amountToSendDropsSecond = toBNExp(0.05, XRP_DECIMAL_PLACES);
+const feeInDrops = toBNExp(0.000015, 6);
+const maxFeeInDrops = toBNExp(0.000012, 6);
 const sequence = 54321;
 
 let wClient: WALLET.XRP;
@@ -126,7 +128,9 @@ describe("Xrp wallet tests", () => {
    });
 
    it("Should receive fee", async () => {
-      const fee = await wClient.getCurrentTransactionFee();
+      const feeP = await wClient.getCurrentTransactionFee({ isPayment: true });
+      expect(feeP).not.to.be.null;
+      const fee = await wClient.getCurrentTransactionFee({ isPayment: false });
       expect(fee).not.to.be.null;
    });
 
@@ -191,7 +195,7 @@ describe("Xrp wallet tests", () => {
 
    /* describe("congested network tests", () => {
       const ntx = 1;
-      it.only("Should create sign and send transactions in a congested network", async () => {
+      it("Should create sign and send transactions in a congested network", async () => {
          await Promise.all(Array(ntx).fill(0).map(async (_, i) => {
             console.log(`i: ` + (await wClient.getCurrentTransactionFee()).toString())
             fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
@@ -205,4 +209,21 @@ describe("Xrp wallet tests", () => {
       })
    }) */
 
+   // Running this takes cca 20 min, as account can only be deleted
+   // if account sequence + DELETE_ACCOUNT_OFFSET < ledger number
+   it.skip("Should create and delete account", async () => {
+      const toDelete = wClient.createWallet();
+      expect(toDelete.address).to.not.be.null;
+      expect(WAValidator.validate(toDelete.address, "XRP", "testnet")).to.be.true;
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
+      const toSendInDrops = toBNExp(20,6); // 20 XPR
+      // fund toDelete account
+      await wClient.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
+      const balance = await wClient.getAccountBalance(toDelete.address);
+      // delete toDelete account
+      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address);
+      const balance2 = await wClient.getAccountBalance(toDelete.address);
+      expect(balance.gt(balance2));
+   });
 });

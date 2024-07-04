@@ -13,10 +13,20 @@ export enum AgentMintingState {
 export enum AgentRedemptionState {
     DONE = "done",
     STARTED = "started",
+    PAYING = "paying",
     PAID = "paid",
+    UNPAID = "unpaid",
     REQUESTED_PROOF = "requestedProof",
     NOT_REQUESTED_PROOF = "notRequestedProof",
     REQUESTED_REJECTION_PROOF = "requestedRejectionProof",
+}
+
+export enum AgentRedemptionFinalState {
+    REJECTED = "rejected",
+    PERFORMED = "performed",
+    FAILED = "failed",
+    BLOCKED = "blocked",
+    EXPIRED = "expired",
 }
 
 export enum AgentUnderlyingPaymentState {

@@ -14,6 +14,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { Secrets } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
+import { AgentSettingName } from "../entities/common";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -28,7 +29,6 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
-import { AgentSettingName } from "../entities/common";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -234,7 +234,10 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async enterAvailableList(agentVault: string): Promise<void> {
-        const { agentBot } = await this.getAgentBot(agentVault);
+        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
+        if (readAgentEnt.waitingForDestructionCleanUp || readAgentEnt.waitingForDestructionTimestamp.gt(BN_ZERO)) {
+            throw new CommandLineError("Agent is closing, cannot re-enter.");
+        }
         await agentBot.agent.makeAvailable();
         await this.notifierFor(agentVault).sendAgentEnteredAvailable();
         logger.info(`Agent ${agentVault} entered available list.`);
@@ -399,8 +402,9 @@ export class AgentBotCommands {
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
         await agentBot.updateSetting.createAgentUpdateSetting(this.orm.em, settingName, validAt, readAgentEnt);
-        logger.info(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
-        console.log(`Agent ${agentVault} announced agent settings update at ${validAt.toString()} for ${settingName}.`);
+        const validAtStr = new Date(Number(validAt) * 1000).toString();
+        logger.info(`Agent ${agentVault} announced agent settings update for ${settingName}. It will take effect after ${validAtStr} (timestamp ${validAt}).`);
+        console.log(`Agent ${agentVault} announced agent settings update for ${settingName}. It will take effect after ${validAtStr}.`);
     }
 
     /**
@@ -620,6 +624,16 @@ export class AgentBotCommands {
     }
 
     /**
+     * Switch vault collateral, but before that deposit the equivalent amount as the current balance.
+     */
+    async depositAndSwitchVaultCollateral(agentVault: string, token: string): Promise<void> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const amountToDeposit = await agentBot.agent.calculateVaultCollateralReplacementAmount(token);
+        await agentBot.agent.depositTokensToVault(token, amountToDeposit);
+        await agentBot.agent.switchVaultCollateral(token);
+    }
+
+    /**
      * Upgrades WNat contract
      * @param agentVault agent's vault address
      */
@@ -640,5 +654,10 @@ export class AgentBotCommands {
         if (await this.context.assetManager.isPoolTokenSuffixReserved(suffix)) {
             throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
         }
+    }
+
+    async makeIllegalPayment(agentVault: string,  destination: string, amount: string | BN): Promise<void> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        await agentBot.agent.performPayment(destination, amount);
     }
 }

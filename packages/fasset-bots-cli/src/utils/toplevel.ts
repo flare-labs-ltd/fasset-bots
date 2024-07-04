@@ -1,7 +1,6 @@
-import { CommandLineError, logger } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, logger, programVersion } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import path from "path";
-import { programVersion } from "./program";
 
 const toplevelRunFinalizers: Array<() => Promise<void>> = [];
 

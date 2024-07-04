@@ -1,14 +1,11 @@
 {
     "name": "fasset-bots-monorepo",
-    "version": "1.0.0-beta.8",
+    "version": "1.0.0-beta.9",
     "private": true,
     "workspaces": {
         "packages": [
             "packages/*"
         ]
-    },
-    "engines": {
-        "node": ">=16.10.0"
     },
     "scripts": {
         "---------BUILD---SCRIPTS": "",
@@ -23,7 +20,7 @@
         "agent-bot": "node packages/fasset-bots-cli/dist/src/cli/agent-bot.js",
         "user-bot": "node packages/fasset-bots-cli/dist/src/cli/user-bot.js",
         "key-gen": "node packages/fasset-bots-cli/dist/src/cli/key-gen.js",
-        "utils": "node packages/fasset-bots-cli/dist/src/cli/utils.js",
+        "tokens": "node packages/fasset-bots-cli/dist/src/cli/tokens.js",
         "test-governance": "node packages/fasset-bots-cli/dist/src/cli/test-governance.js",
         "fake-price-reader": "node packages/fasset-bots-cli/dist/src/cli/fake-price-reader.js",
         "---------BOTS-RUN---SCRIPTS": "",

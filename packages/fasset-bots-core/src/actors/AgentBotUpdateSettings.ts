@@ -2,11 +2,11 @@ import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentUpdateSetting } from "../entities/agent";
+import { AgentUpdateSettingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
-import { AgentUpdateSettingState } from "../entities/common";
 
 export class AgentBotUpdateSettings {
     static deepCopyWithObjectCreate = true;
@@ -26,6 +26,14 @@ export class AgentBotUpdateSettings {
      * @param readAgentEnt
      */
     async createAgentUpdateSetting(rootEm: EM, settingName: string, settingValidAt: BN, readAgentEnt: AgentEntity): Promise<void> {
+        const settingAlreadyUpdating = await rootEm.getRepository(AgentUpdateSetting)
+            .findOne({ name: settingName, state: AgentUpdateSettingState.WAITING } as FilterQuery<AgentUpdateSetting>);
+        // Set previous setting request as Done, as it will be overwritten on smart contract.
+        if(settingAlreadyUpdating) {
+            settingAlreadyUpdating.state = AgentUpdateSettingState.DONE;
+            await rootEm.flush();
+        }
+
         rootEm.create(
             AgentUpdateSetting,
             {
@@ -36,11 +44,12 @@ export class AgentBotUpdateSettings {
             } as RequiredEntityData<AgentUpdateSetting>,
             { persist: true }
         );
+        await rootEm.flush();
         await this.notifier.sendSettingsUpdateStarted(settingName, settingValidAt.toString());
         logger.info(`Agent ${this.agent.vaultAddress} started setting ${settingName} update valid at ${settingValidAt.toString()}.`);
     }
 
-    /**TODO
+    /**
      * Returns update settings with state other than DONE.
      * @param em entity manager
      * @return list of AgentUpdateSetting's instances
@@ -76,7 +85,6 @@ export class AgentBotUpdateSettings {
                             `Agent ${this.agent.vaultAddress} run into update setting state ${updateSetting.state} not supported for update setting ${updateSetting.name}.`
                         );
                 }
-                await em.persistAndFlush(AgentUpdateSetting);
             })
             .catch((error) => {
                 console.error(`Error handling next update setting  step for update setting ${id} agent ${this.agent.vaultAddress}: ${error}`);
@@ -114,7 +122,7 @@ export class AgentBotUpdateSettings {
                 await this.notifier.sendAgentSettingsUpdate(updateSetting.name);
                 return true;
             } catch (error) {
-                if (errorIncluded(error, ["update not valid anymore"])) {
+                if (errorIncluded(error, ["update not valid anymore", "no pending update"])) {
                     await this.notifier.sendAgentCannotUpdateSettingExpired(updateSetting.name);
                     return true;
                 }

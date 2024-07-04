@@ -4,15 +4,16 @@ import { Secrets, createBotConfig } from "../config";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext, isAssetAgentContext } from "../config/create-asset-context";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
-import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
+import { OwnerAddressPair } from "../fasset/Agent";
+import { AgentStatus, AssetManagerSettings, AvailableAgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
+import { latestBlockTimestampBN } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { formatFixed } from "../utils/formatting";
-import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, randomChoice, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, getOrCreateAsync, randomChoice, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { AgentInfoReader, CollateralPriceCalculator } from "./AgentInfoReader";
-import { OwnerAddressPair } from "../fasset/Agent";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
@@ -72,12 +73,24 @@ export class InfoBotCommands {
 
     async findBestAgent(minAvailableLots: BN): Promise<string | undefined> {
         const agents = await this.getAvailableAgents();
-        const eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
+        let eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
         if (eligible.length === 0) return undefined;
-        eligible.sort((a, b) => -toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
-        const lowestFee = toBN(eligible[0].feeBIPS);
-        eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
-        return randomChoice(eligible)?.agentVault;
+        eligible.sort((a, b) => toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
+        while (eligible.length > 0) {
+            const lowestFee = toBN(eligible[0].feeBIPS);
+            let optimal = eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
+            while (optimal.length > 0) {
+                const agentVault = requireNotNull(randomChoice(optimal)).agentVault;  // list must be nonempty
+                const info = await this.context.assetManager.getAgentInfo(agentVault);
+                // console.log(`agent ${agentVault} status ${info.status}`);
+                if (Number(info.status) === AgentStatus.NORMAL) {
+                    return agentVault;
+                }
+                // agent is in liquidation or something, remove it and try another
+                optimal = optimal.filter(a => a.agentVault !== agentVault);
+                eligible = eligible.filter(a => a.agentVault !== agentVault);
+            }
+        }
     }
 
     /**
@@ -171,21 +184,50 @@ export class InfoBotCommands {
     async printAllAgents() {
         const printer = new ColumnPrinter([
             ["Vault address", 42, "l"],
+            ["Owner", 20, "l"],
             ["Owner address", 42, "l"],
+            ["Collateral", 12, "l"],
             ["Minted lots", 12, "r"],
             ["Free lots", 12, "r"],
-            ["Public", 6, "r"],
+            ["Public", 6, "l"],
+            ["Status", 16, "l"],
         ]);
         printer.printHeader();
         const allAgents = await this.getAllAgents();
         const lotSizeUBA = await this.getLotSize();
+        const collateralTokens = new Map<string, string>();
+        let countAll = 0;
+        let countPublic = 0;
+        let totalMinted = 0;
+        let totalfreeLots = 0;
         for (const vaultAddr of allAgents) {
             const info = await this.context.assetManager.getAgentInfo(vaultAddr);
+            const ownerName = await this.context.agentOwnerRegistry.getAgentName(info.ownerManagementAddress);
+            const collateral = await getOrCreateAsync(collateralTokens, info.vaultCollateralToken, async (tokenAddr) => {
+                const collateralType = await this.context.assetManager.getCollateralType(CollateralClass.VAULT, tokenAddr);
+                const tokenBR = await TokenBalances.collateralType(collateralType);
+                let name = tokenBR.symbol;
+                if (toBN(collateralType.validUntil).gt(BN_ZERO)) {
+                    const ts = toBN(collateralType.validUntil).lt(await latestBlockTimestampBN()) ? "i" : "d";
+                    name = `[${ts}] ${name}`;
+                }
+                return name;
+            });
             const mintedLots = Number(info.mintedUBA) / lotSizeUBA;
             const freeLots = Number(info.freeCollateralLots);
             const available = info.publiclyAvailable ? "YES" : "no";
-            printer.printLine(vaultAddr, info.ownerManagementAddress, mintedLots.toFixed(2), freeLots.toFixed(0), available);
+            const status = AgentStatus[Number(info.status)];
+            printer.printLine(vaultAddr, ownerName.slice(0, 20), info.ownerManagementAddress,
+                collateral.slice(0, 12), mintedLots.toFixed(2), freeLots.toFixed(0), available, status);
+            ++countAll;
+            totalMinted += mintedLots;
+            if (info.publiclyAvailable && status === "NORMAL") {
+                ++countPublic;
+                totalfreeLots += freeLots;
+            }
         }
+        console.log(`Total agents: ${countAll},  available for minting: ${countPublic}`);
+        console.log(`Total minted lots: ${totalMinted.toFixed(2)},  total free lots: ${totalfreeLots.toFixed(0)}`);
     }
 
     async findPoolBySymbol(symbol: string) {

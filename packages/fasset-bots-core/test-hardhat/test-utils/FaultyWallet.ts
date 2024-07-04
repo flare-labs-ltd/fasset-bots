@@ -11,6 +11,9 @@ export class FaultyWallet implements IBlockChainWallet {
     ): Promise<string> {
         throw new Error("Method not implemented.");
     }
+    deleteAccount(sourceAddress: string, targetAddress: string, reference: string | null, options?: TransactionOptionsWithFee | undefined): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
     addMultiTransaction(): Promise<string> {
         throw new Error("Method not implemented.");
     }

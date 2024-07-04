@@ -10,8 +10,8 @@ import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chai
 import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { checkUnderlyingFunds, emptyUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
-import { BN_ZERO, BNish, expectErrors, toBN } from "../utils/helpers";
+import { checkUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
+import { BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
@@ -141,10 +141,17 @@ export class Agent {
      * @param amountTokenWei amount to be deposited in wei
      */
     async depositVaultCollateral(amountTokenWei: BNish) {
-        const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
-        const vaultCollateralToken = await IERC20.at(vaultCollateralTokenAddress);
-        await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.owner.workAddress });
-        return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.owner.workAddress });
+        const vaultCollateral = await this.getVaultCollateral();
+        return await this.depositTokensToVault(vaultCollateral.token, amountTokenWei);
+    }
+
+    /**
+     * Deposits any ERC20 tokens to agents vault.
+     */
+    async depositTokensToVault(tokenAddress: string, amountTokenWei: BNish) {
+        const token = await IERC20.at(tokenAddress);
+        await token.approve(this.vaultAddress, amountTokenWei, { from: this.owner.workAddress });
+        return await this.agentVault.depositCollateral(tokenAddress, amountTokenWei, { from: this.owner.workAddress });
     }
 
     /**
@@ -309,7 +316,7 @@ export class Agent {
      * @returns transaction hash
      */
     async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
-        await this.enoughUnderlyingFunds(paymentSourceAddress, paymentDestinationAddress, paymentAmount);
+        await checkUnderlyingFunds(this.context, paymentSourceAddress,paymentAmount, paymentDestinationAddress);
         return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 
@@ -363,6 +370,21 @@ export class Agent {
     }
 
     /**
+     * Calculate the amount of new tokens needed to replace the old tokens in vault.
+     */
+    async calculateVaultCollateralReplacementAmount(token: string) {
+        const oldCollateral = await this.getVaultCollateral();
+        const newCollateral = await this.context.assetManager.getCollateralType(CollateralClass.VAULT, token);
+        const settings = await this.context.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        const oldPrice = await priceReader.getPrice(oldCollateral.tokenFtsoSymbol);
+        const newPrice = await priceReader.getPrice(newCollateral.tokenFtsoSymbol);
+        const oldToken = await IERC20.at(oldCollateral.token);
+        const oldBalance = await oldToken.balanceOf(this.vaultAddress);
+        return oldBalance.mul(oldPrice.price).div(newPrice.price);
+    }
+
+    /**
      * Upgrades WNat contract. It swaps old WNat tokens for new ones and sets it for use by the pool.
      */
     async upgradeWNatContract(): Promise<void> {
@@ -370,26 +392,17 @@ export class Agent {
     }
 
     async emptyAgentUnderlying(destinationAddress: string): Promise<void> {
-        const amountBN = await emptyUnderlyingFunds(this.context, this.underlyingAddress);
-        if (amountBN.lte(BN_ZERO)) {
-            const logMessage = amountBN.lt(BN_ZERO)
-                ? `Agent ${this.vaultAddress} cannot withdraw all funds from underlying ${this.underlyingAddress}.`
-                : `Agent ${this.vaultAddress} has no underlying funds on underlying ${this.underlyingAddress}.`;
-            logger[amountBN.lt(BN_ZERO) ? 'error' : 'info'](logMessage);
+        try {
+            const txHAsh = await this.wallet.deleteAccount(this.underlyingAddress, destinationAddress, null);
+            logger.info(`Agent ${this.vaultAddress} withdrew all funds on underlying ${this.underlyingAddress} with transaction ${txHAsh}.`)
+            return;
+        } catch (error) {
+            logger.error(`Agent ${this.vaultAddress} could not delete account or empty account:`, error);
             return;
         }
-        const txHAsh = await this.wallet.addTransaction(this.underlyingAddress, destinationAddress, amountBN, null);
-        logger.info(`Agent ${this.vaultAddress} withdrew all all funds on underlying ${this.underlyingAddress} with transaction ${txHAsh}.`)
-        return;
     }
 
-    async enoughUnderlyingFunds(sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<void> {
-        const enoughFunds = await checkUnderlyingFunds(this.context, sourceUnderlyingAddress, destinationUnderlyingAddress, amount);
-        if (enoughFunds) {
-            return;
-        }  else {
-            logger.error(`Agent ${this.vaultAddress} run into error while performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.`)
-            throw new Error(`Not enough funds on underlying address ${sourceUnderlyingAddress}`);
-        }
+    async agentPingResponse(query: BNish, response: string) {
+        await this.assetManager.agentPingResponse(this.vaultAddress, query, response, { from: this.owner.workAddress });
     }
 }

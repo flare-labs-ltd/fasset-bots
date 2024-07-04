@@ -1,4 +1,4 @@
-import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
+import { StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet";
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
@@ -27,7 +27,7 @@ export function createWalletClient(
     chainId: ChainId,
     walletUrl: string,
     options: StuckTransaction = {}
-): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
+): WalletClient {
     requireSupportedChainId(chainId);
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
         return new WALLET.BTC({

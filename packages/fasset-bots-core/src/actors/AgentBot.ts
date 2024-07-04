@@ -11,7 +11,7 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError, TokenBalances } from "../utils";
+import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion } from "../utils";
 import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { formatArgs, squashSpace } from "../utils/formatting";
@@ -29,7 +29,6 @@ import { AgentBotMinting } from "./AgentBotMinting";
 import { AgentBotRedemption } from "./AgentBotRedemption";
 import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentTokenBalances } from "./AgentTokenBalances";
-import { checkUnderlyingFunds } from "../utils/fasset-helpers";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentUnderlyingPaymentType } from "../entities/common";
 
@@ -64,6 +63,9 @@ export class AgentBotTransientStorage {
 
     // used by getUnderlyingBlockHeightProof to detect when the wait is too long and agent has to be notified
     waitingForLatestBlockProofSince = BN_ZERO;
+
+    // the block when outdated agent was last reported
+    lastOutdatedEventReported = 0;
 }
 
 export class AgentBot {
@@ -152,7 +154,7 @@ export class AgentBot {
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
 
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-            return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
     }
 
     /**
@@ -165,11 +167,7 @@ export class AgentBot {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const smallest_amount = 1;
-        const enoughFunds = await checkUnderlyingFunds(context, underlyingAddress, underlyingAddress, smallest_amount);
-        if (!enoughFunds) {
-            logger.error(`Not enough funds to prove EOAaddress ${underlyingAddress}`)
-            throw new Error(`Not enough funds to prove EOAaddress ${underlyingAddress}`);
-        }
+        await checkUnderlyingFunds(context, underlyingAddress, smallest_amount, underlyingAddress);
         const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, smallest_amount, reference);
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
@@ -226,10 +224,7 @@ export class AgentBot {
         const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
         try {
             const reference = owner.managementAddress;
-            const enoughFunds = await checkUnderlyingFunds(context, ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount);
-            if (!enoughFunds) {
-                throw new Error(`Not enough funds on underlying address ${ownerUnderlyingAddress}`);
-            }
+            await checkUnderlyingFunds(context, ownerUnderlyingAddress, starterAmount, vaultUnderlyingAddress);
             const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
@@ -291,19 +286,16 @@ export class AgentBot {
             await this.redemption.redemptionStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionDefault")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionDefault' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendRedemptionDefaulted(event.args.requestId.toString(), event.args.redeemer);
+            await this.redemption.redemptionDefault(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId);
-            await this.notifier.sendRedemptionWasPerformed(event.args.requestId, event.args.redeemer);
+            await this.redemption.redemptionPerformed(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentFailed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentFailed' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId);
-            await this.notifier.sendRedemptionFailed(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer, event.args.failureReason);
+            await this.redemption.redemptionPaymentFailed(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionPaymentBlocked")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionPaymentBlocked' with data ${formatArgs(event.args)}.`);
-            await this.redemption.redemptionFinished(em, event.args.requestId);
-            await this.notifier.sendRedemptionBlocked(event.args.requestId.toString(), event.args.transactionHash, event.args.redeemer);
+            await this.redemption.redemptionPaymentBlocked(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
             await this.handleAgentDestroyed(em);
@@ -325,6 +317,9 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "IllegalPaymentConfirmed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash);
+        } else if (eventIs(event, this.context.assetManager, "AgentPing")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentPing' with data ${formatArgs(event.args)}.`);
+            await this.handleAgentPing(event.args.query);
         }
     }
 
@@ -693,7 +688,7 @@ export class AgentBot {
      * @returns proved attestation provider data
      */
     async checkProofExpiredInIndexer(lastUnderlyingBlock: BN, lastUnderlyingTimestamp: BN): Promise<ConfirmedBlockHeightExists.Proof | "NOT_EXPIRED" | "WAITING_PROOF"> {
-        logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
+        // logger.info(`Agent ${this.agent.vaultAddress} is trying to check if transaction (proof) can still be obtained from indexer.`);
         // try to get proof whether payment/non-payment proofs have expired
         const proof = await this.getUnderlyingBlockHeightProof();
         if (proof) {
@@ -703,7 +698,7 @@ export class AgentBot {
                 logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CANNOT be obtained from indexer.`);
                 return proof;
             } else {
-                logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
+                // logger.info(`Agent ${this.agent.vaultAddress} confirmed that transaction (proof) CAN be obtained from indexer.`);
                 return "NOT_EXPIRED";
             }
         }
@@ -741,6 +736,17 @@ export class AgentBot {
      */
     async handleAgentDestroyed(em: EM): Promise<void> {
         await new AgentBotClosing(this).handleAgentDestroyed(em);
+    }
+
+    async handleAgentPing(query: BNish) {
+        try {
+            if (Number(query) === 0) {
+                const data = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
+                await this.agent.agentPingResponse(query, data);
+            }
+        } catch (error) {
+            logger.error(`Error responding to ping for agent ${this.agent.vaultAddress}`, error);
+        }
     }
 
     /**

@@ -15,7 +15,7 @@ import { artifacts, web3 } from "../../src/utils/web3";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
-import { FakeERC20Instance, Truffle } from "../../typechain-truffle";
+import { FakeERC20Instance, IERC20MetadataInstance, Truffle } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 
@@ -143,7 +143,7 @@ describe("Toplevel runner and commands integration test", () => {
         botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService);
         // currencies
         const usdc = context0.stablecoins.usdc as FakeERC20Instance;
-        usdcCurrency = await Currencies.erc20(usdc);
+        usdcCurrency = await Currencies.erc20(usdc as IERC20MetadataInstance);
         natCurrency = await Currencies.evmNative(context0);
         xrpCurrency = Currencies.chain(testXrpChainInfo);
         // mint some collaterals to owner

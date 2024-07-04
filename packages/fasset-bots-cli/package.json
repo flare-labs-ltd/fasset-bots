@@ -1,6 +1,6 @@
 {
     "name": "@flarelabs/fasset-bots-cli",
-    "version": "1.0.0-beta.8",
+    "version": "1.0.0-beta.9",
     "description": "FAsset bots command line executables",
     "author": "Flare Labs",
     "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
@@ -14,8 +14,8 @@
         "fake-price-reader": "dist/src/cli/fake-price-reader.js",
         "key-gen": "dist/src/cli/key-gen.js",
         "test-governance": "dist/src/cli/test-governance.js",
-        "user-bot": "dist/src/cli/user-bot.js",
-        "utils": "dist/src/cli/utils.js"
+        "tokens": "dist/src/cli/tokens.js",
+        "user-bot": "dist/src/cli/user-bot.js"
     },
     "mikro-orm": {
         "useTsNode": true,
