@@ -149,8 +149,8 @@ describe("Xrp wallet tests", () => {
       const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
       rewired.orm = await initializeMikroORM("simple-wallet_xrp.db");
       const txHash = "TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX"
-      await createTransactionEntity(rewired.orm, "", "", "TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX");
-      await expect(rewired.waitForTransaction("TXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTXTX", "tesSUCCESS"))
+      await createTransactionEntity(rewired.orm, "", "", txHash);
+      await expect(rewired.waitForTransaction(txHash, "tesSUCCESS"))
          .to.eventually.be.rejectedWith(`waitForTransaction: notImpl Submission result: tesSUCCESS`)
          .and.be.an.instanceOf(Error);
    });

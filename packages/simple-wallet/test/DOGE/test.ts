@@ -69,8 +69,6 @@ describe("Dogecoin TEST tests", () => {
 
    });
 
-
-
    it("Should create and delete account", async () => {
       const toDelete = wClient.createWallet();
       expect(toDelete.address).to.not.be.null;
