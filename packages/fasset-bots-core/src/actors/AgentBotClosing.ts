@@ -230,6 +230,10 @@ export class AgentBotClosing {
         }
     }
 
+    /**
+     * Marks stored AgentBot in persistent state as inactive after event 'AgentDestroyed' is received.
+     * @param em entity manager
+     */
     async handleAgentDestroyed(rootEm: EM) {
         await this.agent.emptyAgentUnderlying(this.bot.ownerUnderlyingAddress);
         await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {

@@ -87,6 +87,7 @@ export class AgentBot {
     updateSetting = new AgentBotUpdateSettings(this.agent, this.notifier);
     collateralManagement = new AgentBotCollateralManagement(this.agent, this.agentBotSettings, this.notifier, this.tokens);
     underlyingManagement = new AgentBotUnderlyingManagement(this.agent, this.agentBotSettings, this.notifier, this.ownerUnderlyingAddress, this.tokens);
+    closing = new AgentBotClosing(this);
 
     // only set when created by an AgentBotRunner
     runner?: IRunner;
@@ -276,6 +277,7 @@ export class AgentBot {
             const minting = await this.minting.findMinting(em, event.args.collateralReservationId);
             await this.minting.mintingExecuted(minting, false);
         } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
+            // self minting has collateralReservationId=0 and there is no collateral reservation for it
             if (!event.args.collateralReservationId.isZero()) {
                 logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
                 const minting = await this.minting.findMinting(em, event.args.collateralReservationId);
@@ -298,7 +300,7 @@ export class AgentBot {
             await this.redemption.redemptionPaymentBlocked(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentDestroyed' with data ${formatArgs(event.args)}.`);
-            await this.handleAgentDestroyed(em);
+            await this.closing.handleAgentDestroyed(em);
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendCCBAlert(event.args.timestamp);
@@ -481,8 +483,7 @@ export class AgentBot {
 
 
     private async handleAgentCloseProcess(rootEm: EM) {
-        const closingHandler = new AgentBotClosing(this);
-        await closingHandler.handleAgentCloseProcess(rootEm);
+        await this.closing.handleAgentCloseProcess(rootEm);
     }
 
     async handleWaitForCollateralWithdrawal(rootEm: EM, latestTimestamp: BN) {
@@ -730,14 +731,9 @@ export class AgentBot {
     }
 
     /**
-     * Marks stored AgentBot in persistent state as inactive after event 'AgentDestroyed' is received.
-     * @param em entity manager
-     * @param vaultAddress agent's vault address
+     * Respond to ping, measuring agent liveness
+     * @param query query number - 0 means return version
      */
-    async handleAgentDestroyed(em: EM): Promise<void> {
-        await new AgentBotClosing(this).handleAgentDestroyed(em);
-    }
-
     async handleAgentPing(query: BNish) {
         try {
             if (Number(query) === 0) {

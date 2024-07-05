@@ -136,7 +136,7 @@ export class AgentBotEventReader {
                         await this.bot.handleEvent(rootEm, fullEvent);
                     } else {
                         await this.notifier.danger(AgentNotificationKey.UNRESOLVED_EVENT,
-                            `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; ir will be skipped.`);
+                            `Event ${event.id} from block ${event.blockNumber} / index ${event.logIndex} could not be found on chain; it will be skipped.`);
                     }
                     await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.events.remove(event);
