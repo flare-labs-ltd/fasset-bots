@@ -497,7 +497,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             const blob = await this.signTransaction(newTransaction, privateKey);
             const submit = await this.submitTransaction(blob);
             // store new tx and mark replacement
-            await createTransactionEntity(this.orm, transaction, transaction.Account, transaction.Destination, submit.txId);
+            await createTransactionEntity(this.orm, newTransaction, newTransaction.Account, newTransaction.Destination, submit.txId);
             const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
             await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
                txEnt.replaced_by = newTxEnt;

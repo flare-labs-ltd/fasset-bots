@@ -8,8 +8,8 @@ import { BTC_LTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
 
-const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/UTXOWalletImplementation");
-const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("UTXOWalletImplementation");
+const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/LtcWalletImplementation");
+const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("LtcWalletImplementation");
 
 const LTCMccConnectionTest = {
    url: process.env.LTC_URL ?? "",
@@ -49,10 +49,9 @@ describe("Litecoin wallet tests", () => {
    });
 
    it("Should submit transaction", async () => {
-      const rewired = new rewiredUTXOWalletImplementationClass(LTCMccConnectionTest);
-      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-      const fee = await rewired.getCurrentTransactionFee({source: fundedWallet.address, amount: amountToSendInSatoshi, destination: targetAddress});
-      const submitted = await rewired.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      const fee = await wClient.getCurrentTransactionFee({source: fundedWallet.address, amount: amountToSendInSatoshi, destination: targetAddress});
+      const submitted = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, undefined, fee.muln(2));
       expect(typeof submitted).to.equal("object");
    });
 

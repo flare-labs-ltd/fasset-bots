@@ -7,7 +7,7 @@ import * as litecore from "bitcore-lib-ltc";
 import * as dogecore from "bitcore-lib-doge";
 import BIP32Factory from "bip32";
 import { generateMnemonic, mnemonicToSeedSync } from "bip39";
-import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, getTimeLockForAddress, sleepMs, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
+import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, sleepMs, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import {
    BTC_LTC_DUST_AMOUNT,
@@ -29,14 +29,13 @@ const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
-import { ORM } from "../orm/orm";
+import { ORM, createTransactionEntity, fetchTransactionEntity, updateTransactionEntity } from "../orm/orm";
+import { TransactionStatus } from "../entity/transaction";
 
 export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
-   addressLocks = new Map<string, { tx: bitcore.Transaction | null; maxFee: BN | null }>();
    blockOffset: number;
-   timeoutAddressLock: number;
    maxRetries: number;
    feeIncrease: number;
    orm!: ORM;
@@ -75,7 +74,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       this.maxRetries = createConfig.stuckTransactionOptions?.retries ?? resubmit.retries!;
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
-      this.timeoutAddressLock = getTimeLockForAddress(this.chainType, this.blockOffset, this.maxRetries);
    }
 
    /**
@@ -154,6 +152,8 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
       const tx_blob = await this.signTransaction(transaction, privateKey);
       const submitResp = await this.submitTransaction(tx_blob);
+      // save tx in db
+      await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId, maxFeeInSatoshi || null);
       const submittedBlockHeight = await this.getCurrentBlockHeight();
       return await this.waitForTransaction(submitResp.txId, source, privateKey, submittedBlockHeight);
    }
@@ -320,6 +320,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       const txResp = await this.client.get(`/tx/${txHash}`);
       wallet_utxo_ensure_data(txResp);
       if (txResp.data.blockHash) {
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.confirmations = txResp.data.confirmations;
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+         });
          return { txId: txResp.data.txid };
       }
       return this.tryToResubmitTransaction(txHash, source, privateKey, submittedBlockHeight, retry);
@@ -334,26 +338,31 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    private async tryToResubmitTransaction(txHash: string, source: string, privateKey: string, submittedBlockHeight: number, retry: number): Promise<ISubmitTransactionResponse> {
-      const res = this.addressLocks.get(source);
-      const transaction = res?.tx;
-      if (!transaction) {
-         throw new Error(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`);
-      }
+      const retriedTx = await fetchTransactionEntity(this.orm, txHash);
       const lastBlockNumber = submittedBlockHeight + this.blockOffset;
       const currentBlockHeight = await this.getCurrentBlockHeight();
       if (currentBlockHeight > lastBlockNumber) {
          if (retry <= this.maxRetries) {
-            const newTransaction = transaction;
+            const newTransaction = JSON.parse(retriedTx.raw.toString());
             const newFee = newTransaction.getFee() * this.feeIncrease;
-            this.checkFeeRestriction(toBN(newFee), res.maxFee);
+            this.checkFeeRestriction(toBN(newFee), retriedTx.maxFee);
             newTransaction.fee(newFee);
-            this.addressLocks.set(source, { tx: newTransaction, maxFee: res.maxFee });
             const blob = await this.signTransaction(newTransaction, privateKey);
             const submit = await this.submitTransaction(blob);
             const newSubmittedBlockHeight = await this.getCurrentBlockHeight();
+            // store new tx and mark replacement
+            await createTransactionEntity(this.orm, newTransaction, retriedTx.source, retriedTx.destination, submit.txId);
+            const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
+            await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+               txEnt.replaced_by = newTxEnt;
+               txEnt.status = TransactionStatus.TX_REPLACED;
+            });
             retry++;
             return this.waitForTransaction(submit.txId, source, privateKey, newSubmittedBlockHeight, retry);
          }
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_NOT_ACCEPTED;
+         });
          throw new Error(
             `waitForTransaction: transaction ${txHash} is not going to be accepted. Current block ${currentBlockHeight} is greater than submittedBlockHeight ${lastBlockNumber}`
          );
@@ -363,7 +372,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
 
    private checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
       if (maxFee && fee.gt(maxFee)) {
-         throw Error(`Transaction is not prepared: fee ${fee.toString()} is higher than maxFee ${maxFee.toString()}`);
+         throw Error(`Fee ${fee.toString()} is higher than maxFee ${maxFee.toString()}`);
       }
    }
 

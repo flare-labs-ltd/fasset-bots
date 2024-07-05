@@ -7,9 +7,11 @@ import WAValidator from "wallet-address-validator";
 import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
+import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
+import { createTransactionEntity } from "../../src/orm/orm";
 
-const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/UTXOWalletImplementation");
-const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("UTXOWalletImplementation");
+const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
+const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
 
 const DOGEMccConnectionTest = {
    url: process.env.DOGE_URL ?? "",
@@ -69,13 +71,11 @@ describe("Dogecoin wallet tests", () => {
       expect(typeof signed).to.equal("string");
    });
 
-   it("Should create, sign and submit transaction", async () => {
+   it("Should prepare and execute transaction", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, undefined, note);
-      const blob = await rewired.signTransaction(tr, fundedWallet.privateKey as string);
-      const submit = await rewired.submitTransaction(blob);
+      const submit = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note);
       expect(typeof submit).to.equal("object");
    });
 
@@ -110,29 +110,19 @@ describe("Dogecoin wallet tests", () => {
       expect(index).not.to.be.null;
    });
 
-   it("Should not try to resubmit - transaction for source", async () => {
-      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      const txHash = "txHash";
-      const source = "source";
-      await expect(rewired.tryToResubmitTransaction(txHash, source, "", 1, 1))
-         .to.eventually.be.rejectedWith(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`)
-         .and.be.an.instanceOf(Error);
-   });
-
    it("Should create and delete account", async () => {
-      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      const toDelete = rewired.createWallet();
+      const toDelete = wClient.createWallet();
       expect(toDelete.address).to.not.be.null;
       expect(WAValidator.validate(toDelete.address, "DOGE", "testnet")).to.be.true;
-      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       expect(WAValidator.validate(fundedWallet.address, "DOGE", "testnet")).to.be.true;
       // fund toDelete account
-      await rewired.executeLockedSignedTransactionAndWait(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
-      const balance = await rewired.getAccountBalance(toDelete.address);
+      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, toDelete.address, amountToSendInSatoshi);
+      const balance = await wClient.getAccountBalance(toDelete.address);
       // delete toDelete account
       const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      await rewired.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
-      const balance2 = await rewired.getAccountBalance(toDelete.address);
+      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address, undefined, note);
+      const balance2 = await wClient.getAccountBalance(toDelete.address);
       expect(balance.gt(balance2));
    });
 });

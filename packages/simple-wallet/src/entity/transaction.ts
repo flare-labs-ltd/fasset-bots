@@ -1,5 +1,7 @@
 import { Entity, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import { ADDRESS_LENGTH, BYTES32_LENGTH } from "../utils/constants";
+import { BNType } from "../orm/orm-types";
+import BN from "bn.js";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
@@ -17,6 +19,9 @@ export class TransactionEntity {
 
     @Property()
     status!: TransactionStatus;
+
+    @Property({ type: BNType, nullable: true })
+    maxFee?: BN;
 
     @Property()
     confirmations!: number;

@@ -7,8 +7,8 @@ import WAValidator from "wallet-address-validator";
 import { toBN } from "../../src/utils/bnutils";
 import rewire from "rewire";
 
-const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/UTXOWalletImplementation");
-const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("UTXOWalletImplementation");
+const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
+const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
 
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/

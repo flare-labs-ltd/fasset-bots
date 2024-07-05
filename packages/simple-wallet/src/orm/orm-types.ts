@@ -1,8 +1,9 @@
 import { Type } from "@mikro-orm/core";
 import BN from "bn.js";
 
-export class BNType extends Type<BN, string | number> {
-    override convertToDatabaseValue(value: string | number | BN): string {
+export class BNType extends Type<BN | string | number | null> {
+    override convertToDatabaseValue(value: string | number | BN | null): string | null{
+        if (value === null) return null;
         if (typeof value === "string") return value;
         return value.toString(10);
     }
