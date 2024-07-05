@@ -42,10 +42,12 @@ program.action(async () => {
         // run
         try {
             console.log("Agent bot started, press CTRL+C to end");
-            process.on("SIGINT", () => {
+            const stopBot = () => {
                 console.log("Stopping agent bot...");
                 runner.requestStop();
-            });
+            }
+            process.on("SIGINT", stopBot);
+            process.on("SIGTERM", stopBot);
             await runner.run();
         } finally {
             await timekeeperService.stopAll();
