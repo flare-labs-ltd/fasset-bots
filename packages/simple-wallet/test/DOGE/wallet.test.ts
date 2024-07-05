@@ -7,8 +7,6 @@ import WAValidator from "wallet-address-validator";
 import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
-import { createTransactionEntity } from "../../src/orm/orm";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
@@ -72,7 +70,6 @@ describe("Dogecoin wallet tests", () => {
    });
 
    it("Should prepare and execute transaction", async () => {
-      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
       const submit = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note);
