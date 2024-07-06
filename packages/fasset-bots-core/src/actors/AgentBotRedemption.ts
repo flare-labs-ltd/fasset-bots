@@ -199,8 +199,22 @@ export class AgentBotRedemption {
         logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
         // corner case - agent did not pay
         await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
+        switch (rd.state) {
+            case AgentRedemptionState.PAYING:
+                rd.finalState = AgentRedemptionFinalState.EXPIRED_PAYING;
+                break;
+            case AgentRedemptionState.PAID:
+            case AgentRedemptionState.REQUESTED_PROOF:
+                rd.finalState = AgentRedemptionFinalState.EXPIRED_PAID;
+                break;
+            case AgentRedemptionState.UNPAID:
+            case AgentRedemptionState.STARTED:
+            case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
+                rd.finalState = AgentRedemptionFinalState.EXPIRED_UNPAID;
+                break;
+            // no need to handle DONE
+        }
         rd.state = AgentRedemptionState.DONE;
-        rd.finalState = AgentRedemptionFinalState.EXPIRED;
         await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
         logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
     }
