@@ -82,6 +82,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -112,6 +113,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
@@ -146,7 +148,8 @@ describe("Challenger tests", () => {
             orm.em.clear();
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
-            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF || redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus1 = await getAgentStatus(agentBot);
         assert.equal(agentStatus1, AgentStatus.NORMAL);
@@ -163,6 +166,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -195,6 +199,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
@@ -233,6 +238,7 @@ describe("Challenger tests", () => {
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // fund and repeat the same payment (already confirmed)
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
@@ -248,6 +254,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
@@ -283,6 +290,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
@@ -327,6 +335,7 @@ describe("Challenger tests", () => {
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // check start balance
         const startBalanceRedeemer = await context.wNat.balanceOf(redeemer.address);
@@ -425,6 +434,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -491,6 +501,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -540,6 +551,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -582,6 +594,7 @@ describe("Challenger tests", () => {
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
 
         // repeat the same payment (already confirmed)
@@ -596,6 +609,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);

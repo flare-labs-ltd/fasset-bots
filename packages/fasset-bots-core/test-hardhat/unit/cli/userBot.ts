@@ -187,6 +187,7 @@ describe("UserBot cli commands unit tests", () => {
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         await userBot.listRedemptions();
         const agentInfoAfterRedeem = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);

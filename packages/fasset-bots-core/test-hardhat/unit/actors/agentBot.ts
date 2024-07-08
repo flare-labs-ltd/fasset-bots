@@ -128,6 +128,7 @@ describe("Agent bot unit tests", () => {
             const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, { txHash: topUpPayment0.txHash }  as FilterQuery<AgentUnderlyingPayment> );
             console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
             if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         expect(spyBalance2).to.have.been.called.once;
     });

@@ -140,6 +140,7 @@ describe("Agent bot tests", () => {
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // redeemer should now have some funds on the underlying chain
         const balance = await chain.getBalance(redeemer.underlyingAddress);
@@ -500,7 +501,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; ; i++) {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
@@ -510,6 +511,7 @@ describe("Agent bot tests", () => {
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const redemptionDone = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
@@ -718,6 +720,7 @@ describe("Agent bot tests", () => {
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // clear dust
         const info = await agentBot.agent.getAgentInfo();
@@ -736,6 +739,7 @@ describe("Agent bot tests", () => {
             const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
             console.log(`Agent step ${i}, waitingForDestructionCleanUp = ${agentEnt.waitingForDestructionCleanUp}`);
             if (agentEnt.waitingForDestructionCleanUp === false) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // await agentBot.runStep(orm.em);
         const info2 = await agentBot.agent.getAgentInfo();
@@ -957,6 +961,7 @@ describe("Agent bot tests", () => {
             const agentEnt = await agentBot.fetchAgentEntity(orm.em)
             console.log(`Agent step ${i}, active = ${agentEnt.active}`);
             if (agentEnt.active === false) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
     });
 
