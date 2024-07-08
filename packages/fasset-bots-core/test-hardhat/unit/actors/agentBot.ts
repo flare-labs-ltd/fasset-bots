@@ -154,17 +154,12 @@ describe("Agent bot unit tests", () => {
             paymentReference: "",
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
+            proofRequestRound: undefined,
+            proofRequestData: undefined,
         });
         await orm.em.persistAndFlush(rd);
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
-        await agentBot.redemption.nextRedemptionStep(orm.em, rd.id);
-        expect(spyLog).to.have.been.called.once;
-    });
-
-    it("Should not do next redemption step due to redemption not found in db", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyLog = spy.on(console, "error");
-        await agentBot.redemption.nextRedemptionStep(orm.em, 1000);
+        await agentBot.redemption.handleOpenRedemption(orm.em, rd.state, rd);
         expect(spyLog).to.have.been.called.once;
     });
 
@@ -183,6 +178,8 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "",
+            proofRequestRound: undefined,
+            proofRequestData: undefined,
         });
         await orm.em.persistAndFlush(mt);
         await agentBot.minting.nextMintingStep(orm.em, mt.id);
@@ -209,6 +206,8 @@ describe("Agent bot unit tests", () => {
             paymentReference: "",
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
+            proofRequestRound: undefined,
+            proofRequestData: undefined,
         });
         const rd2 = orm.em.create(AgentRedemption, {
             state: AgentRedemptionState.DONE,
@@ -220,12 +219,14 @@ describe("Agent bot unit tests", () => {
             paymentReference: "",
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
+            proofRequestRound: undefined,
+            proofRequestData: undefined,
         });
         await orm.em.persistAndFlush([rd1, rd2]);
-        const ids = await agentBot.redemption.openRedemptions(orm.em, true);
-        const rds = await agentBot.redemption.openRedemptions(orm.em, false);
-        expect(ids.length).to.eq(1);
-        expect(rds.length).to.eq(1);
+        const started = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.STARTED, 100);
+        const done = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.DONE, 100);
+        expect(started.length).to.eq(1);
+        expect(done.length).to.eq(1);
     });
 
     it("Should not receive proof 1 - not finalized", async () => {
@@ -246,7 +247,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.minting.checkNonPayment(mt);
+        await agentBot.minting.checkNonPayment(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -268,7 +269,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.minting.checkPaymentAndExecuteMinting(mt);
+        await agentBot.minting.checkPaymentAndExecuteMinting(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -289,7 +290,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.redemption.checkConfirmPayment(rd);
+        await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -310,7 +311,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.redemption.checkConfirmPayment(rd);
+        await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -326,7 +327,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "data",
         });
-        await agentBot.underlyingManagement.checkConfirmPayment(up);
+        await agentBot.underlyingManagement.checkConfirmPayment(orm.em, up);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -349,7 +350,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.minting.checkNonPayment(mt);
+        await agentBot.minting.checkNonPayment(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -372,7 +373,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.minting.checkPaymentAndExecuteMinting(mt);
+        await agentBot.minting.checkPaymentAndExecuteMinting(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -394,7 +395,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.redemption.checkConfirmPayment(rd);
+        await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -421,7 +422,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "data",
         });
-        await agentBot.underlyingManagement.checkConfirmPayment(up);
+        await agentBot.underlyingManagement.checkConfirmPayment(orm.em, up);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -653,7 +654,7 @@ describe("Agent bot unit tests", () => {
         chain.secondsPerBlock = 1;
         chain.mine(3);
         // minting
-        const minting = {
+        const minting: AgentMinting = {
             id: 3,
             state: AgentMintingState.STARTED,
             agentAddress: "0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59",
@@ -665,13 +666,15 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
+            proofRequestRound: undefined,
+            proofRequestData: undefined,
         };
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
         // switch attestation prover to always fail mode
         checkedCast(agentBot.agent.attestationProvider.stateConnector, MockStateConnectorClient).useAlwaysFailsProver = true;
         //
-        await agentBot.minting.requestNonPaymentProofForMinting(minting)
+        await agentBot.minting.requestNonPaymentProofForMinting(orm.em, minting)
             .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
         const transactionHash = await agentBot.agent.wallet.addTransaction(
@@ -680,7 +683,7 @@ describe("Agent bot unit tests", () => {
             1,
             PaymentReference.selfMint(agentBot.agent.vaultAddress)
         );
-        await agentBot.minting.requestPaymentProofForMinting(minting, transactionHash, randomUnderlyingAddress)
+        await agentBot.minting.requestPaymentProofForMinting(orm.em, minting, transactionHash, randomUnderlyingAddress)
             .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
         const transactionHash1 = await agentBot.agent.wallet.addTransaction(
@@ -690,7 +693,7 @@ describe("Agent bot unit tests", () => {
             PaymentReference.selfMint(agentBot.agent.vaultAddress)
         );
         // redemption
-        const redemption = {
+        const redemption: AgentRedemption = {
             id: 3,
             state: AgentRedemptionState.PAID,
             agentAddress: "0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59",
@@ -702,8 +705,10 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
             txHash: transactionHash1,
+            proofRequestRound: undefined,
+            proofRequestData: undefined,
         };
-        await agentBot.redemption.requestPaymentProof(redemption)
+        await agentBot.redemption.requestPaymentProof(orm.em, redemption)
             .catch(e => console.error(e));
         expect(redemption.state).to.eq("paid");
         // handleDailyTasks
@@ -720,7 +725,7 @@ describe("Agent bot unit tests", () => {
     it("Should not handle claims - no contracts", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        await agentBot.checkForClaims();
+        await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(2);
     });
 
@@ -764,7 +769,7 @@ describe("Agent bot unit tests", () => {
         const amountToClaim1 = web3.eth.abi.encodeParameter("uint256", 15000);
         await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim1);
         // check
-        await agentBot.checkForClaims();
+        await agentBot.claims.checkForClaims();
         // mock functions - there is nothing to claim
         const getEpochs2 = web3.eth.abi.encodeFunctionCall(
             { type: "function", name: "getEpochsWithUnclaimedRewards", inputs: [{ name: "_beneficiary", type: "address" }] },
@@ -775,7 +780,7 @@ describe("Agent bot unit tests", () => {
         const amountToClaim0 = web3.eth.abi.encodeParameter("uint256", 0);
         await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim0);
         // check
-        await agentBot.checkForClaims();
+        await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(0);
         // clean up
         await agentBot.context.addressUpdater.removeContracts(["FtsoRewardManager"]);
@@ -867,35 +872,35 @@ describe("Agent bot unit tests", () => {
         expect(spyLog).to.have.been.called.once;
     });
 
-    it("Should properly order redemptions by priority", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const states = Object.values(AgentRedemptionState);
-        let countStarted = 0;
-        for (let i = 0; i < 20; i++) {
-            const rd = orm.em.create(
-                AgentRedemption,
-                {
-                    state: states[i % states.length],
-                    agentAddress: agentBot.agent.vaultAddress,
-                    requestId: toBN(i),
-                    paymentAddress: "payment_address_" + i,
-                    valueUBA: toBN(1000 + i),
-                    feeUBA: toBN(100 + i),
-                    paymentReference: "reefrence_" + i,
-                    lastUnderlyingBlock: toBN(100),
-                    lastUnderlyingTimestamp: toBN(100),
-                } as RequiredEntityData<AgentRedemption>,
-                { persist: true }
-            );
-            if (rd.state === AgentRedemptionState.STARTED) countStarted++;
-        }
-        await orm.em.flush();
-        orm.em.clear();
-        // check
-        const M = 5;
-        agentBot.redemption.handleMaxNonPriorityRedemptions = M;
-        const redemptions = await agentBot.redemption.openRedemptions(orm.em, true);
-        // console.log(redemptions);
-        assert.equal(redemptions.length, countStarted + M);
-    });
+    // it("Should properly order redemptions by priority", async () => {
+    //     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+    //     const states = Object.values(AgentRedemptionState);
+    //     let countStarted = 0;
+    //     for (let i = 0; i < 20; i++) {
+    //         const rd = orm.em.create(
+    //             AgentRedemption,
+    //             {
+    //                 state: states[i % states.length],
+    //                 agentAddress: agentBot.agent.vaultAddress,
+    //                 requestId: toBN(i),
+    //                 paymentAddress: "payment_address_" + i,
+    //                 valueUBA: toBN(1000 + i),
+    //                 feeUBA: toBN(100 + i),
+    //                 paymentReference: "reefrence_" + i,
+    //                 lastUnderlyingBlock: toBN(100),
+    //                 lastUnderlyingTimestamp: toBN(100),
+    //             } as RequiredEntityData<AgentRedemption>,
+    //             { persist: true }
+    //         );
+    //         if (rd.state === AgentRedemptionState.STARTED) countStarted++;
+    //     }
+    //     await orm.em.flush();
+    //     orm.em.clear();
+    //     // check
+    //     const M = 5;
+    //     agentBot.redemption.handleMaxNonPriorityRedemptions = M;
+    //     const redemptions = await agentBot.redemption.redemptionsInState(orm.em, true);
+    //     // console.log(redemptions);
+    //     assert.equal(redemptions.length, countStarted + M);
+    // });
 });

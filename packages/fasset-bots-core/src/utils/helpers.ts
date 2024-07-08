@@ -258,6 +258,10 @@ export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefin
     throw error; // unexpected error
 }
 
+export function messageForExpectedError(error: any, expectedErrors: ErrorFilter[]): unknown {
+    return errorIncluded(error, expectedErrors) ? error.message : error;
+}
+
 export function toBIPS(x: number | string) {
     if (typeof x === "string" && x.endsWith("%")) {
         return toBNExp(x.slice(0, x.length - 1), 2); // x is in percent, only multiply by 100

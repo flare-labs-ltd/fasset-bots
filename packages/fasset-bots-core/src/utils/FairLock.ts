@@ -1,6 +1,8 @@
 type Resolve<T> = (value: T) => void;
 
 export class FairLock {
+    static deepCopyWithObjectCreate = true;
+
     currentLockId: number | null = null;
     waiting: Resolve<number>[] = [];
     nextLockId: number = 0;
@@ -29,10 +31,10 @@ export class FairLock {
         }
     }
 
-    async lockAndRun(method: () => Promise<void>) {
+    async lockAndRun<T>(method: () => Promise<T>) {
         const lockId = await this.lock();
         try {
-            await method();
+            return await method();
         } finally {
             this.release(lockId);
         }

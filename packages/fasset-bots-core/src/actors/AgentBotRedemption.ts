@@ -1,21 +1,25 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { AgentRedemption } from "../entities/agent";
+import { AgentRedemptionFinalState, AgentRedemptionState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
-import { attestationProved } from "../underlying-chain/AttestationHelper";
+import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { EventArgs } from "../utils/events/common";
 import { squashSpace } from "../utils/formatting";
-import { assertNotNull, toBN } from "../utils/helpers";
+import { assertNotNull, BNish, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
-import { AgentRedemptionFinalState, AgentRedemptionState } from "../entities/common";
+
+const REDEMPTION_BATCH = 1000;
+
+type RedemptionId = { id: number } | { requestId: BN };
 
 export class AgentBotRedemption {
     static deepCopyWithObjectCreate = true;
@@ -35,50 +39,47 @@ export class AgentBotRedemption {
      * @param em entity manager
      * @param request event's RedemptionRequested arguments
      */
-    async redemptionStarted(em: EM, request: EventArgs<RedemptionRequested>): Promise<void> {
-        em.create(
-            AgentRedemption,
-            {
-                state: AgentRedemptionState.STARTED,
-                agentAddress: this.agent.vaultAddress,
-                requestId: toBN(request.requestId),
-                paymentAddress: request.paymentAddress,
-                valueUBA: toBN(request.valueUBA),
-                feeUBA: toBN(request.feeUBA),
-                paymentReference: request.paymentReference,
-                lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
-                lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
-            } as RequiredEntityData<AgentRedemption>,
-            { persist: true }
-        );
+    async redemptionStarted(rootEm: EM, request: EventArgs<RedemptionRequested>): Promise<void> {
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            em.create(
+                AgentRedemption,
+                {
+                    state: AgentRedemptionState.STARTED,
+                    agentAddress: this.agent.vaultAddress,
+                    requestId: toBN(request.requestId),
+                    paymentAddress: request.paymentAddress,
+                    valueUBA: toBN(request.valueUBA),
+                    feeUBA: toBN(request.feeUBA),
+                    paymentReference: request.paymentReference,
+                    lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
+                    lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
+                } as RequiredEntityData<AgentRedemption>,
+                { persist: true }
+            );
+        });
         await this.notifier.sendRedemptionStarted(request.requestId);
         logger.info(`Agent ${this.agent.vaultAddress} started redemption ${request.requestId}.`);
     }
 
-    async redemptionPerformed(em: EM, args: EventArgs<RedemptionPerformed>) {
-        const redemption = await this.findRedemption(em, args.requestId);
-        redemption.finalState = AgentRedemptionFinalState.PERFORMED;
-        await this.redemptionFinished(em, args.requestId);
+    async redemptionPerformed(rootEm: EM, args: EventArgs<RedemptionPerformed>) {
+        await this.finishRedemption(rootEm, args, AgentRedemptionFinalState.PERFORMED);
         await this.notifier.sendRedemptionWasPerformed(args.requestId, args.redeemer);
     }
 
-    async redemptionPaymentFailed(em: EM, args: EventArgs<RedemptionPaymentFailed>) {
-        const redemption = await this.findRedemption(em, args.requestId);
-        redemption.finalState = AgentRedemptionFinalState.FAILED;
-        await this.redemptionFinished(em, args.requestId);
+    async redemptionPaymentFailed(rootEm: EM, args: EventArgs<RedemptionPaymentFailed>) {
+        await this.finishRedemption(rootEm, args, AgentRedemptionFinalState.FAILED);
         await this.notifier.sendRedemptionFailed(args.requestId.toString(), args.transactionHash, args.redeemer, args.failureReason);
     }
 
-    async redemptionPaymentBlocked(em: EM, args: EventArgs<RedemptionPaymentBlocked>) {
-        const redemption = await this.findRedemption(em, args.requestId);
-        redemption.finalState = AgentRedemptionFinalState.BLOCKED;
-        await this.redemptionFinished(em, args.requestId);
+    async redemptionPaymentBlocked(rootEm: EM, args: EventArgs<RedemptionPaymentBlocked>) {
+        await this.finishRedemption(rootEm, args, AgentRedemptionFinalState.BLOCKED);
         await this.notifier.sendRedemptionBlocked(args.requestId.toString(), args.transactionHash, args.redeemer);
     }
 
-    async redemptionDefault(em: EM, args: EventArgs<RedemptionDefault>) {
-        const redemption = await this.findRedemption(em, args.requestId);
-        redemption.defaulted = true;
+    async redemptionDefault(rootEm: EM, args: EventArgs<RedemptionDefault>) {
+        await this.updateRedemption(rootEm, { requestId: toBN(args.requestId) }, {
+            defaulted: true,
+        });
         await this.notifier.sendRedemptionDefaulted(args.requestId.toString(), args.redeemer);
     }
 
@@ -88,105 +89,98 @@ export class AgentBotRedemption {
      * @param requestId redemption request id
      * @param agentVault agent's vault address
      */
-    async redemptionFinished(em: EM, requestId: BN): Promise<void> {
-        const redemption = await this.findRedemption(em, requestId);
-        redemption.state = AgentRedemptionState.DONE;
-        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${requestId}.`);
-        await this.bot.underlyingManagement.checkUnderlyingBalance(em);
+    private async finishRedemption(rootEm: EM, rd: { requestId: BNish }, finalState: AgentRedemptionFinalState) {
+        await this.updateRedemption(rootEm, { requestId: toBN(rd.requestId) }, {
+            state: AgentRedemptionState.DONE,
+            finalState: finalState,
+        });
+        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId} in state ${finalState}.`);
+        await this.bot.underlyingManagement.checkUnderlyingBalanceAndTopup(rootEm);
     }
 
-    /**
-     * Returns redemption by required id from persistent state.
-     * @param em entity manager
-     * @param requestId redemption request id
-     * @param instance of AgentRedemption
-     */
-    async findRedemption(em: EM, requestId: BN): Promise<AgentRedemption> {
-        const agentAddress = this.agent.vaultAddress;
-        return await em.findOneOrFail(AgentRedemption, { agentAddress, requestId } as FilterQuery<AgentRedemption>);
+    // handle redemptions serially - used for tests
+    async handleOpenRedemptions(rootEm: EM) {
+        for (const redemptionState of Object.values(AgentRedemptionState)) {
+            if (redemptionState === AgentRedemptionState.DONE) continue;
+            await this.handleRedemptionsInState(rootEm, redemptionState);
+        }
+        await this.handleExpiredRedemptions(rootEm);
     }
 
-    /**
-     * Returns minting with state other than DONE.
-     * If there are too many redemptions, prioritize those in state STARTED.
-     * @param em entity manager
-     * @param onlyIds if true, only AgentRedemption's entity ids are return
-     * * @return list of AgentRedemption's instances
-     */
-    async openRedemptions(em: EM, onlyIds: boolean): Promise<AgentRedemption[]> {
-        let query = em.createQueryBuilder(AgentRedemption);
-        if (onlyIds) query = query.select(["id", "state"]);
-        const list = await query
-            .where({ agentAddress: this.agent.vaultAddress })
-            .andWhere({ $not: { state: AgentRedemptionState.DONE } })
-            .getResultList();
-        const getPriority = (rd: AgentRedemption) => this.handlingPriorityDict[rd.state] ?? 1000;
-        list.sort((a, b) => getPriority(a) - getPriority(b));
-        // return all in state started plus handleMaxNonPriorityRedemptions at most
-        let count = 0;
-        while (count < list.length && list[count].state === AgentRedemptionState.STARTED) count++;
-        return list.slice(0, count + this.handleMaxNonPriorityRedemptions);
-    }
-
-    handlingPriorityDict: Partial<Record<AgentRedemptionState, number>> = {
-        [AgentRedemptionState.STARTED]: 0,
-        [AgentRedemptionState.REQUESTED_REJECTION_PROOF]: 1,
-        [AgentRedemptionState.PAID]: 2,
-        [AgentRedemptionState.REQUESTED_PROOF]: 2,
-    }
-
-    /**
-     * Handles redemptions stored in persistent state according to their state.
-     * @param rootEm entity manager
-     * @param id AgentRedemption's entity id
-     */
-    async nextRedemptionStep(rootEm: EM, id: number): Promise<void> {
-        await rootEm
-            .transactional(async (em) => {
-                const redemption = await em.getRepository(AgentRedemption).findOneOrFail({ id: Number(id) } as FilterQuery<AgentRedemption>);
-                logger.info(`Agent ${this.agent.vaultAddress} is handling open redemption ${redemption.requestId} in state ${redemption.state}.`);
-                await this.handleOpenRedemption(redemption);
-                await em.persistAndFlush(redemption);
-            })
-            .catch((error) => {
-                console.error(`Error handling next redemption step for redemption ${id} agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next redemption step for redemption ${id}:`, error);
-            });
-    }
-
-    async redemptionExpirationProof(rd: AgentRedemption) {
-        return await this.bot.checkProofExpiredInIndexer(toBN(rd.lastUnderlyingBlock), toBN(rd.lastUnderlyingTimestamp));
-    }
-
-    async handleOpenRedemption(redemption: AgentRedemption) {
-        // speedup - never need to expire redemption in state STARTED
-        if (redemption.state !== AgentRedemptionState.STARTED) {
-            const expirationProof = await this.redemptionExpirationProof(redemption);
-            if (typeof expirationProof === "object") {
-                await this.handleExpiredRedemption(redemption, expirationProof);
-                return;
+    async handleRedemptionsInState(rootEm: EM, state: AgentRedemptionState, batchSize: number = REDEMPTION_BATCH) {
+        const redemptions = await this.redemptionsInState(rootEm, state, batchSize);
+        for (const redemption of redemptions) {
+            if (this.bot.stopRequested()) return;
+            try {
+                await this.handleOpenRedemption(rootEm, state, redemption);
+            } catch (error) {
+                logger.error(`Error handling redemption ${redemption.requestId} in state ${state}`, error);
             }
         }
-        // redemption hasn't expired yet
-        switch (redemption.state) {
+    }
+
+    async handleExpiredRedemptions(rootEm: EM, batchSize: number = REDEMPTION_BATCH) {
+        const expirationProof = await this.bot.getUnderlyingBlockHeightProof();
+        if (!expirationProof) return;
+        if (this.bot.stopRequested()) return;
+        const redemptions = await this.expiredRedemptions(rootEm, expirationProof, batchSize);
+        for (const redemption of redemptions) {
+            if (this.bot.stopRequested()) return;
+            try {
+                await this.handleExpiredRedemption(rootEm, redemption, expirationProof);
+            } catch (error) {
+                logger.error(`Error expiring redemption ${redemption.requestId}`, error);
+            }
+        }
+    }
+
+    /**
+     * Returns minting in given state.
+     * If there are too many redemptions, prioritize those in state STARTED.
+     * @param rootEm entity manager
+     * * @return list of AgentRedemption's instances
+     */
+    async redemptionsInState(rootEm: EM, state: AgentRedemptionState, limit: number): Promise<AgentRedemption[]> {
+        return await rootEm.createQueryBuilder(AgentRedemption)
+            .where({
+                agentAddress: this.agent.vaultAddress,
+                state: state
+            })
+            .limit(limit)
+            .getResultList();
+    }
+
+    async expiredRedemptions(rootEm: EM, expirationProof: ConfirmedBlockHeightExists.Proof, limit: number): Promise<AgentRedemption[]> {
+        return await rootEm.createQueryBuilder(AgentRedemption)
+            .where({
+                agentAddress: this.agent.vaultAddress,
+                lastUnderlyingBlock: { $lt: toBN(expirationProof.data.responseBody.lowestQueryWindowBlockNumber) },
+                lastUnderlyingTimestamp: { $lt: toBN(expirationProof.data.responseBody.lowestQueryWindowBlockTimestamp) },
+                state: { $nin: [AgentRedemptionState.STARTED, AgentRedemptionState.DONE] }
+            })
+            .limit(limit)
+            .getResultList();
+    }
+
+    async handleOpenRedemption(rootEm: EM, state: AgentRedemptionState, redemption: Readonly<AgentRedemption>) {
+        switch (state) {
             case AgentRedemptionState.STARTED:
-                await this.checkBeforeRedemptionPayment(redemption);
+                await this.checkBeforeRedemptionPayment(rootEm, redemption);
                 break;
             case AgentRedemptionState.PAYING:
-                // payment failed, do nothing for now
-                // later we could check the state on chain / in mempool and if there is nothing, retry
+                // TODO: once simple wallet starts handling retries in background, find payment in indekser by address and payment reference
                 break;
             case AgentRedemptionState.UNPAID:
                 // bot didn't manage to pay in time - do nothing and it will be expired after 24h
                 break;
             case AgentRedemptionState.PAID:
-                await this.checkPaymentProofAvailable(redemption);
+                await this.checkPaymentProofAvailable(rootEm, redemption);
                 break;
             case AgentRedemptionState.REQUESTED_PROOF:
-                await this.checkConfirmPayment(redemption);
+                await this.checkConfirmPayment(rootEm, redemption);
                 break;
             case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
-                await this.checkRejectRedemption(redemption);
+                await this.checkRejectRedemptionProof(rootEm, redemption);
                 break;
             default:
                 console.error(`Redemption state: ${redemption.state} not supported`);
@@ -194,29 +188,32 @@ export class AgentBotRedemption {
         }
     }
 
-    // temp disabled
-    async handleExpiredRedemption(rd: AgentRedemption, proof: ConfirmedBlockHeightExists.Proof) {
-        logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${rd.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-        // corner case - agent did not pay
-        await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), rd.requestId, { from: this.agent.owner.workAddress });
-        switch (rd.state) {
+    async handleExpiredRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>, proof: ConfirmedBlockHeightExists.Proof) {
+        logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${redemption.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
+        await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
+        });
+        redemption = await this.updateRedemption(rootEm, redemption, {
+            state: AgentRedemptionState.DONE,
+            finalState: this.getFinalState(redemption),
+        });
+        await this.notifier.sendRedemptionExpiredInIndexer(redemption.requestId);
+        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${redemption.requestId}.`);
+    }
+
+    private getFinalState(redemption: Readonly<AgentRedemption>): AgentRedemptionFinalState | undefined {
+        switch (redemption.state) {
             case AgentRedemptionState.PAYING:
-                rd.finalState = AgentRedemptionFinalState.EXPIRED_PAYING;
-                break;
+                return AgentRedemptionFinalState.EXPIRED_PAYING;
             case AgentRedemptionState.PAID:
             case AgentRedemptionState.REQUESTED_PROOF:
-                rd.finalState = AgentRedemptionFinalState.EXPIRED_PAID;
-                break;
+                return AgentRedemptionFinalState.EXPIRED_PAID;
             case AgentRedemptionState.UNPAID:
             case AgentRedemptionState.STARTED:
             case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
-                rd.finalState = AgentRedemptionFinalState.EXPIRED_UNPAID;
-                break;
+                return AgentRedemptionFinalState.EXPIRED_UNPAID;
             // no need to handle DONE
         }
-        rd.state = AgentRedemptionState.DONE;
-        await this.notifier.sendRedemptionExpiredInIndexer(rd.requestId);
-        logger.info(`Agent ${this.agent.vaultAddress} closed redemption ${rd.requestId}.`);
     }
 
     /**
@@ -224,40 +221,45 @@ export class AgentBotRedemption {
      * Then it performs payment and sets the state of redemption in persistent state as PAID.
      * @param redemption AgentRedemption entity
      */
-    async checkBeforeRedemptionPayment(redemption: AgentRedemption): Promise<void> {
+    async checkBeforeRedemptionPayment(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
         /* istanbul ignore else */
         if (lastBlock && this.stillTimeToPayForRedemption(lastBlock, redemption)) {
             const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId.sourceId, redemption.paymentAddress);
             if (validation.isValid && validation.standardAddress === redemption.paymentAddress) {
-                await this.payForRedemption(redemption);
+                await this.payForRedemption(rootEm, redemption);
             } else {
-                await this.startRejectRedemption(redemption);
+                await this.startRejectRedemption(rootEm, redemption);
             }
         } else if (lastBlock) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${redemption.requestId}.
                 Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock}
                 with timestamp ${redemption.lastUnderlyingTimestamp}. Current block is ${lastBlock.number}
                 with timestamp ${lastBlock.timestamp}.`);
-            redemption.state = AgentRedemptionState.UNPAID;
+            redemption = await this.updateRedemption(rootEm, redemption, {
+                state: AgentRedemptionState.UNPAID,
+            });
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in checkBeforeRedemptionPayment for ${redemption.requestId}.`);
         }
     }
 
-    async payForRedemption(redemption: AgentRedemption) {
+    async payForRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>) {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId}.`);
         const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
-        // !!! TODO: this is a hack, setting state to PAYING should be in separate transaction.
-        // Also, this may increase number of unpaid redemptions (but it prevents full liquidation).
-        // Better solution should be found.
-        redemption.state = AgentRedemptionState.PAYING;
+        redemption = await this.updateRedemption(rootEm, redemption, {
+            state: AgentRedemptionState.PAYING,
+        });
         try {
             // TODO: what if there are too little funds on underlying address to pay for fee?
-            const txHash = await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
-            redemption.txHash = txHash;
-            redemption.state = AgentRedemptionState.PAID;
+            const txHash = await this.bot.locks.underlyingLock.lockAndRun(async () => {
+                return await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+            });
+            redemption = await this.updateRedemption(rootEm, redemption, {
+                txHash: txHash,
+                state: AgentRedemptionState.PAID,
+            });
             await this.notifier.sendRedemptionPaid(redemption.requestId);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
                 with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
@@ -273,25 +275,29 @@ export class AgentBotRedemption {
         return validation.isValid && validation.standardAddress === underlyingAddress;
     }
 
-    async startRejectRedemption(redemption: AgentRedemption) {
+    async startRejectRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>) {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment address invalidity
             for redemption ${redemption.requestId} and address ${redemption.paymentAddress}.`);
-        const request = await this.context.attestationProvider.requestAddressValidityProof(redemption.paymentAddress);
-        if (request) {
-            redemption.state = AgentRedemptionState.REQUESTED_REJECTION_PROOF;
-            redemption.proofRequestRound = request.round;
-            redemption.proofRequestData = request.data;
+        try {
+            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                return await this.context.attestationProvider.requestAddressValidityProof(redemption.paymentAddress);
+            });
+            redemption = await this.updateRedemption(rootEm, redemption, {
+                state: AgentRedemptionState.REQUESTED_REJECTION_PROOF,
+                proofRequestRound: request.round,
+                proofRequestData: request.data,
+            });
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} requested payment proof for payment address invalidity
-                for redemption ${redemption.requestId} and address ${redemption.paymentAddress},
-                proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
+                    for redemption ${redemption.requestId} and address ${redemption.paymentAddress},
+                    proofRequestRound ${request.round}, proofRequestData ${request.data}`);
+        } catch (error) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot request payment proof for payment address invalidity
-                for redemption ${redemption.requestId} and address ${redemption.paymentAddress}.`);
+                for redemption ${redemption.requestId} and address ${redemption.paymentAddress}.`,
+                messageForExpectedError(error, [AttestationHelperError]));
         }
     }
 
-    async checkRejectRedemption(redemption: AgentRedemption): Promise<void> {
+    async checkRejectRedemptionProof(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to obtain proof for payment address invalidity
             for redemption ${redemption.requestId} and address ${redemption.paymentAddress}
             in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
@@ -310,9 +316,13 @@ export class AgentBotRedemption {
             if (!response.isValid || response.standardAddress !== redemption.paymentAddress) {
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained address validation proof for redemption
                     ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-                await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
-                redemption.state = AgentRedemptionState.DONE;
-                redemption.finalState = AgentRedemptionFinalState.REJECTED;
+                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
+                });
+                redemption = await this.updateRedemption(rootEm, redemption, {
+                    state: AgentRedemptionState.DONE,
+                    finalState: AgentRedemptionFinalState.REJECTED,
+                });
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} rejected redemption ${redemption.requestId}
                     with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
             } else {
@@ -326,14 +336,15 @@ export class AgentBotRedemption {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain address validation proof for redemption ${redemption.requestId}
                 in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             // wait for one more round and then reset to state STARTED, which will eventually resubmit request
-            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(redemption.proofRequestRound + 1);
-            if (oneMoreRoundFinalized) {
+            if (await this.bot.enoughTimePassedToObtainProof(redemption)) {
                 await this.notifier.sendRedemptionAddressValidationNoProof(redemption.requestId,
                     redemption.proofRequestRound, redemption.proofRequestData, redemption.paymentAddress);
                 logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining address validation proof for redemption ${redemption.requestId}.`);
-                redemption.state = AgentRedemptionState.STARTED;
-                redemption.proofRequestRound = undefined;
-                redemption.proofRequestData = undefined;
+                redemption = await this.updateRedemption(rootEm, redemption, {
+                    state: AgentRedemptionState.STARTED,
+                    proofRequestRound: undefined,
+                    proofRequestData: undefined,
+                });
             }
         }
     }
@@ -344,7 +355,7 @@ export class AgentBotRedemption {
      * @param redemption
      * @returns
      */
-    stillTimeToPayForRedemption(lastBlock: IBlock, redemption: AgentRedemption): boolean {
+    stillTimeToPayForRedemption(lastBlock: IBlock, redemption: Readonly<AgentRedemption>): boolean {
         const lastAcceptedBlockNumber = lastBlock.number + this.context.blockchainIndexer.finalizationBlocks + 1;
         const lastAcceptedTimestamp =
             lastBlock.timestamp +
@@ -358,13 +369,13 @@ export class AgentBotRedemption {
      * When redemption is in state PAID it requests payment proof - see requestPaymentProof().
      * @param redemption AgentRedemption entity
      */
-    async checkPaymentProofAvailable(redemption: AgentRedemption): Promise<void> {
+    async checkPaymentProofAvailable(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
         assertNotNull(redemption.txHash);
         const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
-            await this.requestPaymentProof(redemption);
+            await this.requestPaymentProof(rootEm, redemption);
             await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
         }
     }
@@ -373,21 +384,25 @@ export class AgentBotRedemption {
      * Sends request for redemption payment proof, sets state for redemption in persistent state to REQUESTED_PROOF.
      * @param redemption AgentRedemption entity
      */
-    async requestPaymentProof(redemption: AgentRedemption): Promise<void> {
+    async requestPaymentProof(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment proof transaction ${redemption.txHash}
             and redemption ${redemption.requestId}.`);
-        assertNotNull(redemption.txHash);
-        const request = await this.context.attestationProvider.requestPaymentProof(redemption.txHash, this.agent.underlyingAddress, redemption.paymentAddress);
-        if (request) {
-            redemption.state = AgentRedemptionState.REQUESTED_PROOF;
-            redemption.proofRequestRound = request.round;
-            redemption.proofRequestData = request.data;
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} requested payment proof for transaction ${redemption.txHash}
+        const txHash = requireNotNull(redemption.txHash);
+        try {
+            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                return await this.context.attestationProvider.requestPaymentProof(txHash, this.agent.underlyingAddress, redemption.paymentAddress);
+            });
+            redemption = await this.updateRedemption(rootEm, redemption, {
+                state: AgentRedemptionState.REQUESTED_PROOF,
+                proofRequestRound: request.round,
+                proofRequestData: request.data,
+            });
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} requested payment proof for transaction ${txHash}
                 and redemption ${redemption.requestId}; target underlying address ${redemption.paymentAddress},
                 proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
-            logger.info(`Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${redemption.txHash} and redemption ${redemption.requestId}.`);
+        } catch (error) {
+            logger.error(`Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${txHash} and redemption ${redemption.requestId}.`,
+                messageForExpectedError(error, [AttestationHelperError]));
         }
     }
 
@@ -397,7 +412,7 @@ export class AgentBotRedemption {
      * If proof cannot be obtained, it sends notification to owner.
      * @param redemption AgentRedemption entity
      */
-    async checkConfirmPayment(redemption: AgentRedemption): Promise<void> {
+    async checkConfirmPayment(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
         assertNotNull(redemption.proofRequestRound);
         assertNotNull(redemption.proofRequestData);
@@ -412,21 +427,49 @@ export class AgentBotRedemption {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            const paymentProof = proof;
-            await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(paymentProof), redemption.requestId, { from: this.agent.owner.workAddress });
-            redemption.state = AgentRedemptionState.DONE;
-            logger.info(`Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
+            await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
+            });
+            redemption = await this.updateRedemption(rootEm, redemption, {
+                state: AgentRedemptionState.DONE,
+            });
+            logger.info(`Agent ${this.agent.vaultAddress} confirmed redemption payment for redemption ${redemption.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
             // wait for one more round and then reset to state PAID, which will eventually resubmit request
-            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(redemption.proofRequestRound + 1);
-            if (oneMoreRoundFinalized) {
+            if (await this.bot.enoughTimePassedToObtainProof(redemption)) {
                 await this.notifier.sendRedemptionNoProofObtained(redemption.requestId, redemption.proofRequestRound, redemption.proofRequestData);
                 logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining proof of payment for redemption ${redemption.requestId}.`);
-                redemption.state = AgentRedemptionState.PAID;
-                redemption.proofRequestRound = undefined;
-                redemption.proofRequestData = undefined;
+                redemption = await this.updateRedemption(rootEm, redemption, {
+                    state: AgentRedemptionState.PAID,
+                    proofRequestRound: undefined,
+                    proofRequestData: undefined,
+                });
             }
+        }
+    }
+
+    /**
+     * Load and update redemption object in its own transaction.
+     */
+    async updateRedemption(rootEm: EM, rd: RedemptionId, modifications: Partial<AgentRedemption>): Promise<AgentRedemption> {
+        return await this.bot.runInTransaction(rootEm, async (em) => {
+            const redemption = await this.findRedemption(em, rd);
+            Object.assign(redemption, modifications);
+            return redemption;
+        });
+    }
+
+    /**
+     * Returns redemption by id or requestId from persistent state.
+     * @param em entity manager
+     * @param instance of AgentRedemption
+     */
+    async findRedemption(em: EM, rd: RedemptionId) {
+        if ("id" in rd) {
+            return await em.findOneOrFail(AgentRedemption, { id: rd.id }, { refresh: true });
+        } else {
+            return await em.findOneOrFail(AgentRedemption, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true });
         }
     }
 }

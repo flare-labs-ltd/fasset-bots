@@ -6,10 +6,12 @@ import { CollateralPrice } from "../state/CollateralPrice";
 import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { AgentBot } from "./AgentBot";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 
 export class AgentBotCollateralManagement {
     constructor(
+        public bot: AgentBot,
         public agent: Agent,
         public agentBotSettings: AgentBotSettings,
         public notifier: AgentNotifier,
@@ -44,7 +46,9 @@ export class AgentBotCollateralManagement {
                 const requiredTopUpF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
                 try {
                     logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
-                    await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
+                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                        await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
+                    });
                     await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpF);
                     logger.info(`Agent ${this.agent.vaultAddress} topped up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
                 } catch (err) {
@@ -67,7 +71,9 @@ export class AgentBotCollateralManagement {
                 const requiredTopUpF = await this.tokens.poolCollateral.format(requiredTopUpPool);
                 try {
                     logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
-                    await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
+                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                        await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
+                    });
                     await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpF);
                     logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
                 } catch (err) {
@@ -133,7 +139,9 @@ export class AgentBotCollateralManagement {
             }
 
             if (vaultCRBIPS.gte(minVaultCollateralRatio) && poolCRBIPS.gte(minPoolCollateralRatio)) {
-                await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.owner.workAddress });
+                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.owner.workAddress });
+                });
                 logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);
             } else {
                 logger.info(`Agent ${this.agent.vaultAddress} could not end liquidation after price change.`);

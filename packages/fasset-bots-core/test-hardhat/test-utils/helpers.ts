@@ -60,7 +60,7 @@ export async function createTestAgentBot(
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
     ownerUnderlyingAddress ??= `underlying_${ownerManagementAddress}`;
     await fundUnderlying(context, ownerUnderlyingAddress, depositUnderlying);
-    const vaultUnderlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
+    const vaultUnderlyingAddress = await AgentBot.createUnderlyingAddress(context);
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
     const agentVaultSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentVaultSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();

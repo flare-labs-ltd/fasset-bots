@@ -122,7 +122,7 @@ export class AgentBotCommands {
     async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent> {
         await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix);
         try {
-            const underlyingAddress = await AgentBot.createUnderlyingAddress(this.orm.em, this.context);
+            const underlyingAddress = await AgentBot.createUnderlyingAddress(this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
             const [addressValidityProof, _] = await Promise.all([
@@ -437,7 +437,7 @@ export class AgentBotCommands {
         try {
             const { agentBot } = await this.getAgentBot(agentVault);
             const announce = await agentBot.agent.announceUnderlyingWithdrawal();
-            const latestBlock =  await latestBlockTimestampBN();
+            const latestBlock = await latestBlockTimestampBN();
             const txHash = await agentBot.agent.performPayment(destinationAddress, amount, announce.paymentReference);
 
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
@@ -445,8 +445,8 @@ export class AgentBotCommands {
                 agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
             });
 
-        await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash, announce.paymentReference);
-        logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${announce.paymentReference} and txHash ${txHash}.`);
+            await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash, announce.paymentReference);
+            logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${announce.paymentReference} and txHash ${txHash}.`);
             return txHash;
         } catch (error) {
             console.error(error);
@@ -460,12 +460,12 @@ export class AgentBotCommands {
      */
     async cancelUnderlyingWithdrawal(agentVault: string): Promise<void> {
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
-        if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)) {
+        const confirmationAllowedAt = await agentBot.underlyingWithdrawal.confirmationAllowedAt(readAgentEnt);
+        if (confirmationAllowedAt != null) {
             logger.info(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
             console.log(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
-            const announcedUnderlyingConfirmationMinSeconds = toBN((await this.context.assetManager.getSettings()).announcedUnderlyingConfirmationMinSeconds);
             const latestTimestamp = await latestBlockTimestampBN();
-            if (toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).lt(latestTimestamp)) {
+            if (confirmationAllowedAt.lt(latestTimestamp)) {
                 await agentBot.agent.cancelUnderlyingWithdrawal();
                 logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
                 await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
@@ -476,8 +476,8 @@ export class AgentBotCommands {
                 await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                     agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                 });
-                logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
-                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${toBN(readAgentEnt.underlyingWithdrawalAnnouncedAtTimestamp).add(announcedUnderlyingConfirmationMinSeconds).toString()}. Current ${latestTimestamp.toString()}.`);
+                logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${confirmationAllowedAt}. Current ${latestTimestamp.toString()}.`);
+                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${confirmationAllowedAt}. Current ${latestTimestamp.toString()}.`);
             }
         } else {
             await this.notifierFor(agentVault).sendNoActiveWithdrawal();

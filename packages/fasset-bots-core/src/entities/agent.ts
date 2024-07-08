@@ -165,10 +165,10 @@ export class AgentMinting {
     // when in state REQUEST_PAYMENT_PROOF, it stores roundId and data to later obtain the proof
 
     @Property({ nullable: true })
-    proofRequestRound?: number;
+    proofRequestRound: number | undefined;
 
     @Property({ nullable: true, type: "text" })
-    proofRequestData?: string;
+    proofRequestData: string | undefined;
 }
 
 // For agent, redemption needs to be tracked, so that agent pays it, obtains proof of payment and confirms it.
@@ -216,10 +216,10 @@ export class AgentRedemption {
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
 
     @Property({ nullable: true })
-    proofRequestRound?: number;
+    proofRequestRound: number | undefined;
 
     @Property({ nullable: true, type: "text" })
-    proofRequestData?: string;
+    proofRequestData: string | undefined;
 
     @Property({ nullable: true })
     defaulted?: boolean;
@@ -285,10 +285,10 @@ export class AgentUnderlyingPayment {
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
 
     @Property({ nullable: true })
-    proofRequestRound?: number;
+    proofRequestRound: number | undefined;
 
     @Property({ nullable: true, type: "text" })
-    proofRequestData?: string;
+    proofRequestData: string | undefined;
 }
 
 @Entity()

@@ -130,7 +130,6 @@ export class AgentBotEventReader {
             for (const event of unhandledEvents) {
                 if (this.bot.stopRequested()) return;
                 try {
-
                     const fullEvent = await this.getEventFromEntity(event);
                     if (fullEvent != null) {
                         await this.bot.handleEvent(rootEm, fullEvent);
