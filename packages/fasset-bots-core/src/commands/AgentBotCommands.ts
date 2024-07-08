@@ -656,8 +656,9 @@ export class AgentBotCommands {
         }
     }
 
-    async makeIllegalPayment(agentVault: string,  destination: string, amount: string | BN): Promise<void> {
+    async makeIllegalPayment(agentVault: string, destination: string, amount: string | BN): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.performPayment(destination, amount);
+        console.log(`made an illegal payment of ${amount} to ${destination} from ${agentVault}`);
     }
 }
