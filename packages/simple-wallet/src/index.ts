@@ -1,9 +1,7 @@
-import { AlgoWalletImplementation } from "./chain-clients/AlgoWalletImplementation";
 import { BtcWalletImplementation } from "./chain-clients/BtcWalletImplementation";
 import { DogeWalletImplementation } from "./chain-clients/DogeWalletImplementation";
-import { LtcWalletImplementation } from "./chain-clients/LtcWalletImplementation";
 import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation";
-import type { AlgoWalletConfig, BitcoinWalletConfig, DogecoinWalletConfig, LitecoinWalletConfig, RippleWalletConfig } from "./interfaces/WriteWalletInterface";
+import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WriteWalletInterface";
 import { initializeMikroORM } from "./orm/mikro-orm.config";
 
 export type { WalletClient, WalletCreate } from "./types";
@@ -17,28 +15,6 @@ export module WALLET {
       static async initialize(createConfig: RippleWalletConfig) {
          const wallet = new XrpWalletImplementation(createConfig);
          wallet.orm = await initializeMikroORM("simple-wallet_xrp.db");
-         return wallet;
-      }
-   }
-
-   export class ALGO extends AlgoWalletImplementation {
-      constructor(options: AlgoWalletConfig) {
-         super(options);
-      }
-      static async initialize(createConfig: AlgoWalletConfig) {
-         const wallet = new AlgoWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM("simple-wallet_algo.db");
-         return wallet;
-      }
-   }
-
-   export class LTC extends LtcWalletImplementation {
-      constructor(options: LitecoinWalletConfig) {
-         super(options);
-      }
-      static async initialize(createConfig: LitecoinWalletConfig) {
-         const wallet = new LtcWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM("simple-wallet_ltc.db");
          return wallet;
       }
    }

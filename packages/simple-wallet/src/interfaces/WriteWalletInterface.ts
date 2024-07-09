@@ -95,6 +95,4 @@ export interface BaseWalletConfig {
 
 export type RippleWalletConfig = BaseWalletConfig;
 export type BitcoinWalletConfig = BaseWalletConfig;
-export type LitecoinWalletConfig = BaseWalletConfig;
 export type DogecoinWalletConfig = BaseWalletConfig;
-export type AlgoWalletConfig = BaseWalletConfig;

@@ -8,9 +8,6 @@ import {
    DOGE_MAINNET,
    DOGE_TESTNET,
    LOCK_ADDRESS_FACTOR,
-   LTC_LEDGER_CLOSE_TIME_MS,
-   LTC_MAINNET,
-   LTC_TESTNET,
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "./constants";
 import { StuckTransaction } from "../interfaces/WriteWalletInterface";
@@ -30,13 +27,6 @@ export async function sleepMs(ms: number) {
 
 export function wallet_utxo_ensure_data(data: any) {
    if (data.statusText !== "OK") {
-      throw MccError(data);
-   }
-}
-
-export function algo_ensure_data(data: any) {
-   const error_codes = [400, 401, 404, 500, 503];
-   if (error_codes.includes(data.status)) {
       throw MccError(data);
    }
 }
@@ -111,9 +101,6 @@ export function getAvgBlockTime(chainType: ChainType): number {
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return DOGE_LEDGER_CLOSE_TIME_MS;
-      case ChainType.LTC:
-      case ChainType.testLTC:
-         return LTC_LEDGER_CLOSE_TIME_MS;
       case ChainType.XRP:
       case ChainType.testXRP:
          return XRP_LEDGER_CLOSE_TIME_MS;
@@ -130,13 +117,6 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
             blockOffset: 1,
             retries: 2,
             feeIncrease: 3,
-         };
-      case ChainType.LTC:
-      case ChainType.testLTC:
-         return {
-            blockOffset: 3,
-            retries: 1,
-            feeIncrease: 2,
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
@@ -168,10 +148,6 @@ export function getCurrentNetwork(chainType: ChainType) {
          return DOGE_MAINNET;
       case ChainType.testDOGE:
          return DOGE_TESTNET;
-      case ChainType.LTC:
-         return LTC_MAINNET;
-      case ChainType.testLTC:
-         return LTC_TESTNET;
       default:
          throw new Error(`Unsupported chain type ${chainType}`);
    }

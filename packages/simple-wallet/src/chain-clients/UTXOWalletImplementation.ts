@@ -3,15 +3,14 @@ import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import bs58check from "bs58check";
 import * as bitcoin from "bitcoinjs-lib";
 import * as bitcore from "bitcore-lib";
-import * as litecore from "bitcore-lib-ltc";
 import * as dogecore from "bitcore-lib-doge";
 import BIP32Factory from "bip32";
 import { generateMnemonic, mnemonicToSeedSync } from "bip39";
 import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, sleepMs, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import {
-   BTC_LTC_DUST_AMOUNT,
-   BTC_LTC_FEE_PER_KB,
+   BTC_DUST_AMOUNT,
+   BTC_FEE_PER_KB,
    ChainType,
    DEFAULT_RATE_LIMIT_OPTIONS,
    DOGE_DUST_AMOUNT,
@@ -193,7 +192,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {BN|undefined} feeInSatoshi - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInSatoshi
-    * @returns {Object} - BTC/DOGE/LTC transaction object
+    * @returns {Object} - BTC/DOGE transaction object
     */
    private async preparePaymentTransaction(
       source: string,
@@ -379,8 +378,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    private getCore(): typeof bitcore {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return dogecore;
-      } else if (this.chainType === ChainType.LTC || this.chainType === ChainType.testLTC) {
-         return litecore;
       } else {
          return bitcore;
       }
@@ -390,7 +387,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return DOGE_DUST_AMOUNT;
       } else {
-         return BTC_LTC_DUST_AMOUNT;
+         return BTC_DUST_AMOUNT;
       }
    }
 
@@ -401,7 +398,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return DOGE_FEE_PER_KB.divn(1000);
       } else {
-         return BTC_LTC_FEE_PER_KB.divn(1000);
+         return BTC_FEE_PER_KB.divn(1000);
       }
    }
 

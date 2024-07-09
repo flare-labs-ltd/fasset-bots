@@ -4,7 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import { BTC_LTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
+import { BTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
 
@@ -34,7 +34,7 @@ const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
 //    privateKey: 'ckzzFoCjnLv9Div59fpwXtvCpUxEwhiHQWEGV6nEsLQfWUDs6h4J'
 //  }
 
-const DOGE_DECIMAL_PLACES = BTC_LTC_DOGE_DEC_PLACES;
+const DOGE_DECIMAL_PLACES = BTC_DOGE_DEC_PLACES;
 const amountToSendInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);
 const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 const maxFeeInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);

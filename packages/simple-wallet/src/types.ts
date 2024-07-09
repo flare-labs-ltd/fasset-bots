@@ -1,4 +1,4 @@
-import { RippleWalletConfig, AlgoWalletConfig, BitcoinWalletConfig, DogecoinWalletConfig, LitecoinWalletConfig } from "./interfaces/WriteWalletInterface";
+import { RippleWalletConfig, BitcoinWalletConfig, DogecoinWalletConfig } from "./interfaces/WriteWalletInterface";
 export { WriteWalletInterface as WalletClient } from "./interfaces/WriteWalletInterface";
 
-export type WalletCreate = BitcoinWalletConfig | DogecoinWalletConfig | LitecoinWalletConfig | AlgoWalletConfig | RippleWalletConfig;
+export type WalletCreate = BitcoinWalletConfig | DogecoinWalletConfig | RippleWalletConfig;

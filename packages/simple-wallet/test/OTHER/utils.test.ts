@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { algo_ensure_data, bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
+import { bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 import { ChainType } from "../../src/utils/constants";
 
@@ -34,13 +34,6 @@ describe("Util tests", () => {
    });
 
    it("Should fail if not desired error code or error message", async () => {
-      const dataAlgo = {
-         status: 400,
-      };
-      const fn = () => {
-         return algo_ensure_data(dataAlgo);
-      };
-      expect(fn).to.throw(Error);
       const dataXrp = {
          result: {
             status: "error",
@@ -162,15 +155,4 @@ describe("Util tests", () => {
       expect(fn2).to.throw(Error);
    });
 
-   it("Should get stuck transactions constants", async function () {
-      const c = stuckTransactionConstants(ChainType.LTC);
-      expect(c.blockOffset).to.eq(3);
-      expect(c.retries).to.eq(1);
-      expect(c.feeIncrease).to.eq(2);
-   });
-
-   it("Should get current network", async function () {
-      const c = getCurrentNetwork(ChainType.LTC);
-      expect(c.bech32).to.eq("ltc");
-   });
 });
