@@ -167,7 +167,6 @@ describe("Toplevel runner and commands integration test", () => {
         console.log("Starting the bots...");
         timekeeperService.startAll();
         void botRunner.run();
-        while (!botRunner.running) await sleep(100);
         for (const chain of chains.values()) {
             chain.enableTimedMining(500);
         }
@@ -179,7 +178,7 @@ describe("Toplevel runner and commands integration test", () => {
             chain.disableTimedMining();
         }
         botRunner.requestStop();
-        while (botRunner.running) await sleep(100);
+        while (!botRunner.stopped()) await sleep(100);
         await timekeeperService.stopAll();
     });
 

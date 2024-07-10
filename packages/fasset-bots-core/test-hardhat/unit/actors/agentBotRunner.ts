@@ -10,6 +10,7 @@ import { FaultyNotifierTransport } from "../../test-utils/FaultyNotifierTranspor
 import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/helpers";
+import { sleep } from "../../../src/utils";
 use(spies);
 
 const loopDelay: number = 2;
@@ -46,13 +47,14 @@ describe("Agent bot runner tests", () => {
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
-    it("Should run agent bot runner until its stopped", async () => {
+    it.only("Should run agent bot runner until its stopped", async () => {
         const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
         const spyStep = spy.on(agentBotRunner, "runStep");
         agentBotRunner.requestStop();
-        void agentBotRunner.run();
+        const runPromise = agentBotRunner.run();    // run in background
         agentBotRunner.requestStop();
+        await runPromise;
         expect(spyStep).to.have.been.called.once;
     });
 
@@ -79,5 +81,8 @@ describe("Agent bot runner tests", () => {
         expect(agentEntities.length).to.eq(3);
         expect(spyWarn).to.have.been.called.once;
         agentBotRunner.requestStop();
+        while (!agentBotRunner.stopped()) {
+            await sleep(100);
+        }
     });
 });

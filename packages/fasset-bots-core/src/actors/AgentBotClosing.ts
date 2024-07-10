@@ -259,6 +259,8 @@ export class AgentBotClosing {
             agentEnt.active = false;
         });
         await this.notifier.sendAgentDestroyed();
+        // stop the running agent loop
+        this.bot.requestStop();
         logger.info(`Agent ${this.agent.vaultAddress} was destroyed.`);
     }
 

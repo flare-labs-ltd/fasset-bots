@@ -1,4 +1,4 @@
-import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
+import { CreateRequestContext } from "@mikro-orm/core";
 import { AgentBotConfig, AgentBotSettings, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
@@ -27,27 +27,27 @@ export class AgentBotRunner {
         public timekeeperService: ITimeKeeperService,
     ) {}
 
-    public running = false;
     public stopRequested = false;
     public restartRequested = false;
 
+    public runningAgentBots = new Map<string, AgentBot>();
+
     private transientStorage: Map<string, AgentBotTransientStorage> = new Map();
 
+    @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
         this.restartRequested = false;
-        this.running = true;
-        try {
-            while (!this.stopLoop()) {
-                await this.runStep();
-                if (this.stopLoop()) break;
-            }
-        } finally {
-            this.running = false;
+        while (!this.stopped()) {
+            await this.runStep();
         }
     }
 
-    stopLoop(): boolean {
+    stopped() {
+        return this.stopOrRestartRequested() && this.runningAgentBots.size === 0;
+    }
+
+    stopOrRestartRequested(): boolean {
         return this.stopRequested || this.restartRequested;
     }
 
@@ -64,12 +64,25 @@ export class AgentBotRunner {
      * In every step it firstly collects all active agent entities. For every entity it construct AgentBot and runs its runsStep method,
      * which handles required events and other.
      */
-    @CreateRequestContext()
     async runStep(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
+        try {
+            this.removeStoppedAgentBots();
+            if (!this.stopOrRestartRequested()) {
+                this.checkForWorkAddressChange();
+                await this.addNewAgentBots();
+            }
+            const sleepMS = this.stopOrRestartRequested() ? this.loopDelay : 100;
+            await sleep(sleepMS);
+        } catch (error) {
+            logger.error(`Error running step of agent bot runner:`, error);
+        }
+    }
+
+    async addNewAgentBots() {
+        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
-            this.checkForWorkAddressChange();
-            if (this.stopLoop()) break;
+            if (this.runningAgentBots.has(agentEntity.vaultAddress)) continue;
+            // create new bot
             try {
                 const context = this.contexts.get(agentEntity.fassetSymbol);
                 if (context == null) {
@@ -83,12 +96,20 @@ export class AgentBotRunner {
                 agentBot.runner = this;
                 agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
                 agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
-                logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
-                await agentBot.runStep(this.orm.em);
-                logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
+                this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
+                logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner added running agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
-                console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
-                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error with agent ${agentEntity.vaultAddress}:`, error);
+                console.error(`Error with adding running agent ${agentEntity.vaultAddress}: ${error}`);
+                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error starting agent ${agentEntity.vaultAddress}:`, error);
+            }
+        }
+    }
+
+    removeStoppedAgentBots() {
+        const agentBotEntries = Array.from(this.runningAgentBots.entries());
+        for (const [address, agentBot] of agentBotEntries) {
+            if (!agentBot.running()) {
+                this.runningAgentBots.delete(address);
             }
         }
     }

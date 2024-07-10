@@ -105,6 +105,10 @@ export class AgentBot {
     transientStorage: AgentBotTransientStorage = new AgentBotTransientStorage();    // changed when running in AgentBotRunner
     locks = new AgentBotLocks(); // changed when running in AgentBotRunner
 
+    // internal
+    private _running: boolean = false;
+    private _stopRequested: boolean = false;
+
     static async createUnderlyingAddress(context: IAssetAgentContext) {
         return await context.wallet.createAccount();
     }
@@ -251,8 +255,16 @@ export class AgentBot {
         }
     }
 
+    requestStop() {
+        this._stopRequested = true;
+    }
+
     stopRequested() {
-        return this.runner?.stopRequested ?? false;
+        return (this.runner?.stopRequested ?? false) || this._stopRequested;
+    }
+
+    running() {
+        return this._running;
     }
 
     /**
@@ -261,34 +273,39 @@ export class AgentBot {
      */
     async runThreads(rootEm: EM) {
         const threads: Promise<void>[] = [];
-        // one thread for reading events
-        threads.push(this.startThread(rootEm, true, async (threadEm) => {
-            await this.handleEvents(threadEm);
-        }));
-        // one thread for every redemption state
-        for (const redemptionState of Object.values(AgentRedemptionState)) {
-            if (redemptionState === AgentRedemptionState.DONE) continue;
+        this._running = true;
+        try {
+            // one thread for reading events
             threads.push(this.startThread(rootEm, true, async (threadEm) => {
-                await this.redemption.handleRedemptionsInState(threadEm, redemptionState);
+                await this.handleEvents(threadEm);
             }));
+            // one thread for every redemption state
+            for (const redemptionState of Object.values(AgentRedemptionState)) {
+                if (redemptionState === AgentRedemptionState.DONE) continue;
+                threads.push(this.startThread(rootEm, true, async (threadEm) => {
+                    await this.redemption.handleRedemptionsInState(threadEm, redemptionState);
+                }));
+            }
+            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+                await this.redemption.handleExpiredRedemptions(threadEm);
+            }));
+            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+                await this.minting.handleOpenMintings(threadEm);
+            }));
+            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+                await this.handleTimelockedProcesses(threadEm);
+            }));
+            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+                await this.underlyingManagement.handleOpenUnderlyingPayments(threadEm);
+            }));
+            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+                await this.handleDailyTasks(threadEm);
+            }));
+            // wait for all to finish
+            await Promise.allSettled(threads);
+        } finally {
+            this._running = false;
         }
-        threads.push(this.startThread(rootEm, true, async (threadEm) => {
-            await this.redemption.handleExpiredRedemptions(threadEm);
-        }));
-        threads.push(this.startThread(rootEm, true, async (threadEm) => {
-            await this.minting.handleOpenMintings(threadEm);
-        }));
-        threads.push(this.startThread(rootEm, true, async (threadEm) => {
-            await this.handleTimelockedProcesses(threadEm);
-        }));
-        threads.push(this.startThread(rootEm, true, async (threadEm) => {
-            await this.underlyingManagement.handleOpenUnderlyingPayments(threadEm);
-        }));
-        threads.push(this.startThread(rootEm, true, async (threadEm) => {
-            await this.handleDailyTasks(threadEm);
-        }));
-        // wait for all to finish
-        await Promise.allSettled(threads);
     }
 
     /**
