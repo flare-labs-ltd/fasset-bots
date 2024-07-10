@@ -69,6 +69,7 @@ describe("Agent bot runner tests", () => {
         // create runner
         const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay, [new FaultyNotifierTransport()]);
+        console.log(`Parallel: ${agentBotRunner.parallel()}`);
         expect(agentBotRunner.loopDelay).to.eq(loopDelay);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
         const agentEntities = await orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
@@ -81,9 +82,11 @@ describe("Agent bot runner tests", () => {
         expect(agentEntities.length).to.eq(3);
         expect(spyWarn).to.have.been.called.once;
         agentBotRunner.requestStop();
-        while (!agentBotRunner.stopped()) {
-            await agentBotRunner.runStep();
-            await sleep(100);
+        if (agentBotRunner.parallel()) {
+            while (agentBotRunner.running) {
+                await agentBotRunner.runStep();
+                await sleep(100);
+            }
         }
     });
 });

@@ -37,6 +37,10 @@
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
                     "type": "string"
                 },
+                "parallel": {
+                    "description": "If true, mintings and various redemption steps will run in parallel.\nWARNING: should not be used with sqlite database.",
+                    "type": "boolean"
+                },
                 "poolCollateralReserveFactor": {
                     "description": "The threshold for NAT on owner's work address, below which alert is triggered.\nRelative to required pool collateral for current minted amount.",
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
@@ -51,6 +55,7 @@
             "required": [
                 "fAssets",
                 "liquidationPreventionFactor",
+                "parallel",
                 "poolCollateralReserveFactor",
                 "vaultCollateralReserveFactor"
             ],
@@ -179,6 +184,21 @@
                 },
                 "host": {
                     "type": "string"
+                },
+                "pool": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "acquireTimeoutMillis": {
+                            "type": "number"
+                        },
+                        "max": {
+                            "type": "number"
+                        },
+                        "min": {
+                            "type": "number"
+                        }
+                    },
+                    "type": "object"
                 },
                 "port": {
                     "type": "number"

@@ -35,6 +35,7 @@
         }
     },
     "agentBotSettings": {
+        "parallel": false,
         "liquidationPreventionFactor": "1.2",
         "vaultCollateralReserveFactor": "0.1",
         "poolCollateralReserveFactor": "0.1",
@@ -56,7 +57,11 @@
     "ormOptions": {
         "type": "sqlite",
         "dbName": "fasset-bots-coston.CONTROLLER.db",
-        "allowGlobalContext": true
+        "allowGlobalContext": true,
+        "pool": {
+            "min": 0,
+            "max": 2
+        }
     },
     "liquidationStrategy": {
         "className": "DefaultLiquidationStrategy"

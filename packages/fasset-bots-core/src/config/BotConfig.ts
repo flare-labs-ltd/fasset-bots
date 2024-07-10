@@ -53,6 +53,7 @@ export interface BotFAssetConfig {
 }
 
 export interface AgentBotSettings {
+    parallel: boolean;
     liquidationPreventionFactor: number;
     vaultCollateralReserveFactor: number;
     poolCollateralReserveFactor: number;
@@ -201,6 +202,7 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
 function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSettings: AgentBotFassetSettingsJson, chainInfo: ChainInfo): AgentBotSettings {
     const underlying = new Currency(chainInfo.symbol, chainInfo.decimals);
     return {
+        parallel: agentBotSettings.parallel,
         liquidationPreventionFactor: Number(agentBotSettings.liquidationPreventionFactor),
         vaultCollateralReserveFactor: Number(agentBotSettings.vaultCollateralReserveFactor),
         poolCollateralReserveFactor: Number(agentBotSettings.poolCollateralReserveFactor),
