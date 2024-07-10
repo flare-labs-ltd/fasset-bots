@@ -18,13 +18,15 @@ export interface WriteWalletInterface {
       fee?: BN,
       note?: string,
       maxFee?: BN,
-      sequence?: number
+      sequence?: number,
+      executeUntilBlock?: number
    ): Promise<any>;
 
    deleteAccount(
       source: string,
       privateKey: string,
       destination: string,
+
       fee?: BN,
       note?: string,
       maxFee?: BN,

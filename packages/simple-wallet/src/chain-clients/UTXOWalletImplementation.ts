@@ -28,16 +28,20 @@ const ecc = require('tiny-secp256k1');
 // You must wrap a tiny-secp256k1 compatible implementation
 const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
-import { ORM, createTransactionEntity, fetchTransactionEntity, updateTransactionEntity } from "../orm/orm";
 import { TransactionStatus } from "../entity/transaction";
+import { ORM } from "../orm/mikro-orm.config";
+import { createTransactionEntity, fetchUnspentUTXOs, storeUTXOS, updateTransactionEntity, updateUTXOEntity } from "../utils/dbutils";
+import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 
 export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
-   blockOffset: number;
-   maxRetries: number;
-   feeIncrease: number;
    orm!: ORM;
+
+   addressLocks = new Set<string>();
+   enoughConfirmations: number = 2;
+   executionBlockOffset: number = 2;
+   feeIncrease: number = 1.3;
 
    constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
@@ -66,13 +70,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          ...DEFAULT_RATE_LIMIT_OPTIONS,
          ...createConfig.rateLimitOptions,
       });
-      const resubmit = stuckTransactionConstants(this.chainType);
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.maxRetries = createConfig.stuckTransactionOptions?.retries ?? resubmit.retries!;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
    }
 
    /**
@@ -146,15 +143,35 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       amountInSatoshi: BN | null,
       feeInSatoshi?: BN,
       note?: string,
-      maxFeeInSatoshi?: BN
+      maxFeeInSatoshi?: BN,
+      executeUntilBlock?: number
    ): Promise<ISubmitTransactionResponse> {
-      const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
-      const tx_blob = await this.signTransaction(transaction, privateKey);
-      const submitResp = await this.submitTransaction(tx_blob);
-      // save tx in db
-      await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId, maxFeeInSatoshi || null);
-      const submittedBlockHeight = await this.getCurrentBlockHeight();
-      return await this.waitForTransaction(submitResp.txId, source, privateKey, submittedBlockHeight);
+      const currentBlockHeight = await this.getCurrentBlockHeight();
+      if (executeUntilBlock && (executeUntilBlock - currentBlockHeight) > this.executionBlockOffset) {
+         throw new Error(`No time to execute transaction until block ${executeUntilBlock}; current block is ${currentBlockHeight}`)
+      }
+      await this.checkIfCanSubmitFromAddress(source);
+      try {
+         // lock address until transaction is visible in mempool
+         this.addressLocks.add(source);
+         const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
+         const tx_blob = await this.signTransaction(transaction, privateKey);
+         const submitResp = await this.submitTransaction(tx_blob);
+         // save tx in db
+         await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId, maxFeeInSatoshi || null);
+         // mark utxo as spent
+         for (const input of transaction.inputs) {
+            await updateUTXOEntity(this.orm, input.prevTxId.toString('hex'), input.outputIndex, async (utxoEnt) => {
+               utxoEnt.spentHeight = SpentHeightEnum.PENDING
+            });
+         }
+         await this.waitForTransactionToAppearInMempool(submitResp.txId);
+         //TODO do this in background
+         void this.waitForTransactionToBeAccepted(submitResp.txId, source, privateKey);
+         return submitResp;
+      } finally {
+         this.addressLocks.delete(source);
+      }
    }
 
    /**
@@ -205,7 +222,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       const isPayment = amountInSatoshi != null;
       const core = this.getCore();
       const utxos = await this.fetchUTXOs(source, amountInSatoshi, this.getEstimatedNumberOfOutputs(amountInSatoshi, note));
-
       if (amountInSatoshi == null) {
          const estimateFee = this.getEstimateFee(utxos.length);
          amountInSatoshi = (await this.getAccountBalance(source)).sub(estimateFee);
@@ -213,7 +229,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       if (amountInSatoshi.lte(this.getDustAmount())) {
          throw new Error(`Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${this.getDustAmount().toString()}`)
       }
-
       const tr = new core.Transaction()
          .from(utxos.map((utxo) => new UnspentOutput(utxo)))
          .to(destination, toNumber(amountInSatoshi));
@@ -228,6 +243,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          tr.addData(Buffer.from(unPrefix0x(note), "hex"));
       }
       tr.enableRBF();
+      if (isPayment && !feeInSatoshi) {
+         const currentFee = tr.getFee();
+         tr.fee(currentFee * this.feeIncrease);
+      }
       return tr;
    }
 
@@ -260,13 +279,19 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     */
    async fetchUTXOs(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<UTXO[]> {
       const utxos = await this.listUnspent(address, amountInSatoshi, estimatedNumOfOutputs);
-      return utxos.map((utxo) => ({
-         txid: utxo.mintTxid,
-         satoshis: utxo.value,
-         outputIndex: utxo.mintIndex,
-         confirmations: utxo.confirmations,
-         scriptPubKey: utxo.script,
-      }));
+      const allUTXOs: UTXO[] = [];
+      for (const utxo of utxos) {
+         const raw = JSON.parse(utxo.raw.toString());
+         const item = {
+            txid: utxo.mintTransactionHash,
+            satoshis: raw.satoshis,
+            outputIndex: utxo.position,
+            confirmations: -1,
+            scriptPubKey: raw.script,
+         }
+         allUTXOs.push(item);
+      }
+      return allUTXOs;
    }
 
    /**
@@ -277,26 +302,56 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @returns {Object[]}
     */
    private async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
-      const res = await this.client.get(`/address/${address}?unspent=true&excludeconflicting=true`);
-      wallet_utxo_ensure_data(res);
-      // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
-      // utxo.mintHeight > -3 => excludeConflicting
-      const allUTXOs =  (res.data as any[]).filter((utxo) => utxo.mintHeight > -3).sort((a, b) => a.value - b.value);
-      if (amountInSatoshi == null) {
-         return allUTXOs;
+      // fetch db utxos
+      let dbUTXOS = await fetchUnspentUTXOs(this.orm, address);
+      // fill from mempool and refetch
+      if (dbUTXOS.length == 0) {
+         await this.fillUTXOsFromMempool(address);
+         dbUTXOS = await fetchUnspentUTXOs(this.orm, address);
       }
+      if (amountInSatoshi == null) {
+         return dbUTXOS;
+      }
+
+      const needed = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi)
+      if (needed) {
+         return needed;
+      }
+
+      // not enough funds in db
+      await this.fillUTXOsFromMempool(address);
+      dbUTXOS = await fetchUnspentUTXOs(this.orm, address);
+
+      const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi)
+      if (neededAfter) {
+         return neededAfter;
+      }
+      return dbUTXOS;
+   }
+
+   private async returnNeededUTXOs(allUTXOS: UTXOEntity[], estimatedNumOfOutputs: number, amountInSatoshi: BN): Promise<UTXOEntity[] | null> {
       const neededUTXOs = [];
       let sum = 0;
-      for (const utxo of allUTXOs) {
+      for (const utxo of allUTXOS) {
          neededUTXOs.push(utxo);
-         sum += utxo.value;
+         const value = JSON.parse(utxo.raw.toString()).satoshis;
+         sum += value;
          const est_fee = this.getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
          // multiply estimated fee by 2 to ensure enough funds TODO: is it enough?
          if (toBN(sum).gt(amountInSatoshi.add(est_fee.muln(2)))) {
             return neededUTXOs;
          }
       }
-      return allUTXOs;
+      return null;
+   }
+
+   private async fillUTXOsFromMempool(address: string) {
+      const res = await this.client.get(`/address/${address}?unspent=true&excludeconflicting=true`);
+      wallet_utxo_ensure_data(res);
+      // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
+      // utxo.mintHeight > -3 => excludeConflicting; utxo.spentHeight == -2 -> unspent
+      const mempoolUTXOs = (res.data as any[]).filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2).sort((a, b) => a.value - b.value);
+      await storeUTXOS(this.orm, address, mempoolUTXOs);
    }
 
    async getCurrentBlockHeight(): Promise<number> {
@@ -305,6 +360,16 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return res.data.height;
    }
 
+   //TODO -> robust if await this.client.get(`/tx/${txHash}`) => 404
+   private async waitForTransactionToAppearInMempool(txHash: string): Promise<ISubmitTransactionResponse> {
+      await sleepMs(10000);
+      let txResp = await this.client.get(`/tx/${txHash}`);
+      while (txResp.status != 200) {
+         await sleepMs(1000);
+         txResp = await this.client.get(`/tx/${txHash}`);
+      }
+      return { txId: txResp.data.txid };
+   }
    /**
     * Returns transaction object when transaction is accepted to the ledger
     * @param {string} txHash
@@ -314,59 +379,25 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {string} retry
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   private async waitForTransaction(txHash: string, source: string, privateKey: string, submittedBlockHeight: number, retry: number = 0): Promise<ISubmitTransactionResponse> {
+   private async waitForTransactionToBeAccepted(txHash: string, source: string, privateKey: string): Promise<ISubmitTransactionResponse> {
+      const submittedBlockHeight = await this.getCurrentBlockHeight();
       await sleepMs(getAvgBlockTime(this.chainType));
-      const txResp = await this.client.get(`/tx/${txHash}`);
+      let txResp = await this.client.get(`/tx/${txHash}`);
       wallet_utxo_ensure_data(txResp);
-      if (txResp.data.blockHash) {
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.confirmations = txResp.data.confirmations;
-            txEnt.status = TransactionStatus.TX_SUCCESS;
-         });
-         return { txId: txResp.data.txid };
-      }
-      return this.tryToResubmitTransaction(txHash, source, privateKey, submittedBlockHeight, retry);
-   }
-
-   /**
-    * @param {string} txHash
-    * @param {Object} source
-    * @param {string} privateKey
-    * @param {number} submittedBlockHeight
-    * @param {number} retry
-    * @returns {Object} - containing transaction id tx_id and optional result
-    */
-   private async tryToResubmitTransaction(txHash: string, source: string, privateKey: string, submittedBlockHeight: number, retry: number): Promise<ISubmitTransactionResponse> {
-      const retriedTx = await fetchTransactionEntity(this.orm, txHash);
-      const lastBlockNumber = submittedBlockHeight + this.blockOffset;
-      const currentBlockHeight = await this.getCurrentBlockHeight();
-      if (currentBlockHeight > lastBlockNumber) {
-         if (retry <= this.maxRetries) {
-            const newTransaction = JSON.parse(retriedTx.raw.toString());
-            const newFee = newTransaction.getFee() * this.feeIncrease;
-            this.checkFeeRestriction(toBN(newFee), retriedTx.maxFee);
-            newTransaction.fee(newFee);
-            const blob = await this.signTransaction(newTransaction, privateKey);
-            const submit = await this.submitTransaction(blob);
-            const newSubmittedBlockHeight = await this.getCurrentBlockHeight();
-            // store new tx and mark replacement
-            await createTransactionEntity(this.orm, newTransaction, retriedTx.source, retriedTx.destination, submit.txId);
-            const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
-            await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-               txEnt.replaced_by = newTxEnt;
-               txEnt.status = TransactionStatus.TX_REPLACED;
-            });
-            retry++;
-            return this.waitForTransaction(submit.txId, source, privateKey, newSubmittedBlockHeight, retry);
+      while (!(txResp.data.blockHash &&txResp.data.confirmations >= this.enoughConfirmations)) {
+         await sleepMs(getAvgBlockTime(this.chainType));
+         txResp = await this.client.get(`/tx/${txHash}`);
+         //TODO handle stuck transactions -> if not accepted in next two block?
+         const currentBlockHeight =  await this.getCurrentBlockHeight();
+         if (currentBlockHeight - submittedBlockHeight > this.enoughConfirmations) {
+            throw new Error(`Transaction ${txHash} is probably not going to be accepted!`);
          }
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_NOT_ACCEPTED;
-         });
-         throw new Error(
-            `waitForTransaction: transaction ${txHash} is not going to be accepted. Current block ${currentBlockHeight} is greater than submittedBlockHeight ${lastBlockNumber}`
-         );
       }
-      return this.waitForTransaction(txHash, source, privateKey, submittedBlockHeight, retry);
+      await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+         txEnt.confirmations = txResp.data.confirmations;
+         txEnt.status = TransactionStatus.TX_SUCCESS;
+      });
+      return { txId: txResp.data.txid };
    }
 
    private checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
@@ -412,4 +443,21 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       if (note) return 3; // destination, change (returned funds) and note
       return 2; // destination and change
    }
+
+   /**
+    * Waits if previous transaction from address is still processing. If wait is too long it throws.
+    * @param {string} address
+    */
+   private async checkIfCanSubmitFromAddress(address: string): Promise<void> {
+      const start = new Date().getTime();
+      while (new Date().getTime() - start < 60000) { //lock for one minute
+         if (!this.addressLocks.has(address)) {
+            this.addressLocks.add(address);
+            return;
+         }
+         await sleepMs(100);
+      }
+      throw new Error(`Timeout waiting to obtain confirmed transaction from address ${address}`);
+   }
+
 }

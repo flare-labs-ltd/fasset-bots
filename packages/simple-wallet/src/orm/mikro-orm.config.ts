@@ -1,9 +1,11 @@
 import { TransactionEntity } from "../entity/transaction";
 import { MikroORM, Options, SqliteDriver } from '@mikro-orm/sqlite';
+import { UTXOEntity } from "../entity/utxo";
 
-/* istanbul ignore next */
+export type ORM = MikroORM;
+
 const config: Options = {
-    entities: [TransactionEntity],
+    entities: [TransactionEntity, UTXOEntity],
     debug: false,
     driver: SqliteDriver,
     allowGlobalContext: true

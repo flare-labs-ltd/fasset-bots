@@ -7,6 +7,8 @@ import WAValidator from "wallet-address-validator";
 import { BTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
+import { sleepMs } from "../../src/utils/utils";
+import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
@@ -63,6 +65,7 @@ describe("Dogecoin wallet tests", () => {
 
    it("Should create and sign transaction", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi);
       const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey as string);
@@ -76,8 +79,22 @@ describe("Dogecoin wallet tests", () => {
       expect(typeof submit).to.equal("object");
    });
 
+   it("Should prepare and execute transactions", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      const note0 = "00000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const note1 = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const note2 = "20000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const resp0 = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note0);
+      expect(typeof resp0).to.equal("object");
+      const resp1 = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note1);
+      expect(typeof resp1).to.equal("object");
+      const resp2 = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note2);
+      expect(typeof resp2).to.equal("object");
+   });
+
    it("Should create transaction with custom fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
@@ -85,6 +102,7 @@ describe("Dogecoin wallet tests", () => {
 
    it("Should not create transaction: maxFee > fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
          .eventually.be.rejectedWith(`Fee ${feeInSatoshi.toString()} is higher than maxFee ${maxFeeInSatoshi.toString()}`);
@@ -92,6 +110,7 @@ describe("Dogecoin wallet tests", () => {
 
    it("Should not create transaction: amount = dust amount", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
+      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note", maxFeeInSatoshi)).to
          .eventually.be.rejectedWith(`Will not prepare transaction for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);

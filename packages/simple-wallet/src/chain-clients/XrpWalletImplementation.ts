@@ -17,8 +17,9 @@ import {
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletInterface, RippleWalletConfig, XRPFeeParams } from "../interfaces/WriteWalletInterface";
 import BN from "bn.js";
-import { ORM, createTransactionEntity, fetchTransactionEntity, getReplacedTransactionHash, updateTransactionEntity } from "../orm/orm";
 import { TransactionStatus } from "../entity/transaction";
+import { ORM } from "../orm/mikro-orm.config";
+import { createTransactionEntity, getReplacedTransactionHash, updateTransactionEntity, fetchTransactionEntity } from "../utils/dbutils";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
@@ -166,6 +167,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    ): Promise<ISubmitTransactionResponse> {
       await this.checkIfCanSubmitFromAddress(source);
       try {
+         this.addressLocks.set(source, { tx: null, maxFee: maxFeeInDrops || null });
          const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence);
          this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops || null });
          const tx_blob = await this.signTransaction(transaction, privateKey);

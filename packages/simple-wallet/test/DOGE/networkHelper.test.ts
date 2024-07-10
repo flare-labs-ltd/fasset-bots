@@ -36,8 +36,5 @@ describe("Dogecoin network helper tests", () => {
       };
       const wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
       expect(wClient.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);
-      expect(wClient.blockOffset).to.eq(DOGEMccConnectionTest.stuckTransactionOptions.blockOffset);
-      expect(wClient.maxRetries).to.eq(DOGEMccConnectionTest.stuckTransactionOptions.retries);
-      expect(wClient.feeIncrease).to.eq(DOGEMccConnectionTest.stuckTransactionOptions.feeIncrease);
    });
 });

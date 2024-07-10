@@ -8,8 +8,8 @@ import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
 import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { createTransactionEntity } from "../../src/orm/orm";
 import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
+import { createTransactionEntity } from "../../src/utils/dbutils";
 
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");

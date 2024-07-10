@@ -1,5 +1,4 @@
 import { Entity, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
-import { ADDRESS_LENGTH, BYTES32_LENGTH } from "../utils/constants";
 import { BNType } from "../orm/orm-types";
 import BN from "bn.js";
 
@@ -8,13 +7,13 @@ export class TransactionEntity {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property({ length: ADDRESS_LENGTH })//TODO
+    @Property()
     source!: string;
 
-    @Property({ length: ADDRESS_LENGTH })//TODO
+    @Property()
     destination!: string;
 
-    @Property({ length: BYTES32_LENGTH })//TODO
+    @Property()
     transactionHash!: string;
 
     @Property()
@@ -22,6 +21,9 @@ export class TransactionEntity {
 
     @Property({ type: BNType, nullable: true })
     maxFee?: BN;
+
+    @Property({ nullable: true  })
+    executeUntilBlock!: number;
 
     @Property()
     confirmations!: number;
