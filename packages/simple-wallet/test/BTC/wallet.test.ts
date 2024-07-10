@@ -6,6 +6,7 @@ use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { toBN } from "../../src/utils/bnutils";
 import rewire from "rewire";
+import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
@@ -26,7 +27,7 @@ const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
 const targetMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
 const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
 
-const amountToSendSatoshi = toBN(120000);
+const amountToSendSatoshi = toBN(50000);
 const feeInSatoshi = toBN(120000);
 const maxFeeInSatoshi = toBN(110000);
 
@@ -52,6 +53,7 @@ describe("Bitcoin wallet tests", () => {
 
    it("Should create transaction with custom fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
+      rewired.orm = await initializeMikroORM("simple-wallet_btc.db");
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
@@ -67,5 +69,12 @@ describe("Bitcoin wallet tests", () => {
    it("Should receive fee", async () => {
       const fee = await wClient.getCurrentTransactionFee({source: fundedAddress, amount: amountToSendSatoshi, destination: targetAddress});
       expect(fee).not.to.be.null;
+   });
+
+   it.skip("Should prepare and execute transaction", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const submit = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note);
+      expect(typeof submit).to.equal("object");
    });
 });
