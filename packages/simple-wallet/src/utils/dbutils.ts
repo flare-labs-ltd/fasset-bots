@@ -76,10 +76,15 @@ export async function fetchUnspentUTXOs(orm: ORM, source: string): Promise<UTXOE
 
 export async function storeUTXOS(orm: ORM, source: string, mempoolUTXOs: any[]): Promise<void> {
     for (const utxo of mempoolUTXOs) {
-        const raw = {
-            "satoshis": utxo.value,
-            "script": utxo.script
-        };
-        await createUTXOEntity(orm, raw, source, utxo.mintTxid, utxo.mintIndex);
+        try {
+            await fetchUTXOEntity(orm, utxo.mintTxid, utxo.mintIndex);
+        } catch(e) {
+            const raw = {
+                "satoshis": utxo.value,
+                "script": utxo.script
+            };
+            await createUTXOEntity(orm, raw, source, utxo.mintTxid, utxo.mintIndex);
+        }
+
     }
 }

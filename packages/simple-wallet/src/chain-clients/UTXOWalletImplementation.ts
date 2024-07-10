@@ -162,7 +162,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          // mark utxo as spent
          for (const input of transaction.inputs) {
             await updateUTXOEntity(this.orm, input.prevTxId.toString('hex'), input.outputIndex, async (utxoEnt) => {
-               utxoEnt.spentHeight = SpentHeightEnum.PENDING
+               utxoEnt.spentHeight = SpentHeightEnum.PENDING;
             });
          }
          await this.waitForTransactionToAppearInMempool(submitResp.txId);
@@ -317,11 +317,9 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       if (needed) {
          return needed;
       }
-
       // not enough funds in db
       await this.fillUTXOsFromMempool(address);
       dbUTXOS = await fetchUnspentUTXOs(this.orm, address);
-
       const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi)
       if (neededAfter) {
          return neededAfter;
