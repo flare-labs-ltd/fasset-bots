@@ -30,7 +30,7 @@ const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
 import { TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
-import { createTransactionEntity, fetchUnspentUTXOs, storeUTXOS, updateTransactionEntity, updateUTXOEntity } from "../utils/dbutils";
+import { createTransactionEntity, fetchTransactionEntity, fetchUnspentUTXOs, getReplacedTransactionHash, storeUTXOS, updateTransactionEntity, updateUTXOEntity } from "../utils/dbutils";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 
 export abstract class UTXOWalletImplementation implements WriteWalletInterface {
@@ -42,6 +42,8 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    enoughConfirmations: number = 2;
    executionBlockOffset: number = 2;
    feeIncrease: number = 1.3;
+   addressLockTime: number = 120000; // 2min
+   mempoolWaitingTime: number = 60000; // 1min
 
    constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
@@ -146,11 +148,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       maxFeeInSatoshi?: BN,
       executeUntilBlock?: number
    ): Promise<ISubmitTransactionResponse> {
-      const currentBlockHeight = await this.getCurrentBlockHeight();
-      if (executeUntilBlock && (executeUntilBlock - currentBlockHeight) > this.executionBlockOffset) {
-         throw new Error(`No time to execute transaction until block ${executeUntilBlock}; current block is ${currentBlockHeight}`)
-      }
       await this.checkIfCanSubmitFromAddress(source);
+      if(!await this.checkIfShouldStillSubmit(executeUntilBlock || null)) {
+         throw new Error(`Transaction will not be prepared due to limit block restriction`);
+      }
       try {
          // lock address until transaction is visible in mempool
          this.addressLocks.add(source);
@@ -165,7 +166,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
                utxoEnt.spentHeight = SpentHeightEnum.PENDING;
             });
          }
-         await this.waitForTransactionToAppearInMempool(submitResp.txId);
+         await this.waitForTransactionToAppearInMempool(submitResp.txId, privateKey, 0, executeUntilBlock);
          //TODO do this in background
          void this.waitForTransactionToBeAccepted(submitResp.txId, source, privateKey);
          return submitResp;
@@ -194,8 +195,12 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return await this.prepareAndExecuteTransaction(source, privateKey, destination, null, feeInSatoshi, note, maxFeeInSatoshi);
    }
 
-   getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
-      throw new Error("Method not implemented.");
+   /**
+    * @param {string} transactionHash
+    * @returns {string} - transactionHash or replaced transactionHash
+    */
+   async getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
+      return getReplacedTransactionHash(this.orm, transactionHash);
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////
@@ -238,7 +243,9 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       if (feeInSatoshi) {
          tr.fee(toNumber(feeInSatoshi));
       }
-      this.checkFeeRestriction(toBN(tr.getFee()), maxFeeInSatoshi);
+      if(this.checkIfFeeTooHigh(toBN(tr.getFee()), maxFeeInSatoshi)) {
+         throw new Error(`Transaction preparation failed due to fee restriction (fee: ${tr.getFee()}, maxFee: ${maxFeeInSatoshi?.toString()})`);
+      }
       if (note) {
          tr.addData(Buffer.from(unPrefix0x(note), "hex"));
       }
@@ -358,15 +365,32 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return res.data.height;
    }
 
-   //TODO -> robust if await this.client.get(`/tx/${txHash}`) => 404
-   private async waitForTransactionToAppearInMempool(txHash: string): Promise<ISubmitTransactionResponse> {
-      await sleepMs(10000);
-      let txResp = await this.client.get(`/tx/${txHash}`);
-      while (txResp.status != 200) {
+   private async waitForTransactionToAppearInMempool(txHash: string, privateKey: string, retry: number = 0, executeUntilBlock: number | null = null): Promise<ISubmitTransactionResponse> {
+      const start = new Date().getTime();
+      while (new Date().getTime() - start < this.mempoolWaitingTime) {
+         try {
+            const txResp = await this.client.get(`/tx/${txHash}`);
+            if (txResp) {
+               return { txId: txResp.data.txid };
+            }
+         } catch (e) { /* empty */ }
          await sleepMs(1000);
-         txResp = await this.client.get(`/tx/${txHash}`);
       }
-      return { txId: txResp.data.txid };
+      // transaction was not accepted in mempool by one minute => replace by fee one time
+      if (retry > 0) {
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_FAILED;
+         });
+         throw new Error('Transaction was not accepted in mempool.');
+      } else {
+         if (!await this.checkIfShouldStillSubmit(executeUntilBlock || null)){
+            await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_FAILED;
+            });
+            throw new Error(`Transaction ${txHash} failed due to limit block restriction`);
+         }
+         return await this.tryToReplaceByFee(txHash, privateKey);
+      }
    }
    /**
     * Returns transaction object when transaction is accepted to the ledger
@@ -398,10 +422,37 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return { txId: txResp.data.txid };
    }
 
-   private checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
-      if (maxFee && fee.gt(maxFee)) {
-         throw Error(`Fee ${fee.toString()} is higher than maxFee ${maxFee.toString()}`);
+   private async tryToReplaceByFee(txHash: string, privateKey: string): Promise<ISubmitTransactionResponse> {
+      const retryTx = await fetchTransactionEntity(this.orm, txHash);
+      const newTransaction = JSON.parse(retryTx.raw.toString());
+      const newFee = newTransaction.getFee() * this.feeIncrease;
+      if (this.checkIfFeeTooHigh(toBN(newFee), retryTx.maxFee)) {
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_FAILED;
+         });
+         throw new Error(`Transaction ${txHash} failed due to fee restriction`)
       }
+      const blob = await this.signTransaction(newTransaction, privateKey);
+      const submitResp = await this.submitTransaction(blob);
+      await createTransactionEntity(this.orm, newTransaction, retryTx.source, retryTx.destination, submitResp.txId);
+      const newTxEnt = await fetchTransactionEntity(this.orm, submitResp.txId);
+      await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+         txEnt.replaced_by = newTxEnt;
+         txEnt.status = TransactionStatus.TX_REPLACED;
+      });
+      await this.waitForTransactionToAppearInMempool(submitResp.txId, privateKey, 1);
+      //TODO do this in background
+      void this.waitForTransactionToBeAccepted(submitResp.txId, retryTx.source, privateKey);
+      return submitResp;
+   }
+
+
+
+   private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
+      if (maxFee && fee.gt(maxFee)) {
+         return true;
+      }
+      return false;
    }
 
    private getCore(): typeof bitcore {
@@ -448,7 +499,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     */
    private async checkIfCanSubmitFromAddress(address: string): Promise<void> {
       const start = new Date().getTime();
-      while (new Date().getTime() - start < 60000) { //lock for one minute
+      while (new Date().getTime() - start < this.addressLockTime) {
          if (!this.addressLocks.has(address)) {
             this.addressLocks.add(address);
             return;
@@ -458,4 +509,11 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       throw new Error(`Timeout waiting to obtain confirmed transaction from address ${address}`);
    }
 
+   private async checkIfShouldStillSubmit(executeUntilBlock: number | null): Promise<boolean> {
+      const currentBlockHeight = await this.getCurrentBlockHeight();
+      if (executeUntilBlock && (executeUntilBlock - currentBlockHeight) > this.executionBlockOffset) {
+         return false;
+      }
+      return true;
+   }
 }

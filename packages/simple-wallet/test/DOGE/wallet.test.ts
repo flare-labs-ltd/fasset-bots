@@ -7,7 +7,6 @@ import WAValidator from "wallet-address-validator";
 import { BTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import { sleepMs } from "../../src/utils/utils";
 import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
@@ -105,7 +104,7 @@ describe("Dogecoin wallet tests", () => {
       rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
-         .eventually.be.rejectedWith(`Fee ${feeInSatoshi.toString()} is higher than maxFee ${maxFeeInSatoshi.toString()}`);
+         .eventually.be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);
    });
 
    it("Should not create transaction: amount = dust amount", async () => {

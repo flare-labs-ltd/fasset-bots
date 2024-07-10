@@ -61,9 +61,10 @@ describe("Bitcoin wallet tests", () => {
 
    it("Should not create transaction: maxFee > fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
+      rewired.orm = await initializeMikroORM("simple-wallet_btc.db");
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
-         .be.rejected;
+         .be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);
    });
 
    it("Should receive fee", async () => {
