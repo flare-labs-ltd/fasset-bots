@@ -47,7 +47,7 @@ describe("Agent bot runner tests", () => {
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
 
-    it.only("Should run agent bot runner until its stopped", async () => {
+    it("Should run agent bot runner until its stopped", async () => {
         const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
         const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
         const spyStep = spy.on(agentBotRunner, "runStep");
@@ -82,6 +82,7 @@ describe("Agent bot runner tests", () => {
         expect(spyWarn).to.have.been.called.once;
         agentBotRunner.requestStop();
         while (!agentBotRunner.stopped()) {
+            await agentBotRunner.runStep();
             await sleep(100);
         }
     });

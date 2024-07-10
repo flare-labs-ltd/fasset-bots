@@ -18,7 +18,7 @@ import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
 import { formatArgs, squashSpace } from "../utils/formatting";
 import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, toBN } from "../utils/helpers";
-import { logger } from "../utils/logger";
+import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, web3 } from "../utils/web3";
@@ -275,35 +275,38 @@ export class AgentBot {
         const threads: Promise<void>[] = [];
         this._running = true;
         try {
+            logger.info(`Starting threads for agent ${this.agent.vaultAddress}.`);
+            const botId = this.agent.vaultAddress.slice(2, 10);
             // one thread for reading events
-            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+            threads.push(this.startThread(rootEm, `events-${botId}`, true, async (threadEm) => {
                 await this.handleEvents(threadEm);
             }));
             // one thread for every redemption state
             for (const redemptionState of Object.values(AgentRedemptionState)) {
                 if (redemptionState === AgentRedemptionState.DONE) continue;
-                threads.push(this.startThread(rootEm, true, async (threadEm) => {
+                threads.push(this.startThread(rootEm, `redemptions-${redemptionState}-${botId}`, true, async (threadEm) => {
                     await this.redemption.handleRedemptionsInState(threadEm, redemptionState);
                 }));
             }
-            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+            threads.push(this.startThread(rootEm, `redemptions-expired-${botId}`, true, async (threadEm) => {
                 await this.redemption.handleExpiredRedemptions(threadEm);
             }));
-            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+            threads.push(this.startThread(rootEm, `mintings-${botId}`, true, async (threadEm) => {
                 await this.minting.handleOpenMintings(threadEm);
             }));
-            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+            threads.push(this.startThread(rootEm, `timelocked-proc-${botId}`, true, async (threadEm) => {
                 await this.handleTimelockedProcesses(threadEm);
             }));
-            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+            threads.push(this.startThread(rootEm, `underlying-payments-${botId}`, true, async (threadEm) => {
                 await this.underlyingManagement.handleOpenUnderlyingPayments(threadEm);
             }));
-            threads.push(this.startThread(rootEm, true, async (threadEm) => {
+            threads.push(this.startThread(rootEm, `daily-tasks-${botId}`, true, async (threadEm) => {
                 await this.handleDailyTasks(threadEm);
             }));
             // wait for all to finish
             await Promise.allSettled(threads);
         } finally {
+            logger.info(`All threads for agent ${this.agent.vaultAddress} ended.`);
             this._running = false;
         }
     }
@@ -315,16 +318,20 @@ export class AgentBot {
      * @param method the thread method (if loop is true, it will be run repeatedly)
      * @returns promise that resolves when thread exits
      */
-    async startThread(rootEm: EM, loop: boolean, method: (em: EM) => Promise<void>) {
-        const threadEm = rootEm.fork();
-        while (!this.stopRequested()) {
-            try {
-                await method(threadEm);
-            } catch (error) {
-                logger.error(`Unexpected error in agent bot thread loop:`, error);
+    async startThread(rootEm: EM, name: string, loop: boolean, method: (em: EM) => Promise<void>) {
+        await loggerAsyncStorage.run(name, async () => {
+            logger.info("Thread started.")
+            const threadEm = rootEm.fork();
+            while (!this.stopRequested()) {
+                try {
+                    await method(threadEm);
+                } catch (error) {
+                    logger.error(`Unexpected error in agent bot thread loop:`, error);
+                }
+                if (!loop) break;
             }
-            if (!loop) break;
-        }
+            logger.info("Thread ended.")
+        })
     }
 
     /**

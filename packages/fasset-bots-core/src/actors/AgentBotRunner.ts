@@ -96,6 +96,10 @@ export class AgentBotRunner {
                 agentBot.runner = this;
                 agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
                 agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
+                void agentBot.runThreads(this.orm.em).catch((error) => {
+                    logger.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
+                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
+                });
                 this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner added running agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
