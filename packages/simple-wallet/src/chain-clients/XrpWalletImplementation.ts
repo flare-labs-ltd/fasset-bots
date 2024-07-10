@@ -38,6 +38,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    lastResortFeeInDrops?: number;
    orm!: ORM;
 
+   executionBlockOffset: number = 2;
+
    constructor(createConfig: RippleWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
@@ -163,20 +165,25 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       feeInDrops?: BN,
       note?: string,
       maxFeeInDrops?: BN,
-      sequence?: number
+      sequence?: number,
+      executeUntilBlock?: number
    ): Promise<ISubmitTransactionResponse> {
       await this.checkIfCanSubmitFromAddress(source);
+      if(!await this.checkIfShouldStillSubmit(executeUntilBlock || null)) {
+         throw new Error(`Transaction will not be prepared due to limit block restriction`);
+      }
       try {
          this.addressLocks.set(source, { tx: null, maxFee: maxFeeInDrops || null });
-         const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence);
+         const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence, executeUntilBlock);
          this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops || null });
          const tx_blob = await this.signTransaction(transaction, privateKey);
          const submitResp = await this.submitTransaction(tx_blob);
          // save tx in db
          await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId);
-         // send transaction to chain, but do not wait for result, immediately return txHash
+         //TODO send transaction to chain, but do not wait for result, immediately return txHash
          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
          return await this.waitForTransaction(submitResp.txId, submitResp.result!, source, privateKey);
+         // return { txId: submitResp.txId };
       } finally {
          this.addressLocks.delete(source);
       }
@@ -233,7 +240,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       feeInDrops?: BN,
       note?: string,
       maxFeeInDrops?: BN,
-      sequence?: number
+      sequence?: number,
+      executeUntilBlock?: number
    ): Promise<xrpl.Payment | xrpl.AccountDelete> {
       const isPayment = amountInDrops != null;
       let tr;
@@ -262,7 +270,9 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       } else {
          tr.Fee = feeInDrops.toString();
       }
-      this.checkFeeRestriction(toBN(tr.Fee), maxFeeInDrops);
+      if(this.checkIfFeeTooHigh(toBN(tr.Fee), maxFeeInDrops)) {
+         throw new Error(`Transaction preparation failed due to fee restriction (fee: ${tr.Fee}, maxFee: ${maxFeeInDrops?.toString()})`);
+      }
       if (note) {
          const noteHex = isValidHexString(prefix0x(note)) ? note : convertStringToHex(note);
          const Memo = { Memo: { MemoData: noteHex } };
@@ -270,7 +280,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       }
       // Highest ledger index this transaction can appear in. https://xrpl.org/reliable-transaction-submission.html#lastledgersequence
       let ledger_sequence = await this.getLatestValidatedLedgerIndex()
-      tr.LastLedgerSequence = ledger_sequence + this.blockOffset;
+      tr.LastLedgerSequence = executeUntilBlock ? executeUntilBlock : ledger_sequence + this.blockOffset;
       if (!isPayment && tr.Sequence + DELETE_ACCOUNT_OFFSET >= ledger_sequence) {
          while (tr.Sequence + DELETE_ACCOUNT_OFFSET >= ledger_sequence) {
             ledger_sequence = await this.getLatestValidatedLedgerIndex()
@@ -485,48 +495,65 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       const currentValidLedger = await this.getLatestValidatedLedgerIndex();
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const lastBlockNumber = transaction.LastLedgerSequence!;
-      if (currentValidLedger > lastBlockNumber) {
-         if (retry <= this.maxRetries) {
-            const newTransaction = transaction;
-            const newFee = (retry < this.maxRetries || this.lastResortFeeInDrops === undefined)
-               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-               ? toBN(newTransaction.Fee!).muln(this.feeIncrease)
-               : toBN(this.lastResortFeeInDrops);
-            newTransaction.LastLedgerSequence = currentValidLedger + this.blockOffset;
-            this.checkFeeRestriction(toBN(newFee), res.maxFee);
-            newTransaction.Fee = newFee.toString();
-            this.addressLocks.set(source, { tx: newTransaction, maxFee: res.maxFee });
-            const blob = await this.signTransaction(newTransaction, privateKey);
-            const submit = await this.submitTransaction(blob);
-            // store new tx and mark replacement
-            await createTransactionEntity(this.orm, newTransaction, newTransaction.Account, newTransaction.Destination, submit.txId);
-            const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
-            await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-               txEnt.replaced_by = newTxEnt;
-               txEnt.status = TransactionStatus.TX_REPLACED;
-            });
-            retry++;
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            return this.waitForTransaction(submit.txId, submit.result!, source, privateKey, retry);
-         }
+      if(!await this.checkIfShouldStillSubmit(lastBlockNumber || null)) {
          await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_NOT_ACCEPTED;
+            txEnt.status = TransactionStatus.TX_FAILED;
          });
-         throw new Error(
-            `waitForTransaction: transaction ${txHash} is not going to be accepted. Latest valid ledger ${currentValidLedger} is greater than transaction.LastLedgerSequence ${lastBlockNumber}`
-         );
+         throw new Error(`Transaction ${txHash} failed due to limit block restriction`);
       }
-      return this.waitForTransaction(txHash, submissionResult, source, privateKey, retry);
+      if (retry <= this.maxRetries) {
+         const newTransaction = transaction;
+         const newFee = (retry < this.maxRetries || this.lastResortFeeInDrops === undefined)
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            ? toBN(newTransaction.Fee!).muln(this.feeIncrease)
+            : toBN(this.lastResortFeeInDrops);
+         newTransaction.LastLedgerSequence = lastBlockNumber;
+         if (this.checkIfFeeTooHigh(toBN(newFee), res.maxFee)){
+            await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_FAILED;
+            });
+            throw new Error(`Transaction preparation failed due to fee restriction (fee: ${newFee}, maxFee: ${res.maxFee?.toString()})`)
+         }
+         newTransaction.Fee = newFee.toString();
+         this.addressLocks.set(source, { tx: newTransaction, maxFee: res.maxFee });
+         const blob = await this.signTransaction(newTransaction, privateKey);
+         const submit = await this.submitTransaction(blob);
+         // store new tx and mark replacement
+         await createTransactionEntity(this.orm, newTransaction, newTransaction.Account, newTransaction.Destination, submit.txId);
+         const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.replaced_by = newTxEnt;
+            txEnt.status = TransactionStatus.TX_REPLACED;
+         });
+         retry++;
+         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+         return this.waitForTransaction(submit.txId, submit.result!, source, privateKey, retry);
+      }
+      await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+         txEnt.status = TransactionStatus.TX_NOT_ACCEPTED;
+      });
+      throw new Error(
+         `waitForTransaction: transaction ${txHash} is not going to be accepted. Latest valid ledger ${currentValidLedger} is greater than transaction.LastLedgerSequence ${lastBlockNumber}`
+      );
    }
 
-   private checkFeeRestriction(fee: BN, maxFee?: BN | null): void {
+   private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
       if (maxFee && fee.gt(maxFee)) {
-         throw Error(`Fee ${fee.toString()} is higher than maxFee ${maxFee.toString()}`);
+         return true;
       }
+      return false;
    }
 
    private roundUpXrpToDrops(amount: number): number {
       return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
+   }
+
+   private async checkIfShouldStillSubmit(executeUntilBlock: number | null): Promise<boolean> {
+      const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
+      if (executeUntilBlock && (executeUntilBlock - currentBlockHeight) < this.executionBlockOffset) {
+         return false;
+      }
+      return true;
    }
 
 }

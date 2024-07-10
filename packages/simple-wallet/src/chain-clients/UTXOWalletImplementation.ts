@@ -409,7 +409,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       while (!(txResp.data.blockHash &&txResp.data.confirmations >= this.enoughConfirmations)) {
          await sleepMs(getAvgBlockTime(this.chainType));
          txResp = await this.client.get(`/tx/${txHash}`);
-         //TODO handle stuck transactions -> if not accepted in next two block?
+         //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!
          const currentBlockHeight =  await this.getCurrentBlockHeight();
          if (currentBlockHeight - submittedBlockHeight > this.enoughConfirmations) {
             throw new Error(`Transaction ${txHash} is probably not going to be accepted!`);
@@ -445,8 +445,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       void this.waitForTransactionToBeAccepted(submitResp.txId, retryTx.source, privateKey);
       return submitResp;
    }
-
-
 
    private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
       if (maxFee && fee.gt(maxFee)) {
