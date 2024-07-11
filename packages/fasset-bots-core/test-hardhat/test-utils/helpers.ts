@@ -85,9 +85,9 @@ export function makeBotFAssetConfigMap<T extends BotFAssetConfig>(fassets: T[]) 
     return new Map(fassets.map(it => [it.fAssetSymbol, it]));
 }
 
-export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string): Promise<void> {
+export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralTokenAddress: string, ownerAddress: string, governance?: string): Promise<void> {
     const vaultCollateralToken = await FakeERC20.at(vaultCollateralTokenAddress);
-    await vaultCollateralToken.mintAmount(ownerAddress, amount);
+    await vaultCollateralToken.mintAmount(ownerAddress, amount, governance ? { from: governance } : {});
 }
 
 export async function createTestChallenger(context: IChallengerContext, address: string, state: TrackedState): Promise<Challenger> {
@@ -160,9 +160,10 @@ export async function createTestAgentAndMakeAvailable(
     ownerAddress: string,
     underlyingAddress: string = agentUnderlyingAddress,
     autoSetWorkAddress: boolean = true,
+    governance?: string,
 ): Promise<Agent> {
     const agent = await createTestAgent(context, ownerAddress, underlyingAddress, autoSetWorkAddress);
-    await mintAndDepositVaultCollateralToOwner(context, agent, depositUSDC, ownerAddress);
+    await mintAndDepositVaultCollateralToOwner(context, agent, depositUSDC, ownerAddress, governance);
     await agent.depositVaultCollateral(depositUSDC);
     await agent.buyCollateralPoolTokens(depositNat);
     await agent.makeAvailable();
@@ -177,24 +178,26 @@ export async function createTestAgentBotAndMakeAvailable(
     autoSetWorkAddress: boolean = true,
     notifier: NotifierTransport[] = testNotifierTransports,
     options?: AgentVaultInitSettings,
+    governance?: string,
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, autoSetWorkAddress, notifier, options);
-    await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, agentBot.agent.owner.workAddress);
+    await mintAndDepositVaultCollateralToOwner(context, agentBot.agent, depositUSDC, agentBot.agent.owner.workAddress, governance);
     await agentBot.agent.depositVaultCollateral(depositUSDC);
     await agentBot.agent.buyCollateralPoolTokens(depositNat);
     await agentBot.agent.makeAvailable();
     return agentBot;
 }
 
-export async function mintAndDepositVaultCollateralToOwner( //TODO
+export async function mintAndDepositVaultCollateralToOwner(
     context: IAssetAgentContext,
     agent: Agent,
     depositAmount: BNish,
-    ownerAddress: string
+    ownerAddress: string,
+    governance?: string
 ): Promise<IERC20Instance> {
     const vaultCollateralToken = await agent.getVaultCollateral();
     const vaultCollateralTokenContract = await IERC20.at(vaultCollateralToken.token);
-    await mintVaultCollateralToOwner(depositAmount, vaultCollateralToken!.token, ownerAddress);
+    await mintVaultCollateralToOwner(depositAmount, vaultCollateralToken!.token, ownerAddress, governance);
     return vaultCollateralTokenContract;
 }
 
