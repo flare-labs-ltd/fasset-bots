@@ -3,6 +3,7 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
+import { toBN } from "./bnutils";
 
 export async function createTransactionEntity(orm: ORM, transaction: any, source: string, destination: string, txHash:string, maxFee: BN | null = null, executeUntilBlock: number | null = null, confirmations: number = 0): Promise<void> {
     orm.em.create(
@@ -43,7 +44,7 @@ export async function getReplacedTransactionHash(orm: ORM, transactionHash: stri
     return txEnt.transactionHash;
  }
 
- export async function createUTXOEntity(orm: ORM, utxo: any, source: string, txHash:string, position: number, spentTxHash: string | null = null): Promise<void> {
+ export async function createUTXOEntity(orm: ORM, source: string, txHash:string, position: number, value: BN, script: string, spentTxHash: string | null = null): Promise<void> {
     orm.em.create(
         UTXOEntity,
         {
@@ -51,8 +52,9 @@ export async function getReplacedTransactionHash(orm: ORM, transactionHash: stri
             mintTransactionHash: txHash,
             spentHeight: SpentHeightEnum.UNSPENT,
             position: position,
+            value: value,
+            script: script,
             spentTransactionHash: spentTxHash,
-            raw: Buffer.from(JSON.stringify(utxo))
         } as RequiredEntityData<UTXOEntity>,
     );
     await orm.em.flush();
@@ -74,16 +76,16 @@ export async function fetchUnspentUTXOs(orm: ORM, source: string): Promise<UTXOE
     return await orm.em.find(UTXOEntity, { source: source, spentHeight: SpentHeightEnum.UNSPENT } as FilterQuery<UTXOEntity>, { refresh: true });
 }
 
+export async function fetchUTXOsByTxHash(orm: ORM, txHash: string): Promise<UTXOEntity[]> {
+    return await orm.em.find(UTXOEntity, { mintTransactionHash: txHash } as FilterQuery<UTXOEntity>, { refresh: true });
+}
+
 export async function storeUTXOS(orm: ORM, source: string, mempoolUTXOs: any[]): Promise<void> {
     for (const utxo of mempoolUTXOs) {
         try {
             await fetchUTXOEntity(orm, utxo.mintTxid, utxo.mintIndex);
         } catch(e) {
-            const raw = {
-                "satoshis": utxo.value,
-                "script": utxo.script
-            };
-            await createUTXOEntity(orm, raw, source, utxo.mintTxid, utxo.mintIndex);
+            await createUTXOEntity(orm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script);
         }
 
     }

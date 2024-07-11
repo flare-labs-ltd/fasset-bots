@@ -22,12 +22,19 @@ const BTCMccConnectionTest = {
    inTestnet: true,
 };
 
-const fundedMnemonic = "depart mixed miss smart enjoy ladder deputy sport chair risk dismiss few";
-const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
-const targetMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
-const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
+const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
+const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
+const targetMnemonic = "forget fine shop cage build else tree hurry upon sure diary multiply despair skirt hill mango hurdle first screen skirt kind fresh scene prize";
+const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
-const amountToSendSatoshi = toBN(50000);
+//old funded - still have some funds
+//mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S
+//cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF
+//old target - still have some funds
+//a: mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2
+//pk: cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY
+
+const amountToSendSatoshi = toBN(10000);
 const feeInSatoshi = toBN(120000);
 const maxFeeInSatoshi = toBN(110000);
 
@@ -37,6 +44,20 @@ let fundedWallet: ICreateWalletResponse;
 describe("Bitcoin wallet tests", () => {
    before(async () => {
       wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
+   });
+
+   it("Should create account", async () => {
+      const newAccount = wClient.createWallet();
+      expect(newAccount.address).to.not.be.null;
+      expect(WAValidator.validate(newAccount.address, "BTC", "testnet")).to.be.true;
+
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      expect(fundedWallet.address).to.eq(fundedAddress);
+      expect(WAValidator.validate(fundedWallet.address, "BTC", "testnet")).to.be.true;
+
+      const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+      expect(targetWallet.address).to.eq(targetAddress);
+      expect(WAValidator.validate(targetWallet.address, "BTC", "testnet")).to.be.true;
    });
 
    it("Should create account", async () => {
@@ -73,9 +94,17 @@ describe("Bitcoin wallet tests", () => {
    });
 
    it.skip("Should prepare and execute transaction", async () => {
+      // fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      const tw = wClient.createWalletFromMnemonic(targetMnemonic);
+      const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
+      const submit = await wClient.prepareAndExecuteTransaction(tw.address, tw.privateKey, fundedAddress, amountToSendSatoshi, undefined, note);
+      expect(typeof submit).to.equal("object");
+   });
+
+   it.skip("Should prepare and execute transaction", async () => {
       fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const submit = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note);
+      const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const submit = await wClient.deleteAccount(fundedWallet.address, fundedWallet.privateKey, targetAddress, undefined, note);
       expect(typeof submit).to.equal("object");
    });
 });

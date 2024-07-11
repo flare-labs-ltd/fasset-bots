@@ -3,6 +3,8 @@ import { toBNExp } from "./bnutils";
 
 export const LOCK_ADDRESS_FACTOR = 1.2;
 
+export const MNEMONIC_STRENGTH = 256;
+
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 

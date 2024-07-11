@@ -12,6 +12,7 @@ import {
    ChainType,
    DEFAULT_RATE_LIMIT_OPTIONS_XRP,
    DELETE_ACCOUNT_OFFSET,
+   MNEMONIC_STRENGTH,
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
@@ -84,7 +85,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @returns {Object} - wallet with auto generated mnemonic
     */
    createWallet(): ICreateWalletResponse {
-      const mnemonic = generateMnemonic();
+      const mnemonic = generateMnemonic(MNEMONIC_STRENGTH);
       const resp = xrplWallet.fromMnemonic(mnemonic);
       return {
          privateKey: resp.privateKey,

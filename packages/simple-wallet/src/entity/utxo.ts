@@ -1,4 +1,6 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { BNType } from "../orm/orm-types";
+import BN from "bn.js";
 
 @Entity({ tableName: "utxo" })
 export class UTXOEntity {
@@ -20,8 +22,11 @@ export class UTXOEntity {
     @Property()
     spentHeight!: SpentHeightEnum;
 
-    @Property({ columnType: 'blob' })
-    raw!: Buffer;
+    @Property({ type: BNType })
+    value!: BN;
+
+    @Property()
+    script!: string;
 
     @Property({ onCreate: () => new Date() })
     createdAt: Date = new Date();
@@ -32,6 +37,6 @@ export class UTXOEntity {
 
 export enum SpentHeightEnum {
     SPENT = 0,
-    PENDING = -2,
-    UNSPENT = -1
+    PENDING = -1,
+    UNSPENT = -2
 }

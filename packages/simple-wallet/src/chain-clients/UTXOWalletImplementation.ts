@@ -1,12 +1,11 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-import bs58check from "bs58check";
-import * as bitcoin from "bitcoinjs-lib";
 import * as bitcore from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
-import BIP32Factory from "bip32";
-import { generateMnemonic, mnemonicToSeedSync } from "bip39";
-import { excludeNullFields, getAvgBlockTime, getCurrentNetwork, sleepMs, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
+import * as bip84btc from "bip84";
+import * as bip84doge from "dogecoin-bip84";
+import { generateMnemonic } from "bip39";
+import { excludeNullFields, getAvgBlockTime, sleepMs, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import {
    BTC_DUST_AMOUNT,
@@ -15,6 +14,7 @@ import {
    DEFAULT_RATE_LIMIT_OPTIONS,
    DOGE_DUST_AMOUNT,
    DOGE_FEE_PER_KB,
+   MNEMONIC_STRENGTH,
    UTXO_INPUT_SIZE,
    UTXO_OUTPUT_SIZE,
    UTXO_OVERHEAD_SIZE,
@@ -24,15 +24,11 @@ import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWall
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const ecc = require('tiny-secp256k1');
-// You must wrap a tiny-secp256k1 compatible implementation
-const bip32 = BIP32Factory(ecc);
 import BN from "bn.js";
 import { TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
-import { createTransactionEntity, fetchTransactionEntity, fetchUnspentUTXOs, getReplacedTransactionHash, storeUTXOS, updateTransactionEntity, updateUTXOEntity } from "../utils/dbutils";
+import { createTransactionEntity, fetchTransactionEntity, fetchUTXOsByTxHash, fetchUnspentUTXOs, getReplacedTransactionHash, storeUTXOS, updateTransactionEntity, updateUTXOEntity } from "../utils/dbutils";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
-
 export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
@@ -78,7 +74,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @returns {Object} - wallet with auto generated mnemonic
     */
    createWallet(): ICreateWalletResponse {
-      const mnemonic = generateMnemonic();
+      const mnemonic = generateMnemonic(MNEMONIC_STRENGTH);
       return this.createWalletFromMnemonic(mnemonic);
    }
 
@@ -87,25 +83,21 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @returns {Object} - wallet
     */
    createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse {
-      const seed: Buffer = mnemonicToSeedSync(mnemonic);
-      const actualNetwork = getCurrentNetwork(this.chainType);
-
-      const node = bip32.fromSeed(seed, actualNetwork);
-      const path = actualNetwork.bip32Path;
-      const child0 = node.derivePath(path);
-      //node.neutered().toBase58()//xpublic_key
-      //node.toBase58()//xprivate_key
-      const payload = Buffer.allocUnsafe(21);
-      payload.writeUInt8(actualNetwork.pubKeyHash, 0);
-      const hash = bitcoin.crypto.hash160(child0.publicKey);
-      hash.copy(payload, 1);
-      const address = bs58check.encode(payload);
+      const bip84 = this.getBip84();
+      const root = new bip84.fromMnemonic(mnemonic, "", this.inTestnet);
+      const child00 = root.deriveAccount(0);
+      const account0 = new bip84.fromZPrv(child00);
+      let account;
+      if (this.chainType == ChainType.testDOGE || this.chainType == ChainType.DOGE) {
+         account = account0.getAddress(0, false, 44);
+      } else {
+         account = account0.getAddress(0, false);
+      }
 
       return {
-         address: address as string,
+         address: account as string,
          mnemonic: mnemonic,
-         privateKey: child0.toWIF(),
-         // publicKey: child.publicKey
+         privateKey: account0.getPrivateKey(0)
       };
    }
 
@@ -168,7 +160,9 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          }
          await this.waitForTransactionToAppearInMempool(submitResp.txId, privateKey, 0, executeUntilBlock);
          //TODO do this in background
-         void this.waitForTransactionToBeAccepted(submitResp.txId, source, privateKey);
+         void this.waitForTransactionToBeAccepted(submitResp.txId, source, privateKey).catch((err) => {
+            console.error(`Error in background task waitForTransactionToBeAccepted: ${err}`);
+         });
          return submitResp;
       } finally {
          this.addressLocks.delete(source);
@@ -288,13 +282,12 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       const utxos = await this.listUnspent(address, amountInSatoshi, estimatedNumOfOutputs);
       const allUTXOs: UTXO[] = [];
       for (const utxo of utxos) {
-         const raw = JSON.parse(utxo.raw.toString());
          const item = {
             txid: utxo.mintTransactionHash,
-            satoshis: raw.satoshis,
+            satoshis: Number(utxo.value),
             outputIndex: utxo.position,
             confirmations: -1,
-            scriptPubKey: raw.script,
+            scriptPubKey: utxo.script,
          }
          allUTXOs.push(item);
       }
@@ -339,7 +332,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       let sum = 0;
       for (const utxo of allUTXOS) {
          neededUTXOs.push(utxo);
-         const value = JSON.parse(utxo.raw.toString()).satoshis;
+         const value = Number(utxo.value);
          sum += value;
          const est_fee = this.getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
          // multiply estimated fee by 2 to ensure enough funds TODO: is it enough?
@@ -401,7 +394,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {string} retry
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   private async waitForTransactionToBeAccepted(txHash: string, source: string, privateKey: string): Promise<ISubmitTransactionResponse> {
+   private async waitForTransactionToBeAccepted(txHash: string, source: string, privateKey: string): Promise<void> {
       const submittedBlockHeight = await this.getCurrentBlockHeight();
       await sleepMs(getAvgBlockTime(this.chainType));
       let txResp = await this.client.get(`/tx/${txHash}`);
@@ -412,14 +405,21 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!
          const currentBlockHeight =  await this.getCurrentBlockHeight();
          if (currentBlockHeight - submittedBlockHeight > this.enoughConfirmations) {
-            throw new Error(`Transaction ${txHash} is probably not going to be accepted!`);
+            console.error(`Transaction ${txHash} is probably not going to be accepted!`);
+            return
+            // throw new Error(`Transaction ${txHash} is probably not going to be accepted!`);
          }
       }
       await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
          txEnt.confirmations = txResp.data.confirmations;
          txEnt.status = TransactionStatus.TX_SUCCESS;
       });
-      return { txId: txResp.data.txid };
+      const utxos = await fetchUTXOsByTxHash(this.orm, txHash);
+      for (const utxo of utxos) {
+         await updateUTXOEntity(this.orm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
+            utxoEnt.spentHeight = SpentHeightEnum.SPENT;
+         });
+      }
    }
 
    private async tryToReplaceByFee(txHash: string, privateKey: string): Promise<ISubmitTransactionResponse> {
@@ -458,6 +458,14 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          return dogecore;
       } else {
          return bitcore;
+      }
+   }
+
+   private getBip84(): typeof bip84btc {
+      if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
+         return bip84doge;
+      } else {
+         return bip84btc;
       }
    }
 
