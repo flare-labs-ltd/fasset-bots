@@ -566,7 +566,7 @@ export class AgentBot {
         }
     }
 
-    async enoughTimePassedToObtainProof(request: { proofRequestRound: number | undefined, proofRequestData: string | undefined }) {
+    async enoughTimePassedToObtainProof(request: { proofRequestRound?: number, proofRequestData?: string }) {
         assertNotNull(request.proofRequestRound);
         return await this.context.attestationProvider.stateConnector.roundFinalized(request.proofRequestRound + 1);
     }
