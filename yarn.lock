@@ -1391,6 +1391,7 @@ __metadata:
     bn.js: 5.2.1
     chai: 4.3.8
     chai-as-promised: 7.1.1
+    crypto: ^1.0.1
     dogecoin-bip84: ^0.0.5
     dotenv: 16.3.1
     elliptic: 6.5.4
@@ -6827,6 +6828,13 @@ __metadata:
     randombytes: ^2.0.0
     randomfill: ^1.0.3
   checksum: c1609af82605474262f3eaa07daa0b2140026bd264ab316d4bf1170272570dbe02f0c49e29407fe0d3634f96c507c27a19a6765fb856fed854a625f9d15618e2
+  languageName: node
+  linkType: hard
+
+"crypto@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "crypto@npm:1.0.1"
+  checksum: 087fe3165bd94c333a49e6ed66a0193911f63eac38a24f379b3001a5fe260a59c413646e53a0f67875ba13902b2686d81dc703cb2c147a4ec727dcdc04e5645e
   languageName: node
   linkType: hard
 

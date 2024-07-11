@@ -16,7 +16,7 @@ import {
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
-import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletInterface, RippleWalletConfig, XRPFeeParams } from "../interfaces/WriteWalletInterface";
+import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletInterface, RippleWalletConfig, XRPFeeParams, SignedObject } from "../interfaces/WriteWalletInterface";
 import BN from "bn.js";
 import { TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
@@ -180,10 +180,10 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          const signed = await this.signTransaction(transaction, privateKey);
          const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
          // save tx in db
-         await createTransactionEntity(this.orm, transaction, source, destination, signed.tx_hash, currentBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInDrops || null);
+         await createTransactionEntity(this.orm, transaction, source, destination, signed.txHash, currentBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInDrops || null);
          // submit
-         await this.submitTransaction(signed.tx_blob, signed.tx_hash);
-         return { txId: signed.tx_hash };
+         await this.submitTransaction(signed.txBlob, signed.txHash);
+         return { txId: signed.txHash };
       } finally {
          this.addressLocks.delete(source);
       }
@@ -329,14 +329,14 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {string}
     */
-   private async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<{ tx_blob: string, tx_hash: string }> {
+   private async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<SignedObject> {
       const publicKey = this.getPublicKeyFromPrivateKey(privateKey, transaction.Account);
       const transactionToSign = { ...transaction };
       transactionToSign.SigningPubKey = publicKey;
       transactionToSign.TxnSignature = sign(encodeForSigning(transactionToSign), privateKey);
       const serialized = xrplEncode(transactionToSign);
       const hash = xrplHashes.hashSignedTx(serialized);
-      return { tx_blob: serialized, tx_hash: hash };
+      return { txBlob: serialized, txHash: hash };
    }
 
    /**

@@ -98,3 +98,8 @@ export interface BaseWalletConfig {
 export type RippleWalletConfig = BaseWalletConfig;
 export type BitcoinWalletConfig = BaseWalletConfig;
 export type DogecoinWalletConfig = BaseWalletConfig;
+
+export interface SignedObject {
+   txBlob: string;
+   txHash: string;
+}

@@ -4,6 +4,7 @@ import * as bitcore from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
 import * as bip84btc from "bip84";
 import * as bip84doge from "dogecoin-bip84";
+import * as crypto from 'crypto';
 import { generateMnemonic } from "bip39";
 import { excludeNullFields, getAvgBlockTime, sleepMs, unPrefix0x, wallet_utxo_ensure_data } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
@@ -19,7 +20,7 @@ import {
    UTXO_OUTPUT_SIZE,
    UTXO_OVERHEAD_SIZE,
 } from "../utils/constants";
-import type { BaseWalletConfig, UTXOFeeParams } from "../interfaces/WriteWalletInterface";
+import type { BaseWalletConfig, SignedObject, UTXOFeeParams } from "../interfaces/WriteWalletInterface";
 import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWalletInterface } from "../interfaces/WriteWalletInterface";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
@@ -149,19 +150,19 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          // lock address until transaction is visible in mempool
          this.addressLocks.add(source);
          const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
-         const tx_blob = await this.signTransaction(transaction, privateKey);
-         const submitResp = await this.submitTransaction(tx_blob);//TODO handle is submit fails
+         const signed = await this.signTransaction(transaction, privateKey);
+         await this.submitTransaction(signed.txBlob);//TODO handle is submit fails
          const submittedBlockHeight = await this.getCurrentBlockHeight();
          // save tx in db
-         await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId, submittedBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInSatoshi || null);
+         await createTransactionEntity(this.orm, transaction, source, destination, signed.txHash, submittedBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInSatoshi || null);
          // mark utxo as spent
          for (const input of transaction.inputs) {
             await updateUTXOEntity(this.orm, input.prevTxId.toString('hex'), input.outputIndex, async (utxoEnt) => {
                utxoEnt.spentHeight = SpentHeightEnum.SENT;
             });
          }
-         await this.waitForTransactionToAppearInMempool(submitResp.txId, 0, executeUntilBlock);
-         return submitResp;
+         await this.waitForTransactionToAppearInMempool(signed.txHash, 0, executeUntilBlock);
+         return { txId: signed.txHash };
       } finally {
          this.addressLocks.delete(source);
       }
@@ -285,19 +286,22 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {string} - hex string
     */
-   private async signTransaction(transaction: bitcore.Transaction, privateKey: string): Promise<string> {
-      const signed = transaction.sign(privateKey).serialize();
-      return signed;
+   private async signTransaction(transaction: bitcore.Transaction, privateKey: string): Promise<SignedObject> {
+      const signedAndSerialized = transaction.sign(privateKey).serialize();
+      // calculate txhash
+      const txBuffer = Buffer.from(signedAndSerialized, 'hex');
+      const hash1 = crypto.createHash('sha256').update(txBuffer).digest();
+      const hash2 = crypto.createHash('sha256').update(hash1).digest();
+      const txId = hash2.reverse().toString('hex');
+      return {txBlob: signedAndSerialized, txHash: txId};
    }
 
    /**
     * @param {string} signedTx
-    * @returns {Object} - containing transaction id tx_id and optional result
     */
-   private async submitTransaction(signedTx: string): Promise<ISubmitTransactionResponse> {
+   private async submitTransaction(signedTx: string): Promise<void> {
       const res = await this.client.post(`/tx/send`, { rawTx: signedTx });
       wallet_utxo_ensure_data(res);
-      return { txId: res.data.txid };
    }
 
    /**
