@@ -51,7 +51,9 @@ export class TransactionEntity {
 }
 
 export enum TransactionStatus {
+    TX_CREATED = "created",
     TX_REPLACED = "replaced",
+    TX_SUBMISSION_FAILED = "submission_failed",
     TX_SUBMITTED = "submitted",
     TX_PENDING = "pending",
     TX_SUCCESS = "success",

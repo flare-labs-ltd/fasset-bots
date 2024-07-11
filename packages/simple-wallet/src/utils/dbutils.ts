@@ -24,7 +24,7 @@ export async function createTransactionEntity(
             source,
             destination,
             transactionHash: txHash,
-            status: TransactionStatus.TX_SUBMITTED,
+            status: TransactionStatus.TX_CREATED,
             maxFee,
             submittedInBlock,
             executeUntilBlock,

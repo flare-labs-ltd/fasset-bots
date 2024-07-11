@@ -46,7 +46,6 @@ export interface ICreateWalletResponse {
 export interface ISubmitTransactionResponse {
    txId: string;
    result?: string;
-   submittedBlock?: number
 }
 
 export interface UTXO {

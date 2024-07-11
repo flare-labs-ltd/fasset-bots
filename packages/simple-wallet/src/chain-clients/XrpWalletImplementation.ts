@@ -177,11 +177,13 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       try {
          this.addressLocks.add(source);
          const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence, executeUntilBlock);
-         const tx_blob = await this.signTransaction(transaction, privateKey);
-         const submitResp = await this.submitTransaction(tx_blob);//TODO if submit fails -> mark in tx
+         const signed = await this.signTransaction(transaction, privateKey);
+         const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
          // save tx in db
-         await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId, submitResp.submittedBlock!, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInDrops || null);
-         return { txId: submitResp.txId };
+         await createTransactionEntity(this.orm, transaction, source, destination, signed.tx_hash, currentBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInDrops || null);
+         // submit
+         await this.submitTransaction(signed.tx_blob, signed.tx_hash);
+         return { txId: signed.tx_hash };
       } finally {
          this.addressLocks.delete(source);
       }
@@ -219,7 +221,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
 
    /**
     */
-      async monitorTransactionProgress(): Promise<void> {
+      async monitorTransactionProgress(): Promise<void> {//TODO - check also failed submissions
       // eslint-disable-next-line no-constant-condition
       while (1) {
          // fetch transactions in pending status
@@ -302,21 +304,22 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       } else {
          tr.Fee = feeInDrops.toString();
       }
-      if(this.checkIfFeeTooHigh(toBN(tr.Fee), maxFeeInDrops)) {
-         throw new Error(`Transaction preparation failed due to fee restriction (fee: ${tr.Fee}, maxFee: ${maxFeeInDrops?.toString()})`);
-      }
       if (note) {
          const noteHex = isValidHexString(prefix0x(note)) ? note : convertStringToHex(note);
          const Memo = { Memo: { MemoData: noteHex } };
          tr.Memos = [Memo];
       }
       // Highest ledger index this transaction can appear in. https://xrpl.org/reliable-transaction-submission.html#lastledgersequence
-      let ledger_sequence = await this.getLatestValidatedLedgerIndex()
+      let ledger_sequence = await this.getLatestValidatedLedgerIndex();
       tr.LastLedgerSequence = executeUntilBlock ? executeUntilBlock : ledger_sequence + this.blockOffset;
+      // In order to be allowed to delete account, following is required. https://xrpl.org/docs/concepts/accounts/deleting-accounts/#requirements
       if (!isPayment && tr.Sequence + DELETE_ACCOUNT_OFFSET >= ledger_sequence) {
          while (tr.Sequence + DELETE_ACCOUNT_OFFSET >= ledger_sequence) {
-            ledger_sequence = await this.getLatestValidatedLedgerIndex()
+            ledger_sequence = await this.getLatestValidatedLedgerIndex();
          }
+      }
+      if(this.checkIfFeeTooHigh(toBN(tr.Fee), maxFeeInDrops)) {
+         throw new Error(`Transaction preparation failed due to fee restriction (fee: ${tr.Fee}, maxFee: ${maxFeeInDrops?.toString()})`);
       }
       return tr;
    }
@@ -326,30 +329,40 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {string}
     */
-   private async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<string> {
+   private async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<{ tx_blob: string, tx_hash: string }> {
       const publicKey = this.getPublicKeyFromPrivateKey(privateKey, transaction.Account);
       const transactionToSign = { ...transaction };
       transactionToSign.SigningPubKey = publicKey;
       transactionToSign.TxnSignature = sign(encodeForSigning(transactionToSign), privateKey);
       const serialized = xrplEncode(transactionToSign);
-      return serialized;
+      const hash = xrplHashes.hashSignedTx(serialized);
+      return { tx_blob: serialized, tx_hash: hash };
    }
 
    /**
-    * @param {string} tx_blob
+    * @param {string} txBlob
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   private async submitTransaction(tx_blob: string): Promise<ISubmitTransactionResponse> {
-      const params = {
-         tx_blob: tx_blob,
-      };
-      const res = await this.client.post("", {
-         method: "submit",
-         params: [params],
-      });
-      xrp_ensure_data(res.data);
-      const txHash = xrplHashes.hashSignedTx(res.data.result.tx_blob);
-      return { txId: txHash, result: res.data.result.engine_result, submittedBlock: res.data.result.validated_ledger_index };
+   private async submitTransaction(txBlob: string, txHash: string): Promise<void> {
+      try {
+         const params = {
+            tx_blob: txBlob,
+         };
+         const res = await this.client.post("", {
+            method: "submit",
+            params: [params],
+         });
+         xrp_ensure_data(res.data);
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUBMITTED;
+            txEnt.submittedInBlock = res.data.result.validated_ledger_index
+         });
+      } catch (e: any) {
+         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUBMISSION_FAILED;
+         });
+         console.error(`Submission for tx ${txHash} failed`)
+      }
    }
 
    /**
