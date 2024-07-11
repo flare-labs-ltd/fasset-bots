@@ -1,4 +1,4 @@
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -7,6 +7,7 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotSettings } from "../../../src/config";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting } from "../../../src/entities/agent";
+import { AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState } from "../../../src/entities/common";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockChain } from "../../../src/mock/MockChain";
@@ -18,13 +19,12 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
-import { fundUnderlying } from "../../../test/test-utils/test-helpers";
-import { AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState } from "../../../src/entities/common";
 use(spies);
 use(chaiAsPromised);
 
@@ -351,6 +351,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
+        await orm.em.persistAndFlush(mt);
         await agentBot.minting.checkNonPayment(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
@@ -374,6 +375,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
+        await orm.em.persistAndFlush(mt);
         await agentBot.minting.checkPaymentAndExecuteMinting(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
@@ -396,6 +398,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
+        await orm.em.persistAndFlush(rd);
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
@@ -423,6 +426,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "data",
         });
+        await orm.em.persistAndFlush(up);
         await agentBot.underlyingManagement.checkConfirmPayment(orm.em, up);
         expect(spyProof).to.have.been.called.once;
     });

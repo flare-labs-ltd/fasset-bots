@@ -20,7 +20,7 @@ import { TokenPriceReader } from "../../src/state/TokenPrice";
 import { InitialAgentData } from "../../src/state/TrackedAgentState";
 import { TrackedState } from "../../src/state/TrackedState";
 import { ScopedRunner } from "../../src/utils/events/ScopedRunner";
-import { BNish, ZERO_ADDRESS, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
+import { BNish, ZERO_ADDRESS, checkedCast, requireNotNull, toBN, toBNExp } from "../../src/utils/helpers";
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
@@ -29,6 +29,7 @@ import { fundUnderlying } from "../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
+import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -40,7 +41,8 @@ const depositUSDC = toBNExp(1_000_000, 6);
 const depositNat = toBNExp(1_000_000, 18);
 const depositUnderlying = toBNExp(1_000_000, 6);
 export const DEFAULT_AGENT_SETTINGS_PATH_HARDHAT: string = "./test-hardhat/test-utils/run-config-tests/agent-settings-config-hardhat.json";
-export const DEFAULT_POOL_TOKEN_SUFFIX: () => string = () => "POOL-TOKEN-" + Math.floor(Math.random() * 10_000);
+let poolSuffixCounter = 0;
+export const DEFAULT_POOL_TOKEN_SUFFIX = () => "POOL-TOKEN-" + (++poolSuffixCounter);
 export const QUERY_WINDOW_SECONDS = 86400;
 
 export function assertWeb3DeepEqual(x: any, y: any, message?: string) {
@@ -173,7 +175,7 @@ export async function createTestAgentBotAndMakeAvailable(
     ownerAddress: string,
     ownerUnderlyingAddress?: string,
     autoSetWorkAddress: boolean = true,
-    notifier: NotifierTransport[] = [],
+    notifier: NotifierTransport[] = testNotifierTransports,
     options?: AgentVaultInitSettings,
 ) {
     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, autoSetWorkAddress, notifier, options);
@@ -251,4 +253,14 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
         poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
     };
     return initialAgentData;
+}
+
+export async function runWithManualSCFinalization(context: IAssetAgentContext, finalizeAfter: boolean, method: () => Promise<void>) {
+    const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
+    scClient.finalizationType = "manual";
+    await method();
+    if (finalizeAfter) {
+        await scClient.finalizeRound();
+    }
+    scClient.finalizationType = "auto";
 }

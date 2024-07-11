@@ -138,7 +138,8 @@ export class AgentBotMinting {
                     logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId}.`);
             }
         } catch (error) {
-            logger.error(`Error handling next step for minting with id ${id}`, error);
+            console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
         }
     }
 
@@ -381,6 +382,7 @@ export class AgentBotMinting {
         if ("id" in mintingId) {
             return await em.findOneOrFail(AgentMinting, { id: mintingId.id }, { refresh: true });
         } else {
+            console.log(`requestId: ${mintingId.requestId}`);
             return await em.findOneOrFail(AgentMinting, { agentAddress: this.agent.vaultAddress, requestId: mintingId.requestId }, { refresh: true });
         }
     }

@@ -16,6 +16,8 @@ import { AgentBot } from "./AgentBot";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 
 export class AgentBotUnderlyingManagement {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public bot: AgentBot,
         public agent: Agent,
