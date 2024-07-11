@@ -20,7 +20,7 @@ import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletInte
 import BN from "bn.js";
 import { TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
-import { createTransactionEntity, getReplacedTransactionHash, updateTransactionEntity, fetchTransactionEntity } from "../utils/dbutils";
+import { createTransactionEntity, getReplacedTransactionHash, updateTransactionEntity, fetchTransactionEntities } from "../utils/dbutils";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
@@ -31,7 +31,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    chainType: ChainType;
    inTestnet: boolean;
    client: AxiosInstance;
-   addressLocks = new Map<string, { tx: xrpl.Payment | xrpl.AccountDelete | null; maxFee: BN | null }>();
+   addressLocks = new Set<string>();
    blockOffset: number;
    timeoutAddressLock: number;
    maxRetries: number;
@@ -167,24 +167,21 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       note?: string,
       maxFeeInDrops?: BN,
       sequence?: number,
-      executeUntilBlock?: number
+      executeUntilBlock?: number,
+      executeUntilTimestamp?: number
    ): Promise<ISubmitTransactionResponse> {
       await this.checkIfCanSubmitFromAddress(source);
       if(!await this.checkIfShouldStillSubmit(executeUntilBlock || null)) {
          throw new Error(`Transaction will not be prepared due to limit block restriction`);
       }
       try {
-         this.addressLocks.set(source, { tx: null, maxFee: maxFeeInDrops || null });
+         this.addressLocks.add(source);
          const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence, executeUntilBlock);
-         this.addressLocks.set(source, { tx: transaction, maxFee: maxFeeInDrops || null });
          const tx_blob = await this.signTransaction(transaction, privateKey);
-         const submitResp = await this.submitTransaction(tx_blob);
+         const submitResp = await this.submitTransaction(tx_blob);//TODO if submit fails -> mark in tx
          // save tx in db
-         await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId);
-         //TODO send transaction to chain, but do not wait for result, immediately return txHash
-         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-         return await this.waitForTransaction(submitResp.txId, submitResp.result!, source, privateKey);
-         // return { txId: submitResp.txId };
+         await createTransactionEntity(this.orm, transaction, source, destination, submitResp.txId, submitResp.submittedBlock!, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInDrops || null);
+         return { txId: submitResp.txId };
       } finally {
          this.addressLocks.delete(source);
       }
@@ -218,6 +215,40 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     */
    async getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
       return getReplacedTransactionHash(this.orm, transactionHash);
+   }
+
+   /**
+    */
+      async monitorTransactionProgress(): Promise<void> {
+      // eslint-disable-next-line no-constant-condition
+      while (1) {
+         // fetch transactions in pending status
+         const pendingTxs = await fetchTransactionEntities(this.orm, TransactionStatus.TX_SUBMITTED);
+         for (const tx of pendingTxs) {
+            const txResp = await this.client.post("", {
+               method: "tx",
+               params: [{ transaction: tx.transactionHash }],
+            });
+            // success
+            if (txResp.data.result.validated) { // Transaction completed
+               // update tx in db
+               await updateTransactionEntity(this.orm, tx.transactionHash, async (txEnt) => {
+                  txEnt.status = TransactionStatus.TX_SUCCESS;
+               });
+            }
+            if (txResp.data.result.status === "error") {
+               //TODO for "txnNotFound"
+               // if (txResp.data.result.error === "txnNotFound") {
+               //    return await this.tryToResubmitTransaction(txHash, submissionResult, source, privateKey, retry);
+               // }
+               await updateTransactionEntity(this.orm, tx.transactionHash, async (txEnt) => {
+                  txEnt.status = TransactionStatus.TX_FAILED;
+               });
+               console.error(`monitorTransactionProgress: ` + txResp.data.result.error);
+            }
+         }
+         await sleepMs(XRP_LEDGER_CLOSE_TIME_MS);
+      }
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////
@@ -318,7 +349,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       });
       xrp_ensure_data(res.data);
       const txHash = xrplHashes.hashSignedTx(res.data.result.tx_blob);
-      return { txId: txHash, result: res.data.result.engine_result };
+      return { txId: txHash, result: res.data.result.engine_result, submittedBlock: res.data.result.validated_ledger_index };
    }
 
    /**
@@ -418,46 +449,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    }
 
    /**
-    * Returns transaction object when transaction is accepted to the ledger.
-    * @param {string} txHash
-    * @param {string} submissionResult
-    * @param {string} source
-    * @param {string} privateKey
-    * @param {string} retry
-    * @returns {Object} - containing transaction id tx_id and optional result
-    */
-   private async waitForTransaction(
-      txHash: string,
-      submissionResult: string,
-      source: string,
-      privateKey: string,
-      retry: number = 0
-   ): Promise<ISubmitTransactionResponse> {
-      await sleepMs(XRP_LEDGER_CLOSE_TIME_MS);
-      const txResp = await this.client.post("", {
-         method: "tx",
-         params: [{ transaction: txHash }],
-      });
-      if (txResp.data.result.status === "error") {
-         if (txResp.data.result.error === "txnNotFound") {
-            return await this.tryToResubmitTransaction(txHash, submissionResult, source, privateKey, retry);
-         }
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_FAILED;
-         });
-         throw new Error(`waitForTransaction: ` + txResp.data.result.error + ` Submission result: ${submissionResult}.`);
-      }
-      if (txResp.data.result.validated) { // Transaction completed
-         // update tx in db
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_SUCCESS;
-         });
-         return { txId: txResp.data.result.hash };
-      }
-      return await this.tryToResubmitTransaction(txHash, submissionResult, source, privateKey, retry);
-   }
-
-   /**
     * Waits if previous transaction from address is still processing. If wait is too long it throws.
     * @param {string} address
     */
@@ -465,7 +456,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       const start = new Date().getTime();
       while (new Date().getTime() - start < this.timeoutAddressLock) {
          if (!this.addressLocks.has(address)) {
-            this.addressLocks.set(address, { tx: null, maxFee: null });
+            this.addressLocks.add(address);
             return;
          }
          await sleepMs(100);
@@ -488,6 +479,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       privateKey: string,
       retry: number
    ): Promise<ISubmitTransactionResponse> {
+      throw new Error(`Cannot replaceByFee transaction ${txHash}: Missing implementation to move privateKey from bot to simple-wallet`);
+      /* TODO fetch from DB
       const res = this.addressLocks.get(source);
       const transaction = res?.tx;
       if (!transaction) {
@@ -520,7 +513,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          const blob = await this.signTransaction(newTransaction, privateKey);
          const submit = await this.submitTransaction(blob);
          // store new tx and mark replacement
-         await createTransactionEntity(this.orm, newTransaction, newTransaction.Account, newTransaction.Destination, submit.txId);
+         await createTransactionEntity(this.orm, newTransaction, newTransaction.Account, newTransaction.Destination, submit.txId, submit.submittedBlock!, res.maxFee || null, );
          const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
          await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
             txEnt.replaced_by = newTxEnt;
@@ -535,7 +528,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       });
       throw new Error(
          `waitForTransaction: transaction ${txHash} is not going to be accepted. Latest valid ledger ${currentValidLedger} is greater than transaction.LastLedgerSequence ${lastBlockNumber}`
-      );
+      );*/
    }
 
    private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {

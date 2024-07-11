@@ -5,17 +5,32 @@ import { ORM } from "../orm/mikro-orm.config";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { toBN } from "./bnutils";
 
-export async function createTransactionEntity(orm: ORM, transaction: any, source: string, destination: string, txHash:string, maxFee: BN | null = null, executeUntilBlock: number | null = null, confirmations: number = 0): Promise<void> {
+export async function createTransactionEntity(
+        orm: ORM,
+        transaction: any,
+        source: string,
+        destination: string,
+        txHash: string,
+        submittedInBlock: number,
+        executeUntilBlock: number | null,
+        executeUntilTimestamp: number | null,
+        reference: string | null,
+        maxFee: BN | null,
+        confirmations: number = 0
+    ): Promise<void> {
     orm.em.create(
         TransactionEntity,
         {
-            source: source,
-            destination: destination,
+            source,
+            destination,
             transactionHash: txHash,
-            status: TransactionStatus.TX_SENT,
-            confirmations: confirmations,
-            maxFee: maxFee,
-            executeUntilBlock: executeUntilBlock,
+            status: TransactionStatus.TX_SUBMITTED,
+            maxFee,
+            submittedInBlock,
+            executeUntilBlock,
+            executeUntilTimestamp,
+            confirmations,
+            reference,
             raw: Buffer.from(JSON.stringify(transaction))
         } as RequiredEntityData<TransactionEntity>,
     );
@@ -32,6 +47,10 @@ export async function updateTransactionEntity(orm: ORM, txHash: string, modify: 
 
 export async function fetchTransactionEntity(orm: ORM, txHash: string): Promise<TransactionEntity> {
     return await orm.em.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'] });
+}
+
+export async function fetchTransactionEntities(orm: ORM, status: TransactionStatus): Promise<TransactionEntity[]> {
+    return await orm.em.find(TransactionEntity, { status } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'] });
 }
 
 export async function getReplacedTransactionHash(orm: ORM, transactionHash: string): Promise<string> {

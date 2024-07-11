@@ -22,11 +22,20 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true })
     maxFee?: BN;
 
-    @Property({ nullable: true  })
-    executeUntilBlock!: number;
-
     @Property()
-    confirmations!: number;
+    submittedInBlock!: number;
+
+    @Property({ nullable: true  })
+    executeUntilBlock?: number;
+
+    @Property({ nullable: true  })
+    executeUntilTimestamp?: number;
+
+    @Property({ nullable: true  })
+    confirmations?: number;
+
+    @Property({ nullable: true  })
+    reference?: string;
 
     @Property({ columnType: 'blob' })
     raw!: Buffer;
@@ -42,9 +51,10 @@ export class TransactionEntity {
 }
 
 export enum TransactionStatus {
-    TX_REPLACED = -2,
-    TX_SENT = -1,
-    TX_SUCCESS = 0,
-    TX_FAILED = 1,
-    TX_NOT_ACCEPTED = 2
+    TX_REPLACED = "replaced",
+    TX_SUBMITTED = "submitted",
+    TX_PENDING = "pending",
+    TX_SUCCESS = "success",
+    TX_FAILED = "failed",
+    TX_NOT_ACCEPTED = "not_accepted"
 }

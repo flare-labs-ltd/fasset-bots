@@ -38,5 +38,6 @@ export class UTXOEntity {
 export enum SpentHeightEnum {
     SPENT = 0,
     PENDING = -1,
-    UNSPENT = -2
+    UNSPENT = -2,
+    SENT = -3
 }
