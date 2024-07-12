@@ -254,7 +254,7 @@ export class AgentBotClosing {
      * @param em entity manager
      */
     async handleAgentDestroyed(rootEm: EM) {
-        await this.bot.locks.underlyingLock.lockAndRun(async () => {
+        await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
             await this.agent.emptyAgentUnderlying(this.bot.ownerUnderlyingAddress);
         });
         await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {

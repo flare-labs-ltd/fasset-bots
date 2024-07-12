@@ -17,7 +17,7 @@ import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
 import { formatArgs, squashSpace } from "../utils/formatting";
-import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, sleep, systemTimestampMS, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, sleep, systemTimestampMS, toBN } from "../utils/helpers";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -71,8 +71,12 @@ export class AgentBotLocks {
     static deepCopyWithObjectCreate = true;
 
     nativeChainLock = new FairLock();
-    underlyingLock = new FairLock();
+    underlyingLockMap = new Map<string, FairLock>();
     databaseLock = new FairLock();
+
+    underlyingLock(address: string) {
+        return getOrCreate(this.underlyingLockMap, address, () => new FairLock());
+    }
 }
 
 export class AgentBot {

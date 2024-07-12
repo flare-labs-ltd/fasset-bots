@@ -64,7 +64,7 @@ export class AgentBotUnderlyingManagement {
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
-        const txHash = await this.bot.locks.underlyingLock.lockAndRun(async () => {
+        const txHash = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
             return await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
         });
         await this.createAgentUnderlyingPayment(em, txHash, AgentUnderlyingPaymentType.TOP_UP);

@@ -257,7 +257,7 @@ export class AgentBotRedemption {
         });
         try {
             // TODO: what if there are too little funds on underlying address to pay for fee?
-            const txHash = await this.bot.locks.underlyingLock.lockAndRun(async () => {
+            const txHash = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
                 return await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
