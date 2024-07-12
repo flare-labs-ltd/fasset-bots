@@ -8,6 +8,8 @@ import { AgentBot } from "./AgentBot";
 import { ClaimType } from "./AgentBotCollateralWithdrawal";
 
 export class AgentBotClosing {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public bot: AgentBot
     ) {}

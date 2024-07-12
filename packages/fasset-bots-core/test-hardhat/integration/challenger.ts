@@ -2,6 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
+import { AgentRedemptionState } from "../../src/entities/common";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
@@ -17,8 +18,7 @@ import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { fundUnderlying, performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
-import { AgentRedemptionState } from "../../src/entities/common";
+import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -143,12 +143,12 @@ describe("Challenger tests", () => {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await agentBot.runStep(orm.em);
+            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if redemption is done
             orm.em.clear();
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
-            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF || redemption.state === AgentRedemptionState.DONE) break;
+            if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
             assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus1 = await getAgentStatus(agentBot);
@@ -329,7 +329,7 @@ describe("Challenger tests", () => {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await agentBot.runStep(orm.em);
+            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if payment proof available
             orm.em.clear();
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
@@ -396,16 +396,19 @@ describe("Challenger tests", () => {
             { status: TX_BLOCKED } as TransactionOptionsWithFee & { status?: number });
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
-        redemption.txHash = txHash;
-        redemption.state = AgentRedemptionState.PAID;
+        await agentBot.runInTransaction(orm.em, async em => {
+            const rd = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+            rd.txHash = txHash;
+            rd.state = AgentRedemptionState.PAID;
+        })
         // run step
+        const spyRedemption = spy.on(agentBot.notifier, "sendRedemptionBlocked");
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         await agentBot.runStep(orm.em);
         // catch 'RedemptionPaymentBlocked' event
         await challenger.runStep();
         // send notification
-        const spyRedemption = spy.on(agentBot.notifier, "sendRedemptionBlocked");
         await agentBot.runStep(orm.em);
         expect(spyRedemption).to.have.been.called.once;
     });

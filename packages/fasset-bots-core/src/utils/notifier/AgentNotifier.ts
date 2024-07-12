@@ -84,6 +84,8 @@ export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
 };
 
 export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
+    static deepCopyWithObjectCreate = true;
+
     constructor(address: string, transports: NotifierTransport[]) {
         super(BotType.AGENT, address, transports);
     }

@@ -33,8 +33,6 @@ import { FuzzingTimeline } from "./FuzzingTimeline";
 
 export type MiningMode = "auto" | "manual";
 
-const StateConnector = artifacts.require("StateConnectorMock");
-
 describe("Fuzzing tests", () => {
     let accounts: string[];
     let context: TestAssetBotContext;
@@ -99,7 +97,7 @@ describe("Fuzzing tests", () => {
             eventFormatter.addAddress("OWNER_ADDRESS_" + i, ownerAddress);
             const ownerUnderlyingAddress = "underlying_owner_agent_" + i;
             const options = createAgentOptions();
-            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options);
+            const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, ownerUnderlyingAddress, true, notifiers, options, governance);
             const owner = new OwnerAddressPair(ownerAddress, ownerAddress);
             const botCliCommands = new AgentBotCommands(context, agentBotSettings, owner, ownerUnderlyingAddress, orm, notifiers);
             const fuzzingAgentBot = new FuzzingAgentBot(agentBot, runner, orm.em, ownerUnderlyingAddress, botCliCommands);
@@ -334,7 +332,7 @@ describe("Fuzzing tests", () => {
     }
 
     async function transferFassetsToLiquidator(liquidatorAddress: string): Promise<void> {
-        const agentB = await createTestAgentAndMakeAvailable(context, accounts[1000]);
+        const agentB = await createTestAgentAndMakeAvailable(context, accounts[1000], "TEMP_UNDERLYING", true, governance);
         eventFormatter.addAddress(`MINTER_BOT`, agentB.vaultAddress);
         const minter = await createTestMinter(context, accounts[999], chain);
         const lots = 3;

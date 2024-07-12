@@ -11,6 +11,8 @@ export enum ClaimType {
 }
 
 export class AgentBotCollateralWithdrawal {
+    static deepCopyWithObjectCreate = true;
+
     constructor(
         public bot: AgentBot
     ) {}
