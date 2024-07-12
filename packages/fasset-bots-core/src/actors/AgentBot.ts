@@ -331,6 +331,7 @@ export class AgentBot {
                 }
                 if (!loop) break;
                 // wait a bit so that idle threads do not burn too much time
+                logger.info(`Finished handling, sleeping ${this.loopDelay / 1000}s`);
                 const waitStart = systemTimestampMS();
                 while (systemTimestampMS() - waitStart < this.loopDelay) {
                     if (this.stopRequested()) break;
