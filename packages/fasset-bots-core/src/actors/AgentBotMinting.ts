@@ -382,7 +382,6 @@ export class AgentBotMinting {
         if ("id" in mintingId) {
             return await em.findOneOrFail(AgentMinting, { id: mintingId.id }, { refresh: true });
         } else {
-            console.log(`requestId: ${mintingId.requestId}`);
             return await em.findOneOrFail(AgentMinting, { agentAddress: this.agent.vaultAddress, requestId: mintingId.requestId }, { refresh: true });
         }
     }
