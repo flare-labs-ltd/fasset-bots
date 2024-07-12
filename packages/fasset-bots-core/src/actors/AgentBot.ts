@@ -17,7 +17,7 @@ import { EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
 import { formatArgs, squashSpace } from "../utils/formatting";
-import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, sleep, systemTimestampMS, toBN } from "../utils/helpers";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -104,6 +104,7 @@ export class AgentBot {
     timekeeper?: ITimeKeeper;
     transientStorage: AgentBotTransientStorage = new AgentBotTransientStorage();    // changed when running in AgentBotRunner
     locks = new AgentBotLocks(); // changed when running in AgentBotRunner
+    loopDelay = 0;
 
     // internal
     private _running: boolean = false;
@@ -329,6 +330,12 @@ export class AgentBot {
                     logger.error(`Unexpected error in agent bot thread loop:`, error);
                 }
                 if (!loop) break;
+                // wait a bit so that idle threads do not burn too much time
+                const waitStart = systemTimestampMS();
+                while (systemTimestampMS() - waitStart < this.loopDelay) {
+                    if (this.stopRequested()) break;
+                    await sleep(100);
+                }
             }
             logger.info("Thread ended.")
         })

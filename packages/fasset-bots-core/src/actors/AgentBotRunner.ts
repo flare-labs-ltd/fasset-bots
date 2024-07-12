@@ -158,6 +158,7 @@ export class AgentBotRunner {
         agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
         agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
         agentBot.locks = this.locks;
+        agentBot.loopDelay = this.loopDelay;
         return agentBot;
     }
 
