@@ -7,6 +7,9 @@ import WAValidator from "wallet-address-validator";
 import { toBN } from "../../src/utils/bnutils";
 import rewire from "rewire";
 import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
+import { fetchTransactionEntityById } from "../../src/db/dbutils";
+import { TransactionStatus } from "../../src/entity/transaction";
+import { sleepMs } from "../../src/utils/utils";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
@@ -45,7 +48,12 @@ let fundedWallet: ICreateWalletResponse;
 describe("Bitcoin wallet tests", () => {
    before(async () => {
       wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
+      wClient.startMonitoringTransactionProgress()
    });
+
+   after(function() {
+      wClient.stopMonitoring();
+    });
 
    it("Should create account", async () => {
       const newAccount = wClient.createWallet();
@@ -94,18 +102,32 @@ describe("Bitcoin wallet tests", () => {
       expect(fee).not.to.be.null;
    });
 
-   it.skip("Should prepare and execute transaction", async () => {
-      // fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const tw = wClient.createWalletFromMnemonic(targetMnemonic);
+   it.only("Should prepare and execute transaction", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(targetMnemonic);
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
-      const submit = await wClient.prepareAndExecuteTransaction(tw.address, tw.privateKey, fundedAddress, amountToSendSatoshi, undefined, note);
-      expect(typeof submit).to.equal("object");
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S", amountToSendSatoshi, undefined, note, undefined);
+      expect(id).to.be.gt(0);
+      const startTime = Date.now();
+      const timeLimit = 600000; // 600 s
+      for (let i = 0; ; i++) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         if (tx.status == TransactionStatus.TX_SUCCESS) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            console.log(tx)
+            throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
+         }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+     }
    });
 
-   it.skip("Should prepare and execute transaction", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-      const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const submit = await wClient.deleteAccount(fundedWallet.address, fundedWallet.privateKey, targetAddress, undefined, note);
-      expect(typeof submit).to.equal("object");
-   });
+   //TODO
+   // it.skip("Should prepare and execute transaction", async () => {
+   //    fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+   //    const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+   //    const submit = await wClient.deleteAccount(fundedWallet.address, fundedWallet.privateKey, targetAddress, undefined, note);
+   //    expect(typeof submit).to.equal("object");
+   // });
 });

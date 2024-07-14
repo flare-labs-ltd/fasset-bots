@@ -128,9 +128,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          return toBN(data.result.account_data.Balance);
       } catch (error) {
          logger.error(`Cannot get account balance for ${account}`, error);
-         if (error instanceof Error && error.message.includes(`"error_message": "Account not found."`)) {
-            return toBN(0);
-         }
          throw error;
       }
    }
@@ -268,9 +265,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             await this.processTransactions(TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
             await this.processTransactions(TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
             await this.processTransactions(TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
-
-
-            await sleepMs(XRP_LEDGER_CLOSE_TIME_MS);
          } catch (error) {
             logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
          }
@@ -305,7 +299,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       const transaction = JSON.parse(tx.raw!.toString());
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
-         await this.handleMissingPrivateKey(tx);
+         await this.handleMissingPrivateKey(tx.id);
          return;
       }
       const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
@@ -316,17 +310,17 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       const transaction = JSON.parse(tx.raw!.toString());
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
-         await this.handleMissingPrivateKey(tx);
+         await this.handleMissingPrivateKey(tx.id);
          return;
       }
       const newFee = toBN(transaction.Fee!);
       await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
    }
 
-   async prepareAndSubmitCreatedTransaction(tx: any): Promise<void> {
+   async prepareAndSubmitCreatedTransaction(tx: TransactionEntity): Promise<void> {
       const currentLedger = await this.getLatestValidatedLedgerIndex();
       if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
-         await this.failTransaction(tx, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
+         await this.failTransaction(tx.id, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
          return;
       }
       //prepare
@@ -341,17 +335,17 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       );
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
-         await this.handleMissingPrivateKey(tx);
+         await this.handleMissingPrivateKey(tx.id);
          return;
       }
       if (checkIfFeeTooHigh(toBN(transaction.Fee!), tx.maxFee || null)) {
-         await this.failTransaction(tx, `Fee restriction (fee: ${transaction.Fee}, maxFee: ${tx.maxFee?.toString()})`);
+         await this.failTransaction(tx.id, `Fee restriction (fee: ${transaction.Fee}, maxFee: ${tx.maxFee?.toString()})`);
       } else {
          await this.signAndSubmitProcess(tx.id, privateKey, transaction);
       }
    }
 
-   async checkSubmittedTransaction(tx: any): Promise<void> {
+   async checkSubmittedTransaction(tx: TransactionEntity): Promise<void> {
       const txResp = await this.client.post("", { method: "tx", params: [{ transaction: tx.transactionHash }] });
       if (txResp.data.result.validated) {
          await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
@@ -362,29 +356,29 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       } else {
          const currentLedger = await this.getLatestValidatedLedgerIndex();
          if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
-            await this.failTransaction(tx, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
+            await this.failTransaction(tx.id, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
             //TODO sanity check [Account Sequence is less than or equal to transaction Sequence] => all good
          }
       }
    }
 
-   async handleMissingPrivateKey(tx: any): Promise<void> {
-      logger.error(`Cannot prepare transaction ${tx.id}. Missing private key for ${tx.source}`);
-      console.error(`Cannot prepare transaction ${tx.id}. Missing private key for ${tx.source}`);
-      await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+   async handleMissingPrivateKey(txId: number): Promise<void> {
+      logger.error(`Cannot prepare transaction ${txId}. Missing private key.`);
+      console.error(`Cannot prepare transaction ${txId}. Missing private key.`);
+      await updateTransactionEntity(this.orm, txId, async (txEnt) => {
          txEnt.status = TransactionStatus.TX_FAILED;
       });
    }
 
-   async failTransaction(tx: any, reason: string): Promise<void> {
-      await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+   async failTransaction(txId: number, reason: string): Promise<void> {
+      await updateTransactionEntity(this.orm, txId, async (txEnt) => {
          txEnt.status = TransactionStatus.TX_FAILED;
       });
-      logger.error(`Cannot prepare transaction ${tx.id}: ${reason}`);
-      console.error(`Cannot prepare transaction ${tx.id}: ${reason}`);
+      logger.error(`Cannot prepare transaction ${txId}: ${reason}`);
+      console.error(`Cannot prepare transaction ${txId}: ${reason}`);
    }
 
-   async signAndSubmitProcess(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete) {
+   async signAndSubmitProcess(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete): Promise<void> {
       const signed = await this.signTransaction(transaction, privateKey);
       const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
       // save tx in db

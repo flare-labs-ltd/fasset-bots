@@ -95,7 +95,6 @@ describe("Xrp wallet tests", () => {
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
       const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
       expect(id).to.be.gt(0);
-      // void wClient.startMonitoringTransactionProgress();
       const startTime = Date.now();
       const timeLimit = 20000; // 20 s
       for (let i = 0; ; i++) {
@@ -118,7 +117,6 @@ describe("Xrp wallet tests", () => {
       const lowFee = toBN(1);
       const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note);
       expect(id).to.be.gt(0);
-      // void wClient.startMonitoringTransactionProgress();
       const startTime = Date.now();
       const timeLimit = 40000; // 40 s
       let replacedTx = null;
@@ -160,7 +158,6 @@ describe("Xrp wallet tests", () => {
       expect(txEnt.fee?.toString()).to.equal(feeInDrops.toString());
       expect(txEnt.reference).to.equal(note);
       expect(txEnt.sequence).to.equal(sequence);
-      // void wClient.startMonitoringTransactionProgress();
       const startTime = Date.now();
       const timeLimit = 30000; // 30 s
       for (let i = 0; ; i++) {
@@ -180,7 +177,6 @@ describe("Xrp wallet tests", () => {
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops);
       expect(id).to.be.gt(0);
-      // void wClient.startMonitoringTransactionProgress();
       const startTime = Date.now();
       const timeLimit = 30000; // 30 s
       for (let i = 0; ; i++) {
@@ -218,7 +214,6 @@ describe("Xrp wallet tests", () => {
       const maxFee = toBN(3);
       const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note, maxFee);
       expect(id).to.be.gt(0);
-      // void wClient.startMonitoringTransactionProgress();
       const startTime = Date.now();
       const timeLimit = 40000; // 40 s
       let replacedTx = null;
@@ -250,7 +245,6 @@ describe("Xrp wallet tests", () => {
       const toSendInDrops = toBNExp(20,6); // 20 XPR
       // fund toDelete account
       const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
-      // void wClient.startMonitoringTransactionProgress();
       const startTime = Date.now();
       const timeLimit = 30000; // 30 s
       while (1) {

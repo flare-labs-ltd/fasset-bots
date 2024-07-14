@@ -4,9 +4,9 @@ import * as bitcore from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
 import * as bip84btc from "bip84";
 import * as bip84doge from "dogecoin-bip84";
-import * as crypto from 'crypto';
+import * as crypto from "crypto";
 import { generateMnemonic } from "bip39";
-import { excludeNullFields, getAvgBlockTime, sleepMs, unPrefix0x } from "../utils/utils";
+import { excludeNullFields, getAvgBlockTime, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import {
    BTC_DUST_AMOUNT,
@@ -28,22 +28,35 @@ const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
 import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
-import { createInitialTransactionEntity, fetchTransactionEntities, fetchUTXOsByTxHash, fetchUnspentUTXOs, getTransactionInfoById, storeUTXOS, updateTransactionEntity, updateTransactionEntityByHash, updateUTXOEntity } from "../db/dbutils";
+import {
+   createInitialTransactionEntity,
+   fetchTransactionEntities,
+   fetchTransactionEntityById,
+   fetchUTXOsByTxHash,
+   fetchUnspentUTXOs,
+   getTransactionInfoById,
+   storeUTXOS,
+   updateTransactionEntity,
+   updateUTXOEntity,
+} from "../db/dbutils";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { IWalletKeys } from "../db/wallet";
+import { logger } from "../utils/logger";
 export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
    orm!: ORM;
    walletKeys!: IWalletKeys;
+   blockOffset: number;
+   feeIncrease: number;
 
    monitoring: boolean = false;
-   addressLocks = new Set<string>();
    enoughConfirmations: number = 2;
-   executionBlockOffset: number = 2;
-   feeIncrease: number = 1.3;
-   addressLockTime: number = 120000; // 2min
+   executionBlockOffset: number = 1;
    mempoolWaitingTime: number = 60000; // 1min
+
+   restartInDueToError: number = 2000; //2s
+   restartInDueNoResponse: number = 20000; //20s
 
    constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
@@ -72,6 +85,12 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          ...DEFAULT_RATE_LIMIT_OPTIONS,
          ...createConfig.rateLimitOptions,
       });
+      const resubmit = stuckTransactionConstants(this.chainType);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
+      // this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset;//TODO
    }
 
    /**
@@ -101,7 +120,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return {
          address: account as string,
          mnemonic: mnemonic,
-         privateKey: account0.getPrivateKey(0)
+         privateKey: account0.getPrivateKey(0),
       };
    }
 
@@ -110,8 +129,13 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     * @returns {BN} - confirmed balance in satoshis
     */
    async getAccountBalance(account: string): Promise<BN> {
-      const res = await this.client.get(`/address/${account}/balance`);
-      return toBN(res.data.balance);
+      try {
+         const res = await this.client.get(`/address/${account}/balance`);
+         return toBN(res.data.balance);
+      } catch (error) {
+         logger.error(`Cannot get account balance for ${account}`, error);
+         throw error;
+      }
    }
 
    /**
@@ -144,34 +168,23 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       executeUntilBlock?: number,
       executeUntilTimestamp?: number
    ): Promise<number> {
-      const ent = await createInitialTransactionEntity(this.orm, this.chainType, source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi, undefined, executeUntilBlock, executeUntilTimestamp);
+      logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}`);
+      const ent = await createInitialTransactionEntity(
+         this.orm,
+         this.chainType,
+         source,
+         destination,
+         amountInSatoshi,
+         feeInSatoshi,
+         note,
+         maxFeeInSatoshi,
+         undefined,
+         executeUntilBlock,
+         executeUntilTimestamp
+      );
       await this.walletKeys.addKey(source, privateKey);
       const txExternalId = ent.id;
       return txExternalId;
-      // await this.checkIfCanSubmitFromAddress(source);
-      // if(!await this.checkIfShouldStillSubmit(executeUntilBlock || null)) {
-      //    throw new Error(`Transaction will not be prepared due to limit block restriction`);
-      // }
-      // try {
-      //    // lock address until transaction is visible in mempool
-      //    this.addressLocks.add(source);
-      //    const transaction = await this.preparePaymentTransaction(source, destination, amountInSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
-      //    const signed = await this.signTransaction(transaction, privateKey);
-      //    await this.submitTransaction(signed.txBlob);//TODO handle is submit fails
-      //    const submittedBlockHeight = await this.getCurrentBlockHeight();
-      //    // save tx in db
-      //    await createTransactionEntity(this.orm, transaction, source, destination, signed.txHash, submittedBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInSatoshi || null);
-      //    // mark utxo as spent
-      //    for (const input of transaction.inputs) {
-      //       await updateUTXOEntity(this.orm, input.prevTxId.toString('hex'), input.outputIndex, async (utxoEnt) => {
-      //          utxoEnt.spentHeight = SpentHeightEnum.SENT;
-      //       });
-      //    }
-      //    await this.waitForTransactionToAppearInMempool(signed.txHash, 0, executeUntilBlock);
-      //    return { txId: signed.txHash };
-      // } finally {
-      //    this.addressLocks.delete(source);
-      // }
    }
 
    /**
@@ -193,7 +206,18 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       executeUntilBlock?: number,
       executeUntilTimestamp?: number
    ): Promise<number> {
-      return await this.createPaymentTransaction(source, privateKey, destination, null, feeInSatoshi, note, maxFeeInSatoshi, executeUntilBlock, executeUntilTimestamp);
+      logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
+      return await this.createPaymentTransaction(
+         source,
+         privateKey,
+         destination,
+         null,
+         feeInSatoshi,
+         note,
+         maxFeeInSatoshi,
+         executeUntilBlock,
+         executeUntilTimestamp
+      );
    }
 
    /**
@@ -204,68 +228,147 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return await getTransactionInfoById(this.orm, dbId);
    }
 
+   ///////////////////////////////////////////////////////////////////////////////////////
+   // MONITORING /////////////////////////////////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////
+
    stopMonitoring() {
       this.monitoring = false;
-    }
+   }
 
-
-   async monitorTransactionProgress(): Promise<void> {
+   /**
+    * Background processing
+    */
+   async startMonitoringTransactionProgress(): Promise<void> {
       this.monitoring = true;
-      while (this.monitoring ) {
-          //fetch transactions in created state //TODO - maybe do not block each other? also have to do it one by one - locked as before?
-          const createdTxs = await fetchTransactionEntities(this.orm, this.chainType, TransactionStatus.TX_CREATED);
-          for (const tx of createdTxs) {
-                const transaction = await this.preparePaymentTransaction(tx.source, tx.destination, tx.amount || null, tx.fee, tx.reference,  tx.maxFee);
-                const privateKey = await this.walletKeys.getKey(tx.source);
-                if (!privateKey) {
-                   console.error(`Cannot prepare transaction. Missing private key for ${privateKey}`);
-                   await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
-                      txEnt.status = TransactionStatus.TX_FAILED;
-                   });
-                   continue;
-                }
-                const signed = await this.signTransaction(transaction, privateKey);
-                const currentBlockHeight = await this.getCurrentBlockHeight();
-                // save tx in db
-                await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
-                   txEnt.raw = Buffer.from(JSON.stringify(transaction));
-                   txEnt.transactionHash = signed.txHash;
-                   txEnt.submittedInBlock = currentBlockHeight;
-                });
-                // submit
-                await this.submitTransaction(signed.txBlob, tx);
-          }
-         // fetch transactions in pending status
-         const pendingTxs = await fetchTransactionEntities(this.orm, this.chainType, TransactionStatus.TX_PENDING);
-         for (const tx of pendingTxs) {
-            const txResp = await this.client.get(`/tx/${tx.transactionHash}`);
-            // success
-            if (txResp.data.blockHash &&txResp.data.confirmations >= this.enoughConfirmations) {
-               await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
-                  txEnt.confirmations = txResp.data.confirmations;
-                  txEnt.status = TransactionStatus.TX_SUCCESS;
-               });
-               const utxos = await fetchUTXOsByTxHash(this.orm, tx.transactionHash!);//TODO
-               for (const utxo of utxos) {
-                  await updateUTXOEntity(this.orm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
-                     utxoEnt.spentHeight = SpentHeightEnum.SPENT;
-                  });
-               }
-            }
-            //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!
-            const currentBlockHeight =  await this.getCurrentBlockHeight();
-            if (currentBlockHeight - tx.submittedInBlock > this.enoughConfirmations) {
-               console.error(`Transaction ${tx.transactionHash} is probably not going to be accepted!`);
-               //TODO mark as FAILED in db
-            }
+      while (this.monitoring) {
+         const networkUp = await this.checkUTXONetworkStatus();
+         if (!networkUp) {
+            logger.error(`Trying again in ${this.restartInDueNoResponse}`);
+            await sleepMs(this.restartInDueNoResponse);
+            continue;
          }
-         await sleepMs(getAvgBlockTime(this.chainType));
+         try {
+            //TODO
+            // await this.processTransactions(TransactionStatus.TX_SUBMITTED, this.resubmitSubmissionFailedTransactions.bind(this));
+            // await this.processTransactions(TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
+            await this.processTransactions(TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
+            await this.processTransactions(TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
+         } catch (error) {
+            logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
+         }
+         await sleepMs(this.restartInDueToError);
+      }
+   }
+
+   async checkUTXONetworkStatus(): Promise<boolean> {
+      //TODO - maybe can be more robust if also take into account response
+      try {
+         await this.getCurrentBlockHeight();
+         return true;
+      } catch (error) {
+         logger.error("Cannot ger response from server", error);
+         return false;
       }
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
+   async processTransactions(status: TransactionStatus, processFunction: (tx: any) => Promise<void>): Promise<void> {
+      logger.info(`Fetching transactions with status ${status}`);
+      console.info(`Fetching transactions with status ${status}`);
+      const transactions = await fetchTransactionEntities(this.orm, this.chainType, status);
+      for (const tx of transactions) {
+         await processFunction(tx);
+      }
+   }
+
+   async prepareAndSubmitCreatedTransaction(tx: TransactionEntity): Promise<void> {
+      const currentBlock = await this.getCurrentBlockHeight();
+      if (tx.executeUntilBlock && currentBlock >= tx.executeUntilBlock) {
+         await this.failTransaction(tx.id, `Current ledger ${currentBlock} >= last transaction ledger ${tx.executeUntilBlock}`);
+         return;
+      }
+      const transaction = await this.preparePaymentTransaction(tx.source, tx.destination, tx.amount || null, tx.fee, tx.reference, tx.executeUntilBlock);
+      const privateKey = await this.walletKeys.getKey(tx.source);
+      if (!privateKey) {
+         await this.handleMissingPrivateKey(tx.id);
+         return;
+      }
+      if (this.checkIfFeeTooHigh(toBN(transaction.getFee()), tx.maxFee || null)) {
+         await this.failTransaction(tx.id, `Fee restriction (fee: ${transaction.getFee()}, maxFee: ${tx.maxFee?.toString()})`);
+      } else {
+         await this.signAndSubmitProcess(tx.id, privateKey, transaction);
+      }
+   }
+
+   async checkSubmittedTransaction(tx: TransactionEntity): Promise<void> {
+      const txResp = await this.client.get(`/tx/${tx.transactionHash}`);
+      // success
+      if (txResp.data.blockHash && txResp.data.confirmations >= this.enoughConfirmations) {
+         await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+            txEnt.confirmations = txResp.data.confirmations;
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+         });
+         const utxos = await fetchUTXOsByTxHash(this.orm, tx.transactionHash!); //TODO
+         for (const utxo of utxos) {
+            await updateUTXOEntity(this.orm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
+               utxoEnt.spentHeight = SpentHeightEnum.SPENT;
+            });
+         }
+         logger.info(`Transaction ${tx.id} was accepted`);
+         console.info(`Transaction ${tx.id} was accepted`);
+         return;
+      }
+      //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!
+      const currentBlockHeight = await this.getCurrentBlockHeight();
+      if (currentBlockHeight - tx.submittedInBlock > this.enoughConfirmations) {
+         console.error(`Transaction ${tx.transactionHash} is probably not going to be accepted!`);
+         await this.failTransaction(tx.id, `Not accepted after ${this.enoughConfirmations} blocks`)
+      }
+   }
+
+   async handleMissingPrivateKey(txId: number): Promise<void> {
+      logger.error(`Cannot prepare transaction ${txId}. Missing private key.`);
+      console.error(`Cannot prepare transaction ${txId}. Missing private key.`);
+      await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+         txEnt.status = TransactionStatus.TX_FAILED;
+      });
+   }
+
+   async failTransaction(txId: number, reason: string): Promise<void> {
+      await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+         txEnt.status = TransactionStatus.TX_FAILED;
+      });
+      logger.error(`Cannot prepare transaction ${txId}: ${reason}`);
+      console.error(`Cannot prepare transaction ${txId}: ${reason}`);
+   }
+
+   async signAndSubmitProcess(txId: number, privateKey: string, transaction: bitcore.Transaction): Promise<void> {
+      let signed = { txBlob: "" }; //TODO do it better
+      try {
+         const signed = await this.signTransaction(transaction, privateKey);
+         const currentBlockHeight = await this.getCurrentBlockHeight();
+         // save tx in db
+         await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+            txEnt.raw = Buffer.from(JSON.stringify(transaction));
+            txEnt.transactionHash = signed.txHash;
+            txEnt.submittedInBlock = currentBlockHeight;
+         });
+      } catch(e) {
+         await this.failTransaction(txId, `Cannot sign transaction ${txId}: ${e}`);
+         return;
+      }
+
+
+      // submit
+      const txStatus = await this.submitTransaction(signed.txBlob, txId);
+      const txEnt = await fetchTransactionEntityById(this.orm, txId);
+      if (txStatus == TransactionStatus.TX_PENDING) {
+         await this.waitForTransactionToAppearInMempool(txEnt.id, 0);
+      }
+   }
 
    /**
     * @param {string} source
@@ -282,7 +385,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       amountInSatoshi: BN | null,
       feeInSatoshi?: BN,
       note?: string,
-      maxFeeInSatoshi?: BN
+      executeUntilBlock?: number
    ): Promise<bitcore.Transaction> {
       const isPayment = amountInSatoshi != null;
       const core = this.getCore();
@@ -292,19 +395,16 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          amountInSatoshi = (await this.getAccountBalance(source)).sub(estimateFee);
       }
       if (amountInSatoshi.lte(this.getDustAmount())) {
-         throw new Error(`Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${this.getDustAmount().toString()}`)
+         throw new Error(
+            `Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${this.getDustAmount().toString()}`
+         );
       }
-      const tr = new core.Transaction()
-         .from(utxos.map((utxo) => new UnspentOutput(utxo)))
-         .to(destination, toNumber(amountInSatoshi));
+      const tr = new core.Transaction().from(utxos.map((utxo) => new UnspentOutput(utxo))).to(destination, toNumber(amountInSatoshi));
       if (isPayment) {
          tr.change(source);
       }
       if (feeInSatoshi) {
          tr.fee(toNumber(feeInSatoshi));
-      }
-      if(this.checkIfFeeTooHigh(toBN(tr.getFee()), maxFeeInSatoshi)) {
-         throw new Error(`Transaction preparation failed due to fee restriction (fee: ${tr.getFee()}, maxFee: ${maxFeeInSatoshi?.toString()})`);
       }
       if (note) {
          tr.addData(Buffer.from(unPrefix0x(note), "hex"));
@@ -325,49 +425,42 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    private async signTransaction(transaction: bitcore.Transaction, privateKey: string): Promise<SignedObject> {
       const signedAndSerialized = transaction.sign(privateKey).serialize();
       // calculate txhash
-      const txBuffer = Buffer.from(signedAndSerialized, 'hex');
-      const hash1 = crypto.createHash('sha256').update(txBuffer).digest();
-      const hash2 = crypto.createHash('sha256').update(hash1).digest();
-      const txId = hash2.reverse().toString('hex');
-      return {txBlob: signedAndSerialized, txHash: txId};
+      const txBuffer = Buffer.from(signedAndSerialized, "hex");
+      const hash1 = crypto.createHash("sha256").update(txBuffer).digest();
+      const hash2 = crypto.createHash("sha256").update(hash1).digest();
+      const txId = hash2.reverse().toString("hex");
+      return { txBlob: signedAndSerialized, txHash: txId };
    }
 
    /**
     * @param {string} signedTx
     */
-   private async submitTransaction(signedTx: string, tx: TransactionEntity): Promise<void> {
+   private async submitTransaction(signedTx: string, txId: number): Promise<TransactionStatus> {
       try {
-         const res = await this.client.post(`/tx/send`, { rawTx: signedTx });
+         await this.client.post(`/tx/send`, { rawTx: signedTx });
          const submittedBlockHeight = await this.getCurrentBlockHeight();
-         await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+         await updateTransactionEntity(this.orm, txId, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUBMITTED;
-            txEnt.submittedInBlock = submittedBlockHeight
+            txEnt.submittedInBlock = submittedBlockHeight;
          });
-         const transaction = JSON.parse(tx.raw!.toString());
+         const txEnt = await fetchTransactionEntityById(this.orm, txId);
+         const transaction = JSON.parse(txEnt.raw!.toString());
          for (const input of transaction.inputs) {
-            await updateUTXOEntity(this.orm, input.prevTxId.toString('hex'), input.outputIndex, async (utxoEnt) => {
+            await updateUTXOEntity(this.orm, input.prevTxId.toString("hex"), input.outputIndex, async (utxoEnt) => {
                utxoEnt.spentHeight = SpentHeightEnum.SENT;
             });
          }
-         await this.waitForTransactionToAppearInMempool(tx.transactionHash!, 0, tx.executeUntilBlock)
-      } catch (e){
-
+         return TransactionStatus.TX_SUBMITTED;
+      } catch (e) {
+         // TODO in case of network problems
+         await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_FAILED;
+         });
+         logger.error(`Transaction ${txId} submission failed`, e);
+         console.error(`Submission for tx ${txId}`, e);
+         return TransactionStatus.TX_FAILED;
       }
-      const res = await this.client.post(`/tx/send`, { rawTx: signedTx });
-
-      //    await this.submitTransaction(signed.txBlob);//TODO handle is submit fails
-      //    const submittedBlockHeight = await this.getCurrentBlockHeight();
-      //    // save tx in db
-      //    await createTransactionEntity(this.orm, transaction, source, destination, signed.txHash, submittedBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInSatoshi || null);
-      //    // mark utxo as spent
-      //    for (const input of transaction.inputs) {
-      //       await updateUTXOEntity(this.orm, input.prevTxId.toString('hex'), input.outputIndex, async (utxoEnt) => {
-      //          utxoEnt.spentHeight = SpentHeightEnum.SENT;
-      //       });
-      //    }
-      //    await this.waitForTransactionToAppearInMempool(signed.txHash, 0, executeUntilBlock);
    }
-
    /**
     * Retrieves unspent transactions in format accepted by transaction
     * @param {string} address
@@ -385,7 +478,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
             outputIndex: utxo.position,
             confirmations: -1,
             scriptPubKey: utxo.script,
-         }
+         };
          allUTXOs.push(item);
       }
       return allUTXOs;
@@ -410,14 +503,14 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          return dbUTXOS;
       }
 
-      const needed = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi)
+      const needed = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi);
       if (needed) {
          return needed;
       }
       // not enough funds in db
       await this.fillUTXOsFromMempool(address);
       dbUTXOS = await fetchUnspentUTXOs(this.orm, address);
-      const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi)
+      const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi);
       if (neededAfter) {
          return neededAfter;
       }
@@ -453,31 +546,37 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return res.data.height;
    }
 
-   private async waitForTransactionToAppearInMempool(txHash: string, retry: number = 0, executeUntilBlock: number | null = null): Promise<void> {
+   private async waitForTransactionToAppearInMempool(txId: number, retry: number = 0): Promise<void> {
+      const txEnt = await fetchTransactionEntityById(this.orm, txId);
       const start = new Date().getTime();
       while (new Date().getTime() - start < this.mempoolWaitingTime) {
          try {
-            const txResp = await this.client.get(`/tx/${txHash}`);
-            if (txResp) {//TODO is this enough?
+            const txResp = await this.client.get(`/tx/${txEnt.transactionHash}`);
+            if (txResp) {
+               await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+                  txEnt.status = TransactionStatus.TX_SUBMITTED;
+               });
                return;
             }
-         } catch (e) { /* empty */ //TODO}
+         } catch (e) {
+            /* empty */ //TODO}
             await sleepMs(1000);
          }
          // transaction was not accepted in mempool by one minute => replace by fee one time
          if (retry > 0) {
-            await updateTransactionEntityByHash(this.orm, txHash, async (txEnt) => {
+            await updateTransactionEntity(this.orm, txId, async (txEnt) => {
                txEnt.status = TransactionStatus.TX_FAILED;
             });
-            console.error(`Transaction ${txHash} was not accepted in mempool`);
+            logger.error(`Transaction ${txId} was not accepted in mempool`);
+            console.error(`Transaction ${txId} was not accepted in mempool`);
          } else {
-            if (!await this.checkIfShouldStillSubmit(executeUntilBlock || null)){
-               await updateTransactionEntityByHash(this.orm, txHash, async (txEnt) => {
-                  txEnt.status = TransactionStatus.TX_FAILED;
-               });
-               console.error(`Transaction ${txHash} failed due to limit block restriction`);
+            if (!(await this.checkIfShouldStillSubmit(txEnt.executeUntilBlock || null))) {
+               const currentBlock = await this.getCurrentBlockHeight();
+               await this.failTransaction(txId, `Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
             }
-            await this.tryToReplaceByFee(txHash);
+            //TODO fail for now
+            //await this.tryToReplaceByFee(txHash);
+            await this.failTransaction(txId, `Need to implement rbf`);
          }
       }
    }
@@ -485,27 +584,27 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    private async tryToReplaceByFee(txHash: string): Promise<ISubmitTransactionResponse> {
       throw new Error(`Cannot replaceByFee transaction ${txHash}: Missing implementation to move privateKey from bot to simple-wallet`);
       /*
-      const retryTx = await fetchTransactionEntity(this.orm, txHash);
-      const newTransaction = JSON.parse(retryTx.raw.toString());
-      const newFee = newTransaction.getFee() * this.feeIncrease;
-      if (this.checkIfFeeTooHigh(toBN(newFee), retryTx.maxFee)) {
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_FAILED;
-         });
-         throw new Error(`Transaction ${txHash} failed due to fee restriction`)
-      }
-      const privateKey = ""; //TODO fetch private key from
-      const blob = await this.signTransaction(newTransaction, privateKey);
-      const submitResp = await this.submitTransaction(blob);
-      const submittedBlockHeight = await this.getCurrentBlockHeight();
-      await createTransactionEntity(this.orm, newTransaction, retryTx.source, retryTx.destination, submitResp.txId, submittedBlockHeight, retryTx.maxFee);
-      const newTxEnt = await fetchTransactionEntity(this.orm, submitResp.txId);
-      await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-         txEnt.replaced_by = newTxEnt;
-         txEnt.status = TransactionStatus.TX_REPLACED;
-      });
-      await this.waitForTransactionToAppearInMempool(submitResp.txId, 1);
-      return submitResp;*/
+  const retryTx = await fetchTransactionEntity(this.orm, txHash);
+  const newTransaction = JSON.parse(retryTx.raw.toString());
+  const newFee = newTransaction.getFee() * this.feeIncrease;
+  if (this.checkIfFeeTooHigh(toBN(newFee), retryTx.maxFee)) {
+     await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+        txEnt.status = TransactionStatus.TX_FAILED;
+     });
+     throw new Error(`Transaction ${txHash} failed due to fee restriction`)
+  }
+  const privateKey = ""; //TODO fetch private key from
+  const blob = await this.signTransaction(newTransaction, privateKey);
+  const submitResp = await this.submitTransaction(blob);
+  const submittedBlockHeight = await this.getCurrentBlockHeight();
+  await createTransactionEntity(this.orm, newTransaction, retryTx.source, retryTx.destination, submitResp.txId, submittedBlockHeight, retryTx.maxFee);
+  const newTxEnt = await fetchTransactionEntity(this.orm, submitResp.txId);
+  await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+     txEnt.replaced_by = newTxEnt;
+     txEnt.status = TransactionStatus.TX_REPLACED;
+  });
+  await this.waitForTransactionToAppearInMempool(submitResp.txId, 1);
+  return submitResp;*/
    }
 
    private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
@@ -554,32 +653,16 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       return this.getDefaultFeePerB().muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
    }
 
-   private getEstimatedNumberOfOutputs(amountInSatoshi:BN | null, note?: string) {
+   private getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: string) {
       if (amountInSatoshi == null && note) return 2; // destination and note
       if (amountInSatoshi == null && !note) return 1; // destination
       if (note) return 3; // destination, change (returned funds) and note
       return 2; // destination and change
    }
 
-   /**
-    * Waits if previous transaction from address is still processing. If wait is too long it throws.
-    * @param {string} address
-    */
-   private async checkIfCanSubmitFromAddress(address: string): Promise<void> {
-      const start = new Date().getTime();
-      while (new Date().getTime() - start < this.addressLockTime) {
-         if (!this.addressLocks.has(address)) {
-            this.addressLocks.add(address);
-            return;
-         }
-         await sleepMs(100);
-      }
-      throw new Error(`Timeout waiting to obtain confirmed transaction from address ${address}`);
-   }
-
    private async checkIfShouldStillSubmit(executeUntilBlock: number | null): Promise<boolean> {
       const currentBlockHeight = await this.getCurrentBlockHeight();
-      if (executeUntilBlock && (executeUntilBlock - currentBlockHeight) > this.executionBlockOffset) {
+      if (executeUntilBlock && executeUntilBlock - currentBlockHeight > this.executionBlockOffset) {
          return false;
       }
       return true;
