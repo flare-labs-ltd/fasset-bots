@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { BTC_MAINNET, BTC_TESTNET, ChainType } from "../../src/utils/constants";
+import { BTC_MAINNET, BTC_TESTNET } from "../../src/utils/constants";
 import { getCurrentNetwork } from "../../src/utils/utils";
 
 describe("Bitcoin network helper tests", () => {
@@ -12,6 +12,7 @@ describe("Bitcoin network helper tests", () => {
          rateLimitOptions: {
             timeoutMs: 15000,
          },
+         walletSecret: "wallet_secret"
       };
       const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionMain);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
@@ -24,6 +25,7 @@ describe("Bitcoin network helper tests", () => {
          username: "",
          password: "",
          inTestnet: true,
+         walletSecret: "wallet_secret"
       };
       const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
@@ -36,6 +38,7 @@ describe("Bitcoin network helper tests", () => {
          username: "username",
          password: "password",
          inTestnet: true,
+         walletSecret: "wallet_secret"
       };
       const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
       expect(wClient.client.defaults.auth).to.not.be.undefined;

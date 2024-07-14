@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
+import { bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 import { ChainType } from "../../src/utils/constants";
 
@@ -9,53 +9,11 @@ const BTCMccConnectionTest = {
    username: "",
    password: "",
    inTestnet: true,
+   walletSecret: "wallet_secret"
 };
 const invalidChainType = "0x494e56414c494400000000000000000000000000000000000000000000000000" as ChainType;
 
 describe("Util tests", () => {
-   it("Should fail if status not 'OK'", async () => {
-      const data = {
-         statusText: "FAIL",
-      };
-      const fn = () => {
-         return wallet_utxo_ensure_data(data);
-      };
-      expect(fn).to.throw(Error);
-   });
-
-   it("Should not fail if status is 'OK'", async () => {
-      const data = {
-         statusText: "OK",
-      };
-      const fn = () => {
-         return wallet_utxo_ensure_data(data);
-      };
-      expect(fn).to.not.throw(Error);
-   });
-
-   it("Should fail if not desired error code or error message", async () => {
-      const dataXrp = {
-         result: {
-            status: "error",
-            error: "txnNotFound"
-         }
-      };
-      const fn2 = () => {
-         return xrp_ensure_data(dataXrp);
-      };
-      expect(fn2).to.throw(Error);
-      dataXrp.result.error = "lgrNotFound"
-      const fn3 = () => {
-         return xrp_ensure_data(dataXrp);
-      };
-      expect(fn3).to.throw(Error);
-      dataXrp.result.error = "someOther"
-      const fn4 = () => {
-         return xrp_ensure_data(dataXrp);
-      };
-      expect(fn4).to.throw(Error);
-   });
-
    it("Should fail if env variable not defined", async () => {
       const envVariable = "I_AM_NOT_DEFINED";
       const fn = () => {

@@ -16,6 +16,7 @@ const BTCMccConnectionTest = {
    password: "",
    apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",
    inTestnet: true,
+   walletSecret: "wallet_secret"
 };
 
 const fundedMnemonic = "depart mixed miss smart enjoy ladder deputy sport chair risk dismiss few";

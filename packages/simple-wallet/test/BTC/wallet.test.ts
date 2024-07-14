@@ -10,7 +10,7 @@ import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
-
+const walletSecret = "wallet_secret";
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
@@ -20,6 +20,7 @@ const BTCMccConnectionTest = {
    password: "",
    apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",
    inTestnet: true,
+   walletSecret: walletSecret
 };
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
@@ -74,7 +75,7 @@ describe("Bitcoin wallet tests", () => {
 
    it("Should create transaction with custom fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
-      rewired.orm = await initializeMikroORM("simple-wallet_btc.db");
+      rewired.orm = await initializeMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
@@ -82,7 +83,7 @@ describe("Bitcoin wallet tests", () => {
 
    it("Should not create transaction: maxFee > fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
-      rewired.orm = await initializeMikroORM("simple-wallet_btc.db");
+      rewired.orm = await initializeMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
          .be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);

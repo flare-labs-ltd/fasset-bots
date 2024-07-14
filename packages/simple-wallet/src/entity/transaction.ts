@@ -1,6 +1,7 @@
 import { Entity, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import { BNType } from "../orm/orm-types";
 import BN from "bn.js";
+import { ChainType } from "../utils/constants";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
@@ -8,22 +9,28 @@ export class TransactionEntity {
     id!: number;
 
     @Property()
+    chainType!: ChainType;
+
+    @Property()
     source!: string;
 
     @Property()
     destination!: string;
 
-    @Property()
-    transactionHash!: string;
+    @Property({ nullable: true })
+    transactionHash?: string;
 
     @Property()
     status!: TransactionStatus;
 
     @Property({ type: BNType, nullable: true })
+    fee?: BN;
+
+    @Property({ type: BNType, nullable: true })
     maxFee?: BN;
 
     @Property()
-    submittedInBlock!: number;
+    submittedInBlock: number = 0; // 0 when tx is created
 
     @Property({ nullable: true  })
     executeUntilBlock?: number;
@@ -35,10 +42,19 @@ export class TransactionEntity {
     confirmations?: number;
 
     @Property({ nullable: true  })
+    sequence?: number;
+
+    @Property({ nullable: true  })
     reference?: string;
 
-    @Property({ columnType: 'blob' })
-    raw!: Buffer;
+    @Property({ type: BNType, nullable: true  })
+    amount?: BN;
+
+    @Property({ columnType: 'blob', nullable: true })
+    raw?: Buffer;
+
+    @Property({ columnType: 'blob', nullable: true })
+    serverSubmitResponse?: Buffer;
 
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity;
@@ -53,10 +69,9 @@ export class TransactionEntity {
 export enum TransactionStatus {
     TX_CREATED = "created",
     TX_REPLACED = "replaced",
-    TX_SUBMISSION_FAILED = "submission_failed",
+    TX_SUBMISSION_FAILED = "submission_failed", // in xrp this means failed due ti insufficient fee -> replace tx
     TX_SUBMITTED = "submitted",
-    TX_PENDING = "pending",
+    TX_PENDING = "pending", // in xrp this means that submit fn received error -> tx might be submitted or not
     TX_SUCCESS = "success",
-    TX_FAILED = "failed",
-    TX_NOT_ACCEPTED = "not_accepted"
+    TX_FAILED = "failed"
 }

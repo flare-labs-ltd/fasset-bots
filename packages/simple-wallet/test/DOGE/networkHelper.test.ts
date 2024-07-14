@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, DOGE_MAINNET, DOGE_TESTNET } from "../../src/utils/constants";
+import { DEFAULT_RATE_LIMIT_OPTIONS, DOGE_MAINNET, DOGE_TESTNET } from "../../src/utils/constants";
 import { getCurrentNetwork } from "../../src/utils/utils";
 
 describe("Dogecoin network helper tests", () => {
@@ -9,6 +9,7 @@ describe("Dogecoin network helper tests", () => {
          url: process.env.DOGE_URL ?? "",
          username: "",
          password: "",
+         walletSecret: "wallet_secret"
       };
       const wClient: WALLET.DOGE = await WALLET.DOGE.initialize(DOGEMccConnectionMain);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
@@ -21,6 +22,7 @@ describe("Dogecoin network helper tests", () => {
          username: "",
          password: "",
          inTestnet: true,
+         walletSecret: "wallet_secret"
       };
       const wClient: WALLET.DOGE = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
@@ -33,6 +35,7 @@ describe("Dogecoin network helper tests", () => {
          username: "",
          password: "",
          inTestnet: true, stuckTransactionOptions: { blockOffset: 10, retries: 5, feeIncrease: 4 },
+         walletSecret: "wallet_secret"
       };
       const wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
       expect(wClient.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);

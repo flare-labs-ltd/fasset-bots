@@ -16,6 +16,7 @@ const DOGEMccConnectionTest = {
    stuckTransactionOptions: {
       blockOffset: 1
    },
+   walletSecret: "wallet_secret"
 };
 
 const fundedMnemonic = "once marine attract scorpion track summer choice hamster";

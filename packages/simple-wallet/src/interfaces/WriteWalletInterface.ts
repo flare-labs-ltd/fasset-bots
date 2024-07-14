@@ -1,3 +1,4 @@
+import { TransactionStatus } from "../entity/transaction";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 
@@ -10,7 +11,7 @@ export interface WriteWalletInterface {
    getAccountBalance(account: string): Promise<BN>;
    getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
-   prepareAndExecuteTransaction(
+   createPaymentTransaction(
       source: string,
       privateKey: string,
       destination: string,
@@ -22,7 +23,7 @@ export interface WriteWalletInterface {
       executeUntilBlock?: number
    ): Promise<any>;
 
-   deleteAccount(
+   createDeleteAccountTransaction(
       source: string,
       privateKey: string,
       destination: string,
@@ -33,7 +34,7 @@ export interface WriteWalletInterface {
       sequence?: number
    ): Promise<any>;
 
-   getReplacedOrTransactionHash(transactionHash: string): Promise<string>;
+   getTransactionInfo(dbId: number): Promise<TransactionInfo>;
 }
 
 export interface ICreateWalletResponse {
@@ -80,7 +81,7 @@ export interface StuckTransaction {
    blockOffset?: number; // How many block to wait for transaction to be validated
    retries?: number; // How many times should transaction retry to successfully submit
    feeIncrease?: number; // Factor to increase fee in resubmitting process
-   lastResortFee?: number; // fee to use when all retries fail
+   executionBlockOffset?: number; //
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
@@ -93,6 +94,7 @@ export interface BaseWalletConfig {
    password?: string; // probably never used
    rateLimitOptions?: RateLimitOptions;
    stuckTransactionOptions?: StuckTransaction;
+   walletSecret: string;
 }
 
 export type RippleWalletConfig = BaseWalletConfig;
@@ -102,4 +104,11 @@ export type DogecoinWalletConfig = BaseWalletConfig;
 export interface SignedObject {
    txBlob: string;
    txHash: string;
+}
+
+export interface TransactionInfo {
+   dbId: number;
+   replacedByDdId: number | null,
+   transactionHash: string | null;
+   status: TransactionStatus;
 }

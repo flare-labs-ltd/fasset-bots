@@ -11,6 +11,7 @@ import {
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "./constants";
 import { StuckTransaction } from "../interfaces/WriteWalletInterface";
+import BN from "bn.js";
 
 function MccError(error: any) {
    try {
@@ -23,24 +24,6 @@ function MccError(error: any) {
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
-}
-
-export function wallet_utxo_ensure_data(data: any) {
-   if (data.statusText !== "OK") {
-      throw MccError(data);
-   }
-}
-
-export function xrp_ensure_data(data: any) {
-   if (data.result.status === "error") {
-      if (data.result.error === "txnNotFound") {
-         throw MccError(data.status);
-      }
-      if (data.result.error === "lgrNotFound") {
-         throw MccError(data.status);
-      }
-      throw MccError(data);
-   }
 }
 
 export function bytesToHex(a: Iterable<number> | ArrayLike<number>): string {
@@ -115,23 +98,22 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testBTC:
          return {
             blockOffset: 1,
-            retries: 2,
             feeIncrease: 3,
+            executionBlockOffset: 1,
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
             blockOffset: 3,
-            retries: 1,
             feeIncrease: 2,
+            executionBlockOffset: 3
          };
       case ChainType.XRP:
       case ChainType.testXRP:
          return {
-            blockOffset: 10,
-            retries: 1,
+            blockOffset: 5,
             feeIncrease: 2,
-            lastResortFee: 1e6,
+            executionBlockOffset: 10
          };
       default:
          throw new Error(`Constants not defined for chain type ${chainType}`);
@@ -151,4 +133,20 @@ export function getCurrentNetwork(chainType: ChainType) {
       default:
          throw new Error(`Unsupported chain type ${chainType}`);
    }
+}
+
+//TODO add for timestamp
+export function shouldExecuteTransaction(executeUntilBlock: number | null, latestBlock: number, executionBlockOffset: number): boolean {
+   if (!executeUntilBlock || (executeUntilBlock && (executeUntilBlock - latestBlock) >= executionBlockOffset)) {
+      return true;
+   }
+   return false;
+}
+
+
+export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
+   if (maxFee && fee.gt(maxFee)) {
+      return true;
+   }
+   return false;
 }

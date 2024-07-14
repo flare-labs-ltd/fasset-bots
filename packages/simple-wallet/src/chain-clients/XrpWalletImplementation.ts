@@ -6,40 +6,52 @@ import xrpl, { convertStringToHex, encodeForSigning, Wallet as xrplWallet, encod
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
 import { generateMnemonic } from "bip39";
-import { excludeNullFields, sleepMs, bytesToHex, prefix0x, xrp_ensure_data, getTimeLockForAddress, stuckTransactionConstants, isValidHexString } from "../utils/utils";
+import { excludeNullFields, sleepMs, bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../utils/utils";
 import { toBN } from "../utils/bnutils";
-import {
-   ChainType,
-   DEFAULT_RATE_LIMIT_OPTIONS_XRP,
-   DELETE_ACCOUNT_OFFSET,
-   MNEMONIC_STRENGTH,
-   XRP_LEDGER_CLOSE_TIME_MS,
-} from "../utils/constants";
+import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, DELETE_ACCOUNT_OFFSET, MNEMONIC_STRENGTH, XRP_LEDGER_CLOSE_TIME_MS } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
-import type { ISubmitTransactionResponse, ICreateWalletResponse, WriteWalletInterface, RippleWalletConfig, XRPFeeParams, SignedObject } from "../interfaces/WriteWalletInterface";
+import type {
+   ICreateWalletResponse,
+   WriteWalletInterface,
+   RippleWalletConfig,
+   XRPFeeParams,
+   SignedObject,
+   TransactionInfo,
+} from "../interfaces/WriteWalletInterface";
 import BN from "bn.js";
-import { TransactionStatus } from "../entity/transaction";
+import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
-import { createTransactionEntity, getReplacedTransactionHash, updateTransactionEntity, fetchTransactionEntities } from "../utils/dbutils";
+import {
+   updateTransactionEntity,
+   fetchTransactionEntities,
+   createInitialTransactionEntity,
+   getTransactionInfoById,
+   fetchTransactionEntityById,
+} from "../db/dbutils";
+import { IWalletKeys } from "../db/wallet";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
 
-const DROPS_PER_XRP = 1000000.0
+import { logger } from "../utils/logger";
+
+const DROPS_PER_XRP = 1000000.0;
 
 export class XrpWalletImplementation implements WriteWalletInterface {
    chainType: ChainType;
    inTestnet: boolean;
    client: AxiosInstance;
-   addressLocks = new Set<string>();
    blockOffset: number;
-   timeoutAddressLock: number;
-   maxRetries: number;
    feeIncrease: number;
-   lastResortFeeInDrops?: number;
+   executionBlockOffset?: number;
    orm!: ORM;
+   walletKeys!: IWalletKeys;
 
-   executionBlockOffset: number = 2;
+   monitoring: boolean = false;
+   executionTimestampOffset: number = 10; //TODO
+
+   restartInDueToError: number = 2000; //2s
+   restartInDueNoResponse: number = 20000; //20s
 
    constructor(createConfig: RippleWalletConfig) {
       this.inTestnet = createConfig.inTestnet ?? false;
@@ -74,11 +86,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.maxRetries = createConfig.stuckTransactionOptions?.retries ?? resubmit.retries!;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
-      this.lastResortFeeInDrops = createConfig.stuckTransactionOptions?.lastResortFee ?? resubmit.lastResortFee;
-      this.timeoutAddressLock = getTimeLockForAddress(this.chainType, this.blockOffset, this.maxRetries);
+      this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset;
    }
 
    /**
@@ -118,6 +127,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          const data = await this.getAccountInfo(account);
          return toBN(data.result.account_data.Balance);
       } catch (error) {
+         logger.error(`Cannot get account balance for ${account}`, error);
          if (error instanceof Error && error.message.includes(`"error_message": "Account not found."`)) {
             return toBN(0);
          }
@@ -158,7 +168,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {number|undefined} sequence
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async prepareAndExecuteTransaction(
+   async createPaymentTransaction(
       source: string,
       privateKey: string,
       destination: string,
@@ -169,24 +179,24 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       sequence?: number,
       executeUntilBlock?: number,
       executeUntilTimestamp?: number
-   ): Promise<ISubmitTransactionResponse> {
-      await this.checkIfCanSubmitFromAddress(source);
-      if(!await this.checkIfShouldStillSubmit(executeUntilBlock || null)) {
-         throw new Error(`Transaction will not be prepared due to limit block restriction`);
-      }
-      try {
-         this.addressLocks.add(source);
-         const transaction = await this.preparePaymentTransaction(source, destination, amountInDrops, feeInDrops, note, maxFeeInDrops, sequence, executeUntilBlock);
-         const signed = await this.signTransaction(transaction, privateKey);
-         const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
-         // save tx in db
-         await createTransactionEntity(this.orm, transaction, source, destination, signed.txHash, currentBlockHeight, executeUntilBlock || null, executeUntilTimestamp || null, note || null, maxFeeInDrops || null);
-         // submit
-         await this.submitTransaction(signed.txBlob, signed.txHash);
-         return { txId: signed.txHash };
-      } finally {
-         this.addressLocks.delete(source);
-      }
+   ): Promise<number> {
+      logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops} and reference ${note}`);
+      const ent = await createInitialTransactionEntity(
+         this.orm,
+         this.chainType,
+         source,
+         destination,
+         amountInDrops,
+         feeInDrops,
+         note,
+         maxFeeInDrops,
+         sequence,
+         executeUntilBlock,
+         executeUntilTimestamp
+      );
+      await this.walletKeys.addKey(source, privateKey);
+      const txExternalId = ent.id;
+      return txExternalId;
    }
 
    /**
@@ -199,63 +209,264 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {number|undefined} sequence
     * @returns {Object} - containing transaction id tx_id and optional result
     */
-   async deleteAccount(
+   async createDeleteAccountTransaction(
       source: string,
       privateKey: string,
       destination: string,
       feeInDrops?: BN,
       note?: string,
       maxFeeInDrops?: BN,
-      sequence?: number
-   ): Promise<ISubmitTransactionResponse> {
-      return await this.prepareAndExecuteTransaction(source, privateKey, destination, null, feeInDrops, note, maxFeeInDrops, sequence);
+      sequence?: number,
+      executeUntilBlock?: number,
+      executeUntilTimestamp?: number
+   ): Promise<number> {
+      logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
+      return await this.createPaymentTransaction(
+         source,
+         privateKey,
+         destination,
+         null,
+         feeInDrops,
+         note,
+         maxFeeInDrops,
+         sequence,
+         executeUntilBlock,
+         executeUntilTimestamp
+      );
    }
 
    /**
-    * @param {string} transactionHash
-    * @returns {string} - transactionHash or replaced transactionHash
+    * @param {number} dbId
+    * @returns {Object} - containing transaction info
     */
-   async getReplacedOrTransactionHash(transactionHash: string): Promise<string> {
-      return getReplacedTransactionHash(this.orm, transactionHash);
+   async getTransactionInfo(dbId: number): Promise<TransactionInfo> {
+      return await getTransactionInfoById(this.orm, dbId);
+   }
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+   // MONITORING /////////////////////////////////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////
+
+   stopMonitoring() {
+      this.monitoring = false;
    }
 
    /**
+    * Background processing
     */
-      async monitorTransactionProgress(): Promise<void> {//TODO - check also failed submissions
-      // eslint-disable-next-line no-constant-condition
-      while (1) {
-         // fetch transactions in pending status
-         const pendingTxs = await fetchTransactionEntities(this.orm, TransactionStatus.TX_SUBMITTED);
-         for (const tx of pendingTxs) {
-            const txResp = await this.client.post("", {
-               method: "tx",
-               params: [{ transaction: tx.transactionHash }],
-            });
-            // success
-            if (txResp.data.result.validated) { // Transaction completed
-               // update tx in db
-               await updateTransactionEntity(this.orm, tx.transactionHash, async (txEnt) => {
-                  txEnt.status = TransactionStatus.TX_SUCCESS;
-               });
-            }
-            if (txResp.data.result.status === "error") {
-               //TODO for "txnNotFound"
-               // if (txResp.data.result.error === "txnNotFound") {
-               //    return await this.tryToResubmitTransaction(txHash, submissionResult, source, privateKey, retry);
-               // }
-               await updateTransactionEntity(this.orm, tx.transactionHash, async (txEnt) => {
-                  txEnt.status = TransactionStatus.TX_FAILED;
-               });
-               console.error(`monitorTransactionProgress: ` + txResp.data.result.error);
-            }
+   async startMonitoringTransactionProgress(): Promise<void> {
+      this.monitoring = true;
+      while (this.monitoring) {
+         const networkUp = await this.checkXrpNetworkStatus();
+         if (!networkUp) {
+            logger.error(`Trying again in ${this.restartInDueNoResponse}`);
+            await sleepMs(this.restartInDueNoResponse);
+            continue;
          }
-         await sleepMs(XRP_LEDGER_CLOSE_TIME_MS);
+         try {
+            await this.processTransactions(TransactionStatus.TX_SUBMISSION_FAILED, this.resubmitSubmissionFailedTransactions.bind(this));
+            await this.processTransactions(TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
+            await this.processTransactions(TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
+            await this.processTransactions(TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
+
+
+            await sleepMs(XRP_LEDGER_CLOSE_TIME_MS);
+         } catch (error) {
+            logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
+         }
+         await sleepMs(this.restartInDueToError);
+      }
+   }
+
+   async checkXrpNetworkStatus(): Promise<boolean> {
+      //TODO - maybe can be more robust if also take into account response
+      try {
+         await this.getServerInfo();
+         return true;
+      } catch (error) {
+         logger.error("Cannot ger response from server", error);
+         return false;
       }
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
+   async processTransactions(status: TransactionStatus, processFunction: (tx: any) => Promise<void>): Promise<void> {
+      logger.info(`Fetching transactions with status ${status}`);
+      console.info(`Fetching transactions with status ${status}`);
+      const transactions = await fetchTransactionEntities(this.orm, this.chainType, status);
+      for (const tx of transactions) {
+         await processFunction(tx);
+      }
+   }
+
+   async resubmitSubmissionFailedTransactions(tx: TransactionEntity): Promise<void> {
+      const transaction = JSON.parse(tx.raw!.toString());
+      const privateKey = await this.walletKeys.getKey(tx.source);
+      if (!privateKey) {
+         await this.handleMissingPrivateKey(tx);
+         return;
+      }
+      const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
+      await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
+   }
+
+   async resubmitPendingTransaction(tx: TransactionEntity): Promise<void> {
+      const transaction = JSON.parse(tx.raw!.toString());
+      const privateKey = await this.walletKeys.getKey(tx.source);
+      if (!privateKey) {
+         await this.handleMissingPrivateKey(tx);
+         return;
+      }
+      const newFee = toBN(transaction.Fee!);
+      await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
+   }
+
+   async prepareAndSubmitCreatedTransaction(tx: any): Promise<void> {
+      const currentLedger = await this.getLatestValidatedLedgerIndex();
+      if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
+         await this.failTransaction(tx, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
+         return;
+      }
+      //prepare
+      const transaction = await this.preparePaymentTransaction(
+         tx.source,
+         tx.destination,
+         tx.amount || null,
+         tx.fee,
+         tx.reference,
+         tx.sequence,
+         tx.executeUntilBlock
+      );
+      const privateKey = await this.walletKeys.getKey(tx.source);
+      if (!privateKey) {
+         await this.handleMissingPrivateKey(tx);
+         return;
+      }
+      if (checkIfFeeTooHigh(toBN(transaction.Fee!), tx.maxFee || null)) {
+         await this.failTransaction(tx, `Fee restriction (fee: ${transaction.Fee}, maxFee: ${tx.maxFee?.toString()})`);
+      } else {
+         await this.signAndSubmitProcess(tx.id, privateKey, transaction);
+      }
+   }
+
+   async checkSubmittedTransaction(tx: any): Promise<void> {
+      const txResp = await this.client.post("", { method: "tx", params: [{ transaction: tx.transactionHash }] });
+      if (txResp.data.result.validated) {
+         await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+         });
+         logger.info(`Transaction ${tx.id} was accepted`);
+         console.info(`Transaction ${tx.id} was accepted`);
+      } else {
+         const currentLedger = await this.getLatestValidatedLedgerIndex();
+         if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
+            await this.failTransaction(tx, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
+            //TODO sanity check [Account Sequence is less than or equal to transaction Sequence] => all good
+         }
+      }
+   }
+
+   async handleMissingPrivateKey(tx: any): Promise<void> {
+      logger.error(`Cannot prepare transaction ${tx.id}. Missing private key for ${tx.source}`);
+      console.error(`Cannot prepare transaction ${tx.id}. Missing private key for ${tx.source}`);
+      await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+         txEnt.status = TransactionStatus.TX_FAILED;
+      });
+   }
+
+   async failTransaction(tx: any, reason: string): Promise<void> {
+      await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+         txEnt.status = TransactionStatus.TX_FAILED;
+      });
+      logger.error(`Cannot prepare transaction ${tx.id}: ${reason}`);
+      console.error(`Cannot prepare transaction ${tx.id}: ${reason}`);
+   }
+
+   async signAndSubmitProcess(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete) {
+      const signed = await this.signTransaction(transaction, privateKey);
+      const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
+      // save tx in db
+      await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+         txEnt.raw = Buffer.from(JSON.stringify(transaction));
+         txEnt.transactionHash = signed.txHash;
+         txEnt.submittedInBlock = currentBlockHeight;
+         txEnt.executeUntilBlock = transaction.LastLedgerSequence;
+      });
+      const txStatus = await this.submitTransaction(signed.txBlob, txId);
+      // resubmit with higher fee
+      if (txStatus == TransactionStatus.TX_SUBMISSION_FAILED) {
+         const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
+         await this.resubmitTransaction(txId, privateKey, transaction, newFee);
+      }
+      if (txStatus == TransactionStatus.TX_PENDING) {
+         // wait if tx shows up in next x blocks
+         const txEnt = await fetchTransactionEntityById(this.orm, txId);
+         const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
+         while ((await this.getLatestValidatedLedgerIndex()) <= waitUntilBlock) {
+            const txResp = await this.client.post("", {
+               method: "tx",
+               params: [{ transaction: txEnt.transactionHash }],
+            });
+            if (txResp.data.result.validated) {
+               // transaction completed - update tx in db
+               await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+                  txEnt.status = TransactionStatus.TX_SUCCESS;
+               });
+               logger.info(`Transaction ${txId} was accepted`);
+               console.info(`Transaction ${txId} was accepted`);
+               break;
+            }
+         }
+         // tx did not show up => resubmit with the same data
+         const newFee = toBN(transaction.Fee!);
+         await this.resubmitTransaction(txId, privateKey, transaction, newFee);
+      }
+   }
+
+   async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete, newFee: BN) {
+      const origTx = await fetchTransactionEntityById(this.orm, txId);
+      if (checkIfFeeTooHigh(newFee, origTx.maxFee || null)) {
+         await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_FAILED;
+         });
+         logger.error(`Cannot resubmit transaction ${txId}. Due to fee restriction (fee: ${newFee}, maxFee: ${origTx.maxFee?.toString()})`);
+         console.error(`Cannot resubmit transaction ${txId}. Due to fee restriction (fee: ${newFee}, maxFee: ${origTx.maxFee?.toString()})`);
+      } else {
+         const originalTx = await fetchTransactionEntityById(this.orm, txId);
+         const newTransaction = transaction;
+         newTransaction.Fee = newFee.toString();
+         // store tx + update previous one
+         const resubmittedTx = await createInitialTransactionEntity(
+            this.orm,
+            this.chainType,
+            originalTx.source,
+            originalTx.destination,
+            originalTx.amount || null,
+            newFee,
+            originalTx.reference,
+            originalTx.maxFee,
+            originalTx.sequence,
+            originalTx.executeUntilBlock,
+            originalTx.executeUntilTimestamp
+         );
+         await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_REPLACED;
+            txEnt.replaced_by = resubmittedTx;
+         });
+         const signed = await this.signTransaction(newTransaction, privateKey);
+         const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
+         // save tx in db
+         await updateTransactionEntity(this.orm, resubmittedTx.id, async (txEnt) => {
+            txEnt.raw = Buffer.from(JSON.stringify(transaction));
+            txEnt.transactionHash = signed.txHash;
+            txEnt.submittedInBlock = currentBlockHeight;
+            txEnt.executeUntilBlock = transaction.LastLedgerSequence;
+         });
+         await this.submitTransaction(signed.txBlob, resubmittedTx.id, 1);
+      }
+   }
 
    /**
     * @param {string} source
@@ -267,13 +478,12 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {number|undefined} sequence
     * @returns {Object} - XRP Payment or AccountDelete transaction object
     */
-   private async preparePaymentTransaction(
+   async preparePaymentTransaction(
       source: string,
       destination: string,
       amountInDrops: BN | null,
       feeInDrops?: BN,
       note?: string,
-      maxFeeInDrops?: BN,
       sequence?: number,
       executeUntilBlock?: number
    ): Promise<xrpl.Payment | xrpl.AccountDelete> {
@@ -318,9 +528,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             ledger_sequence = await this.getLatestValidatedLedgerIndex();
          }
       }
-      if(this.checkIfFeeTooHigh(toBN(tr.Fee), maxFeeInDrops)) {
-         throw new Error(`Transaction preparation failed due to fee restriction (fee: ${tr.Fee}, maxFee: ${maxFeeInDrops?.toString()})`);
-      }
       return tr;
    }
 
@@ -329,7 +536,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
     * @param {string} privateKey
     * @returns {string}
     */
-   private async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<SignedObject> {
+   async signTransaction(transaction: xrpl.Transaction, privateKey: string): Promise<SignedObject> {
       const publicKey = this.getPublicKeyFromPrivateKey(privateKey, transaction.Account);
       const transactionToSign = { ...transaction };
       transactionToSign.SigningPubKey = publicKey;
@@ -341,9 +548,10 @@ export class XrpWalletImplementation implements WriteWalletInterface {
 
    /**
     * @param {string} txBlob
-    * @returns {Object} - containing transaction id tx_id and optional result
+    * @param {number} txDbId
+    * @returns {boolean} - should replace fn or not; replace in case insufficient fee
     */
-   private async submitTransaction(txBlob: string, txHash: string): Promise<void> {
+   async submitTransaction(txBlob: string, txDbId: number, retry: number = 0): Promise<TransactionStatus> {
       try {
          const params = {
             tx_blob: txBlob,
@@ -352,16 +560,38 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             method: "submit",
             params: [params],
          });
-         xrp_ensure_data(res.data);
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_SUBMITTED;
-            txEnt.submittedInBlock = res.data.result.validated_ledger_index
-         });
+         // https://github.com/flare-foundation/multi-chain-client/blob/4f06fd2bfb7f39e386bc88d0441b6c52e9d8948e/src/base-objects/transactions/XrpTransaction.ts#L345
+         if (retry == 0 && res.data.result.engine_result.includes("INSUF_FEE")) {
+            await updateTransactionEntity(this.orm, txDbId, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_SUBMISSION_FAILED;
+            });
+            logger.error(`Transaction ${txDbId} submission failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
+            console.error(`Submission for tx ${txDbId} failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
+            return TransactionStatus.TX_SUBMISSION_FAILED;
+         } else if (res.data.result.engine_result.startsWith("tes")) {
+            await updateTransactionEntity(this.orm, txDbId, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_SUBMITTED;
+               txEnt.submittedInBlock = res.data.result.validated_ledger_index;
+               txEnt.serverSubmitResponse = Buffer.from(JSON.stringify(res.data.result));
+            });
+            logger.info(`Transaction ${txDbId} was submitted`);
+            console.info(`Transaction ${txDbId} was submitted`);
+            return TransactionStatus.TX_SUBMITTED;
+         } else {
+            await updateTransactionEntity(this.orm, txDbId, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_FAILED;
+            });
+            logger.error(`Transaction ${txDbId} submission failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
+            console.error(`Submission for tx ${txDbId} failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
+            return TransactionStatus.TX_FAILED;
+         }
       } catch (e: any) {
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_SUBMISSION_FAILED;
+         await updateTransactionEntity(this.orm, txDbId, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_PENDING;
          });
-         console.error(`Submission for tx ${txHash} failed`)
+         logger.error(`Transaction ${txDbId} submission failed`, e);
+         console.error(`Submission for tx ${txDbId} failed with ${e}`);
+         return TransactionStatus.TX_PENDING;
       }
    }
 
@@ -436,7 +666,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          method: "account_info",
          params: [params],
       });
-      xrp_ensure_data(res.data);
       return res.data;
    }
 
@@ -448,7 +677,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          method: "server_info",
          params: [],
       });
-      xrp_ensure_data(res.data);
       return res.data;
    }
 
@@ -461,106 +689,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       return data.result.account_data.Sequence;
    }
 
-   /**
-    * Waits if previous transaction from address is still processing. If wait is too long it throws.
-    * @param {string} address
-    */
-   private async checkIfCanSubmitFromAddress(address: string): Promise<void> {
-      const start = new Date().getTime();
-      while (new Date().getTime() - start < this.timeoutAddressLock) {
-         if (!this.addressLocks.has(address)) {
-            this.addressLocks.add(address);
-            return;
-         }
-         await sleepMs(100);
-      }
-      throw new Error(`Timeout waiting to obtain confirmed transaction from address ${address}`);
-   }
-
-   /**
-    * @param {string} txHash
-    * @param {string} submissionResult
-    * @param {Object} transaction
-    * @param {number} retry
-    * @param {string} privateKey
-    * @returns {Object} - containing transaction id tx_id and optional result
-    */
-   private async tryToResubmitTransaction(
-      txHash: string,
-      submissionResult: string,
-      source: string,
-      privateKey: string,
-      retry: number
-   ): Promise<ISubmitTransactionResponse> {
-      throw new Error(`Cannot replaceByFee transaction ${txHash}: Missing implementation to move privateKey from bot to simple-wallet`);
-      /* TODO fetch from DB
-      const res = this.addressLocks.get(source);
-      const transaction = res?.tx;
-      if (!transaction) {
-         throw new Error(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`);
-      }
-      const currentValidLedger = await this.getLatestValidatedLedgerIndex();
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const lastBlockNumber = transaction.LastLedgerSequence!;
-      if(!await this.checkIfShouldStillSubmit(lastBlockNumber || null)) {
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_FAILED;
-         });
-         throw new Error(`Transaction ${txHash} failed due to limit block restriction`);
-      }
-      if (retry <= this.maxRetries) {
-         const newTransaction = transaction;
-         const newFee = (retry < this.maxRetries || this.lastResortFeeInDrops === undefined)
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            ? toBN(newTransaction.Fee!).muln(this.feeIncrease)
-            : toBN(this.lastResortFeeInDrops);
-         newTransaction.LastLedgerSequence = lastBlockNumber;
-         if (this.checkIfFeeTooHigh(toBN(newFee), res.maxFee)){
-            await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-               txEnt.status = TransactionStatus.TX_FAILED;
-            });
-            throw new Error(`Transaction preparation failed due to fee restriction (fee: ${newFee}, maxFee: ${res.maxFee?.toString()})`)
-         }
-         newTransaction.Fee = newFee.toString();
-         this.addressLocks.set(source, { tx: newTransaction, maxFee: res.maxFee });
-         const blob = await this.signTransaction(newTransaction, privateKey);
-         const submit = await this.submitTransaction(blob);
-         // store new tx and mark replacement
-         await createTransactionEntity(this.orm, newTransaction, newTransaction.Account, newTransaction.Destination, submit.txId, submit.submittedBlock!, res.maxFee || null, );
-         const newTxEnt = await fetchTransactionEntity(this.orm, submit.txId);
-         await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-            txEnt.replaced_by = newTxEnt;
-            txEnt.status = TransactionStatus.TX_REPLACED;
-         });
-         retry++;
-         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-         return this.waitForTransaction(submit.txId, submit.result!, source, privateKey, retry);
-      }
-      await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-         txEnt.status = TransactionStatus.TX_NOT_ACCEPTED;
-      });
-      throw new Error(
-         `waitForTransaction: transaction ${txHash} is not going to be accepted. Latest valid ledger ${currentValidLedger} is greater than transaction.LastLedgerSequence ${lastBlockNumber}`
-      );*/
-   }
-
-   private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
-      if (maxFee && fee.gt(maxFee)) {
-         return true;
-      }
-      return false;
-   }
-
    private roundUpXrpToDrops(amount: number): number {
       return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
    }
-
-   private async checkIfShouldStillSubmit(executeUntilBlock: number | null): Promise<boolean> {
-      const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
-      if (executeUntilBlock && (executeUntilBlock - currentBlockHeight) < this.executionBlockOffset) {
-         return false;
-      }
-      return true;
-   }
-
 }

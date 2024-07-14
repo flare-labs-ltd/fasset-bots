@@ -3,16 +3,17 @@ import { ICreateWalletResponse, RippleWalletConfig } from "../../src/interfaces/
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
-import { encode } from "xrpl";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
 import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
-import { createTransactionEntity } from "../../src/utils/dbutils";
+import { fetchTransactionEntityById } from "../../src/db/dbutils";
+import { TransactionStatus } from "../../src/entity/transaction";
+import { sleepMs } from "../../src/utils/utils";
 
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
+const walletSecret = "secret_address"
 
 const XRPMccConnectionTest: RippleWalletConfig = {
    url: process.env.XRP_URL ?? "",
@@ -21,11 +22,11 @@ const XRPMccConnectionTest: RippleWalletConfig = {
    stuckTransactionOptions: {
       blockOffset: 10,
       retries: 2,
-      lastResortFee: 1e5
    },
    rateLimitOptions: {
       timeoutMs: 60000,
    },
+   walletSecret: walletSecret
 };
 
 const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
@@ -40,7 +41,6 @@ const amountToSendDropsSecond = toBNExp(0.05, XRP_DECIMAL_PLACES);
 const feeInDrops = toBNExp(0.000015, 6);
 const maxFeeInDrops = toBNExp(0.000012, 6);
 const sequence = 54321;
-const blockOffset = 25;
 
 let wClient: WALLET.XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
@@ -48,7 +48,12 @@ let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE
 describe("Xrp wallet tests", () => {
    before(async () => {
       wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
+      wClient.startMonitoringTransactionProgress()
    });
+
+   after(function() {
+      wClient.stopMonitoring();
+    });
 
    it("Should create account", async () => {
       const newAccount = wClient.createWallet();
@@ -85,53 +90,112 @@ describe("Xrp wallet tests", () => {
       expect(wallet1.publicKey).to.eq(public1);
    });
 
-   it("Should create, sign and submit transaction", async () => {
-      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
-      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+   it("Should submit transaction", async () => {
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsFirst, undefined, note);
-      const blob = await rewired.signTransaction(tr, fundedWallet.privateKey as string);
-      const submit = await rewired.submitTransaction(blob);
-      expect(typeof submit).to.equal("object");
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
+      expect(id).to.be.gt(0);
+      // void wClient.startMonitoringTransactionProgress();
+      const startTime = Date.now();
+      const timeLimit = 20000; // 20 s
+      for (let i = 0; ; i++) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         if (tx.status == TransactionStatus.TX_SUCCESS) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            console.log(tx)
+            throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
+         }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+     }
+   });
+
+   it("Should not validate submit and resubmit transaction - fee to low", async () => {
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const lowFee = toBN(1);
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note);
+      expect(id).to.be.gt(0);
+      // void wClient.startMonitoringTransactionProgress();
+      const startTime = Date.now();
+      const timeLimit = 40000; // 40 s
+      let replacedTx = null;
+      while(1) {
+         const txInfo = await wClient.getTransactionInfo(id);
+         if (txInfo.replacedByDdId) {
+            replacedTx = await fetchTransactionEntityById(wClient.orm, txInfo.replacedByDdId);
+         }
+         if (replacedTx && replacedTx.status == TransactionStatus.TX_FAILED) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            console.log(txInfo)
+            throw new Error(`Time limit exceeded for ${txInfo.dbId} with ${txInfo.transactionHash}`);
+         }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+      }
+      const tx = await fetchTransactionEntityById(wClient.orm, id);
+      expect(tx.status).to.equal(TransactionStatus.TX_REPLACED);
    });
 
    it("Should create transaction with sequence and fee", async () => {
-      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
-      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const tr = await rewired.preparePaymentTransaction(
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const note = "Submit";
+      const trId = await wClient.createPaymentTransaction(
          fundedWallet.address,
+         fundedWallet.privateKey,
          targetAddress,
          amountToSendDropsSecond,
          feeInDrops,
-         "Submit",
+         note,
          undefined,
          sequence
       );
-      expect(typeof tr).to.equal("object");
+      const txEnt = await fetchTransactionEntityById(wClient.orm, trId);
+      expect(txEnt.source).to.equal(fundedWallet.address);
+      expect(txEnt.destination).to.equal(targetAddress);
+      expect(txEnt.fee?.toString()).to.equal(feeInDrops.toString());
+      expect(txEnt.reference).to.equal(note);
+      expect(txEnt.sequence).to.equal(sequence);
+      // void wClient.startMonitoringTransactionProgress();
+      const startTime = Date.now();
+      const timeLimit = 30000; // 30 s
+      for (let i = 0; ; i++) {
+         const tx = await fetchTransactionEntityById(wClient.orm, txEnt.id);
+         if (tx.status == TransactionStatus.TX_FAILED) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
+         }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+      }
    });
 
-   it("Should not submit unsigned transaction", async () => {
-      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
-      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const tr = await rewired.preparePaymentTransaction(
-         fundedWallet.address,
-         targetAddress,
-         amountToSendDropsSecond,
-         feeInDrops,
-         "Submit",
-         undefined,
-         sequence
-      );
-      const serialized = encode(tr);
-      await expect(rewired.submitTransaction(serialized)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
-   });
-
-   it("Should not create transaction: fee > maxFee", async () => {
-      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
-      fundedWallet = rewired.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops))
-         .to.eventually.be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInDrops}, maxFee: ${maxFeeInDrops})`)
-         .and.be.an.instanceOf(Error);
+   it("Should not submit transaction: fee > maxFee", async () => {
+      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops);
+      expect(id).to.be.gt(0);
+      // void wClient.startMonitoringTransactionProgress();
+      const startTime = Date.now();
+      const timeLimit = 30000; // 30 s
+      for (let i = 0; ; i++) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         if (tx.status == TransactionStatus.TX_FAILED) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
+         }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+     }
+     const txEnt = await fetchTransactionEntityById(wClient.orm, id);
+     expect(txEnt.maxFee!.lt(txEnt.fee!)).to.be.true;
    });
 
    it("Should receive fee", async () => {
@@ -139,6 +203,7 @@ describe("Xrp wallet tests", () => {
       expect(feeP).not.to.be.null;
       const fee = await wClient.getCurrentTransactionFee({ isPayment: false });
       expect(fee).not.to.be.null;
+      expect(fee.gt(feeP)).to.be.true;
    });
 
    it("Should receive latest validated ledger index", async () => {
@@ -146,73 +211,33 @@ describe("Xrp wallet tests", () => {
       expect(index).not.to.be.null;
    });
 
-   it.skip("Should timeout on waiting for address to be unlocked", async () => {
-      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
-      const address = "rhNMdXAuUQGmaPmYBj84f9zaEyq9qXFwfs"; // secret=sEd7pKYYVphXge4My2q98M6BPJTPUPk
-      void rewired.checkIfCanSubmitFromAddress(address);
-      await expect(rewired.checkIfCanSubmitFromAddress(address))
-         .to.eventually.be.rejectedWith(`Timeout waiting to obtain confirmed transaction from address ${address}`)
-         .and.be.an.instanceOf(Error);
-   });
-   //TODO - add rbf
-   it.skip("Should replace transactions with low fee", async () => {
-      const lowFee = toBN(5);
+   it("Should not submit resubmitted transaction - fee to low", async () => {
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
-      const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
-      const latestToBeAccepted = await wClient.getLatestValidatedLedgerIndex() + blockOffset;
-      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee, undefined, undefined, undefined, latestToBeAccepted);
-      const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
-      const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
-      expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).sub(lowFee.muln(2)))).to.be.true;
-      expect(balanceTargetAfter.eq(balanceTargetBefore.add(amountToSendDropsSecond))).to.be.true;
+      const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const lowFee = toBN(2);
+      const maxFee = toBN(3);
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note, maxFee);
+      expect(id).to.be.gt(0);
+      // void wClient.startMonitoringTransactionProgress();
+      const startTime = Date.now();
+      const timeLimit = 40000; // 40 s
+      let replacedTx = null;
+      while(1) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         if (tx.status == TransactionStatus.TX_FAILED) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
+         }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+      }
+      const tx = await wClient.getTransactionInfo(id);
+      expect(tx.replacedByDdId).to.be.null;
+      const txEnt = await fetchTransactionEntityById(wClient.orm, id);
+     expect(txEnt.maxFee!.lt(txEnt.fee!.muln(wClient.feeIncrease))).to.be.true;
    });
-   //TODO - check
-   it.skip("Should replace transactions with last resort fee", async () => {
-      const lowFee = toBN(1);
-      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      const balanceSourceBefore = await wClient.getAccountBalance(fundedWallet.address);
-      const balanceTargetBefore = await wClient.getAccountBalance(targetAddress);
-      const latestToBeAccepted = await wClient.getLatestValidatedLedgerIndex() + blockOffset;
-      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee, undefined, undefined, undefined, latestToBeAccepted);
-      const balanceSourceAfter = await wClient.getAccountBalance(fundedWallet.address);
-      const balanceTargetAfter = await wClient.getAccountBalance(targetAddress);
-      expect(balanceSourceAfter.eq(balanceSourceBefore.sub(amountToSendDropsSecond).subn(wClient.lastResortFeeInDrops!))).to.be.true;
-      expect(balanceTargetAfter.eq(balanceTargetBefore.add(amountToSendDropsSecond))).to.be.true;
-   });
-   //TODO-wait for rbf
-   it.skip("Should not replace transactions with low fee - fee to high", async () => {
-      const lowFee = toBN(1);
-      fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-      await expect(wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, lowFee, undefined, maxFeeInDrops, undefined))
-         .to.eventually.be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${XRPMccConnectionTest.stuckTransactionOptions?.lastResortFee}, maxFee: ${maxFeeInDrops?.toString()})`)
-         .and.be.an.instanceOf(Error);
-   });
-   //TODO-wait for rbf
-   it.skip("Should not try to resubmit - transaction for source", async () => {
-      const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
-      const txHash = "txHash";
-      const source = "source";
-      await expect(rewired.tryToResubmitTransaction(txHash, "", source, "", 1))
-         .to.eventually.be.rejectedWith(`waitForTransaction: transaction ${txHash} for source ${source} cannot be found`)
-         .and.be.an.instanceOf(Error);
-   });
-
-   /* describe("congested network tests", () => {
-      const ntx = 1;
-      it("Should create sign and send transactions in a congested network", async () => {
-         await Promise.all(Array(ntx).fill(0).map(async (_, i) => {
-            console.log(`i: ` + (await wClient.getCurrentTransactionFee()).toString())
-            fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-            const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-            const tr = await wClient.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendDropsFirst, undefined, note);
-            const blob = await wClient.signTransaction(tr, fundedWallet.privateKey as string);
-            const submit = await wClient.submitTransaction(blob);
-            expect(typeof submit).to.equal("object");
-            console.log(submit)
-         }))
-      })
-   }) */
 
    // Running this takes cca 20 min, as account can only be deleted
    // if account sequence + DELETE_ACCOUNT_OFFSET < ledger number
@@ -224,10 +249,37 @@ describe("Xrp wallet tests", () => {
       expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
       const toSendInDrops = toBNExp(20,6); // 20 XPR
       // fund toDelete account
-      await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
+      // void wClient.startMonitoringTransactionProgress();
+      const startTime = Date.now();
+      const timeLimit = 30000; // 30 s
+      while (1) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         if (tx.status == TransactionStatus.TX_SUCCESS) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            throw new Error(`Time limit 1 exceeded for transaction ${tx.id, tx.transactionHash}`);
+          }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+      }
       const balance = await wClient.getAccountBalance(toDelete.address);
       // delete toDelete account
-      await wClient.deleteAccount(toDelete.address, toDelete.privateKey, fundedWallet.address);
+      const id2 = await wClient.createDeleteAccountTransaction(toDelete.address, toDelete.privateKey, fundedWallet.address);
+      const startTime2 = Date.now();
+      const timeLimit2 = 25 * 60000 // 25min
+      while (1) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id2);
+         if (tx.status == TransactionStatus.TX_SUCCESS) {
+            break;
+         }
+         if (Date.now() - startTime2 > timeLimit2) {
+            throw new Error(`Time limit 2 exceeded in for transaction ${tx.id, tx.transactionHash}`);
+          }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+      }
       const balance2 = await wClient.getAccountBalance(toDelete.address);
       expect(balance.gt(balance2));
    });

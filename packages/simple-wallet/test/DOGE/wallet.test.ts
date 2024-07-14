@@ -20,6 +20,7 @@ const DOGEMccConnectionTest = {
    stuckTransactionOptions: {
       blockOffset: 1
    },
+   walletSecret: "wallet_secret"
 };
 
 const fundedMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
@@ -60,7 +61,7 @@ describe("Dogecoin wallet tests", () => {
 
    it("Should create and sign transaction", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
+      rewired.orm = await initializeMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi);
       const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey as string);
@@ -89,7 +90,7 @@ describe("Dogecoin wallet tests", () => {
 
    it("Should create transaction with custom fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
+      rewired.orm = await initializeMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
@@ -97,7 +98,7 @@ describe("Dogecoin wallet tests", () => {
    //TODO fix
    it.skip("Should not create transaction: maxFee > fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
+      rewired.orm = await initializeMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
          .eventually.be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);
@@ -105,7 +106,7 @@ describe("Dogecoin wallet tests", () => {
 
    it("Should not create transaction: amount = dust amount", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      rewired.orm = await initializeMikroORM("simple-wallet_doge.db");
+      rewired.orm = await initializeMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note", maxFeeInSatoshi)).to
          .eventually.be.rejectedWith(`Will not prepare transaction for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);

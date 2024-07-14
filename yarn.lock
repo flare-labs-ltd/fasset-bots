@@ -388,6 +388,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@colors/colors@npm:1.6.0, @colors/colors@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "@colors/colors@npm:1.6.0"
+  checksum: aa209963e0c3218e80a4a20553ba8c0fbb6fa13140540b4e5f97923790be06801fc90172c1114fc8b7e888b3d012b67298cde6b9e81521361becfaee400c662f
+  languageName: node
+  linkType: hard
+
 "@cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
@@ -1372,9 +1379,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@flarelabs/simple-wallet@workspace:packages/simple-wallet"
   dependencies:
-    "@mikro-orm/core": ^6.2.9
-    "@mikro-orm/knex": ^6.2.9
-    "@mikro-orm/sqlite": ^6.2.9
+    "@mikro-orm/core": 6.2.9
+    "@mikro-orm/knex": 6.2.9
+    "@mikro-orm/sqlite": 6.2.9
     "@types/bitcore-lib": 0.15.6
     "@types/bn.js": 5.1.5
     "@types/bs58check": 2.1.0
@@ -1385,14 +1392,14 @@ __metadata:
     axios: 1.5.1
     axios-retry: 3.8.0
     bip39: 3.0.4
-    bip84: ^0.2.9
+    bip84: 0.2.9
     bitcore-lib: 10.0.36
     bitcore-lib-doge: 10.0.36
     bn.js: 5.2.1
     chai: 4.3.8
     chai-as-promised: 7.1.1
-    crypto: ^1.0.1
-    dogecoin-bip84: ^0.0.5
+    crypto: 1.0.1
+    dogecoin-bip84: 0.0.5
     dotenv: 16.3.1
     elliptic: 6.5.4
     fast-safe-stringify: 2.1.1
@@ -1404,6 +1411,9 @@ __metadata:
     typescript: 5.2.2
     wallet-address-validator: ^0.2.4
     web3-utils: 1.10.2
+    winston: ^3.13.1
+    winston-daily-rotate-file: ^5.0.0
+    winston-transport: ^4.7.1
     xrpl: 2.3.1
   languageName: unknown
   linkType: soft
@@ -1736,7 +1746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mikro-orm/core@npm:^6.2.9":
+"@mikro-orm/core@npm:6.2.9":
   version: 6.2.9
   resolution: "@mikro-orm/core@npm:6.2.9"
   dependencies:
@@ -1789,7 +1799,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mikro-orm/knex@npm:6.2.9, @mikro-orm/knex@npm:^6.2.9":
+"@mikro-orm/knex@npm:6.2.9":
   version: 6.2.9
   resolution: "@mikro-orm/knex@npm:6.2.9"
   dependencies:
@@ -1891,7 +1901,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mikro-orm/sqlite@npm:^6.2.9":
+"@mikro-orm/sqlite@npm:6.2.9":
   version: 6.2.9
   resolution: "@mikro-orm/sqlite@npm:6.2.9"
   dependencies:
@@ -5187,7 +5197,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bip84@npm:^0.2.7, bip84@npm:^0.2.9":
+"bip84@npm:0.2.9, bip84@npm:^0.2.7":
   version: 0.2.9
   resolution: "bip84@npm:0.2.9"
   dependencies:
@@ -6831,7 +6841,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"crypto@npm:^1.0.1":
+"crypto@npm:1.0.1":
   version: 1.0.1
   resolution: "crypto@npm:1.0.1"
   checksum: 087fe3165bd94c333a49e6ed66a0193911f63eac38a24f379b3001a5fe260a59c413646e53a0f67875ba13902b2686d81dc703cb2c147a4ec727dcdc04e5645e
@@ -7237,7 +7247,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dogecoin-bip84@npm:^0.0.5":
+"dogecoin-bip84@npm:0.0.5":
   version: 0.0.5
   resolution: "dogecoin-bip84@npm:0.0.5"
   dependencies:
@@ -11926,6 +11936,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"logform@npm:^2.6.0, logform@npm:^2.6.1":
+  version: 2.6.1
+  resolution: "logform@npm:2.6.1"
+  dependencies:
+    "@colors/colors": 1.6.0
+    "@types/triple-beam": ^1.3.2
+    fecha: ^4.2.0
+    ms: ^2.1.1
+    safe-stable-stringify: ^2.3.1
+    triple-beam: ^1.3.0
+  checksum: 0c6b95fa8350ccc33c7c33d77de2a9920205399706fc1b125151c857b61eb90873f4670d9e0e58e58c165b68a363206ae670d6da8b714527c838da3c84449605
+  languageName: node
+  linkType: hard
+
 "long@npm:^5.2.1":
   version: 5.2.3
   resolution: "long@npm:5.2.3"
@@ -13316,7 +13340,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"object-hash@npm:3.0.0":
+"object-hash@npm:3.0.0, object-hash@npm:^3.0.0":
   version: 3.0.0
   resolution: "object-hash@npm:3.0.0"
   checksum: 80b4904bb3857c52cc1bfd0b52c0352532ca12ed3b8a6ff06a90cd209dfda1b95cee059a7625eb9da29537027f68ac4619363491eedb2f5d3dddbba97494fd6c
@@ -16692,7 +16716,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"triple-beam@npm:^1.3.0":
+"triple-beam@npm:^1.3.0, triple-beam@npm:^1.4.1":
   version: 1.4.1
   resolution: "triple-beam@npm:1.4.1"
   checksum: 2e881a3e8e076b6f2b85b9ec9dd4a900d3f5016e6d21183ed98e78f9abcc0149e7d54d79a3f432b23afde46b0885bdcdcbff789f39bc75de796316961ec07f61
@@ -18651,6 +18675,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"winston-daily-rotate-file@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "winston-daily-rotate-file@npm:5.0.0"
+  dependencies:
+    file-stream-rotator: ^0.6.1
+    object-hash: ^3.0.0
+    triple-beam: ^1.4.1
+    winston-transport: ^4.7.0
+  peerDependencies:
+    winston: ^3
+  checksum: 45d0a1c1d1a178a22a6f92f4248139e0889720947d5afa657314826d6ea48e7dceae37521e2de2ed3a121993c4ae4ddcb0b510613c489a68d2eed689a304bef5
+  languageName: node
+  linkType: hard
+
 "winston-transport@npm:4.5.0, winston-transport@npm:^4.4.0, winston-transport@npm:^4.5.0":
   version: 4.5.0
   resolution: "winston-transport@npm:4.5.0"
@@ -18659,6 +18697,17 @@ __metadata:
     readable-stream: ^3.6.0
     triple-beam: ^1.3.0
   checksum: a56e5678a80b88a73e77ed998fc6e19d0db19c989a356b137ec236782f2bf58ae4511b11c29163f99391fa4dc12102c7bc5738dcb6543f28877fa2819adc3ee9
+  languageName: node
+  linkType: hard
+
+"winston-transport@npm:^4.7.0, winston-transport@npm:^4.7.1":
+  version: 4.7.1
+  resolution: "winston-transport@npm:4.7.1"
+  dependencies:
+    logform: ^2.6.1
+    readable-stream: ^3.6.2
+    triple-beam: ^1.3.0
+  checksum: e1dc070df1eb2ab0270a369fd7e8ff2b7a714ba9cf9a3f2c9a3509eb5fe60667c64e5cd4f37b3dd64a21017a93ea63fdcb2ac9176b12d2222a9e4244439d1b35
   languageName: node
   linkType: hard
 
@@ -18678,6 +18727,25 @@ __metadata:
     triple-beam: ^1.3.0
     winston-transport: ^4.5.0
   checksum: 47df0361220d12b46d1b3c98a1c380a3718321739d527a182ce7984fc20715e5b0b55db0bcd3fd076d1b1d3261903b890b053851cfd4bc028bda7951fa8ca2e0
+  languageName: node
+  linkType: hard
+
+"winston@npm:^3.13.1":
+  version: 3.13.1
+  resolution: "winston@npm:3.13.1"
+  dependencies:
+    "@colors/colors": ^1.6.0
+    "@dabh/diagnostics": ^2.0.2
+    async: ^3.2.3
+    is-stream: ^2.0.0
+    logform: ^2.6.0
+    one-time: ^1.0.0
+    readable-stream: ^3.4.0
+    safe-stable-stringify: ^2.3.1
+    stack-trace: 0.0.x
+    triple-beam: ^1.3.0
+    winston-transport: ^4.7.0
+  checksum: 34fb3da9ed62fa6a5aded17692b7d4773744999c42efd0a15b866c1202391859b1aef922e94b532632a02738b30ed658429258cb32d5aec4563bb14f2168b888
   languageName: node
   linkType: hard
 

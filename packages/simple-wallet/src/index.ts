@@ -1,6 +1,7 @@
 import { BtcWalletImplementation } from "./chain-clients/BtcWalletImplementation";
 import { DogeWalletImplementation } from "./chain-clients/DogeWalletImplementation";
 import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation";
+import { DBWalletKeys } from "./db/wallet";
 import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WriteWalletInterface";
 import { initializeMikroORM } from "./orm/mikro-orm.config";
 
@@ -14,7 +15,8 @@ export module WALLET {
       }
       static async initialize(createConfig: RippleWalletConfig) {
          const wallet = new XrpWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM("simple-wallet_xrp.db");
+         wallet.orm = await initializeMikroORM();
+         wallet.walletKeys = new DBWalletKeys(wallet.orm.em, createConfig.walletSecret);
          return wallet;
       }
    }
@@ -25,7 +27,8 @@ export module WALLET {
       }
       static async initialize(createConfig: BitcoinWalletConfig) {
          const wallet = new BtcWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM("simple-wallet_btc.db");
+         wallet.orm = await initializeMikroORM();
+         wallet.walletKeys = new DBWalletKeys(wallet.orm.em, createConfig.walletSecret);
          return wallet;
       }
    }
@@ -36,7 +39,8 @@ export module WALLET {
       }
       static async initialize(createConfig: DogecoinWalletConfig) {
          const wallet = new DogeWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM("simple-wallet_doge.db");
+         wallet.orm = await initializeMikroORM();
+         wallet.walletKeys = new DBWalletKeys(wallet.orm.em, createConfig.walletSecret);
          return wallet;
       }
    }
