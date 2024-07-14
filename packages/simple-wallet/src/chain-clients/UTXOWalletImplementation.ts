@@ -6,7 +6,7 @@ import * as bip84btc from "bip84";
 import * as bip84doge from "dogecoin-bip84";
 import * as crypto from "crypto";
 import { generateMnemonic } from "bip39";
-import { excludeNullFields, getAvgBlockTime, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
+import { excludeNullFields, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import {
    BTC_DUST_AMOUNT,
@@ -113,16 +113,19 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       let account;
       if (this.chainType == ChainType.testDOGE || this.chainType == ChainType.DOGE) {
          account = account0.getAddress(0, false, 44);
-      } else {
+      } else if (this.chainType == ChainType.testBTC || this.chainType == ChainType.BTC) {
          account = account0.getAddress(0, false);
+      } else {
+         logger.error(`Invalid chainType ${this.chainType}`)
+         throw new Error(`Invalid chainType ${this.chainType}`)
       }
-
       return {
          address: account as string,
          mnemonic: mnemonic,
          privateKey: account0.getPrivateKey(0),
       };
    }
+
 
    /**
     * @param {string} account
@@ -330,8 +333,8 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    }
 
    async handleMissingPrivateKey(txId: number): Promise<void> {
-      logger.error(`Cannot prepare transaction ${txId}. Missing private key.`);
-      console.error(`Cannot prepare transaction ${txId}. Missing private key.`);
+      logger.error(`Transaction ${txId} failed. Missing private key.`);
+      console.error(`Transaction ${txId} failed. Missing private key.`);
       await updateTransactionEntity(this.orm, txId, async (txEnt) => {
          txEnt.status = TransactionStatus.TX_FAILED;
       });
@@ -341,14 +344,14 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       await updateTransactionEntity(this.orm, txId, async (txEnt) => {
          txEnt.status = TransactionStatus.TX_FAILED;
       });
-      logger.error(`Cannot prepare transaction ${txId}: ${reason}`);
-      console.error(`Cannot prepare transaction ${txId}: ${reason}`);
+      logger.error(`Transaction ${txId} failed: ${reason}`);
+      console.error(`Transaction ${txId} failed: ${reason}`);
    }
 
    async signAndSubmitProcess(txId: number, privateKey: string, transaction: bitcore.Transaction): Promise<void> {
-      let signed = { txBlob: "" }; //TODO do it better
+      let signed = { txBlob: "", txHash: "" }; //TODO do it better
       try {
-         const signed = await this.signTransaction(transaction, privateKey);
+         signed = await this.signTransaction(transaction, privateKey);
          const currentBlockHeight = await this.getCurrentBlockHeight();
          // save tx in db
          await updateTransactionEntity(this.orm, txId, async (txEnt) => {
@@ -356,12 +359,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
             txEnt.transactionHash = signed.txHash;
             txEnt.submittedInBlock = currentBlockHeight;
          });
-      } catch(e) {
+      } catch (e) {
          await this.failTransaction(txId, `Cannot sign transaction ${txId}: ${e}`);
          return;
       }
-
-
       // submit
       const txStatus = await this.submitTransaction(signed.txBlob, txId);
       const txEnt = await fetchTransactionEntityById(this.orm, txId);
@@ -437,20 +438,29 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     */
    private async submitTransaction(signedTx: string, txId: number): Promise<TransactionStatus> {
       try {
-         await this.client.post(`/tx/send`, { rawTx: signedTx });
-         const submittedBlockHeight = await this.getCurrentBlockHeight();
-         await updateTransactionEntity(this.orm, txId, async (txEnt) => {
-            txEnt.status = TransactionStatus.TX_SUBMITTED;
-            txEnt.submittedInBlock = submittedBlockHeight;
-         });
-         const txEnt = await fetchTransactionEntityById(this.orm, txId);
-         const transaction = JSON.parse(txEnt.raw!.toString());
-         for (const input of transaction.inputs) {
-            await updateUTXOEntity(this.orm, input.prevTxId.toString("hex"), input.outputIndex, async (utxoEnt) => {
-               utxoEnt.spentHeight = SpentHeightEnum.SENT;
+         const resp = await this.client.post(`/tx/send`, { rawTx: signedTx });
+         if (resp.status == 200) {
+            const submittedBlockHeight = await this.getCurrentBlockHeight();
+            await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_SUBMITTED;
+               txEnt.submittedInBlock = submittedBlockHeight;
             });
+            const txEnt = await fetchTransactionEntityById(this.orm, txId);
+            const transaction = JSON.parse(txEnt.raw!.toString());
+            for (const input of transaction.inputs) {
+               await updateUTXOEntity(this.orm, input.prevTxId.toString("hex"), input.outputIndex, async (utxoEnt) => {
+                  utxoEnt.spentHeight = SpentHeightEnum.SENT;
+               });
+            }
+            return TransactionStatus.TX_SUBMITTED;
+         } else {
+            await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_FAILED;
+            });
+            logger.error(`Transaction ${txId} submission failed ${resp.status}`, resp.data);
+            console.error(`Transaction ${txId} submission failed ${resp.status}`, resp.data);
+            return TransactionStatus.TX_FAILED;
          }
-         return TransactionStatus.TX_SUBMITTED;
       } catch (e) {
          // TODO in case of network problems
          await updateTransactionEntity(this.orm, txId, async (txEnt) => {
