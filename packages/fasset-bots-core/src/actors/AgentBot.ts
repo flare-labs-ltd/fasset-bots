@@ -13,7 +13,7 @@ import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion } from "../utils";
-import { EvmEvent } from "../utils/events/common";
+import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
 import { formatArgs, squashSpace } from "../utils/formatting";
@@ -35,6 +35,7 @@ import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentBotUnderlyingWithdrawal } from "./AgentBotUnderlyingWithdrawal";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+import { AgentPing } from "../../typechain-truffle/IIAssetManager";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -410,8 +411,7 @@ export class AgentBot {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'IllegalPaymentConfirmed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendFullLiquidationAlert(event.args.transactionHash);
         } else if (eventIs(event, this.context.assetManager, "AgentPing")) {
-            logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentPing' with data ${formatArgs(event.args)}.`);
-            await this.handleAgentPing(event.args.query);
+            await this.handleAgentPing(event.args);
         }
     }
 
@@ -561,9 +561,16 @@ export class AgentBot {
      * Respond to ping, measuring agent liveness
      * @param query query number - 0 means return version
      */
-    async handleAgentPing(query: BNish) {
+    async handleAgentPing(args: EventArgs<AgentPing>) {
         try {
-            if (Number(query) === 0) {
+            // only respond to pings from trusted senders
+            if (!this.agentBotSettings.trustedPingSenders.has(args.sender.toLowerCase())) return;
+            // log after checking for trusted
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentPing' with data ${formatArgs(args)}.`);
+            const query = toBN(args.query);
+            // upper 32 bits are query topic; the rest is topic specific, e.g. query id
+            const topic = Number(query.shrn(256 - 32));
+            if (topic === 0) {
                 const data = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
                 await this.locks.nativeChainLock.lockAndRun(async () => {
                     await this.agent.agentPingResponse(query, data);

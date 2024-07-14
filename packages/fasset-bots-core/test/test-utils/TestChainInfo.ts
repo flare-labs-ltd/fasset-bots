@@ -83,6 +83,7 @@ export const parallelBots = false;
 export const testAgentBotSettings: Record<string, AgentBotSettings> = {
     "FETH": {
         parallel: parallelBots,
+        trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
@@ -91,6 +92,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
     },
     "FBTC": {
         parallel: parallelBots,
+        trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
@@ -99,6 +101,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
     },
     "FXRP": {
         parallel: parallelBots,
+        trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,

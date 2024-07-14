@@ -23,6 +23,7 @@
         "liquidationPreventionFactor": "1.2",
         "vaultCollateralReserveFactor": "0.1",
         "poolCollateralReserveFactor": "0.1",
+        "trustedPingSenders": [],
         "fAssets": {
             "FTestXRP": {
                 "recommendedOwnerBalance": "50",

@@ -123,6 +123,11 @@ export interface AgentBotSettingsJson {
     poolCollateralReserveFactor: string;
 
     /**
+     * The list of address to whose pings the agent will respond.
+     */
+    trustedPingSenders: string[];
+
+    /**
      * Per FAsset settings.
      */
     fAssets: { [fAssetSymbol: string]: AgentBotFassetSettingsJson };

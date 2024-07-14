@@ -77,6 +77,7 @@ describe("Toplevel runner and commands integration test", () => {
 
     const agentBotSettings: AgentBotSettings = {
         parallel: false,
+        trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,

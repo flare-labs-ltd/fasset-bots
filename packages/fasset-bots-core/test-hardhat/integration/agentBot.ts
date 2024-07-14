@@ -977,13 +977,26 @@ describe("Agent bot tests", () => {
     }
 
     it("Should respond to agent ping", async () => {
+        const trustedPingSenders = [accounts[5]];
+        agentBot.agentBotSettings.trustedPingSenders = new Set(trustedPingSenders.map(a => a.toLowerCase()));
         const fromBlock = await web3.eth.getBlockNumber();
-        await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0);
+        await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0, { from: accounts[5] });
         await agentBot.runStep(orm.em);
         const allEvents = await readEventsFrom(context.assetManager, fromBlock);
         const events = filterEventList(allEvents, context.assetManager, "AgentPingResponse");
         assert.equal(events.length, 1);
         const response = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
         assert.equal(events[0].args.response, response);
+    });
+
+    it("Should not respond to ping from untrusted providers", async () => {
+        const trustedPingSenders = [accounts[5]];
+        agentBot.agentBotSettings.trustedPingSenders = new Set(trustedPingSenders.map(a => a.toLowerCase()));
+        const fromBlock = await web3.eth.getBlockNumber();
+        await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0, { from: accounts[1] });
+        await agentBot.runStep(orm.em);
+        const allEvents = await readEventsFrom(context.assetManager, fromBlock);
+        const events = filterEventList(allEvents, context.assetManager, "AgentPingResponse");
+        assert.equal(events.length, 0);
     });
 });

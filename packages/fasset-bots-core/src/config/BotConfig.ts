@@ -54,6 +54,7 @@ export interface BotFAssetConfig {
 
 export interface AgentBotSettings {
     parallel: boolean;
+    trustedPingSenders: Set<string>;
     liquidationPreventionFactor: number;
     vaultCollateralReserveFactor: number;
     poolCollateralReserveFactor: number;
@@ -203,6 +204,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
     const underlying = new Currency(chainInfo.symbol, chainInfo.decimals);
     return {
         parallel: agentBotSettings.parallel,
+        trustedPingSenders: new Set(agentBotSettings.trustedPingSenders.map(a => a.toLowerCase())),
         liquidationPreventionFactor: Number(agentBotSettings.liquidationPreventionFactor),
         vaultCollateralReserveFactor: Number(agentBotSettings.vaultCollateralReserveFactor),
         poolCollateralReserveFactor: Number(agentBotSettings.poolCollateralReserveFactor),
