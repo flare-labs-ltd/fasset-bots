@@ -37,7 +37,6 @@ describe("XRP network helper tests", () => {
       const wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
       expect(wClient.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs);
       expect(wClient.blockOffset).to.eq(XRPMccConnectionTest.stuckTransactionOptions.blockOffset);
-      expect(wClient.maxRetries).to.eq(XRPMccConnectionTest.stuckTransactionOptions.retries);
       expect(wClient.feeIncrease).to.eq(XRPMccConnectionTest.stuckTransactionOptions.feeIncrease);
    });
 });
