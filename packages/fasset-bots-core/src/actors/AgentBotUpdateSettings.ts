@@ -7,11 +7,14 @@ import { Agent } from "../fasset/Agent";
 import { errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
+import { AgentBot } from "./AgentBot";
+import { latestBlockTimestampBN } from "../utils";
 
 export class AgentBotUpdateSettings {
     static deepCopyWithObjectCreate = true;
 
     constructor(
+        public bot: AgentBot,
         public agent: Agent,
         public notifier: AgentNotifier,
     ) {}
@@ -26,37 +29,53 @@ export class AgentBotUpdateSettings {
      * @param readAgentEnt
      */
     async createAgentUpdateSetting(rootEm: EM, settingName: string, settingValidAt: BN, readAgentEnt: AgentEntity): Promise<void> {
-        const settingAlreadyUpdating = await rootEm.getRepository(AgentUpdateSetting)
-            .findOne({ name: settingName, state: AgentUpdateSettingState.WAITING } as FilterQuery<AgentUpdateSetting>);
-        // Set previous setting request as Done, as it will be overwritten on smart contract.
-        if(settingAlreadyUpdating) {
-            settingAlreadyUpdating.state = AgentUpdateSettingState.DONE;
-            await rootEm.flush();
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            const settingAlreadyUpdating = await em.getRepository(AgentUpdateSetting)
+                .findOne({ name: settingName, state: AgentUpdateSettingState.WAITING } as FilterQuery<AgentUpdateSetting>);
+            // set previous setting request as Done, as it will be overwritten on smart contract.
+            if (settingAlreadyUpdating) {
+                settingAlreadyUpdating.state = AgentUpdateSettingState.DONE;
+            }
+            // create new setting update
+            em.create(
+                AgentUpdateSetting,
+                {
+                    state: AgentUpdateSettingState.WAITING,
+                    name: settingName,
+                    agent: readAgentEnt,
+                    validAt: toBN(settingValidAt),
+                } as RequiredEntityData<AgentUpdateSetting>,
+                { persist: true }
+            );
+            await this.notifier.sendSettingsUpdateStarted(settingName, settingValidAt.toString());
+            logger.info(`Agent ${this.agent.vaultAddress} started setting ${settingName} update valid at ${settingValidAt.toString()}.`);
+        });
+    }
+
+    async handleWaitForAgentSettingUpdate(rootEm: EM) {
+        if (this.bot.stopRequested()) return;
+        try {
+            const openUpdateSettings = await this.openUpdateSettings(rootEm);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open update settings #${openUpdateSettings.length}.`);
+            for (const us of openUpdateSettings) {
+                if (this.bot.stopRequested()) return;
+                await this.nextUpdateSettingStep(rootEm, us);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open update settings.`);
+        } catch (error) {
+            console.error(`Error while handling open update settings for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open update settings:`, error);
         }
 
-        rootEm.create(
-            AgentUpdateSetting,
-            {
-                state: AgentUpdateSettingState.WAITING,
-                name: settingName,
-                agent: readAgentEnt,
-                validAt: toBN(settingValidAt),
-            } as RequiredEntityData<AgentUpdateSetting>,
-            { persist: true }
-        );
-        await rootEm.flush();
-        await this.notifier.sendSettingsUpdateStarted(settingName, settingValidAt.toString());
-        logger.info(`Agent ${this.agent.vaultAddress} started setting ${settingName} update valid at ${settingValidAt.toString()}.`);
     }
 
     /**
      * Returns update settings with state other than DONE.
-     * @param em entity manager
+     * @param rootEm entity manager
      * @return list of AgentUpdateSetting's instances
      */
-    async openUpdateSettingIds(em: EM): Promise<AgentUpdateSetting[]> {
-        const query = em.createQueryBuilder(AgentUpdateSetting).select("id");
-        return await query
+    async openUpdateSettings(rootEm: EM): Promise<AgentUpdateSetting[]> {
+        return await rootEm.createQueryBuilder(AgentUpdateSetting)
             .where({ agentAddress: this.agent.vaultAddress })
             .andWhere({ $not: { state: AgentUpdateSettingState.DONE } })
             .getResultList();
@@ -68,28 +87,20 @@ export class AgentBotUpdateSettings {
      * @param id AgentUpdateSetting's entity id
      * @param latestTimestamp
      */
-    async nextUpdateSettingStep(rootEm: EM, id: number, latestTimestamp: BN): Promise<void> {
-        await rootEm
-            .transactional(async (em) => {
-                const updateSetting = await em
-                    .getRepository(AgentUpdateSetting)
-                    .findOneOrFail({ id: Number(id) } as FilterQuery<AgentUpdateSetting>);
-                logger.info(`Agent ${this.agent.vaultAddress} is handling open update setting ${updateSetting.name}.`);
-                switch (updateSetting.state) {
-                    case AgentUpdateSettingState.WAITING:
-                        await this.checkIfCanUpdate(updateSetting, latestTimestamp);
-                        break;
-                    default:
-                        console.error(`Update setting state: ${updateSetting.state} not supported`);
-                        logger.error(
-                            `Agent ${this.agent.vaultAddress} run into update setting state ${updateSetting.state} not supported for update setting ${updateSetting.name}.`
-                        );
-                }
-            })
-            .catch((error) => {
-                console.error(`Error handling next update setting  step for update setting ${id} agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling next update setting  step for update setting  ${id}:`, error);
-            });
+    async nextUpdateSettingStep(rootEm: EM, updateSetting: Readonly<AgentUpdateSetting>): Promise<void> {
+        try {
+            logger.info(`Agent ${this.agent.vaultAddress} is handling open update setting ${updateSetting.name}.`);
+            switch (updateSetting.state) {
+                case AgentUpdateSettingState.WAITING:
+                    await this.checkIfCanUpdate(rootEm, updateSetting);
+                    break;
+                default:
+                    console.error(`Update setting state: ${updateSetting.state} not supported`);
+                    logger.error(`Agent ${this.agent.vaultAddress} run into update setting state ${updateSetting.state} not supported for update setting ${updateSetting.name}.`);
+            }
+        } catch (error) {
+            logger.error(`Error handling setting update ${updateSetting.name}:`, error);
+        }
     }
 
 
@@ -98,12 +109,14 @@ export class AgentBotUpdateSettings {
      * @param updateSetting
      * @param latestTimestamp
      */
-    async checkIfCanUpdate(updateSetting: AgentUpdateSetting, latestTimestamp: BN): Promise<void> {
-        const updatedOrExpired = await this.updateAgentSettings(updateSetting, latestTimestamp);
+    async checkIfCanUpdate(rootEm: EM, updateSetting: Readonly<AgentUpdateSetting>): Promise<void> {
+        const updatedOrExpired = await this.updateAgentSettings(updateSetting);
         if (updatedOrExpired) {
-            updateSetting.state = AgentUpdateSettingState.DONE;
+            await this.bot.runInTransaction(rootEm, async (em) => {
+                const writeUpdateSetting = await em.findOneOrFail(AgentUpdateSetting, { id: updateSetting.id }, { refresh: true });
+                writeUpdateSetting.state = AgentUpdateSettingState.DONE;
+            });
         }
-
     }
 
     /**
@@ -112,13 +125,16 @@ export class AgentBotUpdateSettings {
      * @param latestTimestamp
      * @returns true if settings was updated or valid time expired
      */
-    async updateAgentSettings(updateSetting: AgentUpdateSetting, latestTimestamp: BN): Promise<boolean> {
+    async updateAgentSettings(updateSetting: Readonly<AgentUpdateSetting>): Promise<boolean> {
         logger.info(`Agent ${this.agent.vaultAddress} is waiting for ${updateSetting.name} agent setting update.`);
         // agent waiting for setting update
+        const latestTimestamp = await latestBlockTimestampBN();
         if (toBN(updateSetting.validAt).lte(latestTimestamp)) {
             // agent can update setting
             try {
-                await this.agent.executeAgentSettingUpdate(updateSetting.name);
+                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.agent.executeAgentSettingUpdate(updateSetting.name);
+                });
                 await this.notifier.sendAgentSettingsUpdate(updateSetting.name);
                 return true;
             } catch (error) {

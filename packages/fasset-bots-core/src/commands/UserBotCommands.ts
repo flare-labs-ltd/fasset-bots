@@ -283,7 +283,7 @@ export class UserBotCommands {
      * @param executorAddress
      * @param executorFeeNatWei
      */
-    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
+    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<BN[]> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
         logger.info(`User ${this.nativeAddress} is asking for redemption of ${lots} lots.`);
@@ -321,6 +321,7 @@ export class UserBotCommands {
             requestFiles.forEach(fname => console.log("    " + fname));
         }
         logger.info(loggedRequests);
+        return requests.map(req => toBN(req.requestId));
     }
 
     /**
@@ -358,6 +359,38 @@ export class UserBotCommands {
         await redeemer.executePaymentDefault(requestId, proof, ZERO_ADDRESS); // executor must call from own user address
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
+    }
+
+    async updateAllRedemptions() {
+        const list = this.readStateList("redeem");
+        const settings = await this.context.assetManager.getSettings();
+        const timestamp = await latestBlockTimestamp();
+        let successful = 0;
+        let defaulted = 0;
+        let expired = 0;
+        for (const state of list) {
+            const status = await this.redemptionStatus(state, timestamp, settings);
+            if (status === RedemptionStatus.SUCCESS) {
+                console.log(`Redemption ${state.requestId} finished successfully.`);
+                this.deleteState(state);
+                ++successful;
+            } else if (status === RedemptionStatus.DEFAULT) {
+                console.log(`Redemption ${state.requestId} wasn't paid in time, executing default...`);
+                try {
+                    await this.savedRedemptionDefault(state.requestId);
+                    ++defaulted;
+                } catch (error) {
+                    logger.error(`Redemption default for ${state.requestId} failed:`, error);
+                    console.error(`Redemption default for ${state.requestId} failed: ${error}`);
+                }
+            } else if (status === RedemptionStatus.EXPIRED) {
+                console.log(`Redemption ${state.requestId} expired in indexer and will be eventually defaulted by the agent.`);
+                this.deleteState(state);
+                ++expired;
+            }
+        }
+        const remaining = list.length - successful - defaulted - expired;
+        return { total: list.length, successful, defaulted, expired, remaining };
     }
 
     async listRedemptions(): Promise<void> {

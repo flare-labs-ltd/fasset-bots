@@ -1,20 +1,23 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { CollateralReserved } from "../../typechain-truffle/IIAssetManager";
+import { CollateralReservationDeleted, CollateralReserved, MintingExecuted } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { AgentMinting } from "../entities/agent";
+import { AgentMintingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
-import { attestationProved } from "../underlying-chain/AttestationHelper";
+import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
+import { ITransaction, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { EventArgs } from "../utils/events/common";
-import { BN_ZERO, MAX_BIPS, assertNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, assertNotNull, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
-import { AgentMintingState } from "../entities/common";
-import { ITransaction, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
+import { formatArgs } from "../utils/formatting";
+
+type MintingId = { id: number } | { requestId: BN };
 
 export class AgentBotMinting {
     static deepCopyWithObjectCreate = true;
@@ -29,39 +32,71 @@ export class AgentBotMinting {
 
     /**
      * Stores received collateral reservation as minting in persistent state.
-     * @param em entity manager
+     * @param rootEm entity manager
      * @param request event's CollateralReserved arguments
      */
-    async mintingStarted(em: EM, request: EventArgs<CollateralReserved>): Promise<void> {
-        em.create(
-            AgentMinting,
-            {
-                state: AgentMintingState.STARTED,
-                agentAddress: this.agent.vaultAddress,
-                agentUnderlyingAddress: this.agent.underlyingAddress,
-                requestId: toBN(request.collateralReservationId),
-                valueUBA: toBN(request.valueUBA),
-                feeUBA: toBN(request.feeUBA),
-                firstUnderlyingBlock: toBN(request.firstUnderlyingBlock),
-                lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
-                lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
-                paymentReference: request.paymentReference,
-            } as RequiredEntityData<AgentMinting>,
-            { persist: true }
-        );
+    async mintingStarted(rootEm: EM, request: EventArgs<CollateralReserved>): Promise<void> {
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            em.create(
+                AgentMinting,
+                {
+                    state: AgentMintingState.STARTED,
+                    agentAddress: this.agent.vaultAddress,
+                    agentUnderlyingAddress: this.agent.underlyingAddress,
+                    requestId: toBN(request.collateralReservationId),
+                    valueUBA: toBN(request.valueUBA),
+                    feeUBA: toBN(request.feeUBA),
+                    firstUnderlyingBlock: toBN(request.firstUnderlyingBlock),
+                    lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
+                    lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
+                    paymentReference: request.paymentReference,
+                } as RequiredEntityData<AgentMinting>,
+                { persist: true }
+            );
+        });
         await this.notifier.sendMintingStarted(request.collateralReservationId);
         logger.info(`Agent ${this.agent.vaultAddress} started minting ${request.collateralReservationId}.`);
     }
 
+    async mintingExecuted(rootEm: EM, args: EventArgs<MintingExecuted>): Promise<void> {
+        if (!args.collateralReservationId.isZero()) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(args)}.`);
+            let minting = await this.findMinting(rootEm, { requestId: args.collateralReservationId });
+            minting = await this.updateMinting(rootEm, minting, {
+                state: AgentMintingState.DONE,
+            });
+            await this.notifier.sendMintingExecuted(minting.requestId);
+            logger.info(`Agent ${this.agent.vaultAddress} closed (executed) minting ${minting.requestId}.`);
+        } else {
+            logger.info(`Agent ${this.agent.vaultAddress} executed self-minting.`);
+        }
+    }
+
+    async mintingDeleted(rootEm: EM, args: EventArgs<CollateralReservationDeleted>) {
+        let minting = await this.findMinting(rootEm, { requestId: args.collateralReservationId });
+        minting = await this.updateMinting(rootEm, minting, {
+            state: AgentMintingState.DONE,
+        });
+        await this.notifier.sendMintingDeleted(minting.requestId);
+        logger.info(`Agent ${this.agent.vaultAddress} closed (deleted) minting ${minting.requestId}.`);
+    }
+
     /**
-     * Returns minting by required id from persistent state.
-     * @param em entity manager
-     * @param requestId collateral reservation id
-     * @returns instance of AgentMinting
+     * @param rootEm entity manager
      */
-    async findMinting(em: EM, requestId: BN): Promise<AgentMinting> {
-        const agentAddress = this.agent.vaultAddress;
-        return await em.findOneOrFail(AgentMinting, { agentAddress, requestId } as FilterQuery<AgentMinting>);
+    async handleOpenMintings(rootEm: EM): Promise<void> {
+        try {
+            const openMintings = await this.openMintings(rootEm, true);
+            logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
+            for (const rd of openMintings) {
+                if (this.bot.stopRequested()) return;
+                await this.nextMintingStep(rootEm, rd.id);
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished handling open mintings.`);
+        } catch (error) {
+            console.error(`Error while handling open mintings for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling open mintings:`, error);
+        }
     }
 
     /**
@@ -80,51 +115,32 @@ export class AgentBotMinting {
     }
 
     /**
-     * Marks stored minting in persistent state as DONE.
-     * @param minting AgentMinting entity
-     * @param executed if true, notifies about executed minting, otherwise notifies about deleted minting
-     */
-    async mintingExecuted(minting: AgentMinting, executed: boolean): Promise<void> {
-        minting.state = AgentMintingState.DONE;
-        if (executed) {
-            await this.notifier.sendMintingExecuted(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} closed (executed) minting ${minting.requestId}.`);
-        } else {
-            await this.notifier.sendMintingDeleted(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} closed (deleted) minting ${minting.requestId}.`);
-        }
-    }
-
-    /**
      * Handles mintings stored in persistent state according to their state.
      * @param rootEm entity manager
      * @param id AgentMinting's entity id
      */
     async nextMintingStep(rootEm: EM, id: number): Promise<void> {
-        await rootEm
-            .transactional(async (em) => {
-                const minting = await em.getRepository(AgentMinting).findOneOrFail({ id: Number(id) } as FilterQuery<AgentMinting>);
-                logger.info(`Agent ${this.agent.vaultAddress} is handling open minting ${minting.requestId} in state ${minting.state}.`);
-                switch (minting.state) {
-                    case AgentMintingState.STARTED:
-                        await this.checkForNonPaymentProofOrExpiredProofs(minting);
-                        break;
-                    case AgentMintingState.REQUEST_NON_PAYMENT_PROOF:
-                        await this.checkNonPayment(minting);
-                        break;
-                    case AgentMintingState.REQUEST_PAYMENT_PROOF:
-                        await this.checkPaymentAndExecuteMinting(minting);
-                        break;
-                    default:
-                        console.error(`Minting state: ${minting.state} not supported`);
-                        logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId}.`);
-                }
-                await em.persistAndFlush(minting);
-            })
-            .catch((error) => {
-                console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
-            });
+        try {
+            const minting = await this.findMinting(rootEm, { id });
+            logger.info(`Agent ${this.agent.vaultAddress} is handling open minting ${minting.requestId} in state ${minting.state}.`);
+            switch (minting.state) {
+                case AgentMintingState.STARTED:
+                    await this.checkForNonPaymentProofOrExpiredProofs(rootEm, minting);
+                    break;
+                case AgentMintingState.REQUEST_NON_PAYMENT_PROOF:
+                    await this.checkNonPayment(rootEm, minting);
+                    break;
+                case AgentMintingState.REQUEST_PAYMENT_PROOF:
+                    await this.checkPaymentAndExecuteMinting(rootEm, minting);
+                    break;
+                default:
+                    console.error(`Minting state: ${minting.state} not supported`);
+                    logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId}.`);
+            }
+        } catch (error) {
+            console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
+        }
     }
 
     /**
@@ -132,14 +148,14 @@ export class AgentBotMinting {
      * Then it calls the appropriate handling method.
      * @param minting AgentMinting entity
      */
-    async checkForNonPaymentProofOrExpiredProofs(minting: AgentMinting): Promise<void> {
+    async checkForNonPaymentProofOrExpiredProofs(rootEm: EM, minting: Readonly<AgentMinting>): Promise<void> {
         const proof = await this.bot.checkProofExpiredInIndexer(toBN(minting.lastUnderlyingBlock), toBN(minting.lastUnderlyingTimestamp));
         if (proof === "NOT_EXPIRED") {
             // payment/non-payment proof can be obtained
-            await this.handleOpenMinting(minting);
+            await this.handleOpenMinting(rootEm, minting);
         } else if (typeof proof === "object") {
             // corner case: proof expires in indexer
-            await this.handleExpiredMinting(minting, proof);
+            await this.handleExpiredMinting(rootEm, minting, proof);
         }
     }
 
@@ -150,7 +166,7 @@ export class AgentBotMinting {
      * If it does not exist, then it request non payment proof - see requestNonPaymentProofForMinting().
      * @param minting AgentMinting entity
      */
-    async handleOpenMinting(minting: AgentMinting) {
+    async handleOpenMinting(rootEm: EM, minting: Readonly<AgentMinting>) {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const latestBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
         // wait times expires on underlying + finalizationBlock
@@ -166,7 +182,7 @@ export class AgentBotMinting {
                 // check minter paid -> request payment proof -> execute minting
                 const sourceAddress = tx.inputs[0][0];
                 logger.info(`Agent ${this.agent.vaultAddress} found payment transaction ${txHash} for minting ${minting.requestId}.`);
-                await this.requestPaymentProofForMinting(minting, txHash, sourceAddress);
+                await this.requestPaymentProofForMinting(rootEm, minting, txHash, sourceAddress);
             } else {
                 // just log failed transactions
                 for (const tx of txs) {
@@ -174,12 +190,12 @@ export class AgentBotMinting {
                 }
                 // minter did not pay -> request non payment proof -> unstick minting
                 logger.info(`Agent ${this.agent.vaultAddress} did NOT find successful payment transactions for minting ${minting.requestId}.`);
-                await this.requestNonPaymentProofForMinting(minting);
+                await this.requestNonPaymentProofForMinting(rootEm, minting);
             }
         }
     }
 
-    isSuccessfulPayment(minting: AgentMinting, tx: ITransaction) {
+    isSuccessfulPayment(minting: Readonly<AgentMinting>, tx: ITransaction) {
         const targetAmount = tx.outputs
             .filter(([dst, amount]) => dst === minting.agentUnderlyingAddress)
             .reduce((x, [dst, amount]) => x.add(toBN(amount)), BN_ZERO);
@@ -193,18 +209,19 @@ export class AgentBotMinting {
      * @param minting AgentMinting entity
      * @param proof The proof that payment and non-payment proofs for the minting have expired
      */
-    async handleExpiredMinting(minting: AgentMinting, proof: ConfirmedBlockHeightExists.Proof) {
+    async handleExpiredMinting(rootEm: EM, minting: Readonly<AgentMinting>, proof: ConfirmedBlockHeightExists.Proof) {
         logger.info(`Agent ${this.agent.vaultAddress} is calling 'unstickMinting' ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
         const settings = await this.context.assetManager.getSettings();
         const natPriceConverter = await this.agent.getPoolCollateralPrice(settings);
         const burnNats = natPriceConverter.convertUBAToTokenWei(toBN(minting.valueUBA))
             .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
         // TODO what to do if owner does not have enough nat
-        await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), {
-            from: this.agent.owner.workAddress,
-            value: burnNats,
+        await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), { from: this.agent.owner.workAddress, value: burnNats });
         });
-        minting.state = AgentMintingState.DONE;
+        minting = await this.updateMinting(rootEm, minting, {
+            state: AgentMintingState.DONE,
+        });
         await this.notifier.sendMintingIndexerExpired(minting.requestId);
         logger.info(`Agent ${this.agent.vaultAddress} unstuck minting ${minting.requestId}.`);
     }
@@ -215,18 +232,22 @@ export class AgentBotMinting {
      * @param txHash transaction hash for minting payment
      * @param sourceAddress minter's underlying address
      */
-    async requestPaymentProofForMinting(minting: AgentMinting, txHash: string, sourceAddress: string): Promise<void> {
+    async requestPaymentProofForMinting(rootEm: EM, minting: Readonly<AgentMinting>, txHash: string, sourceAddress: string): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is sending request for payment proof for transaction ${txHash} and minting ${minting.requestId}.`);
-        const request = await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
-        if (request) {
-            minting.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
-            minting.proofRequestRound = request.round;
-            minting.proofRequestData = request.data;
+        try {
+            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                return await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
+            });
+            minting = await this.updateMinting(rootEm, minting, {
+                state: AgentMintingState.REQUEST_PAYMENT_PROOF,
+                proofRequestRound: request.round,
+                proofRequestData: request.data,
+            });
             await this.notifier.sendMintingPaymentProofRequested(minting.requestId);
             logger.info(`Agent ${this.agent.vaultAddress} requested payment proof for transaction ${txHash} and minting ${minting.requestId}; source underlying address ${sourceAddress}, proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
-            logger.info(`Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${txHash} and minting ${minting.requestId}.`);
+        } catch (error) {
+            logger.info(`Agent ${this.agent.vaultAddress} cannot yet request payment proof for transaction ${txHash} and minting ${minting.requestId}:`,
+                messageForExpectedError(error, [AttestationHelperError]));
         }
     }
 
@@ -234,25 +255,24 @@ export class AgentBotMinting {
      * Sends request for minting non payment proof, sets state for minting in persistent state to REQUEST_NON_PAYMENT_PROOF and sends notification to owner,
      * @param minting AgentMinting entity
      */
-    async requestNonPaymentProofForMinting(minting: AgentMinting): Promise<void> {
+    async requestNonPaymentProofForMinting(rootEm: EM, minting: Readonly<AgentMinting>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is sending request for non payment proof for minting ${minting.requestId}.`);
-        const request = await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
-            minting.agentUnderlyingAddress,
-            minting.paymentReference,
-            toBN(minting.valueUBA).add(toBN(minting.feeUBA)),
-            Number(minting.firstUnderlyingBlock),
-            Number(minting.lastUnderlyingBlock),
-            Number(minting.lastUnderlyingTimestamp)
-        );
-        if (request) {
-            minting.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
-            minting.proofRequestRound = request.round;
-            minting.proofRequestData = request.data;
+        try {
+            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                return await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
+                    minting.agentUnderlyingAddress, minting.paymentReference, toBN(minting.valueUBA).add(toBN(minting.feeUBA)),
+                    Number(minting.firstUnderlyingBlock), Number(minting.lastUnderlyingBlock), Number(minting.lastUnderlyingTimestamp));
+            });
+            minting = await this.updateMinting(rootEm, minting, {
+                state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
+                proofRequestRound: request.round,
+                proofRequestData: request.data,
+            });
             await this.notifier.sendMintingNonPaymentProofRequested(minting.requestId);
             logger.info(`Agent ${this.agent.vaultAddress} requested non payment proof for minting ${minting.requestId}; reference ${minting.paymentReference}, target underlying address ${minting.agentUnderlyingAddress}, proofRequestRound ${request.round}, proofRequestData ${request.data}`);
-        } else {
-            // else cannot prove request yet
-            logger.info(`Agent ${this.agent.vaultAddress} cannot yet prove non payment proof for minting ${minting.requestId}.`);
+        } catch (error) {
+            logger.info(`Agent ${this.agent.vaultAddress} cannot yet prove non payment proof for minting ${minting.requestId}:`,
+                messageForExpectedError(error, [AttestationHelperError]));
         }
     }
 
@@ -261,7 +281,7 @@ export class AgentBotMinting {
      * If proof cannot be obtained, it sends notification to owner.
      * @param minting AgentMinting entity
      */
-    async checkNonPayment(minting: AgentMinting): Promise<void> {
+    async checkNonPayment(rootEm: EM, minting: Readonly<AgentMinting>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
         assertNotNull(minting.proofRequestRound);
         assertNotNull(minting.proofRequestData);
@@ -276,21 +296,25 @@ export class AgentBotMinting {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            const nonPaymentProof = proof;
-            await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(nonPaymentProof), minting.requestId, { from: this.agent.owner.workAddress });
-            await this.mintingExecuted(minting, true);
-            logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(nonPaymentProof))}.`);
+            await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(proof), minting.requestId, { from: this.agent.owner.workAddress });
+            });
+            minting = await this.updateMinting(rootEm, minting, {
+                state: AgentMintingState.DONE,
+            });
+            logger.info(`Agent ${this.agent.vaultAddress} executed minting payment default for minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
             await this.notifier.sendMintingDefaultSuccess(minting.requestId);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             // wait for one more round and then reset to state STARTED, which will eventually resubmit request
-            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(minting.proofRequestRound + 1);
-            if (oneMoreRoundFinalized) {
+            if (await this.bot.enoughTimePassedToObtainProof(minting)) {
                 await this.notifier.sendMintingDefaultFailure(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
                 logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining non payment proof for minting ${minting.requestId}.`);
-                minting.state = AgentMintingState.STARTED;
-                minting.proofRequestRound = undefined;
-                minting.proofRequestData = undefined;
+                minting = await this.updateMinting(rootEm, minting, {
+                    state: AgentMintingState.STARTED,
+                    proofRequestRound: undefined,
+                    proofRequestData: undefined,
+                });
             }
         }
     }
@@ -300,7 +324,7 @@ export class AgentBotMinting {
      * If proof cannot be obtained, it sends notification to owner.
      * @param minting AgentMinting entity
      */
-    async checkPaymentAndExecuteMinting(minting: AgentMinting): Promise<void> {
+    async checkPaymentAndExecuteMinting(rootEm: EM, minting: Readonly<AgentMinting>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to obtain payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
         assertNotNull(minting.proofRequestRound);
         assertNotNull(minting.proofRequestData);
@@ -315,21 +339,50 @@ export class AgentBotMinting {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            const paymentProof = proof;
-            await this.context.assetManager.executeMinting(web3DeepNormalize(paymentProof), minting.requestId, { from: this.agent.owner.workAddress });
-            minting.state = AgentMintingState.DONE;
-            logger.info(`Agent ${this.agent.vaultAddress} executed minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(paymentProof))}.`);
+            await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.context.assetManager.executeMinting(web3DeepNormalize(proof), minting.requestId, { from: this.agent.owner.workAddress });
+            });
+            minting = await this.updateMinting(rootEm, minting, {
+                state: AgentMintingState.DONE,
+            });
+            logger.info(`Agent ${this.agent.vaultAddress} executed minting ${minting.requestId} with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} cannot obtain payment proof for minting ${minting.requestId} with in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
             // wait for one more round and then reset to state STARTED, which will eventually resubmit request
-            const oneMoreRoundFinalized = await this.context.attestationProvider.stateConnector.roundFinalized(minting.proofRequestRound + 1);
-            if (oneMoreRoundFinalized) {
+            if (await this.bot.enoughTimePassedToObtainProof(minting)) {
                 await this.notifier.sendMintingNoProofObtained(minting.requestId, minting.proofRequestRound, minting.proofRequestData);
                 logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining payment proof for minting ${minting.requestId}.`);
-                minting.state = AgentMintingState.STARTED;
-                minting.proofRequestRound = undefined;
-                minting.proofRequestData = undefined;
+                minting = await this.updateMinting(rootEm, minting, {
+                    state: AgentMintingState.STARTED,
+                    proofRequestRound: undefined,
+                    proofRequestData: undefined,
+                });
             }
+        }
+    }
+
+    /**
+     * Load and update minting object in its own transaction.
+     */
+    async updateMinting(rootEm: EM, mintingId: MintingId, modifications: Partial<AgentMinting>): Promise<AgentMinting> {
+        return await this.bot.runInTransaction(rootEm, async (em) => {
+            const minting = await this.findMinting(em, mintingId);
+            Object.assign(minting, modifications);
+            return minting;
+        });
+    }
+
+    /**
+     * Returns minting by required id from persistent state.
+     * @param em entity manager
+     * @param mintingId either db id or collateral reservation id
+     * @returns instance of AgentMinting
+     */
+    async findMinting(em: EM, mintingId: MintingId): Promise<AgentMinting> {
+        if ("id" in mintingId) {
+            return await em.findOneOrFail(AgentMinting, { id: mintingId.id }, { refresh: true });
+        } else {
+            return await em.findOneOrFail(AgentMinting, { agentAddress: this.agent.vaultAddress, requestId: mintingId.requestId }, { refresh: true });
         }
     }
 }

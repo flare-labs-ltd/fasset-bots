@@ -26,7 +26,7 @@ import { AgentOwnerRegistryInstance, Truffle } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -108,7 +108,7 @@ describe("Agent bot tests", () => {
         orm.em.clear();
         const openMintingsAfter = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintingsAfter.length, 0);
-        const mintingAfter = await agentBot.minting.findMinting(orm.em, minting.requestId);
+        const mintingAfter = await agentBot.minting.findMinting(orm.em, { requestId: minting.requestId });
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
     });
 
@@ -137,9 +137,10 @@ describe("Agent bot tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // redeemer should now have some funds on the underlying chain
         const balance = await chain.getBalance(redeemer.underlyingAddress);
@@ -156,7 +157,7 @@ describe("Agent bot tests", () => {
         assert.equal(mintings.length, 1);
         assert.equal(mintings[0].state, "started");
         // run it also now to cover else
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
         mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
@@ -167,16 +168,16 @@ describe("Agent bot tests", () => {
         // get time proof
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // handle again
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedNonPaymentProof'
         mintings = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(mintings.length, 1);
         assert.equal(mintings[0].state, AgentMintingState.REQUEST_NON_PAYMENT_PROOF);
         // check if minting is done
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
         assert.equal(mintingDone.state, AgentMintingState.DONE);
         // check that executing minting after calling mintingPaymentDefault will revert
         const txHash = await minter.performMintingPayment(crt);
@@ -203,7 +204,7 @@ describe("Agent bot tests", () => {
         // get time proof
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // handle again
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedPaymentProof'
         mintings = await agentBot.minting.openMintings(orm.em, false);
@@ -211,9 +212,9 @@ describe("Agent bot tests", () => {
         const mintingRequestedNonPaymentProof = mintings[0];
         assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // check if minting is done
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
@@ -236,7 +237,7 @@ describe("Agent bot tests", () => {
         // get time proof
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         // handle again
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedPaymentProof'
         mintings = await agentBot.minting.openMintings(orm.em, false);
@@ -247,20 +248,20 @@ describe("Agent bot tests", () => {
         const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
         delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[mintingRequestedPaymentProof.proofRequestData!];
         // check if minting is done
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
-        assert.equal(mintingDone.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
+        const mintingRequestedPaymentProof1 = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
+        assert.equal(mintingRequestedPaymentProof1.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // after one more state connector round, the minitng should be reset to started
         scClient.rounds.push([]);
         await scClient.finalizeRound();
         // check minting status
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingRestart = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        const mintingRestart = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
         assert.equal(mintingRestart.state, AgentMintingState.STARTED);
         // handle again
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
         // should have one open minting with state 'requestedPaymentProof'
         mintings = await agentBot.minting.openMintings(orm.em, false);
@@ -268,9 +269,9 @@ describe("Agent bot tests", () => {
         const mintingRequestedPaymentProof2 = mintings[0];
         assert.equal(mintingRequestedPaymentProof2.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // check if minting is done
-        await agentBot.handleOpenMintings(orm.em);
+        await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
-        const mintingDone2 = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone2 = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
         assert.equal(mintingDone2.state, AgentMintingState.DONE);
     });
 
@@ -298,41 +299,41 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // check redemption state
         orm.em.clear();
-        let redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        let redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.PAID);
         chain.mine(5);
         // submit proof
-        await agentBot.handleOpenRedemptions(orm.em);
+        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
-        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         // remove the proof
         const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
         delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[redemption.proofRequestData!];
         // redemption status should be stuck
-        await agentBot.handleOpenRedemptions(orm.em);
+        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
-        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         // after one more state connector round, the minitng should be reset to paid
         scClient.rounds.push([]);
         await scClient.finalizeRound();
         // check minting status
-        await agentBot.handleOpenRedemptions(orm.em);
+        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
-        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.PAID);
         // handle again
-        await agentBot.handleOpenRedemptions(orm.em);
+        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
-        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         // and now it should be done
-        await agentBot.handleOpenRedemptions(orm.em);
+        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
-        redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.DONE);
-     });
+    });
 
     it("Should perform unstick minting - minter does not pay and time expires in indexer", async () => {
         // create multiple collateral reservations
@@ -376,7 +377,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         // check if minting is done
         orm.em.clear();
-        const mintingDone = await agentBot.minting.findMinting(orm.em, crt.collateralReservationId);
+        const mintingDone = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
         assert.equal(mintingDone.state, AgentMintingState.DONE);
         // check that executing minting after calling unstickMinting will revert
         await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
@@ -429,15 +430,16 @@ describe("Agent bot tests", () => {
         chain.mine(Number(rdReq.lastUnderlyingBlock));
         // agentBot stores redemption
         await agentBot.runStep(orm.em);
-        const redemptionStarted = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemptionStarted = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemptionStarted.state, AgentRedemptionState.UNPAID);
         // agentBot doesn't pay for redemption - expired on underlying
         await agentBot.runStep(orm.em);
-        const redemptionNotPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemptionNotPaid = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemptionNotPaid.state, AgentRedemptionState.UNPAID);
     });
 
     it("Should not perform redemption - agent does not pay, time expires in indexer", async () => {
+        const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         const txHash = await minter.performMintingPayment(crt);
@@ -452,23 +454,26 @@ describe("Agent bot tests", () => {
         const rdReq = rdReqs[0];
         // redemption started
         await agentBot.handleEvents(orm.em);
+        // skip time so the it will be too late for payment
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + 10);
+        chain.mine(Number(crt.lastUnderlyingBlock) + 10);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        // first step wil set state to UNPAID
+        await agentBot.runStep(orm.em);
+        orm.em.clear();
+        const redemptionUnpaid = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+        assert.equal(redemptionUnpaid.state, AgentRedemptionState.UNPAID);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
         const queryBlock = Math.round(queryWindow / chain.secondsPerBlock);
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
-        // get time proof
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
-        // first step wil set state to UNPAID
-        await agentBot.runStep(orm.em);
-        orm.em.clear();
-        const redemptionUnpaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
-        assert.equal(redemptionUnpaid.state, AgentRedemptionState.UNPAID);
         // second step should expire
         await agentBot.runStep(orm.em);
         // check redemption
         orm.em.clear();
-        const redemptionDone = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemptionDone = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
@@ -492,7 +497,7 @@ describe("Agent bot tests", () => {
         // agent pays
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
-        const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
         // skip time so the proof will expire in indexer
         const queryWindow = QUERY_WINDOW_SECONDS * 2;
@@ -500,18 +505,19 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + queryWindow);
         chain.mine(Number(crt.lastUnderlyingBlock) + queryBlock);
         // check if redemption is done
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; ; i++) {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
-        const redemptionDone = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemptionDone = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemptionDone.state, AgentRedemptionState.DONE);
     });
 
@@ -539,7 +545,7 @@ describe("Agent bot tests", () => {
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         orm.em.clear();
-        const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemptionPaid = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemptionPaid.state, AgentRedemptionState.PAID);
         // agent does not confirm payment
         // others can confirm redemption payment after some time
@@ -575,7 +581,7 @@ describe("Agent bot tests", () => {
         orm.em.clear();
         const openMintingsAfter = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintingsAfter.length, 0);
-        const mintingAfter = await agentBot.minting.findMinting(orm.em, minting.requestId);
+        const mintingAfter = await agentBot.minting.findMinting(orm.em, { requestId: minting.requestId });
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
         const status1 = Number((await agentBot.agent.getAgentInfo()).status);
@@ -608,7 +614,7 @@ describe("Agent bot tests", () => {
         orm.em.clear();
         const openMintingsAfter = await agentBot.minting.openMintings(orm.em, false);
         assert.equal(openMintingsAfter.length, 0);
-        const mintingAfter = await agentBot.minting.findMinting(orm.em, minting.requestId);
+        const mintingAfter = await agentBot.minting.findMinting(orm.em, { requestId: minting.requestId });
         assert.equal(mintingAfter.state, AgentMintingState.DONE);
         // check agent status
         const status1 = Number((await agentBot.agent.getAgentInfo()).status);
@@ -715,9 +721,10 @@ describe("Agent bot tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // clear dust
         const info = await agentBot.agent.getAgentInfo();
@@ -736,6 +743,7 @@ describe("Agent bot tests", () => {
             const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
             console.log(`Agent step ${i}, waitingForDestructionCleanUp = ${agentEnt.waitingForDestructionCleanUp}`);
             if (agentEnt.waitingForDestructionCleanUp === false) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // await agentBot.runStep(orm.em);
         const info2 = await agentBot.agent.getAgentInfo();
@@ -951,12 +959,13 @@ describe("Agent bot tests", () => {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await agentBot.runStep(orm.em);
+            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if agent is not active
             orm.em.clear();
             const agentEnt = await agentBot.fetchAgentEntity(orm.em)
             console.log(`Agent step ${i}, active = ${agentEnt.active}`);
             if (agentEnt.active === false) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
     });
 
@@ -968,13 +977,26 @@ describe("Agent bot tests", () => {
     }
 
     it("Should respond to agent ping", async () => {
+        const trustedPingSenders = [accounts[5]];
+        agentBot.agentBotSettings.trustedPingSenders = new Set(trustedPingSenders.map(a => a.toLowerCase()));
         const fromBlock = await web3.eth.getBlockNumber();
-        await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0);
+        await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0, { from: accounts[5] });
         await agentBot.runStep(orm.em);
         const allEvents = await readEventsFrom(context.assetManager, fromBlock);
         const events = filterEventList(allEvents, context.assetManager, "AgentPingResponse");
         assert.equal(events.length, 1);
         const response = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
         assert.equal(events[0].args.response, response);
+    });
+
+    it("Should not respond to ping from untrusted providers", async () => {
+        const trustedPingSenders = [accounts[5]];
+        agentBot.agentBotSettings.trustedPingSenders = new Set(trustedPingSenders.map(a => a.toLowerCase()));
+        const fromBlock = await web3.eth.getBlockNumber();
+        await context.assetManager.agentPing(agentBot.agent.vaultAddress, 0, { from: accounts[1] });
+        await agentBot.runStep(orm.em);
+        const allEvents = await readEventsFrom(context.assetManager, fromBlock);
+        const events = filterEventList(allEvents, context.assetManager, "AgentPingResponse");
+        assert.equal(events.length, 0);
     });
 });

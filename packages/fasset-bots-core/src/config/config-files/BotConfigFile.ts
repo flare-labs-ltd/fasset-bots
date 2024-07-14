@@ -12,6 +12,11 @@ export interface OrmConfigOptions {
     host?: string;
     port?: number;
     charset?: string;
+    pool?: {
+        min?: number;
+        max?: number;
+        acquireTimeoutMillis?: number;
+    }
     // allow other options
     [key: string]: any;
 }
@@ -91,6 +96,12 @@ export interface AgentBotFassetSettingsJson {
 
 export interface AgentBotSettingsJson {
     /**
+     * If true, mintings and various redemption steps will run in parallel.
+     * WARNING: should not be used with sqlite database.
+     */
+    parallel: boolean;
+
+    /**
      * Minimum amount of collateral to topup vault to, to prevent liquidation.
      * Relative to collateral's CCB CR.
      * @pattern ^[0-9]+(\.[0-9]+)?$
@@ -110,6 +121,11 @@ export interface AgentBotSettingsJson {
      * @pattern ^[0-9]+(\.[0-9]+)?$
      */
     poolCollateralReserveFactor: string;
+
+    /**
+     * The list of address to whose pings the agent will respond.
+     */
+    trustedPingSenders: string[];
 
     /**
      * Per FAsset settings.

@@ -31,10 +31,12 @@ program.action(async () => {
     try {
         console.log("Timekeeper bot started, press CTRL+C to end");
         await new Promise<void>((resolve) => {
-            process.on("SIGINT", () => {
+            const stopBot = () => {
                 console.log("Timekeeper bot stopping...");
                 resolve();
-            });
+            }
+            process.on("SIGINT", stopBot);
+            process.on("SIGTERM", stopBot);
         });
     } finally {
         await timekeeperService.stopAll();

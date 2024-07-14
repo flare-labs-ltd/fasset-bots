@@ -63,6 +63,7 @@ export function deepCopy<T>(object: T, copiedObjectsMap?: Map<any, any>): T {
             return object.deepCopyThis(copiedObjectsMap);
         }
         // all other class object are not copied
+        // console.log(`Not copyable ${object.constructor?.name}`);
         return object;
     } else {
         // atomic object (number, string, function, null, etc.) - return without copying

@@ -24,10 +24,12 @@ program.action(async () => {
     // run
     try {
         console.log("System keeper bot started, press CTRL+C to end");
-        process.on("SIGINT", () => {
+        const stopBot = () => {
             console.log("System keeper bot stopping...");
             runners.forEach(runner => runner.requestStop());
-        });
+        }
+        process.on("SIGINT", stopBot);
+        process.on("SIGTERM", stopBot);
         await Promise.allSettled(runners.map(
             runner => runner.run(ActorBaseKind.SYSTEM_KEEPER))
         );

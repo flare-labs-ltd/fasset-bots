@@ -11,7 +11,7 @@
         "---------BUILD---SCRIPTS": "",
         "clean": "rimraf -g dist \"packages/*/{dist,coverage,.nyc_output}\" \"packages/fasset-liquidator/{artifacts,cache,types}\"",
         "clean-nm": "rimraf -g node_modules \"packages/*/node_modules\"",
-        "build": "tsc --build",
+        "build": "echo \"Building...\" && tsc --build && echo \"Build successful\"",
         "watch": "tsc --build --watch --incremental",
         "update-references": "utils-typescript-references",
         "---------LINT---SCRIPTS": "",
