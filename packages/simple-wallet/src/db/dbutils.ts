@@ -6,6 +6,7 @@ import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
 import { TransactionInfo } from "../interfaces/WriteWalletInterface";
+import { logger } from "../utils/logger";
 
 
 // transaction operations
@@ -21,7 +22,7 @@ export async function createInitialTransactionEntity(
     sequence?: number,
     executeUntilBlock?: number,
     executeUntilTimestamp?: number
-) : Promise<TransactionEntity> {
+): Promise<TransactionEntity> {
     const ent = orm.em.create(
         TransactionEntity,
         {
@@ -30,10 +31,10 @@ export async function createInitialTransactionEntity(
             destination,
             status: TransactionStatus.TX_CREATED,
             maxFee: maxFee || null,
-            executeUntilBlock: executeUntilBlock|| null,
+            executeUntilBlock: executeUntilBlock || null,
             executeUntilTimestamp: executeUntilTimestamp || null,
             reference: note || null,
-            sequence: sequence ||null,
+            sequence: sequence || null,
             amount: amountInDrops,
             fee: feeInDrops || null
         } as RequiredEntityData<TransactionEntity>,
@@ -67,11 +68,11 @@ export async function fetchTransactionEntityByHash(orm: ORM, txHash: string): Pr
 }
 
 export async function fetchTransactionEntities(orm: ORM, chainType: ChainType, status: TransactionStatus): Promise<TransactionEntity[]> {
-    return await orm.em.find(TransactionEntity, { status, chainType } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'], orderBy: { id: 'ASC' }});
+    return await orm.em.find(TransactionEntity, { status, chainType } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'], orderBy: { id: 'ASC' } });
 }
 
- // utxo operations
- export async function createUTXOEntity(orm: ORM, source: string, txHash:string, position: number, value: BN, script: string, spentTxHash: string | null = null): Promise<void> {
+// utxo operations
+export async function createUTXOEntity(orm: ORM, source: string, txHash: string, position: number, value: BN, script: string, spentTxHash: string | null = null): Promise<void> {
     orm.em.create(
         UTXOEntity,
         {
@@ -111,7 +112,7 @@ export async function storeUTXOS(orm: ORM, source: string, mempoolUTXOs: any[]):
     for (const utxo of mempoolUTXOs) {
         try {
             await fetchUTXOEntity(orm, utxo.mintTxid, utxo.mintIndex);
-        } catch(e) {
+        } catch (e) {
             await createUTXOEntity(orm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script);
         }
 
@@ -124,24 +125,24 @@ export async function getReplacedTransactionByHash(orm: ORM, transactionHash: st
     let txEnt = await fetchTransactionEntityByHash(orm, transactionHash);
     let replaced = txEnt.replaced_by;
     while (replaced && replaced.transactionHash) {
-       txEnt = await fetchTransactionEntityByHash(orm, replaced.transactionHash);
-       replaced = txEnt.replaced_by;
+        txEnt = await fetchTransactionEntityByHash(orm, replaced.transactionHash);
+        replaced = txEnt.replaced_by;
     }
     return txEnt.transactionHash!;
- }
+}
 
- export async function getReplacedTransactionById(orm: ORM, dbId: number): Promise<TransactionEntity> {
+export async function getReplacedTransactionById(orm: ORM, dbId: number): Promise<TransactionEntity> {
     let txEnt = await fetchTransactionEntityById(orm, dbId);
     let replaced = txEnt.replaced_by;
     while (replaced && replaced.transactionHash) {
-       txEnt = await fetchTransactionEntityById(orm, replaced.id);
-       replaced = txEnt.replaced_by;
+        txEnt = await fetchTransactionEntityById(orm, replaced.id);
+        replaced = txEnt.replaced_by;
     }
     return txEnt;
- }
+}
 
- // get transaction info
- export async function getTransactionInfoById(orm: ORM, dbId: number): Promise<TransactionInfo> {
+// get transaction info
+export async function getTransactionInfoById(orm: ORM, dbId: number): Promise<TransactionInfo> {
     const txEntReplaced = await getReplacedTransactionById(orm, dbId);
     const txEntOriginal = await fetchTransactionEntityById(orm, dbId);
     return {
@@ -150,4 +151,37 @@ export async function getReplacedTransactionByHash(orm: ORM, transactionHash: st
         status: txEntOriginal.status,
         replacedByDdId: dbId == txEntReplaced.id ? null : txEntReplaced.id
     };
+}
+
+
+//others
+export async function handleMissingPrivateKey(orm: ORM, txId: number): Promise<void> {
+    await failTransaction(orm, txId, `Cannot prepare transaction ${txId}. Missing private key.`);
+}
+
+export async function failTransaction(orm: ORM, txId: number, reason: string, error?: Error): Promise<void> {
+    await updateTransactionEntity(orm, txId, async (txEnt) => {
+        txEnt.status = TransactionStatus.TX_FAILED;
+    });
+    if (error) {
+        logger.error(`Transaction ${txId} failed: ${reason}`, error);
+        console.error(`Transaction ${txId} failed: ${reason}`, error);
+    } else {
+        logger.error(`Transaction ${txId} failed: ${reason}`);
+        console.error(`Transaction ${txId} failed: ${reason}`);
+    }
+}
+
+export async function processTransactions(orm: ORM, chainType: ChainType, status: TransactionStatus, processFunction: (txEnt: TransactionEntity) => Promise<void>): Promise<void> {
+    const transactionEntities = await fetchTransactionEntities(orm, chainType, status);
+    logger.info(`Fetching transactions ${transactionEntities.length} with status ${status}`);
+    console.info(`Fetching transactions ${transactionEntities.length} with status ${status}`);
+    for (const txEnt of transactionEntities) {
+       try {
+          await processFunction(txEnt);
+       } catch (e) {
+          logger.error(`Cannot process transaction ${txEnt.id}`, e);
+          console.error(`Error while processing ${txEnt.id}`, e);
+       }
+    }
  }
