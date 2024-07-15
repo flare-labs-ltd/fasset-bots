@@ -4,7 +4,6 @@ import * as bitcore from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
 import * as bip84btc from "bip84";
 import * as bip84doge from "dogecoin-bip84";
-import * as crypto from "crypto";
 import { generateMnemonic } from "bip39";
 import { excludeNullFields, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
@@ -31,7 +30,6 @@ import { ORM } from "../orm/mikro-orm.config";
 import {
    createInitialTransactionEntity,
    failTransaction,
-   fetchTransactionEntities,
    fetchTransactionEntityById,
    fetchUTXOsByTxHash,
    fetchUnspentUTXOs,
@@ -236,7 +234,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    ///////////////////////////////////////////////////////////////////////////////////////
    // MONITORING /////////////////////////////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
-
    stopMonitoring() {
       this.monitoring = false;
    }
@@ -254,9 +251,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
             continue;
          }
          try {
-            //TODO
-            // await this.processTransactions(TransactionStatus.TX_SUBMITTED, this.resubmitSubmissionFailedTransactions.bind(this));
-            // await this.processTransactions(TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
+            await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PENDING, this.checkPendingTransaction.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
          } catch (error) {
@@ -332,6 +327,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          console.error(`Transaction ${txEnt.transactionHash} is probably not going to be accepted!`);
          await failTransaction(this.orm, txEnt.id, `Not accepted after ${this.enoughConfirmations} blocks`);
       }
+   }
+
+   async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
+      await this.waitForTransactionToAppearInMempool(txEnt.id);
    }
 
    async signAndSubmitProcess(txId: number, privateKey: string, transaction: bitcore.Transaction): Promise<void> {
@@ -422,7 +421,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       // check if there is still time to submit
       const transaction = await fetchTransactionEntityById(this.orm, txId);
       const currentBlockHeight = await this.getCurrentBlockHeight();
-      if (transaction.executeUntilBlock && currentBlockHeight - transaction.executeUntilBlock < this.executionBlockOffset) {
+      if (transaction.executeUntilBlock && transaction.executeUntilBlock - currentBlockHeight < this.executionBlockOffset) {
          await failTransaction(this.orm, txId, `Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentBlockHeight}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}`);
          return TransactionStatus.TX_FAILED;
       } else if (!transaction.executeUntilBlock) {
@@ -434,9 +433,10 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          if (resp.status == 200) {
             const submittedBlockHeight = await this.getCurrentBlockHeight();
             await updateTransactionEntity(this.orm, txId, async (txEnt) => {
-               txEnt.status = TransactionStatus.TX_SUBMITTED;
+               txEnt.status = TransactionStatus.TX_PENDING;
                txEnt.submittedInBlock = submittedBlockHeight;
-            });
+               txEnt.submittedInTimestamp = new Date().getTime();
+;            });
             const txEnt = await fetchTransactionEntityById(this.orm, txId);
             const transaction = JSON.parse(txEnt.raw!.toString());
             for (const input of transaction.inputs) {
@@ -444,13 +444,13 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
                   utxoEnt.spentHeight = SpentHeightEnum.SENT;
                });
             }
-            return TransactionStatus.TX_SUBMITTED;
+            return TransactionStatus.TX_PENDING;
          } else {
             await failTransaction(this.orm, txId, `Transaction ${txId} submission failed ${resp.status}`, resp.data);
             return TransactionStatus.TX_FAILED;
          }
       } catch (e: any) {
-         // TODO in case of network problems
+         //TODO in case of network problems
          await failTransaction(this.orm, txId,`Transaction ${txId} submission failed`, e);
          return TransactionStatus.TX_FAILED;
       }
@@ -542,7 +542,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
 
    private async waitForTransactionToAppearInMempool(txId: number, retry: number = 0): Promise<void> {
       const txEnt = await fetchTransactionEntityById(this.orm, txId);
-      const start = new Date().getTime();
+      const start = txEnt.submittedInTimestamp;
       while (new Date().getTime() - start < this.mempoolWaitingTime) {
          try {
             const txResp = await this.client.get(`/tx/${txEnt.transactionHash}`);
@@ -553,26 +553,33 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
                return;
             }
          } catch (e) {
-            /* empty */ //TODO}
+            if (axios.isAxiosError(e)) {
+               const responseData = e.response?.data;
+               logger.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
+               console.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
+            } else {
+               logger.warn(`Transaction ${txId} not yet seen in mempool`, e)
+               console.warn(`Transaction ${txId} not yet seen in mempool`, e)
+            }
             await sleepMs(1000);
          }
-         // transaction was not accepted in mempool by one minute => replace by fee one time
-         if (retry > 0) {
-            await failTransaction(this.orm, txId, `Transaction ${txId} was not accepted in mempool`);
-         } else {
-            if (!(await this.checkIfShouldStillSubmit(txEnt.executeUntilBlock || null))) {
-               const currentBlock = await this.getCurrentBlockHeight();
-               await failTransaction(this.orm, txId, `Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
-            }
-            //TODO fail for now
-            //await this.tryToReplaceByFee(txHash);
-            await failTransaction(this.orm, txId, `Need to implement rbf`);
+      }
+      // transaction was not accepted in mempool by one minute => replace by fee one time
+      if (retry > 0) {
+         await failTransaction(this.orm, txId, `Transaction ${txId} was not accepted in mempool`);
+      } else {
+         if (!(await this.checkIfShouldStillSubmit(txEnt.executeUntilBlock || null))) {
+            const currentBlock = await this.getCurrentBlockHeight();
+            await failTransaction(this.orm, txId, `Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
          }
+         //TODO fail for now
+         //await this.tryToReplaceByFee(txHash);
+         await failTransaction(this.orm, txId, `Need to implement rbf`);
       }
    }
 
    private async tryToReplaceByFee(txHash: string): Promise<ISubmitTransactionResponse> {
-      throw new Error(`Cannot replaceByFee transaction ${txHash}: Missing implementation to move privateKey from bot to simple-wallet`);
+      throw new Error(`Cannot replaceByFee transaction ${txHash}.`);
       /*
 const retryTx = await fetchTransactionEntity(this.orm, txHash);
 const newTransaction = JSON.parse(retryTx.raw.toString());
@@ -652,7 +659,7 @@ return submitResp;*/
 
    private async checkIfShouldStillSubmit(executeUntilBlock: number | null): Promise<boolean> {
       const currentBlockHeight = await this.getCurrentBlockHeight();
-      if (executeUntilBlock && executeUntilBlock - currentBlockHeight > this.executionBlockOffset) {
+      if (executeUntilBlock && currentBlockHeight - executeUntilBlock > this.executionBlockOffset) {
          return false;
       }
       return true;

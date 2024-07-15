@@ -32,6 +32,9 @@ export class TransactionEntity {
     @Property()
     submittedInBlock: number = 0; // 0 when tx is created
 
+    @Property()
+    submittedInTimestamp = 0; // server time - needed to track when tx appears in mempool
+
     @Property({ nullable: true  })
     executeUntilBlock?: number;
 

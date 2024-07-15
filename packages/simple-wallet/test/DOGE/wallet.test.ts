@@ -20,9 +20,6 @@ const DOGEMccConnectionTest = {
    username: "",
    password: "",
    inTestnet: true,
-   stuckTransactionOptions: {
-      blockOffset: 1
-   },
    walletSecret: "wallet_secret"
 };
 

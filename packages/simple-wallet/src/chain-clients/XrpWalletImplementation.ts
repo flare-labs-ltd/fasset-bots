@@ -8,7 +8,7 @@ import { deriveAddress, sign } from "ripple-keypairs";
 import { generateMnemonic } from "bip39";
 import { excludeNullFields, sleepMs, bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../utils/utils";
 import { toBN } from "../utils/bnutils";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, DELETE_ACCOUNT_OFFSET, MNEMONIC_STRENGTH, XRP_LEDGER_CLOSE_TIME_MS } from "../utils/constants";
+import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, DELETE_ACCOUNT_OFFSET, MNEMONIC_STRENGTH } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type {
    ICreateWalletResponse,
@@ -23,7 +23,6 @@ import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
 import {
    updateTransactionEntity,
-   fetchTransactionEntities,
    createInitialTransactionEntity,
    getTransactionInfoById,
    fetchTransactionEntityById,
@@ -246,7 +245,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    ///////////////////////////////////////////////////////////////////////////////////////
    // MONITORING /////////////////////////////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
-
    stopMonitoring() {
       this.monitoring = false;
    }
@@ -430,7 +428,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             txEnt.raw = Buffer.from(JSON.stringify(transaction));
             txEnt.transactionHash = signed.txHash;
             txEnt.submittedInBlock = currentBlockHeight;
-            txEnt.executeUntilBlock = transaction.LastLedgerSequence;
+            txEnt.executeUntilBlock = transaction.LastLedgerSequence;//TODO
          });
          await this.submitTransaction(signed.txBlob, resubmittedTx.id, 1);
       }
@@ -523,7 +521,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       // check if there is still time to submit
       const transaction = await fetchTransactionEntityById(this.orm, txDbId);
       const currentLedger = await this.getLatestValidatedLedgerIndex();
-      if (transaction.executeUntilBlock && currentLedger - transaction.executeUntilBlock < this.executionBlockOffset) {
+      if (transaction.executeUntilBlock && transaction.executeUntilBlock - currentLedger < this.executionBlockOffset) {
          await failTransaction(this.orm, txDbId, `Transaction ${txDbId} has no time left to be submitted: currentLedger: ${currentLedger}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}`);
          return TransactionStatus.TX_FAILED;
       } else if (!transaction.executeUntilBlock) {

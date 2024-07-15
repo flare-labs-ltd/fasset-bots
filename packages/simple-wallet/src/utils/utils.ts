@@ -104,9 +104,9 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 3,
+            blockOffset: 4,
             feeIncrease: 2,
-            executionBlockOffset: 3
+            executionBlockOffset: 2
          };
       case ChainType.XRP:
       case ChainType.testXRP:
