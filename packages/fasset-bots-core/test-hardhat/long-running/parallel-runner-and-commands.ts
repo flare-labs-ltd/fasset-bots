@@ -3,20 +3,20 @@ import { AgentBotCommands, AgentBotRunner, ChainId, TimeKeeperService, UserBotCo
 import { AgentBotSettings, AgentSettingsConfig, Secrets } from "../../src/config";
 import { ORM } from "../../src/config/orm";
 import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
-import { OwnerAddressPair } from "../../src/fasset/Agent";
+import { Agent, OwnerAddressPair } from "../../src/fasset/Agent";
 import { MockChain } from "../../src/mock/MockChain";
 import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
-import { Currencies, Currency, latestBlockTimestamp } from "../../src/utils";
+import { Currencies, Currency } from "../../src/utils";
 import { Web3ContractEventDecoder } from "../../src/utils/events/Web3ContractEventDecoder";
 import { EvmEvent } from "../../src/utils/events/common";
 import { eventIs } from "../../src/utils/events/truffle";
-import { BN_ZERO, DAYS, fail, firstValue, getOrCreateAsync, HOURS, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, DAYS, enumerate, fail, firstValue, getOrCreateAsync, HOURS, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { FakeERC20Instance, IERC20MetadataInstance, Truffle } from "../../typechain-truffle";
-import { TestAssetBotContext, createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
+import { createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets, TestAssetBotContext, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
 
 const StateConnector = artifacts.require("StateConnectorMock");
 
@@ -40,18 +40,20 @@ describe("Toplevel runner and commands integration test - massively parallel ver
     let natCurrency: Currency;
     let xrpCurrency: Currency;
 
-    const newAgentSettings: AgentSettingsConfig = {
-        poolTokenSuffix: "TESTAGNT",
-        vaultCollateralFtsoSymbol: "testUSDC",
-        fee: "0.25%",
-        poolFeeShare: "40%",
-        mintingVaultCollateralRatio: "1.6",
-        mintingPoolCollateralRatio: "2.4",
-        poolExitCollateralRatio: "2.6",
-        poolTopupCollateralRatio: "2.2",
-        poolTopupTokenPriceFactor: "0.8",
-        buyFAssetByAgentFactor: "0.99"
-    };
+    function newAgentSettings(i: number): AgentSettingsConfig {
+        return {
+            poolTokenSuffix: "TESTAGNT" + i,
+            vaultCollateralFtsoSymbol: "testUSDC",
+            fee: "0.25%",
+            poolFeeShare: "40%",
+            mintingVaultCollateralRatio: "1.6",
+            mintingPoolCollateralRatio: "2.4",
+            poolExitCollateralRatio: "2.6",
+            poolTopupCollateralRatio: "2.2",
+            poolTopupTokenPriceFactor: "0.8",
+            buyFAssetByAgentFactor: "0.99"
+        };
+    }
 
     const testXrpChainInfo: TestChainInfo = {
         chainId: ChainId.testXRP,
@@ -80,7 +82,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
-        minimumFreeUnderlyingBalance: toBNExp(12, 6),
+        minimumFreeUnderlyingBalance: toBNExp(0.01, 6),
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
     };
 
@@ -203,11 +205,16 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         const agentCommands = createAgentCommands(context);
         const userCommands = await createUserCommands(context);
         //
-        const agent = await agentCommands.createAgentVault(newAgentSettings);
-        const agentVault = agent.vaultAddress;
-        await agentCommands.depositToVault(agentVault, usdcCurrency.parse("10000"));
-        await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("3000000"));
-        await agentCommands.enterAvailableList(agentVault);
+        const NAG = 5;
+        const agents: Agent[] = [];
+        for (let i = 0; i < NAG; i++) {
+            const agent = await agentCommands.createAgentVault(newAgentSettings(i));
+            const agentVault = agent.vaultAddress;
+            await agentCommands.depositToVault(agentVault, usdcCurrency.parse("10000"));
+            await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("3000000"));
+            await agentCommands.enterAvailableList(agentVault);
+            agents.push(agent);
+        }
         await userCommands.infoBot().printAvailableAgents();
         // cleanup state dir
         for (const state of userCommands.readStateList("redeem")) {
@@ -217,7 +224,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         for (let i = 0; i < 300; i++) {
             if (i % 10 === 0) {
                 console.log(`Minting ${i}...`);
-                await userCommands.mint(agentVault, 9, false);
+                await userCommands.mint(agents[(i / 10) % NAG].vaultAddress, 9, false);
             } else {
                 console.log(`Redeeming ${i}...`);
                 await userCommands.redeem(1);
@@ -236,8 +243,10 @@ describe("Toplevel runner and commands integration test - massively parallel ver
             totalDefaulted += res.defaulted;
             totalExpired += res.expired;
             // print agent info
-            const info = await agent.getAgentInfo();
-            console.log(`Minted=${xrpCurrency.format(info.mintedUBA)}   Redeeming=${xrpCurrency.format(info.redeemingUBA)}`);
+            for (const [agent, i] of enumerate(agents)) {
+                const info = await agent.getAgentInfo();
+                console.log(`${i}: minted=${xrpCurrency.format(info.mintedUBA)}   Redeeming=${xrpCurrency.format(info.redeemingUBA)}`);
+            }
             //
             if (res.remaining === 0) break;
             await sleep(3000);
@@ -249,17 +258,23 @@ describe("Toplevel runner and commands integration test - massively parallel ver
             skippedTime += 2 * HOURS;
             await sleep(1000);
             //
-            const info = await agent.getAgentInfo();
-            console.log(`WAITING EXPIRATION: Minted=${xrpCurrency.format(info.mintedUBA)}   Redeeming=${xrpCurrency.format(info.redeemingUBA)}`);
-            if (toBN(info.redeemingUBA).eq(BN_ZERO) && skippedTime > 5 * DAYS) break;
+            let totalRedeeming = BN_ZERO;
+            for (const [agent, i] of enumerate(agents)) {
+                const info = await agent.getAgentInfo();
+                console.log(`${i}: WAITING EXPIRATION: minted=${xrpCurrency.format(info.mintedUBA)}   Redeeming=${xrpCurrency.format(info.redeemingUBA)}`);
+                totalRedeeming = totalRedeeming.add(toBN(info.redeemingUBA));
+            }
+            if (totalRedeeming.eq(BN_ZERO) && skippedTime > 5 * DAYS) break;
         }
         // close
         const lastBlock2 = await web3.eth.getBlockNumber();
-        await agentCommands.closeVault(agentVault);
         // wait for close process to finish (speed up time to rush through all the timelocks)
         const timeSpeedupTimer = setInterval(() => void time.increase(100), 200);
         try {
-            await waitForEvent(context.assetManager, lastBlock2, 2000000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
+            await Promise.allSettled(agents.map(async (agent) => {
+                await agentCommands.closeVault(agent.vaultAddress);
+                await waitForEvent(context.assetManager, lastBlock2, 2000000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agent.vaultAddress);
+            }));
         } finally {
             clearInterval(timeSpeedupTimer);
         }
