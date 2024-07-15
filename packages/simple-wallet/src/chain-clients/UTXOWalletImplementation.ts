@@ -28,6 +28,7 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
 import {
+   checkIfIsDeleting,
    createInitialTransactionEntity,
    failTransaction,
    fetchTransactionEntityById,
@@ -36,6 +37,7 @@ import {
    getTransactionInfoById,
    handleMissingPrivateKey,
    processTransactions,
+   setAccountIsDeleting,
    storeUTXOS,
    updateTransactionEntity,
    updateUTXOEntity,
@@ -172,6 +174,12 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       executeUntilTimestamp?: number
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}`);
+      if (await checkIfIsDeleting(this.orm, source)) {
+         logger.error(`Cannot receive requests. ${source} is deleting`);
+         console.error(`Cannot receive requests. ${source} is deleting`);
+         throw new Error(`Cannot receive requests. ${source} is deleting`);
+      }
+      await this.walletKeys.addKey(source, privateKey);
       const ent = await createInitialTransactionEntity(
          this.orm,
          this.chainType,
@@ -185,7 +193,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          executeUntilBlock,
          executeUntilTimestamp
       );
-      await this.walletKeys.addKey(source, privateKey);
       const txExternalId = ent.id;
       return txExternalId;
    }
@@ -210,9 +217,17 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       executeUntilTimestamp?: number
    ): Promise<number> {
       logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
-      return await this.createPaymentTransaction(
+      if (await checkIfIsDeleting(this.orm, source)) {
+         logger.error(`Cannot receive requests. ${source} is deleting`);
+         throw new Error(`Cannot receive requests. ${source} is deleting`);
+      }
+      await this.walletKeys.addKey(source, privateKey);
+      await this.walletKeys.addKey(source, privateKey);
+      await setAccountIsDeleting(this.orm, source);
+      const ent = await createInitialTransactionEntity(
+         this.orm,
+         this.chainType,
          source,
-         privateKey,
          destination,
          null,
          feeInSatoshi,
@@ -221,6 +236,8 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          executeUntilBlock,
          executeUntilTimestamp
       );
+      const txExternalId = ent.id;
+      return txExternalId;
    }
 
    /**
@@ -251,6 +268,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
             continue;
          }
          try {
+            await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PENDING, this.checkPendingTransaction.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
@@ -294,6 +312,11 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       if (this.checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee || null)) {
          await failTransaction(this.orm, txEnt.id, `Fee restriction (fee: ${transaction.getFee()}, maxFee: ${txEnt.maxFee?.toString()})`);
       } else {
+         // save tx in db
+         await updateTransactionEntity(this.orm, txEnt.id, async (txEntToUpdate) => {
+            txEntToUpdate.raw = Buffer.from(JSON.stringify(transaction));
+            txEntToUpdate.status = TransactionStatus.TX_PREPARED;
+         });
          await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
       }
    }
@@ -329,6 +352,16 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       }
    }
 
+   async submitPreparedTransactions(txEnt: TransactionEntity): Promise<void> {
+      const transaction = JSON.parse(txEnt.raw!.toString());
+      const privateKey = await this.walletKeys.getKey(txEnt.source);
+      if (!privateKey) {
+         await handleMissingPrivateKey(this.orm, txEnt.id);
+         return;
+      }
+      await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
+   }
+
    async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
       await this.waitForTransactionToAppearInMempool(txEnt.id);
    }
@@ -337,12 +370,9 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       let signed = { txBlob: "", txHash: "" }; //TODO do it better
       try {
          signed = await this.signTransaction(transaction, privateKey);
-         const currentBlockHeight = await this.getCurrentBlockHeight();
          // save tx in db
          await updateTransactionEntity(this.orm, txId, async (txEnt) => {
-            txEnt.raw = Buffer.from(JSON.stringify(transaction));
             txEnt.transactionHash = signed.txHash;
-            txEnt.submittedInBlock = currentBlockHeight;
          });
       } catch (e: any) {
          await failTransaction(this.orm, txId, `Cannot sign transaction ${txId}`, e);
@@ -436,7 +466,8 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
                txEnt.status = TransactionStatus.TX_PENDING;
                txEnt.submittedInBlock = submittedBlockHeight;
                txEnt.submittedInTimestamp = new Date().getTime();
-;            });
+               ;
+            });
             const txEnt = await fetchTransactionEntityById(this.orm, txId);
             const transaction = JSON.parse(txEnt.raw!.toString());
             for (const input of transaction.inputs) {
@@ -451,7 +482,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          }
       } catch (e: any) {
          //TODO in case of network problems
-         await failTransaction(this.orm, txId,`Transaction ${txId} submission failed`, e);
+         await failTransaction(this.orm, txId, `Transaction ${txId} submission failed`, e);
          return TransactionStatus.TX_FAILED;
       }
    }

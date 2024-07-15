@@ -9,7 +9,7 @@ import { generateMnemonic } from "bip39";
 import { excludeNullFields, sleepMs, bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../utils/utils";
 import { toBN } from "../utils/bnutils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, DELETE_ACCOUNT_OFFSET, MNEMONIC_STRENGTH } from "../utils/constants";
-import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
+import type { AccountInfoRequest, AccountInfoResponse, ErrorResponse } from "xrpl";
 import type {
    ICreateWalletResponse,
    WriteWalletInterface,
@@ -29,6 +29,8 @@ import {
    failTransaction,
    handleMissingPrivateKey,
    processTransactions,
+   checkIfIsDeleting,
+   setAccountIsDeleting,
 } from "../db/dbutils";
 import { IWalletKeys } from "../db/wallet";
 
@@ -36,6 +38,7 @@ const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
 
 import { logger } from "../utils/logger";
+import { BaseResponse } from "xrpl/dist/npm/models/methods/baseMethod";
 
 const DROPS_PER_XRP = 1000000.0;
 
@@ -127,7 +130,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    async getAccountBalance(account: string): Promise<BN> {
       try {
          const data = await this.getAccountInfo(account);
-         return toBN(data.result.account_data.Balance);
+         logger.info(`Get account balance for ${account}`, data.result);
+         return toBN(data.result.account_data?.Balance || 0);
       } catch (error) {
          logger.error(`Cannot get account balance for ${account}`, error);
          throw error;
@@ -180,6 +184,12 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       executeUntilTimestamp?: number
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops} and reference ${note}`);
+      if (await checkIfIsDeleting(this.orm, source)) {
+         logger.error(`Cannot receive requests. ${source} is deleting`);
+         console.error(`Cannot receive requests. ${source} is deleting`);
+         throw new Error(`Cannot receive requests. ${source} is deleting`);
+      }
+      await this.walletKeys.addKey(source, privateKey);
       const ent = await createInitialTransactionEntity(
          this.orm,
          this.chainType,
@@ -193,7 +203,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          executeUntilBlock,
          executeUntilTimestamp
       );
-      await this.walletKeys.addKey(source, privateKey);
       const txExternalId = ent.id;
       return txExternalId;
    }
@@ -220,9 +229,17 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       executeUntilTimestamp?: number
    ): Promise<number> {
       logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
-      return await this.createPaymentTransaction(
+      if (await checkIfIsDeleting(this.orm, source)) {
+         logger.error(`Cannot receive requests. ${source} is deleting`);
+         throw new Error(`Cannot receive requests. ${source} is deleting`);
+      }
+      await this.walletKeys.addKey(source, privateKey);
+      await this.walletKeys.addKey(source, privateKey);
+      await setAccountIsDeleting(this.orm, source);
+      const ent = await createInitialTransactionEntity(
+         this.orm,
+         this.chainType,
          source,
-         privateKey,
          destination,
          null,
          feeInDrops,
@@ -232,6 +249,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          executeUntilBlock,
          executeUntilTimestamp
       );
+      const txExternalId = ent.id;
+      return txExternalId;
    }
 
    /**
@@ -262,6 +281,7 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             continue;
          }
          try {
+            await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, this.resubmitSubmissionFailedTransactions.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
@@ -309,6 +329,16 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
    }
 
+   async submitPreparedTransactions(tx: TransactionEntity): Promise<void> {
+      const transaction = JSON.parse(tx.raw!.toString());
+      const privateKey = await this.walletKeys.getKey(tx.source);
+      if (!privateKey) {
+         await handleMissingPrivateKey(this.orm, tx.id);
+         return;
+      }
+      await this.signAndSubmitProcess(tx.id, privateKey, transaction);
+   }
+
    async prepareAndSubmitCreatedTransaction(tx: TransactionEntity): Promise<void> {
       const currentLedger = await this.getLatestValidatedLedgerIndex();
       if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
@@ -333,6 +363,12 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       if (checkIfFeeTooHigh(toBN(transaction.Fee!), tx.maxFee || null)) {
          await failTransaction(this.orm, tx.id, `Fee restriction (fee: ${transaction.Fee}, maxFee: ${tx.maxFee?.toString()})`);
       } else {
+         // save tx in db
+         await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+            txEnt.raw = Buffer.from(JSON.stringify(transaction));
+            txEnt.executeUntilBlock = transaction.LastLedgerSequence;
+            txEnt.status = TransactionStatus.TX_PREPARED;
+         });
          await this.signAndSubmitProcess(tx.id, privateKey, transaction);
       }
    }
@@ -356,13 +392,9 @@ export class XrpWalletImplementation implements WriteWalletInterface {
 
    async signAndSubmitProcess(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete): Promise<void> {
       const signed = await this.signTransaction(transaction, privateKey);
-      const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
       // save tx in db
       await updateTransactionEntity(this.orm, txId, async (txEnt) => {
-         txEnt.raw = Buffer.from(JSON.stringify(transaction));
          txEnt.transactionHash = signed.txHash;
-         txEnt.submittedInBlock = currentBlockHeight;
-         txEnt.executeUntilBlock = transaction.LastLedgerSequence;
       });
       const txStatus = await this.submitTransaction(signed.txBlob, txId);
       // resubmit with higher fee
@@ -486,13 +518,11 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          tr.Memos = [Memo];
       }
       // Highest ledger index this transaction can appear in. https://xrpl.org/reliable-transaction-submission.html#lastledgersequence
-      let ledger_sequence = await this.getLatestValidatedLedgerIndex();
-      tr.LastLedgerSequence = executeUntilBlock ? executeUntilBlock : ledger_sequence + this.blockOffset;
+      const latestBlock = await this.getLatestValidatedLedgerIndex();
+      tr.LastLedgerSequence = executeUntilBlock ? executeUntilBlock : latestBlock + this.blockOffset;
       // In order to be allowed to delete account, following is required. https://xrpl.org/docs/concepts/accounts/deleting-accounts/#requirements
-      if (!isPayment && tr.Sequence + DELETE_ACCOUNT_OFFSET >= ledger_sequence) {
-         while (tr.Sequence + DELETE_ACCOUNT_OFFSET >= ledger_sequence) {
-            ledger_sequence = await this.getLatestValidatedLedgerIndex();
-         }
+      if (!isPayment) {
+         tr.LastLedgerSequence = Math.max(tr.Sequence + DELETE_ACCOUNT_OFFSET, latestBlock) + this.blockOffset;
       }
       return tr;
    }
@@ -528,6 +558,14 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          console.warn(`Transaction ${txDbId} does not have 'executeUntilBlock' defined`);
          logger.warn(`Transaction ${txDbId} does not have 'executeUntilBlock' defined`);
       }
+      const originalTx: xrpl.Payment | xrpl.AccountDelete = JSON.parse(transaction.raw!.toString());
+      if (originalTx.TransactionType == "AccountDelete") {
+         if (originalTx.Sequence! + DELETE_ACCOUNT_OFFSET > currentLedger) {
+            logger.warn(`AccountDelete transaction ${txDbId} does not yet satisfy requirements: sequence ${originalTx.Sequence}, currentLedger ${currentLedger}`);
+            console.warn(`AccountDelete transaction ${txDbId} does not yet satisfy requirements: sequence ${originalTx.Sequence}, currentLedger ${currentLedger}`);
+            return TransactionStatus.TX_PREPARED;
+         }
+      }
       try {
          const params = {
             tx_blob: txBlob,
@@ -535,6 +573,10 @@ export class XrpWalletImplementation implements WriteWalletInterface {
          const res = await this.client.post("", {
             method: "submit",
             params: [params],
+         });
+         const currentBlockHeight = await this.getLatestValidatedLedgerIndex()
+         await updateTransactionEntity(this.orm, txDbId, async (txEnt) => {
+            txEnt.submittedInBlock = currentBlockHeight;
          });
          // https://github.com/flare-foundation/multi-chain-client/blob/4f06fd2bfb7f39e386bc88d0441b6c52e9d8948e/src/base-objects/transactions/XrpTransaction.ts#L345
          if (retry == 0 && res.data.result.engine_result.includes("INSUF_FEE")) {

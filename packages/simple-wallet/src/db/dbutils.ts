@@ -7,6 +7,7 @@ import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
 import { TransactionInfo } from "../interfaces/WriteWalletInterface";
 import { logger } from "../utils/logger";
+import { WalletEntity } from "../entity/wallet";
 
 
 // transaction operations
@@ -185,3 +186,21 @@ export async function processTransactions(orm: ORM, chainType: ChainType, status
        }
     }
  }
+
+export async function checkIfIsDeleting(orm: ORM, address: string): Promise<boolean> {
+    const wa = await orm.em.findOne(WalletEntity, { address } as FilterQuery<WalletEntity>);
+    if (wa && wa.isDeleting) {
+        return true;
+    }
+    return false;
+}
+
+export async function setAccountIsDeleting(orm: ORM, address: string): Promise<void> {
+    await orm.em.transactional(async (em) => {
+        const wa = await orm.em.findOne(WalletEntity, { address } as FilterQuery<WalletEntity>);
+        if (wa) {
+            wa.isDeleting = true;
+            await em.persistAndFlush(wa);
+        }
+    });
+}

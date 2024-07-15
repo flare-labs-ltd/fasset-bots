@@ -93,7 +93,7 @@ describe("Xrp wallet tests", () => {
    it("Should submit transaction", async () => {
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
+      const id = await wClient.createPaymentTransaction("r4LHvyYXXkYyQC8ACjo8VKct5hpHc3QFvj", fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
       expect(id).to.be.gt(0);
       const startTime = Date.now();
       const timeLimit = 20000; // 20 s
@@ -103,7 +103,6 @@ describe("Xrp wallet tests", () => {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
-            console.log(tx)
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
          wClient.orm.em.clear();
@@ -129,7 +128,6 @@ describe("Xrp wallet tests", () => {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
-            console.log(txInfo)
             throw new Error(`Time limit exceeded for ${txInfo.dbId} with ${txInfo.transactionHash}`);
          }
          wClient.orm.em.clear();

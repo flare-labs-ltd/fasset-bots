@@ -71,6 +71,7 @@ export class TransactionEntity {
 
 export enum TransactionStatus {
     TX_CREATED = "created", // received tx is initially stored in db
+    TX_PREPARED = "prepared",
     TX_REPLACED = "replaced", // tx was replaced with new transaction
     TX_SUBMISSION_FAILED = "submission_failed", //xrp: failed due ti insufficient fee -> replace tx
     TX_SUBMITTED = "submitted", // utxo: tx is in mempool

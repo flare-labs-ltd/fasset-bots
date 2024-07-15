@@ -7,4 +7,7 @@ export class WalletEntity {
 
     @Property()
     encryptedPrivateKey!: string;
+
+    @Property()
+    isDeleting: boolean = false;
 }
