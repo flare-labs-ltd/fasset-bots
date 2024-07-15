@@ -194,7 +194,7 @@ export class AgentBotRedemption {
 
     async handleExpiredRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>, proof: ConfirmedBlockHeightExists.Proof) {
         logger.info(`Agent ${this.agent.vaultAddress} found expired unpaid redemption ${redemption.requestId} and is calling 'finishRedemptionWithoutPayment'.`);
-        await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+        await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
             await this.context.assetManager.finishRedemptionWithoutPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
         });
         redemption = await this.updateRedemption(rootEm, redemption, {
@@ -283,7 +283,7 @@ export class AgentBotRedemption {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is sending request for payment address invalidity
             for redemption ${redemption.requestId} and address ${redemption.paymentAddress}.`);
         try {
-            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
                 return await this.context.attestationProvider.requestAddressValidityProof(redemption.paymentAddress);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
@@ -320,7 +320,7 @@ export class AgentBotRedemption {
             if (!response.isValid || response.standardAddress !== redemption.paymentAddress) {
                 logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained address validation proof for redemption
                     ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     await this.context.assetManager.rejectInvalidRedemption(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
                 });
                 redemption = await this.updateRedemption(rootEm, redemption, {
@@ -393,7 +393,7 @@ export class AgentBotRedemption {
             and redemption ${redemption.requestId}.`);
         const txHash = requireNotNull(redemption.txHash);
         try {
-            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
                 return await this.context.attestationProvider.requestPaymentProof(txHash, this.agent.underlyingAddress, redemption.paymentAddress);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
@@ -431,7 +431,7 @@ export class AgentBotRedemption {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for redemption ${redemption.requestId} in round ${redemption.proofRequestRound} and data ${redemption.proofRequestData}.`);
-            await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                 await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(proof), redemption.requestId, { from: this.agent.owner.workAddress });
             });
             redemption = await this.updateRedemption(rootEm, redemption, {

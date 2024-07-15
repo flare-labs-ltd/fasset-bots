@@ -48,7 +48,7 @@ export class AgentBotCollateralManagement {
                 const requiredTopUpF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
                 try {
                     logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
-                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                         await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
                     });
                     await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpF);
@@ -73,7 +73,7 @@ export class AgentBotCollateralManagement {
                 const requiredTopUpF = await this.tokens.poolCollateral.format(requiredTopUpPool);
                 try {
                     logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
-                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                         await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
                     });
                     await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpF);
@@ -141,7 +141,7 @@ export class AgentBotCollateralManagement {
             }
 
             if (vaultCRBIPS.gte(minVaultCollateralRatio) && poolCRBIPS.gte(minPoolCollateralRatio)) {
-                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     await this.context.assetManager.endLiquidation(this.agent.vaultAddress, { from: this.agent.owner.workAddress });
                 });
                 logger.info(`Agent ${this.agent.vaultAddress} ended liquidation after price change.`);

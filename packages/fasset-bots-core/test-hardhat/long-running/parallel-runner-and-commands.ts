@@ -28,6 +28,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
     const ownerUnderlyingAddress = "owner_underlying_1";
     let ownerWorkAddress: string;
     let userAddress: string;
+    let submitterAddress: string;
     const userUnderlyingAddress = "user_underlying_1";
     let contexts: Map<string, TestAssetBotContext> = new Map();
     let agentBotSettingsMap: Map<string, AgentBotSettings> = new Map();
@@ -124,6 +125,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         ownerManagementAddress = accounts[2];
         ownerWorkAddress = accounts[3];
         userAddress = accounts[4];
+        submitterAddress = accounts[5];
     });
 
     async function initialize() {
@@ -131,7 +133,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         orm = await createTestOrm();
         const contracts = await createTestChainContracts(accounts[0]);
         const stateConnector = await StateConnector.at(contracts.StateConnector.address);
-        const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto");
+        const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto", submitterAddress);
         // secrets
         secrets = createTestSecrets(testChainInfos.map(ci => ci.chainId), ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
         // create contexts

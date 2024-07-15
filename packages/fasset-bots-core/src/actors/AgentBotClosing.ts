@@ -94,7 +94,7 @@ export class AgentBotClosing {
         try {
             const poolFeeBalance = await this.agent.poolFeeBalance();
             if (poolFeeBalance.gt(BN_ZERO)) {
-                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     await this.agent.withdrawPoolFees(poolFeeBalance);
                 });
                 const br = await TokenBalances.fasset(this.context);
@@ -115,7 +115,7 @@ export class AgentBotClosing {
             const minted = toBN(agentInfo.mintedUBA);
             const closeAmount = minBN(ownerFAssetBalance, minted);
             if (closeAmount.gt(BN_ZERO)) {
-                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     await this.agent.selfClose(closeAmount);
                 });
                 const remaining = minted.sub(closeAmount);
@@ -136,7 +136,7 @@ export class AgentBotClosing {
         const freeVaultCollateralBalance = toBN(agentInfo.freeVaultCollateralWei);
         if (freeVaultCollateralBalance.gt(BN_ZERO) && this.hasNoBackedFAssets(agentInfo)) {
             // announce withdraw class 1
-            const withdrawalAllowedAt = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            const withdrawalAllowedAt = await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                 return await this.agent.announceVaultCollateralWithdrawal(freeVaultCollateralBalance)
             });
             await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
@@ -171,7 +171,7 @@ export class AgentBotClosing {
         const poolTokenBalance = toBN(await this.agent.collateralPoolToken.balanceOf(this.agent.vaultAddress));
         if (poolTokenBalance.gt(BN_ZERO) && this.hasNoBackedFAssets(agentInfo)) {
             // announce redeem pool tokens and wait for others to do so (pool needs to be empty)
-            const redemptionAllowedAt = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            const redemptionAllowedAt = await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                 return await this.agent.announcePoolTokenRedemption(poolTokenBalance);
             });
             await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
@@ -205,7 +205,7 @@ export class AgentBotClosing {
             const totalVaultCollateral = toBN(agentInfo.totalVaultCollateralWei);
             const everythingClean = totalPoolTokens.eq(BN_ZERO) && totalVaultCollateral.eq(BN_ZERO) && this.hasNoBackedFAssets(agentInfo);
             if (everythingClean) {
-                const destroyAllowedAt = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                const destroyAllowedAt = await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     return await this.agent.announceDestroy();
                 });
                 await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
@@ -231,7 +231,7 @@ export class AgentBotClosing {
                 const latestTimestamp = await latestBlockTimestampBN();
                 if (toBN(readAgentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
                     // agent can be destroyed
-                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                         await this.agent.destroy();
                     });
                     await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
