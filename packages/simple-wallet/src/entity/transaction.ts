@@ -67,11 +67,11 @@ export class TransactionEntity {
 }
 
 export enum TransactionStatus {
-    TX_CREATED = "created",
-    TX_REPLACED = "replaced",
-    TX_SUBMISSION_FAILED = "submission_failed", // in xrp this means failed due ti insufficient fee -> replace tx
-    TX_SUBMITTED = "submitted",
-    TX_PENDING = "pending", // in xrp this means that submit fn received error -> tx might be submitted or not
-    TX_SUCCESS = "success",
+    TX_CREATED = "created", // received tx is initially stored in db
+    TX_REPLACED = "replaced", // tx was replaced with new transaction
+    TX_SUBMISSION_FAILED = "submission_failed", //xrp: failed due ti insufficient fee -> replace tx
+    TX_SUBMITTED = "submitted", // utxo: tx is in mempool
+    TX_PENDING = "pending", //xrp: submit fn received error -> tx might be submitted or not; utxo: tx was send but was not yet seen in mempool
+    TX_SUCCESS = "success", // confirmed transaction: xrp -> tx is in validated ledger; utxo -> tx was confirmed by x blocks
     TX_FAILED = "failed"
 }

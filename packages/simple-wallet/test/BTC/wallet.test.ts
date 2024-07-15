@@ -103,9 +103,9 @@ describe("Bitcoin wallet tests", () => {
    });
 
    it.skip("Should prepare and execute transaction", async () => {
-      fundedWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
-      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S", amountToSendSatoshi, undefined, note, undefined);
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
       expect(id).to.be.gt(0);
       const startTime = Date.now();
       const timeLimit = 600000; // 600 s

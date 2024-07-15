@@ -116,8 +116,8 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       } else if (this.chainType == ChainType.testBTC || this.chainType == ChainType.BTC) {
          account = account0.getAddress(0, false);
       } else {
-         logger.error(`Invalid chainType ${this.chainType}`)
-         throw new Error(`Invalid chainType ${this.chainType}`)
+         logger.error(`Invalid chainType ${this.chainType}`);
+         throw new Error(`Invalid chainType ${this.chainType}`);
       }
       return {
          address: account as string,
@@ -125,7 +125,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
          privateKey: account0.getPrivateKey(0),
       };
    }
-
 
    /**
     * @param {string} account
@@ -279,9 +278,9 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
    async processTransactions(status: TransactionStatus, processFunction: (tx: any) => Promise<void>): Promise<void> {
-      logger.info(`Fetching transactions with status ${status}`);
-      console.info(`Fetching transactions with status ${status}`);
       const transactions = await fetchTransactionEntities(this.orm, this.chainType, status);
+      logger.info(`Fetching transactions ${transactions.length} with status ${status}`);
+      console.info(`Fetching transactions ${transactions.length} with status ${status}`);
       for (const tx of transactions) {
          await processFunction(tx);
       }
@@ -307,28 +306,33 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    }
 
    async checkSubmittedTransaction(tx: TransactionEntity): Promise<void> {
-      const txResp = await this.client.get(`/tx/${tx.transactionHash}`);
-      // success
-      if (txResp.data.blockHash && txResp.data.confirmations >= this.enoughConfirmations) {
-         await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
-            txEnt.confirmations = txResp.data.confirmations;
-            txEnt.status = TransactionStatus.TX_SUCCESS;
-         });
-         const utxos = await fetchUTXOsByTxHash(this.orm, tx.transactionHash!); //TODO
-         for (const utxo of utxos) {
-            await updateUTXOEntity(this.orm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
-               utxoEnt.spentHeight = SpentHeightEnum.SPENT;
+      try {
+         const txResp = await this.client.get(`/tx/${tx.transactionHash}`);
+         // success
+         if (txResp.data.blockHash && txResp.data.confirmations >= this.enoughConfirmations) {
+            await updateTransactionEntity(this.orm, tx.id, async (txEnt) => {
+               txEnt.confirmations = txResp.data.confirmations;
+               txEnt.status = TransactionStatus.TX_SUCCESS;
             });
+            const utxos = await fetchUTXOsByTxHash(this.orm, tx.transactionHash!); //TODO
+            for (const utxo of utxos) {
+               await updateUTXOEntity(this.orm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
+                  utxoEnt.spentHeight = SpentHeightEnum.SPENT;
+               });
+            }
+            logger.info(`Transaction ${tx.id} was accepted`);
+            console.info(`Transaction ${tx.id} was accepted`);
+            return;
          }
-         logger.info(`Transaction ${tx.id} was accepted`);
-         console.info(`Transaction ${tx.id} was accepted`);
-         return;
+      } catch (e) {
+         console.error(`Transaction ${tx.transactionHash} cannot be fetched from node`);
+         logger.error(`Transaction ${tx.transactionHash} cannot be fetched from node`, e);
       }
       //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!
       const currentBlockHeight = await this.getCurrentBlockHeight();
       if (currentBlockHeight - tx.submittedInBlock > this.enoughConfirmations) {
          console.error(`Transaction ${tx.transactionHash} is probably not going to be accepted!`);
-         await this.failTransaction(tx.id, `Not accepted after ${this.enoughConfirmations} blocks`)
+         await this.failTransaction(tx.id, `Not accepted after ${this.enoughConfirmations} blocks`);
       }
    }
 
@@ -425,11 +429,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
     */
    private async signTransaction(transaction: bitcore.Transaction, privateKey: string): Promise<SignedObject> {
       const signedAndSerialized = transaction.sign(privateKey).serialize();
-      // calculate txhash
-      const txBuffer = Buffer.from(signedAndSerialized, "hex");
-      const hash1 = crypto.createHash("sha256").update(txBuffer).digest();
-      const hash2 = crypto.createHash("sha256").update(hash1).digest();
-      const txId = hash2.reverse().toString("hex");
+      const txId = transaction.id;
       return { txBlob: signedAndSerialized, txHash: txId };
    }
 
@@ -594,27 +594,27 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    private async tryToReplaceByFee(txHash: string): Promise<ISubmitTransactionResponse> {
       throw new Error(`Cannot replaceByFee transaction ${txHash}: Missing implementation to move privateKey from bot to simple-wallet`);
       /*
-  const retryTx = await fetchTransactionEntity(this.orm, txHash);
-  const newTransaction = JSON.parse(retryTx.raw.toString());
-  const newFee = newTransaction.getFee() * this.feeIncrease;
-  if (this.checkIfFeeTooHigh(toBN(newFee), retryTx.maxFee)) {
-     await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-        txEnt.status = TransactionStatus.TX_FAILED;
-     });
-     throw new Error(`Transaction ${txHash} failed due to fee restriction`)
-  }
-  const privateKey = ""; //TODO fetch private key from
-  const blob = await this.signTransaction(newTransaction, privateKey);
-  const submitResp = await this.submitTransaction(blob);
-  const submittedBlockHeight = await this.getCurrentBlockHeight();
-  await createTransactionEntity(this.orm, newTransaction, retryTx.source, retryTx.destination, submitResp.txId, submittedBlockHeight, retryTx.maxFee);
-  const newTxEnt = await fetchTransactionEntity(this.orm, submitResp.txId);
-  await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
-     txEnt.replaced_by = newTxEnt;
-     txEnt.status = TransactionStatus.TX_REPLACED;
-  });
-  await this.waitForTransactionToAppearInMempool(submitResp.txId, 1);
-  return submitResp;*/
+const retryTx = await fetchTransactionEntity(this.orm, txHash);
+const newTransaction = JSON.parse(retryTx.raw.toString());
+const newFee = newTransaction.getFee() * this.feeIncrease;
+if (this.checkIfFeeTooHigh(toBN(newFee), retryTx.maxFee)) {
+   await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+      txEnt.status = TransactionStatus.TX_FAILED;
+   });
+   throw new Error(`Transaction ${txHash} failed due to fee restriction`)
+}
+const privateKey = ""; //TODO fetch private key from
+const blob = await this.signTransaction(newTransaction, privateKey);
+const submitResp = await this.submitTransaction(blob);
+const submittedBlockHeight = await this.getCurrentBlockHeight();
+await createTransactionEntity(this.orm, newTransaction, retryTx.source, retryTx.destination, submitResp.txId, submittedBlockHeight, retryTx.maxFee);
+const newTxEnt = await fetchTransactionEntity(this.orm, submitResp.txId);
+await updateTransactionEntity(this.orm, txHash, async (txEnt) => {
+   txEnt.replaced_by = newTxEnt;
+   txEnt.status = TransactionStatus.TX_REPLACED;
+});
+await this.waitForTransactionToAppearInMempool(submitResp.txId, 1);
+return submitResp;*/
    }
 
    private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
