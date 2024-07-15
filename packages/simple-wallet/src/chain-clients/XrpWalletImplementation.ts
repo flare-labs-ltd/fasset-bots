@@ -541,8 +541,8 @@ export class XrpWalletImplementation implements WriteWalletInterface {
             await updateTransactionEntity(this.orm, txDbId, async (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUBMISSION_FAILED;
             });
-            logger.error(`Transaction ${txDbId} submission failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
-            console.error(`Submission for tx ${txDbId} failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
+            logger.warn(`Transaction ${txDbId} submission failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
+            console.warn(`Submission for tx ${txDbId} failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`);
             return TransactionStatus.TX_SUBMISSION_FAILED;
          } else if (res.data.result.engine_result.startsWith("tes")) {
             await updateTransactionEntity(this.orm, txDbId, async (txEnt) => {
