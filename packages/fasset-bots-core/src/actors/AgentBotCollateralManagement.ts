@@ -3,11 +3,13 @@ import { AgentBotSettings } from "../config";
 import { Agent } from "../fasset/Agent";
 import { AgentInfo, AgentStatus, CollateralClass } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
-import { BN_ZERO, MAX_BIPS, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, minBN, toBN, toBNExp } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentBot } from "./AgentBot";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+
+const MIN_OWNER_BALANCE = toBNExp(200, 18);
 
 export class AgentBotCollateralManagement {
     static deepCopyWithObjectCreate = true;
@@ -69,19 +71,25 @@ export class AgentBotCollateralManagement {
             const poolCollateralPrice = await this.agent.getPoolCollateralPrice();
             const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(this.agentBotSettings.liquidationPreventionFactor);
             const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
-            if (requiredTopUpPool.gt(BN_ZERO)) {
-                const requiredTopUpF = await this.tokens.poolCollateral.format(requiredTopUpPool);
+            const ownerBalance = await this.tokens.native.balance(this.agent.owner.workAddress);
+            const topupPool = minBN(requiredTopUpPool, ownerBalance.sub(MIN_OWNER_BALANCE));
+            if (topupPool.gt(BN_ZERO)) {
+                const topupPoolF = await this.tokens.poolCollateral.format(topupPool);
                 try {
-                    logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} is trying to buy collateral pool tokens ${topupPoolF} from owner ${this.agent.owner}.`);
                     await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
-                        await this.agent.buyCollateralPoolTokens(requiredTopUpPool);
+                        await this.agent.buyCollateralPoolTokens(topupPool);
                     });
-                    await this.notifier.sendPoolCollateralTopUpAlert(requiredTopUpF);
-                    logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}.`);
+                    await this.notifier.sendPoolCollateralTopUpAlert(topupPoolF);
+                    logger.info(`Agent ${this.agent.vaultAddress} bought collateral pool tokens ${topupPoolF} from owner ${this.agent.owner}.`);
                 } catch (err) {
-                    await this.notifier.sendPoolCollateralTopUpFailedAlert(requiredTopUpF);
-                    logger.error(`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
+                    await this.notifier.sendPoolCollateralTopUpFailedAlert(topupPoolF);
+                    logger.error(`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens ${topupPoolF} from owner ${this.agent.owner}:`, err);
                 }
+            } else if (requiredTopUpPool.gt(BN_ZERO)) {
+                const requiredTopUpPoolF = await this.tokens.poolCollateral.format(requiredTopUpPool);
+                await this.notifier.sendPoolCollateralTopUpFailedAlert(requiredTopUpPoolF);
+                logger.warn(`Agent ${this.agent.vaultAddress} could not buy collateral pool tokens - owner work balance critically low`);
             }
         } catch (error) {
             console.error(`Error while checking for pool collateral top up for agent ${this.agent.vaultAddress}: ${error}`);
@@ -110,8 +118,13 @@ export class AgentBotCollateralManagement {
             const nativeLowBalance = this.ownerNativeLowBalance(agentInfo);
             if (ownerBalanceNative.lte(nativeLowBalance)) {
                 const nativeBalanceF = await this.tokens.native.format(ownerBalanceNative);
-                await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, nativeBalanceF);
-                logger.info(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance ${nativeBalanceF}.`);
+                if (ownerBalanceNative.lte(MIN_OWNER_BALANCE)) {
+                    await this.notifier.sendCriticalLowBalanceOnOwnersAddress(this.agent.owner.workAddress, nativeBalanceF);
+                    logger.warn(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has criticaly low native balance ${nativeBalanceF}.`);
+                } else {
+                    await this.notifier.sendLowBalanceOnOwnersAddress(this.agent.owner.workAddress, nativeBalanceF);
+                    logger.info(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has low native balance ${nativeBalanceF}.`);
+                }
             }
         } catch (error) {
             console.error(`Error while checking owner native balance for agent ${this.agent.vaultAddress}: ${error}`);
