@@ -71,7 +71,7 @@ describe("Dogecoin wallet tests", () => {
       const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note, undefined);
       expect(id).to.be.gt(0);
       const startTime = Date.now();
-      const timeLimit = 600000; // 600 s
+      const timeLimit = 15 * 60_000; // 15 min s
       for (let i = 0; ; i++) {
          const tx = await fetchTransactionEntityById(wClient.orm, id);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
@@ -104,7 +104,7 @@ describe("Dogecoin wallet tests", () => {
       const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", maxFeeInSatoshi);
       expect(id).to.be.gt(0);
       const startTime = Date.now();
-      const timeLimit = 30000; // 30 s
+      const timeLimit = 30_000; // 30 s
       for (let i = 0; ; i++) {
          const tx = await fetchTransactionEntityById(wClient.orm, id);
          if (tx.status == TransactionStatus.TX_FAILED) {
@@ -139,7 +139,7 @@ describe("Dogecoin wallet tests", () => {
       expect(index).not.to.be.null;
    });
 
-   it.skip("Should delete account", async () => {
+   it("Should delete account", async () => {
       const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
       const balance = await wClient.getAccountBalance(targetWallet.address);
       // delete toDelete account
