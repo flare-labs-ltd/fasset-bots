@@ -9,9 +9,8 @@ import * as bip84doge from "dogecoin-bip84";
 export class UTXOAccountGeneration implements WalletAccountGenerationInterface {
 
     constructor(
-      public chainType: ChainType,
-      public inTestnet: boolean
-   ) {
+      public chainType: ChainType
+    ) {
     }
 
    /**
@@ -28,7 +27,8 @@ export class UTXOAccountGeneration implements WalletAccountGenerationInterface {
     */
    createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse {
       const bip84 = this.getBip84();
-      const root = new bip84.fromMnemonic(mnemonic, "", this.inTestnet);
+      const inTestnet = this.chainType == ChainType.testDOGE || this.chainType == ChainType.testBTC;
+      const root = new bip84.fromMnemonic(mnemonic, "", inTestnet);
       const child00 = root.deriveAccount(0);
       const account0 = new bip84.fromZPrv(child00);
       let account;

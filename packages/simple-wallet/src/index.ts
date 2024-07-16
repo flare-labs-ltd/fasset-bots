@@ -7,7 +7,6 @@ import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAcco
 import { DBWalletKeys } from "./db/wallet";
 import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WalletTransactionInterface";
 import { initializeMikroORM } from "./orm/mikro-orm.config";
-import { ChainType } from "./utils/constants";
 
 export type { WalletClient, WalletCreate } from "./types";
 export type { StuckTransaction } from "./interfaces/WalletTransactionInterface";
@@ -20,14 +19,14 @@ export module WALLET {
       }
    };
    export class BtcAccount extends BtcAccountGeneration {
-      constructor(public chainType: ChainType){
-         super(chainType);
+      constructor(inTestnet: boolean){
+         super(inTestnet);
       }
    };
 
    export class DogeAccount extends DogeAccountGeneration {
-      constructor(public chainType: ChainType){
-         super(chainType);
+      constructor(inTestnet: boolean){
+         super(inTestnet);
       }
    };
    export class XRP extends XrpWalletImplementation {

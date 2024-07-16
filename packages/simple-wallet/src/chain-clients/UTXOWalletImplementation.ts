@@ -59,7 +59,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    restartInDueNoResponse: number = 20000; //20s
 
    constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
-      super(chainType, createConfig.inTestnet ?? false);
+      super(chainType);
       this.inTestnet = createConfig.inTestnet ?? false;
       const createAxiosConfig: AxiosRequestConfig = {
          baseURL: createConfig.url,
