@@ -3,14 +3,14 @@ import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, CommandLineError, initWeb3, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
 // We only check balance of timekeeper and submitter at start, so deposit enough funds to last for a while (only needed for gas)
 // TODO: check balances and deposit continuously
-const MIN_NATIVE_BALANCE = toBNExp(500, 18);
+const MIN_NATIVE_BALANCE = toBNExp(250, 18);
 
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: "auto",
@@ -34,10 +34,12 @@ function getAccountRequired(secrets: Secrets, key: string) {
     return { address, privateKey } as const;
 }
 
-async function fundAccount(from: string, to: string, minBalance: BN) {
+async function fundAccount(from: string, to: string, minBalance: BN, name: string) {
     const balance = toBN(await web3.eth.getBalance(to));
     if (balance.lt(minBalance)) {
-        await web3.eth.sendTransaction({ from: from, to: to, value: String(minBalance), gas: 100_000 });
+        const transferBalance = minBalance.muln(2);
+        console.log(`Transfering ${formatFixed(transferBalance, 18)} native tokens to ${name} (${to}) for gas...`);
+        await sendWeb3Transaction({ from: from, to: to, value: String(transferBalance), gas: 100_000 });
     }
 }
 
@@ -61,10 +63,10 @@ program.action(async () => {
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), walletPrivateKeys, owner.address);
         // check balances and fund addresses so there is enough for gas
         if (timekeeper.address !== owner.address) {
-            await fundAccount(owner.address, timekeeper.address, MIN_NATIVE_BALANCE);
+            await fundAccount(owner.address, timekeeper.address, MIN_NATIVE_BALANCE, "timekeeper");
         }
         if (requestSubmitter.address !== owner.address) {
-            await fundAccount(owner.address, requestSubmitter.address, MIN_NATIVE_BALANCE);
+            await fundAccount(owner.address, requestSubmitter.address, MIN_NATIVE_BALANCE, "request submitter");
         }
         await validateBalance(owner.address, MIN_NATIVE_BALANCE);
         //
