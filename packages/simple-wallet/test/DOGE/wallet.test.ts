@@ -99,13 +99,25 @@ describe("Dogecoin wallet tests", () => {
    //    expect(typeof resp2).to.equal("object");
    // });
 
-   //TODO fix
-   it.skip("Should not create transaction: maxFee > fee", async () => {
-      const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      rewired.orm = await initializeMikroORM();
-      fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-      await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to
-         .eventually.be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);
+   it("Should not submit transaction: fee > maxFee", async () => {
+      fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", maxFeeInSatoshi);
+      expect(id).to.be.gt(0);
+      const startTime = Date.now();
+      const timeLimit = 30000; // 30 s
+      for (let i = 0; ; i++) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         if (tx.status == TransactionStatus.TX_FAILED) {
+            break;
+         }
+         if (Date.now() - startTime > timeLimit) {
+            throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
+         }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+     }
+     const txEnt = await fetchTransactionEntityById(wClient.orm, id);
+     expect(txEnt.maxFee!.lt(txEnt.fee!)).to.be.true;
    });
 
    //TODO fix
@@ -127,14 +139,27 @@ describe("Dogecoin wallet tests", () => {
       expect(index).not.to.be.null;
    });
 
-   //TODO
-   // it("Should delete account", async () => {
-   //    const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
-   //    const balance = await wClient.getAccountBalance(targetWallet.address);
-   //    // delete toDelete account
-   //    const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-   //    await wClient.deleteAccount(targetWallet.address, targetWallet.privateKey, fundedAddress, undefined, note);
-   //    const balance2 = await wClient.getAccountBalance(targetWallet.address);
-   //    expect(balance.gt(balance2));
-   // });
+   it.skip("Should delete account", async () => {
+      const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+      const balance = await wClient.getAccountBalance(targetWallet.address);
+      // delete toDelete account
+      const note = "dead0000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
+      const id = await wClient.createDeleteAccountTransaction(targetWallet.address, targetWallet.privateKey, fundedAddress, undefined, note);
+      const startTime2 = Date.now();
+      const timeLimit2 = 15 * 60000 // 15min
+      while (1) {
+         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         if (tx.status == TransactionStatus.TX_SUCCESS) {
+            break;
+         }
+         if (Date.now() - startTime2 > timeLimit2) {
+            throw new Error(`Time limit 2 exceeded in for transaction ${tx.id, tx.transactionHash}`);
+          }
+         wClient.orm.em.clear();
+         await sleepMs(2000);
+      }
+      const balance2 = await wClient.getAccountBalance(targetWallet.address);
+      expect(balance.gt(balance2));
+   });
+
 });
