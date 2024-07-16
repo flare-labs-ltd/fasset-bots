@@ -64,7 +64,7 @@ export class AgentBotUnderlyingManagement {
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
-        const txHash = await this.bot.locks.underlyingLock.lockAndRun(async () => {
+        const txHash = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
             return await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
         });
         await this.createAgentUnderlyingPayment(em, txHash, AgentUnderlyingPaymentType.TOP_UP);
@@ -194,7 +194,7 @@ export class AgentBotUnderlyingManagement {
         try {
             const sourceAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? null : this.agent.underlyingAddress;
             const tragetAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? this.agent.underlyingAddress : null;
-            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
                 return await this.context.attestationProvider.requestPaymentProof(underlyingPayment.txHash, sourceAddress, tragetAddress);
             });
             underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
@@ -234,7 +234,7 @@ export class AgentBotUnderlyingManagement {
         if (attestationProved(proof)) {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} obtained payment proof for underlying ${underlyingPayment.type}
                 payment ${underlyingPayment.txHash} in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
-            await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                 if (underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP) {
                     await this.context.assetManager.confirmTopupPayment(web3DeepNormalize(proof), this.agent.vaultAddress,
                         { from: this.agent.owner.workAddress });

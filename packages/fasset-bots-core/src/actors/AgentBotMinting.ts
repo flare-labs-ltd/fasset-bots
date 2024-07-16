@@ -216,7 +216,7 @@ export class AgentBotMinting {
         const burnNats = natPriceConverter.convertUBAToTokenWei(toBN(minting.valueUBA))
             .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
         // TODO what to do if owner does not have enough nat
-        await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+        await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
             await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), { from: this.agent.owner.workAddress, value: burnNats });
         });
         minting = await this.updateMinting(rootEm, minting, {
@@ -235,7 +235,7 @@ export class AgentBotMinting {
     async requestPaymentProofForMinting(rootEm: EM, minting: Readonly<AgentMinting>, txHash: string, sourceAddress: string): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is sending request for payment proof for transaction ${txHash} and minting ${minting.requestId}.`);
         try {
-            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
                 return await this.context.attestationProvider.requestPaymentProof(txHash, sourceAddress, this.agent.underlyingAddress);
             });
             minting = await this.updateMinting(rootEm, minting, {
@@ -258,7 +258,7 @@ export class AgentBotMinting {
     async requestNonPaymentProofForMinting(rootEm: EM, minting: Readonly<AgentMinting>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is sending request for non payment proof for minting ${minting.requestId}.`);
         try {
-            const request = await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
                 return await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
                     minting.agentUnderlyingAddress, minting.paymentReference, toBN(minting.valueUBA).add(toBN(minting.feeUBA)),
                     Number(minting.firstUnderlyingBlock), Number(minting.lastUnderlyingBlock), Number(minting.lastUnderlyingTimestamp));
@@ -296,7 +296,7 @@ export class AgentBotMinting {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained non payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                 await this.context.assetManager.mintingPaymentDefault(web3DeepNormalize(proof), minting.requestId, { from: this.agent.owner.workAddress });
             });
             minting = await this.updateMinting(rootEm, minting, {
@@ -339,7 +339,7 @@ export class AgentBotMinting {
         }
         if (attestationProved(proof)) {
             logger.info(`Agent ${this.agent.vaultAddress} obtained payment proof for minting ${minting.requestId} in round ${minting.proofRequestRound} and data ${minting.proofRequestData}.`);
-            await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+            await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                 await this.context.assetManager.executeMinting(web3DeepNormalize(proof), minting.requestId, { from: this.agent.owner.workAddress });
             });
             minting = await this.updateMinting(rootEm, minting, {

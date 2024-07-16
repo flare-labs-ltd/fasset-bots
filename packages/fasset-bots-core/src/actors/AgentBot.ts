@@ -17,7 +17,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
 import { formatArgs, squashSpace } from "../utils/formatting";
-import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, sleep, systemTimestampMS, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, sleep, systemTimestampMS, toBN } from "../utils/helpers";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -71,9 +71,17 @@ export class AgentBotTransientStorage {
 export class AgentBotLocks {
     static deepCopyWithObjectCreate = true;
 
-    nativeChainLock = new FairLock();
-    underlyingLock = new FairLock();
+    nativeChainLockMap = new Map<string, FairLock>();
+    underlyingLockMap = new Map<string, FairLock>();
     databaseLock = new FairLock();
+
+    nativeChainLock(address: string) {
+        return getOrCreate(this.nativeChainLockMap, address, () => new FairLock());
+    }
+
+    underlyingLock(address: string) {
+        return getOrCreate(this.underlyingLockMap, address, () => new FairLock());
+    }
 }
 
 export class AgentBot {
@@ -267,6 +275,10 @@ export class AgentBot {
 
     running() {
         return this._running;
+    }
+
+    requestSubmitterAddress() {
+        return this.context.attestationProvider.stateConnector.account ?? this.owner.workAddress;
     }
 
     /**
@@ -475,7 +487,7 @@ export class AgentBot {
     }
 
     async exitAvailable(rootEm: EM) {
-        await this.locks.nativeChainLock.lockAndRun(async () => {
+        await this.locks.nativeChainLock(this.owner.workAddress).lockAndRun(async () => {
             await this.agent.exitAvailable();
         })
         await this.updateAgentEntity(rootEm, async (agentEnt) => {
@@ -572,7 +584,7 @@ export class AgentBot {
             const topic = Number(query.shrn(256 - 32));
             if (topic === 0) {
                 const data = JSON.stringify({ name: "flarelabs/fasset-bots", version: programVersion() });
-                await this.locks.nativeChainLock.lockAndRun(async () => {
+                await this.locks.nativeChainLock(this.owner.workAddress).lockAndRun(async () => {
                     await this.agent.agentPingResponse(query, data);
                 });
             }

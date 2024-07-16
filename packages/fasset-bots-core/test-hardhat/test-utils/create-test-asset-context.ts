@@ -164,6 +164,7 @@ type CreateTestAssetContextOptions = {
     useFaultyWallet?: boolean;
     chain?: MockChain;
     stateConnectorClient?: MockStateConnectorClient;
+    stateConnectorSubmitterAccount?: string;
 };
 
 export async function createTestAssetContext(
@@ -196,7 +197,8 @@ export async function createTestAssetContext(
     }
     // create mock chain attestation provider
     const chain = options.chain ?? await createTestChain(chainInfo);
-    const stateConnectorClient = options.stateConnectorClient ?? new MockStateConnectorClient(stateConnector, {}, "auto", options.useAlwaysFailsProver ?? false);
+    const stateConnectorClient = options.stateConnectorClient
+        ?? new MockStateConnectorClient(stateConnector, {}, "auto", options.stateConnectorSubmitterAccount, options.useAlwaysFailsProver ?? false);
     stateConnectorClient.addChain(chainInfo.chainId, chain);
     const verificationClient = new MockVerificationApiClient();
     const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);

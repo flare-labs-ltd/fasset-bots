@@ -2,7 +2,7 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
 import { Secrets, indexerApiKey } from "../../../src/config";
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
+import { createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createWalletClient, supportedChainId } from "../../../src/config/create-wallet-client";
@@ -94,53 +94,6 @@ describe("Bot config tests", () => {
             return createBlockchainWalletHelper("agent", secrets, invalidSourceId, botConfig.orm.em, "");
         };
         expect(fn).to.throw(`SourceId ${invalidSourceId.chainName} not supported.`);
-    });
-
-    it("Should create attestation helper", async () => {
-        const btc = await createAttestationHelper(
-            ChainId.testBTC,
-            ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
-            OWNER_ADDRESS,
-            indexerTestBTCUrl,
-            indexerApiKey(secrets),
-        );
-        expect(btc.chainId).to.eq(ChainId.testBTC);
-        const doge = await createAttestationHelper(
-            ChainId.testDOGE,
-            ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
-            OWNER_ADDRESS,
-            indexerTestDOGEUrl,
-            indexerApiKey(secrets),
-        );
-        expect(doge.chainId).to.eq(ChainId.testDOGE);
-        const xrp = await createAttestationHelper(
-            ChainId.testXRP,
-            ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
-            OWNER_ADDRESS,
-            indexerTestXRPUrl,
-            indexerApiKey(secrets),
-        );
-        expect(xrp.chainId).to.eq(ChainId.testXRP);
-        const unsupportedSourceId = ChainId.ALGO;
-        await expect(
-            createAttestationHelper(
-                unsupportedSourceId,
-                ATTESTATION_PROVIDER_URLS,
-                STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-                STATE_CONNECTOR_ADDRESS,
-                OWNER_ADDRESS,
-                indexerTestXRPUrl,
-                indexerApiKey(secrets),
-            )
-        )
-            .to.eventually.be.rejectedWith(`SourceId ${unsupportedSourceId} not supported.`)
-            .and.be.an.instanceOf(Error);
     });
 
     it("Should create state connector helper", async () => {

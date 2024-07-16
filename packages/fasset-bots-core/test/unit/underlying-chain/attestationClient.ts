@@ -1,7 +1,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { Secrets, indexerApiKey } from "../../../src/config";
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
+import { Secrets, createStateConnectorClient, indexerApiKey, supportedChainId } from "../../../src/config";
+import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
@@ -22,6 +22,24 @@ const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";
 const finalizationBlocks: number = 6;
+
+async function createAttestationHelper(
+    chainId: ChainId,
+    attestationProviderUrls: string[],
+    scProofVerifierAddress: string,
+    stateConnectorAddress: string,
+    owner: string,
+    indexerUrl: string,
+    indexerApiKey: string,
+): Promise<AttestationHelper> {
+    if (!supportedChainId(chainId)) {
+        throw new Error(`SourceId ${chainId} not supported.`);
+    }
+    const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
+    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
+    return new AttestationHelper(stateConnector, indexer, chainId);
+}
+
 
 // Working tests but skipped from coverage because they take quite some time.
 // Feel free to run them any time separately.
