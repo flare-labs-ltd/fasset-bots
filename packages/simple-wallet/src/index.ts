@@ -1,14 +1,35 @@
 import { BtcWalletImplementation } from "./chain-clients/BtcWalletImplementation";
 import { DogeWalletImplementation } from "./chain-clients/DogeWalletImplementation";
 import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation";
+import { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
+import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
+import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
 import { DBWalletKeys } from "./db/wallet";
-import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WriteWalletInterface";
+import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WalletTransactionInterface";
 import { initializeMikroORM } from "./orm/mikro-orm.config";
+import { ChainType } from "./utils/constants";
 
 export type { WalletClient, WalletCreate } from "./types";
-export type { StuckTransaction } from "./interfaces/WriteWalletInterface";
+export type { StuckTransaction } from "./interfaces/WalletTransactionInterface";
 
 export module WALLET {
+
+   export class XrpAccount extends XrpAccountGeneration {
+      constructor(inTestnet: boolean){
+         super(inTestnet);
+      }
+   };
+   export class BtcAccount extends BtcAccountGeneration {
+      constructor(public chainType: ChainType){
+         super(chainType);
+      }
+   };
+
+   export class DogeAccount extends DogeAccountGeneration {
+      constructor(public chainType: ChainType){
+         super(chainType);
+      }
+   };
    export class XRP extends XrpWalletImplementation {
       constructor(options: RippleWalletConfig) {
          super(options);

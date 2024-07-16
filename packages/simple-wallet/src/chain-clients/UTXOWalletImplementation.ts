@@ -2,9 +2,6 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import * as bitcore from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
-import * as bip84btc from "bip84";
-import * as bip84doge from "dogecoin-bip84";
-import { generateMnemonic } from "bip39";
 import { excludeNullFields, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import {
@@ -14,13 +11,12 @@ import {
    DEFAULT_RATE_LIMIT_OPTIONS,
    DOGE_DUST_AMOUNT,
    DOGE_FEE_PER_KB,
-   MNEMONIC_STRENGTH,
    UTXO_INPUT_SIZE,
    UTXO_OUTPUT_SIZE,
    UTXO_OVERHEAD_SIZE,
 } from "../utils/constants";
-import type { BaseWalletConfig, SignedObject, TransactionInfo, UTXOFeeParams } from "../interfaces/WriteWalletInterface";
-import type { ICreateWalletResponse, ISubmitTransactionResponse, UTXO, WriteWalletInterface } from "../interfaces/WriteWalletInterface";
+import type { BaseWalletConfig, SignedObject, TransactionInfo, UTXOFeeParams } from "../interfaces/WalletTransactionInterface";
+import type { ISubmitTransactionResponse, UTXO, WriteWalletInterface } from "../interfaces/WalletTransactionInterface";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -45,7 +41,8 @@ import {
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { IWalletKeys } from "../db/wallet";
 import { logger } from "../utils/logger";
-export abstract class UTXOWalletImplementation implements WriteWalletInterface {
+import { UTXOAccountGeneration } from "./account-generation/UTXOAccountGeneration";
+export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
    orm!: ORM;
@@ -62,6 +59,7 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
    restartInDueNoResponse: number = 20000; //20s
 
    constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
+      super(chainType, createConfig.inTestnet ?? false);
       this.inTestnet = createConfig.inTestnet ?? false;
       const createAxiosConfig: AxiosRequestConfig = {
          baseURL: createConfig.url,
@@ -94,39 +92,6 @@ export abstract class UTXOWalletImplementation implements WriteWalletInterface {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
-   }
-
-   /**
-    * @returns {Object} - wallet with auto generated mnemonic
-    */
-   createWallet(): ICreateWalletResponse {
-      const mnemonic = generateMnemonic(MNEMONIC_STRENGTH);
-      return this.createWalletFromMnemonic(mnemonic);
-   }
-
-   /**
-    * @param {string} mnemonic - mnemonic used for wallet creation
-    * @returns {Object} - wallet
-    */
-   createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse {
-      const bip84 = this.getBip84();
-      const root = new bip84.fromMnemonic(mnemonic, "", this.inTestnet);
-      const child00 = root.deriveAccount(0);
-      const account0 = new bip84.fromZPrv(child00);
-      let account;
-      if (this.chainType == ChainType.testDOGE || this.chainType == ChainType.DOGE) {
-         account = account0.getAddress(0, false, 44);
-      } else if (this.chainType == ChainType.testBTC || this.chainType == ChainType.BTC) {
-         account = account0.getAddress(0, false);
-      } else {
-         logger.error(`Invalid chainType ${this.chainType}`);
-         throw new Error(`Invalid chainType ${this.chainType}`);
-      }
-      return {
-         address: account as string,
-         mnemonic: mnemonic,
-         privateKey: account0.getPrivateKey(0),
-      };
    }
 
    /**
@@ -647,14 +612,6 @@ return submitResp;*/
          return dogecore;
       } else {
          return bitcore;
-      }
-   }
-
-   private getBip84(): typeof bip84btc {
-      if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-         return bip84doge;
-      } else {
-         return bip84btc;
       }
    }
 

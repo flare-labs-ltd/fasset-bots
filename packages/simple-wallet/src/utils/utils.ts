@@ -10,7 +10,7 @@ import {
    LOCK_ADDRESS_FACTOR,
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "./constants";
-import { StuckTransaction } from "../interfaces/WriteWalletInterface";
+import { StuckTransaction } from "../interfaces/WalletTransactionInterface";
 import BN from "bn.js";
 
 function MccError(error: any) {

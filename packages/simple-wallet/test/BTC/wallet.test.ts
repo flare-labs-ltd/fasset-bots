@@ -1,5 +1,5 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WriteWalletInterface";
+import { ICreateWalletResponse } from "../../src/interfaces/WalletTransactionInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);

@@ -17,7 +17,7 @@ import type {
    XRPFeeParams,
    SignedObject,
    TransactionInfo,
-} from "../interfaces/WriteWalletInterface";
+} from "../interfaces/WalletTransactionInterface";
 import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
@@ -38,11 +38,11 @@ const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
 
 import { logger } from "../utils/logger";
-import { BaseResponse } from "xrpl/dist/npm/models/methods/baseMethod";
+import { XrpAccountGeneration } from "./account-generation/XrpAccountGeneration";
 
 const DROPS_PER_XRP = 1000000.0;
 
-export class XrpWalletImplementation implements WriteWalletInterface {
+export class XrpWalletImplementation extends XrpAccountGeneration implements WriteWalletInterface {
    chainType: ChainType;
    inTestnet: boolean;
    client: AxiosInstance;
@@ -59,7 +59,9 @@ export class XrpWalletImplementation implements WriteWalletInterface {
    restartInDueNoResponse: number = 20000; //20s
 
    constructor(createConfig: RippleWalletConfig) {
+      super(createConfig.inTestnet ?? false);
       this.inTestnet = createConfig.inTestnet ?? false;
+
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
 
       const createAxiosConfig: AxiosRequestConfig = {
@@ -93,34 +95,6 @@ export class XrpWalletImplementation implements WriteWalletInterface {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
-   }
-
-   /**
-    * @returns {Object} - wallet with auto generated mnemonic
-    */
-   createWallet(): ICreateWalletResponse {
-      const mnemonic = generateMnemonic(MNEMONIC_STRENGTH);
-      const resp = xrplWallet.fromMnemonic(mnemonic);
-      return {
-         privateKey: resp.privateKey,
-         publicKey: resp.publicKey,
-         address: resp.classicAddress,
-         mnemonic: mnemonic,
-      } as ICreateWalletResponse;
-   }
-
-   /**
-    * @param {string} mnemonic - mnemonic used for wallet creation
-    * @returns {Object} - wallet generated using mnemonic from input
-    */
-   createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse {
-      const resp = xrplWallet.fromMnemonic(mnemonic);
-      return {
-         privateKey: resp.privateKey,
-         publicKey: resp.publicKey,
-         address: resp.classicAddress,
-         mnemonic: mnemonic,
-      } as ICreateWalletResponse;
    }
 
    /**

@@ -2,11 +2,14 @@ import { TransactionStatus } from "../entity/transaction";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 
-export interface WriteWalletInterface {
+export interface WalletAccountGenerationInterface {
    chainType: ChainType;
 
    createWallet(): ICreateWalletResponse;
    createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse;
+}
+
+export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    getAccountBalance(account: string): Promise<BN>;
    getCurrentTransactionFee(params: FeeParams): Promise<BN>;

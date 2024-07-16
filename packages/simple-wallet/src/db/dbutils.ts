@@ -5,7 +5,7 @@ import { ORM } from "../orm/mikro-orm.config";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
-import { TransactionInfo } from "../interfaces/WriteWalletInterface";
+import { TransactionInfo } from "../interfaces/WalletTransactionInterface";
 import { logger } from "../utils/logger";
 import { WalletEntity } from "../entity/wallet";
 

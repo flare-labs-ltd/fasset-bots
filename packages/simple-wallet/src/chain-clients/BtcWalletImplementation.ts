@@ -1,6 +1,6 @@
 import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { ChainType } from "../utils/constants";
-import type { BitcoinWalletConfig } from "../interfaces/WriteWalletInterface";
+import type { BitcoinWalletConfig } from "../interfaces/WalletTransactionInterface";
 
 export class BtcWalletImplementation extends UTXOWalletImplementation {
    constructor(options: BitcoinWalletConfig) {
