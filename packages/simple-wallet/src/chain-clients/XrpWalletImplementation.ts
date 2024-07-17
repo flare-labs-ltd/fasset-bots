@@ -141,7 +141,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
-    * @param {number|undefined} sequence
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    async createPaymentTransaction(
@@ -152,7 +151,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       feeInDrops?: BN,
       note?: string,
       maxFeeInDrops?: BN,
-      sequence?: number,
       executeUntilBlock?: number,
       executeUntilTimestamp?: number
    ): Promise<number> {
@@ -172,7 +170,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          feeInDrops,
          note,
          maxFeeInDrops,
-         sequence,
          executeUntilBlock,
          executeUntilTimestamp
       );
@@ -197,7 +194,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       feeInDrops?: BN,
       note?: string,
       maxFeeInDrops?: BN,
-      sequence?: number,
       executeUntilBlock?: number,
       executeUntilTimestamp?: number
    ): Promise<number> {
@@ -218,7 +214,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          feeInDrops,
          note,
          maxFeeInDrops,
-         sequence,
          executeUntilBlock,
          executeUntilTimestamp
       );
@@ -344,7 +339,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          tx.amount || null,
          tx.fee,
          tx.reference,
-         tx.sequence,
          tx.executeUntilBlock
       );
       const privateKey = await this.walletKeys.getKey(tx.source);
@@ -437,7 +431,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             newFee,
             originalTx.reference,
             originalTx.maxFee,
-            originalTx.sequence,
             originalTx.executeUntilBlock,
             originalTx.executeUntilTimestamp
          );
@@ -465,7 +458,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
-    * @param {number|undefined} sequence
     * @returns {Object} - XRP Payment or AccountDelete transaction object
     */
    async preparePaymentTransaction(
@@ -474,7 +466,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       amountInDrops: BN | null,
       feeInDrops?: BN,
       note?: string,
-      sequence?: number,
       executeUntilBlock?: number
    ): Promise<xrpl.Payment | xrpl.AccountDelete> {
       const isPayment = amountInDrops != null;
@@ -494,11 +485,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          } as xrpl.AccountDelete;
       }
 
-      if (!sequence) {
-         tr.Sequence = await this.getAccountSequence(source);
-      } else {
-         tr.Sequence = sequence;
-      }
+      tr.Sequence = await this.getAccountSequence(source);
       if (!feeInDrops) {
          tr.Fee = (await this.getCurrentTransactionFee({ isPayment })).toString();
       } else {

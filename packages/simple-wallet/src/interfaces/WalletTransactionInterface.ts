@@ -22,19 +22,17 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
       fee?: BN,
       note?: string,
       maxFee?: BN,
-      sequence?: number,
-      executeUntilBlock?: number
+      executeUntilBlock?: number,
+      executeUntilTimestamp?: number//TODO
    ): Promise<number>;
 
    createDeleteAccountTransaction(
       source: string,
       privateKey: string,
       destination: string,
-
       fee?: BN,
       note?: string,
       maxFee?: BN,
-      sequence?: number
    ): Promise<number>;
 
    getTransactionInfo(dbId: number): Promise<TransactionInfo>;

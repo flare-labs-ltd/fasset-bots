@@ -154,7 +154,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          feeInSatoshi,
          note,
          maxFeeInSatoshi,
-         undefined,
          executeUntilBlock,
          executeUntilTimestamp
       );
@@ -431,7 +430,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                txEnt.status = TransactionStatus.TX_PENDING;
                txEnt.submittedInBlock = submittedBlockHeight;
                txEnt.submittedInTimestamp = new Date().getTime();
-               ;
             });
             const txEnt = await fetchTransactionEntityById(this.orm, txId);
             const transaction = JSON.parse(txEnt.raw!.toString());

@@ -20,7 +20,6 @@ export async function createInitialTransactionEntity(
     feeInDrops?: BN,
     note?: string,
     maxFee?: BN,
-    sequence?: number,
     executeUntilBlock?: number,
     executeUntilTimestamp?: number
 ): Promise<TransactionEntity> {
@@ -35,7 +34,6 @@ export async function createInitialTransactionEntity(
             executeUntilBlock: executeUntilBlock || null,
             executeUntilTimestamp: executeUntilTimestamp || null,
             reference: note || null,
-            sequence: sequence || null,
             amount: amountInDrops,
             fee: feeInDrops || null
         } as RequiredEntityData<TransactionEntity>,

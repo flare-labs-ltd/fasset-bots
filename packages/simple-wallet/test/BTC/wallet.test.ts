@@ -48,7 +48,7 @@ let fundedWallet: ICreateWalletResponse;
 describe("Bitcoin wallet tests", () => {
    before(async () => {
       wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
-      wClient.startMonitoringTransactionProgress()
+      void wClient.startMonitoringTransactionProgress()
    });
 
    after(function() {

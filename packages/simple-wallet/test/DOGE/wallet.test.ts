@@ -43,7 +43,7 @@ let fundedWallet: ICreateWalletResponse;
 describe("Dogecoin wallet tests", () => {
    before(async () => {
       wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
-      wClient.startMonitoringTransactionProgress()
+      void wClient.startMonitoringTransactionProgress()
    });
 
    after(function() {

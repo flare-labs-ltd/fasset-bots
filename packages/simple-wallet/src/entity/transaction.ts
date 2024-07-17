@@ -45,9 +45,6 @@ export class TransactionEntity {
     confirmations?: number;
 
     @Property({ nullable: true  })
-    sequence?: number;
-
-    @Property({ nullable: true  })
     reference?: string;
 
     @Property({ type: BNType, nullable: true  })

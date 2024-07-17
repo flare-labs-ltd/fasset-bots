@@ -26,7 +26,8 @@ const XRPMccConnectionTest: RippleWalletConfig = {
    rateLimitOptions: {
       timeoutMs: 60000,
    },
-   walletSecret: walletSecret
+   walletSecret: walletSecret,
+   inTestnet: true
 };
 
 const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
@@ -48,7 +49,7 @@ let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE
 describe("Xrp wallet tests", () => {
    before(async () => {
       wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
-      wClient.startMonitoringTransactionProgress()
+      void wClient.startMonitoringTransactionProgress();
    });
 
    after(function() {
@@ -93,7 +94,7 @@ describe("Xrp wallet tests", () => {
    it("Should submit transaction", async () => {
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-      const id = await wClient.createPaymentTransaction("r4LHvyYXXkYyQC8ACjo8VKct5hpHc3QFvj", fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
+      const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
       expect(id).to.be.gt(0);
       const startTime = Date.now();
       const timeLimit = 20000; // 20 s
@@ -137,7 +138,7 @@ describe("Xrp wallet tests", () => {
       expect(tx.status).to.equal(TransactionStatus.TX_REPLACED);
    });
 
-   it("Should create transaction with sequence and fee", async () => {
+   it("Should create transaction with fee", async () => {
       fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
       const note = "Submit";
       const trId = await wClient.createPaymentTransaction(
@@ -148,19 +149,17 @@ describe("Xrp wallet tests", () => {
          feeInDrops,
          note,
          undefined,
-         sequence
       );
       const txEnt = await fetchTransactionEntityById(wClient.orm, trId);
       expect(txEnt.source).to.equal(fundedWallet.address);
       expect(txEnt.destination).to.equal(targetAddress);
       expect(txEnt.fee?.toString()).to.equal(feeInDrops.toString());
       expect(txEnt.reference).to.equal(note);
-      expect(txEnt.sequence).to.equal(sequence);
       const startTime = Date.now();
       const timeLimit = 30000; // 30 s
       for (let i = 0; ; i++) {
          const tx = await fetchTransactionEntityById(wClient.orm, txEnt.id);
-         if (tx.status == TransactionStatus.TX_FAILED) {
+         if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
@@ -214,7 +213,6 @@ describe("Xrp wallet tests", () => {
       expect(id).to.be.gt(0);
       const startTime = Date.now();
       const timeLimit = 40000; // 40 s
-      let replacedTx = null;
       while(1) {
          const tx = await fetchTransactionEntityById(wClient.orm, id);
          if (tx.status == TransactionStatus.TX_FAILED) {
