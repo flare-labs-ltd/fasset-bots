@@ -37,10 +37,21 @@
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
                     "type": "string"
                 },
+                "parallel": {
+                    "description": "If true, mintings and various redemption steps will run in parallel.\nWARNING: should not be used with sqlite database.",
+                    "type": "boolean"
+                },
                 "poolCollateralReserveFactor": {
                     "description": "The threshold for NAT on owner's work address, below which alert is triggered.\nRelative to required pool collateral for current minted amount.",
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
                     "type": "string"
+                },
+                "trustedPingSenders": {
+                    "description": "The list of address to whose pings the agent will respond.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
                 },
                 "vaultCollateralReserveFactor": {
                     "description": "The threshold for USDC/WETH/... on owner's work address, below which alert is triggered.\nRelative to required vault collateral for current minted amount.",
@@ -51,7 +62,9 @@
             "required": [
                 "fAssets",
                 "liquidationPreventionFactor",
+                "parallel",
                 "poolCollateralReserveFactor",
+                "trustedPingSenders",
                 "vaultCollateralReserveFactor"
             ],
             "type": "object"
@@ -179,6 +192,21 @@
                 },
                 "host": {
                     "type": "string"
+                },
+                "pool": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "acquireTimeoutMillis": {
+                            "type": "number"
+                        },
+                        "max": {
+                            "type": "number"
+                        },
+                        "min": {
+                            "type": "number"
+                        }
+                    },
+                    "type": "object"
                 },
                 "port": {
                     "type": "number"

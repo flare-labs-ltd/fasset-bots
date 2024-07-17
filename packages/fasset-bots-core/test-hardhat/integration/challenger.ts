@@ -2,6 +2,7 @@ import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { ORM } from "../../src/config/orm";
+import { AgentRedemptionState } from "../../src/entities/common";
 import { AgentStatus } from "../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { MockChain } from "../../src/mock/MockChain";
@@ -17,8 +18,7 @@ import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { fundUnderlying, performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
-import { AgentRedemptionState } from "../../src/entities/common";
+import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -82,6 +82,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -112,6 +113,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
@@ -141,12 +143,13 @@ describe("Challenger tests", () => {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await agentBot.runStep(orm.em);
+            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus1 = await getAgentStatus(agentBot);
         assert.equal(agentStatus1, AgentStatus.NORMAL);
@@ -163,6 +166,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -195,6 +199,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
@@ -230,9 +235,10 @@ describe("Challenger tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // fund and repeat the same payment (already confirmed)
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
@@ -248,6 +254,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);
@@ -283,6 +290,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.FULL_LIQUIDATION);
@@ -308,31 +316,32 @@ describe("Challenger tests", () => {
         const rdReq = reqs[0];
         // create redemption entity
         await agentBot.handleEvents(orm.em);
-        const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - wrong underlying address, also tweak redemption to trigger low underlying balance alert
         redemption.paymentAddress = minter.underlyingAddress;
         const agentBalance = await context.blockchainIndexer.chain.getBalance(agentBot.agent.underlyingAddress);
         redemption.valueUBA = toBN(agentBalance).sub(context.chainInfo.minimumAccountBalance);
-        await agentBot.redemption.checkBeforeRedemptionPayment(redemption);
+        await agentBot.redemption.checkBeforeRedemptionPayment(orm.em, redemption);
         expect(redemption.state).eq(AgentRedemptionState.PAID);
         // check payment proof is available
         for (let i = 0; ; i++) {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await agentBot.runStep(orm.em);
+            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if payment proof available
             orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.REQUESTED_PROOF) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // check start balance
         const startBalanceRedeemer = await context.wNat.balanceOf(redeemer.address);
         const startBalanceAgent = await context.wNat.balanceOf(agentBot.agent.agentVault.address);
         // confirm payment proof is available
-        const fetchedRedemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const fetchedRedemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         const proof = await context.attestationProvider.obtainPaymentProof(fetchedRedemption.proofRequestRound!, fetchedRedemption.proofRequestData!);
         if (!attestationProved(proof)) assert.fail("not proved");
         const res = await context.assetManager.confirmRedemptionPayment(proof, fetchedRedemption.requestId, { from: agentBot.agent.owner.workAddress });
@@ -379,7 +388,7 @@ describe("Challenger tests", () => {
         const rdReq = reqs[0];
         // create redemption entity
         await agentBot.handleEvents(orm.em);
-        const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+        const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - payment blocked
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
@@ -387,16 +396,19 @@ describe("Challenger tests", () => {
             { status: TX_BLOCKED } as TransactionOptionsWithFee & { status?: number });
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
-        redemption.txHash = txHash;
-        redemption.state = AgentRedemptionState.PAID;
+        await agentBot.runInTransaction(orm.em, async em => {
+            const rd = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+            rd.txHash = txHash;
+            rd.state = AgentRedemptionState.PAID;
+        })
         // run step
+        const spyRedemption = spy.on(agentBot.notifier, "sendRedemptionBlocked");
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.runStep(orm.em);
         await agentBot.runStep(orm.em);
         // catch 'RedemptionPaymentBlocked' event
         await challenger.runStep();
         // send notification
-        const spyRedemption = spy.on(agentBot.notifier, "sendRedemptionBlocked");
         await agentBot.runStep(orm.em);
         expect(spyRedemption).to.have.been.called.once;
     });
@@ -425,6 +437,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -491,6 +504,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -540,6 +554,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);
@@ -579,9 +594,10 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await agentBot.runStep(orm.em); // check if redemption is done orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
 
         // repeat the same payment (already confirmed)
@@ -596,6 +612,7 @@ describe("Challenger tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         const agentStatus = await getAgentStatus(agentBot);
         assert.equal(agentStatus, AgentStatus.FULL_LIQUIDATION);

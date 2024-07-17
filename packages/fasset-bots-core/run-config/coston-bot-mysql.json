@@ -1,11 +1,19 @@
 {
     "$schema": "./schema/bot-config-override.schema.json",
     "extends": "coston-bot.json",
+    "agentBotSettings": {
+        "parallel": true
+    },
     "ormOptions": {
         "type": "mysql",
         "dbName": "fasset_bots",
         "host": "localhost",
         "port": 3306,
-        "allowGlobalContext": true
+        "allowGlobalContext": true,
+        "pool": {
+            "min": 0,
+            "max": 80,
+            "acquireTimeoutMillis": 60000
+        }
     }
 }

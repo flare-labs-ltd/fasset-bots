@@ -330,6 +330,7 @@ describe("Liquidator tests", () => {
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         // send notification
         await agentBot.runStep(orm.em);

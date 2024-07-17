@@ -21,6 +21,7 @@ export type SecretsFile = {
     user?: {
         [key: string]: ChainAccount;
     };
+    requestSubmitter?: ChainAccount;
     challenger?: ChainAccount;
     liquidator?: ChainAccount;
     timeKeeper?: ChainAccount;

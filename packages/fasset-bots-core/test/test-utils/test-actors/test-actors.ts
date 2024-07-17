@@ -38,7 +38,7 @@ export async function createTestAgentBot(
     notifiers: NotifierTransport[] = testNotifierTransports
 ): Promise<AgentBot> {
     const owner = await Agent.getOwnerAddressPair(context, ownerManagementAddress);
-    const underlyingAddress = await AgentBot.createUnderlyingAddress(orm.em, context);
+    const underlyingAddress = await AgentBot.createUnderlyingAddress(context);
     console.log(`Validating new underlying address ${underlyingAddress}...`);
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, underlyingAddress);
     console.log(`Creating agent bot...`);

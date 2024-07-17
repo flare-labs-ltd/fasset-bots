@@ -108,6 +108,7 @@ export class UserBotCommands {
         const underlyingAddress = await this.loadUnderlyingAddress(secrets, context, fassetConfig.verificationClient);
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
+        logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new UserBotCommands(context, fAssetSymbol, nativeAddress, underlyingAddress, userDataDir);
     }
 
@@ -209,11 +210,11 @@ export class UserBotCommands {
     async proveAndExecuteSavedMinting(requestIdOrPath: BNish | string, noWait: boolean) {
         const state = this.readState("mint", requestIdOrPath);
         if (noWait) {
-            await this.proveAndExecuteSavedMintingNoWait(requestIdOrPath, state);
+            await this.proveAndExecuteSavedMintingNoWait(requestIdOrPath, state, true);
         } else {
             await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
+            this.deleteState(state, requestIdOrPath);
         }
-        this.deleteState(state, requestIdOrPath);
     }
 
     /**
@@ -237,7 +238,7 @@ export class UserBotCommands {
         logger.info(`User ${this.nativeAddress} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`);
     }
 
-    async proveAndExecuteSavedMintingNoWait(requestIdOrPath: BNish | string, state: MintData) {
+    async proveAndExecuteSavedMintingNoWait(requestIdOrPath: BNish | string, state: MintData, throwIfNotDone: boolean) {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         // if proof request has not been submitted yet, submit (when transction is finalized)
         if (state.proofRequest == null) {
@@ -257,13 +258,15 @@ export class UserBotCommands {
         console.log(`User ${this.nativeAddress} is checking for existence of the proof of underlying payment transaction ${state.transactionHash}...`);
         const proof = await minter.obtainPaymentProof(state.proofRequest.round, state.proofRequest.data);
         if (!attestationProved(proof)) {
-            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET)
+            if (!throwIfNotDone) return;
+            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
         }
         console.log(`Executing payment...`);
         logger.info(`User ${this.nativeAddress} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);
         await minter.executeProvedMinting(state.requestId, proof, ZERO_ADDRESS);
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);
+        this.deleteState(state, requestIdOrPath);
     }
 
     async listMintings(): Promise<void> {
@@ -272,10 +275,15 @@ export class UserBotCommands {
         const settings = await this.context.assetManager.getSettings();
         console.log('Minting requests (id and status):')
         for (const state of stateList) {
-            const stateTs = this.dateStringToTimestamp(state.createdAt);
-            const expired = timestamp - stateTs >= Number(settings.attestationWindowSeconds);
-            console.log(`- ${state.requestId}  ${expired ? MintingStatus.EXPIRED : MintingStatus.PENDING}`);
+            const status = this.mintingStatus(state, timestamp, settings);
+            console.log(`- ${state.requestId}  ${status}`);
         }
+    }
+
+    mintingStatus(state: MintData, timestamp: number, settings: AssetManagerSettings) {
+        const stateTs = this.dateStringToTimestamp(state.createdAt);
+        const expired = timestamp - stateTs >= Number(settings.attestationWindowSeconds);
+        return expired ? MintingStatus.EXPIRED : MintingStatus.PENDING;
     }
 
     /**
@@ -284,7 +292,7 @@ export class UserBotCommands {
      * @param executorAddress
      * @param executorFeeNatWei
      */
-    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
+    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<BN[]> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
         logger.info(`User ${this.nativeAddress} is asking for redemption of ${lots} lots.`);
@@ -322,6 +330,7 @@ export class UserBotCommands {
             requestFiles.forEach(fname => console.log("    " + fname));
         }
         logger.info(loggedRequests);
+        return requests.map(req => toBN(req.requestId));
     }
 
     /**
@@ -359,6 +368,54 @@ export class UserBotCommands {
         await redeemer.executePaymentDefault(requestId, proof, ZERO_ADDRESS); // executor must call from own user address
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
+    }
+
+    async updateAllMintings() {
+        const list = this.readStateList("mint");
+        const settings = await this.context.assetManager.getSettings();
+        const timestamp = await latestBlockTimestamp();
+        for (const state of list) {
+            console.log(`Checking status of minting ${state.requestId}`);
+            const status = this.mintingStatus(state, timestamp, settings);
+            if (status === MintingStatus.PENDING) {
+                await this.proveAndExecuteSavedMintingNoWait(state.requestId, state, false);
+            } else if (status === MintingStatus.EXPIRED) {
+                console.log(`Minting ${state.requestId} expired in indexer and will be eventually defaulted by the agent.`);
+                this.deleteState(state);
+            }
+        }
+    }
+
+    async updateAllRedemptions() {
+        const list = this.readStateList("redeem");
+        const settings = await this.context.assetManager.getSettings();
+        const timestamp = await latestBlockTimestamp();
+        let successful = 0;
+        let defaulted = 0;
+        let expired = 0;
+        for (const state of list) {
+            const status = await this.redemptionStatus(state, timestamp, settings);
+            if (status === RedemptionStatus.SUCCESS) {
+                console.log(`Redemption ${state.requestId} finished successfully.`);
+                this.deleteState(state);
+                ++successful;
+            } else if (status === RedemptionStatus.DEFAULT) {
+                console.log(`Redemption ${state.requestId} wasn't paid in time, executing default...`);
+                try {
+                    await this.savedRedemptionDefault(state.requestId);
+                    ++defaulted;
+                } catch (error) {
+                    logger.error(`Redemption default for ${state.requestId} failed:`, error);
+                    console.error(`Redemption default for ${state.requestId} failed: ${error}`);
+                }
+            } else if (status === RedemptionStatus.EXPIRED) {
+                console.log(`Redemption ${state.requestId} expired in indexer and will be eventually defaulted by the agent.`);
+                this.deleteState(state);
+                ++expired;
+            }
+        }
+        const remaining = list.length - successful - defaulted - expired;
+        return { total: list.length, successful, defaulted, expired, remaining };
     }
 
     async listRedemptions(): Promise<void> {
