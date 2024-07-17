@@ -1,8 +1,7 @@
-import { TransactionEntity } from "../entity/transaction";
 import { MikroORM, Options, SqliteDriver } from '@mikro-orm/sqlite';
-import { UTXOEntity } from "../entity/utxo";
 import { WalletEntity } from "../entity/wallet";
-import { ChainType } from "../utils/constants";
+import { TransactionEntity } from '../entity/transaction';
+import { UTXOEntity } from '../entity/utxo';
 
 export type ORM = MikroORM;
 const config: Options = {

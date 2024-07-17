@@ -8,8 +8,8 @@ import rewire from "rewire";
 import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import { fetchTransactionEntityById } from "../../src/db/dbutils";
-import { TransactionStatus } from "../../src/entity/transaction";
 import { sleepMs } from "../../src/utils/utils";
+import { TransactionStatus } from "../../src/entity/transaction";
 
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");

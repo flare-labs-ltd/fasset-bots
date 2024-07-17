@@ -24,7 +24,7 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
       maxFee?: BN,
       sequence?: number,
       executeUntilBlock?: number
-   ): Promise<any>;
+   ): Promise<number>;
 
    createDeleteAccountTransaction(
       source: string,
@@ -35,9 +35,12 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
       note?: string,
       maxFee?: BN,
       sequence?: number
-   ): Promise<any>;
+   ): Promise<number>;
 
    getTransactionInfo(dbId: number): Promise<TransactionInfo>;
+
+   startMonitoringTransactionProgress(): Promise<void>;
+   stopMonitoring(): void;
 }
 
 export interface ICreateWalletResponse {

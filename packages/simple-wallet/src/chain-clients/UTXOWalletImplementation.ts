@@ -21,7 +21,6 @@ import type { ISubmitTransactionResponse, UTXO, WriteWalletInterface } from "../
 const UnspentOutput = require("bitcore-lib/lib/transaction/unspentoutput");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import BN from "bn.js";
-import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
 import {
    checkIfIsDeleting,
@@ -38,10 +37,11 @@ import {
    updateTransactionEntity,
    updateUTXOEntity,
 } from "../db/dbutils";
-import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { IWalletKeys } from "../db/wallet";
 import { logger } from "../utils/logger";
 import { UTXOAccountGeneration } from "./account-generation/UTXOAccountGeneration";
+import { TransactionStatus, TransactionEntity } from "../entity/transaction";
+import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;

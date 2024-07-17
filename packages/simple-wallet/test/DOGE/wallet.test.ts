@@ -9,8 +9,8 @@ import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
 import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 import { fetchTransactionEntityById } from "../../src/db/dbutils";
-import { TransactionStatus } from "../../src/entity/transaction";
 import { sleepMs } from "../../src/utils/utils";
+import { TransactionStatus } from "../../src/entity/transaction";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");

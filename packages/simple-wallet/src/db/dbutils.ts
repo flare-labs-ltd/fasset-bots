@@ -1,13 +1,13 @@
 import { RequiredEntityData, FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
-import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
-import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
 import { TransactionInfo } from "../interfaces/WalletTransactionInterface";
 import { logger } from "../utils/logger";
 import { WalletEntity } from "../entity/wallet";
+import { TransactionEntity, TransactionStatus } from "../entity/transaction";
+import { UTXOEntity, SpentHeightEnum } from "../entity/utxo";
 
 
 // transaction operations

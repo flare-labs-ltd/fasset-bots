@@ -5,7 +5,6 @@ import xrpl, { convertStringToHex, encodeForSigning, Wallet as xrplWallet, encod
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
-import { generateMnemonic } from "bip39";
 import { excludeNullFields, sleepMs, bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../utils/utils";
 import { toBN } from "../utils/bnutils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, DELETE_ACCOUNT_OFFSET, MNEMONIC_STRENGTH } from "../utils/constants";
@@ -19,7 +18,6 @@ import type {
    TransactionInfo,
 } from "../interfaces/WalletTransactionInterface";
 import BN from "bn.js";
-import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { ORM } from "../orm/mikro-orm.config";
 import {
    updateTransactionEntity,
@@ -39,6 +37,7 @@ const secp256k1 = new elliptic.ec("secp256k1");
 
 import { logger } from "../utils/logger";
 import { XrpAccountGeneration } from "./account-generation/XrpAccountGeneration";
+import { TransactionStatus, TransactionEntity } from "../entity/transaction";
 
 const DROPS_PER_XRP = 1000000.0;
 
@@ -238,7 +237,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    ///////////////////////////////////////////////////////////////////////////////////////
    // MONITORING /////////////////////////////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
-   stopMonitoring() {
+   stopMonitoring(): void {
       this.monitoring = false;
    }
 
@@ -246,6 +245,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * Background processing
     */
    async startMonitoringTransactionProgress(): Promise<void> {
+      logger.info(`Monitoring started for chain ${this.chainType}`);
+      console.info(`Monitoring started for chain ${this.chainType}`);
       this.monitoring = true;
       while (this.monitoring) {
          const networkUp = await this.checkXrpNetworkStatus();
@@ -256,15 +257,32 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          }
          try {
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
+            if (this.shouldStopMonitoring()) break;
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, this.resubmitSubmissionFailedTransactions.bind(this));
+            if (this.shouldStopMonitoring()) break;
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
+            if (this.shouldStopMonitoring()) break;
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
+            if (this.shouldStopMonitoring()) break;
             await processTransactions(this.orm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
+            if (this.shouldStopMonitoring()) break;
          } catch (error) {
             logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
          }
          await sleepMs(this.restartInDueToError);
+         if (this.shouldStopMonitoring()) {
+            break;
+         }
       }
+   }
+
+   shouldStopMonitoring() {
+      if (!this.monitoring) {
+         logger.info(`Monitoring stopped for chain ${this.chainType}`);
+         console.info(`Monitoring stopped for chain ${this.chainType}`);
+         return true;
+      }
+      return false;
    }
 
    async checkXrpNetworkStatus(): Promise<boolean> {
