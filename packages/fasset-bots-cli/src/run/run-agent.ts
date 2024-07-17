@@ -10,7 +10,7 @@ import { toplevelRun } from "../utils/toplevel";
 
 // We only check balance of timekeeper and submitter at start, so deposit enough funds to last for a while (only needed for gas)
 // TODO: check balances and deposit continuously
-const MIN_NATIVE_BALANCE = toBNExp(250, 18);
+const MIN_NATIVE_BALANCE = toBNExp(2, 18);
 
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: "auto",
