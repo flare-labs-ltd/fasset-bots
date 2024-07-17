@@ -1,5 +1,7 @@
 import type BN from "bn.js";
-import { FeeParams } from "../../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+import { FeeParams, TransactionInfo } from "../../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+
+
 
 type NumberLike = BN | number | string;
 
@@ -54,21 +56,24 @@ export interface IBlockChainWallet {
     getTransactionFee(params: FeeParams): Promise<BN>;
 
     // Delete XRP account or empty funds on UTXO chain.
-    // Returns transaction hash - it waits for finalization.
+    // Returns database id of that transaction in simple-wallet.
     deleteAccount(
         sourceAddress: string,
         targetAddress: string,
         reference: string | null,
         options?: TransactionOptionsWithFee
-    ): Promise<string>;
+    ): Promise<number>;
 
-    // Waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)-TODO-urska
+    // Waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)
     // Returns transaction hash
-    addTransactionAndWaitForItsFinalization(//TODO-urska
+    addTransactionAndWaitForItsFinalization(
         sourceAddress: string,
         targetAddress: string,
         amount: NumberLike,
         reference: string | null,
         options?: TransactionOptionsWithFee
     ): Promise<string>;
+
+    // Returns info about transaction (txHash, status, replacedById)
+    checkTransactionStatus(txDbId: number): Promise<TransactionInfo>;
 }

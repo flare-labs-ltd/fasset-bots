@@ -16,6 +16,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
+import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 
 const REDEMPTION_BATCH = 1000;
 
@@ -255,18 +256,18 @@ export class AgentBotRedemption {
         redemption = await this.updateRedemption(rootEm, redemption, {
             state: AgentRedemptionState.PAYING,
         });
-        try {//TODO-urska-initiatePayment
+        try {
             // TODO: what if there are too little funds on underlying address to pay for fee?
-            const txHash = await this.bot.locks.underlyingLock.lockAndRun(async () => {
-                return await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+            const txDbId = await this.bot.locks.underlyingLock.lockAndRun(async () => {
+                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
-                txHash: txHash,
+                txDbId: txDbId,
                 state: AgentRedemptionState.PAID,
             });
             await this.notifier.sendRedemptionPaid(redemption.requestId);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
-                with txHash ${txHash}; target underlying address ${redemption.paymentAddress}, payment reference
+                with txDbId ${txDbId}; target underlying address ${redemption.paymentAddress}, payment reference
                 ${redemption.paymentReference}, amount ${paymentAmount}.`);
         } catch (error) {
             logger.error(`Error trying to pay for redemption ${redemption.requestId}:`, error);
@@ -375,12 +376,27 @@ export class AgentBotRedemption {
      */
     async checkPaymentProofAvailable(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
-        assertNotNull(redemption.txHash);
-        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-        if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
-            await this.requestPaymentProof(rootEm, redemption);
-            await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
+        assertNotNull(redemption.txDbId);
+        const info = await this.context.wallet.checkTransactionStatus(redemption.txDbId);
+        if ((info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED)
+            && info.transactionHash
+        ) {
+            assertNotNull(info.transactionHash);
+            redemption = await this.updateRedemption(rootEm, redemption, {
+                txHash: info.transactionHash
+            });
+            assertNotNull(redemption.txHash);
+            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
+            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+            if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                await this.requestPaymentProof(rootEm, redemption);
+                await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
+            }
+        } else if (info.status == TransactionStatus.TX_REPLACED) {
+            assertNotNull(info.replacedByDdId);
+            await this.updateRedemption(rootEm, redemption, {
+                txDbId: info.replacedByDdId
+            });
         }
     }
 

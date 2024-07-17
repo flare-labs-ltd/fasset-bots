@@ -1,6 +1,10 @@
+import { TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 
 export class FaultyWallet implements IBlockChainWallet {
+    checkTransactionStatus(txDbId: number): Promise<TransactionInfo> {
+        throw new Error("Method not implemented.");
+    }
     addTransaction(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee | undefined): Promise<number> {
         throw new Error("Method not implemented.");
     }

@@ -1,10 +1,11 @@
 import { WalletClient } from "@flarelabs/simple-wallet";
-import { sleep, toBN, unPrefix0x } from "../utils/helpers";
+import { toBN, unPrefix0x } from "../utils/helpers";
 import { IWalletKeys } from "./WalletKeys";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
-import { FeeParams } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
-import { TransactionStatus } from "../entities/transaction";
+import { FeeParams, TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
+import { sleepMs } from "../../../simple-wallet/src/utils/utils";
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(
@@ -12,17 +13,13 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         private walletKeys: IWalletKeys
     ) {}
 
-    addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined): Promise<string> {
-        throw new Error("Method not implemented.");
-    }
-
     async addTransaction(
         sourceAddress: string,
         targetAddress: string,
         amount: string | number | BN,
         reference: string | null,
         options?: TransactionOptionsWithFee,
-        executeUntilBlock?: number //TODO
+        executeUntilBlock?: number
     ): Promise<number> {
         const value = toBN(amount);
         const fee = undefined;
@@ -30,27 +27,26 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         const note = reference ? unPrefix0x(reference) : undefined;
         const privateKey = await this.walletKeys.getKey(sourceAddress);
         if (privateKey) {
-            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, privateKey, targetAddress, value, fee, note, maxFee);
+            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, privateKey, targetAddress, value, fee, note, maxFee, executeUntilBlock);
             return dbId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
         }
     }
 
-    async deleteAccount(//TODO-urska - wait for finalization
+    async deleteAccount(
         sourceAddress: string,
         targetAddress: string,
         reference: string | null,
-        options?: TransactionOptionsWithFee
-    ): Promise<string> {
+        options?: TransactionOptionsWithFee,
+    ): Promise<number> {
         const fee = undefined;
         const maxFee = options?.maxFee ? toBN(options.maxFee) : undefined;
         const note = reference ? unPrefix0x(reference) : undefined;
         const privateKey = await this.walletKeys.getKey(sourceAddress);
         if (privateKey) {
             const dbId = await this.walletClient.createDeleteAccountTransaction(sourceAddress, privateKey, targetAddress, fee, note, maxFee);
-            // return dbId;
-            return "";
+            return dbId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
         }
@@ -81,4 +77,24 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         return toBN(fee);
     }
 
+    async checkTransactionStatus(txDbId: number): Promise<TransactionInfo> {
+        return await this.walletClient.getTransactionInfo(txDbId);
+    }
+
+    // background task (monitoring in simple-wallet) should be running
+    async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number): Promise<string> {
+        let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock);
+        let info = await this.checkTransactionStatus(id);
+        while (!info.transactionHash ||
+            (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
+        {
+            await sleepMs(2000); //sleep for 2 seconds
+            info = await this.checkTransactionStatus(id);
+            if (info.status == TransactionStatus.TX_REPLACED && info.replacedByDdId) {
+                id = info.replacedByDdId;
+                info = await this.checkTransactionStatus(id);
+            }
+        }
+        return info.transactionHash;
+    }
 }

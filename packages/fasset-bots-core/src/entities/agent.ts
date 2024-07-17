@@ -210,6 +210,9 @@ export class AgentRedemption {
 
     // 'PAID' state data
 
+    @PrimaryKey({ nullable: true })
+    txDbId?: number;
+
     @Property({ nullable: true })
     txHash?: string;
 
@@ -280,7 +283,10 @@ export class AgentUnderlyingPayment {
     // 'PAID' state data
 
     @Property({ nullable: true })
-    txHash!: string;
+    txDbId?: number;
+
+    @Property({ nullable: true })
+    txHash?: string;
 
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
 
