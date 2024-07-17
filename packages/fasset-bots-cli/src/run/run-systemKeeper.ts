@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { Secrets, closeBotConfig, createBotConfig, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, initWeb3, logger } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
@@ -17,6 +17,7 @@ program.action(async () => {
     const systemKeeperPrivateKey: string = secrets.required("systemKeeper.private_key");
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [systemKeeperPrivateKey], null);
     const config = await createBotConfig("common", secrets, runConfig, systemKeeperAddress);
+    logger.info(`Asset manager controller is ${config.contractRetriever.assetManagerController.address}.`);
     const fassetList = Array.from(config.fAssets.values());
     const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, systemKeeperAddress, ActorBaseKind.SYSTEM_KEEPER, chainConfig)

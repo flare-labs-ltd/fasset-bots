@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -71,6 +71,7 @@ program.action(async () => {
         await validateBalance(owner.address, MIN_NATIVE_BALANCE);
         //
         const botConfig = await createBotConfig("agent", secrets, runConfig, requestSubmitter.address);
+        logger.info(`Asset manager controller is ${botConfig.contractRetriever.assetManagerController.address}.`);
         // create timekeepers
         const timekeeperService = await TimeKeeperService.create(botConfig, timekeeper.address, timekeeperConfig);
         timekeeperService.startAll();

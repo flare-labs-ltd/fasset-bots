@@ -108,6 +108,7 @@ export class UserBotCommands {
         const underlyingAddress = await this.loadUnderlyingAddress(secrets, context, fassetConfig.verificationClient);
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
+        logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new UserBotCommands(context, fAssetSymbol, nativeAddress, underlyingAddress, userDataDir);
     }
 

@@ -85,6 +85,7 @@ export class AgentBotCommands {
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
         console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
+        logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new AgentBotCommands(context, chainConfig.agentBotSettings, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
     }
 

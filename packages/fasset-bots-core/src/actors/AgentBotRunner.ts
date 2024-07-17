@@ -4,7 +4,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { web3 } from "../utils";
+import { squashSpace, web3 } from "../utils";
 import { firstValue, getOrCreate, requireNotNull, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -196,7 +196,8 @@ export class AgentBotRunner {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
             contexts.set(chainConfig.fAssetSymbol, assetContext);
             settings.set(chainConfig.fAssetSymbol, chainConfig.agentBotSettings);
-            logger.info(`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol} on chain ${assetContext.chainInfo.chainId}`);
+            logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol}
+                on chain ${assetContext.chainInfo.chainId} with asset manager ${assetContext.assetManager.address}`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
