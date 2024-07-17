@@ -52,6 +52,7 @@ export enum AgentNotificationKey {
     // underlying
     LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE",
     LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS",
+    CRITICALLY_LOW_OWNERS_NATIVE_BALANCE = "CRITICALLY LOW BALANCE IN OWNER'S ADDRESS",
     LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS",
     CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL",
     CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT",
@@ -84,6 +85,8 @@ export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
 };
 
 export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
+    static deepCopyWithObjectCreate = true;
+
     constructor(address: string, transports: NotifierTransport[]) {
         super(BotType.AGENT, address, transports);
     }
@@ -191,6 +194,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: FormattedString) {
         await this.info(AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance ${balance}.`);
+    }
+
+    async sendCriticalLowBalanceOnOwnersAddress(ownerAddress: string, balance: FormattedString) {
+        await this.critical(AgentNotificationKey.CRITICALLY_LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has criticaly low native balance ${balance}.`);
     }
 
     async sendRedemptionAddressValidationNoProof(requestId: BNish | null, roundId: number, requestData: string, address: string) {

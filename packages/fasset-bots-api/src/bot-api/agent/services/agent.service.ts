@@ -416,7 +416,7 @@ export class AgentService {
 
     async checkBotStatus(): Promise<boolean> {
         return new Promise((resolve, reject) => {
-            exec("ps -aux", (err, stdout, stderr) => {
+            exec("ps -ef", (err, stdout, stderr) => {
                 if (err) {
                     console.error(`Error executing command: ${err}`);
                     reject('Internal server error');

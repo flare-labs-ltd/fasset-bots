@@ -11,6 +11,11 @@ const testOptions: CreateOrmOptions = {
     debug: false,
     allowGlobalContext: true,
     schemaUpdate: "recreate",
+    pool: {
+        min: 0,
+        max: 2,
+        // acquireTimeoutMillis: 60_000,
+    }
 };
 
 const ormInitOptions: WeakMap<ORM, CreateOrmOptions> = new WeakMap();
@@ -44,5 +49,6 @@ export async function copyORM(orm: ORM) {
     // copy sqlite db file
     const dbName = options.dbName.replace(/\.db$/, `.copy.db`);
     await copyFile(options.dbName, dbName);
+    // if ()
     return await overrideAndCreateOrm({ ...options, dbName, schemaUpdate: "none" }, undefined);
 }

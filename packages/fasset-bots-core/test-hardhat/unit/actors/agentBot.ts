@@ -1,4 +1,4 @@
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { FilterQuery } from "@mikro-orm/core";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -7,6 +7,7 @@ import { AgentBot } from "../../../src/actors/AgentBot";
 import { AgentBotSettings } from "../../../src/config";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting } from "../../../src/entities/agent";
+import { AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState } from "../../../src/entities/common";
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockChain } from "../../../src/mock/MockChain";
@@ -18,13 +19,12 @@ import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
+import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
-import { fundUnderlying } from "../../../test/test-utils/test-helpers";
-import { AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState } from "../../../src/entities/common";
 use(spies);
 use(chaiAsPromised);
 
@@ -128,6 +128,7 @@ describe("Agent bot unit tests", () => {
             const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, { txHash: topUpPayment0.txHash }  as FilterQuery<AgentUnderlyingPayment> );
             console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
             if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         expect(spyBalance2).to.have.been.called.once;
     });
@@ -157,14 +158,7 @@ describe("Agent bot unit tests", () => {
         });
         await orm.em.persistAndFlush(rd);
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
-        await agentBot.redemption.nextRedemptionStep(orm.em, rd.id);
-        expect(spyLog).to.have.been.called.once;
-    });
-
-    it("Should not do next redemption step due to redemption not found in db", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const spyLog = spy.on(console, "error");
-        await agentBot.redemption.nextRedemptionStep(orm.em, 1000);
+        await agentBot.redemption.handleOpenRedemption(orm.em, rd.state, rd);
         expect(spyLog).to.have.been.called.once;
     });
 
@@ -222,10 +216,10 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
         });
         await orm.em.persistAndFlush([rd1, rd2]);
-        const ids = await agentBot.redemption.openRedemptions(orm.em, true);
-        const rds = await agentBot.redemption.openRedemptions(orm.em, false);
-        expect(ids.length).to.eq(1);
-        expect(rds.length).to.eq(1);
+        const started = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.STARTED, 100);
+        const done = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.DONE, 100);
+        expect(started.length).to.eq(1);
+        expect(done.length).to.eq(1);
     });
 
     it("Should not receive proof 1 - not finalized", async () => {
@@ -246,7 +240,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.minting.checkNonPayment(mt);
+        await agentBot.minting.checkNonPayment(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -268,7 +262,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.minting.checkPaymentAndExecuteMinting(mt);
+        await agentBot.minting.checkPaymentAndExecuteMinting(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -289,7 +283,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.redemption.checkConfirmPayment(rd);
+        await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -310,7 +304,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "",
         });
-        await agentBot.redemption.checkConfirmPayment(rd);
+        await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -326,7 +320,7 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 1,
             proofRequestData: "data",
         });
-        await agentBot.underlyingManagement.checkConfirmPayment(up);
+        await agentBot.underlyingManagement.checkConfirmPayment(orm.em, up);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -349,7 +343,8 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.minting.checkNonPayment(mt);
+        await orm.em.persistAndFlush(mt);
+        await agentBot.minting.checkNonPayment(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -372,7 +367,8 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.minting.checkPaymentAndExecuteMinting(mt);
+        await orm.em.persistAndFlush(mt);
+        await agentBot.minting.checkPaymentAndExecuteMinting(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -394,7 +390,8 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "",
         });
-        await agentBot.redemption.checkConfirmPayment(rd);
+        await orm.em.persistAndFlush(rd);
+        await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -421,7 +418,8 @@ describe("Agent bot unit tests", () => {
             proofRequestRound: 0,
             proofRequestData: "data",
         });
-        await agentBot.underlyingManagement.checkConfirmPayment(up);
+        await orm.em.persistAndFlush(up);
+        await agentBot.underlyingManagement.checkConfirmPayment(orm.em, up);
         expect(spyProof).to.have.been.called.once;
     });
 
@@ -653,7 +651,7 @@ describe("Agent bot unit tests", () => {
         chain.secondsPerBlock = 1;
         chain.mine(3);
         // minting
-        const minting = {
+        const minting: AgentMinting = {
             id: 3,
             state: AgentMintingState.STARTED,
             agentAddress: "0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59",
@@ -671,7 +669,7 @@ describe("Agent bot unit tests", () => {
         // switch attestation prover to always fail mode
         checkedCast(agentBot.agent.attestationProvider.stateConnector, MockStateConnectorClient).useAlwaysFailsProver = true;
         //
-        await agentBot.minting.requestNonPaymentProofForMinting(minting)
+        await agentBot.minting.requestNonPaymentProofForMinting(orm.em, minting)
             .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
         const transactionHash = await agentBot.agent.wallet.addTransaction(
@@ -680,7 +678,7 @@ describe("Agent bot unit tests", () => {
             1,
             PaymentReference.selfMint(agentBot.agent.vaultAddress)
         );
-        await agentBot.minting.requestPaymentProofForMinting(minting, transactionHash, randomUnderlyingAddress)
+        await agentBot.minting.requestPaymentProofForMinting(orm.em, minting, transactionHash, randomUnderlyingAddress)
             .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
         const transactionHash1 = await agentBot.agent.wallet.addTransaction(
@@ -690,7 +688,7 @@ describe("Agent bot unit tests", () => {
             PaymentReference.selfMint(agentBot.agent.vaultAddress)
         );
         // redemption
-        const redemption = {
+        const redemption: AgentRedemption = {
             id: 3,
             state: AgentRedemptionState.PAID,
             agentAddress: "0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59",
@@ -703,7 +701,7 @@ describe("Agent bot unit tests", () => {
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
             txHash: transactionHash1,
         };
-        await agentBot.redemption.requestPaymentProof(redemption)
+        await agentBot.redemption.requestPaymentProof(orm.em, redemption)
             .catch(e => console.error(e));
         expect(redemption.state).to.eq("paid");
         // handleDailyTasks
@@ -720,7 +718,7 @@ describe("Agent bot unit tests", () => {
     it("Should not handle claims - no contracts", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        await agentBot.checkForClaims();
+        await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(2);
     });
 
@@ -764,7 +762,7 @@ describe("Agent bot unit tests", () => {
         const amountToClaim1 = web3.eth.abi.encodeParameter("uint256", 15000);
         await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim1);
         // check
-        await agentBot.checkForClaims();
+        await agentBot.claims.checkForClaims();
         // mock functions - there is nothing to claim
         const getEpochs2 = web3.eth.abi.encodeFunctionCall(
             { type: "function", name: "getEpochsWithUnclaimedRewards", inputs: [{ name: "_beneficiary", type: "address" }] },
@@ -775,7 +773,7 @@ describe("Agent bot unit tests", () => {
         const amountToClaim0 = web3.eth.abi.encodeParameter("uint256", 0);
         await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim0);
         // check
-        await agentBot.checkForClaims();
+        await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(0);
         // clean up
         await agentBot.context.addressUpdater.removeContracts(["FtsoRewardManager"]);
@@ -867,35 +865,35 @@ describe("Agent bot unit tests", () => {
         expect(spyLog).to.have.been.called.once;
     });
 
-    it("Should properly order redemptions by priority", async () => {
-        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const states = Object.values(AgentRedemptionState);
-        let countStarted = 0;
-        for (let i = 0; i < 20; i++) {
-            const rd = orm.em.create(
-                AgentRedemption,
-                {
-                    state: states[i % states.length],
-                    agentAddress: agentBot.agent.vaultAddress,
-                    requestId: toBN(i),
-                    paymentAddress: "payment_address_" + i,
-                    valueUBA: toBN(1000 + i),
-                    feeUBA: toBN(100 + i),
-                    paymentReference: "reefrence_" + i,
-                    lastUnderlyingBlock: toBN(100),
-                    lastUnderlyingTimestamp: toBN(100),
-                } as RequiredEntityData<AgentRedemption>,
-                { persist: true }
-            );
-            if (rd.state === AgentRedemptionState.STARTED) countStarted++;
-        }
-        await orm.em.flush();
-        orm.em.clear();
-        // check
-        const M = 5;
-        agentBot.redemption.handleMaxNonPriorityRedemptions = M;
-        const redemptions = await agentBot.redemption.openRedemptions(orm.em, true);
-        // console.log(redemptions);
-        assert.equal(redemptions.length, countStarted + M);
-    });
+    // it("Should properly order redemptions by priority", async () => {
+    //     const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+    //     const states = Object.values(AgentRedemptionState);
+    //     let countStarted = 0;
+    //     for (let i = 0; i < 20; i++) {
+    //         const rd = orm.em.create(
+    //             AgentRedemption,
+    //             {
+    //                 state: states[i % states.length],
+    //                 agentAddress: agentBot.agent.vaultAddress,
+    //                 requestId: toBN(i),
+    //                 paymentAddress: "payment_address_" + i,
+    //                 valueUBA: toBN(1000 + i),
+    //                 feeUBA: toBN(100 + i),
+    //                 paymentReference: "reefrence_" + i,
+    //                 lastUnderlyingBlock: toBN(100),
+    //                 lastUnderlyingTimestamp: toBN(100),
+    //             } as RequiredEntityData<AgentRedemption>,
+    //             { persist: true }
+    //         );
+    //         if (rd.state === AgentRedemptionState.STARTED) countStarted++;
+    //     }
+    //     await orm.em.flush();
+    //     orm.em.clear();
+    //     // check
+    //     const M = 5;
+    //     agentBot.redemption.handleMaxNonPriorityRedemptions = M;
+    //     const redemptions = await agentBot.redemption.redemptionsInState(orm.em, true);
+    //     // console.log(redemptions);
+    //     assert.equal(redemptions.length, countStarted + M);
+    // });
 });

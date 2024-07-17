@@ -50,6 +50,11 @@ export class InfoBotCommands {
         const context = await createAgentBotContext(botConfig, chainConfig);
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);
+        if (fAssetSymbol) {
+            logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
+        } else {
+            logger.info(`Asset manager controller is ${context.assetManagerController.address}.`);
+        }
         console.error(chalk.cyan("Environment successfully initialized."));
         return new InfoBotCommands(context);
     }

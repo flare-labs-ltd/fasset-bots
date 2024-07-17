@@ -1,14 +1,14 @@
-import { CreateRequestContext, FilterQuery } from "@mikro-orm/core";
+import { CreateRequestContext } from "@mikro-orm/core";
 import { AgentBotConfig, AgentBotSettings, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { web3 } from "../utils";
-import { getOrCreate, requireNotNull, sleep } from "../utils/helpers";
+import { squashSpace, web3 } from "../utils";
+import { firstValue, getOrCreate, requireNotNull, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
-import { AgentBot, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
+import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
 
 export interface ITimeKeeperService {
     get(symbol: string): ITimeKeeper;
@@ -27,27 +27,40 @@ export class AgentBotRunner {
         public timekeeperService: ITimeKeeperService,
     ) {}
 
-    public running = false;
     public stopRequested = false;
     public restartRequested = false;
+    public running = false;
+
+    public runningAgentBots = new Map<string, AgentBot>();
+
+    public locks = new AgentBotLocks();
 
     private transientStorage: Map<string, AgentBotTransientStorage> = new Map();
 
+    @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
         this.restartRequested = false;
         this.running = true;
         try {
-            while (!this.stopLoop()) {
+            while (!this.readyToStop()) {
                 await this.runStep();
-                if (this.stopLoop()) break;
             }
         } finally {
             this.running = false;
         }
     }
 
-    stopLoop(): boolean {
+    parallel() {
+        // paralle has same value for all chains, so just use first
+        return firstValue(this.settings)?.parallel ?? false;
+    }
+
+    readyToStop() {
+        return this.stopOrRestartRequested() && this.runningAgentBots.size === 0;
+    }
+
+    stopOrRestartRequested(): boolean {
         return this.stopRequested || this.restartRequested;
     }
 
@@ -61,34 +74,99 @@ export class AgentBotRunner {
 
     /**
      * This is the main method, where "automatic" logic is gathered.
-     * In every step it firstly collects all active agent entities. For every entity it construct AgentBot and runs its runsStep method,
-     * which handles required events and other.
      */
-    @CreateRequestContext()
-    async runStep(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true } as FilterQuery<AgentEntity>);
+    async runStep() {
+        try {
+            if (this.parallel()) {
+                await this.runStepParallel();
+            } else {
+                await this.runStepSerial();
+            }
+        } catch (error) {
+            logger.error(`Error running step of agent bot runner:`, error);
+        }
+    }
+
+    /**
+     * This is the main method, for parallel mode.
+     * In every step it updates the list of running agents and runs new ones if they were added to the database.
+     */
+    async runStepParallel(): Promise<void> {
+        this.removeStoppedAgentBots();
+        if (!this.stopOrRestartRequested()) {
+            this.checkForWorkAddressChange();
+            await this.addNewAgentBots();
+        }
+        const sleepMS = this.stopOrRestartRequested() ? this.loopDelay : 100;
+        await sleep(sleepMS);
+    }
+
+    /**
+     * This is the main method, for serial mode (tests with sqlite).
+     * In every step it collects all active agent entities and for every one it construct AgentBot and runs its runsStep method, which handles required events and other methods.
+     */
+    async runStepSerial(): Promise<void> {
+        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
             this.checkForWorkAddressChange();
-            if (this.stopLoop()) break;
+            if (this.stopOrRestartRequested()) break;
             try {
-                const context = this.contexts.get(agentEntity.fassetSymbol);
-                if (context == null) {
-                    console.warn(`Invalid fasset symbol ${agentEntity.fassetSymbol}`);
-                    logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid token symbol ${agentEntity.fassetSymbol}.`);
-                    continue;
-                }
-                const agentBotSettings = requireNotNull(this.settings.get(agentEntity.fassetSymbol));    // cannot be missing - see create()
-                const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
-                const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
-                agentBot.runner = this;
-                agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
-                agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
+                const agentBot = await this.newAgentBot(agentEntity);
+                if (agentBot == null) continue;
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner started handling agent ${agentBot.agent.vaultAddress}.`);
                 await agentBot.runStep(this.orm.em);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner finished handling agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with agent ${agentEntity.vaultAddress}: ${error}`);
                 logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error with agent ${agentEntity.vaultAddress}:`, error);
+            }
+        }
+    }
+
+    async addNewAgentBots() {
+        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        for (const agentEntity of agentEntities) {
+            if (this.runningAgentBots.has(agentEntity.vaultAddress)) continue;
+            // create new bot
+            try {
+                const agentBot = await this.newAgentBot(agentEntity);
+                if (agentBot == null) continue;
+                void agentBot.runThreads(this.orm.em).catch((error) => {
+                    logger.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
+                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
+                });
+                this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
+                logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner added running agent ${agentBot.agent.vaultAddress}.`);
+            } catch (error) {
+                console.error(`Error with adding running agent ${agentEntity.vaultAddress}: ${error}`);
+                logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error starting agent ${agentEntity.vaultAddress}:`, error);
+            }
+        }
+    }
+
+    async newAgentBot(agentEntity: AgentEntity) {
+        const context = this.contexts.get(agentEntity.fassetSymbol);
+        if (context == null) {
+            console.warn(`Invalid fasset symbol ${agentEntity.fassetSymbol}`);
+            logger.warn(`Owner's ${agentEntity.ownerAddress} AgentBotRunner found invalid token symbol ${agentEntity.fassetSymbol}.`);
+            return null;
+        }
+        const agentBotSettings = requireNotNull(this.settings.get(agentEntity.fassetSymbol));    // cannot be missing - see create()
+        const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
+        const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
+        agentBot.runner = this;
+        agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
+        agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
+        agentBot.locks = this.locks;
+        agentBot.loopDelay = this.loopDelay;
+        return agentBot;
+    }
+
+    removeStoppedAgentBots() {
+        const agentBotEntries = Array.from(this.runningAgentBots.entries());
+        for (const [address, agentBot] of agentBotEntries) {
+            if (!agentBot.running()) {
+                this.runningAgentBots.delete(address);
             }
         }
     }
@@ -118,7 +196,8 @@ export class AgentBotRunner {
             const assetContext = await createAgentBotContext(botConfig, chainConfig);
             contexts.set(chainConfig.fAssetSymbol, assetContext);
             settings.set(chainConfig.fAssetSymbol, chainConfig.agentBotSettings);
-            logger.info(`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol} on chain ${assetContext.chainInfo.chainId}`);
+            logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol}
+                on chain ${assetContext.chainInfo.chainId} with asset manager ${assetContext.assetManager.address}`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
