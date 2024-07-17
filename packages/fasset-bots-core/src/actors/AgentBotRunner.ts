@@ -1,12 +1,14 @@
 import { CreateRequestContext } from "@mikro-orm/core";
+import BN from "bn.js";
 import { AgentBotConfig, AgentBotSettings, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { squashSpace, web3 } from "../utils";
+import { EVMNativeTokenBalance, sendWeb3Transaction, squashSpace, web3 } from "../utils";
 import { firstValue, getOrCreate, requireNotNull, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
+import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
 
@@ -36,6 +38,8 @@ export class AgentBotRunner {
     public locks = new AgentBotLocks();
 
     private transientStorage: Map<string, AgentBotTransientStorage> = new Map();
+
+    public serviceAccounts = new Map<string, string>();
 
     @CreateRequestContext()
     async run(): Promise<void> {
@@ -77,6 +81,7 @@ export class AgentBotRunner {
      */
     async runStep() {
         try {
+            await this.fundServiceAccounts();
             if (this.parallel()) {
                 await this.runStepParallel();
             } else {
@@ -97,7 +102,7 @@ export class AgentBotRunner {
             this.checkForWorkAddressChange();
             await this.addNewAgentBots();
         }
-        const sleepMS = this.stopOrRestartRequested() ? this.loopDelay : 100;
+        const sleepMS = this.stopOrRestartRequested() ? 100 : this.loopDelay;
         await sleep(sleepMS);
     }
 
@@ -179,6 +184,40 @@ export class AgentBotRunner {
             this.requestRestart();
             console.warn(`Owner's native address from secrets file, does not match their used account`);
             logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
+        }
+    }
+
+    async fundServiceAccounts() {
+        const settings = firstValue(this.settings);
+        const fundingAddress = this.secrets.optional("owner.native.address");
+        if (!settings || !fundingAddress) return;
+        const notifier = new AgentNotifier(fundingAddress, this.notifierTransports);
+        for (const [name, address] of this.serviceAccounts) {
+            await this.fundAccount(fundingAddress, address, settings.minBalanceOnServiceAccount, name, notifier);
+        }
+    }
+
+    async fundAccount(from: string, account: string, minBalance: BN, name: string, notifier?: AgentNotifier) {
+        try {
+            const nativeBR = new EVMNativeTokenBalance("NAT", 18);
+            const balance = await nativeBR.balance(account);
+            logger.info(`Checking ${name} for funding: balance=${nativeBR.format(balance)} minBalance=${nativeBR.format(minBalance)}.`);
+            if (balance.lt(minBalance)) {
+                const transferBalance = minBalance.muln(2);
+                const ownerBalance = await nativeBR.balance(from);
+                if (ownerBalance.lt(transferBalance.add(minBalance))) {
+                    await notifier?.sendFailedFundingServiceAccount(name, account);
+                    return;
+                }
+                logger.info(`Transferring ${nativeBR.formatValue(transferBalance)} native tokens to ${name} (${account}) for gas...`);
+                await this.locks.nativeChainLock(from).lockAndRun(async () => {
+                    await sendWeb3Transaction({ from: from, to: account, value: String(transferBalance), gas: 100_000 });
+                });
+                await notifier?.sendFundedServiceAccount(name, account);
+            }
+        } catch (error) {
+            logger.error(`Error funding account ${name} (${account}):`, error);
+            await notifier?.sendFailedFundingServiceAccount(name, account);
         }
     }
 

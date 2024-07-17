@@ -59,6 +59,7 @@ export interface AgentBotSettings {
     poolCollateralReserveFactor: number;
     recommendedOwnerUnderlyingBalance: BN;
     minimumFreeUnderlyingBalance: BN;
+    minBalanceOnServiceAccount: BN;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
@@ -201,6 +202,7 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
 
 function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSettings: AgentBotFassetSettingsJson, chainInfo: ChainInfo): AgentBotSettings {
     const underlying = new Currency(chainInfo.symbol, chainInfo.decimals);
+    const native = new Currency("NAT", 18);
     return {
         parallel: agentBotSettings.parallel,
         trustedPingSenders: new Set(agentBotSettings.trustedPingSenders.map(a => a.toLowerCase())),
@@ -209,6 +211,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
         poolCollateralReserveFactor: Number(agentBotSettings.poolCollateralReserveFactor),
         minimumFreeUnderlyingBalance: underlying.parse(fassetSettings.minimumFreeUnderlyingBalance),
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
+        minBalanceOnServiceAccount: native.parse(agentBotSettings.minBalanceOnServiceAccount),
     }
 }
 
