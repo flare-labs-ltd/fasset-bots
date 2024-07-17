@@ -66,7 +66,7 @@ export class AgentBotUnderlyingManagement {
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
         const txHash = await this.bot.locks.underlyingLock.lockAndRun(async () => {
             return await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
-        });
+        });//TODO-urska-initiate
         await this.createAgentUnderlyingPayment(em, txHash, AgentUnderlyingPaymentType.TOP_UP);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner sent underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
             to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);

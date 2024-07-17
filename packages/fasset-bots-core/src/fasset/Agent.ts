@@ -27,7 +27,7 @@ export class OwnerAddressPair {
     constructor(
         public managementAddress: string,
         public workAddress: string,
-    ) {}
+    ) { }
 
     toString() {
         return `${this.managementAddress} with work address ${this.workAddress}`;
@@ -44,7 +44,7 @@ export class Agent {
         public collateralPool: CollateralPoolInstance,
         public collateralPoolToken: CollateralPoolTokenInstance,
         public underlyingAddress: string
-    ) {}
+    ) { }
 
     get assetManager(): ContractWithEvents<IIAssetManagerInstance, AllEvents> {
         return this.context.assetManager;
@@ -260,6 +260,16 @@ export class Agent {
     }
 
     /**
+     * Initiates underlying top up
+     * @param amount amount to be topped up
+     * @param underlyingAddress source underlying address
+     * @returns transaction id from local database
+     */
+    async initiateTopupPayment(amount: BNish, underlyingAddress: string): Promise<number> {
+        return await this.initiatePayment(this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address), underlyingAddress);
+    }
+
+    /**
      * Confirms underlying top up
      * @param transactionHash transaction hash of top up payment
      */
@@ -316,7 +326,20 @@ export class Agent {
      * @returns transaction hash
      */
     async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
-        await checkUnderlyingFunds(this.context, paymentSourceAddress,paymentAmount, paymentDestinationAddress);
+        await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
+        return await this.wallet.addTransactionAndWaitForItsFinalization(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
+    }
+
+    /**
+     * Initiates underlying payment
+     * @param paymentAddress underlying destination address
+     * @param paymentAmount amount to be transferred
+     * @param paymentReference payment reference
+     * @param options instance of TransactionOptionsWithFee
+     * @returns transaction id from local database
+     */
+    async initiatePayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<number> {
+        await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
         return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 

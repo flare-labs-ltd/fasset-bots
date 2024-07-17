@@ -101,6 +101,6 @@ export class Minter {
 
     async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null): Promise<string> {
         await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAmount, paymentAddress);
-        return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference);
+        return this.wallet.addTransactionAndWaitForItsFinalization(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference);
     }
 }

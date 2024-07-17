@@ -22,39 +22,42 @@ export function supportedChainId(chainId: ChainId) {
  * @param inTestnet if testnet should be used, optional parameter
  * @returns instance of Wallet implementation according to sourceId
  */
-export function createWalletClient(
+export async function createWalletClient(
     secrets: Secrets,
     chainId: ChainId,
     walletUrl: string,
     options: StuckTransaction = {}
-): WalletClient {
+): Promise<WalletClient> {
     requireSupportedChainId(chainId);
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        return new WALLET.BTC({
+        return await WALLET.BTC.initialize({
             url: walletUrl,
             username: "",
             password: "",
             inTestnet: chainId === ChainId.testBTC ? true : false,
             apiTokenKey: secrets.optional("apiKey.btc_rpc"),
             stuckTransactionOptions: options,
+            walletSecret: secrets.requiredEncryptionPassword("wallet.encryption_password")
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        return new WALLET.DOGE({
+        return await WALLET.DOGE.initialize({
             url: walletUrl,
             username: "",
             password: "",
             inTestnet: chainId === ChainId.testDOGE ? true : false,
             apiTokenKey: secrets.optional("apiKey.doge_rpc"),
             stuckTransactionOptions: options,
+            walletSecret: secrets.requiredEncryptionPassword("wallet.encryption_password")
         }); // UtxoMccCreate
     } else {
-        return new WALLET.XRP({
+        return await WALLET.XRP.initialize({
             url: walletUrl,
             username: "",
             password: "",
             apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
             inTestnet: chainId === ChainId.testXRP ? true : false,
             stuckTransactionOptions: options,
+            walletSecret: secrets.requiredEncryptionPassword("wallet.encryption_password")
         }); // XrpMccCreate
     }
 }

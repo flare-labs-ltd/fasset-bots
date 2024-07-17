@@ -167,7 +167,7 @@ export async function createBotFAssetConfig(
     };
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = createBlockchainWalletHelper(type, secrets, chainId, em, fassetInfo.walletUrl, walletOptions);
+        result.wallet = await createBlockchainWalletHelper(type, secrets, chainId, em, fassetInfo.walletUrl, walletOptions);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
@@ -232,16 +232,16 @@ export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrl: stri
  * @param inTestnet if testnet should be used, optional parameter
  * @returns instance of BlockchainWalletHelper
  */
-export function createBlockchainWalletHelper(
+export async function createBlockchainWalletHelper(
     type: "agent" | "user",
     secrets: Secrets,
     chainId: ChainId,
     em: EntityManager | undefined,
     walletUrl: string,
     options?: StuckTransaction
-): BlockchainWalletHelper {
+): Promise<BlockchainWalletHelper> {
     requireSupportedChainId(chainId);
-    const walletClient = createWalletClient(secrets, chainId, walletUrl, options);
+    const walletClient = await createWalletClient(secrets, chainId, walletUrl, options);
     const walletKeys = type === "agent" ? DBWalletKeys.from(requireNotNull(em), secrets) : new MemoryWalletKeys();
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }

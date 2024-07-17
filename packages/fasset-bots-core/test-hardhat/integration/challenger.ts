@@ -392,7 +392,7 @@ describe("Challenger tests", () => {
         expect(redemption.state).eq(AgentRedemptionState.STARTED);
         // pay for redemption - payment blocked
         const paymentAmount = rdReq.valueUBA.sub(rdReq.feeUBA);
-        const txHash = await context.wallet.addTransaction(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference,
+        const txHash = await context.wallet.addTransactionAndWaitForItsFinalization(agentBot.agent.underlyingAddress, rdReq.paymentAddress, paymentAmount, rdReq.paymentReference,
             { status: TX_BLOCKED } as TransactionOptionsWithFee & { status?: number });
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid

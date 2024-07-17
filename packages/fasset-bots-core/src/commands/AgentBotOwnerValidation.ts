@@ -155,7 +155,7 @@ export class AgentBotOwnerValidation {
 
     async createWalletTokenBalance(fassetSymbol: string) {
         const fassetInfo = this.configFile.fAssets[fassetSymbol];
-        const walletClient = createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl));
+        const walletClient = await createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl));
         const wallet = new BlockchainWalletHelper(walletClient, new MemoryWalletKeys());
         const fasset = requireNotNull(this.fassets.get(fassetSymbol));
         return new WalletTokenBalance(wallet, await fasset.assetSymbol(), Number(await fasset.decimals()));

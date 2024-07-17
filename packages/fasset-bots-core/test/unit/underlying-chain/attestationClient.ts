@@ -48,7 +48,7 @@ describe("Attestation client unit tests", () => {
             indexerApiKey(secrets)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
     });
 
@@ -76,7 +76,7 @@ describe("Attestation client unit tests", () => {
         expect(res1).to.be.equal(AttestationNotProved.NOT_FINALIZED);
         // request payment
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined);
+        const transaction = await walletHelper.addTransactionAndWaitForItsFinalization(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined);
         await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(transaction);
         let currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
         const finalBlock = currentBlockHeight + finalizationBlocks;

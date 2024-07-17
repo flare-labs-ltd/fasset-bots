@@ -9,6 +9,7 @@ import { prefix0x } from "../../src/utils/helpers";
 import { createTestOrm } from "../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
+import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 
 let orm: ORM;
 let walletHelper: BlockchainWalletHelper;
@@ -30,30 +31,47 @@ describe("XRP transaction integration tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        void walletHelper.walletClient.startMonitoringTransactionProgress();
+    });
+
+    after(async () => {
+        walletHelper.walletClient.stopMonitoring();
     });
 
     it("Should send funds and retrieve transaction", async () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const balanceBefore = await walletHelper.getBalance(targetAddressXRP);
         const options = { maxFee: 12 }; // maxFee in Drops
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, null, options);
+        const dbId = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, null, options);
+        while(1) {
+            const info = await walletHelper.walletClient.getTransactionInfo(dbId);
+            if (info.status == TransactionStatus.TX_SUCCESS) break;
+            if (info.status == TransactionStatus.TX_FAILED) throw new Error("Test failed");
+        }
+        const txInfo = await walletHelper.walletClient.getTransactionInfo(dbId);
         const balanceAfter = await walletHelper.getBalance(targetAddressXRP);
         expect(balanceAfter.gt(balanceBefore)).to.be.true;
         // wait for transaction
-        const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(transaction);
-        expect(transaction).to.equal(retrievedTransaction?.hash);
+        const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(txInfo.transactionHash!);
+        expect(txInfo.transactionHash).to.equal(retrievedTransaction?.hash);
         await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
     });
 
     it("Should send funds and retrieve transaction by reference", async () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, undefined);
+        const dbId = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, undefined);
+        while(1) {
+            const info = await walletHelper.walletClient.getTransactionInfo(dbId);
+            if (info.status == TransactionStatus.TX_SUCCESS) break;
+            if (info.status == TransactionStatus.TX_FAILED) throw new Error("Test failed");
+        }
+        const txInfo = await walletHelper.walletClient.getTransactionInfo(dbId);
         // wait for transaction
         const waitBlocks = 20;
-        const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(transaction, waitBlocks);
-        expect(transaction).to.equal(retrievedTransaction?.hash);
+        const retrievedTransaction = await blockChainIndexerHelper.waitForUnderlyingTransactionFinalization(txInfo.transactionHash!, waitBlocks);
+        expect(txInfo.transactionHash!).to.equal(retrievedTransaction?.hash);
         const retrievedTransactionsByRef = await blockChainIndexerHelper.getTransactionsByReference(prefix0x(note));
         expect(retrievedTransactionsByRef.length).to.be.gt(0);
         await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);

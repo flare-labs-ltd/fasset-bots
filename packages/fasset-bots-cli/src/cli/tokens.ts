@@ -58,13 +58,13 @@ program
         } else if (token.type === "underlying") {
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(chainInfo.walletUrl));
             await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
             const minBN = currency.parse(token.chainInfo.minimumAccountBalance ?? "0");
             await enoughUnderlyingFunds(wallet, accountFrom.address, addressTo, amountNat, minBN);
-            await wallet.addTransaction(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+            await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
         }
     });
 
@@ -102,7 +102,7 @@ program
         } else if (token.type === "underlying") {
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(chainInfo.walletUrl));
             const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));

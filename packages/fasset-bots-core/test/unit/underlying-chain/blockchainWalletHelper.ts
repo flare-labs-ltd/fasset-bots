@@ -30,7 +30,7 @@ describe("testXRP wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl, { retries: 2 });
+        walletHelper = await createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl, { retries: 2 });
     });
 
     it("Should create account", async () => {
@@ -91,7 +91,7 @@ describe("testBTC wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
@@ -126,7 +126,7 @@ describe("testDOGE wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {

@@ -48,17 +48,17 @@ describe("Bot config tests", () => {
     });
 
     it("Should create wallet clients", async () => {
-        const testBTC = createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl);
+        const testBTC = await createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl);
         expect(testBTC.chainType).to.eq(ChainId.testBTC.sourceId);
-        const testDOGE = createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl);
+        const testDOGE = await createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl);
         expect(testDOGE.chainType).to.eq(ChainId.testDOGE.sourceId);
-        const testXRP = createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl);
+        const testXRP = await createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl);
         expect(testXRP.chainType).to.eq(ChainId.testXRP.sourceId);
-        const btc = createWalletClient(secrets, ChainId.BTC, walletBTCUrl);
+        const btc = await createWalletClient(secrets, ChainId.BTC, walletBTCUrl);
         expect(btc.chainType).to.eq(ChainId.BTC.sourceId);
-        const doge = createWalletClient(secrets, ChainId.DOGE, walletDOGEUrl);
+        const doge = await createWalletClient(secrets, ChainId.DOGE, walletDOGEUrl);
         expect(doge.chainType).to.eq(ChainId.DOGE.sourceId);
-        const xrp = createWalletClient(secrets, ChainId.XRP, walletXRPUrl);
+        const xrp = await createWalletClient(secrets, ChainId.XRP, walletXRPUrl);
         expect(xrp.chainType).to.eq(ChainId.XRP.sourceId);
         const invalidSourceId = ChainId.ALGO;
         const fn = () => {
@@ -83,11 +83,11 @@ describe("Bot config tests", () => {
 
     it("Should create block chain wallet helper", async () => {
         const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
-        const btc = createBlockchainWalletHelper("agent", secrets, ChainId.testBTC, botConfig.orm.em, walletTestBTCUrl);
+        const btc = await createBlockchainWalletHelper("agent", secrets, ChainId.testBTC, botConfig.orm.em, walletTestBTCUrl);
         expect(btc.walletClient.chainType).to.eq(ChainId.testBTC.sourceId);
-        const doge = createBlockchainWalletHelper("agent", secrets, ChainId.testDOGE, botConfig.orm.em, walletTestDOGEUrl);
+        const doge = await createBlockchainWalletHelper("agent", secrets, ChainId.testDOGE, botConfig.orm.em, walletTestDOGEUrl);
         expect(doge.walletClient.chainType).to.eq(ChainId.testDOGE.sourceId);
-        const xrp = createBlockchainWalletHelper("user", secrets, ChainId.testXRP, undefined, walletTestXRPUrl);
+        const xrp = await createBlockchainWalletHelper("user", secrets, ChainId.testXRP, undefined, walletTestXRPUrl);
         expect(xrp.walletClient.chainType).to.eq(ChainId.testXRP.sourceId);
         const invalidSourceId = ChainId.ALGO;
         const fn = () => {

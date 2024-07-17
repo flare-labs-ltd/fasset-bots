@@ -255,7 +255,7 @@ export class AgentBotRedemption {
         redemption = await this.updateRedemption(rootEm, redemption, {
             state: AgentRedemptionState.PAYING,
         });
-        try {
+        try {//TODO-urska-initiatePayment
             // TODO: what if there are too little funds on underlying address to pay for fee?
             const txHash = await this.bot.locks.underlyingLock.lockAndRun(async () => {
                 return await this.agent.performPayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);

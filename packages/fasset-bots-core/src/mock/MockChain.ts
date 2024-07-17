@@ -235,7 +235,12 @@ export class MockChainWallet implements IBlockChainWallet {
     addExistingAccount(): Promise<string> {
         throw new Error("Method not implemented.");
     }
-    async addTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<string> {
+    async addTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<number> {
+        const transaction = this.createTransaction(from, to, value, reference, options);
+        this.chain.addTransaction(transaction);
+        return this.chain.transactionIndex[transaction.hash][1];
+    }
+    async addTransactionAndWaitForItsFinalization(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<string> {
         const transaction = this.createTransaction(from, to, value, reference, options);
         this.chain.addTransaction(transaction);
         return transaction.hash;
@@ -260,7 +265,6 @@ export class MockChainWallet implements IBlockChainWallet {
         const receivedObj: SpentReceivedObject = { [to]: [{ value: received }] };
         return this.createMultiTransaction(spentObj, receivedObj, reference, options);
     }
-
     createMultiTransaction(spent_: SpentReceivedObject, received_: SpentReceivedObject, reference: string | null, options?: MockTransactionOptions): MockChainTransaction {
         const inputs: TxInputOutput[] = Object.entries(spent_).flatMap(([address, utxos]): TxInputOutput[] => {
             return utxos.map(utxo => [address, toBN(utxo.value)]);
