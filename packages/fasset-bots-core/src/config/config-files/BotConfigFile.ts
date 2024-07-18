@@ -123,6 +123,11 @@ export interface AgentBotSettingsJson {
     poolCollateralReserveFactor: string;
 
     /**
+     * Minimum balance needed for gas on request submitter and timekeeper account.
+     */
+    minBalanceOnServiceAccount: string;
+
+    /**
      * The list of address to whose pings the agent will respond.
      */
     trustedPingSenders: string[];
