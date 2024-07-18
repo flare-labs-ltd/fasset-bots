@@ -89,6 +89,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         poolCollateralReserveFactor: 0.1,
         minimumFreeUnderlyingBalance: toBNExp(0.01, 18),
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 18),
+        minBalanceOnServiceAccount: toBNExp(2, 18),
     },
     "FBTC": {
         parallel: parallelBots,
@@ -98,6 +99,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         poolCollateralReserveFactor: 0.1,
         minimumFreeUnderlyingBalance: toBNExp(0.001, 8),
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 8),
+        minBalanceOnServiceAccount: toBNExp(2, 18),
     },
     "FXRP": {
         parallel: parallelBots,
@@ -107,5 +109,6 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         poolCollateralReserveFactor: 0.1,
         minimumFreeUnderlyingBalance: toBNExp(12, 6),
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
+        minBalanceOnServiceAccount: toBNExp(2, 18),
     }
 }

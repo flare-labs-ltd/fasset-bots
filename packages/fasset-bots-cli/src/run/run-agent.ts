@@ -8,10 +8,6 @@ import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
-// We only check balance of timekeeper and submitter at start, so deposit enough funds to last for a while (only needed for gas)
-// TODO: check balances and deposit continuously
-const MIN_NATIVE_BALANCE = toBNExp(2, 18);
-
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: "auto",
     updateIntervalMs: 300_000,
@@ -62,13 +58,17 @@ program.action(async () => {
         const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey]));
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), walletPrivateKeys, owner.address);
         // check balances and fund addresses so there is enough for gas
+        const minNativeBalance = toBNExp(runConfig.agentBotSettings.minBalanceOnServiceAccount, 18);
+        const serviceAccounts = new Map<string, string>();
         if (timekeeper.address !== owner.address) {
-            await fundAccount(owner.address, timekeeper.address, MIN_NATIVE_BALANCE, "timekeeper");
+            await fundAccount(owner.address, timekeeper.address, minNativeBalance, "timekeeper");
+            serviceAccounts.set("timekeeper", timekeeper.address);
         }
         if (requestSubmitter.address !== owner.address) {
-            await fundAccount(owner.address, requestSubmitter.address, MIN_NATIVE_BALANCE, "request submitter");
+            await fundAccount(owner.address, requestSubmitter.address, minNativeBalance, "request submitter");
+            serviceAccounts.set("request submitter", requestSubmitter.address);
         }
-        await validateBalance(owner.address, MIN_NATIVE_BALANCE);
+        await validateBalance(owner.address, minNativeBalance);
         //
         const botConfig = await createBotConfig("agent", secrets, runConfig, requestSubmitter.address);
         logger.info(`Asset manager controller is ${botConfig.contractRetriever.assetManagerController.address}.`);
@@ -77,6 +77,7 @@ program.action(async () => {
         timekeeperService.startAll();
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
+        runner.serviceAccounts = serviceAccounts;
         // store owner's underlying address
         for (const ctx of runner.contexts.values()) {
             const chainName = ctx.chainInfo.chainId.chainName;

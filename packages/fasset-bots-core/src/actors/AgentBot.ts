@@ -1,6 +1,7 @@
 import { AddressValidity, ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
+import { AgentPing } from "../../typechain-truffle/IIAssetManager";
 import { AgentBotSettings, Secrets } from "../config";
 import { AgentVaultInitSettings } from "../config/AgentVaultInitSettings";
 import { EM } from "../config/orm";
@@ -17,7 +18,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
 import { formatArgs, squashSpace } from "../utils/formatting";
-import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, sleep, systemTimestampMS, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, sleepUntil, toBN } from "../utils/helpers";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -35,7 +36,6 @@ import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentBotUnderlyingWithdrawal } from "./AgentBotUnderlyingWithdrawal";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
-import { AgentPing } from "../../typechain-truffle/IIAssetManager";
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -345,11 +345,7 @@ export class AgentBot {
                 if (!loop) break;
                 // wait a bit so that idle threads do not burn too much time
                 logger.info(`Finished handling, sleeping ${this.loopDelay / 1000}s`);
-                const waitStart = systemTimestampMS();
-                while (systemTimestampMS() - waitStart < this.loopDelay) {
-                    if (this.stopRequested()) break;
-                    await sleep(100);
-                }
+                await sleepUntil(this.loopDelay, () => this.stopRequested());
             }
             logger.info("Thread ended.")
         })

@@ -84,6 +84,7 @@ describe("Toplevel runner and commands integration test", () => {
         poolCollateralReserveFactor: 0.1,
         minimumFreeUnderlyingBalance: toBNExp(0.01, 6),
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
+        minBalanceOnServiceAccount: toBNExp(2, 18),
     };
 
     const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];
