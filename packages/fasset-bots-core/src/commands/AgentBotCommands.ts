@@ -250,6 +250,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async announceExitAvailableList(agentVault: string): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to announce exit available list.`);
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
         const status = await agentBot.getExitAvailableProcessStatus(readAgentEnt);
         if (status === "NOT_ANNOUNCED") {
@@ -269,14 +270,17 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async exitAvailableList(agentVault: string): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to exit available list.`);
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
         try {
             await agentBot.exitAvailable(this.orm.em);
         } catch (error) {
             if (errorIncluded(error, ["exit not announced"])) {
+                logger.error(`Agent ${agentVault} cannot exit - exit not announced.`);
                 throw new CommandLineError(`Agent ${readAgentEnt.vaultAddress} cannot exit available list - exit not announced.`);
             }
             if (errorIncluded(error, ["exit too soon"])) {
+                logger.error(`Agent ${agentVault} cannot exit - exit too soon. Allowed at ${readAgentEnt.exitAvailableAllowedAtTimestamp}, current timestamp is ${await latestBlockTimestampBN()}.`);
                 throw new CommandLineError(squashSpace`Agent ${readAgentEnt.vaultAddress} cannot exit available list.
                     Allowed at ${readAgentEnt.exitAvailableAllowedAtTimestamp}, current timestamp is ${await latestBlockTimestampBN()}.`);
             }
@@ -291,6 +295,7 @@ export class AgentBotCommands {
      * @param amount amount to be withdrawn
      */
     async announceWithdrawFromVault(agentVault: string, amount: string | BN): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to announce withdraw from vault with amount ${amount.toString()}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announceVaultCollateralWithdrawal(amount);
         const amountF = await agentBot.tokens.vaultCollateral.format(amount);
@@ -307,6 +312,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async cancelWithdrawFromVaultAnnouncement(agentVault: string): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to cancel withdraw from vault announcement.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
         await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
@@ -324,6 +330,7 @@ export class AgentBotCommands {
      * @param amount amount to be redeemed
      */
     async announceRedeemCollateralPoolTokens(agentVault: string, amount: string | BN): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to announce collateral pool token redemption with amount ${amount.toString()}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         const withdrawalAllowedAt = await agentBot.agent.announcePoolTokenRedemption(amount);
         const amountF = await agentBot.tokens.poolToken.format(amount);
@@ -340,6 +347,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async cancelCollateralPoolTokensAnnouncement(agentVault: string): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to cancel collateral pool redemption announcement.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
         await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
@@ -356,6 +364,7 @@ export class AgentBotCommands {
      * @param amount amount to be withdrawn
      */
     async withdrawPoolFees(agentVault: string, amount: string | BN): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to withdraw pool fees with amount ${amount.toString()}.`);
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.withdrawPoolFees(amount);
         const amountF = await agentBot.tokens.fAsset.format(amount);
@@ -435,6 +444,7 @@ export class AgentBotCommands {
      * @param destinationAddress underlying destination address
      */
     async withdrawUnderlying(agentVault: string, amount: string | BN, destinationAddress: string): Promise<string | null> {
+        logger.info(`Agent ${agentVault} is trying to announce underlying withdrawal with amount ${amount.toString()} to destination ${destinationAddress}.`);
         try {
             const { agentBot } = await this.getAgentBot(agentVault);
             const announce = await agentBot.agent.announceUnderlyingWithdrawal();
@@ -450,6 +460,7 @@ export class AgentBotCommands {
             logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${announce.paymentReference} and txHash ${txHash}.`);
             return txHash;
         } catch (error) {
+            logger.error(`Agent ${agentVault} is received error while announcing underlying withdrawal.`, error);
             console.error(error);
             return null;
         }
@@ -460,6 +471,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async cancelUnderlyingWithdrawal(agentVault: string): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying to cancel underlying withdrawal announcement.`);
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
         const confirmationAllowedAt = await agentBot.underlyingWithdrawal.confirmationAllowedAt(readAgentEnt);
         if (confirmationAllowedAt != null) {
@@ -589,7 +601,9 @@ export class AgentBotCommands {
     async getFreeVaultCollateral(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
-        return info.freeVaultCollateralWei.toString();
+        const free = info.freeVaultCollateralWei.toString();
+        logger.info(`Agent ${agentVault} has free vault collateral ${free}.`);
+        return free;
     }
 
     /**
@@ -600,7 +614,9 @@ export class AgentBotCommands {
     async getFreePoolCollateral(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
-        return info.freePoolCollateralNATWei.toString();
+        const free = info.freePoolCollateralNATWei.toString();
+        logger.info(`Agent ${agentVault} has free pool collateral ${free}.`);
+        return free;
     }
 
     /**
@@ -611,7 +627,9 @@ export class AgentBotCommands {
     async getFreeUnderlying(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
-        return info.freeUnderlyingBalanceUBA.toString();
+        const free = info.freeUnderlyingBalanceUBA.toString();
+        logger.info(`Agent ${agentVault} has free underlying  ${free}.`);
+        return free;
     }
 
     /**
@@ -622,6 +640,7 @@ export class AgentBotCommands {
     async switchVaultCollateral(agentVault: string, token: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.switchVaultCollateral(token);
+        logger.info(`Agent ${agentVault} switched vault collateral to ${token}.`);
     }
 
     /**
@@ -632,6 +651,7 @@ export class AgentBotCommands {
         const amountToDeposit = await agentBot.agent.calculateVaultCollateralReplacementAmount(token);
         await agentBot.agent.depositTokensToVault(token, amountToDeposit);
         await agentBot.agent.switchVaultCollateral(token);
+        logger.info(`Agent ${agentVault} deposited and switched vault collateral to ${token}.`);
     }
 
     /**
@@ -641,6 +661,7 @@ export class AgentBotCommands {
     async upgradeWNatContract(agentVault: string): Promise<void> {
         const { agentBot } = await this.getAgentBot(agentVault);
         await agentBot.agent.upgradeWNatContract();
+        logger.info(`Agent ${agentVault} upgraded wnat contract.`);
     }
 
     async validateCollateralPoolTokenSuffix(suffix: string) {
