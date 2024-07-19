@@ -132,7 +132,7 @@ export class AgentBotUpdateSettings {
         if (toBN(updateSetting.validAt).lte(latestTimestamp)) {
             // agent can update setting
             try {
-                await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     await this.agent.executeAgentSettingUpdate(updateSetting.name);
                 });
                 await this.notifier.sendAgentSettingsUpdate(updateSetting.name);

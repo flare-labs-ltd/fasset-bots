@@ -52,6 +52,7 @@ export enum AgentNotificationKey {
     // underlying
     LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE",
     LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS",
+    CRITICALLY_LOW_OWNERS_NATIVE_BALANCE = "CRITICALLY LOW BALANCE IN OWNER'S ADDRESS",
     LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS",
     CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL",
     CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT",
@@ -76,6 +77,8 @@ export enum AgentNotificationKey {
     UNRESOLVED_EVENT = "EVENT IN DATABASE NOT FOUND ON CHAIN - SKIPPED",
     AGENT_BEHIND_ON_EVENT_HANDLING = "AGENT BEHIND ON EVENT HANDLING",
     AGENT_EVENT_HANDLING_CAUGHT_UP = "AGENT EVENT HANDLING CAUGHT UP",
+    AGENT_FUNDED_SERVICE_ACCOUNT = "AGENT FUNDED SERVICE ACCOUNT",
+    AGENT_FAILED_FUNDING_SERVICE_ACCOUNT = "AGENT FAILED FUNDING SERVICE ACCOUNT",
 }
 
 export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
@@ -193,6 +196,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendLowBalanceOnOwnersAddress(ownerAddress: string, balance: FormattedString) {
         await this.info(AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance ${balance}.`);
+    }
+
+    async sendCriticalLowBalanceOnOwnersAddress(ownerAddress: string, balance: FormattedString) {
+        await this.critical(AgentNotificationKey.CRITICALLY_LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has criticaly low native balance ${balance}.`);
     }
 
     async sendRedemptionAddressValidationNoProof(requestId: BNish | null, roundId: number, requestData: string, address: string) {
@@ -455,5 +462,13 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.AGENT_EVENT_HANDLING_CAUGHT_UP,
             `Agent ${this.address} has caught up with latest events. Normal processing will proceed.`
         );
+    }
+
+    async sendFundedServiceAccount(name: string, account: string) {
+        await this.info(AgentNotificationKey.AGENT_FUNDED_SERVICE_ACCOUNT, `Agent owner has funded service account ${name} (${account})`);
+    }
+
+    async sendFailedFundingServiceAccount(name: string, account: string) {
+        await this.danger(AgentNotificationKey.AGENT_FAILED_FUNDING_SERVICE_ACCOUNT, `Agent owner has failed funding service account ${name} (${account})`);
     }
 }

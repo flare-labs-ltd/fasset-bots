@@ -8,7 +8,6 @@ import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
-import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../underlying-chain/ChainId";
@@ -25,7 +24,7 @@ import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport
 import { AssetContractRetriever } from "./AssetContractRetriever";
 import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
-import { createWalletClient, requireSupportedChainId, supportedChainId } from "./create-wallet-client";
+import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
@@ -60,6 +59,7 @@ export interface AgentBotSettings {
     poolCollateralReserveFactor: number;
     recommendedOwnerUnderlyingBalance: BN;
     minimumFreeUnderlyingBalance: BN;
+    minBalanceOnServiceAccount: BN;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
@@ -202,6 +202,7 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
 
 function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSettings: AgentBotFassetSettingsJson, chainInfo: ChainInfo): AgentBotSettings {
     const underlying = new Currency(chainInfo.symbol, chainInfo.decimals);
+    const native = new Currency("NAT", 18);
     return {
         parallel: agentBotSettings.parallel,
         trustedPingSenders: new Set(agentBotSettings.trustedPingSenders.map(a => a.toLowerCase())),
@@ -210,6 +211,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
         poolCollateralReserveFactor: Number(agentBotSettings.poolCollateralReserveFactor),
         minimumFreeUnderlyingBalance: underlying.parse(fassetSettings.minimumFreeUnderlyingBalance),
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
+        minBalanceOnServiceAccount: native.parse(agentBotSettings.minBalanceOnServiceAccount),
     }
 }
 
@@ -244,33 +246,6 @@ export async function createBlockchainWalletHelper(
     const walletClient = await createWalletClient(secrets, chainId, walletUrl, options);
     const walletKeys = type === "agent" ? DBWalletKeys.from(requireNotNull(em), secrets) : new MemoryWalletKeys();
     return new BlockchainWalletHelper(walletClient, walletKeys);
-}
-
-/**
- * Creates attestation helper.
- * @param chainId chain source
- * @param attestationProviderUrls list of attestation provider's urls
- * @param scProofVerifierAddress SCProofVerifier's contract address
- * @param stateConnectorAddress StateConnector's contract address
- * @param owner native owner address
- * @param indexerUrl indexer's url
- * @returns instance of AttestationHelper
- */
-export async function createAttestationHelper(
-    chainId: ChainId,
-    attestationProviderUrls: string[],
-    scProofVerifierAddress: string,
-    stateConnectorAddress: string,
-    owner: string,
-    indexerUrl: string,
-    indexerApiKey: string,
-): Promise<AttestationHelper> {
-    if (!supportedChainId(chainId)) {
-        throw new Error(`SourceId ${chainId} not supported.`);
-    }
-    const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
-    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
-    return new AttestationHelper(stateConnector, indexer, chainId);
 }
 
 /**

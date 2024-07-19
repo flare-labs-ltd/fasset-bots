@@ -223,7 +223,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[]> {
         const txs = await retry(this.getTransactionsWithinBlockRangeFromIndexer.bind(this), [from, to], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved transactions from ${from} to ${to}: ${formatArgs(txs)}`);
+        logger.info(`Block chain indexer helper: retrieved transactions from ${from} to ${to}: ${txs.length}`);
         return txs;
     }
 

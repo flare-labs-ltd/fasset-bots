@@ -198,7 +198,7 @@ let lastTransactionId = systemTimestamp() * 1000;
 /**
  * Send a transaction for a contract method. Estimate gas before if needed.
  */
-async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
+export async function executeMethodSend(settings: ContractSettings, transactionConfig: TransactionConfig) {
     const { web3, gasMultiplier, waitFor } = settings;
     const config = mergeConfig(settings, transactionConfig);
     if (typeof config.from !== "string") {

@@ -16,6 +16,11 @@ export class LazyTokenBalance {
         return await this.tokenBalance.balance(address);
     }
 
+    async formatBalance(address: string) {
+        this.tokenBalance ??= await this.initializer();
+        return await this.tokenBalance.formatBalance(address);
+    }
+
     async parse(amount: string) {
         this.tokenBalance ??= await this.initializer();
         return this.tokenBalance.parse(amount);

@@ -42,6 +42,17 @@ export function sleep(ms: number) {
 }
 
 /**
+ * Asynchronously wait `delayMS` milliseconds, but stop immediately if `stopCondition()` becomes true.
+ */
+export async function sleepUntil(delayMS: number, stopCondition: () => boolean, pollMS: number = 100) {
+    const start = systemTimestampMS();
+    while (systemTimestampMS() - start < delayMS) {
+        if (stopCondition()) break;
+        await sleep(pollMS);
+    }
+}
+
+/**
  * Return system time as timestamp (seconds since 1.1.1970).
  */
 export function systemTimestamp() {
@@ -384,4 +395,10 @@ export function iteratorToArray<K>(iter: Iterable<K>): Array<K> {
         ret.push(elt);
     }
     return ret;
+}
+
+export function* enumerate<T>(array: T[]): Iterable<[T, number]> {
+    for (let i = 0; i < array.length; i++) {
+        yield [array[i], i];
+    }
 }

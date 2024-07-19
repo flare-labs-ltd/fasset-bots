@@ -8,7 +8,7 @@ import {
 } from "@flarelabs/fasset-bots-core/config";
 import {
     CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, logger,
-    requireNotNull, requiredAddressBalance, toBN, web3
+    requireNotNull, requiredAddressBalance, sendWeb3Transaction, toBN
 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
@@ -41,7 +41,7 @@ program
             await initializeWeb3(config, secrets, [accountFrom]);
             const currency = new Currency(config.nativeChainInfo.tokenSymbol, 18);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
-            await web3.eth.sendTransaction({ from: accountFrom.address, to: addressTo, value: String(amountNat), gas: 100_000 });
+            await sendWeb3Transaction({ from: accountFrom.address, to: addressTo, value: String(amountNat), gas: 100_000 });
         } else if (token.type === "erc20") {
             await initializeWeb3(config, secrets, [accountFrom]);
             const tokenContract = await ERC20.at(token.address);
@@ -244,7 +244,7 @@ async function validateAddressForToken(secrets: Secrets, token: TokenType, addre
 
 async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddress: string, destinationAddress: string, amount: BN, minimumBalance: BN): Promise<void> {
     const senderBalance = await wallet.getBalance(sourceAddress);
-    const fee = await wallet.getTransactionFee({source: sourceAddress, amount: amount, destination: destinationAddress, isPayment: true});
+    const fee = await wallet.getTransactionFee({ source: sourceAddress, amount: amount, destination: destinationAddress, isPayment: true });
     const requiredBalance = requiredAddressBalance(amount, minimumBalance, fee);
     if (senderBalance.gte(requiredBalance)) {
         return;

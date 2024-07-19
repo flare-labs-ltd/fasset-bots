@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { expandConfigPath } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
+import { validateAddress } from "../utils/validation";
 
 const program = new Command();
 
@@ -26,7 +27,10 @@ program
     .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean }) => {
         const users: SecretsUser[] = [];
         if (opts.user) users.push("user");
-        if (opts.agent) users.push("agent");
+        if (opts.agent) {
+            validateAddress(opts.agent, "agent management address");
+            users.push("agent");
+        }
         if (opts.other) users.push("other");
         if (!opts.config) {
             opts.config = process.env.FASSET_BOT_CONFIG ?? process.env.FASSET_USER_CONFIG ?? "coston";

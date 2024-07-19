@@ -795,7 +795,8 @@ describe("Agent bot tests", () => {
         expect(spyLowOwnerBalance).to.have.been.called.exactly(2);
         // top up ownerAddress
         const deposit = toBNExp(5_000_000, 6).toString();
-        await mintVaultCollateralToOwner(deposit, (await agentBot.agent.getAgentInfo()).vaultCollateralToken, ownerAddress);
+        const agentInfo = await agentBot.agent.getAgentInfo();
+        await mintVaultCollateralToOwner(deposit, agentInfo.vaultCollateralToken, ownerAddress);
         // mock price changes and run liquidation trigger
         await context.ftsoManager.mockFinalizePriceEpoch();
         // send notifications: top up successful
@@ -812,6 +813,7 @@ describe("Agent bot tests", () => {
         const spyVaultTopUpFailed = spy.on(agentBot.notifier, "sendVaultCollateralTopUpFailedAlert");
         const spyPoolTopUpFailed = spy.on(agentBot.notifier, "sendPoolCollateralTopUpFailedAlert");
         const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
+        const spyCriticalLowOwnerBalance = spy.on(agentBot.notifier, "sendCriticalLowBalanceOnOwnersAddress");
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
@@ -822,16 +824,15 @@ describe("Agent bot tests", () => {
         await context.ftsoManager.mockFinalizePriceEpoch();
         // make an agent hold less than minimum amount of NAT reserves
         const agentInfo = await agentBot.agent.getAgentInfo()
-        const minNative = toBN(agentInfo.totalPoolCollateralNATWei)
-            .sub(toBN(agentInfo.freePoolCollateralNATWei))
-            .muln(agentBot.agentBotSettings.poolCollateralReserveFactor);
+        const minNative = toBNExp(199, 18);
         const deposit = ownerBalance.sub(minNative)
         await agentB.buyCollateralPoolTokens(deposit);
         // send notifications: top up failed and low balance on ownerAddress
         await agentBot.runStep(orm.em);
         expect(spyVaultTopUpFailed).to.have.been.called.once;
         expect(spyPoolTopUpFailed).to.have.been.called.once;
-        expect(spyLowOwnerBalance).to.have.been.called.exactly(3);
+        expect(spyLowOwnerBalance).to.have.been.called.exactly(2);
+        expect(spyCriticalLowOwnerBalance).to.have.been.called.exactly(1);
         // redeem pool tokens
         const redeemAt = await agentB.announcePoolTokenRedemption(deposit);
         await time.increaseTo(redeemAt);

@@ -75,7 +75,7 @@ export class AgentBotUnderlyingWithdrawal {
                 const latestTimestamp = await latestBlockTimestampBN();
                 if (confirmationAllowedAt.lt(latestTimestamp)) {
                     // agent can confirm cancel withdrawal announcement
-                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                         await this.agent.cancelUnderlyingWithdrawal();
                     });
                     await this.notifier.sendCancelWithdrawUnderlying();

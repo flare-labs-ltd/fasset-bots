@@ -80,12 +80,12 @@ export class AgentBotCollateralWithdrawal {
             const token = type === ClaimType.VAULT ? this.bot.tokens.vaultCollateral : this.bot.tokens.poolCollateral;
             try {
                 if (type === ClaimType.VAULT) {
-                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                         await this.agent.withdrawVaultCollateral(withdrawAmount);
                     });
                     await this.notifier.sendWithdrawVaultCollateral(await token.format(withdrawAmount));
                 } else {
-                    await this.bot.locks.nativeChainLock.lockAndRun(async () => {
+                    await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                         await this.agent.redeemCollateralPoolTokens(withdrawAmount);
                     });
                     await this.notifier.sendRedeemCollateralPoolTokens(await token.format(withdrawAmount));

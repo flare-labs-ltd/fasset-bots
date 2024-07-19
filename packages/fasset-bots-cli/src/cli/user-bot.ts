@@ -120,6 +120,15 @@ program
     });
 
 program
+    .command("updateMintings")
+    .description("Update all open mintings")
+    .action(async () => {
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
+        await redeemerBot.updateAllMintings();
+    });
+
+program
     .command("redeem")
     .description("Triggers redemption")
     .argument("<numberOfLots>")
@@ -168,6 +177,15 @@ program
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         await redeemerBot.listRedemptions();
+    });
+
+program
+    .command("updateRedemptions")
+    .description("Update all open redemptions")
+    .action(async () => {
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
+        await redeemerBot.updateAllRedemptions();
     });
 
 program

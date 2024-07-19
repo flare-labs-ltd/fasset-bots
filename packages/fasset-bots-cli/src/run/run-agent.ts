@@ -2,8 +2,9 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
-import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
+import { closeBotConfig, createBotConfig, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
@@ -17,21 +18,66 @@ const timekeeperConfig: TimekeeperTimingConfig = {
 
 const program = programWithCommonOptions("agent", "all_fassets");
 
+function getAccount(secrets: Secrets, key: string) {
+    const address = secrets.optional(`${key}.address`);
+    const privateKey = secrets.optional(`${key}.private_key`);
+    if (address && privateKey) return { address, privateKey } as const;
+}
+
+function getAccountRequired(secrets: Secrets, key: string) {
+    const address = secrets.required(`${key}.address`);
+    const privateKey = secrets.required(`${key}.private_key`);
+    return { address, privateKey } as const;
+}
+
+async function fundAccount(from: string, to: string, minBalance: BN, name: string) {
+    const balance = toBN(await web3.eth.getBalance(to));
+    if (balance.lt(minBalance)) {
+        const transferBalance = minBalance.muln(2);
+        console.log(`Transfering ${formatFixed(transferBalance, 18)} native tokens to ${name} (${to}) for gas...`);
+        await sendWeb3Transaction({ from: from, to: to, value: String(transferBalance), gas: 100_000 });
+    }
+}
+
+async function validateBalance(address: string, minBalance: BN) {
+    const fromBalance = toBN(await web3.eth.getBalance(address));
+    if (fromBalance.lt(minBalance)) {
+        throw new CommandLineError(`Balance on owner address too small`);
+    }
+}
+
 program.action(async () => {
     // eslint-disable-next-line no-constant-condition
     while (true) {
         const options: { config: string; secrets: string } = program.opts();
         const secrets = Secrets.load(options.secrets);
         const runConfig = loadAgentConfigFile(options.config);
-        const ownerAddress: string = secrets.required("owner.native.address");
-        const ownerPrivateKey: string = secrets.required("owner.native.private_key");
-        await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [ownerPrivateKey], ownerAddress);
-        const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
+        const owner = getAccountRequired(secrets, "owner.native");
+        const timekeeper = getAccount(secrets, "timeKeeper") ?? owner;
+        const requestSubmitter = getAccount(secrets, "requestSubmitter") ?? owner;
+        const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey]));
+        await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), walletPrivateKeys, owner.address);
+        // check balances and fund addresses so there is enough for gas
+        const minNativeBalance = toBNExp(runConfig.agentBotSettings.minBalanceOnServiceAccount, 18);
+        const serviceAccounts = new Map<string, string>();
+        if (timekeeper.address !== owner.address) {
+            await fundAccount(owner.address, timekeeper.address, minNativeBalance, "timekeeper");
+            serviceAccounts.set("timekeeper", timekeeper.address);
+        }
+        if (requestSubmitter.address !== owner.address) {
+            await fundAccount(owner.address, requestSubmitter.address, minNativeBalance, "request submitter");
+            serviceAccounts.set("request submitter", requestSubmitter.address);
+        }
+        await validateBalance(owner.address, minNativeBalance);
+        //
+        const botConfig = await createBotConfig("agent", secrets, runConfig, requestSubmitter.address);
+        logger.info(`Asset manager controller is ${botConfig.contractRetriever.assetManagerController.address}.`);
         // create timekeepers
-        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, timekeeperConfig);
+        const timekeeperService = await TimeKeeperService.create(botConfig, timekeeper.address, timekeeperConfig);
         timekeeperService.startAll();
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
+        runner.serviceAccounts = serviceAccounts;
         // store owner's underlying address
         for (const ctx of runner.contexts.values()) {
             const chainName = ctx.chainInfo.chainId.chainName;
