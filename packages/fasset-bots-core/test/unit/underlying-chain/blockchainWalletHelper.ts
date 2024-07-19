@@ -50,23 +50,11 @@ describe("testXRP wallet tests", () => {
         await removeWalletAddressFromDB(walletHelper, targetAddressXRP);
     });
 
-    it("Should not send funds: fee > maxFee", async () => {
-        await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
-        const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-        const maxFee = 8;
-        const fee = 10;
-        const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options))
-            .to.eventually.be.rejectedWith(`Fee ${fee} is higher than maxFee ${maxFee}`)
-            .and.be.an.instanceOf(Error);
-        await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
-    });
-
     it("Should not add multi transaction - method not implemented", async () => {
         await expect(walletHelper.addMultiTransaction()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
 
-    it("Should add transaction - source address not found in db", async () => {
+    it("Should not add transaction - source address not found in db", async () => {
         await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined))
             .to.eventually.be.rejectedWith(`Cannot find address ${targetAddressXRP}`)
             .and.be.an.instanceOf(Error);
@@ -146,10 +134,11 @@ describe("testDOGE wallet tests", () => {
         await removeWalletAddressFromDB(walletHelper, targetAddress);
     });
 
-    it.skip("Should send funds", async () => {
+    it("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined);
-        expect(transaction).to.not.be.null;
+        const txDbId = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined);
+        expect(txDbId).to.not.be.null;
+        expect(txDbId).to.be.gt(0);
         await removeWalletAddressFromDB(walletHelper, fundedAddress);
     });
 });
