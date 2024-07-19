@@ -17,18 +17,18 @@ export module WALLET {
       constructor(inTestnet: boolean){
          super(inTestnet);
       }
-   };
+   }
    export class BtcAccount extends BtcAccountGeneration {
       constructor(inTestnet: boolean){
          super(inTestnet);
       }
-   };
+   }
 
    export class DogeAccount extends DogeAccountGeneration {
       constructor(inTestnet: boolean){
          super(inTestnet);
       }
-   };
+   }
    export class XRP extends XrpWalletImplementation {
       constructor(options: RippleWalletConfig) {
          super(options);
