@@ -17,7 +17,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/"
@@ -27,7 +27,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
