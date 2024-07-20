@@ -9,7 +9,7 @@ import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
 const timekeeperConfig: TimekeeperTimingConfig = {
-    queryWindow: "auto",
+    queryWindow: 172800,
     updateIntervalMs: 300_000,
     loopDelayMs: 5000,
     maxUnderlyingTimestampAgeS: 60,
