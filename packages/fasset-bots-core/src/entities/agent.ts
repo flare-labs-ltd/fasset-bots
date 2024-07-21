@@ -4,6 +4,7 @@ import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
+import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -20,7 +21,7 @@ export class AgentEntity {
     @Property()
     fassetSymbol!: string;
 
-    // This is management address, which is immutable. The actuasl address used in all trabsactions will be the work address,
+    // This is management address, which is immutable. The actual address used in all transactions will be the work address,
     // which is mutable and not recorded in the database. It can be obtained from chain by calling `agentOwnerRegistry.getWorkAddress(ownerAddress)`.
     @Property()
     ownerAddress!: string;
@@ -75,6 +76,9 @@ export class AgentEntity {
 
     @Property()
     destroyVaultCollateralWithdrawalAllowedAtAmount: string = "";
+
+    @Property({ nullable: true })
+    waitingToEmptyUnderlyingAddressTxId?: number;// number of transaction id in db
 
     // agent exit available list
 

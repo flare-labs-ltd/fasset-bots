@@ -1,3 +1,4 @@
+import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { AgentInfo } from "../fasset/AssetManagerTypes";
@@ -37,6 +38,15 @@ export class AgentBotClosing {
             const closingPhase = await this.closingPhase(readAgentEntAtBeginning);
             if (closingPhase === "CLEANUP") {
                 logger.info(`Agent ${this.agent.vaultAddress} is performing cleanup.`);
+                // initiate empty underlying account
+                if (readAgentEntAtBeginning.waitingToEmptyUnderlyingAddressTxId == null) {
+                    const dbTxId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
+                        return await this.agent.emptyAgentUnderlying(this.bot.ownerUnderlyingAddress);
+                    });
+                    await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.waitingToEmptyUnderlyingAddressTxId = dbTxId;
+                    });
+                }
                 // withdraw pool fees
                 await this.withdrawPoolFees();
                 // self close minted fassets with fassets on agent's address
@@ -227,6 +237,26 @@ export class AgentBotClosing {
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
             if (toBN(readAgentEnt.waitingForDestructionTimestamp).gt(BN_ZERO)) {
                 logger.info(`Agent ${this.agent.vaultAddress} is waiting for destruction.`);
+                // wait for empty underlying funds transaction to execute - check for status
+                const txDbId = readAgentEnt.waitingToEmptyUnderlyingAddressTxId;
+                if (txDbId && txDbId > 0) {
+                    const info = await this.context.wallet.checkTransactionStatus(txDbId);
+                    logger.info(`Agent ${this.agent.vaultAddress} is checking status of empty underlying address:transaction database id ${txDbId}; status ${info.status}.`);
+                    if (info.status == TransactionStatus.TX_REPLACED && info.replacedByDdId) {
+                        await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                            agentEnt.waitingToEmptyUnderlyingAddressTxId = info.replacedByDdId!;
+                        });
+                        return;
+                    } else if (info.status == TransactionStatus.TX_SUCCESS) {
+                        logger.info(`Agent ${this.agent.vaultAddress} successfully emptied underlying address: transaction hash ${info.transactionHash}; transaction database id ${txDbId}.`);
+                    } else if (TransactionStatus.TX_FAILED) {
+                        logger.info(`Agent ${this.agent.vaultAddress} FAILED emptied underlying address: transaction hash ${info.transactionHash}; transaction database id ${txDbId}.`);
+                    } else {
+                        return; // wait for one of final transaction states (failed, success, replace)
+                    }
+                } else {
+                    logger.info(`Agent ${this.agent.vaultAddress} does not empty underlying address transaction active; transaction database is ${txDbId}.`);
+                }
                 // agent waiting for destruction
                 const latestTimestamp = await latestBlockTimestampBN();
                 if (toBN(readAgentEnt.waitingForDestructionTimestamp).lte(latestTimestamp)) {
@@ -254,9 +284,6 @@ export class AgentBotClosing {
      * @param em entity manager
      */
     async handleAgentDestroyed(rootEm: EM) {
-        await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
-            await this.agent.emptyAgentUnderlying(this.bot.ownerUnderlyingAddress);
-        });
         await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
             agentEnt.active = false;
         });
