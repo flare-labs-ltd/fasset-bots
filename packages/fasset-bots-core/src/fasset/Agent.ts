@@ -414,7 +414,7 @@ export class Agent {
         await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.owner.workAddress });
     }
 
-    async emptyAgentUnderlying(destinationAddress: string): Promise<number> {//todo-urska -> wait for transaction to execute.
+    async emptyAgentUnderlying(destinationAddress: string): Promise<number> {
         try {
             const txDbId = await this.wallet.deleteAccount(this.underlyingAddress, destinationAddress, null);
             logger.info(`Agent ${this.vaultAddress} initiated withdrawing of all funds on underlying ${this.underlyingAddress} with database id ${txDbId}.`)

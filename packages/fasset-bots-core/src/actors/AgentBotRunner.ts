@@ -56,7 +56,7 @@ export class AgentBotRunner {
     }
 
     parallel() {
-        // paralle has same value for all chains, so just use first
+        // parallel has same value for all chains, so just use first
         return firstValue(this.settings)?.parallel ?? false;
     }
 
