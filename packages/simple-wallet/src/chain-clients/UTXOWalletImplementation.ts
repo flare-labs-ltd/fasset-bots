@@ -99,12 +99,25 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     * @param {string} account
     * @returns {BN} - confirmed balance in satoshis
     */
-   async getAccountBalance(account: string): Promise<BN> {
+   async getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN> {
       try {
          const res = await this.client.get(`/address/${account}/balance`);
-         return toBN(res.data.balance);
+         const mainAccountBalance = toBN(res.data.balance);
+         if (!otherAddresses) {
+            return mainAccountBalance;
+         } else {
+            const balancePromises = otherAddresses.map(address => this.client.get(`/address/${address}/balance`));
+            const balanceResponses = await Promise.all(balancePromises);
+            const totalAddressesBalance = balanceResponses.reduce((sum, response) => {
+               if (response.data && typeof response.data.balance === 'number') {
+                   return sum + response.data.balance;
+               }
+               return sum;
+           }, 0);
+           return toBN(totalAddressesBalance).add(mainAccountBalance);
+         }
       } catch (error) {
-         logger.error(`Cannot get account balance for ${account}`, error);
+         logger.error(`Cannot get account balance for ${account} and other addresses ${otherAddresses}`, error);
          throw error;
       }
    }
