@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { InfoBotCommands, PoolUserBotCommands, UserBotCommands } from "@flarelabs/fasset-bots-core";
 import { Secrets } from "@flarelabs/fasset-bots-core/config";
-import { TokenBalances, formatFixed, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { TokenBalances, formatFixed, sleep, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import os from "os";
 import path from "path";
@@ -151,6 +151,7 @@ program
                 } else {
                     await redeemerBot.redeem(numberOfLots);
                 }
+                await sleep(20_000);
             } catch (error) {
                 translateError(error, {
                     "f-asset balance too low": `User account does not hold ${numberOfLots} lots of ${options.fasset}.`
