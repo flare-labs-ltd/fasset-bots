@@ -1,15 +1,16 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WalletTransactionInterface";
+import { BitcoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/WalletTransactionInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { toBN } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 import { fetchTransactionEntityById } from "../../src/db/dbutils";
 import { sleepMs } from "../../src/utils/utils";
 import { TransactionStatus } from "../../src/entity/transaction";
+import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
@@ -17,7 +18,7 @@ const walletSecret = "wallet_secret";
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
-const BTCMccConnectionTest = {
+const BTCMccConnectionTestInitial = {
    url: process.env.BTC_URL ?? "",
    username: "",
    password: "",
@@ -25,6 +26,7 @@ const BTCMccConnectionTest = {
    inTestnet: true,
    walletSecret: walletSecret
 };
+let BTCMccConnectionTest: BitcoinWalletConfig;
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -47,6 +49,9 @@ let fundedWallet: ICreateWalletResponse;
 
 describe("Bitcoin wallet tests", () => {
    before(async () => {
+      const testOrm = await initializeTestMikroORM();
+      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+      BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
       void wClient.startMonitoringTransactionProgress()
    });
@@ -83,7 +88,7 @@ describe("Bitcoin wallet tests", () => {
 
    it("Should create transaction with custom fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
-      rewired.orm = await initializeMikroORM();
+      rewired.orm = await initializeTestMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
       expect(typeof tr).to.equal("object");
@@ -91,7 +96,7 @@ describe("Bitcoin wallet tests", () => {
 
    it("Should not create transaction: maxFee > fee", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
-      rewired.orm = await initializeMikroORM();
+      rewired.orm = await initializeTestMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
          .be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);
@@ -110,7 +115,7 @@ describe("Bitcoin wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 600000; // 600 s
       for (let i = 0; ; i++) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
@@ -118,7 +123,7 @@ describe("Bitcoin wallet tests", () => {
             console.log(tx)
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
      }
    });

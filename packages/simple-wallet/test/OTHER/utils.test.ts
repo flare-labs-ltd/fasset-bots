@@ -3,13 +3,15 @@ import { WALLET } from "../../src";
 import { bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 import { ChainType } from "../../src/utils/constants";
+import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 
-const BTCMccConnectionTest = {
+const BTCMccConnectionTestInitial = {
    url: process.env.BTC_URL ?? "",
    username: "",
    password: "",
    inTestnet: true,
-   walletSecret: "wallet_secret"
+
 };
 const invalidChainType = "0x494e56414c494400000000000000000000000000000000000000000000000000" as ChainType;
 
@@ -23,6 +25,9 @@ describe("Util tests", () => {
    });
 
    it("Should fail if unsupported network", async () => {
+      const testOrm = await initializeTestMikroORM();
+      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+      const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       const wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
       wClient.chainType = invalidChainType;
       const fn = () => {

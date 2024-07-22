@@ -3,17 +3,26 @@ import { AbstractSqlDriver } from "@mikro-orm/knex";
 import { DatabaseAccount } from "./config/config-files/SecretsFile";
 import { CreateOrmOptions, ORM, createOrm } from "./config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event } from "./entities/agent";
-import { WalletAddress } from "./entities/wallet";
+import { WalletAddressEntity } from "../../simple-wallet/src/entity/wallet";
+import { UTXOEntity } from "../../simple-wallet/src/entity/utxo";
+import { TransactionEntity } from "../../simple-wallet/src/entity/transaction";
+import { DatabaseType } from "./config";
 
 /* istanbul ignore next */
 const options: Options<AbstractSqlDriver> = {
-    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting],
+    entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity],
     dbName: "fasset-bots.db",
     debug: false
 };
 
-export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions, databaseAccount: DatabaseAccount | undefined): Promise<ORM> {
-    const createOptions: CreateOrmOptions = { ...options, ...databaseAccount, ...optionsOverride };
+export const simpleWalletOptions: Options<AbstractSqlDriver> = {// for user
+    entities: [WalletAddressEntity, UTXOEntity, TransactionEntity],
+    dbName: "simple-wallet.db",
+    debug: false,
+};
+
+export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions, databaseAccount: DatabaseAccount | undefined, defaultOptions: Options<AbstractSqlDriver> = options): Promise<ORM> {
+    const createOptions: CreateOrmOptions = { ...defaultOptions, ...databaseAccount, ...optionsOverride };
     return createOrm(createOptions);
 }
 

@@ -10,25 +10,26 @@ import { toBN, toBNExp } from "../../src/utils/bnutils";
 import { fetchTransactionEntityById } from "../../src/db/dbutils";
 import { sleepMs } from "../../src/utils/utils";
 import { TransactionStatus } from "../../src/entity/transaction";
+import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import { CONNREFUSED } from "dns";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 
 const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
-const walletSecret = "secret_address"
 
-const XRPMccConnectionTest: RippleWalletConfig = {
+const XRPMccConnectionTestInitial = {
    url: process.env.XRP_URL ?? "",
    username: "",
    password: "",
    stuckTransactionOptions: {
       blockOffset: 10,
-      retries: 2,
    },
    rateLimitOptions: {
       timeoutMs: 60000,
    },
-   walletSecret: walletSecret,
    inTestnet: true
 };
+let XRPMccConnectionTest: RippleWalletConfig;
 
 const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
@@ -41,13 +42,15 @@ const amountToSendDropsFirst = toBNExp(0.1, XRP_DECIMAL_PLACES);
 const amountToSendDropsSecond = toBNExp(0.05, XRP_DECIMAL_PLACES);
 const feeInDrops = toBNExp(0.000015, 6);
 const maxFeeInDrops = toBNExp(0.000012, 6);
-const sequence = 54321;
 
 let wClient: WALLET.XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
 
 describe("Xrp wallet tests", () => {
    before(async () => {
+      const testOrm = await initializeTestMikroORM();
+      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+      XRPMccConnectionTest = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
       void wClient.startMonitoringTransactionProgress();
    });
@@ -99,14 +102,14 @@ describe("Xrp wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 20000; // 20 s
       for (let i = 0; ; i++) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
      }
    });
@@ -123,7 +126,7 @@ describe("Xrp wallet tests", () => {
       while(1) {
          const txInfo = await wClient.getTransactionInfo(id);
          if (txInfo.replacedByDdId) {
-            replacedTx = await fetchTransactionEntityById(wClient.orm, txInfo.replacedByDdId);
+            replacedTx = await fetchTransactionEntityById(wClient.rootEm, txInfo.replacedByDdId);
          }
          if (replacedTx && replacedTx.status == TransactionStatus.TX_FAILED) {
             break;
@@ -131,10 +134,10 @@ describe("Xrp wallet tests", () => {
          if (Date.now() - startTime > timeLimit) {
             throw new Error(`Time limit exceeded for ${txInfo.dbId} with ${txInfo.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
       }
-      const tx = await fetchTransactionEntityById(wClient.orm, id);
+      const tx = await fetchTransactionEntityById(wClient.rootEm, id);
       expect(tx.status).to.equal(TransactionStatus.TX_REPLACED);
    });
 
@@ -150,7 +153,7 @@ describe("Xrp wallet tests", () => {
          note,
          undefined,
       );
-      const txEnt = await fetchTransactionEntityById(wClient.orm, trId);
+      const txEnt = await fetchTransactionEntityById(wClient.rootEm, trId);
       expect(txEnt.source).to.equal(fundedWallet.address);
       expect(txEnt.destination).to.equal(targetAddress);
       expect(txEnt.fee?.toString()).to.equal(feeInDrops.toString());
@@ -158,14 +161,14 @@ describe("Xrp wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 30000; // 30 s
       for (let i = 0; ; i++) {
-         const tx = await fetchTransactionEntityById(wClient.orm, txEnt.id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, txEnt.id);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
       }
    });
@@ -177,17 +180,17 @@ describe("Xrp wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 30000; // 30 s
       for (let i = 0; ; i++) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_FAILED) {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
      }
-     const txEnt = await fetchTransactionEntityById(wClient.orm, id);
+     const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
      expect(txEnt.maxFee!.lt(txEnt.fee!)).to.be.true;
    });
 
@@ -214,19 +217,19 @@ describe("Xrp wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 40000; // 40 s
       while(1) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_FAILED) {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
       }
       const tx = await wClient.getTransactionInfo(id);
       expect(tx.replacedByDdId).to.be.null;
-      const txEnt = await fetchTransactionEntityById(wClient.orm, id);
+      const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
      expect(txEnt.maxFee!.lt(txEnt.fee!.muln(wClient.feeIncrease))).to.be.true;
    });
 
@@ -244,14 +247,14 @@ describe("Xrp wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 30000; // 30 s
       while (1) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
             throw new Error(`Time limit 1 exceeded for transaction ${tx.id, tx.transactionHash}`);
           }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
       }
       const balance = await wClient.getAccountBalance(toDelete.address);
@@ -260,14 +263,14 @@ describe("Xrp wallet tests", () => {
       const startTime2 = Date.now();
       const timeLimit2 = 25 * 60000 // 25min
       while (1) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id2);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id2);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
          if (Date.now() - startTime2 > timeLimit2) {
             throw new Error(`Time limit 2 exceeded in for transaction ${tx.id, tx.transactionHash}`);
           }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
       }
       const balance2 = await wClient.getAccountBalance(toDelete.address);

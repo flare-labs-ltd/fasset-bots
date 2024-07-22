@@ -1,3 +1,4 @@
+import { EntityManager } from "@mikro-orm/core";
 import { TransactionStatus } from "../entity/transaction";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
@@ -98,7 +99,8 @@ export interface BaseWalletConfig {
    password?: string; // probably never used
    rateLimitOptions?: RateLimitOptions;
    stuckTransactionOptions?: StuckTransaction;
-   walletSecret: string;
+   em: EntityManager;
+   walletKeys: IWalletKeys;
 }
 
 export type RippleWalletConfig = BaseWalletConfig;
@@ -115,4 +117,9 @@ export interface TransactionInfo {
    replacedByDdId: number | null,
    transactionHash: string | null;
    status: TransactionStatus;
+}
+
+export interface IWalletKeys {
+   getKey(address: string): Promise<string | undefined>;
+   addKey(address: string, privateKey: string): Promise<void>;
 }

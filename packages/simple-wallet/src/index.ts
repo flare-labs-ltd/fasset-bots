@@ -4,9 +4,7 @@ import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation
 import { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
 import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
 import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
-import { DBWalletKeys } from "./db/wallet";
 import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WalletTransactionInterface";
-import { initializeMikroORM } from "./orm/mikro-orm.config";
 
 export type { WalletClient, WalletCreate } from "./types";
 export type { StuckTransaction } from "./interfaces/WalletTransactionInterface";
@@ -35,8 +33,6 @@ export module WALLET {
       }
       static async initialize(createConfig: RippleWalletConfig) {
          const wallet = new XrpWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
-         wallet.walletKeys = new DBWalletKeys(wallet.orm.em, createConfig.walletSecret);
          return wallet;
       }
    }
@@ -47,8 +43,6 @@ export module WALLET {
       }
       static async initialize(createConfig: BitcoinWalletConfig) {
          const wallet = new BtcWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
-         wallet.walletKeys = new DBWalletKeys(wallet.orm.em, createConfig.walletSecret);
          return wallet;
       }
    }
@@ -59,8 +53,6 @@ export module WALLET {
       }
       static async initialize(createConfig: DogecoinWalletConfig) {
          const wallet = new DogeWalletImplementation(createConfig);
-         wallet.orm = await initializeMikroORM();
-         wallet.walletKeys = new DBWalletKeys(wallet.orm.em, createConfig.walletSecret);
          return wallet;
       }
    }

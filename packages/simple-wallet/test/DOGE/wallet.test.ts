@@ -1,5 +1,5 @@
 import { WALLET } from "../../src";
-import { ICreateWalletResponse } from "../../src/interfaces/WalletTransactionInterface";
+import { DogecoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/WalletTransactionInterface";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 use(chaiAsPromised);
@@ -7,21 +7,22 @@ import WAValidator from "wallet-address-validator";
 import { BTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import { initializeMikroORM } from "../../src/orm/mikro-orm.config";
 import { fetchTransactionEntityById } from "../../src/db/dbutils";
 import { sleepMs } from "../../src/utils/utils";
 import { TransactionStatus } from "../../src/entity/transaction";
+import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
 
-const DOGEMccConnectionTest = {
+const DOGEMccConnectionTestInitial = {
    url: process.env.DOGE_URL ?? "",
    username: "",
    password: "",
    inTestnet: true,
-   walletSecret: "wallet_secret"
 };
+let DOGEMccConnectionTest: DogecoinWalletConfig;
 
 const fundedMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
 const fundedAddress = "noXb5PiT85PPyQ3WBMLY7BUExm9KpfV93S";
@@ -42,6 +43,9 @@ let fundedWallet: ICreateWalletResponse;
 
 describe("Dogecoin wallet tests", () => {
    before(async () => {
+      const testOrm = await initializeTestMikroORM();
+      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+      DOGEMccConnectionTest = { ...DOGEMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
       void wClient.startMonitoringTransactionProgress()
    });
@@ -73,7 +77,7 @@ describe("Dogecoin wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 15 * 60_000; // 15 min s
       for (let i = 0; ; i++) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
@@ -81,7 +85,7 @@ describe("Dogecoin wallet tests", () => {
             console.log(tx)
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
      }
    });
@@ -106,24 +110,24 @@ describe("Dogecoin wallet tests", () => {
       const startTime = Date.now();
       const timeLimit = 30_000; // 30 s
       for (let i = 0; ; i++) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_FAILED) {
             break;
          }
          if (Date.now() - startTime > timeLimit) {
             throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
          }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
      }
-     const txEnt = await fetchTransactionEntityById(wClient.orm, id);
+     const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
      expect(txEnt.maxFee!.lt(txEnt.fee!)).to.be.true;
    });
 
    //TODO fix
    it.skip("Should not create transaction: amount = dust amount", async () => {
       const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
-      rewired.orm = await initializeMikroORM();
+      rewired.orm = await initializeTestMikroORM();
       fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
       await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note", maxFeeInSatoshi)).to
          .eventually.be.rejectedWith(`Will not prepare transaction for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
@@ -148,14 +152,14 @@ describe("Dogecoin wallet tests", () => {
       const startTime2 = Date.now();
       const timeLimit2 = 15 * 60000 // 15min
       while (1) {
-         const tx = await fetchTransactionEntityById(wClient.orm, id);
+         const tx = await fetchTransactionEntityById(wClient.rootEm, id);
          if (tx.status == TransactionStatus.TX_SUCCESS) {
             break;
          }
          if (Date.now() - startTime2 > timeLimit2) {
             throw new Error(`Time limit 2 exceeded in for transaction ${tx.id, tx.transactionHash}`);
           }
-         wClient.orm.em.clear();
+         wClient.rootEm.clear();
          await sleepMs(2000);
       }
       const balance2 = await wClient.getAccountBalance(targetWallet.address);

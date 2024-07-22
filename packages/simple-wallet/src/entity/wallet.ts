@@ -1,7 +1,7 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 
 @Entity()
-export class WalletEntity {
+export class WalletAddressEntity {
     @PrimaryKey()
     address!: string;
 

@@ -1,9 +1,8 @@
 import { WalletClient } from "@flarelabs/simple-wallet";
 import { toBN, unPrefix0x } from "../utils/helpers";
-import { IWalletKeys } from "./WalletKeys";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
-import { FeeParams, TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+import { FeeParams, IWalletKeys, TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
 import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 import { sleepMs } from "../../../simple-wallet/src/utils/utils";
 

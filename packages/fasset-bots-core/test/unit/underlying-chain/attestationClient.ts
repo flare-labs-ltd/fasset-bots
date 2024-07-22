@@ -66,7 +66,7 @@ describe("Attestation client unit tests", () => {
             indexerApiKey(secrets)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
     });
 
