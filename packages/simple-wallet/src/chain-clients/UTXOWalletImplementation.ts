@@ -42,6 +42,7 @@ import { logger } from "../utils/logger";
 import { UTXOAccountGeneration } from "./account-generation/UTXOAccountGeneration";
 import { TransactionStatus, TransactionEntity } from "../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
+import { isChainTypeLocked, lockChainType, unlockChainType } from "../utils/lockManagement";
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
@@ -223,24 +224,53 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     * Background processing
     */
    async startMonitoringTransactionProgress(): Promise<void> {
-      this.monitoring = true;
-      while (this.monitoring) {
-         const networkUp = await this.checkUTXONetworkStatus();
-         if (!networkUp) {
-            logger.error(`Trying again in ${this.restartInDueNoResponse}`);
-            await sleepMs(this.restartInDueNoResponse);
-            continue;
-         }
-         try {
-            await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
-            await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PENDING, this.checkPendingTransaction.bind(this));
-            await processTransactions(this.orm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
-            await processTransactions(this.orm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
-         } catch (error) {
-            logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
-         }
-         await sleepMs(this.restartInDueToError);
+      if (isChainTypeLocked(this.chainType)) {
+         logger.info(`Monitoring for chain ${this.chainType} is already running.`);
+         return;
       }
+
+      logger.info(`Monitoring started for chain ${this.chainType}`);
+      console.info(`Monitoring started for chain ${this.chainType}`);
+      lockChainType(this.chainType);
+      try {
+         this.monitoring = true;
+
+         while (this.monitoring) {
+            try {
+               const networkUp = await this.checkUTXONetworkStatus();
+               if (!networkUp) {
+                  logger.error(`Trying again in ${this.restartInDueNoResponse}`);
+                  await sleepMs(this.restartInDueNoResponse);
+                  continue;
+               }
+
+               await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
+               if (this.shouldStopMonitoring()) break;
+               await processTransactions(this.orm, this.chainType, TransactionStatus.TX_PENDING, this.checkPendingTransaction.bind(this));
+               if (this.shouldStopMonitoring()) break;
+               await processTransactions(this.orm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
+               if (this.shouldStopMonitoring()) break;
+               await processTransactions(this.orm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
+               if (this.shouldStopMonitoring()) break;
+            } catch (error) {
+               logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
+            }
+            await sleepMs(this.restartInDueToError);
+         }
+      } finally {
+         this.monitoring = false;
+         unlockChainType(this.chainType);
+         logger.info(`Monitoring started for chain ${this.chainType} stopped.`);
+      }
+   }
+
+   shouldStopMonitoring() {
+      if (!this.monitoring) {
+         logger.info(`Monitoring should be stopped for chain ${this.chainType}`);
+         console.info(`Monitoring should be stopped for chain ${this.chainType}`);
+         return true;
+      }
+      return false;
    }
 
    async checkUTXONetworkStatus(): Promise<boolean> {
