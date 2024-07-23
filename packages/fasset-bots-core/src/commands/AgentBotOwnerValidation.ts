@@ -51,6 +51,7 @@ export class AgentBotOwnerValidation {
 
     static async create(secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const apiKey = secrets.optional("apiKey.native_rpc");
         await initWeb3(authenticatedHttpProvider(configFile.rpcUrl, apiKey), [], null);
@@ -59,15 +60,16 @@ export class AgentBotOwnerValidation {
         const agentOwnerRegistry = await contractRetriever.getContract(AgentOwnerRegistry);
         const fassets = new Map<string, FAssetInstance>();
         for (const [symbol, { fasset }] of contractRetriever.assetManagers) fassets.set(symbol, fasset);
-        const botConfig = await createBotConfig("agent", secrets, configFile);
+        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
         return new AgentBotOwnerValidation(secrets, configFile, agentOwnerRegistry, fassets, reporter, botConfig.orm);
     }
 
     static async fromContext(context: IAssetAgentContext, secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const fassets = new Map<string, FAssetInstance>([[context.fAssetSymbol, context.fAsset]]);
-        const botConfig = await createBotConfig("agent", secrets, configFile);
+        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
         return new AgentBotOwnerValidation(secrets, configFile, context.agentOwnerRegistry, fassets, reporter, botConfig.orm);
     }
 
