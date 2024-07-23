@@ -4,7 +4,6 @@ import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
 import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
-import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -214,7 +213,7 @@ export class AgentRedemption {
 
     // 'PAID' state data
 
-    @PrimaryKey({ nullable: true })
+    @Property({ nullable: true })
     txDbId?: number;
 
     @Property({ nullable: true })

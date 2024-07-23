@@ -10,7 +10,6 @@ import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { initWeb3 } from "../../../src/utils/web3";
 import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { getNativeAccounts } from "../../test-utils/test-helpers";
-import { CommandLineError } from "../../../src/utils";
 use(chaiAsPromised);
 
 const indexerTestBTCUrl = "https://attestation-coston.aflabs.net/verifier/btc/";
