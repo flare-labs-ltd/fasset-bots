@@ -327,8 +327,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          await handleMissingPrivateKey(this.orm, tx.id);
          return;
       }
-      const newFee = toBN(transaction.Fee!);
-      await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
+
+      if (!await this.checkIfTransactionAppears(tx.id)) {
+         const newFee = toBN(transaction.Fee!);
+         await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
+      }
    }
 
    async submitPreparedTransactions(tx: TransactionEntity): Promise<void> {
@@ -404,28 +407,35 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          await this.resubmitTransaction(txId, privateKey, transaction, newFee);
       }
       if (txStatus == TransactionStatus.TX_PENDING) {
-         // wait if tx shows up in next x blocks
-         const txEnt = await fetchTransactionEntityById(this.orm, txId);
-         const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
-         while ((await this.getLatestValidatedLedgerIndex()) <= waitUntilBlock) {
-            const txResp = await this.client.post("", {
-               method: "tx",
-               params: [{ transaction: txEnt.transactionHash }],
-            });
-            if (txResp.data.result.validated) {
-               // transaction completed - update tx in db
-               await updateTransactionEntity(this.orm, txId, async (txEnt) => {
-                  txEnt.status = TransactionStatus.TX_SUCCESS;
-               });
-               logger.info(`Transaction ${txId} was accepted`);
-               console.info(`Transaction ${txId} was accepted`);
-               break;
-            }
+         if (await this.checkIfTransactionAppears(txId)) {
+            return
          }
          // tx did not show up => resubmit with the same data
          const newFee = toBN(transaction.Fee!);
          await this.resubmitTransaction(txId, privateKey, transaction, newFee);
       }
+   }
+
+   async checkIfTransactionAppears(txId: number) {
+      // wait if tx shows up in next x blocks
+      const txEnt = await fetchTransactionEntityById(this.orm, txId);
+      const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
+      while ((await this.getLatestValidatedLedgerIndex()) <= waitUntilBlock) {
+         const txResp = await this.client.post("", {
+            method: "tx",
+            params: [{ transaction: txEnt.transactionHash }],
+         });
+         if (txResp.data.result.validated) {
+            // transaction completed - update tx in db
+            await updateTransactionEntity(this.orm, txId, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_SUCCESS;
+            });
+            logger.info(`Transaction ${txId} was accepted`);
+            console.info(`Transaction ${txId} was accepted`);
+            return true;
+         }
+      }
+      return false;
    }
 
    async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete, newFee: BN) {
