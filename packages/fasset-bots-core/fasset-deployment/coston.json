@@ -237,46 +237,61 @@
     "mustSwitchToProduction": true
   },
   {
+    "name": "AgentVaultProxyImplementation",
+    "contractName": "AgentVault.sol",
+    "address": "0x3895143cbbFf605C5c11d7513De51975FF850882"
+  },
+  {
+    "name": "CollateralPoolProxyImplementation",
+    "contractName": "CollateralPool.sol",
+    "address": "0x6BCD2f2d969BC767549029d8325c309378B6BDd8"
+  },
+  {
+    "name": "CollateralPoolTokenProxyImplementation",
+    "contractName": "CollateralPoolToken.sol",
+    "address": "0x6Cdf63Ba5B8DF9d60E7542940E6D3Ecb33a869A8"
+  },
+  {
     "name": "AgentVaultFactory",
     "contractName": "AgentVaultFactory.sol",
-    "address": "0x33853b37F282816e8B08938853C7931F590E8333"
+    "address": "0xD8293935c23E65F822aaB1b592CC674C2c69A691"
   },
   {
     "name": "CollateralPoolFactory",
     "contractName": "CollateralPoolFactory.sol",
-    "address": "0xAaEAD74F305dcB9095735Eb96c4a1256b18b3BC5"
+    "address": "0xD04D6245725045cA3894f4978a4ee7AF965f57E3"
   },
   {
     "name": "CollateralPoolTokenFactory",
     "contractName": "CollateralPoolTokenFactory.sol",
-    "address": "0x53D98Cd59e9AcB14E4557538210F8Cde50Cb696A"
+    "address": "0xD0c34DAd4b074b735Cc33024C19AE25dF6586E6B"
   },
   {
     "name": "AssetManagerController",
     "contractName": "AssetManagerController.sol",
-    "address": "0x4af6F5c874F3c5e08ea6E86d72611b94020441E6",
+    "address": "0xfC11c082056E134e6743534235221F532fbcC19e",
     "mustSwitchToProduction": true
   },
   {
     "name": "AssetManager_FTestXRP",
     "contractName": "AssetManager.sol",
-    "address": "0x2b54C101c8355B8Ac3a9DD1F5A92c3F5431E07e0"
+    "address": "0xD596A8004c2616A999bD87bC3f647D400b541D8c"
   },
   {
     "name": "FTestXRP",
     "contractName": "FAsset.sol",
-    "address": "0x89e67b3Be56837764697e76E53F3532A5e2d040d",
+    "address": "0xf0b89C3a573E6Ffd8847d975ED3C05d523E4EdAC",
     "mustSwitchToProduction": true
   },
   {
     "name": "AssetManager_FSimCoinX",
     "contractName": "AssetManager.sol",
-    "address": "0x0D6F1e8De60a408ed81B2b8c4Be197E801843120"
+    "address": "0xEadD03c5a6bAd82bbB91351f5e5DeddC6e444D3D"
   },
   {
     "name": "FSimCoinX",
     "contractName": "FAsset.sol",
-    "address": "0xb99dEC4dAde897ce67E721E9A8449dAB56e003F7",
+    "address": "0xebb42B721181F3D0Ee87F1a969B5Cce4EE9B4214",
     "mustSwitchToProduction": true
   },
   {
