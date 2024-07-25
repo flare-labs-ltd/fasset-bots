@@ -360,7 +360,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    }
 
    async submitPreparedTransactions(txEnt: TransactionEntity): Promise<void> {
-      const transaction = JSON.parse(txEnt.raw!.toString());
+      const core = this.getCore();
+      const transaction = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
+
       const privateKey = await this.walletKeys.getKey(txEnt.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.orm, txEnt.id);
