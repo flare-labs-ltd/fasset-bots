@@ -243,7 +243,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * Background processing
     */
    async startMonitoringTransactionProgress(): Promise<void> {
-      if (isChainTypeLocked(this.chainType)) {
+      if (isChainTypeLocked(this.chainType)) { //todo-urska: if already running -> try multiple times again?
          logger.info(`Monitoring for chain ${this.chainType} is already running.`);
          return;
       }
