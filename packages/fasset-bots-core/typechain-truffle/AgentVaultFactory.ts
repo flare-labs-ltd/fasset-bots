@@ -9,7 +9,10 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 
 export interface AgentVaultFactoryContract
   extends Truffle.Contract<AgentVaultFactoryInstance> {
-  "new"(meta?: Truffle.TransactionDetails): Promise<AgentVaultFactoryInstance>;
+  "new"(
+    _implementation: string,
+    meta?: Truffle.TransactionDetails
+  ): Promise<AgentVaultFactoryInstance>;
 }
 
 export type AllEvents = never;
@@ -32,6 +35,8 @@ export interface AgentVaultFactoryInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
+
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   supportsInterface(
     _interfaceId: string,
@@ -56,6 +61,8 @@ export interface AgentVaultFactoryInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     supportsInterface(
       _interfaceId: string,

@@ -452,6 +452,14 @@ export interface RedemptionPaymentBlocked {
   };
 }
 
+export interface RedemptionPaymentExtensionSecondsChanged {
+  name: "RedemptionPaymentExtensionSecondsChanged";
+  args: {
+    value: BN;
+    0: BN;
+  };
+}
+
 export interface RedemptionPaymentFailed {
   name: "RedemptionPaymentFailed";
   args: {
@@ -721,6 +729,7 @@ export type AllEvents =
   | RedeemedInCollateral
   | RedemptionDefault
   | RedemptionPaymentBlocked
+  | RedemptionPaymentExtensionSecondsChanged
   | RedemptionPaymentFailed
   | RedemptionPerformed
   | RedemptionRejected
@@ -2826,6 +2835,10 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  redemptionPaymentExtensionSeconds(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   rejectInvalidRedemption: {
     (
       _proof: {
@@ -3090,6 +3103,25 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       },
       _agentVault: string,
       _lots: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setRedemptionPaymentExtensionSeconds: {
+    (
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -5434,6 +5466,10 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    redemptionPaymentExtensionSeconds(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     rejectInvalidRedemption: {
       (
         _proof: {
@@ -5698,6 +5734,25 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         },
         _agentVault: string,
         _lots: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setRedemptionPaymentExtensionSeconds: {
+      (
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

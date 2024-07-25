@@ -7,86 +7,71 @@ import type { Truffle } from "./types";
 import BN from "bn.js";
 import { EventData, PastEventOptions } from "web3-eth-contract";
 
-export interface CollateralPoolTokenFactoryContract
-  extends Truffle.Contract<CollateralPoolTokenFactoryInstance> {
+export interface IRedemptionTimeExtensionContract
+  extends Truffle.Contract<IRedemptionTimeExtensionInstance> {
   "new"(
-    _implementation: string,
     meta?: Truffle.TransactionDetails
-  ): Promise<CollateralPoolTokenFactoryInstance>;
+  ): Promise<IRedemptionTimeExtensionInstance>;
 }
 
-export type AllEvents = never;
+export interface RedemptionPaymentExtensionSecondsChanged {
+  name: "RedemptionPaymentExtensionSecondsChanged";
+  args: {
+    value: BN;
+    0: BN;
+  };
+}
 
-export interface CollateralPoolTokenFactoryInstance
+export type AllEvents = RedemptionPaymentExtensionSecondsChanged;
+
+export interface IRedemptionTimeExtensionInstance
   extends Truffle.ContractInstance {
-  create: {
+  redemptionPaymentExtensionSeconds(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  setRedemptionPaymentExtensionSeconds: {
     (
-      _pool: string,
-      _systemSuffix: string,
-      _agentSuffix: string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _pool: string,
-      _systemSuffix: string,
-      _agentSuffix: string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
+    ): Promise<void>;
     sendTransaction(
-      _pool: string,
-      _systemSuffix: string,
-      _agentSuffix: string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _pool: string,
-      _systemSuffix: string,
-      _agentSuffix: string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  supportsInterface(
-    _interfaceId: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<boolean>;
-
   methods: {
-    create: {
+    redemptionPaymentExtensionSeconds(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    setRedemptionPaymentExtensionSeconds: {
       (
-        _pool: string,
-        _systemSuffix: string,
-        _agentSuffix: string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _pool: string,
-        _systemSuffix: string,
-        _agentSuffix: string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
+      ): Promise<void>;
       sendTransaction(
-        _pool: string,
-        _systemSuffix: string,
-        _agentSuffix: string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _pool: string,
-        _systemSuffix: string,
-        _agentSuffix: string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    supportsInterface(
-      _interfaceId: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;
