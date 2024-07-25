@@ -21,7 +21,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentRedemptionState } from "../../../src/entities/common";
-import { TokenBalances } from "../../../src/utils";
+import { proveAndUpdateUnderlyingBlock, TokenBalances } from "../../../src/utils";
 use(chaiAsPromised);
 use(spies);
 
@@ -78,6 +78,8 @@ describe("UserBot cli commands unit tests", () => {
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
+        chain.mine(2);
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // user bot
         const fAssetSymbol = "TESTHHSYM";
         userBot = new UserBotCommands(context, fAssetSymbol, minterAddress, userUnderlyingAddress, userDataDir);
