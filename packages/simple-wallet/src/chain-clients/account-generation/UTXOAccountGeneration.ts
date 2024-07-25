@@ -29,11 +29,16 @@ export class UTXOAccountGeneration implements WalletAccountGenerationInterface {
       const bip84 = this.getBip84();
       const inTestnet = this.chainType == ChainType.testDOGE || this.chainType == ChainType.testBTC;
       const root = new bip84.fromMnemonic(mnemonic, "", inTestnet);
-      const child00 = root.deriveAccount(0);
-      const account0 = new bip84.fromZPrv(child00);
+      const child0 = root.deriveAccount(0);
+      const account0 = new bip84.fromZPrv(child0);
+
       let account;
       if (this.chainType == ChainType.testDOGE || this.chainType == ChainType.DOGE) {
-         account = account0.getAddress(0, false, 44);
+         account = account0.getAddress(0, false, 44); // first receiving address
+         // const change = account0.getAddress(0, true, 44); // first change address
+         // console.log("xpub: ", account0.getAccountPublicKey())
+         // console.log("first change address:", change)
+         // console.log("first change address private key:", account0.getPrivateKey(0, true, 44))
       } else if (this.chainType == ChainType.testBTC || this.chainType == ChainType.BTC) {
          account = account0.getAddress(0, false);
       } else {

@@ -32,6 +32,16 @@ const targetAddress = "npJo8FieqEmB1NehU4jFFEFPsdvy8ippbm";
 const address = 'nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D'
 const privateKey = 'ckmubApfH515MCZNC9ufLR4kHrmnb1PCtX2vhoN4iYx9Wqzh2AQ9'
 
+// first change derivative and xpub
+// FUNDED
+// xpub:  vpub5ZZjGgAiEbwK4oFTypCwvyHnE7XPFgEHB7iqUqmRrWEnQU9RKLKs6uok1zvwDvdWjmSnNgM2QnTmT477YECcxsxsdJANtdV9qmVfYc39PLS
+// first change address: np3gXRRAfJ1fbw3pnkdDR96sbmhEdFjq3v
+// first change address private key: ciCVd1m6gFJ2PTRuWjrmXK2KRBLkY8RzgCJ9pqfmqm1XT6L7pXwM
+// TARGET
+// xpub:  vpub5YEVpE5aqVJiEos7Z1iQgQPcdSM7nfQNB8dfdW7zDGGQrp3MUk2e5aAaCgfsyeQryUHHgxWGteYqkPfCBCpnEGAcqxaFpWAZ7ByJsvXPPzJ
+// first change address: nkatKfFLa5wXbtuMHM5vN9qJ3v7UPfkBU9
+// first change address private key: cgAnaNqPmVUr3Am1VAzGX9zGEVw5AJ2FWMYw65dBGnUUJs4iTEkP
+
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
 
 
