@@ -41,6 +41,10 @@ export class UTXOAccountGeneration implements WalletAccountGenerationInterface {
          // console.log("first change address private key:", account0.getPrivateKey(0, true, 44))
       } else if (this.chainType == ChainType.testBTC || this.chainType == ChainType.BTC) {
          account = account0.getAddress(0, false);
+         // const change = account0.getAddress(0, true); // first change address
+         // console.log("xpub: ", account0.getAccountPublicKey())
+         // console.log("first change address:", change)
+         // console.log("first change address private key:", account0.getPrivateKey(0, true))
       } else {
          logger.error(`Invalid chainType ${this.chainType}`);
          throw new Error(`Invalid chainType ${this.chainType}`);

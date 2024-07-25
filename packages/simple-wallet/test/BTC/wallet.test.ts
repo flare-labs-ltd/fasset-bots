@@ -40,6 +40,15 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 //a: mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2
 //pk: cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY
 
+//funded
+// xpub:  vpub5ZQX8V9N9iEqpgfZo42p6eRSA1px1h1cWGvsLjbMbvXE6ymgKCtqq3oZs8dWp2F85pw23QYY8YWqTb1BpCq7G4FQXcSeDv8kFeBiqD7LCvo
+// first change address: tb1q9szxd7rnvkkspxp0sl8mha5jk38q9t3rlc2wjx
+// first change address private key: cQpQrPr1yrdPLdom5dkxjJgh8bsKp284tPFa2znRs9RTB1VkzQyq
+//target
+// xpub:  vpub5ZXcEAAqkR4Lg3CBfdYC1fUHkrdRfzxCbRg6tpvERsLB1HpH1KCRcTzQ9TcaLymXpYQmAtyccAcXc1z6UpVNMgcHSuZmmS1YzpvYRHWqd3X
+// first change address: tb1q38w40nmt5chk4a60mrh502h7m3l5w6pxpxvr0c
+// first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
+
 const amountToSendSatoshi = toBN(10000);
 const feeInSatoshi = toBN(120000);
 const maxFeeInSatoshi = toBN(110000);
