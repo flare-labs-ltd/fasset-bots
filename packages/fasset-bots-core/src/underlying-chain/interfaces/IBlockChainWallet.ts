@@ -1,8 +1,6 @@
 import type BN from "bn.js";
 import { FeeParams, TransactionInfo } from "../../../../simple-wallet/src/interfaces/WalletTransactionInterface";
 
-
-
 type NumberLike = BN | number | string;
 
 export type UTXO = {
@@ -76,4 +74,8 @@ export interface IBlockChainWallet {
 
     // Returns info about transaction (txHash, status, replacedById)
     checkTransactionStatus(txDbId: number): Promise<TransactionInfo>;
+
+    // Background tasks
+    startMonitoringTransactionProgress(): Promise<void>;
+    stopMonitoring(): void;
 }
