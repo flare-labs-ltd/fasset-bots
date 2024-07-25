@@ -1,7 +1,7 @@
 import { Entity, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
-import { BNType } from "../orm/orm-types";
 import BN from "bn.js";
 import { ChainType } from "../utils/constants";
+import { BNType } from "../utils/orm-types";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {

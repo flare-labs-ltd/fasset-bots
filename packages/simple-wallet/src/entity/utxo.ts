@@ -1,6 +1,6 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
-import { BNType } from "../orm/orm-types";
 import BN from "bn.js";
+import { BNType } from "../utils/orm-types";
 
 @Entity({ tableName: "utxo" })
 export class UTXOEntity {

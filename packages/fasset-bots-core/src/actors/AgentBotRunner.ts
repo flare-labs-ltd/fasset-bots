@@ -11,6 +11,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
+import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 export interface ITimeKeeperService {
     get(symbol: string): ITimeKeeper;
@@ -41,13 +42,19 @@ export class AgentBotRunner {
 
     public serviceAccounts = new Map<string, string>();
 
+    private simpleWalletBackgroundTasks: Map<string, IBlockChainWallet> = new Map();
+
     @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
         this.restartRequested = false;
         this.running = true;
-        try {
+        try {//TODO-urska add here probably?
             while (!this.readyToStop()) {
+                void this.runBackgroundWalletTasks().catch((error) => {
+                    logger.error(`Wallet background task run into error:`, error);
+                    console.error(`Wallet background task run into error:`, error);
+                });
                 await this.runStep();
             }
         } finally {
@@ -164,6 +171,9 @@ export class AgentBotRunner {
         agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
         agentBot.locks = this.locks;
         agentBot.loopDelay = this.loopDelay;
+
+        // add wallet to the background loop
+        this.addSimpleWalletToLoop(agentEntity.chainId, agentBot);
         return agentBot;
     }
 
@@ -240,5 +250,23 @@ export class AgentBotRunner {
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
+    }
+
+    addSimpleWalletToLoop(chainId: string, agentBot: AgentBot) {
+        const wallet = this.simpleWalletBackgroundTasks.get(chainId);
+        if (wallet) {
+            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
+            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
+        } else {
+            this.simpleWalletBackgroundTasks.set(chainId, agentBot.context.wallet);
+            logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.agentVault}.`);
+        }
+    }
+
+    async runBackgroundWalletTasks() {//todo-urska
+        for (const wallet of this.simpleWalletBackgroundTasks.values()) {
+            console.log(`Value: ${wallet}`);
+            void wallet.startMonitoringTransactionProgress();
+        }
     }
 }

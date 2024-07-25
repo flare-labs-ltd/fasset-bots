@@ -1,12 +1,8 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { WalletAddress } from "../entities/wallet";
 import { decryptText, encryptText } from "../utils/encryption";
 import { Secrets } from "../config";
-
-export interface IWalletKeys {
-    getKey(address: string): Promise<string | undefined>;
-    addKey(address: string, privateKey: string): Promise<void>;
-}
+import { IWalletKeys } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+import { WalletAddressEntity } from "../../../simple-wallet/src/entity/wallet";
 
 export class MemoryWalletKeys implements IWalletKeys {
     private keys = new Map<string, string>();
@@ -38,7 +34,7 @@ export class DBWalletKeys implements IWalletKeys {
 
     async getKey(address: string): Promise<string | undefined> {
         if (!this.privateKeyCache.has(address)) {
-            const wa = await this.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
+            const wa = await this.em.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
             if (wa != null) {
                 const privateKey = decryptText(this.password, wa.encryptedPrivateKey);
                 this.privateKeyCache.set(address, privateKey);
@@ -52,7 +48,7 @@ export class DBWalletKeys implements IWalletKeys {
         // set cache
         this.privateKeyCache.set(address, privateKey);
         // persist
-        const wa = new WalletAddress();
+        const wa = new WalletAddressEntity();
         wa.address = address;
         wa.encryptedPrivateKey = encryptText(this.password, privateKey, true);
         await this.em.persist(wa).flush();

@@ -2,13 +2,12 @@ import {TransactionInfo} from "../../src/interfaces/WalletTransactionInterface";
 import {TransactionEntity, TransactionStatus} from "../../src/entity/transaction";
 import {sleepMs} from "../../src/utils/utils";
 import {ChainType} from "../../src/utils/constants";
-import {RequiredEntityData} from "@mikro-orm/core";
+import {EntityManager, RequiredEntityData} from "@mikro-orm/core";
 import {WALLET} from "../../src";
 import BN from "bn.js";
-import {ORM} from "../../src/orm/mikro-orm.config";
-import {WalletEntity} from "../../src/entity/wallet";
 import {fetchTransactionEntityById, getTransactionInfoById} from "../../src/db/dbutils";
 import {UTXOEntity} from "../../src/entity/utxo";
+import { WalletAddressEntity } from "../../src/entity/wallet";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -50,15 +49,15 @@ async function loop(sleepIntervalMs: number, timeLimit: number, tx: TransactionE
  * @param status
  * @param txId
  */
-async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, orm: ORM, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
-    let tx = await fetchTransactionEntityById(orm, txId);
+async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, rootEm: EntityManager, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
+    let tx = await fetchTransactionEntityById(rootEm, txId);
     await loop(sleepInterval * 1000, timeLimit * 1000, tx,async () => {
-        orm.em.clear();
-        tx = await fetchTransactionEntityById(orm, txId);
+        rootEm.clear();
+        tx = await fetchTransactionEntityById(rootEm, txId);
         return checkStatus(tx, [status]);
     });
 
-    return [await fetchTransactionEntityById(orm, txId), await getTransactionInfoById(orm, txId)];
+    return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];
 }
 
 async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit: number, wClient: WALLET.XRP | WALLET.BTC | WALLET.DOGE, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
@@ -66,19 +65,19 @@ async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit:
     let replacedTx: TransactionEntity | TransactionInfo | null = null;
 
     await loop(sleepInterval * 1000, timeLimit * 1000, txInfo, async () => {
-        wClient.orm.em.clear();
+        wClient.rootEm.clear();
         txInfo = await wClient.getTransactionInfo(txId);
         if (txInfo.replacedByDdId)
-            replacedTx = await fetchTransactionEntityById(wClient.orm, txInfo.replacedByDdId);
+            replacedTx = await fetchTransactionEntityById(wClient.rootEm, txInfo.replacedByDdId);
         if (replacedTx)
             return checkStatus(replacedTx, [status]);
     });
 
-    return [await fetchTransactionEntityById(wClient.orm, txId), await wClient.getTransactionInfo(txId)];
+    return [await fetchTransactionEntityById(wClient.rootEm, txId), await wClient.getTransactionInfo(txId)];
 }
 
 function createTransactionEntity(
-    orm: ORM,
+    rootEm: EntityManager,
     chainType: ChainType,
     source: string,
     destination: string,
@@ -89,7 +88,7 @@ function createTransactionEntity(
     executeUntilBlock?: number,
     executeUntilTimestamp?: number
 ) {
-    return orm.em.create(
+    return rootEm.create(
         TransactionEntity,
         {
             chainType,
@@ -115,36 +114,36 @@ async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source
         note,
     );
 
-    const txEnt = createTransactionEntity(wClient.orm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
+    const txEnt = createTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
     const privateKey = await wClient.walletKeys.getKey(txEnt.source);
     txEnt.raw = Buffer.from(JSON.stringify(transaction));
     txEnt.transactionHash = (await wClient.signTransaction(JSON.parse(txEnt.raw!.toString()), privateKey!)).txHash;
     txEnt.status = status;
 
-    await wClient.orm.em.flush();
+    await wClient.rootEm.flush();
     return txEnt;
 }
 
-async function clearTransactions(orm: ORM) {
-    await orm.em.nativeDelete(TransactionEntity, {});
-    await orm.em.flush();
+async function clearTransactions(rootEm: EntityManager) {
+    await rootEm.nativeDelete(TransactionEntity, {});
+    await rootEm.flush();
 }
 
-async function clearUTXOs(orm: ORM) {
-    await orm.em.nativeDelete(UTXOEntity, {});
-    await orm.em.flush();
+async function clearUTXOs(rootEm: EntityManager) {
+    await rootEm.nativeDelete(UTXOEntity, {});
+    await rootEm.flush();
 }
 
-async function updateWalletInDB(orm: ORM, address: string, modify: (walletEnt: WalletEntity) => Promise<void>) {
-    await orm.em.transactional(async (em) => {
-        const ent = await orm.em.findOneOrFail(WalletEntity, {'address': address});
+async function updateWalletInDB(rootEm: EntityManager, address: string, modify: (walletEnt: WalletAddressEntity) => Promise<void>) {
+    await rootEm.transactional(async (em) => {
+        const ent = await rootEm.findOneOrFail(WalletAddressEntity, {'address': address});
         await modify(ent);
         await em.persistAndFlush(ent);
     });
 }
 
-async function setWalletStatusInDB(orm: ORM, address: string, isDeleting: boolean) {
-    await updateWalletInDB(orm, address, async walletEnt => {
+async function setWalletStatusInDB(rootEm: EntityManager, address: string, isDeleting: boolean) {
+    await updateWalletInDB(rootEm, address, async walletEnt => {
         walletEnt.isDeleting = isDeleting;
     });
 }

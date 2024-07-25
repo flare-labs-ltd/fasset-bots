@@ -1,9 +1,8 @@
 import { WalletClient } from "@flarelabs/simple-wallet";
 import { toBN, unPrefix0x } from "../utils/helpers";
-import { IWalletKeys } from "./WalletKeys";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
-import { FeeParams, TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+import { FeeParams, IWalletKeys, TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
 import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 import { sleepMs } from "../../../simple-wallet/src/utils/utils";
 
@@ -83,6 +82,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
 
     // background task (monitoring in simple-wallet) should be running
     async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number): Promise<string> {
+        //TODO-urska -> start and stop here?
         let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock);
         let info = await this.checkTransactionStatus(id);
         while (!info.transactionHash ||
@@ -96,5 +96,13 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
             }
         }
         return info.transactionHash;
+    }
+
+    async startMonitoringTransactionProgress(): Promise<void> {
+        await this.walletClient.startMonitoringTransactionProgress();
+    }
+
+    stopMonitoring(): void {
+        this.walletClient.stopMonitoring();
     }
 }

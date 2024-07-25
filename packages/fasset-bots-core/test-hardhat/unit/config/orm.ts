@@ -1,17 +1,17 @@
 import { createOrm, CreateOrmOptions } from "../../../src/config/orm";
 import { existsSync, rm } from "fs";
 import { expect } from "chai";
-import { WalletAddress } from "../../../src/entities/wallet";
 import { BNType } from "../../../src/config/orm-types";
 import { toBN } from "../../../src/utils/helpers";
 import BN from "bn.js";
+import { WalletAddressEntity } from "../../../../simple-wallet/src/entity/wallet";
 
 const dbNameSqlite: string = "fasset-bots-unit-test-sqlite.db";
 const dbNameMySql: string = "fasset-bots-unit-test-mysql";
 const dbNamePostgres: string = "fasset-bots-unit-test-postgres";
-const dbOptionsSqlite: CreateOrmOptions = { dbName: dbNameSqlite, type: "sqlite", entities: [WalletAddress] };
-const dbOptionsMySql: CreateOrmOptions = { dbName: dbNameMySql, type: "mysql", entities: [WalletAddress] };
-const dbOptionsPostgres: CreateOrmOptions = { dbName: dbNamePostgres, type: "postgresql", entities: [WalletAddress] };
+const dbOptionsSqlite: CreateOrmOptions = { dbName: dbNameSqlite, type: "sqlite", entities: [WalletAddressEntity] };
+const dbOptionsMySql: CreateOrmOptions = { dbName: dbNameMySql, type: "mysql", entities: [WalletAddressEntity] };
+const dbOptionsPostgres: CreateOrmOptions = { dbName: dbNamePostgres, type: "postgresql", entities: [WalletAddressEntity] };
 
 describe("Orm config tests", () => {
     it("Should create database", async () => {

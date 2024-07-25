@@ -2,6 +2,12 @@ import { TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTra
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 
 export class FaultyWallet implements IBlockChainWallet {
+    startMonitoringTransactionProgress(): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    stopMonitoring(): void {
+        throw new Error("Method not implemented.");
+    }
     checkTransactionStatus(txDbId: number): Promise<TransactionInfo> {
         throw new Error("Method not implemented.");
     }
