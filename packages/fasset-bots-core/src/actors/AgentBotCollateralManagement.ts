@@ -46,19 +46,25 @@ export class AgentBotCollateralManagement {
             const vaultCollateralPrice = await this.agent.getVaultCollateralPrice();
             const requiredCrVaultCollateralBIPS = toBN(vaultCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(this.agentBotSettings.liquidationPreventionFactor);
             const requiredTopUpVaultCollateral = await this.requiredTopUp(requiredCrVaultCollateralBIPS, agentInfo, vaultCollateralPrice);
-            if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
-                const requiredTopUpF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
+            const ownerBalance = await this.tokens.vaultCollateral.balance(this.agent.owner.workAddress);
+            const topupVault = minBN(requiredTopUpVaultCollateral, ownerBalance);
+            if (topupVault.gt(BN_ZERO)) {
+                const topupVaultF = await this.tokens.vaultCollateral.format(topupVault);
                 try {
-                    logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} is trying to top up vault collateral ${topupVaultF} from owner ${this.agent.owner}.`);
                     await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
-                        await this.agent.depositVaultCollateral(requiredTopUpVaultCollateral);
+                        await this.agent.depositVaultCollateral(topupVault);
                     });
-                    await this.notifier.sendVaultCollateralTopUpAlert(requiredTopUpF);
-                    logger.info(`Agent ${this.agent.vaultAddress} topped up vault collateral ${requiredTopUpF} from owner ${this.agent.owner}.`);
+                    await this.notifier.sendVaultCollateralTopUpAlert(topupVaultF);
+                    logger.info(`Agent ${this.agent.vaultAddress} topped up vault collateral ${topupVaultF} from owner ${this.agent.owner}.`);
                 } catch (err) {
-                    await this.notifier.sendVaultCollateralTopUpFailedAlert(requiredTopUpF);
-                    logger.error(`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${requiredTopUpF} from owner ${this.agent.owner}:`, err);
+                    await this.notifier.sendVaultCollateralTopUpFailedAlert(topupVaultF);
+                    logger.error(`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${topupVaultF} from owner ${this.agent.owner}:`, err);
                 }
+            } else if (requiredTopUpVaultCollateral.gt(BN_ZERO)) {
+                const requiredTopUpVaultF = await this.tokens.vaultCollateral.format(requiredTopUpVaultCollateral);
+                await this.notifier.sendVaultCollateralTopUpFailedAlert(requiredTopUpVaultF);
+                logger.error(`Agent ${this.agent.vaultAddress} could not be topped up with vault collateral ${requiredTopUpVaultF} - owner work balance too low`);
             }
         } catch (error) {
             console.error(`Error while checking for vault collateral top up for agent ${this.agent.vaultAddress}: ${error}`);
