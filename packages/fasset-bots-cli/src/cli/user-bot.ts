@@ -103,7 +103,7 @@ program
     .command("mintExecute")
     .description("Tries to execute the minting that was paid but the execution failed")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
-    .option("--noWait", "don't wait for minting proof, but immediatelly exit with exitcode 1 if the proof isn't available")
+    .option("--noWait", "don't wait for minting proof, but immediatelly exit with exitcode 10 if the proof isn't available")
     .action(async (requestId: string, cmdOptions: { noWait?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
@@ -158,11 +158,12 @@ program
     .command("redemptionDefault")
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
-    .action(async (requestId: string) => {
+    .option("--noWait", "don't wait for non-payment proof, but immediatelly exit with exitcode 10 if the proof isn't available")
+    .action(async (requestId: string, cmdOptions: { noWait?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         try {
-            await redeemerBot.savedRedemptionDefault(requestId);
+            await redeemerBot.savedRedemptionDefault(requestId, cmdOptions.noWait ?? false);
         } catch (error) {
             translateError(error, {
                 "redemption default too early": "Agent still has time to pay; please try redemptionDefault later if the redemption isn't paid."

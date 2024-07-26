@@ -242,7 +242,7 @@ describe("UserBot cli commands unit tests", () => {
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
         // redemption default
-        await userBot.savedRedemptionDefault(rdReq.requestId);
+        await userBot.savedRedemptionDefault(rdReq.requestId, false);
         const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
         const endBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
@@ -444,7 +444,7 @@ describe("UserBot cli commands unit tests", () => {
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
         // redemption default
-        await userBot.savedRedemptionDefault(rdReq.requestId);
+        await userBot.savedRedemptionDefault(rdReq.requestId, false);
         const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
         const endBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
