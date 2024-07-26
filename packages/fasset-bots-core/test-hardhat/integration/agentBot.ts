@@ -942,7 +942,7 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
         chain.mine(Number(rdReq.lastUnderlyingBlock));
         const paymentAmount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
-        const proof = await redeemer.obtainNonPaymentProof(redeemer.underlyingAddress, rdReq.paymentReference, paymentAmount,
+        const proof = await redeemer.proveNonPayment(redeemer.underlyingAddress, rdReq.paymentReference, paymentAmount,
             rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp);
         const res = await redeemer.executePaymentDefault(PaymentReference.decodeId(rdReq.paymentReference), proof, ZERO_ADDRESS);
         // redeemer balance of vault collateral should be > 0

@@ -60,7 +60,21 @@ export class Redeemer {
         return this.executePaymentDefault(request.requestId, proof, request.executor);
     }
 
-    async obtainNonPaymentProof(paymentAddress: string, paymentReference: string, amountUBA: BNish, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish) {
+    async requestNonPaymentProof(paymentAddress: string, paymentReference: string, amountUBA: BNish, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish) {
+        return await this.attestationProvider.requestReferencedPaymentNonexistenceProof(
+            paymentAddress,
+            paymentReference,
+            toBN(amountUBA),
+            Number(firstUnderlyingBlock),
+            Number(lastUnderlyingBlock),
+            Number(lastUnderlyingTimestamp));
+    }
+
+    async obtainNonPaymentProof(roundId: number, requestData: string) {
+        return await this.context.attestationProvider.obtainReferencedPaymentNonexistenceProof(roundId, requestData);
+    }
+
+    async proveNonPayment(paymentAddress: string, paymentReference: string, amountUBA: BNish, firstUnderlyingBlock: BNish, lastUnderlyingBlock: BNish, lastUnderlyingTimestamp: BNish) {
         return await this.attestationProvider.proveReferencedPaymentNonexistence(
             paymentAddress,
             paymentReference,

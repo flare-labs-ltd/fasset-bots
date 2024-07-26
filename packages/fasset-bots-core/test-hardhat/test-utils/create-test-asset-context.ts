@@ -6,7 +6,7 @@ import { Secrets } from "../../src/config";
 import { ChainAccount, SecretsFile } from "../../src/config/config-files/SecretsFile";
 import { ChainContracts, newContract } from "../../src/config/contracts";
 import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../../src/fasset-bots/IAssetBotContext";
-import { AssetManagerSettings, CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
+import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { MockIndexer } from "../../src/mock/MockIndexer";
@@ -23,8 +23,9 @@ import { FtsoManagerMockInstance } from "../../typechain-truffle/FtsoManagerMock
 import { FtsoMockInstance } from "../../typechain-truffle/FtsoMock";
 import { FtsoRegistryMockInstance } from "../../typechain-truffle/FtsoRegistryMock";
 import { FaultyWallet } from "./FaultyWallet";
-import { newAssetManager, waitForTimelock } from "./new-asset-manager";
+import { AssetManagerInitSettings, newAssetManager, waitForTimelock } from "./new-asset-manager";
 
+const AgentVault = artifacts.require("AgentVault");
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
 const SCProofVerifier = artifacts.require("SCProofVerifier");
 const AssetManagerController = artifacts.require("AssetManagerController");
@@ -36,7 +37,9 @@ const FtsoManagerMock = artifacts.require("FtsoManagerMock");
 const StateConnector = artifacts.require("StateConnectorMock");
 const GovernanceSettings = artifacts.require("GovernanceSettings");
 const VPContract = artifacts.require("VPContract");
+const CollateralPool = artifacts.require("CollateralPool");
 const CollateralPoolFactory = artifacts.require("CollateralPoolFactory");
+const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const CollateralPoolTokenFactory = artifacts.require("CollateralPoolTokenFactory");
 const FakeERC20 = artifacts.require("FakeERC20");
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
@@ -92,7 +95,14 @@ export async function createTestChainContracts(governance: string, updateExecuto
     // create state connector
     const stateConnector = await StateConnector.new();
     // create agent vault factory
-    const agentVaultFactory = await AgentVaultFactory.new();
+    const agentVaultImplementation = await AgentVault.new(ZERO_ADDRESS);
+    const agentVaultFactory = await AgentVaultFactory.new(agentVaultImplementation.address);
+    // create collateral pool factory
+    const collateralPoolImplementation = await CollateralPool.new(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS, 0, 0, 0);
+    const collateralPoolFactory = await CollateralPoolFactory.new(collateralPoolImplementation.address);
+    // create collateral pool token factory
+    const collateralPoolTokenImplementation = await CollateralPoolToken.new(ZERO_ADDRESS, "", "");
+    const collateralPoolTokenFactory = await CollateralPoolTokenFactory.new(collateralPoolTokenImplementation.address);
     // create attestation client
     const scProofVerifier = await SCProofVerifier.new(stateConnector.address);
     // create asset manager controller
@@ -119,9 +129,6 @@ export async function createTestChainContracts(governance: string, updateExecuto
     await createFtsoMock(ftsoRegistry, "testETH", ftsoEthInitialPrice);
     // create price reader
     const priceReader = await PriceReader.new(addressUpdater.address, ftsoRegistry.address);
-    // create collateral pool factory
-    const collateralPoolFactory = await CollateralPoolFactory.new();
-    const collateralPoolTokenFactory = await CollateralPoolTokenFactory.new();
     // create allow-all agent owner registry
     const agentOwnerRegistry = await AgentOwnerRegistry.new(governanceSettings.address, governance, true);
     await agentOwnerRegistry.setAllowAll(true, { from: governance });
@@ -297,7 +304,7 @@ function createTestAssetManagerSettings(
     parameters: any,
     chainInfo: TestChainInfo,
     requireEOAAddressProof?: boolean
-): AssetManagerSettings {
+): AssetManagerInitSettings {
     if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.SCProofVerifier) {
         throw new Error("Missing contracts");
     }
@@ -355,6 +362,7 @@ function createTestAssetManagerSettings(
         liquidationCollateralFactorBIPS: parameters.liquidationCollateralFactorBIPS.map(bnToString),
         liquidationFactorVaultCollateralBIPS: parameters.liquidationFactorVaultCollateralBIPS.map(bnToString),
         diamondCutMinTimelockSeconds: bnToString(parameters.diamondCutMinTimelockSeconds),
+        redemptionPaymentExtensionSeconds: bnToString(15),
     };
 }
 

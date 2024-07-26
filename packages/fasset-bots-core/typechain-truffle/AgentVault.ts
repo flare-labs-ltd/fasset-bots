@@ -191,6 +191,24 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  initialize: {
+    (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _assetManager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   isOwner(
     _address: string,
     txDetails?: Truffle.TransactionDetails
@@ -614,6 +632,24 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    initialize: {
+      (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _assetManager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

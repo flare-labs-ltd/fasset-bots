@@ -206,6 +206,33 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  initialize: {
+    (
+      _collateralPool: string,
+      _tokenName: string,
+      _tokenSymbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _collateralPool: string,
+      _tokenName: string,
+      _tokenSymbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _collateralPool: string,
+      _tokenName: string,
+      _tokenSymbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _collateralPool: string,
+      _tokenName: string,
+      _tokenSymbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   lockedBalanceOf(
     _account: string,
     txDetails?: Truffle.TransactionDetails
@@ -469,6 +496,33 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
       estimateGas(
         spender: string,
         addedValue: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    initialize: {
+      (
+        _collateralPool: string,
+        _tokenName: string,
+        _tokenSymbol: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _collateralPool: string,
+        _tokenName: string,
+        _tokenSymbol: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _collateralPool: string,
+        _tokenName: string,
+        _tokenSymbol: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _collateralPool: string,
+        _tokenName: string,
+        _tokenSymbol: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
