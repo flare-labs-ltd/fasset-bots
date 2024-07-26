@@ -49,16 +49,13 @@ export class AgentBotRunner {
         this.stopRequested = false;
         this.restartRequested = false;
         this.running = true;
-        try {//TODO-urska add here probably?
+        try {
             while (!this.readyToStop()) {
-                void this.runBackgroundWalletTasks().catch((error) => {
-                    logger.error(`Wallet background task run into error:`, error);
-                    console.error(`Wallet background task run into error:`, error);
-                });
                 await this.runStep();
             }
         } finally {
             this.running = false;
+            this.stopAllWalletMonitoring();
         }
     }
 
@@ -258,15 +255,17 @@ export class AgentBotRunner {
             logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
             logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
         } else {
-            this.simpleWalletBackgroundTasks.set(chainId, agentBot.context.wallet);
+            const newWallet = agentBot.context.wallet
+            this.simpleWalletBackgroundTasks.set(chainId, newWallet);
             logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.agentVault}.`);
+            void newWallet.startMonitoringTransactionProgress();//start in background
         }
     }
 
-    async runBackgroundWalletTasks() {//todo-urska
-        for (const wallet of this.simpleWalletBackgroundTasks.values()) {
-            console.log(`Value: ${wallet}`);
-            void wallet.startMonitoringTransactionProgress();
-        }
+    stopAllWalletMonitoring() {
+        this.simpleWalletBackgroundTasks.forEach((wallet, chainId) => {
+            wallet.stopMonitoring();
+            logger.info(`Stopped monitoring wallet for chain ${chainId}.`);
+        });
     }
 }
