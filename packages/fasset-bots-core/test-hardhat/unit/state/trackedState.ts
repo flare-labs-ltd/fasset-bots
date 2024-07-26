@@ -10,7 +10,7 @@ import { tokenBalance } from "../../../src/state/TokenPrice";
 import { MAX_EVENT_HANDLE_RETRY, TrackedState } from "../../../src/state/TrackedState";
 import { EventArgs } from "../../../src/utils/events/common";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
-import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
+import { attestationWindowSeconds, proveAndUpdateUnderlyingBlock } from "../../../src/utils/fasset-helpers";
 import { BN_ZERO, MAX_BIPS, ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -101,6 +101,8 @@ describe("Tracked state tests", () => {
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
+        chain.mine(2);
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         return { context, trackedStateContext, chain, trackedState };
     }
 

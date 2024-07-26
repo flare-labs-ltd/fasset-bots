@@ -40,6 +40,7 @@ import { MintingFacetContract } from "./MintingFacet";
 import { RedemptionConfirmationsFacetContract } from "./RedemptionConfirmationsFacet";
 import { RedemptionDefaultsFacetContract } from "./RedemptionDefaultsFacet";
 import { RedemptionRequestsFacetContract } from "./RedemptionRequestsFacet";
+import { RedemptionTimeExtensionFacetContract } from "./RedemptionTimeExtensionFacet";
 import { SettingsManagementFacetContract } from "./SettingsManagementFacet";
 import { SettingsReaderFacetContract } from "./SettingsReaderFacet";
 import { SystemStateManagementFacetContract } from "./SystemStateManagementFacet";
@@ -102,6 +103,7 @@ import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
 import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
+import { IRedemptionTimeExtensionContract } from "./IRedemptionTimeExtension";
 import { IWhitelistContract } from "./IWhitelist";
 import { MathUtilsMockContract } from "./MathUtilsMock";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
@@ -198,6 +200,9 @@ export type * from "./types";
       ): RedemptionConfirmationsFacetContract;
       require(name: "RedemptionDefaultsFacet"): RedemptionDefaultsFacetContract;
       require(name: "RedemptionRequestsFacet"): RedemptionRequestsFacetContract;
+      require(
+        name: "RedemptionTimeExtensionFacet"
+      ): RedemptionTimeExtensionFacetContract;
       require(name: "SettingsManagementFacet"): SettingsManagementFacetContract;
       require(name: "SettingsReaderFacet"): SettingsReaderFacetContract;
       require(
@@ -274,6 +279,9 @@ export type * from "./types";
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
       require(name: "ICollateralPool"): ICollateralPoolContract;
       require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
+      require(
+        name: "IRedemptionTimeExtension"
+      ): IRedemptionTimeExtensionContract;
       require(name: "IWhitelist"): IWhitelistContract;
       require(name: "MathUtilsMock"): MathUtilsMockContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
@@ -424,6 +432,10 @@ export {
   RedemptionRequestsFacetContract,
   RedemptionRequestsFacetInstance,
 } from "./RedemptionRequestsFacet";
+export {
+  RedemptionTimeExtensionFacetContract,
+  RedemptionTimeExtensionFacetInstance,
+} from "./RedemptionTimeExtensionFacet";
 export {
   SettingsManagementFacetContract,
   SettingsManagementFacetInstance,
@@ -609,6 +621,10 @@ export {
   ICollateralPoolTokenContract,
   ICollateralPoolTokenInstance,
 } from "./ICollateralPoolToken";
+export {
+  IRedemptionTimeExtensionContract,
+  IRedemptionTimeExtensionInstance,
+} from "./IRedemptionTimeExtension";
 export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
 export { MathUtilsMockContract, MathUtilsMockInstance } from "./MathUtilsMock";
 export {

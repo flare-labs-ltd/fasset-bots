@@ -102,6 +102,13 @@ export class MockChain implements IBlockChain {
         }
     }
 
+    mineTo(blockNo: number) {
+        const current = this.blockHeight();
+        if (blockNo <= current) return;
+        if (blockNo - current > 1000) throw new Error(`Mining too many blocks: ${blockNo - current}`);
+        this.mine(blockNo - current);
+    }
+
     miningTimer: NodeJS.Timeout | null = null;
 
     timedMining() {

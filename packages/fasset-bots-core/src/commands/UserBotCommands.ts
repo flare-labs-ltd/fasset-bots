@@ -48,6 +48,7 @@ interface RedeemData {
     lastUnderlyingTimestamp: string;
     executorAddress: string;
     createdAt: string;
+    proofRequest?: { round: number, data: string };
 }
 
 type StateData = MintData | RedeemData;
@@ -209,7 +210,7 @@ export class UserBotCommands {
     async proveAndExecuteSavedMinting(requestIdOrPath: BNish | string, noWait: boolean) {
         const state = this.readState("mint", requestIdOrPath);
         if (noWait) {
-            await this.proveAndExecuteSavedMintingNoWait(requestIdOrPath, state, true);
+            await this.proveAndExecuteSavedMintingNoWait(requestIdOrPath, state);
         } else {
             await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
             this.deleteState(state, requestIdOrPath);
@@ -237,27 +238,30 @@ export class UserBotCommands {
         logger.info(`User ${this.nativeAddress} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`);
     }
 
-    async proveAndExecuteSavedMintingNoWait(requestIdOrPath: BNish | string, state: MintData, throwIfNotDone: boolean) {
+    async proveAndExecuteSavedMintingNoWait(requestIdOrPath: BNish | string, state: MintData): Promise<void> {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         // if proof request has not been submitted yet, submit (when transction is finalized)
         if (state.proofRequest == null) {
             logger.info(`User ${this.nativeAddress} is checking for transaction ${state.transactionHash} finalization for reservation ${state.requestId}.`);
+            // check if finalized
             const transactionFinalized = await minter.isTransactionFinalized(state.transactionHash);
             if (!transactionFinalized) {
                 throw new CommandLineError(`Transaction ${state.transactionHash} not finalized yet.`, ERR_CANNOT_EXECUTE_YET)
             }
             // submit proof request
-            const request = await minter.requestPaymentProof(state.paymentAddress, state.transactionHash)
-                .catch(e => { throw CommandLineError.replace(e, `Payment proof not available yet.`, ERR_CANNOT_EXECUTE_YET); });
-            logger.info(`User ${this.nativeAddress} has submitted payment proof request in round ${request.round} with data ${request.data} for reservation ${state.requestId}.`);
-            state.proofRequest = request;
-            this.writeState(state, requestIdOrPath);
+            try {
+                const request = await minter.requestPaymentProof(state.paymentAddress, state.transactionHash);
+                logger.info(`User ${this.nativeAddress} has submitted payment proof request in round ${request.round} with data ${request.data} for reservation ${state.requestId}.`);
+                state.proofRequest = request;
+                this.writeState(state, requestIdOrPath);
+            } catch (error) {
+                throw CommandLineError.replace(error, `Payment proof not available yet.`, ERR_CANNOT_EXECUTE_YET);
+            }
         }
         // check if proof is available
         console.log(`User ${this.nativeAddress} is checking for existence of the proof of underlying payment transaction ${state.transactionHash}...`);
         const proof = await minter.obtainPaymentProof(state.proofRequest.round, state.proofRequest.data);
         if (!attestationProved(proof)) {
-            if (!throwIfNotDone) return;
             throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
         }
         console.log(`Executing payment...`);
@@ -336,10 +340,14 @@ export class UserBotCommands {
      * Call redemption default with saved redemption state.
      * @param requestIdOrPath redemption request id or minting state file path
      */
-    async savedRedemptionDefault(requestIdOrPath: BNish | string): Promise<void> {
+    async savedRedemptionDefault(requestIdOrPath: BNish | string, noWait: boolean): Promise<void> {
         const state = this.readState("redeem", requestIdOrPath);
-        await this.redemptionDefault(state.amountUBA, state.paymentReference, state.firstUnderlyingBlock, state.lastUnderlyingBlock, state.lastUnderlyingTimestamp);
-        this.deleteState(state, requestIdOrPath);
+        if (noWait) {
+            await this.redemptionDefaultNoWait(requestIdOrPath, state);
+        } else {
+            await this.redemptionDefault(state.amountUBA, state.paymentReference, state.firstUnderlyingBlock, state.lastUnderlyingBlock, state.lastUnderlyingTimestamp);
+            this.deleteState(state, requestIdOrPath);
+        }
     }
 
     /**
@@ -360,13 +368,42 @@ export class UserBotCommands {
         }
         console.log("Waiting for payment default proof...");
         logger.info(`User ${this.nativeAddress} is waiting for proof of underlying non payment for redemption ${requestId}.`);
-        const proof = await redeemer.obtainNonPaymentProof(this.underlyingAddress, paymentReference, amountUBA,
+        const proof = await redeemer.proveNonPayment(this.underlyingAddress, paymentReference, amountUBA,
             firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
         console.log("Executing payment default...");
         logger.info(`User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
         await redeemer.executePaymentDefault(requestId, proof, ZERO_ADDRESS); // executor must call from own user address
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
+    }
+
+    async redemptionDefaultNoWait(requestIdOrPath: BNish | string, state: RedeemData): Promise<void> {
+        const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
+        // if proof request has not been submitted yet, submit
+        if (state.proofRequest == null) {
+            logger.info(`User ${this.nativeAddress} is submitting non-payment proof request for redemption ${state.requestId}.`);
+            try {
+                const request = await redeemer.requestNonPaymentProof(this.underlyingAddress, state.paymentReference, state.amountUBA,
+                    state.firstUnderlyingBlock, state.lastUnderlyingBlock, state.lastUnderlyingTimestamp);
+                logger.info(`User ${this.nativeAddress} has submitted non-payment proof request in round ${request.round} with data ${request.data} for redemption ${state.requestId}.`);
+                state.proofRequest = request;
+                this.writeState(state, requestIdOrPath);
+            } catch (error) {
+                throw CommandLineError.replace(error, `Cannot submit non-payment proof for redemption ${state.requestId} - agent probably still has time to pay.`, ERR_CANNOT_EXECUTE_YET);
+            }
+        }
+        // check if proof is available
+        console.log(`User ${this.nativeAddress} is checking for existence of the proof of non-payment for redemption ${state.requestId}...`);
+        const proof = await redeemer.obtainNonPaymentProof(state.proofRequest.round, state.proofRequest.data);
+        if (!attestationProved(proof)) {
+            throw new CommandLineError(`Non-payment proof for redemption ${state.requestId} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
+        }
+        console.log("Executing payment default...");
+        logger.info(`User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} for redemption ${state.requestId}.`);
+        await redeemer.executePaymentDefault(state.requestId, proof, ZERO_ADDRESS); // executor must call from own user address
+        console.log("Done");
+        logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} for redemption ${state.requestId}.`);
+        this.deleteState(state, requestIdOrPath);
     }
 
     async updateAllMintings() {
@@ -377,7 +414,16 @@ export class UserBotCommands {
             console.log(`Checking status of minting ${state.requestId}`);
             const status = this.mintingStatus(state, timestamp, settings);
             if (status === MintingStatus.PENDING) {
-                await this.proveAndExecuteSavedMintingNoWait(state.requestId, state, false);
+                try {
+                    await this.proveAndExecuteSavedMintingNoWait(state.requestId, state);
+                } catch (error) {
+                    if (error instanceof CommandLineError && error.exitCode === ERR_CANNOT_EXECUTE_YET) {
+                        console.log(error.message);
+                    } else {
+                        logger.error(`Execute minting for ${state.requestId} failed:`, error);
+                        console.error(`Execute minting for ${state.requestId} failed: ${error}`);
+                    }
+                }
             } else if (status === MintingStatus.EXPIRED) {
                 console.log(`Minting ${state.requestId} expired in indexer and will be eventually defaulted by the agent.`);
                 this.deleteState(state);
@@ -401,11 +447,15 @@ export class UserBotCommands {
             } else if (status === RedemptionStatus.DEFAULT) {
                 console.log(`Redemption ${state.requestId} wasn't paid in time, executing default...`);
                 try {
-                    await this.savedRedemptionDefault(state.requestId);
+                    await this.redemptionDefaultNoWait(state.requestId, state);
                     ++defaulted;
                 } catch (error) {
-                    logger.error(`Redemption default for ${state.requestId} failed:`, error);
-                    console.error(`Redemption default for ${state.requestId} failed: ${error}`);
+                    if (error instanceof CommandLineError && error.exitCode === ERR_CANNOT_EXECUTE_YET) {
+                        console.log(error.message);
+                    } else {
+                        logger.error(`Redemption default for ${state.requestId} failed:`, error);
+                        console.error(`Redemption default for ${state.requestId} failed: ${error}`);
+                    }
                 }
             } else if (status === RedemptionStatus.EXPIRED) {
                 console.log(`Redemption ${state.requestId} expired in indexer and will be eventually defaulted by the agent.`);
