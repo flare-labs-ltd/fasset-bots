@@ -257,6 +257,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          while (this.monitoring) {
             try {
                const networkUp = await this.checkXrpNetworkStatus();
+               logger.info(`asdfas`);
                if (!networkUp) {
                   logger.error(`Trying again in ${this.restartInDueNoResponse}`);
                   await sleepMs(this.restartInDueNoResponse);
@@ -267,7 +268,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
                if (this.shouldStopMonitoring()) break;
                await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, this.resubmitSubmissionFailedTransactions.bind(this));
                if (this.shouldStopMonitoring()) break;
-               await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
+               await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, this.handlePendingTransaction.bind(this));
                if (this.shouldStopMonitoring()) break;
                await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
                if (this.shouldStopMonitoring()) break;
@@ -322,15 +323,30 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
    }
 
-   async resubmitPendingTransaction(tx: TransactionEntity): Promise<void> {
+   async handlePendingTransaction(tx: TransactionEntity): Promise<void> {
       const transaction = JSON.parse(tx.raw!.toString());
+      const waitUntilBlock = tx.submittedInBlock + this.blockOffset;
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, tx.id);
          return;
       }
 
-      if (!await this.checkIfTransactionAppears(tx.id)) {
+      const txResp = await this.client.post("", {
+         method: "tx",
+         params: [{ transaction: tx.transactionHash }],
+      });
+      if (txResp.data.result.validated) {
+         // transaction completed - update tx in db
+         await updateTransactionEntity(this.rootEm, tx.id, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+         });
+         logger.info(`Transaction ${tx.id} was accepted`);
+         console.info(`Transaction ${tx.id} was accepted`);
+         return;
+      }
+
+      if ((await this.getLatestValidatedLedgerIndex()) > waitUntilBlock) {
          const newFee = toBN(transaction.Fee!);
          await this.resubmitTransaction(tx.id, privateKey, transaction, newFee);
       }
@@ -408,36 +424,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
          await this.resubmitTransaction(txId, privateKey, transaction, newFee);
       }
-      if (txStatus == TransactionStatus.TX_PENDING) {
-         if (await this.checkIfTransactionAppears(txId)) {
-            return
-         }
-         // tx did not show up => resubmit with the same data
-         const newFee = toBN(transaction.Fee!);
-         await this.resubmitTransaction(txId, privateKey, transaction, newFee);
-      }
-   }
-
-   async checkIfTransactionAppears(txId: number) {
-      // wait if tx shows up in next x blocks
-      const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-      const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
-      while ((await this.getLatestValidatedLedgerIndex()) <= waitUntilBlock) {
-         const txResp = await this.client.post("", {
-            method: "tx",
-            params: [{ transaction: txEnt.transactionHash }],
-         });
-         if (txResp.data.result.validated) {
-            // transaction completed - update tx in db
-            await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
-               txEnt.status = TransactionStatus.TX_SUCCESS;
-            });
-            logger.info(`Transaction ${txId} was accepted`);
-            console.info(`Transaction ${txId} was accepted`);
-            return true;
-         }
-      }
-      return false;
    }
 
    async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete, newFee: BN) {

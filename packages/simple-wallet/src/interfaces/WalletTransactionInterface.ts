@@ -99,6 +99,7 @@ export interface BaseWalletConfig {
    password?: string; // probably never used
    rateLimitOptions?: RateLimitOptions;
    stuckTransactionOptions?: StuckTransaction;
+   enoughConfirmations?: number,
    em: EntityManager;
    walletKeys: IWalletKeys;
 }

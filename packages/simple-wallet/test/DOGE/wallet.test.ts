@@ -47,7 +47,7 @@ const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
 
 const DOGE_DECIMAL_PLACES = BTC_DOGE_DEC_PLACES;
 const amountToSendInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);
-const feeInSatoshi = toBNExp(4, DOGE_DECIMAL_PLACES);
+const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 const maxFeeInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);
 
 let wClient: WALLET.DOGE;

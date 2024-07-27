@@ -94,6 +94,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
       this.rootEm = createConfig.em;
       this.walletKeys = createConfig.walletKeys;
+      this.enoughConfirmations = createConfig.enoughConfirmations ?? 2;
    }
 
    /**
@@ -373,7 +374,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    }
 
    async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
-      await this.waitForTransactionToAppearInMempool(txEnt.id);
+      await this.checkIfTransactionAppearsInMempool(txEnt.id);
    }
 
    async signAndSubmitProcess(txId: number, privateKey: string, transaction: bitcore.Transaction): Promise<void> {
@@ -389,11 +390,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          return;
       }
       // submit
-      const txStatus = await this.submitTransaction(signed.txBlob, txId);
-      const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-      if (txStatus == TransactionStatus.TX_PENDING) {
-         await this.waitForTransactionToAppearInMempool(txEnt.id, 0);
-      }
+      await this.submitTransaction(signed.txBlob, txId);
    }
 
    /**
@@ -580,31 +577,36 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       return res.data.height;
    }
 
-   private async waitForTransactionToAppearInMempool(txId: number, retry: number = 0): Promise<void> {
+   private async checkIfTransactionAppearsInMempool(txId: number, retry: number = 0): Promise<void> {
       const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
       const start = txEnt.submittedInTimestamp;
-      while (new Date().getTime() - start < this.mempoolWaitingTime) {
-         try {
-            const txResp = await this.client.get(`/tx/${txEnt.transactionHash}`);
-            if (txResp) {
-               await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
-                  txEnt.status = TransactionStatus.TX_SUBMITTED;
-               });
-               return;
-            }
-         } catch (e) {
-            if (axios.isAxiosError(e)) {
-               const responseData = e.response?.data;
-               logger.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
-               console.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
-            } else {
-               logger.warn(`Transaction ${txId} not yet seen in mempool`, e)
-               console.warn(`Transaction ${txId} not yet seen in mempool`, e)
-            }
-            await sleepMs(1000);
+
+      try {
+         const txResp = await this.client.get(`/tx/${txEnt.transactionHash}`);
+         if (txResp) {
+            await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
+               txEnt.status = TransactionStatus.TX_SUBMITTED;
+            });
+            return;
+         }
+      } catch (e) {
+         if (axios.isAxiosError(e)) {
+            const responseData = e.response?.data;
+            logger.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
+            console.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
+         } else {
+            logger.warn(`Transaction ${txId} not yet seen in mempool`, e)
+            console.warn(`Transaction ${txId} not yet seen in mempool`, e)
          }
       }
-      // transaction was not accepted in mempool by one minute => replace by fee one time
+
+      if (new Date().getTime() - start >= this.mempoolWaitingTime) {
+         await this.resubmitTransaction(txId, retry);
+      }
+   }
+
+   private async resubmitTransaction(txId: number, retry: number = 0): Promise<void> {
+      const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
       if (retry > 0) {
          await failTransaction(this.rootEm, txId, `Transaction ${txId} was not accepted in mempool`);
       } else {
