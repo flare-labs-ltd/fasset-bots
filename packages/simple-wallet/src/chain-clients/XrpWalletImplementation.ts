@@ -257,7 +257,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          while (this.monitoring) {
             try {
                const networkUp = await this.checkXrpNetworkStatus();
-               logger.info(`asdfas`);
                if (!networkUp) {
                   logger.error(`Trying again in ${this.restartInDueNoResponse}`);
                   await sleepMs(this.restartInDueNoResponse);
