@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { BNType } from "../../../src/config/orm-types";
 import { toBN } from "../../../src/utils/helpers";
 import BN from "bn.js";
-import { WalletAddressEntity } from "../../../../simple-wallet/src/entity/wallet";
+import { WalletAddressEntity } from "@flarelabs/simple-wallet";
 
 const dbNameSqlite: string = "fasset-bots-unit-test-sqlite.db";
 const dbNameMySql: string = "fasset-bots-unit-test-mysql";

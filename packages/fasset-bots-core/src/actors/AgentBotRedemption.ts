@@ -16,7 +16,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
-import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
+import { TransactionStatus } from "@flarelabs/simple-wallet";
 
 const REDEMPTION_BATCH = 1000;
 

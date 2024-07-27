@@ -6,8 +6,16 @@ import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAc
 import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
 import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WalletTransactionInterface";
 
-export type { WalletClient, WalletCreate } from "./types";
+
+export * from "./entity/transaction";
+export * from "./entity/wallet";
+export * from "./entity/utxo";
+export type * from "./types";
 export type { StuckTransaction } from "./interfaces/WalletTransactionInterface";
+export { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
+export { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
+export { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
+export * from "./interfaces/WalletTransactionInterface";
 
 export module WALLET {
 

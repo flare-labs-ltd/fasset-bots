@@ -2,9 +2,7 @@ import { copyFile } from "fs/promises";
 import { CreateOrmOptions, ORM } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event } from "../../src/entities/agent";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
-import { WalletAddressEntity } from "../../../simple-wallet/src/entity/wallet";
-import { UTXOEntity } from "../../../simple-wallet/src/entity/utxo";
-import { TransactionEntity } from "../../../simple-wallet/src/entity/transaction";
+import { WalletAddressEntity, UTXOEntity, TransactionEntity } from "@flarelabs/simple-wallet";
 
 const testOptions: CreateOrmOptions = {
     entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity],

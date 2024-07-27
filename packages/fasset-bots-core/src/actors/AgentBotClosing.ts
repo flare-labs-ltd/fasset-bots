@@ -1,4 +1,3 @@
-import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
 import { EM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { AgentInfo } from "../fasset/AssetManagerTypes";

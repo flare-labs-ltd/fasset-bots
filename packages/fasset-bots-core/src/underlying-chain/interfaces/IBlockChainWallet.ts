@@ -1,5 +1,5 @@
+import { FeeParams, TransactionInfo } from "@flarelabs/simple-wallet";
 import type BN from "bn.js";
-import { FeeParams, TransactionInfo } from "../../../../simple-wallet/src/interfaces/WalletTransactionInterface";
 
 type NumberLike = BN | number | string;
 

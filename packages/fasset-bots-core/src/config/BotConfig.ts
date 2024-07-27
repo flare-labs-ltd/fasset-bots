@@ -13,7 +13,7 @@ import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelp
 import { ChainId } from "../underlying-chain/ChainId";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
-import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
+import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";

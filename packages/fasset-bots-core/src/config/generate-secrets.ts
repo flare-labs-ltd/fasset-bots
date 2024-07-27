@@ -4,11 +4,7 @@ import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError, requireNotNull } from "../utils";
 import { loadConfigFile } from "./config-file-loader";
 import { ChainAccount, SecretsFile } from "./config-files/SecretsFile";
-import { ICreateWalletResponse } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
-import { XrpAccountGeneration } from "../../../simple-wallet/src/chain-clients/account-generation/XrpAccountGeneration";
-import { BtcAccountGeneration } from "../../../simple-wallet/src/chain-clients/account-generation/BtcAccountGeneration";
-import { DogeAccountGeneration } from "../../../simple-wallet/src/chain-clients/account-generation/DogeAccountGeneration";
-import { WalletAccount } from "../../../simple-wallet/src/types";
+import { BtcAccountGeneration, DogeAccountGeneration, ICreateWalletResponse, WalletAccount, XrpAccountGeneration } from "@flarelabs/simple-wallet";
 
 export type SecretsUser = "user" | "agent" | "other";
 

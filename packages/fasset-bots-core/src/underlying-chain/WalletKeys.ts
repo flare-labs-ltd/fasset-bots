@@ -1,8 +1,8 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
 import { decryptText, encryptText } from "../utils/encryption";
 import { Secrets } from "../config";
-import { IWalletKeys } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
-import { WalletAddressEntity } from "../../../simple-wallet/src/entity/wallet";
+import { IWalletKeys, WalletAddressEntity } from "@flarelabs/simple-wallet";
+
 
 export class MemoryWalletKeys implements IWalletKeys {
     private keys = new Map<string, string>();

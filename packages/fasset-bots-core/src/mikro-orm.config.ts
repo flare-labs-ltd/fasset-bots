@@ -3,10 +3,7 @@ import { AbstractSqlDriver } from "@mikro-orm/knex";
 import { DatabaseAccount } from "./config/config-files/SecretsFile";
 import { CreateOrmOptions, ORM, createOrm } from "./config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event } from "./entities/agent";
-import { WalletAddressEntity } from "../../simple-wallet/src/entity/wallet";
-import { UTXOEntity } from "../../simple-wallet/src/entity/utxo";
-import { TransactionEntity } from "../../simple-wallet/src/entity/transaction";
-import { DatabaseType } from "./config";
+import { TransactionEntity, UTXOEntity, WalletAddressEntity } from "@flarelabs/simple-wallet";
 
 /* istanbul ignore next */
 const options: Options<AbstractSqlDriver> = {

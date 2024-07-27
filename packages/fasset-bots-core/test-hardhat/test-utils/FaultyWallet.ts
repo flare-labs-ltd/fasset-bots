@@ -1,4 +1,4 @@
-import { TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+import { TransactionInfo } from "@flarelabs/simple-wallet";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 
 export class FaultyWallet implements IBlockChainWallet {

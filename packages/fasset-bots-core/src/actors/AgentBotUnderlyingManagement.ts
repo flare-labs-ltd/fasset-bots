@@ -14,7 +14,7 @@ import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { AgentTokenBalances } from "./AgentTokenBalances";
-import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
+import { TransactionStatus } from "@flarelabs/simple-wallet";
 
 export class AgentBotUnderlyingManagement {
     static deepCopyWithObjectCreate = true;

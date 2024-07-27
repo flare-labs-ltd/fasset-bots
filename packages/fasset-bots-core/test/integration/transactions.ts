@@ -9,7 +9,7 @@ import { prefix0x } from "../../src/utils/helpers";
 import { createTestOrm } from "../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
-import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
+import { TransactionStatus } from "@flarelabs/simple-wallet";
 
 let orm: ORM;
 let walletHelper: BlockchainWalletHelper;

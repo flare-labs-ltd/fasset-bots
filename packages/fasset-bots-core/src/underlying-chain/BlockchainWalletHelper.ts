@@ -1,10 +1,8 @@
-import { WalletClient } from "@flarelabs/simple-wallet";
-import { toBN, unPrefix0x } from "../utils/helpers";
+import { FeeParams, IWalletKeys, TransactionInfo, TransactionStatus, WalletClient } from "@flarelabs/simple-wallet";
+import { sleep, toBN, unPrefix0x } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
-import { FeeParams, IWalletKeys, TransactionInfo } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
-import { TransactionStatus } from "../../../simple-wallet/src/entity/transaction";
-import { sleepMs } from "../../../simple-wallet/src/utils/utils";
+
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
     constructor(
@@ -88,7 +86,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         while (!info.transactionHash ||
             (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
         {
-            await sleepMs(2000); //sleep for 2 seconds
+            await sleep(2000); //sleep for 2 seconds
             info = await this.checkTransactionStatus(id);
             if (info.status == TransactionStatus.TX_REPLACED && info.replacedByDdId) {
                 id = info.replacedByDdId;
