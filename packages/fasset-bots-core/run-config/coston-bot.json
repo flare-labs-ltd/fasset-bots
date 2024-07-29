@@ -22,6 +22,22 @@
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/"
         },
+        "FTestBTC": {
+            "chainId": "testBTC",
+            "tokenName": "Test BTC",
+            "tokenSymbol": "testBTC",
+            "tokenDecimals": 8,
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
+            "walletUrl": "https://api.bitcore.io/api/BTC/testnet/"
+        },
+        "FTestDOGE": {
+            "chainId": "testDOGE",
+            "tokenName": "Test DOGE",
+            "tokenSymbol": "testDOGE",
+            "tokenDecimals": 8,
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/doge",
+            "walletUrl": "https://api.bitcore.io/api/DOGE/testnet/"
+        },
         "FSimCoinX": {
             "chainId": "testXRP",
             "tokenName": "Test XRP",
