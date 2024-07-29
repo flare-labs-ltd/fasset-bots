@@ -40,8 +40,9 @@ import { logger } from "../utils/logger";
 import { UTXOAccountGeneration } from "./account-generation/UTXOAccountGeneration";
 import { TransactionStatus, TransactionEntity } from "../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
-import { isChainTypeLocked, lockChainType, unlockChainType } from "../utils/lockManagement";
-import { EntityManager } from "@mikro-orm/core";
+import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
+import { fetchMonitoringState, updateMonitoringState } from "../utils/lockManagement";
+import { MonitoringStateEntity } from "../entity/monitoring_state";
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
    inTestnet: boolean;
    client: AxiosInstance;
@@ -243,16 +244,23 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     * Background processing
     */
    async startMonitoringTransactionProgress(): Promise<void> {
-      if (isChainTypeLocked(this.chainType)) {
-         logger.info(`Monitoring for chain ${this.chainType} is already running.`);
-         return;
-      }
-
-      logger.info(`Monitoring started for chain ${this.chainType}`);
-      console.info(`Monitoring started for chain ${this.chainType}`);
-      lockChainType(this.chainType);
       try {
-         this.monitoring = true;
+         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+         if (!monitoringState) {
+            this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, isMonitoring: true } as RequiredEntityData<MonitoringStateEntity>,);
+            await this.rootEm.flush();
+            this.monitoring = true;
+         } else if (monitoringState.isMonitoring) {
+            logger.info(`Monitoring for chain ${this.chainType} is already running.`);
+            return;
+         } else {
+            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+               monitoringEnt.isMonitoring = true;
+            });
+            this.monitoring = true;
+         }
+         logger.info(`Monitoring started for chain ${this.chainType}`);
+         console.info(`Monitoring started for chain ${this.chainType}`);
 
          while (this.monitoring) {
             try {
@@ -278,7 +286,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          }
       } finally {
          this.monitoring = false;
-         unlockChainType(this.chainType);
+         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+            monitoringEnt.isMonitoring = false;
+         });
          logger.info(`Monitoring started for chain ${this.chainType} stopped.`);
       }
    }

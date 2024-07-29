@@ -37,8 +37,9 @@ const secp256k1 = new elliptic.ec("secp256k1");
 import { logger } from "../utils/logger";
 import { XrpAccountGeneration } from "./account-generation/XrpAccountGeneration";
 import { TransactionStatus, TransactionEntity } from "../entity/transaction";
-import { isChainTypeLocked, lockChainType, unlockChainType } from "../utils/lockManagement";
-import { EntityManager } from "@mikro-orm/core";
+import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
+import { fetchMonitoringState, updateMonitoringState } from "../utils/lockManagement";
+import { MonitoringStateEntity } from "../entity/monitoring_state";
 
 const DROPS_PER_XRP = 1000000.0;
 
@@ -237,7 +238,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    ///////////////////////////////////////////////////////////////////////////////////////
 
    isMonitoring(): boolean {
-       return this.monitoring === true;
+      return this.monitoring === true;
    }
 
    stopMonitoring(): void {
@@ -248,14 +249,23 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * Background processing
     */
    async startMonitoringTransactionProgress(): Promise<void> {
-      if (isChainTypeLocked(this.chainType)) { //todo-urska: if already running -> try multiple times again?
+      const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+      if (!monitoringState) {
+         this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, isMonitoring: true } as RequiredEntityData<MonitoringStateEntity>,);
+         await this.rootEm.flush();
+         this.monitoring = true;
+      } else if (monitoringState.isMonitoring) {
          logger.info(`Monitoring for chain ${this.chainType} is already running.`);
          return;
+      } else {
+         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+            monitoringEnt.isMonitoring = true;
+         });
+         this.monitoring = true;
       }
-
       logger.info(`Monitoring started for chain ${this.chainType}`);
       console.info(`Monitoring started for chain ${this.chainType}`);
-      lockChainType(this.chainType);
+
       try {
          this.monitoring = true;
 
@@ -288,7 +298,9 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          }
       } finally {
          this.monitoring = false;
-         unlockChainType(this.chainType);
+         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+            monitoringEnt.isMonitoring = false;
+         });
          logger.info(`Monitoring stopped for chain ${this.chainType} stopped.`);
       }
    }

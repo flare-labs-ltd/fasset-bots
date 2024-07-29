@@ -10,6 +10,7 @@ import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } fr
 export * from "./entity/transaction";
 export * from "./entity/wallet";
 export * from "./entity/utxo";
+export * from "./entity/monitoring_state";
 export type * from "./types";
 export type { StuckTransaction } from "./interfaces/WalletTransactionInterface";
 export { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";

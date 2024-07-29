@@ -2,6 +2,7 @@ import { FeeParams, IWalletKeys, TransactionInfo, TransactionStatus, WalletClien
 import { sleep, toBN, unPrefix0x } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
+import { formatArgs, logger } from "../utils";
 
 
 export class BlockchainWalletHelper implements IBlockChainWallet {
@@ -80,20 +81,27 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
 
     // background task (monitoring in simple-wallet) should be running
     async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number): Promise<string> {
-        //TODO-urska -> start and stop here?
-        let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock);
-        let info = await this.checkTransactionStatus(id);
-        while (!info.transactionHash ||
-            (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
-        {
-            await sleep(2000); //sleep for 2 seconds
-            info = await this.checkTransactionStatus(id);
-            if (info.status == TransactionStatus.TX_REPLACED && info.replacedByDdId) {
-                id = info.replacedByDdId;
+        try {
+            void this.startMonitoringTransactionProgress();
+            let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock);
+            logger.info(`Transactions txDbId ${id} was sent: ${sourceAddress}, ${targetAddress}, ${amount.toString()}, ${reference}, ${formatArgs(options)} and ${executeUntilBlock}`);
+            let info = await this.checkTransactionStatus(id);
+            while (!info.transactionHash ||
+                (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
+            {
+                await sleep(2000); //sleep for 2 seconds
                 info = await this.checkTransactionStatus(id);
+                logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
+                if (info.status == TransactionStatus.TX_REPLACED && info.replacedByDdId) {
+                    id = info.replacedByDdId;
+                    info = await this.checkTransactionStatus(id);
+                }
+                this.ensureWalletMonitoringRunning();
             }
+            return info.transactionHash;
+        } finally {
+            this.stopMonitoring();
         }
-        return info.transactionHash;
     }
 
     async startMonitoringTransactionProgress(): Promise<void> {
@@ -107,4 +115,12 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     isMonitoring(): boolean {
         return this.walletClient.isMonitoring();
     }
+
+    private ensureWalletMonitoringRunning() {
+        if (!this.isMonitoring()) {
+            void this.startMonitoringTransactionProgress();
+        }
+    }
+
+
 }
