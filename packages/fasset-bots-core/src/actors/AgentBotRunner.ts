@@ -132,10 +132,14 @@ export class AgentBotRunner {
         }
     }
 
-    async addNewAgentBots() {
+    async addNewAgentBots(): Promise<void> {
         const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
         for (const agentEntity of agentEntities) {
-            if (this.runningAgentBots.has(agentEntity.vaultAddress)) continue;
+            const runningAgentBot = this.runningAgentBots.get(agentEntity.vaultAddress);
+            if (runningAgentBot) {
+                this.checkIfWalletIsRunning(agentEntity.chainId, runningAgentBot);
+                continue;
+            }
             // create new bot
             try {
                 const agentBot = await this.newAgentBot(agentEntity);
@@ -153,7 +157,7 @@ export class AgentBotRunner {
         }
     }
 
-    async newAgentBot(agentEntity: AgentEntity) {
+    async newAgentBot(agentEntity: AgentEntity): Promise<AgentBot | null> {
         const context = this.contexts.get(agentEntity.fassetSymbol);
         if (context == null) {
             console.warn(`Invalid fasset symbol ${agentEntity.fassetSymbol}`);
@@ -174,7 +178,7 @@ export class AgentBotRunner {
         return agentBot;
     }
 
-    removeStoppedAgentBots() {
+    removeStoppedAgentBots(): void {
         const agentBotEntries = Array.from(this.runningAgentBots.entries());
         for (const [address, agentBot] of agentBotEntries) {
             if (!agentBot.running()) {
@@ -183,7 +187,7 @@ export class AgentBotRunner {
         }
     }
 
-    checkForWorkAddressChange() {
+    checkForWorkAddressChange(): void {
         if (this.secrets.filePath === "MEMORY") return;     // memory secrets (for tests)
         const newSecrets = Secrets.load(this.secrets.filePath);
         if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
@@ -194,7 +198,7 @@ export class AgentBotRunner {
         }
     }
 
-    async fundServiceAccounts() {
+    async fundServiceAccounts(): Promise<void> {
         const settings = firstValue(this.settings);
         const fundingAddress = this.secrets.optional("owner.native.address");
         if (!settings || !fundingAddress) return;
@@ -204,7 +208,7 @@ export class AgentBotRunner {
         }
     }
 
-    async fundAccount(from: string, account: string, minBalance: BN, name: string, notifier?: AgentNotifier) {
+    async fundAccount(from: string, account: string, minBalance: BN, name: string, notifier?: AgentNotifier): Promise<void> {
         try {
             const nativeBR = new EVMNativeTokenBalance("NAT", 18);
             const balance = await nativeBR.balance(account);
@@ -249,7 +253,7 @@ export class AgentBotRunner {
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
     }
 
-    addSimpleWalletToLoop(chainId: string, agentBot: AgentBot) {
+    addSimpleWalletToLoop(chainId: string, agentBot: AgentBot): void {
         const wallet = this.simpleWalletBackgroundTasks.get(chainId);
         if (wallet) {
             logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
@@ -262,10 +266,23 @@ export class AgentBotRunner {
         }
     }
 
-    stopAllWalletMonitoring() {
+    stopAllWalletMonitoring(): void {
         this.simpleWalletBackgroundTasks.forEach((wallet, chainId) => {
             wallet.stopMonitoring();
             logger.info(`Stopped monitoring wallet for chain ${chainId}.`);
         });
+    }
+
+    checkIfWalletIsRunning(chainId: string, agentBot: AgentBot): boolean {
+        logger.info(`Checking if monitoring wallet for chain ${chainId} is running.`);
+        const wallet = this.simpleWalletBackgroundTasks.get(chainId);
+        if (wallet?.isMonitoring()) {
+            logger.info(`Monitoring wallet for chain ${chainId} is running.`)
+            return true;
+        } else {
+            logger.info(`Monitoring wallet for chain ${chainId} is NOT running.`)
+            this.addSimpleWalletToLoop(chainId, agentBot);
+            return false;
+        }
     }
 }

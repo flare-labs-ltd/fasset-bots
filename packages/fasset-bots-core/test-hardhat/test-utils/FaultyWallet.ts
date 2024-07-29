@@ -2,6 +2,9 @@ import { TransactionInfo } from "@flarelabs/simple-wallet";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 
 export class FaultyWallet implements IBlockChainWallet {
+    isMonitoring(): boolean {
+        throw new Error("Method not implemented.");
+    }
     startMonitoringTransactionProgress(): Promise<void> {
         throw new Error("Method not implemented.");
     }

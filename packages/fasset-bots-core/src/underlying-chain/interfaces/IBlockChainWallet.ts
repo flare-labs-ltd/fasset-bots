@@ -78,4 +78,5 @@ export interface IBlockChainWallet {
     // Background tasks
     startMonitoringTransactionProgress(): Promise<void>;
     stopMonitoring(): void;
+    isMonitoring(): boolean;
 }

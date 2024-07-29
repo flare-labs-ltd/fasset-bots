@@ -103,4 +103,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     stopMonitoring(): void {
         this.walletClient.stopMonitoring();
     }
+
+    isMonitoring(): boolean {
+        return this.walletClient.isMonitoring();
+    }
 }

@@ -40,6 +40,7 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    startMonitoringTransactionProgress(): Promise<void>;
    stopMonitoring(): void;
+   isMonitoring(): boolean;
 }
 
 export interface ICreateWalletResponse {
