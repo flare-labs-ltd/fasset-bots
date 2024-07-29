@@ -249,25 +249,23 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * Background processing
     */
    async startMonitoringTransactionProgress(): Promise<void> {
-      const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-      if (!monitoringState) {
-         this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, isMonitoring: true } as RequiredEntityData<MonitoringStateEntity>,);
-         await this.rootEm.flush();
-         this.monitoring = true;
-      } else if (monitoringState.isMonitoring) {
-         logger.info(`Monitoring for chain ${this.chainType} is already running.`);
-         return;
-      } else {
-         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-            monitoringEnt.isMonitoring = true;
-         });
-         this.monitoring = true;
-      }
-      logger.info(`Monitoring started for chain ${this.chainType}`);
-      console.info(`Monitoring started for chain ${this.chainType}`);
-
       try {
-         this.monitoring = true;
+         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+         if (!monitoringState) {
+            this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, isMonitoring: true } as RequiredEntityData<MonitoringStateEntity>,);
+            await this.rootEm.flush();
+            this.monitoring = true;
+         } else if (monitoringState.isMonitoring) {
+            logger.info(`Monitoring for chain ${this.chainType} is already running.`);
+            return;
+         } else {
+            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+               monitoringEnt.isMonitoring = true;
+            });
+            this.monitoring = true;
+         }
+         logger.info(`Monitoring started for chain ${this.chainType}`);
+         console.info(`Monitoring started for chain ${this.chainType}`);
 
          while (this.monitoring) {
             try {
