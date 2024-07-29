@@ -141,8 +141,8 @@ export class AgentBotRunner {
                 const agentBot = await this.newAgentBot(agentEntity);
                 if (agentBot == null) continue;
                 void agentBot.runThreads(this.orm.em).catch((error) => {
-                    logger.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
-                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
+                    logger.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
+                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
                 });
                 this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner added running agent ${agentBot.agent.vaultAddress}.`);
