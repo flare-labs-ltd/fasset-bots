@@ -36,8 +36,6 @@ export class UTXOAccountGeneration implements WalletAccountGenerationInterface {
          account = account0.getAddress(0, false, 44);
       } else if (this.chainType == ChainType.testBTC || this.chainType == ChainType.BTC) {
          account = account0.getAddress(0, false);
-
-         console.log("xpub: ", account0.getAccountPublicKey())
       } else {
          logger.error(`Invalid chainType ${this.chainType}`);
          throw new Error(`Invalid chainType ${this.chainType}`);
