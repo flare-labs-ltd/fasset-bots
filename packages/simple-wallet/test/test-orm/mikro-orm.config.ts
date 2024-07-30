@@ -4,6 +4,7 @@ import { TransactionEntity } from "../../src/entity/transaction";
 import { UTXOEntity } from "../../src/entity/utxo";
 import { WalletAddressEntity } from "../../src/entity/wallet";
 import { SchemaUpdate } from "../../src/interfaces/WalletTransactionInterface";
+import { MonitoringStateEntity } from "../../src";
 
 export type ORM = MikroORM;
 
@@ -13,7 +14,7 @@ export type CreateOrmOptions = Options<AbstractSqlDriver> & {
     type: "sqlite";
 };
 const config: CreateOrmOptions = {
-    entities: [TransactionEntity, UTXOEntity, WalletAddressEntity],
+    entities: [TransactionEntity, UTXOEntity, WalletAddressEntity, MonitoringStateEntity],
     debug: false,
     driver: SqliteDriver,
     allowGlobalContext: true,

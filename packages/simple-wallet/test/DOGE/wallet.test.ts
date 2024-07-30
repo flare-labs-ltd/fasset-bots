@@ -28,9 +28,6 @@ const fundedMnemonic = "involve essay clean frequent stumble cheese elite custom
 const fundedAddress = "noXb5PiT85PPyQ3WBMLY7BUExm9KpfV93S";
 const targetMnemonic = "forum tissue lonely diamond sea invest hill bamboo hamster leaf asset column duck order sock dad beauty valid staff scan hospital pair law cable";
 const targetAddress = "npJo8FieqEmB1NehU4jFFEFPsdvy8ippbm";
-//old target, still holds some funds:
-const address = 'nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D'
-const privateKey = 'ckmubApfH515MCZNC9ufLR4kHrmnb1PCtX2vhoN4iYx9Wqzh2AQ9'
 
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
 
