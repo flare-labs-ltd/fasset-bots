@@ -33,6 +33,7 @@
         "poolCollateralReserveFactor": "0.1",
         "trustedPingSenders": [],
         "minBalanceOnServiceAccount": "2",
+        "minBalanceOnWorkAccount": "200",
         "fAssets": {
             "FTestXRP": {
                 "recommendedOwnerBalance": "50",

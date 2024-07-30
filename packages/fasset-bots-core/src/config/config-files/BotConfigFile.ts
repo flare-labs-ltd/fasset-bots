@@ -128,6 +128,12 @@ export interface AgentBotSettingsJson {
     minBalanceOnServiceAccount: string;
 
     /**
+     * Minimum balance needed for gas and other things on agent work account.
+     * Pool collateral topups always leav this amount.
+     */
+    minBalanceOnWorkAccount: string;
+
+    /**
      * The list of address to whose pings the agent will respond.
      */
     trustedPingSenders: string[];

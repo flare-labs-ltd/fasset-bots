@@ -60,6 +60,7 @@ export interface AgentBotSettings {
     recommendedOwnerUnderlyingBalance: BN;
     minimumFreeUnderlyingBalance: BN;
     minBalanceOnServiceAccount: BN;
+    minBalanceOnWorkAccount: BN;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
@@ -212,6 +213,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
         minimumFreeUnderlyingBalance: underlying.parse(fassetSettings.minimumFreeUnderlyingBalance),
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
         minBalanceOnServiceAccount: native.parse(agentBotSettings.minBalanceOnServiceAccount),
+        minBalanceOnWorkAccount: native.parse(agentBotSettings.minBalanceOnWorkAccount),
     }
 }
 
