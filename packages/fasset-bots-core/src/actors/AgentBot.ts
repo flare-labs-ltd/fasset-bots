@@ -245,8 +245,8 @@ export class AgentBot {
      * @param vaultUnderlyingAddress agent's underlying address
      */
     static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
-        const starterAmount = context.chainInfo.minimumAccountBalance;
-        if (starterAmount == BN_ZERO) return;
+        const starterAmount = toBN(context.chainInfo.minimumAccountBalance);
+        if (starterAmount.eq(BN_ZERO)) return;
         const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
         try {
             const reference = owner.managementAddress;
