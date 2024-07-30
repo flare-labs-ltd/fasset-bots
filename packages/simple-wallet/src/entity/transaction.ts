@@ -35,6 +35,18 @@ export class TransactionEntity {
     @Property()
     submittedInTimestamp = 0; // server time - needed to track when tx appears in mempool
 
+    @Property({nullable: true})
+    acceptedToMempoolInTimestamp?: number;
+
+    @Property()
+    reachedFinalStatusInTimestamp: number = 0; // TX_REPLACED, TX_FAILED, TX_SUCCESS
+
+    @Property({nullable: true})
+    reachedStatusPreparedInTimestamp: number = 0;
+
+    @Property({nullable: true})
+    reachedStatusPendingInTimestamp: number = 0;
+
     @Property({ nullable: true  })
     executeUntilBlock?: number;
 

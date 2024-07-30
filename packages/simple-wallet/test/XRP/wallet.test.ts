@@ -12,7 +12,6 @@ import {toBN, toBNExp} from "../../src/utils/bnutils";
 import {fetchTransactionEntityById, updateTransactionEntity} from "../../src/db/dbutils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import {
-    clearTransactions,
     createAndSignXRPTransactionWithStatus,
     setWalletStatusInDB,
     TEST_WALLET_XRP,
@@ -66,13 +65,8 @@ describe("Xrp wallet tests", () => {
       void wClient.startMonitoringTransactionProgress();
    });
 
-   after(function() {
-      wClient.stopMonitoring();
-    });
-
     after(async () => {
         wClient.stopMonitoring();
-        await clearTransactions(wClient.rootEm);
     });
 
     it("Should create account", async () => {

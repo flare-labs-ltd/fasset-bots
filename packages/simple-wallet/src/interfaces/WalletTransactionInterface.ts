@@ -100,6 +100,7 @@ export interface BaseWalletConfig {
    rateLimitOptions?: RateLimitOptions;
    stuckTransactionOptions?: StuckTransaction;
    enoughConfirmations?: number,
+   feeServiceConfig?: FeeServiceConfig;
    em: EntityManager;
    walletKeys: IWalletKeys;
 }
@@ -123,4 +124,19 @@ export interface TransactionInfo {
 export interface IWalletKeys {
    getKey(address: string): Promise<string | undefined>;
    addKey(address: string, privateKey: string): Promise<void>;
+}
+
+export interface FeeServiceConfig {
+   indexerUrl: string;
+   rateLimitOptions?: RateLimitOptions;
+   sleepTimeMs: number;
+   numberOfBlocksInHistory: number;
+}
+
+export interface BlockStats {
+   blockHeight: number;
+   blockTime: number;
+   timeSincePreviousBlock: number;
+   averageFeePerKB: BN;
+   decilesFeePerKB: BN[];
 }
