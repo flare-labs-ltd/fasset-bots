@@ -65,6 +65,14 @@
             "FSimCoinX": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "0.01"
+            },
+            "FTestBTC": {
+                "recommendedOwnerBalance": "0.0001",
+                "minimumFreeUnderlyingBalance": "0.00004"
+            },
+            "FTestDOGE": {
+                "recommendedOwnerBalance": "20",
+                "minimumFreeUnderlyingBalance": "0.4"
             }
         }
     },
