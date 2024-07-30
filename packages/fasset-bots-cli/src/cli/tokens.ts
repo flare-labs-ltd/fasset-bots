@@ -60,7 +60,7 @@ program
             const orm = await createCliOrm();
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));//TODO-urska - run in background
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
             await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);

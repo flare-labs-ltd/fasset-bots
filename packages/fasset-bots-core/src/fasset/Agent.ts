@@ -417,7 +417,8 @@ export class Agent {
     async emptyAgentUnderlying(destinationAddress: string): Promise<number> {
         try {
             const txDbId = await this.wallet.deleteAccount(this.underlyingAddress, destinationAddress, null);
-            logger.info(`Agent ${this.vaultAddress} initiated withdrawing of all funds on underlying ${this.underlyingAddress} with database id ${txDbId}.`)
+            logger.info(`Agent ${this.vaultAddress} initiated withdrawing of all funds on underlying ${this.underlyingAddress} with database id ${txDbId}.`);
+            //todo-urska: wait for status submit
             return txDbId;
         } catch (error) {
             logger.error(`Agent ${this.vaultAddress} could not initiated emptying underlying account:`, error);
