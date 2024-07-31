@@ -160,6 +160,7 @@ export async function handleMissingPrivateKey(rootEm: EntityManager, txId: numbe
 export async function failTransaction(rootEm: EntityManager, txId: number, reason: string, error?: Error): Promise<void> {
     await updateTransactionEntity(rootEm, txId, async (txEnt) => {
         txEnt.status = TransactionStatus.TX_FAILED;
+        txEnt.reachedFinalStatusInTimestamp = new Date().getTime();
     });
     if (error) {
         logger.error(`Transaction ${txId} failed: ${reason}`, error);
