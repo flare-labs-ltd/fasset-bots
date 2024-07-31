@@ -496,7 +496,7 @@ export class AgentService {
             // Get agent vaults for fasset from database
             const agentVaults = await query.where({ fassetSymbol: fasset }).getResultList();
             if (agentVaults.length == 0){
-                break;
+                continue;
             }
             const settings = await cli.context.assetManager.getSettings();
             const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
