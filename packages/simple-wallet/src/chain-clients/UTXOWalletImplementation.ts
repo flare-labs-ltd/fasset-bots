@@ -176,7 +176,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}`);
       if (await checkIfIsDeleting(this.rootEm, source)) {
          logger.error(`Cannot receive requests. ${source} is deleting`);
-         console.error(`Cannot receive requests. ${source} is deleting`);
          throw new Error(`Cannot receive requests. ${source} is deleting`);
       }
       await this.walletKeys.addKey(source, privateKey);
@@ -385,12 +384,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                   utxoEnt.spentHeight = SpentHeightEnum.SPENT;
                });
             }
-            logger.info(`Transaction ${txEnt.id} was accepted`);
-            console.info(`Transaction ${txEnt.id} was accepted`);
+            logger.info(`Transaction ${txEnt.id} (${txEnt.transactionHash}) was accepted`);
+            console.info(`Transaction ${txEnt.id} (${txEnt.transactionHash}) was accepted`);
             return;
          }
       } catch (e) {
-         console.error(`Transaction ${txEnt.transactionHash} cannot be fetched from node`);
          logger.error(`Transaction ${txEnt.transactionHash} cannot be fetched from node`, e);
       }
       //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!

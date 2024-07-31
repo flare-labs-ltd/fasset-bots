@@ -174,7 +174,6 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
 export async function processTransactions(rootEm: EntityManager, chainType: ChainType, status: TransactionStatus, processFunction: (txEnt: TransactionEntity) => Promise<void>): Promise<void> {
     const transactionEntities = await fetchTransactionEntities(rootEm, chainType, status);
     logger.info(`Fetching ${transactionEntities.length} transactions with status ${status}`);
-    console.info(`Fetching ${transactionEntities.length} transactions with status ${status}`);
     for (const txEnt of transactionEntities) {
        try {
           await processFunction(txEnt);
