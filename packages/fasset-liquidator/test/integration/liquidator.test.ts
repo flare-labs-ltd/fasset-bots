@@ -10,7 +10,7 @@ import { JsonRpcProvider, Wallet, WeiPerEther, ZeroAddress } from 'ethers'
 import { assert } from 'chai'
 import { waitFinalize } from './utils/finalization'
 import { getCollateralPriceForAgentCr } from "./utils/fasset"
-import { setOrUpdateDexes } from "./utils/uniswap-v2/dex-manipulator"
+import { DexFtsoPriceSyncer } from "./utils/uniswap-v2/dex-manipulator"
 import { getAssetManagerFromAgent, deployLiquidator, getContracts } from './utils/contracts'
 import type { JsonRpcSigner } from 'ethers'
 import type { Contracts } from './utils/interfaces/contracts'
@@ -23,21 +23,25 @@ const AGENT_ADDRESS = "0x6A3fad5275938549302C26678A487BfC5F9D8ba5"
 // governance is funded with FSimCoinX and CFLR, can mint USDC and set price reader prices
 const GOVERNANCE_PVK = process.env.GOVERNANCE_PRIVATE_KEY!
 
-const provider = new JsonRpcProvider("http://127.0.0.1:8545/")
+const RPC_URL = "http://127.0.0.1:8545/"
+const provider = new JsonRpcProvider(RPC_URL)
 
 describe("Liquidator", () => {
     let contracts: Contracts
     let governance: Wallet
     let signer: JsonRpcSigner
     let liquidator: Liquidator
+    let dexSyncer: DexFtsoPriceSyncer
 
     before(async () => {
         // get relevant signers
         governance = new Wallet(GOVERNANCE_PVK, provider)
         signer = await provider.getSigner(1)
         // get contracts
-        contracts = await getContracts(await getAssetManagerFromAgent(AGENT_ADDRESS, provider), "coston", provider)
+        const assetManagerAddress = await getAssetManagerFromAgent(AGENT_ADDRESS, provider)
+        contracts = await getContracts(assetManagerAddress, "coston", provider)
         liquidator = await deployLiquidator(contracts.flashLender, contracts.uniswapV2, signer, provider)
+        dexSyncer = await DexFtsoPriceSyncer.create("coston", RPC_URL, assetManagerAddress, GOVERNANCE_PVK)
         // mint USDC to governance and wrap their CFLR (they will provide liquidity to dexes)
         console.log(chalk.cyan("minting USDC to governance and wrapping CFLR..."))
         const fakeUsdc = contracts.collaterals.usdc.connect(governance) as FakeERC20
@@ -54,7 +58,10 @@ describe("Liquidator", () => {
         await waitFinalize(provider, governance, contracts.priceReader.connect(governance).setPrice("testXRP", assetPrice))
         // according to the conditions constructed above, sync up dexes as stably as possible with governance's limited funds
         console.log(chalk.cyan("syncing prices on dexes..."))
-        await setOrUpdateDexes(contracts, governance, provider)
+        await dexSyncer.syncDex({ pools: [
+            { symbolA: "testUSDC", symbolB: "testXRP" },
+            { symbolA: "WNAT", symbolB: "testXRP" }
+        ]}, false)
         // check that collateral ratio is still as specified above
         const { mintedUBA: mintedUbaBefore, poolCollateralRatioBIPS } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)
         assert.equal(poolCollateralRatioBIPS, BigInt(18_900))
