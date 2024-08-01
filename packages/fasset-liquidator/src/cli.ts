@@ -1,10 +1,8 @@
 import { Command, OptionValues } from "commander"
 import { JsonRpcProvider, Wallet } from "ethers"
 import { storeLatestDeploy } from "./utils"
-import { mulFactor } from "../test/utils"
 import { deployLiquidator, deployChallenger, deployUniswapV2, deployFlashLender, deployUniswapV2Mock } from "./deploy"
-import { Config, DexManipulator } from "../test/integration/utils/uniswap-v2/dex-manipulator"
-import { FASSET_MAX_BIPS } from "../test/constants"
+import { Config, DexFtsoPriceSyncer } from "../test/integration/utils/uniswap-v2/dex-manipulator"
 import { ASSET_MANAGER_ADDRESSES, DEX_POOLS } from "../test/config"
 import type { Signer } from "ethers"
 import type { NetworkAddressesJson } from "../test/integration/utils/interfaces/addresses"
@@ -53,34 +51,30 @@ program
     })
 program
     .command("coston-beta").description("methods regarding used dex")
-    .argument("action <adjust-dex|remove-liquidity|wrap-wnat|unwrap-wnat>", "action to perform")
+    .argument("action <sync-dex|remove-liquidity|wrap-wnat|unwrap-wnat|run-dex-sync-bot>", "action to perform")
     .option("-f, --f-asset <fTestXRP>", "address of the relevant f-asset", "FTestXRP")
-    .option("-s, --slippage <bips>", "slippage applied to all of the registered pools (in bips)")
-    .option("-v, --volume <bigint>", "amount of token whose swap produces the given slippage")
     .option("-m, --max-spend-ratio <number>", "maximum ratio of the balance willing to spend in this tx")
     .option("--greedy <boolean>", "whether to not distribute spendings evenly across pools (if balance runs out, not all pools will be affected by your action)", false)
     .action(async (action: string, _opts: OptionValues) => {
         const opts = { ..._opts, ...program.opts() }
         const assetManager = getAssetManagerAddress(opts.network, opts.fAsset)
         const liquidityPools = getDexPools(opts.network, opts.fAsset)
-        // target swapping to test xrp (or sim coin x later)
-        const manipulator = await DexManipulator.create(opts.network, process.env.RPC_URL!, assetManager, process.env.PRIVATE_KEY!)
-        if (action === "adjust-dex") {
+        const manipulator = await DexFtsoPriceSyncer.create(opts.network, process.env.RPC_URL!, assetManager, process.env.PRIVATE_KEY!)
+        if (action === "sync-dex" || action === "run-dex-sync-bot") {
             if (Number(opts.slippage === undefined + opts.volume === undefined) == 1) {
                 throw Error("slippage and volume are not well-defined without each other")
             }
             const config: Config = {
                 maxRelativeSpendings: opts.maxSpendRatio,
-                pools: liquidityPools.map(([symbolA, symbolB]) => ({
-                    symbolA, symbolB, sync: false, slippage: (opts.slippage !== undefined) ? {
-                        amountA: BigInt(opts.volume),
-                        bips: Number(mulFactor(FASSET_MAX_BIPS, Number(opts.slippage)))
-                    } : undefined
-                }))
+                pools: liquidityPools.map(([symbolA, symbolB]) => ({ symbolA, symbolB }))
             }
-            await manipulator.adjustDex(config, opts.greedy)
+            if (action === "sync-dex") {
+                await manipulator.syncDex(config, opts.greedy)
+            } else {
+                await manipulator.run(config, opts.greedy)
+            }
         } else if (action === "remove-liquidity") {
-            await manipulator.removeAllLiquidity({ pools: liquidityPools.map(([symbolA, symbolB]) => ({ symbolA, symbolB })) })
+            await manipulator.removeAllLiquidity(liquidityPools.map(([symbolA, symbolB]) => ({ symbolA, symbolB })))
         } else if (action === "wrap-wnat") {
             await manipulator.wrapWNat()
         } else if (action === "unwrap-wnat") {

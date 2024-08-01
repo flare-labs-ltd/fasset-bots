@@ -7,12 +7,10 @@
 import "dotenv/config"
 import { expect } from 'chai'
 import { abs } from "../utils"
-import { slippageBipsFromSwapAmountIn } from "../calculations/calculations"
 import { swap } from "./utils/uniswap-v2/wrappers"
-import { DexManipulator } from "./utils/uniswap-v2/dex-manipulator"
+import { DexFtsoPriceSyncer } from "./utils/uniswap-v2/dex-manipulator"
 import { FASSET_MAX_BIPS, PRICE_PRECISION } from "../constants"
 import { FTSO_SYMBOLS, ASSET_MANAGER_ADDRESSES, DEX_POOLS } from "../config"
-import type { PoolConfig } from "./utils/uniswap-v2/dex-manipulator"
 
 
 const RPC_URL = "http://127.0.0.1:8545/"
@@ -21,7 +19,6 @@ const RPC_URL = "http://127.0.0.1:8545/"
 const SIGNER_PRIVATE_KEY = process.env.PRIVATE_KEY!
 
 const MAX_PRICE_ERROR = PRICE_PRECISION / BigInt(1e5) // price is accurate to 5 decimals (so FTSOs prices are not affected)
-const MAX_SLIPPAGE_BIPS_ERROR = 10 // expect configured slippage to differentiate for at most this amounts
 const MAX_TOKEN_LOSS_BIPS = 1 // expect to lose at most .01% of the invested balance (some liquidity stays locked after removal)
 
 // test environment configuration
@@ -31,21 +28,10 @@ const COSTON_DEX_POOLS = DEX_POOLS["coston"]["FTestXRP"]
 
 // slippage config where swapping 1e6 = 1 TEST_XRP should result in 10% slippage
 // this way the added reserves should require at most 100 TEST_XRP (deficient token)
-const POOL_SLIPPAGE_CONFIG_1 = COSTON_DEX_POOLS.map(([symbolA, symbolB]) => ({
-    symbolA, symbolB, slippage: { amountA: BigInt(1e6), bips: 1000 }
-}))
-const POOL_SLIPPAGE_CONFIG_2 = POOL_SLIPPAGE_CONFIG_1.map(pool => {
-    if (pool.symbolB == COSTON_FTSO_SYMBOLS.USDC) {
-        return { ...pool, slippage: { amountA: BigInt(1e6), bips: 500 } }
-    } else if (pool.symbolB == COSTON_FTSO_SYMBOLS.WETH) {
-        return { ...pool, slippage: { amountA: BigInt(1e6), bips: 1200 } }
-    } else {
-        return pool
-    }
-})
+const POOL_SLIPPAGE_CONFIG_1 = COSTON_DEX_POOLS.map(([symbolA, symbolB]) => ({ symbolA, symbolB }))
 
 describe("Uniswap V2 Price Synchronization", () => {
-    let manipulator: DexManipulator
+    let manipulator: DexFtsoPriceSyncer
     let signerBalanceBefore: Map<string, bigint>
 
     async function getSignerBalances(): Promise<Map<string, bigint>> {
@@ -78,21 +64,9 @@ describe("Uniswap V2 Price Synchronization", () => {
         }
     }
 
-    async function assertPoolConfig(pools: PoolConfig[]): Promise<void> {
-        for (const pool of pools) {
-            if (pool.slippage !== undefined) {
-                const tokenA = manipulator.symbolToToken.get(pool.symbolA)!
-                const tokenB = manipulator.symbolToToken.get(pool.symbolB)!
-                const [reserveA,] = await manipulator.getReserves(tokenA, tokenB)
-                const slippageBips = slippageBipsFromSwapAmountIn(pool.slippage.amountA, reserveA)
-                expect(Number(slippageBips)).to.be.approximately(pool.slippage.bips, MAX_SLIPPAGE_BIPS_ERROR)
-            }
-        }
-    }
-
     before(async () => {
         // get relevant signers
-        manipulator = await DexManipulator.create("coston", RPC_URL, ASSET_MANAGER, SIGNER_PRIVATE_KEY)
+        manipulator = await DexFtsoPriceSyncer.create("coston", RPC_URL, ASSET_MANAGER, SIGNER_PRIVATE_KEY)
         // wrap signer's CFLR
         await manipulator.wrapWNat()
         // aux test cache
@@ -104,11 +78,9 @@ describe("Uniswap V2 Price Synchronization", () => {
         // add liquidity to match slippage and ftso price by investing all of the signer's tokens
         // except for 0.5 x USDC balance and 0.5 CFLR balance
         // distribute to  pools evenly, not greedily
-        await manipulator.adjustDex({ pools: POOL_SLIPPAGE_CONFIG_1, maxRelativeSpendings: { [manipulator.symbols.USDC]: 0.5 } }, false)
+        await manipulator.syncDex({ pools: POOL_SLIPPAGE_CONFIG_1, maxRelativeSpendings: { [manipulator.symbols.USDC]: 0.5 } }, false)
         // check that reserves are aligned with ftso prices on all relevant dex pools
         await assertDexPricesFtsoSynced()
-        // check that slippage on all pools is as specified
-        await assertPoolConfig(POOL_SLIPPAGE_CONFIG_1)
     })
 
     it("should swap to fix the price discrepancy", async () => {
@@ -121,22 +93,14 @@ describe("Uniswap V2 Price Synchronization", () => {
         await swap(manipulator.contracts.uniswapV2, manipulator.contracts.collaterals.USDC,
             manipulator.contracts.fAsset, swapAmount, manipulator.signer, manipulator.provider)
         // sort out the price discrepancy by syncing all pools with ftso prices
-        await manipulator.adjustDex({ pools: COSTON_DEX_POOLS.map(([symbolA, symbolB]) => ({ symbolA, symbolB, sync: true })) }, true)
+        await manipulator.syncDex({ pools: COSTON_DEX_POOLS.map(([symbolA, symbolB]) => ({ symbolA, symbolB, sync: true })) }, true)
         // check that reserves are aligned with ftso prices on all relevant dex pools
         await assertDexPricesFtsoSynced()
     })
 
-    it("should adjust the slippage with a new configuration", async () => {
-        // adjust dexes
-        await manipulator.adjustDex({ pools: POOL_SLIPPAGE_CONFIG_2 }, false)
-        // we don't check prices as we are setting slippage only
-        // check that slippage on all pools is as specified
-        await assertPoolConfig(POOL_SLIPPAGE_CONFIG_2)
-    })
-
     it("should remove liquidity from dexes", async () => {
         // remove signer's liquidity from all dexes
-        await manipulator.removeAllLiquidity({ pools: COSTON_DEX_POOLS.map(([symbolA, symbolB]) => ({ symbolA, symbolB })) })
+        await manipulator.removeAllLiquidity(COSTON_DEX_POOLS.map(([symbolA, symbolB]) => ({ symbolA, symbolB })))
         // check that signer had funds returned (minus accounting for some locked liquidity)
         const signerBalanceAfter = await getSignerBalances()
         for (const symbol of Object.values(manipulator.symbols)) {

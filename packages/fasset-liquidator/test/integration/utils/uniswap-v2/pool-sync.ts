@@ -1,60 +1,9 @@
 import { priceBasedAddedDexReserves, swapToDexPrice } from "../../../calculations/calculations"
-import { cappedAddedLiquidityFromSlippage, cappedReservesFromPriceAndSlippage } from '../../../calculations/slippage'
-import { addLiquidity, swap, safelyGetReserves, removeLiquidity } from "./wrappers"
-import { logAddedLiquidityForSlippage, logSlippageUnnecessary, logRemovingLiquidityBeforeRetrying, logUnableToProduceSlippage, logCappingDesiredSwapAmount, logSwapping } from "./log-format"
+import { addLiquidity, swap, safelyGetReserves } from "./wrappers"
+import { logCappingDesiredSwapAmount, logSwapping } from "./log-format"
 import type { JsonRpcProvider, Signer } from "ethers"
 import type { IERC20Metadata, IPriceReader, IUniswapV2Router } from "../../../../types"
 
-
-export async function adjustLiquidityForSlippage(
-    uniswapV2: IUniswapV2Router,
-    priceReader: IPriceReader,
-    tokenA: IERC20Metadata,
-    tokenB: IERC20Metadata,
-    symbolA: string,
-    symbolB: string,
-    maxA: bigint,
-    maxB: bigint,
-    amountA: bigint,
-    slippageBips: number,
-    signer: Signer,
-    provider: JsonRpcProvider,
-    recursiveCall = false
-): Promise<void> {
-    const decimalsA = await tokenA.decimals()
-    const decimalsB = await tokenB.decimals()
-    const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
-    let [addedA, addedB]: [bigint, bigint] = [BigInt(0), BigInt(0)]
-    if (reserveA == BigInt(0) || reserveB == BigInt(0)) {
-        const { 0: priceA, 2: ftsoDecimalsA } = await priceReader.getPrice(symbolA)
-        const { 0: priceB, 2: ftsoDecimalsB } = await priceReader.getPrice(symbolB)
-        if (ftsoDecimalsA != BigInt(5) || ftsoDecimalsB != BigInt(5))
-            throw Error("Token price has non-5 ftso decimals")
-            ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
-    } else {
-        [addedA, addedB] = cappedAddedLiquidityFromSlippage(amountA, slippageBips, maxA, maxB, reserveA, reserveB)
-    }
-    if (addedA > 0 && addedA <= maxA && addedB > 0 && addedB <= maxB) {
-        logAddedLiquidityForSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
-        await addLiquidity(uniswapV2, tokenA, tokenB, addedA, addedB, signer, provider)
-    } else if (addedA == BigInt(0) && addedB == BigInt(0)) {
-        logSlippageUnnecessary(slippageBips, amountA, maxA, maxB, symbolA, symbolB, decimalsA, decimalsB)
-    } else if (reserveA > BigInt(0) && reserveB > BigInt(0) && !recursiveCall) {
-        // if anything goes wrong remove all liquidity and try again
-        logRemovingLiquidityBeforeRetrying(symbolA, symbolB)
-        const [removedA, removedB] = await removeLiquidity(uniswapV2, tokenA, tokenB, signer, provider)
-        if (removedA == BigInt(0) && removedB == BigInt(0)) {
-            return logUnableToProduceSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
-        }
-        // try again with reserves changed
-        await adjustLiquidityForSlippage(
-            uniswapV2, priceReader, tokenA, tokenB, symbolA, symbolB,
-            maxA + removedA, maxB + removedB, amountA, slippageBips,
-            signer, provider, true)
-    } else {
-        logUnableToProduceSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
-    }
-}
 
 export async function syncDexReservesWithFtsoPrices(
     uniswapV2: IUniswapV2Router,
