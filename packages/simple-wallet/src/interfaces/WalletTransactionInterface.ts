@@ -12,7 +12,7 @@ export interface WalletAccountGenerationInterface {
 
 export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
-   getAccountBalance(account: string): Promise<BN>;
+   getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN>;
    getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
    createPaymentTransaction(

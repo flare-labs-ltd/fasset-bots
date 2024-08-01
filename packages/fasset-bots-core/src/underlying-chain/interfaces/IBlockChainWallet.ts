@@ -48,7 +48,7 @@ export interface IBlockChainWallet {
     addExistingAccount(address: string, privateKey: string): Promise<string>;
 
     // Return the balance of an address on the chain. If the address does not exist, returns 0.
-    getBalance(address: string): Promise<BN>;
+    getBalance(address: string, otherAddresses?: string[]): Promise<BN>;
 
     // Return the current or estimated transaction fee on the chain.
     getTransactionFee(params: FeeParams): Promise<BN>;
