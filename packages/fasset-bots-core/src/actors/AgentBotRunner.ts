@@ -256,12 +256,11 @@ export class AgentBotRunner {
     addSimpleWalletToLoop(chainId: string, agentBot: AgentBot): void {
         const wallet = this.simpleWalletBackgroundTasks.get(chainId);
         if (wallet) {
-            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
-            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
+            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.vaultAddress} tried to start it.`);
         } else {
             const newWallet = agentBot.context.wallet
             this.simpleWalletBackgroundTasks.set(chainId, newWallet);
-            logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.agentVault}.`);
+            logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.vaultAddress}.`);
             void newWallet.startMonitoringTransactionProgress().catch((error) => {
                 logger.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
                 console.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
