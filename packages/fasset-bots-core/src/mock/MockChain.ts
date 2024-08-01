@@ -227,14 +227,14 @@ export class MockChainWallet implements IBlockChainWallet {
     transactionList: MockChainTransaction[] = []
     constructor(public chain: MockChain) {}
 
-    isMonitoring(): boolean {
+    async isMonitoring(): Promise<boolean> {
         throw new Error("Method not implemented.");
     }
 
     startMonitoringTransactionProgress(): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    stopMonitoring(): void {
+    async stopMonitoring(): Promise<void> {
         throw new Error("Method not implemented.");
     }
 

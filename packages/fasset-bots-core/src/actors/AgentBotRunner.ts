@@ -55,7 +55,7 @@ export class AgentBotRunner {
             }
         } finally {
             this.running = false;
-            this.stopAllWalletMonitoring();
+            await this.stopAllWalletMonitoring();
         }
     }
 
@@ -266,11 +266,11 @@ export class AgentBotRunner {
         }
     }
 
-    stopAllWalletMonitoring(): void {
-        this.simpleWalletBackgroundTasks.forEach((wallet, chainId) => {
-            wallet.stopMonitoring();
+    async stopAllWalletMonitoring(): Promise<void> {
+        for (const [chainId, wallet] of this.simpleWalletBackgroundTasks) {
+            await wallet.stopMonitoring();
             logger.info(`Stopped monitoring wallet for chain ${chainId}.`);
-        });
+        }
     }
 
     checkIfWalletIsRunning(chainId: string, agentBot: AgentBot): boolean {

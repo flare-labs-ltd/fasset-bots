@@ -18,6 +18,9 @@ import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {toBNExp} from "../../src/utils/bnutils";
 import {BTC_DOGE_DEC_PLACES} from "../../src/utils/constants";
+import {addConsoleTransportForTests, loop, resetMonitoringOnForceExit, setMonitoringStatus} from "../test_util/util";
+import {fetchMonitoringState} from "../../src/utils/lockManagement";
+import {logger} from "../../src/utils/logger";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
@@ -69,24 +72,41 @@ let wClient: WALLET.BTC;
 let fundedWallet: ICreateWalletResponse;
 
 describe("Bitcoin wallet tests", () => {
+    let removeConsoleLogging: () => void;
+
     before(async () => {
+        removeConsoleLogging = addConsoleTransportForTests(logger);
+
         const testOrm = await initializeTestMikroORM();
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            feeServiceConfig: feeServiceConfig
+            feeServiceConfig: feeServiceConfig,
+            enoughConfirmations: 1
         };
         wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
 
         await wClient.feeService?.setupHistory();
         void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
+
+        resetMonitoringOnForceExit(wClient);
     });
 
-    after(function () {
-        wClient.stopMonitoring();
+    after(async () => {
+        await wClient.stopMonitoring();
+        try {
+            await loop(100, 2000, null, async () => {
+                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
+                if (!monitoringState || !monitoringState.isMonitoring) return true;
+            });
+        } catch (e) {
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+        }
+
+        removeConsoleLogging();
     });
 
     it("Should create account", async () => {

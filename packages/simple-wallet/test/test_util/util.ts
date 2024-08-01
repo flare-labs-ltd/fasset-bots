@@ -1,4 +1,4 @@
-import {TransactionInfo} from "../../src/interfaces/WalletTransactionInterface";
+import {TransactionInfo, type WriteWalletInterface} from "../../src/interfaces/WalletTransactionInterface";
 import {TransactionEntity, TransactionStatus} from "../../src/entity/transaction";
 import {sleepMs} from "../../src/utils/utils";
 import {ChainType} from "../../src/utils/constants";
@@ -8,6 +8,9 @@ import BN from "bn.js";
 import {fetchTransactionEntityById, getTransactionInfoById} from "../../src/db/dbutils";
 import {UTXOEntity} from "../../src/entity/utxo";
 import { WalletAddressEntity } from "../../src/entity/wallet";
+import {updateMonitoringState} from "../../src/utils/lockManagement";
+import winston from "winston";
+import {logger} from "../../src/utils/logger";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -148,6 +151,54 @@ async function setWalletStatusInDB(rootEm: EntityManager, address: string, isDel
     });
 }
 
+async function setMonitoringStatus(rootEm: EntityManager, chainType: ChainType, monitoring: boolean) {
+    await updateMonitoringState(rootEm, chainType, async (monitoringEnt) => {
+        monitoringEnt.isMonitoring = monitoring;
+    });
+}
+
+function addConsoleTransportForTests (logger: any) {
+    const consoleTransport = new winston.transports.Console({
+        format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple()
+        ),
+    });
+
+    logger.add(consoleTransport);
+
+    return () => {
+        logger.remove(consoleTransport);
+    };
+}
+
+function resetMonitoringOnForceExit<T extends WriteWalletInterface>(wClient: T) {
+    process.on("SIGINT", () => {
+        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+            logger.error(err);
+            process.exit(1);
+        });
+    });
+    process.on("SIGTERM", () => {
+        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+            logger.error(err);
+            process.exit(1);
+        });
+    });
+    process.on("SIGQUIT", () => {
+        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+            logger.error(err);
+            process.exit(1);
+        });
+    });
+    process.on("SIGHUP", () => {
+        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+            logger.error(err);
+            process.exit(1);
+        });
+    });
+}
+
 const END_STATUSES = [TransactionStatus.TX_REPLACED, TransactionStatus.TX_FAILED, TransactionStatus.TX_SUBMISSION_FAILED, TransactionStatus.TX_SUCCESS];
 const TEST_WALLET_XRP = {
     address: "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8"
@@ -166,6 +217,10 @@ export {
     clearUTXOs,
 
     setWalletStatusInDB,
+    setMonitoringStatus,
+
+    addConsoleTransportForTests,
+    resetMonitoringOnForceExit,
 
     TEST_WALLET_XRP,
     END_STATUSES

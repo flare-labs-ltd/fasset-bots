@@ -15,8 +15,17 @@ import rewire from "rewire";
 import {TransactionStatus} from "../../src/entity/transaction";
 import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {clearTransactions, clearUTXOs, createTransactionEntity, waitForTxToFinishWithStatus} from "../test_util/util";
+import {
+    addConsoleTransportForTests,
+    clearTransactions,
+    clearUTXOs,
+    createTransactionEntity,
+    loop, resetMonitoringOnForceExit, setMonitoringStatus,
+    waitForTxToFinishWithStatus
+} from "../test_util/util";
 import BN from "bn.js";
+import {fetchMonitoringState} from "../../src/utils/lockManagement";
+import { logger } from "../../src/utils/logger";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
@@ -73,20 +82,41 @@ let wClient: WALLET.DOGE;
 let fundedWallet: ICreateWalletResponse;
 
 describe("Dogecoin wallet tests", () => {
+    let removeConsoleLogging: () => void;
+
     before(async () => {
+        removeConsoleLogging = addConsoleTransportForTests(logger);
+
         const testOrm = await initializeTestMikroORM();
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-        DOGEMccConnectionTest = {...DOGEMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys, feeServiceConfig: feeServiceConfig};
+        DOGEMccConnectionTest = {
+            ...DOGEMccConnectionTestInitial,
+            em: testOrm.em,
+            walletKeys: unprotectedDBWalletKeys,
+            feeServiceConfig: feeServiceConfig,
+            enoughConfirmations: 1
+        };
         wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
 
         await wClient.feeService?.setupHistory();
         void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
+
+        resetMonitoringOnForceExit(wClient);
     });
 
     after(async () => {
-        wClient.stopMonitoring();
-        // await clearTransactions(wClient.rootEm);
+        await wClient.stopMonitoring();
+        try {
+            await loop(100, 2000, null, async () => {
+                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
+                if (!monitoringState || !monitoringState.isMonitoring) return true;
+            });
+        } catch (e) {
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+        }
+
+        removeConsoleLogging();
     });
 
 
@@ -102,6 +132,8 @@ describe("Dogecoin wallet tests", () => {
         expect(WAValidator.validate(newAccount.address, "DOGE", "testnet")).to.be.true;
         expect(WAValidator.validate(fundedWallet.address, "DOGE", "testnet")).to.be.true;
         expect(WAValidator.validate(targetWallet.address, "DOGE", "testnet")).to.be.true;
+
+        console.log(fundedWallet);
     });
 
     it("Should prepare and execute transaction", async () => {
@@ -271,7 +303,12 @@ describe("Dogecoin wallet tests", () => {
 async function setupRewiredWallet() {
     const testOrm = await initializeTestMikroORM();
     const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-    DOGEMccConnectionTest = {...DOGEMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys, feeServiceConfig: feeServiceConfig};
+    DOGEMccConnectionTest = {
+        ...DOGEMccConnectionTestInitial,
+        em: testOrm.em,
+        walletKeys: unprotectedDBWalletKeys,
+        feeServiceConfig: feeServiceConfig
+    };
     const rewired = new rewiredUTXOWalletImplementationClass(DOGEMccConnectionTest);
     fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
 

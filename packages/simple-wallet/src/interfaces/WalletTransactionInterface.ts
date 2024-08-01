@@ -39,8 +39,8 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
    getTransactionInfo(dbId: number): Promise<TransactionInfo>;
 
    startMonitoringTransactionProgress(): Promise<void>;
-   stopMonitoring(): void;
-   isMonitoring(): boolean;
+   stopMonitoring(): Promise<void>;
+   isMonitoring(): Promise<boolean>;
 }
 
 export interface ICreateWalletResponse {

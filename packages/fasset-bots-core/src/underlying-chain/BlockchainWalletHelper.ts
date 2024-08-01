@@ -96,11 +96,11 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                     id = info.replacedByDdId;
                     info = await this.checkTransactionStatus(id);
                 }
-                this.ensureWalletMonitoringRunning();
+                await this.ensureWalletMonitoringRunning();
             }
             return info.transactionHash;
         } finally {
-            this.stopMonitoring();
+            await this.stopMonitoring();
         }
     }
 
@@ -108,16 +108,17 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         await this.walletClient.startMonitoringTransactionProgress();
     }
 
-    stopMonitoring(): void {
-        this.walletClient.stopMonitoring();
+    async stopMonitoring(): Promise<void> {
+        return this.walletClient.stopMonitoring();
     }
 
-    isMonitoring(): boolean {
+    async isMonitoring(): Promise<boolean> {
         return this.walletClient.isMonitoring();
     }
 
-    private ensureWalletMonitoringRunning() {
-        if (!this.isMonitoring()) {
+    private async ensureWalletMonitoringRunning() {
+        const isMonitoring = await this.isMonitoring();
+        if (!isMonitoring) {
             void this.startMonitoringTransactionProgress();
         }
     }
