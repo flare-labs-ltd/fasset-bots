@@ -65,8 +65,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         return address;
     }
 
-    async getBalance(address: string): Promise<BN> {
-        const balance = await this.walletClient.getAccountBalance(address);
+    async getBalance(address: string, otherAddresses?: string[]): Promise<BN> {
+        const balance = await this.walletClient.getAccountBalance(address, otherAddresses);
         return toBN(balance);
     }
 
