@@ -262,7 +262,10 @@ export class AgentBotRunner {
             const newWallet = agentBot.context.wallet
             this.simpleWalletBackgroundTasks.set(chainId, newWallet);
             logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.agentVault}.`);
-            void newWallet.startMonitoringTransactionProgress();//start in background
+            void newWallet.startMonitoringTransactionProgress().catch((error) => {
+                logger.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
+                console.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
+            });//start in background
         }
     }
 

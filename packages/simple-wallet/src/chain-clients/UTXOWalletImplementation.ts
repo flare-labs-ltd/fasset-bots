@@ -471,16 +471,22 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       if (isPayment) {
          tr.change(source);
       }
-      if (feeInSatoshi) {
-         tr.fee(toNumber(feeInSatoshi));
-      }
       if (note) {
          tr.addData(Buffer.from(unPrefix0x(note), "hex"));
       }
       tr.enableRBF();
+      if (feeInSatoshi) {
+         tr.fee(toNumber(feeInSatoshi));
+      }
       if (isPayment && !feeInSatoshi) {//TODO
          tr.fee(toNumber(await this.getEstimateFee(utxos.length)));
       }
+      // } else {//TODO-urska
+         // const feeRate = await this.getCurrentFeeRate();
+         // if (feeRate) {
+         //    tr.feePerKb(feeRate);
+         // }
+      // }
       return tr;
    }
 
@@ -615,11 +621,21 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    }
 
    private async fillUTXOsFromMempool(address: string) {
-      const res = await this.client.get(`/address/${address}?unspent=true&excludeconflicting=true`);
+      const res = await this.client.get(`/address/${address}?unspent=true&limit=0&excludeconflicting=true`);
       // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
       // utxo.mintHeight > -3 => excludeConflicting; utxo.spentHeight == -2 -> unspent
       const mempoolUTXOs = (res.data as any[]).filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2).sort((a, b) => a.value - b.value);
       await storeUTXOS(this.rootEm, address, mempoolUTXOs);
+   }
+
+   async getCurrentFeeRate(nextBlocks: number = 2): Promise<number|null> {
+      try {
+      const res = await this.client.get(`/fee/${nextBlocks}`);
+      return res.data.feerate;
+      } catch (e) {
+         logger.error(`Cannot obtain fee rate`, e);
+         return null;
+      }
    }
 
    async getCurrentBlockHeight(): Promise<number> {
@@ -745,7 +761,6 @@ return submitResp;*/
             defaultFeePerB = feeStats.averageFeePerKB.divn(1000);
          }
       }
-
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return defaultFeePerB.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
       } else {
