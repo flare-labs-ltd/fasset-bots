@@ -478,15 +478,20 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       if (feeInSatoshi) {
          tr.fee(toNumber(feeInSatoshi));
       }
-      if (isPayment && !feeInSatoshi) {//TODO
-         tr.fee(toNumber(await this.getEstimateFee(utxos.length)));
+      // console.log(tr.getFee());
+      // if (isPayment && !feeInSatoshi) {//TODO
+      //       tr.fee(toNumber(await this.getEstimateFee(utxos.length)));
+      if (isPayment && !feeInSatoshi) {//TODO--temporarily to test; as fee is too high now (in case blockbook is not available)
+         const fee = tr.getFee();
+         tr.fee(Math.ceil(fee/4));
       }
       // } else {//TODO-urska
-         // const feeRate = await this.getCurrentFeeRate();
+         // const feeRate = await this.getCurgirentFeeRate();
          // if (feeRate) {
          //    tr.feePerKb(feeRate);
          // }
       // }
+      // console.log(tr.getFee());
       return tr;
    }
 
