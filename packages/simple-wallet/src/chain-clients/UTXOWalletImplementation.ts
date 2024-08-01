@@ -309,7 +309,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
             await sleepMs(this.restartInDueToError);
          }
-         logger.info(`Monitoring started for chain ${this.chainType} stopped.`);
+         logger.info(`Monitoring stopped for chain ${this.chainType}.`);
       } catch (e) {
          logger.error(`Monitoring failed for chain ${this.chainType} error: ${e}.`);
       }
@@ -329,7 +329,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          await this.getCurrentBlockHeight();
          return true;
       } catch (error) {
-         logger.error("Cannot ger response from server", error);
+         logger.error("Cannot get response from server", error);
          return false;
       }
    }
