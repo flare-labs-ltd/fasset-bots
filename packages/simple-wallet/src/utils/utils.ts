@@ -13,15 +13,6 @@ import {
 import { StuckTransaction } from "../interfaces/WalletTransactionInterface";
 import BN from "bn.js";
 
-function MccError(error: any) {
-   try {
-      return new Error(safeStringify(error, undefined, 2, { depthLimit: 2, edgesLimit: 3 }));
-   } catch (thisError) {
-      /* istanbul ignore next */
-      return new Error(`MCC stringify error ${thisError}`);
-   }
-}
-
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
 }
@@ -97,16 +88,18 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.BTC:
       case ChainType.testBTC:
          return {
-            blockOffset: 2,
-            feeIncrease: 1.5,
+            blockOffset: 4,//accepted in next x blocks
+            feeIncrease: 1.8,
             executionBlockOffset: 1,
+            enoughConfirmations: 4
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 4,
+            blockOffset: 8,
             feeIncrease: 2,
-            executionBlockOffset: 2
+            executionBlockOffset: 2,
+            enoughConfirmations: 10
          };
       case ChainType.XRP:
       case ChainType.testXRP:
@@ -149,4 +142,18 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
       return true;
    }
    return false;
+}
+
+
+export function getDefaultFeePerKB(chainType: ChainType) {
+   switch (chainType) {
+      case ChainType.BTC:
+      case ChainType.testBTC:
+         return 10000; // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+      case ChainType.DOGE:
+      case ChainType.testDOGE:
+         return 100000000; // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+      default:
+         throw new Error(`Unsupported chain type ${chainType}`);
+   }
 }

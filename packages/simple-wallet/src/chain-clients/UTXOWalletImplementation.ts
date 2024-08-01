@@ -2,9 +2,10 @@ import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import * as bitcore from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
-import {excludeNullFields, sleepMs, stuckTransactionConstants, unPrefix0x} from "../utils/utils";
-import {toBN, toNumber} from "../utils/bnutils";
+import {excludeNullFields, getDefaultFeePerKB, sleepMs, stuckTransactionConstants, unPrefix0x} from "../utils/utils";
+import {toBN, toBNExp, toNumber} from "../utils/bnutils";
 import {
+   BTC_DOGE_DEC_PLACES,
    BTC_DUST_AMOUNT,
    BTC_FEE_PER_KB, BTC_LEDGER_CLOSE_TIME_MS,
    ChainType,
@@ -68,7 +69,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    feeService?: FeeService;
 
    monitoring: boolean = false;
-   enoughConfirmations: number = 2;
+   enoughConfirmations: number;
    mempoolWaitingTime: number = 60000; // 1min
 
    restartInDueToError: number = 2000; //2s
@@ -110,7 +111,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
       this.rootEm = createConfig.em;
       this.walletKeys = createConfig.walletKeys;
-      this.enoughConfirmations = createConfig.enoughConfirmations ?? this.enoughConfirmations;
+      this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
       if (createConfig.feeServiceConfig) {
          this.feeService = new FeeService(createConfig.feeServiceConfig);
       }
@@ -351,7 +352,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             txEnt.executeUntilBlock = currentBlock + this.blockOffset;
          });
       }
-      const transaction = await this.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount || null, txEnt.fee, txEnt.reference, txEnt.executeUntilBlock);
+      const transaction = await this.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount || null, txEnt.fee, txEnt.reference);
       const privateKey = await this.walletKeys.getKey(txEnt.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, txEnt.id);
@@ -453,7 +454,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       amountInSatoshi: BN | null,
       feeInSatoshi?: BN,
       note?: string,
-      executeUntilBlock?: number
    ): Promise<bitcore.Transaction> {
       const isPayment = amountInSatoshi != null;
       const core = this.getCore();
@@ -481,16 +481,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       // if (isPayment && !feeInSatoshi) {//TODO
       //       tr.fee(toNumber(await this.getEstimateFee(utxos.length)));
       // }
-      if (isPayment && !feeInSatoshi && this.chainType == ChainType.testBTC) {//TODO
-         const fee = tr.getFee();
-         tr.fee(Math.floor(fee/4));
+      if (isPayment && !feeInSatoshi) {//TODO
+         const feeRate = await this.getCurrentFeeRate();
+            tr.feePerKb(Number(feeRate));
       }
-      // } else {//TODO-urska
-         // const feeRate = await this.getCurgirentFeeRate();
-         // if (feeRate) {
-         //    tr.feePerKb(feeRate);
-         // }
-      // }
       return tr;
    }
 
@@ -634,10 +628,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    async getCurrentFeeRate(nextBlocks: number = 2): Promise<number|null> {
       try {
       const res = await this.client.get(`/fee/${nextBlocks}`);
-      return res.data.feerate;
+      const rateInSatoshies = toBNExp(res.data.feerate, BTC_DOGE_DEC_PLACES);
+      return Number(rateInSatoshies) * (this.feeIncrease ?? 1.5);
       } catch (e) {
          logger.error(`Cannot obtain fee rate`, e);
-         return null;
+         return getDefaultFeePerKB(this.chainType);
       }
    }
 
@@ -779,7 +774,7 @@ return submitResp;*/
    private async checkIfShouldStillSubmit(executeUntilBlock: number | null, executeUntilTimestamp:  number | null): Promise<boolean> {
       const currentBlockHeight = await this.getCurrentBlockHeight();
       if (executeUntilBlock && currentBlockHeight - executeUntilBlock > this.executionBlockOffset ||
-          executeUntilTimestamp && new Date().getTime() - executeUntilTimestamp > this.executionBlockOffset * this.getDefaultBlockTime()) {
+          executeUntilTimestamp && new Date().getTime() - executeUntilTimestamp > this.executionBlockOffset * this.getDefaultBlockTime()) {//TODO-urska (is this good estimate?)
          return false;
       }
       return true;

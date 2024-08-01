@@ -123,17 +123,6 @@ describe("Bitcoin wallet tests", () => {
         expect(WAValidator.validate(targetWallet.address, "BTC", "testnet")).to.be.true;
     });
 
-    it("Should create account", async () => {
-        const newAccount = wClient.createWallet();
-        expect(newAccount.address).to.not.be.null;
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        expect(fundedWallet.address).to.eq(fundedAddress);
-        const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
-        expect(targetWallet.address).to.eq(targetAddress);
-        expect(WAValidator.validate(newAccount.address, "BTC", "testnet")).to.be.true;
-        expect(WAValidator.validate(fundedWallet.address, "BTC", "testnet")).to.be.true;
-        expect(WAValidator.validate(targetWallet.address, "BTC", "testnet")).to.be.true;
-    });
 
     it("Should create transaction with custom fee", async () => {
         const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
@@ -160,7 +149,7 @@ describe("Bitcoin wallet tests", () => {
         expect(fee).not.to.be.null;
     });
 
-    it.skip("Should prepare and execute transaction", async () => {
+    it("Should prepare and execute transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);

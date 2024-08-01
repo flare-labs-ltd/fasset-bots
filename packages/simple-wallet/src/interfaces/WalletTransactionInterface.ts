@@ -88,6 +88,7 @@ export interface StuckTransaction {
    retries?: number; // How many times should transaction retry to successfully submit
    feeIncrease?: number; // Factor to increase fee in resubmitting process
    executionBlockOffset?: number; //
+   enoughConfirmations? : number; // number of confirmations to be declared successful
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
