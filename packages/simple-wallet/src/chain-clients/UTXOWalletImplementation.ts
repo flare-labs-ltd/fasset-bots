@@ -125,7 +125,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    async getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN> {
       try {
          const res = await this.client.get(`/address/${account}/balance`);
-         const mainAccountBalance = toBN(res.data.confirmed);
+         const mainAccountBalance = toBN(res.data.balance);
          if (!otherAddresses) {
             return mainAccountBalance;
          } else {
