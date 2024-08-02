@@ -125,10 +125,7 @@ export class AttestationHelper {
 
     async requestConfirmedBlockHeightExistsProof(queryWindow: number): Promise<AttestationRequestId> {
         logger.info(`Attestation helper: requesting confirmed block height exists proof with queryWindow ${queryWindow}`);
-        let blockHeight = await this.chain.getBlockHeight();
-        if (this.chainId.toString() === ChainId.testBTC.toString()) {//TODO-urska: temporary "hack" as testBTC indexer returns last seen block on chain and not last confirm as other indexers
-            blockHeight = blockHeight - this.chain.finalizationBlocks;
-        }
+        const blockHeight = await this.chain.getBlockHeight();
         const blockNumber = Math.max(blockHeight - this.chain.finalizationBlocks, 0);
         const finalizationBlockNumber = blockNumber + this.chain.finalizationBlocks;
         const finalizationBlock = await this.chain.getBlockAt(finalizationBlockNumber);
