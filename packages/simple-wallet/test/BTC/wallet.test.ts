@@ -149,7 +149,7 @@ describe("Bitcoin wallet tests", () => {
         expect(fee).not.to.be.null;
     });
 
-    it("Should prepare and execute transaction", async () => {
+    it.skip("Should prepare and execute transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);

@@ -1,5 +1,6 @@
 import safeStringify from "fast-safe-stringify";
 import {
+   BTC_DOGE_DEC_PLACES,
    BTC_LEDGER_CLOSE_TIME_MS,
    BTC_MAINNET,
    BTC_TESTNET,
@@ -12,6 +13,7 @@ import {
 } from "./constants";
 import { StuckTransaction } from "../interfaces/WalletTransactionInterface";
 import BN from "bn.js";
+import { toBN, toBNExp } from "./bnutils";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -89,7 +91,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testBTC:
          return {
             blockOffset: 4,//accepted in next x blocks
-            feeIncrease: 1.8,
+            feeIncrease: 2,
             executionBlockOffset: 1,
             enoughConfirmations: 4
          };
@@ -145,15 +147,23 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
 }
 
 
-export function getDefaultFeePerKB(chainType: ChainType) {
+export function getDefaultFeePerKB(chainType: ChainType): BN {
    switch (chainType) {
       case ChainType.BTC:
       case ChainType.testBTC:
-         return 10000; // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+         return toBN(10000); // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
       case ChainType.DOGE:
       case ChainType.testDOGE:
-         return 100000000; // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+         return toBN(100000000); // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
       default:
          throw new Error(`Unsupported chain type ${chainType}`);
    }
 }
+
+// UTXO default fee per kb
+// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+// https://github.com/dogecoin/dogecoin/blob/0b46a40ed125d7bf4b5a485b91350bc8bdc48fc8/doc/man/dogecoin-qt.1
+export const DOGE_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
+// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-ltc/lib/transaction/transaction.js#L81
+// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib/lib/transaction/transaction.js#L80
+export const BTC_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);

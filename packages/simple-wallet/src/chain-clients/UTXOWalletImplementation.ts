@@ -7,11 +7,12 @@ import {toBN, toBNExp, toNumber} from "../utils/bnutils";
 import {
    BTC_DOGE_DEC_PLACES,
    BTC_DUST_AMOUNT,
-   BTC_FEE_PER_KB, BTC_LEDGER_CLOSE_TIME_MS,
+   BTC_LEDGER_CLOSE_TIME_MS,
    ChainType,
+   DEFAULT_FEE_INCREASE,
    DEFAULT_RATE_LIMIT_OPTIONS,
    DOGE_DUST_AMOUNT,
-   DOGE_FEE_PER_KB, DOGE_LEDGER_CLOSE_TIME_MS,
+   DOGE_LEDGER_CLOSE_TIME_MS,
    UTXO_INPUT_SIZE,
    UTXO_INPUT_SIZE_SEGWIT,
    UTXO_OUTPUT_SIZE,
@@ -150,7 +151,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     */
    async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
       const tx = await this.preparePaymentTransaction(params.source, params.destination, params.amount);
-      return this.getEstimateFee(tx.inputs.length, tx.outputs.length);
+      return toBN(tx.getFee());
    }
 
    /**
@@ -478,12 +479,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       if (feeInSatoshi) {
          tr.fee(toNumber(feeInSatoshi));
       }
-      // if (isPayment && !feeInSatoshi) {//TODO
-      //       tr.fee(toNumber(await this.getEstimateFee(utxos.length)));
-      // }
-      if (isPayment && !feeInSatoshi) {//TODO
-         const feeRate = await this.getCurrentFeeRate();
-            tr.feePerKb(Number(feeRate));
+      if (isPayment && !feeInSatoshi) {
+         const feeRatePerKB = await this.getFeePerKB();
+            tr.feePerKb(Number(feeRatePerKB));
       }
       return tr;
    }
@@ -625,11 +623,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       await storeUTXOS(this.rootEm, address, mempoolUTXOs);
    }
 
-   async getCurrentFeeRate(nextBlocks: number = 2): Promise<number|null> {
+   async getCurrentFeeRate(nextBlocks: number = 2): Promise<BN> {
       try {
       const res = await this.client.get(`/fee/${nextBlocks}`);
       const rateInSatoshies = toBNExp(res.data.feerate, BTC_DOGE_DEC_PLACES);
-      return Number(rateInSatoshies) * (this.feeIncrease ?? 1.5);
+      return rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
       } catch (e) {
          logger.error(`Cannot obtain fee rate`, e);
          return getDefaultFeePerKB(this.chainType);
@@ -731,12 +729,16 @@ return submitResp;*/
    /**
     * @returns default fee per byte
     */
-   private getDefaultFeePerB(): BN {
-      if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-         return DOGE_FEE_PER_KB.divn(1000);
-      } else {
-         return BTC_FEE_PER_KB.divn(1000);
+   private async getFeePerKB(): Promise<BN> {
+      if (this.feeService) {
+         const feeStats = await this.feeService.getLatestFeeStats();
+         if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
+            return feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+         } else if (feeStats.averageFeePerKB.gtn(0)) {
+            return feeStats.averageFeePerKB.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+         }
       }
+      return await this.getCurrentFeeRate();
    }
 
    private getDefaultBlockTime() {
@@ -748,19 +750,12 @@ return submitResp;*/
    }
 
    private async getEstimateFee(inputLength: number, outputLength: number = 2): Promise<BN> {
-      let defaultFeePerB = this.getDefaultFeePerB();
-      if (this.feeService) {
-         const feeStats = await this.feeService.getLatestFeeStats();
-         if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
-            defaultFeePerB = feeStats.decilesFeePerKB[this.feeDecileIndex].divn(1000);
-         } else if (feeStats.averageFeePerKB.gtn(0)) {
-            defaultFeePerB = feeStats.averageFeePerKB.divn(1000);
-         }
-      }
+      const feePerKb = await this.getFeePerKB();
+      const feePerb = feePerKb.divn(1000);
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-         return defaultFeePerB.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
+         return feePerb.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
       } else {
-         return defaultFeePerB.muln(inputLength * UTXO_INPUT_SIZE_SEGWIT + outputLength * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT);
+         return feePerb.muln(inputLength * UTXO_INPUT_SIZE_SEGWIT + outputLength * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT);
       }
    }
 
