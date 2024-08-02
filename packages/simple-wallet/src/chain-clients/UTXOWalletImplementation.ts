@@ -125,7 +125,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    async getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN> {
       try {
          const res = await this.client.get(`/address/${account}/balance`);
-         const mainAccountBalance = toBN(res.data.balance);
+         const mainAccountBalance = toBN(res.data.confirmed);
          if (!otherAddresses) {
             return mainAccountBalance;
          } else {
@@ -481,7 +481,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       }
       if (isPayment && !feeInSatoshi) {
          const feeRatePerKB = await this.getFeePerKB();
-            tr.feePerKb(Number(feeRatePerKB));
+         tr.feePerKb(Number(feeRatePerKB));
       }
       return tr;
    }
