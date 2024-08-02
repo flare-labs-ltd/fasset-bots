@@ -7,6 +7,7 @@ import {excludeNullFields, sleepMs} from "../utils/utils";
 import {BlockStats, FeeServiceConfig} from "../interfaces/WalletTransactionInterface";
 import {toBN} from "../utils/bnutils";
 import BN from "bn.js";
+import {logger} from "../utils/logger";
 
 export class FeeService {
     client: AxiosInstance;
@@ -50,7 +51,7 @@ export class FeeService {
     }
 
     async startMonitoringFees(): Promise<void> {
-        console.info("Started monitoring fees");
+        logger.info("Started monitoring fees");
 
         while (this.monitoring) {
             const blockHeight = await this.getCurrentBlockHeight();
@@ -62,7 +63,7 @@ export class FeeService {
             const feeStats = await this.getFeeStatsFromIndexer(blockHeight);
             const blockTime = await this.getBlockTime(blockHeight);
             if (feeStats.decilesFeePerKB.length == 11 && feeStats.averageFeePerKB.gtn(0) && blockTime > 0) {
-                console.info("Updating fee history");
+                logger.info("Updating fee history");
                 this.history[this.currentHistoryIndex % this.numberOfBlocksInHistory] = {
                     blockHeight: blockHeight,
                     blockTime: blockTime,
@@ -79,7 +80,7 @@ export class FeeService {
             await sleepMs(this.sleepTimeMs);
         }
 
-        console.info("Stopped monitoring fees");
+        logger.info("Stopped monitoring fees");
     }
 
     async setupHistory() {

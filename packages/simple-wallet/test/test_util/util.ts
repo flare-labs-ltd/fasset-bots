@@ -174,25 +174,37 @@ function addConsoleTransportForTests (logger: any) {
 
 function resetMonitoringOnForceExit<T extends WriteWalletInterface>(wClient: T) {
     process.on("SIGINT", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGINT")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });
     });
     process.on("SIGTERM", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGTERM")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });
     });
     process.on("SIGQUIT", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGQUIT")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });
     });
     process.on("SIGHUP", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGHUP")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });

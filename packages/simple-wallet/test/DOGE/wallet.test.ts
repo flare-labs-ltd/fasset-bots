@@ -31,7 +31,7 @@ const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWall
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
 
 const DOGEMccConnectionTestInitial = {
-    url: process.env.DOGE_URL ?? "",
+    url: "https://blockbook.htz.matheo.si:19138/api/v2" ?? "",
     username: "",
     password: "",
     inTestnet: true,
@@ -80,6 +80,7 @@ const maxFeeInSatoshi = toBNExp(1.5, DOGE_DECIMAL_PLACES);
 
 let wClient: WALLET.DOGE;
 let fundedWallet: ICreateWalletResponse;
+let targetWallet: ICreateWalletResponse;
 
 describe("Dogecoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -97,7 +98,7 @@ describe("Dogecoin wallet tests", () => {
             enoughConfirmations: 1
         };
         wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
-
+        await wClient.stopMonitoring();
         await wClient.feeService?.setupHistory();
         void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
@@ -297,6 +298,29 @@ describe("Dogecoin wallet tests", () => {
 
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
+
+    it("Stress test", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+
+        const N_TRANSACTIONS = 50;
+
+        const ids = []
+        for (let i = 0; i < N_TRANSACTIONS; i++) {
+            let id;
+            if (Math.random() > 0.5) {
+            id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi);
+            }
+            else {
+                id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendInSatoshi, feeInSatoshi);
+            }
+            ids.push(id);
+        }
+
+        for (const id of ids) {
+            await waitForTxToFinishWithStatus(2, 900, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        }
+    })
 
 });
 

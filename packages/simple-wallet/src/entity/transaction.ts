@@ -1,7 +1,8 @@
-import { Entity, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import {Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property} from "@mikro-orm/core";
 import BN from "bn.js";
-import { ChainType } from "../utils/constants";
-import { BNType } from "../utils/orm-types";
+import {ChainType} from "../utils/constants";
+import {BNType} from "../utils/orm-types";
+import {TransactionOutputEntity} from "./transactionOutput";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
@@ -76,6 +77,9 @@ export class TransactionEntity {
 
     @Property({ onUpdate: () => new Date() })
     updatedAt: Date = new Date();
+
+    @OneToMany(() => TransactionOutputEntity, output => output.transaction)
+    outputs = new Collection<TransactionOutputEntity>(this);
 }
 
 export enum TransactionStatus {

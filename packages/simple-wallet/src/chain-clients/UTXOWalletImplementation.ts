@@ -34,8 +34,8 @@ import type {
 import BN from "bn.js";
 import {
    checkIfIsDeleting,
-   createInitialTransactionEntity,
-   failTransaction,
+   createInitialTransactionEntity, createTransactionOutputEntities,
+   failTransaction, fetchTransactionEntityByHash,
    fetchTransactionEntityById,
    fetchUnspentUTXOs,
    fetchUTXOsByTxHash,
@@ -124,16 +124,16 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     */
    async getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN> {
       try {
-         const res = await this.client.get(`/address/${account}/balance`);
+         const res = await this.client.get(`/address/${account}`);
          const mainAccountBalance = toBN(res.data.balance);
          if (!otherAddresses) {
             return mainAccountBalance;
          } else {
-            const balancePromises = otherAddresses.map(address => this.client.get(`/address/${address}/balance`));
+            const balancePromises = otherAddresses.map(address => this.client.get(`/address/${address}`));
             const balanceResponses = await Promise.all(balancePromises);
             const totalAddressesBalance = balanceResponses.reduce((sum, response) => {
-               if (response.data && typeof response.data.balance === 'number') {
-                   return sum + response.data.balance;
+               if (response.data && typeof response.data.confirmed === 'number') {
+                   return sum + response.data.confirmed;
                }
                return sum;
            }, 0);
@@ -369,6 +369,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             txEntToUpdate.reachedStatusPreparedInTimestamp = new Date().getTime();
          });
          await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
+         await createTransactionOutputEntities(this.rootEm, transaction, txEnt);
       }
    }
 
@@ -458,11 +459,16 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    ): Promise<bitcore.Transaction> {
       const isPayment = amountInSatoshi != null;
       const core = this.getCore();
-      const utxos = await this.fetchUTXOs(source, amountInSatoshi, this.getEstimatedNumberOfOutputs(amountInSatoshi, note));
+      const utxos = await this.fetchUTXOs(source, amountInSatoshi, feeInSatoshi, this.getEstimatedNumberOfOutputs(amountInSatoshi, note));
       if (amountInSatoshi == null) {
          feeInSatoshi = await this.getEstimateFee(utxos.length);
          amountInSatoshi = (await this.getAccountBalance(source)).sub(feeInSatoshi);
       }
+      logger.warn(`amount: ${amountInSatoshi}, fee: ${feeInSatoshi}, 
+      utxos - amount ${utxos.reduce((accumulator, transaction) => {   return accumulator + Number(transaction.satoshis); }, 0) - amountInSatoshi.toNumber()}
+      utxos: ${utxos.map(utxo => utxo.toString())}
+      total_utxo val: ${utxos.reduce((accumulator, transaction) => {   return accumulator + Number(transaction.satoshis); }, 0)}`);
+
       if (amountInSatoshi.lte(this.getDustAmount())) {
          throw new Error(
             `Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${this.getDustAmount().toString()}`
@@ -516,7 +522,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          logger.warn(`Transaction ${txId} does not have 'executeUntilBlock' defined`);
       }
       try {
-         const resp = await this.client.post(`/tx/send`, { rawTx: signedTx });
+         const resp = await this.client.get(`/sendtx/${signedTx}`);
          if (resp.status == 200) {
             const submittedBlockHeight = await this.getCurrentBlockHeight();
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
@@ -547,11 +553,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     * Retrieves unspent transactions in format accepted by transaction
     * @param {string} address
     * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param feeInSatoshi
     * @param {number} estimatedNumOfOutputs
     * @returns {Object[]}
     */
-   async fetchUTXOs(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<UTXO[]> {
-      const utxos = await this.listUnspent(address, amountInSatoshi, estimatedNumOfOutputs);
+   async fetchUTXOs(address: string, amountInSatoshi: BN | null, feeInSatoshi: BN | undefined,  estimatedNumOfOutputs: number): Promise<UTXO[]> {
+      const utxos = await this.listUnspent(address, amountInSatoshi, feeInSatoshi, estimatedNumOfOutputs);
       const allUTXOs: UTXO[] = [];
       for (const utxo of utxos) {
          const item = {
@@ -570,11 +577,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     * Retrieves unspent transactions
     * @param {string} address
     * @param {BN|null} amountInSatoshi - if null => empty all funds
+    * @param feeInSatoshi
     * @param {number} estimatedNumOfOutputs
     * @returns {Object[]}
     */
-   private async listUnspent(address: string, amountInSatoshi: BN | null, estimatedNumOfOutputs: number): Promise<any[]> {
+   private async listUnspent(address: string, amountInSatoshi: BN | null, feeInSatoshi: BN | undefined, estimatedNumOfOutputs: number): Promise<any[]> {
       // fetch db utxos
+      logger.info(`Listing UTXOs for address ${address}`);
       let dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address);
       // fill from mempool and refetch
       if (dbUTXOS.length == 0) {
@@ -585,21 +594,23 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          return dbUTXOS;
       }
 
-      const needed = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi);
+      const needed = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi, feeInSatoshi);
       if (needed) {
          return needed;
       }
       // not enough funds in db
       await this.fillUTXOsFromMempool(address);
       dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address);
-      const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi);
+      const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi, feeInSatoshi);
       if (neededAfter) {
          return neededAfter;
       }
       return dbUTXOS;
    }
 
-   private async returnNeededUTXOs(allUTXOS: UTXOEntity[], estimatedNumOfOutputs: number, amountInSatoshi: BN): Promise<UTXOEntity[] | null> {
+   private async returnNeededUTXOs(allUTXOS: UTXOEntity[], estimatedNumOfOutputs: number, amountInSatoshi: BN, feeInSatoshi?: BN): Promise<UTXOEntity[] | null> {
+      feeInSatoshi = feeInSatoshi ?? toBN(0);
+
       const neededUTXOs = [];
       let sum = 0;
       for (const utxo of allUTXOS) {
@@ -607,8 +618,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          const value = Number(utxo.value);
          sum += value;
          const est_fee = await this.getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
+         logger.info(`Est_fee: ${est_fee}, amountInSatoshi: ${amountInSatoshi}, feeInSatoshi: ${feeInSatoshi}`);
          // multiply estimated fee by 2 to ensure enough funds TODO: is it enough?
-         if (toBN(sum).gt(amountInSatoshi.add(est_fee.muln(2)))) {
+         if (toBN(sum).gt(amountInSatoshi.add(this.max(est_fee, feeInSatoshi).muln(2)))) {
             return neededUTXOs;
          }
       }
@@ -616,17 +628,38 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    }
 
    private async fillUTXOsFromMempool(address: string) {
-      const res = await this.client.get(`/address/${address}?unspent=true&limit=0&excludeconflicting=true`);
-      // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
-      // utxo.mintHeight > -3 => excludeConflicting; utxo.spentHeight == -2 -> unspent
-      const mempoolUTXOs = (res.data as any[]).filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2).sort((a, b) => a.value - b.value);
-      await storeUTXOS(this.rootEm, address, mempoolUTXOs);
+      const res = await this.client.get(`/utxo/${address}?confirmed=true`);
+      const utxos = [];
+
+      for (const utxo of res.data) {
+         let script;
+         try {
+            const txEnt = await fetchTransactionEntityByHash(this.rootEm, utxo.txid);
+            script = txEnt.outputs.getItems().find(output => output.vout === utxo.vout)?.script;
+         } catch (e) {
+            script = await this.getUnspentOutputScriptFromBlockbook(utxo.txid, utxo.vout);
+         }
+         utxos.push({
+            mintTxid: utxo.txid,
+            mintIndex: utxo.vout,
+            value: utxo.value,
+            script: script,
+         });
+      }
+
+      await storeUTXOS(this.rootEm, address, utxos);
+   }
+
+   private async getUnspentOutputScriptFromBlockbook(txHash: string, vout: number) {
+      const res = await this.client.get(`/tx-specific/${txHash}`);
+      return res.data.vout[vout].scriptPubKey.hex;
    }
 
    async getCurrentFeeRate(nextBlocks: number = 2): Promise<BN> {
       try {
-      const res = await this.client.get(`/fee/${nextBlocks}`);
-      const rateInSatoshies = toBNExp(res.data.feerate, BTC_DOGE_DEC_PLACES);
+      const res = await this.client.get(`/estimatefee/${nextBlocks}`);
+      const rateInSatoshies = toBNExp(res.data.result, BTC_DOGE_DEC_PLACES);
+      logger.info("Using bitcore fee");
       return rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
       } catch (e) {
          logger.error(`Cannot obtain fee rate`, e);
@@ -635,8 +668,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    }
 
    async getCurrentBlockHeight(): Promise<number> {
-      const res = await this.client.get(`/block/tip`);
-      return res.data.height;
+      const res = await this.client.get(``);
+      return res.data.blockbook.bestHeight;
    }
 
    private async waitForTransactionToAppearInMempool(txId: number, retry: number = 0): Promise<void> {
@@ -733,8 +766,10 @@ return submitResp;*/
       if (this.feeService) {
          const feeStats = await this.feeService.getLatestFeeStats();
          if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
+            logger.info("Using deciles");
             return feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
          } else if (feeStats.averageFeePerKB.gtn(0)) {
+            logger.info("Using avg");
             return feeStats.averageFeePerKB.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
          }
       }
@@ -773,5 +808,9 @@ return submitResp;*/
          return false;
       }
       return true;
+   }
+
+   private max(a: BN, b: BN): BN {
+      return a.gt(b) ? a : b;
    }
 }

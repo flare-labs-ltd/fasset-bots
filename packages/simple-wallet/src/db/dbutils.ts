@@ -7,6 +7,9 @@ import { logger } from "../utils/logger";
 import { WalletAddressEntity } from "../entity/wallet";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { UTXOEntity, SpentHeightEnum } from "../entity/utxo";
+import {Transaction} from "bitcore-lib";
+import Output = Transaction.Output;
+import {TransactionOutputEntity} from "../entity/transactionOutput";
 
 
 // transaction operations
@@ -69,6 +72,20 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
     return await rootEm.find(TransactionEntity, { status, chainType } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'], orderBy: { id: 'ASC' } });
 }
 
+export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txEnt: TransactionEntity): Promise<void> {
+    const outputEntities = transaction.outputs.map(((output, index) => transformOutputToEntity(index, output, txEnt)));
+    await rootEm.persistAndFlush(outputEntities);
+}
+
+function transformOutputToEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
+    const entity = new TransactionOutputEntity();
+    entity.transaction = transaction;
+    entity.vout = vout;
+    entity.amount = toBN(output.satoshis);
+    entity.script = JSON.parse(JSON.stringify(output)).script;
+    return entity;
+}
+
 // utxo operations
 export async function createUTXOEntity(rootEm: EntityManager, source: string, txHash: string, position: number, value: BN, script: string, spentTxHash: string | null = null): Promise<void> {
     rootEm.create(
@@ -113,7 +130,6 @@ export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolU
         } catch (e) {
             await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script);
         }
-
     }
 }
 

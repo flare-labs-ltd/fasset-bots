@@ -18,9 +18,16 @@ import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {toBNExp} from "../../src/utils/bnutils";
 import {BTC_DOGE_DEC_PLACES} from "../../src/utils/constants";
-import {addConsoleTransportForTests, loop, resetMonitoringOnForceExit, setMonitoringStatus} from "../test_util/util";
-import {fetchMonitoringState} from "../../src/utils/lockManagement";
+import {
+    addConsoleTransportForTests,
+    loop,
+    resetMonitoringOnForceExit,
+    setMonitoringStatus,
+    waitForTxToFinishWithStatus
+} from "../test_util/util";
+import {fetchMonitoringState, updateMonitoringState} from "../../src/utils/lockManagement";
 import {logger} from "../../src/utils/logger";
+import BN from "bn.js";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
@@ -65,11 +72,12 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 // first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
 
 const amountToSendSatoshi = toBN(10000);
-const feeInSatoshi = toBN(120000);
+const feeInSatoshi = toBN(1200);
 const maxFeeInSatoshi = toBN(110000);
 
 let wClient: WALLET.BTC;
 let fundedWallet: ICreateWalletResponse;
+let targetWallet: ICreateWalletResponse;
 
 describe("Bitcoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -91,6 +99,8 @@ describe("Bitcoin wallet tests", () => {
         await wClient.feeService?.setupHistory();
         void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
+
+        await sleepMs(200);
 
         resetMonitoringOnForceExit(wClient);
     });
@@ -180,6 +190,35 @@ describe("Bitcoin wallet tests", () => {
         const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, null, null, "Note", maxFeeInSatoshi);
 
         expect(transaction.getFee()).to.be.gt(0);
+    });
+
+    it("Should get account balance", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const accountBalance = await wClient.getAccountBalance(fundedWallet.address);
+        expect(accountBalance.gt(new BN(0))).to.be.true;
+    });
+
+    it("Stress test", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+
+        const N_TRANSACTIONS = 15;
+
+        const ids = []
+        for (let i = 0; i < N_TRANSACTIONS; i++) {
+            let id;
+            // if (Math.random() > 0.5) {
+            id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi.muln(2));
+            // }
+            // else {
+            //     id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendSatoshi, feeInSatoshi);
+            // }
+            ids.push(id);
+        }
+
+        while (1) {
+            await sleepMs(2000);
+        }
     });
 
     //TODO
