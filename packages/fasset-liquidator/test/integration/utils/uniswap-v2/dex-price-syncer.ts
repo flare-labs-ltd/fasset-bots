@@ -61,8 +61,12 @@ export class DexFtsoPriceSyncer {
 
     public async run(config: DexFtsoPriceSyncerConfig, greedySpend: boolean): Promise<void> {
         while (true) {
-            await this.syncDex(config, greedySpend)
-            await sleep(DEX_SYNC_SLEEP_MS)
+            try {
+                await this.syncDex(config, greedySpend)
+                await sleep(DEX_SYNC_SLEEP_MS)
+            } catch (error) {
+                console.error("Error syncing dexes", error)
+            }
         }
     }
 
