@@ -3,6 +3,8 @@ import { JsonRpcProvider, Wallet } from "ethers"
 import { storeLatestDeploy } from "./utils"
 import { deployLiquidator, deployChallenger, deployUniswapV2, deployFlashLender, deployUniswapV2Mock } from "./deploy"
 import { DexFtsoPriceSyncerConfig, DexFtsoPriceSyncer } from "../test/integration/utils/uniswap-v2/dex-price-syncer"
+import { addLiquidity } from "../test/integration/utils/uniswap-v2/wrappers"
+import { getContracts } from "../test/integration/utils/contracts"
 import { ASSET_MANAGER_ADDRESSES, DEX_POOLS } from "../test/config"
 import type { Signer } from "ethers"
 import type { NetworkAddressesJson } from "../test/integration/utils/interfaces/addresses"
@@ -19,6 +21,7 @@ let signer: Signer | undefined
 program
     .option("-n, --network <coston|flare>", "network to deploy to", "coston")
     .option("-e, --env-path <env-path>", "path to the file with private key and rpc url", ".env")
+    .option("-f, --f-asset <fTestXRP>", "address of the relevant f-asset", "FTestXRP")
     .hook("preAction", (cmd) => {
         const opts = cmd.opts()
         // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -52,9 +55,8 @@ program
 program
     .command("coston-beta").description("methods regarding used dex")
     .argument("action <sync-dex|remove-liquidity|wrap-wnat|unwrap-wnat|run-dex-sync-bot>", "action to perform")
-    .option("-f, --f-asset <fTestXRP>", "address of the relevant f-asset", "FTestXRP")
     .option("-m, --max-spend-ratio <number>", "maximum ratio of the balance willing to spend in this tx")
-    .option("--greedy <boolean>", "whether to not distribute spendings evenly across pools (if balance runs out, not all pools will be affected by your action)", false)
+    .option("--greedy", "whether to not distribute spendings evenly across pools (if balance runs out, not all pools will be affected by your action)", false)
     .action(async (action: string, _opts: OptionValues) => {
         const opts = { ..._opts, ...program.opts() }
         const assetManager = getAssetManagerAddress(opts.network, opts.fAsset)
@@ -80,6 +82,24 @@ program
         } else if (action === "unwrap-wnat") {
             await manipulator.unwrapWNat()
         }
+    })
+program
+    .command("add-liquidity").description("add liquidity to a dex pool")
+    .argument("<token>", "first token name")
+    .option("-pA <percent>", "percent of spending of token A", "100")
+    .option("-pB <percent>", "percent of spending of token B", "100")
+    .action(async (token: string, _opts: OptionValues) => {
+        const opts = { ..._opts, ...program.opts() }
+        const assetManagerAddress = getAssetManagerAddress(opts.network, opts.fAsset)
+        const contracts = await getContracts(assetManagerAddress, opts.network, provider)
+        const tokenA = (token.toLowerCase() === "wnat") ? contracts.wNat : contracts.collaterals[token]
+        const tokenB = contracts.fAsset
+        const balanceA = await tokenA.balanceOf(signer!.getAddress())
+        const balanceB = await tokenB.balanceOf(signer!.getAddress())
+        const amountA = balanceA * BigInt(opts.PA) / BigInt(100)
+        const amountB = balanceB * BigInt(opts.PB) / BigInt(100)
+        await addLiquidity(contracts.uniswapV2, tokenA, tokenB, amountA, amountB, signer!, provider)
+        console.log(`Added liquidity to ${token}/${opts.fAsset} pool`)
     })
 
 program.parseAsync(process.argv).catch((error) => {

@@ -1,9 +1,11 @@
-import { priceBasedAddedDexReserves, swapToDexPrice } from "../../../calculations/calculations"
+import { priceBasedAddedDexReserves, relativePriceErrorBips, relativeTokenDexPrice, relativeTokenPrice, swapToDexPrice } from "../../../calculations/calculations"
 import { addLiquidity, swap, safelyGetReserves } from "./wrappers"
-import { logCappingDesiredSwapAmount, logSwapping } from "./log-format"
+import { logCappingDesiredSwapAmount, logPoolAlreadySynced, logSwapping } from "./log-format"
 import type { JsonRpcProvider, Signer } from "ethers"
 import type { IERC20Metadata, IPriceReader, IUniswapV2Router } from "../../../../types"
 
+
+const MAX_RELATIVE_PRICE_ERROR_BIPS = BigInt(100) // 1%
 
 export async function syncDexReservesWithFtsoPrices(
     uniswapV2: IUniswapV2Router,
@@ -19,8 +21,8 @@ export async function syncDexReservesWithFtsoPrices(
     addInitialLiquidity = true
 ): Promise<void> {
     // get ftso prices of all relevant symbols
-    const { 0: priceA, 2: decimalsA } = await priceReader.getPrice(symbolA)
-    const { 0: priceB, 2: decimalsB } = await priceReader.getPrice(symbolB)
+    const { _price: priceA, _priceDecimals: decimalsA } = await priceReader.getPrice(symbolA)
+    const { _price: priceB, _priceDecimals: decimalsB } = await priceReader.getPrice(symbolB)
     if (decimalsA != BigInt(5) || decimalsB != BigInt(5)) throw Error("Token price has non-5 ftso decimals")
     // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances by swapping
     const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
@@ -31,8 +33,15 @@ export async function syncDexReservesWithFtsoPrices(
             maxA, maxB, signer, provider
         )
     } else if (reserveA > BigInt(0) && reserveB > BigInt(0)) {
-        // if there are reserves swap first, then add liquidity
-        await swapDexPairToPrice(uniswapV2, tokenA, tokenB, symbolA, symbolB, priceA, priceB, maxA, maxB, signer, provider)
+        // if there are already reserves, sync prices if necessary
+        const priceDex = relativeTokenDexPrice(reserveA, reserveB, decimalsA, decimalsB)
+        const priceFtso = relativeTokenPrice(priceA, priceB)
+        console.log(relativePriceErrorBips(priceDex, priceFtso))
+        if (relativePriceErrorBips(priceDex, priceFtso) > MAX_RELATIVE_PRICE_ERROR_BIPS) {
+            await swapDexPairToPrice(uniswapV2, tokenA, tokenB, symbolA, symbolB, priceA, priceB, maxA, maxB, signer, provider)
+        } else {
+            logPoolAlreadySynced(symbolA, symbolB)
+        }
     } else {
         console.error('sync dex reserves: no reserves to sync')
     }
@@ -104,6 +113,6 @@ export async function swapDexPairToPrice(
         logSwapping(swapB, symbolB, symbolA, decimalsB)
         await swap(uniswapV2, tokenB, tokenA, swapB, signer, provider)
     } else {
-        console.error(`pool (${symbolA}, ${symbolB}) is already in sync with ftso prices`)
+        logPoolAlreadySynced(symbolA, symbolB)
     }
 }

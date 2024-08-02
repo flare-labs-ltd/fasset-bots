@@ -1,6 +1,7 @@
 import type {
-    IWNat, FlashLender, IUniswapV2Router,
-    IIAssetManager, IERC20Metadata, FakePriceReader, FakeERC20
+    IWNat, IUniswapV2Router,
+    IIAssetManager, IERC20Metadata, FakePriceReader, FakeERC20,
+    IERC3156FlashLender
 } from '../../../../types'
 
 /**
@@ -14,7 +15,7 @@ export interface BaseContracts {
     collaterals: { [name: string]: FakeERC20 }
     wNat: IWNat & IERC20Metadata
     uniswapV2: IUniswapV2Router
-    flashLender: FlashLender
+    flashLender: IERC3156FlashLender
 }
 
 export interface FAssetContracts {

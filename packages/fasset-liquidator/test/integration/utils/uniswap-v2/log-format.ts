@@ -30,3 +30,9 @@ export function logRemovedLiquidity(
     const log = `removed ${removedA_f} ${symbolA} and ${removedB_f} ${symbolB} from pool`
     console.log(log)
 }
+
+export function logPoolAlreadySynced(
+    symbolA: string, symbolB: string
+): void {
+    console.log(`pool (${symbolA}, ${symbolB}) is already in sync with ftso prices`)
+}

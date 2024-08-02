@@ -65,7 +65,7 @@ export class DexFtsoPriceSyncer {
                 await this.syncDex(config, greedySpend)
                 await sleep(DEX_SYNC_SLEEP_MS)
             } catch (error) {
-                console.error("Error syncing dexes", error)
+                console.error("Error runninx DexFtsoPriceSyncer bot", error)
             }
         }
     }
@@ -78,13 +78,17 @@ export class DexFtsoPriceSyncer {
             const tokenA = this.symbolToToken.get(pool.symbolA)!
             const tokenB = this.symbolToToken.get(pool.symbolB)!
             // sync pool with the ftso price
-            await syncDexReservesWithFtsoPrices(
-                this.contracts.uniswapV2, this.contracts.priceReader,
-                tokenA, tokenB, pool.symbolA, pool.symbolB,
-                config.maxAbsoluteSpendings[pool.symbolA],
-                config.maxAbsoluteSpendings[pool.symbolB],
-                this.signer, this.provider, true
-            )
+            try {
+                await syncDexReservesWithFtsoPrices(
+                    this.contracts.uniswapV2, this.contracts.priceReader,
+                    tokenA, tokenB, pool.symbolA, pool.symbolB,
+                    config.maxAbsoluteSpendings[pool.symbolA],
+                    config.maxAbsoluteSpendings[pool.symbolB],
+                    this.signer, this.provider, true
+                )
+            } catch (error) {
+                console.error(`Error syncing pool (${pool.symbolA}, ${pool.symbolB})`, error)
+            }
         }
     }
 
@@ -119,8 +123,8 @@ export class DexFtsoPriceSyncer {
     }
 
     public async getFtsoPriceForPair(symbolA: string, symbolB: string): Promise<bigint> {
-        const { 0: priceA } = await this.contracts.priceReader.getPrice(symbolA)
-        const { 0: priceB } = await this.contracts.priceReader.getPrice(symbolB)
+        const { _price: priceA } = await this.contracts.priceReader.getPrice(symbolA)
+        const { _price: priceB } = await this.contracts.priceReader.getPrice(symbolB)
         return relativeTokenPrice(priceA, priceB)
     }
 

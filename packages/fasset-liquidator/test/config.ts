@@ -10,7 +10,7 @@ export const FTSO_SYMBOLS = {
 }
 export const ASSET_MANAGER_ADDRESSES = {
     "coston": {
-        FTestXRP: "0x72995b59d89B0Dc7853a5Da1E16D6940522f2D7B"
+        FTestXRP: "0x901E620B91fBFa32f68738Ef9027Cdb76F21d208"
     }
 }
 export const DEX_POOLS = {
