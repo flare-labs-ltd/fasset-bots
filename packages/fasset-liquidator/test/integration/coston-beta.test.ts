@@ -8,7 +8,7 @@ import "dotenv/config"
 import { expect } from 'chai'
 import { abs } from "../utils"
 import { swap } from "./utils/uniswap-v2/wrappers"
-import { DexFtsoPriceSyncer } from "./utils/uniswap-v2/dex-manipulator"
+import { DexFtsoPriceSyncer } from "./utils/uniswap-v2/dex-price-syncer"
 import { FASSET_MAX_BIPS, PRICE_PRECISION } from "../constants"
 import { FTSO_SYMBOLS, ASSET_MANAGER_ADDRESSES, DEX_POOLS } from "../config"
 

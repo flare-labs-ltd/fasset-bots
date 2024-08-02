@@ -21,7 +21,7 @@ export interface PoolConfig {
     symbolB: string
 }
 
-export type Config = {
+export type DexFtsoPriceSyncerConfig = {
     maxRelativeSpendings?: MaxRelativeSpendings
     maxAbsoluteSpendings?: MaxAbsoluteSpendings
     pools: PoolConfig[]
@@ -59,14 +59,14 @@ export class DexFtsoPriceSyncer {
         ])
     }
 
-    public async run(config: Config, greedySpend: boolean): Promise<void> {
+    public async run(config: DexFtsoPriceSyncerConfig, greedySpend: boolean): Promise<void> {
         while (true) {
             await this.syncDex(config, greedySpend)
             await sleep(DEX_SYNC_SLEEP_MS)
         }
     }
 
-    public async syncDex(config: Config, greedySpend: boolean): Promise<void> {
+    public async syncDex(config: DexFtsoPriceSyncerConfig, greedySpend: boolean): Promise<void> {
         if (config.maxAbsoluteSpendings === undefined) {
             config.maxAbsoluteSpendings = await this.distributeSpendings(config, greedySpend)
         }
@@ -129,7 +129,7 @@ export class DexFtsoPriceSyncer {
 
     // determine amounts of max tokens to be spent for each token from user's specified balance percentages
     // greedy determines whether to spend all tokens on a single pair or distribute them across all pairs
-    private async distributeSpendings(config: Config, greedy: boolean): Promise<MaxAbsoluteSpendings> {
+    private async distributeSpendings(config: DexFtsoPriceSyncerConfig, greedy: boolean): Promise<MaxAbsoluteSpendings> {
         const maxSpent: MaxAbsoluteSpendings = {}
         for (const pairs of config.pools) {
             for (const symbol of [pairs.symbolA, pairs.symbolB]) {

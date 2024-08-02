@@ -2,7 +2,7 @@ import { Command, OptionValues } from "commander"
 import { JsonRpcProvider, Wallet } from "ethers"
 import { storeLatestDeploy } from "./utils"
 import { deployLiquidator, deployChallenger, deployUniswapV2, deployFlashLender, deployUniswapV2Mock } from "./deploy"
-import { Config, DexFtsoPriceSyncer } from "../test/integration/utils/uniswap-v2/dex-manipulator"
+import { DexFtsoPriceSyncerConfig, DexFtsoPriceSyncer } from "../test/integration/utils/uniswap-v2/dex-price-syncer"
 import { ASSET_MANAGER_ADDRESSES, DEX_POOLS } from "../test/config"
 import type { Signer } from "ethers"
 import type { NetworkAddressesJson } from "../test/integration/utils/interfaces/addresses"
@@ -64,7 +64,7 @@ program
             if (Number(opts.slippage === undefined + opts.volume === undefined) == 1) {
                 throw Error("slippage and volume are not well-defined without each other")
             }
-            const config: Config = {
+            const config: DexFtsoPriceSyncerConfig = {
                 maxRelativeSpendings: opts.maxSpendRatio,
                 pools: liquidityPools.map(([symbolA, symbolB]) => ({ symbolA, symbolB }))
             }
