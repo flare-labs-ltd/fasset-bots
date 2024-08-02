@@ -1,11 +1,11 @@
 import { priceBasedAddedDexReserves, relativePriceErrorBips, relativeTokenDexPrice, relativeTokenPrice, swapToDexPrice } from "../../../calculations/calculations"
 import { addLiquidity, swap, safelyGetReserves } from "./wrappers"
-import { logCappingDesiredSwapAmount, logPoolAlreadySynced, logSwapping } from "./log-format"
+import { logCappingDesiredSwapAmount, logPoolAlreadySynced, logPoolOutOfSync, logSwapping } from "./log-format"
 import type { JsonRpcProvider, Signer } from "ethers"
 import type { IERC20Metadata, IPriceReader, IUniswapV2Router } from "../../../../types"
 
 
-const MAX_RELATIVE_PRICE_ERROR_BIPS = BigInt(100) // 1%
+const MAX_RELATIVE_PRICE_ERROR_BIPS = BigInt(300) // 3%
 
 export async function syncDexReservesWithFtsoPrices(
     uniswapV2: IUniswapV2Router,
@@ -34,13 +34,14 @@ export async function syncDexReservesWithFtsoPrices(
         )
     } else if (reserveA > BigInt(0) && reserveB > BigInt(0)) {
         // if there are already reserves, sync prices if necessary
-        const priceDex = relativeTokenDexPrice(reserveA, reserveB, decimalsA, decimalsB)
-        const priceFtso = relativeTokenPrice(priceA, priceB)
-        console.log(relativePriceErrorBips(priceDex, priceFtso))
-        if (relativePriceErrorBips(priceDex, priceFtso) > MAX_RELATIVE_PRICE_ERROR_BIPS) {
+        const priceOnDex = relativeTokenDexPrice(reserveA, reserveB, decimalsA, decimalsB)
+        const priceOnFtso = relativeTokenPrice(priceA, priceB)
+        const priceError = relativePriceErrorBips(priceOnDex, priceOnFtso)
+        if (priceError > MAX_RELATIVE_PRICE_ERROR_BIPS) {
+            logPoolOutOfSync(symbolA, symbolB, priceError)
             await swapDexPairToPrice(uniswapV2, tokenA, tokenB, symbolA, symbolB, priceA, priceB, maxA, maxB, signer, provider)
         } else {
-            logPoolAlreadySynced(symbolA, symbolB)
+            logPoolAlreadySynced(symbolA, symbolB, priceError)
         }
     } else {
         console.error('sync dex reserves: no reserves to sync')

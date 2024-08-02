@@ -32,7 +32,14 @@ export function logRemovedLiquidity(
 }
 
 export function logPoolAlreadySynced(
-    symbolA: string, symbolB: string
+    symbolA: string, symbolB: string, priceError?: bigint
 ): void {
-    console.log(`pool (${symbolA}, ${symbolB}) is already in sync with ftso prices`)
+    const add = (priceError !== undefined) ? ` with price error ${priceError} bips` : ""
+    console.log(`pool (${symbolA}, ${symbolB}) is already in sync with ftso prices${add}`)
+}
+
+export function logPoolOutOfSync(
+    symbolA: string, symbolB: string, priceError: bigint
+): void {
+    console.log(`pool (${symbolA}, ${symbolB}) is out of sync with ftso prices by ${priceError} bips`)
 }

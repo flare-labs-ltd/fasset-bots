@@ -86,8 +86,8 @@ export class DexFtsoPriceSyncer {
                     config.maxAbsoluteSpendings[pool.symbolB],
                     this.signer, this.provider, true
                 )
-            } catch (error) {
-                console.error(`Error syncing pool (${pool.symbolA}, ${pool.symbolB})`, error)
+            } catch (error: any) {
+                console.error(`Error syncing pool (${pool.symbolA}, ${pool.symbolB})`, error.toString())
             }
         }
     }
