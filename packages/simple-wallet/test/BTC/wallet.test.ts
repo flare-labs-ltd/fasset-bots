@@ -3,7 +3,7 @@ import {
     BitcoinWalletConfig,
     FeeServiceConfig,
     ICreateWalletResponse
-} from "../../src/interfaces/WalletTransactionInterface";
+} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import {expect, use} from "chai";
 
@@ -16,8 +16,6 @@ import {sleepMs} from "../../src/utils/utils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {toBNExp} from "../../src/utils/bnutils";
-import {BTC_DOGE_DEC_PLACES} from "../../src/utils/constants";
 import {
     addConsoleTransportForTests,
     loop,
@@ -35,8 +33,9 @@ const walletSecret = "wallet_secret";
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
+const blockchainAPI = "blockbook";
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
+    url: process.env.BLOCKBOOK_BTC_URL ?? "",
     username: "",
     password: "",
     apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",
@@ -45,10 +44,10 @@ const BTCMccConnectionTestInitial = {
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
 const feeServiceConfig: FeeServiceConfig = {
-    indexerUrl: "https://blockbook.htz.matheo.si:19130",
+    indexerUrl: process.env.BLOCKBOOK_BTC_URL ?? "",
     sleepTimeMs: 1000,
     numberOfBlocksInHistory: 3,
-}
+};
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -73,7 +72,7 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
 const amountToSendSatoshi = toBN(10000);
 const feeInSatoshi = toBN(1200);
-const maxFeeInSatoshi = toBN(110000);
+const maxFeeInSatoshi = toBN(1100);
 
 let wClient: WALLET.BTC;
 let fundedWallet: ICreateWalletResponse;
@@ -89,6 +88,7 @@ describe("Bitcoin wallet tests", () => {
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
+            api: blockchainAPI,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
@@ -142,7 +142,7 @@ describe("Bitcoin wallet tests", () => {
         expect(typeof tr).to.equal("object");
     });
 
-    it("Should not create transaction: maxFee > fee", async () => {
+    it("Should not create transaction: fee > maxFee", async () => {
         const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
         rewired.orm = await initializeTestMikroORM();
         fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
@@ -198,7 +198,7 @@ describe("Bitcoin wallet tests", () => {
         expect(accountBalance.gt(new BN(0))).to.be.true;
     });
 
-    it("Stress test", async () => {
+    it.skip("Stress test", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
 

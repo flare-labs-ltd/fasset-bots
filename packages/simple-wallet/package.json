@@ -39,6 +39,7 @@
     "dependencies": {
         "@mikro-orm/core": "5.8.4",
         "@mikro-orm/knex": "5.8.4",
+        "@mikro-orm/mysql": "5.8.4",
         "@mikro-orm/sqlite": "5.8.4",
         "@types/bitcore-lib": "0.15.6",
         "@types/bn.js": "5.1.5",

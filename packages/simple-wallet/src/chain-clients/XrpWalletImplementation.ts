@@ -17,7 +17,7 @@ import type {
    SignedObject,
    TransactionInfo,
    IWalletKeys,
-} from "../interfaces/WalletTransactionInterface";
+} from "../interfaces/IWalletTransaction";
 import BN from "bn.js";
 import {
    updateTransactionEntity,
@@ -365,7 +365,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
          await failTransaction(this.rootEm, tx.id, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
          return;
-      } else if (tx.executeUntilTimestamp && currentTimestamp >= tx.executeUntilTimestamp) {
+      } else if (tx.executeUntilTimestamp && currentTimestamp >= tx.executeUntilTimestamp.getTime()) {
          await failTransaction(this.rootEm, tx.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${tx.executeUntilTimestamp}`);
          return;
       }
@@ -391,7 +391,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEnt.raw = Buffer.from(JSON.stringify(transaction));
             txEnt.executeUntilBlock = transaction.LastLedgerSequence;
             txEnt.status = TransactionStatus.TX_PREPARED;
-            txEnt.reachedStatusPreparedInTimestamp = new Date().getTime();
+            txEnt.reachedStatusPreparedInTimestamp = new Date();
          });
          await this.signAndSubmitProcess(tx.id, privateKey, transaction);
       }
@@ -402,7 +402,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       if (txResp.data.result.validated) {
          await updateTransactionEntity(this.rootEm, tx.id, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
-            txEnt.reachedFinalStatusInTimestamp = new Date().getTime();
+            txEnt.reachedFinalStatusInTimestamp = new Date();
          });
          logger.info(`Transaction ${tx.id} was accepted`);
       } else {
@@ -412,7 +412,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
             await failTransaction(this.rootEm, tx.id, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
             //TODO sanity check [Account Sequence is less than or equal to transaction Sequence] => all good
-         } else if (tx.executeUntilTimestamp && currentTimestamp >= tx.executeUntilTimestamp) {
+         } else if (tx.executeUntilTimestamp && currentTimestamp >= tx.executeUntilTimestamp.getTime()) {
             await failTransaction(this.rootEm, tx.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${tx.executeUntilTimestamp}`);
          }
       }
@@ -432,7 +432,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       }
       if (txStatus == TransactionStatus.TX_PENDING) {
          await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
-            txEnt.reachedStatusPendingInTimestamp = new Date().getTime();
+            txEnt.reachedStatusPendingInTimestamp = new Date();
          })
          if (await this.checkIfTransactionAppears(txId)) {
             return
@@ -456,7 +456,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             // transaction completed - update tx in db
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUCCESS;
-               txEnt.reachedFinalStatusInTimestamp = new Date().getTime();
+               txEnt.reachedFinalStatusInTimestamp = new Date();
             });
             logger.info(`Transaction ${txId} was accepted`);
             return true;
@@ -484,12 +484,12 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             originalTx.reference,
             originalTx.maxFee,
             originalTx.executeUntilBlock,
-            originalTx.executeUntilTimestamp
+            originalTx.executeUntilTimestamp?.getTime()
          );
          await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_REPLACED;
             txEnt.replaced_by = resubmittedTx;
-            txEnt.reachedFinalStatusInTimestamp = new Date().getTime();
+            txEnt.reachedFinalStatusInTimestamp = new Date();
          });
          const signed = await this.signTransaction(newTransaction, privateKey);
          const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
@@ -590,7 +590,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          return TransactionStatus.TX_FAILED;
       } else if (!transaction.executeUntilBlock) {
          logger.warn(`Transaction ${txDbId} does not have 'executeUntilBlock' defined`);
-      } else if (transaction.executeUntilTimestamp && currentTimestamp >= transaction.executeUntilTimestamp) {
+      } else if (transaction.executeUntilTimestamp && currentTimestamp >= transaction.executeUntilTimestamp.getTime()) {
          await failTransaction(this.rootEm, transaction.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}`);
          return TransactionStatus.TX_FAILED;
       }
@@ -599,7 +599,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          if (originalTx.Sequence! + DELETE_ACCOUNT_OFFSET > currentLedger) {
             logger.warn(`AccountDelete transaction ${txDbId} does not yet satisfy requirements: sequence ${originalTx.Sequence}, currentLedger ${currentLedger}`);
             await updateTransactionEntity(this.rootEm, txDbId, async (txEnt: TransactionEntity) => {
-               txEnt.reachedStatusPreparedInTimestamp = new Date().getTime();
+               txEnt.reachedStatusPreparedInTimestamp = new Date();
             })
             return TransactionStatus.TX_PREPARED;
          }
@@ -627,7 +627,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             await updateTransactionEntity(this.rootEm, txDbId, async (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUBMITTED;
                txEnt.submittedInBlock = res.data.result.validated_ledger_index;
-               txEnt.submittedInTimestamp = new Date().getTime();
+               txEnt.submittedInTimestamp = new Date();
                txEnt.serverSubmitResponse = Buffer.from(JSON.stringify(res.data.result));
             });
             logger.info(`Transaction ${txDbId} was submitted`);
@@ -639,7 +639,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       } catch (e) {
          await updateTransactionEntity(this.rootEm, txDbId, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_PENDING;
-            txEnt.reachedStatusPendingInTimestamp = new Date().getTime();
+            txEnt.reachedStatusPendingInTimestamp = new Date();
          });
          logger.error(`Transaction ${txDbId} submission failed`, e);
          return TransactionStatus.TX_PENDING;

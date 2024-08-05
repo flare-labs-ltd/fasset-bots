@@ -2,7 +2,7 @@ import {WALLET} from "../../src";
 import {
     ICreateWalletResponse,
     RippleWalletConfig,
-} from "../../src/interfaces/WalletTransactionInterface";
+} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import {expect, use} from "chai";
 import WAValidator from "wallet-address-validator";

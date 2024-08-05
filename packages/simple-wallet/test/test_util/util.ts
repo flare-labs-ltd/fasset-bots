@@ -1,4 +1,4 @@
-import {TransactionInfo, type WriteWalletInterface} from "../../src/interfaces/WalletTransactionInterface";
+import {TransactionInfo, type WriteWalletInterface} from "../../src/interfaces/IWalletTransaction";
 import {TransactionEntity, TransactionStatus} from "../../src/entity/transaction";
 import {sleepMs} from "../../src/utils/utils";
 import {ChainType} from "../../src/utils/constants";

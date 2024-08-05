@@ -2,7 +2,7 @@ import { RequiredEntityData, FilterQuery, EntityManager } from "@mikro-orm/core"
 import BN from "bn.js";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
-import { TransactionInfo } from "../interfaces/WalletTransactionInterface";
+import { TransactionInfo } from "../interfaces/IWalletTransaction";
 import { logger } from "../utils/logger";
 import { WalletAddressEntity } from "../entity/wallet";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
@@ -176,7 +176,7 @@ export async function handleMissingPrivateKey(rootEm: EntityManager, txId: numbe
 export async function failTransaction(rootEm: EntityManager, txId: number, reason: string, error?: Error): Promise<void> {
     await updateTransactionEntity(rootEm, txId, async (txEnt) => {
         txEnt.status = TransactionStatus.TX_FAILED;
-        txEnt.reachedFinalStatusInTimestamp = new Date().getTime();
+        txEnt.reachedFinalStatusInTimestamp = new Date();
     });
     if (error) {
         logger.error(`Transaction ${txId} failed: ${reason}`, error);

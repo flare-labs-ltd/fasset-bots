@@ -11,7 +11,7 @@ import {
    LOCK_ADDRESS_FACTOR,
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "./constants";
-import { StuckTransaction } from "../interfaces/WalletTransactionInterface";
+import { StuckTransaction } from "../interfaces/IWalletTransaction";
 import BN from "bn.js";
 import { toBN, toBNExp } from "./bnutils";
 

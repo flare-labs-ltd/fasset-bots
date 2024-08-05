@@ -1,4 +1,4 @@
-import { RateLimitOptions } from "../interfaces/WalletTransactionInterface";
+import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { toBNExp } from "./bnutils";
 
 export const LOCK_ADDRESS_FACTOR = 1.2;
@@ -90,6 +90,10 @@ export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
    ...DEFAULT_RATE_LIMIT_OPTIONS,
    timeoutMs: 20000,
 };
+
+export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
+   timeoutMs: 500,
+}
 
 // Approximate times between blocks, in milliseconds
 export const BTC_LEDGER_CLOSE_TIME_MS = 600000; // 10min

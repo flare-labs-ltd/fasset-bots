@@ -92,9 +92,11 @@ export interface StuckTransaction {
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
+export type BlockchainAPI = "bitcore" | "blockbook";
 
 export interface BaseWalletConfig {
    url: string;
+   api: BlockchainAPI;
    inTestnet?: boolean;
    apiTokenKey?: string;
    username?: string; // probably never used

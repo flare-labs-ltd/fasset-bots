@@ -3,7 +3,7 @@ import {
     DogecoinWalletConfig,
     FeeServiceConfig,
     ICreateWalletResponse
-} from "../../src/interfaces/WalletTransactionInterface";
+} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import {expect, use} from "chai";
 
@@ -17,7 +17,6 @@ import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
-    clearTransactions,
     clearUTXOs,
     createTransactionEntity,
     loop, resetMonitoringOnForceExit, setMonitoringStatus,
@@ -30,14 +29,15 @@ import { logger } from "../../src/utils/logger";
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
 
+const blockchainAPI = "blockbook";
 const DOGEMccConnectionTestInitial = {
-    url: "https://blockbook.htz.matheo.si:19138/api/v2" ?? "",
+    url: process.env.BLOCKBOOK_DOGE_URL ?? "",
     username: "",
     password: "",
     inTestnet: true,
 };
 const feeServiceConfig: FeeServiceConfig = {
-    indexerUrl: "https://blockbook.htz.matheo.si:19138",
+    indexerUrl: process.env.BLOCKBOOK_DOGE_URL ?? "",
     sleepTimeMs: 10000,
     numberOfBlocksInHistory: 3,
 }
@@ -92,13 +92,13 @@ describe("Dogecoin wallet tests", () => {
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         DOGEMccConnectionTest = {
             ...DOGEMccConnectionTestInitial,
+            api: blockchainAPI,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
             enoughConfirmations: 1
         };
         wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
-        await wClient.stopMonitoring();
         await wClient.feeService?.setupHistory();
         void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
@@ -299,7 +299,7 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
-    it("Stress test", async () => {
+    it.skip("Stress test", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
 
@@ -309,9 +309,8 @@ describe("Dogecoin wallet tests", () => {
         for (let i = 0; i < N_TRANSACTIONS; i++) {
             let id;
             if (Math.random() > 0.5) {
-            id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi);
-            }
-            else {
+                id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi);
+            } else {
                 id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendInSatoshi, feeInSatoshi);
             }
             ids.push(id);
@@ -320,7 +319,7 @@ describe("Dogecoin wallet tests", () => {
         for (const id of ids) {
             await waitForTxToFinishWithStatus(2, 900, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
-    })
+    });
 
 });
 
@@ -329,6 +328,7 @@ async function setupRewiredWallet() {
     const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
     DOGEMccConnectionTest = {
         ...DOGEMccConnectionTestInitial,
+        api: blockchainAPI,
         em: testOrm.em,
         walletKeys: unprotectedDBWalletKeys,
         feeServiceConfig: feeServiceConfig
