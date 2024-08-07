@@ -1,9 +1,10 @@
-import axios from "axios";
+import {AxiosResponse} from "axios";
 
 export interface IBlockchainAPI {
+
     getAccountBalance(account: string): Promise<number | undefined>;
 
-    sendTransaction(tx: string): Promise<axios.AxiosResponse>;
+    sendTransaction(tx: string): Promise<AxiosResponse>;
 
     getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]>;
 
@@ -11,7 +12,7 @@ export interface IBlockchainAPI {
 
     getCurrentBlockHeight(): Promise<number>;
 
-    getTransaction(txHash: string | undefined): Promise<axios.AxiosResponse>;
+    getTransaction(txHash: string | undefined): Promise<AxiosResponse>;
 }
 
 export interface MempoolUTXO {

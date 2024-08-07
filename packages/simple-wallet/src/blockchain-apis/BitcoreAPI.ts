@@ -3,7 +3,6 @@ import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
 import {DEFAULT_RATE_LIMIT_OPTIONS} from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import {RateLimitOptions} from "../interfaces/IWalletTransaction";
-import {EntityManager} from "@mikro-orm/core";
 
 export class BitcoreAPI implements IBlockchainAPI {
     private client: AxiosInstance;

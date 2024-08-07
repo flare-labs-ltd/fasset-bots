@@ -25,6 +25,7 @@ import {
 import BN from "bn.js";
 import {fetchMonitoringState} from "../../src/utils/lockManagement";
 import { logger } from "../../src/utils/logger";
+import {sleepMs} from "../../src/utils/utils";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
@@ -143,19 +144,6 @@ describe("Dogecoin wallet tests", () => {
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
-
-    // it("Should prepare and execute transactions", async () => {
-    //    fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-    //    const note0 = "00000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-    //    const note1 = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-    //    const note2 = "20000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-    //    const resp0 = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note0);
-    //    expect(typeof resp0).to.equal("object");
-    //    const resp1 = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note1);
-    //    expect(typeof resp1).to.equal("object");
-    //    const resp2 = await wClient.prepareAndExecuteTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note2);
-    //    expect(typeof resp2).to.equal("object");
-    // });
 
     it("Should not submit transaction: fee > maxFee", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
@@ -319,6 +307,15 @@ describe("Dogecoin wallet tests", () => {
         for (const id of ids) {
             await waitForTxToFinishWithStatus(2, 900, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
+    });
+
+    it("Transaction with a too low fee should be updated with a higher fee", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const startFee = toBNExp(0.0000000000001, 0);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, startFee, note, undefined);
+        expect(id).to.be.gt(0);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        expect(txEnt.fee?.toNumber()).to.be.gt(startFee.toNumber());
     });
 
 });

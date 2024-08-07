@@ -9,7 +9,7 @@ import {expect, use} from "chai";
 
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import {toBN} from "../../src/utils/bnutils";
+import {toBN, toBNExp} from "../../src/utils/bnutils";
 import rewire from "rewire";
 import {fetchTransactionEntityById} from "../../src/db/dbutils";
 import {sleepMs} from "../../src/utils/utils";
@@ -219,6 +219,15 @@ describe("Bitcoin wallet tests", () => {
         while (1) {
             await sleepMs(2000);
         }
+    });
+
+    it("Transaction with a too low fee should be updated with a higher fee", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const startFee = new BN(0.0000000001);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, startFee);
+        expect(id).to.be.gt(0);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        expect(txEnt.fee?.toNumber()).to.be.gt(startFee.toNumber());
     });
 
     //TODO
