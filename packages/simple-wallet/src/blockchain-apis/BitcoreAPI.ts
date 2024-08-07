@@ -1,11 +1,11 @@
-import {IBlockchainAPI, MempoolUTXO} from "../interfaces/IBlockchainAPI";
-import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
-import {DEFAULT_RATE_LIMIT_OPTIONS} from "../utils/constants";
+import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-import {RateLimitOptions} from "../interfaces/IWalletTransaction";
+import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 
 export class BitcoreAPI implements IBlockchainAPI {
-    private client: AxiosInstance;
+    client: AxiosInstance;
 
     constructor(axiosConfig: AxiosRequestConfig, rateLimitOptions: RateLimitOptions | undefined) {
         const client = axios.create(axiosConfig);
@@ -41,13 +41,12 @@ export class BitcoreAPI implements IBlockchainAPI {
         return (res.data as any[]).filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2).sort((a, b) => a.value - b.value);
     }
 
-    private async getUnspentOutputScriptFromBlockbook(txHash: string, vout: number) {
-        const res = await this.client.get(`/tx-specific/${txHash}`);
-        return res.data.vout[vout].scriptPubKey.hex;
+    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
+        return this.getUTXOsFromMempool(address);
     }
 
     async sendTransaction(tx: string): Promise<axios.AxiosResponse> {
-        return this.client.post(`/tx/send`, {rawTx: tx});
+        return this.client.post(`/tx/send`, { rawTx: tx });
     }
 
 }

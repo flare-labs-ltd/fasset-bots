@@ -1,31 +1,30 @@
-import {WALLET} from "../../src";
-import {
-    DogecoinWalletConfig,
-    FeeServiceConfig,
-    ICreateWalletResponse
-} from "../../src/interfaces/IWalletTransaction";
+import { SpentHeightEnum, UTXOEntity, WALLET } from "../../src";
+import { DogecoinWalletConfig, FeeServiceConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
-import {expect, use} from "chai";
-
-use(chaiAsPromised);
+import { assert, expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
-import {BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT} from "../../src/utils/constants";
-import {toBNExp} from "../../src/utils/bnutils";
+import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
+import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import {TransactionStatus} from "../../src/entity/transaction";
-import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
-import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
+import { TransactionStatus } from "../../src/entity/transaction";
+import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
     clearUTXOs,
     createTransactionEntity,
-    loop, resetMonitoringOnForceExit, setMonitoringStatus,
-    waitForTxToFinishWithStatus
+    loop,
+    resetMonitoringOnForceExit,
+    setMonitoringStatus,
+    waitForTxToFinishWithStatus,
 } from "../test_util/util";
 import BN from "bn.js";
-import {fetchMonitoringState} from "../../src/utils/lockManagement";
+import { fetchMonitoringState } from "../../src/utils/lockManagement";
 import { logger } from "../../src/utils/logger";
-import {sleepMs} from "../../src/utils/utils";
+import { sleepMs } from "../../src/utils/utils";
+import { fetchTransactionEntityById } from "../../src/db/dbutils";
+
+use(chaiAsPromised);
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
@@ -97,7 +96,10 @@ describe("Dogecoin wallet tests", () => {
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
-            enoughConfirmations: 1
+            enoughConfirmations: 1,
+            rateLimitOptions: {
+                timeoutMs: 2000,
+            }
         };
         wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
         await wClient.feeService?.setupHistory();
@@ -316,6 +318,64 @@ describe("Dogecoin wallet tests", () => {
         expect(id).to.be.gt(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         expect(txEnt.fee?.toNumber()).to.be.gt(startFee.toNumber());
+    });
+
+    it("Already spent UTXOs with wrong status should get a new status - consistency checker", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note, undefined);
+        expect(id).to.be.gt(0);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+
+        let utxoEnt;
+        do {
+            utxoEnt = await wClient.rootEm.findOne(UTXOEntity, { spentHeight: SpentHeightEnum.SPENT });
+            await sleepMs(500);
+        } while (!utxoEnt)
+
+        utxoEnt.spentHeight = SpentHeightEnum.UNSPENT;
+        await wClient.rootEm.persistAndFlush(utxoEnt);
+
+        const id2 = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note, undefined);
+        expect(id2).to.be.gt(0);
+
+        utxoEnt = await wClient.rootEm.findOne(UTXOEntity, { spentHeight: SpentHeightEnum.SPENT });
+        assert(utxoEnt !== null);
+        assert(utxoEnt.spentHeight === SpentHeightEnum.SPENT);
+    });
+
+    it("Test blockchain API connection down", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note, undefined);
+        expect(id).to.be.gt(0);
+
+        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
+            config => Promise.reject(`Down`),
+        );
+        await sleepMs(10000);
+        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+    });
+
+    it("Test service API connection down", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note, undefined);
+        expect(id).to.be.gt(0);
+
+        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
+            config => Promise.reject(`Down`),
+        );
+        await sleepMs(10000);
+        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+
+        const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
+        const rewired = await setupRewiredWallet();
+        const core = rewired.getCore();
+        const tr = new core.Transaction(txEnt.raw);
+
+        const estimateFee = rewired.getEstimateFee(tr.inputs.length, tr.outputs.length);
+        expect((await estimateFee).toNumber()).to.be.equal(txEnt.fee?.toNumber());
+
     });
 
 });

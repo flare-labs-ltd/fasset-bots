@@ -1,12 +1,15 @@
-import {AxiosResponse} from "axios";
+import { AxiosInstance, AxiosResponse } from "axios";
 
 export interface IBlockchainAPI {
+    client: AxiosInstance;
 
     getAccountBalance(account: string): Promise<number | undefined>;
 
     sendTransaction(tx: string): Promise<AxiosResponse>;
 
     getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]>;
+
+    getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]>;
 
     getCurrentFeeRate(nextBlocks: number): Promise<number>;
 
@@ -15,9 +18,13 @@ export interface IBlockchainAPI {
     getTransaction(txHash: string | undefined): Promise<AxiosResponse>;
 }
 
-export interface MempoolUTXO {
+export interface MempoolUTXOMWithoutScript {
     mintTxid: number,
     mintIndex: number,
     value: number,
+}
+
+export interface MempoolUTXO extends MempoolUTXOMWithoutScript {
     script: string,
 }
+

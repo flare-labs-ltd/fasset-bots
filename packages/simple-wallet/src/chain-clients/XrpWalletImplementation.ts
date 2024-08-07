@@ -273,7 +273,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             try {
                const networkUp = await this.checkXrpNetworkStatus();
                if (!networkUp) {
-                  logger.error(`Trying again in ${this.restartInDueNoResponse}`);
+                  logger.error(`Network is down - trying again in ${this.restartInDueNoResponse}`);
                   await sleepMs(this.restartInDueNoResponse);
                   continue;
                }
