@@ -168,14 +168,14 @@ export async function correctUTXOInconsistencies(rootEm: EntityManager, address:
         const utxoEnts = await em.find(UTXOEntity, {
             source: address,
             spentHeight: SpentHeightEnum.UNSPENT,
-            $or: condition,
+            $and: condition,
         }) as UTXOEntity[];
 
         utxoEnts.forEach(utxoEnt => {
             utxoEnt.spentHeight = SpentHeightEnum.SPENT;
         });
 
-        if (mempoolUTXOs.length > 0) {
+        if (utxoEnts.length > 0) {
             logger.info(`Fixed ${utxoEnts.length} UTXO inconsistencies`);
         }
 

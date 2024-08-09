@@ -378,7 +378,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.fee = toBN(transaction.getFee()); // set the new fee if the original one was null/wrong
                 });
                 await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
-                await createTransactionOutputEntities(this.rootEm, transaction, txEnt);
             }
         } catch (error) {
             if (error instanceof InvalidFeeError) {
@@ -404,13 +403,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.reachedFinalStatusInTimestamp = new Date();
                 });
                 const core = this.getCore();
-                const utxos = await fetchUTXOs(this.rootEm, (new core.Transaction(JSON.parse(txEnt.raw!.toString()))).inputs);
+                const tr = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
+                const utxos = await fetchUTXOs(this.rootEm, tr.inputs);
 
                 for (const utxo of utxos) {
                     await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
                         utxoEnt.spentHeight = SpentHeightEnum.SPENT;
                     });
                 }
+                await createTransactionOutputEntities(this.rootEm, tr, txEnt);
                 logger.info(`Transaction ${txEnt.id} (${txEnt.transactionHash}) was accepted`);
                 return;
             }

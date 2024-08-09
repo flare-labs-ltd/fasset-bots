@@ -50,7 +50,7 @@ describe("Bitcoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
-      expect(wClient.client.defaults.auth).to.not.be.undefined;
+      const wClient: WALLET.BTC = await WALLET.BTC.initialize({...BTCMccConnectionTest, api: "blockbook"});
+      expect(wClient.blockchainAPI.client.defaults.auth).to.not.be.undefined;
    });
 });

@@ -83,7 +83,7 @@ export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
    maxRPS: 5,
    maxRequests: 10,
    timeoutMs: 30000,
-   retries: 5,
+   retries: 10,
 };
 
 export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {

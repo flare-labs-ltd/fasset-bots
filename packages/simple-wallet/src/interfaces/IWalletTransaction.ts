@@ -96,7 +96,7 @@ export type BlockchainAPI = "bitcore" | "blockbook";
 
 export interface BaseWalletConfig {
    url: string;
-   api: BlockchainAPI;
+   api?: BlockchainAPI;
    inTestnet?: boolean;
    apiTokenKey?: string;
    username?: string; // probably never used
