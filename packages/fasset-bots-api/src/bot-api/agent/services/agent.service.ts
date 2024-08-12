@@ -391,6 +391,7 @@ export class AgentService {
             const agentInfo = await this.getAgentInfo(fasset);
             const collateral: AllCollaterals = { fassetSymbol: fasset, collaterals: agentInfo.collaterals };
             collaterals.push(collateral);
+            break;
         }
         return collaterals;
     }
