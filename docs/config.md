@@ -205,8 +205,10 @@ See [`.env.template`](../.env.template).
 Example:
 
 ```env
-## Path to config file for the agent bot (and other bots)
-FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
+## Path to config file for the agent bot (and other bots) for MYSQL
+FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot-mysql.json"
+## If you want to use sqlite (not recommended) uncomment the line below and comment the line above
+#FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
 
 ## Path to secrets file for the agent bot (and other bots)
 FASSET_BOT_SECRETS="./secrets.json"
@@ -218,10 +220,13 @@ FASSET_BOT_SECRETS="./secrets.json"
 # FASSET_USER_CONFIG="./packages/fasset-bots-core/run-config/coston-user.json"
 
 ## (Optional) Path to secrets json file for users, instead you can use `-s` parameter.
-# FASSET_USER_SECRETS=""
+FASSET_USER_SECRETS="./secrets.json"
 
 ## (Optional) Path to directory, used for storing unexecuted minting. Defaults to `fasset` subdirectory in user's home directory.
 # FASSET_USER_DATA_DIR=""
+
+## (Optional) Path to database file for the bot (if sqlite is enabled).
+#FASSET_BOT_SQLITE_DB ="./fasset-bots-coston.db"
 ```
 
 ## Secrets file
