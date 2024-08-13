@@ -610,12 +610,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @returns {Object[]}
      */
     async fetchUTXOs(address: string, amountInSatoshi: BN | null, feeInSatoshi: BN | undefined, estimatedNumOfOutputs: number): Promise<UTXO[]> {
-        console.time("FetchUTXOs 1");
         const utxos = await this.listUnspent(address, amountInSatoshi, feeInSatoshi, estimatedNumOfOutputs);
         const allUTXOs: UTXO[] = [];
-        console.timeEnd("FetchUTXOs 1");
 
-        console.time("FetchUTXOs 2");
         for (const utxo of utxos) {
             if (!utxo.script) {
                 utxo.script = await this.blockchainAPI.getUTXOScript(address, utxo.mintTransactionHash, utxo.position);
@@ -630,7 +627,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             };
             allUTXOs.push(item);
         }
-        console.timeEnd("FetchUTXOs 2");
         return allUTXOs;
     }
 
