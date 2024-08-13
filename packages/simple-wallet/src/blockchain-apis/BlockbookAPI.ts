@@ -39,30 +39,18 @@ export class BlockbookAPI implements IBlockchainAPI {
     }
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
-        const res = await this.client.get(`/utxo/${address}?confirmed=true`);
-        const utxos = [];
+        const res = await this.client.get(`/utxo/${address}`);
 
-        for (const utxo of res.data) {
-            let script;
-            try {
-                const txEnt = await fetchTransactionEntityByHash(this.rootEm, utxo.txid);
-                script = txEnt.outputs.getItems().find(output => output.vout === utxo.vout)?.script;
-            } catch (e) {
-                script = await this.getUnspentOutputScriptFromBlockbook(utxo.txid, utxo.vout);
-            }
-            utxos.push({
-                mintTxid: utxo.txid,
-                mintIndex: utxo.vout,
-                value: utxo.value,
-                script: script,
-            });
-        }
-
-        return utxos;
+        return res.data.map((utxo: any) => ({
+            mintTxid: utxo.txid,
+            mintIndex: utxo.vout,
+            value: utxo.value,
+            script: "",
+        }));
     }
 
     async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
-        const res = await this.client.get(`/utxo/${address}?confirmed=true`);
+        const res = await this.client.get(`/utxo/${address}`);
         return res.data.map((utxo: any) => ({
             mintTxid: utxo.txid,
             mintIndex: utxo.vout,
@@ -70,7 +58,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         }));
     }
 
-    private async getUnspentOutputScriptFromBlockbook(txHash: string, vout: number) {
+    async getUTXOScript(address: string, txHash: string, vout: number) {
         const res = await this.client.get(`/tx-specific/${txHash}`);
         return res.data.vout[vout].scriptPubKey.hex;
     }

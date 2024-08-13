@@ -11,6 +11,8 @@ export interface IBlockchainAPI {
 
     getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]>;
 
+    getUTXOScript(address: string, txHash: string, vout: number): Promise<string>;
+
     getCurrentFeeRate(nextBlocks: number): Promise<number>;
 
     getCurrentBlockHeight(): Promise<number>;
@@ -19,7 +21,7 @@ export interface IBlockchainAPI {
 }
 
 export interface MempoolUTXOMWithoutScript {
-    mintTxid: number,
+    mintTxid: string,
     mintIndex: number,
     value: number,
 }

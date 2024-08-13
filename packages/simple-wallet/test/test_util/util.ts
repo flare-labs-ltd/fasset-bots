@@ -11,6 +11,7 @@ import { WalletAddressEntity } from "../../src/entity/wallet";
 import {updateMonitoringState} from "../../src/utils/lockManagement";
 import winston from "winston";
 import {logger} from "../../src/utils/logger";
+import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -211,6 +212,51 @@ function resetMonitoringOnForceExit<T extends WriteWalletInterface>(wClient: T) 
     });
 }
 
+function addRequestTimers(wClient: WALLET.DOGE | WALLET.BTC) {
+    interface AxiosRequestConfigWithMetadata extends AxiosRequestConfig {
+        metadata?: {
+            startTime: Date;
+        };
+    }
+
+    wClient.blockchainAPI.client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+        (config as AxiosRequestConfigWithMetadata).metadata = { startTime: new Date() };
+        return config;
+    }, error => {
+        return Promise.reject(error);
+    });
+
+    wClient.blockchainAPI.client.interceptors.response.use((response: AxiosResponse) => {
+        const config = response.config as AxiosRequestConfigWithMetadata;
+
+        if (config.metadata?.startTime) {
+            const endTime = new Date();
+            const duration = endTime.getTime() - config.metadata.startTime.getTime();
+
+            logger.info(`Request to ${config.url} took ${duration} ms`);
+        }
+
+        return response;
+    }, error => {
+        const config = error.config as AxiosRequestConfigWithMetadata;
+
+        if (config?.metadata?.startTime) {
+            const endTime = new Date();
+            const duration = endTime.getTime() - config.metadata.startTime.getTime();
+
+            logger.info(`Request to ${config.url} failed after ${duration} ms`);
+        }
+
+        return Promise.reject(error);
+    });
+}
+
+async function calculateNewFeeForTx(txId: number, feePerKb: BN, core: any, rootEm: EntityManager) {
+    const txEnt = await fetchTransactionEntityById(rootEm, txId);
+    const tr = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
+    return [txEnt.fee, tr.feePerKb(feePerKb).getFee()];
+}
+
 const END_STATUSES = [TransactionStatus.TX_REPLACED, TransactionStatus.TX_FAILED, TransactionStatus.TX_SUBMISSION_FAILED, TransactionStatus.TX_SUCCESS];
 const TEST_WALLET_XRP = {
     address: "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8"
@@ -224,6 +270,7 @@ export {
 
     createTransactionEntity,
     createAndSignXRPTransactionWithStatus,
+    calculateNewFeeForTx,
 
     clearTransactions,
     clearUTXOs,
@@ -233,6 +280,7 @@ export {
 
     addConsoleTransportForTests,
     resetMonitoringOnForceExit,
+    addRequestTimers,
 
     TEST_WALLET_XRP,
     END_STATUSES

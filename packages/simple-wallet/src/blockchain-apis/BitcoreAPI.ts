@@ -41,6 +41,11 @@ export class BitcoreAPI implements IBlockchainAPI {
         return (res.data as any[]).filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2).sort((a, b) => a.value - b.value);
     }
 
+    async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
+        const mempoolUTXOS = await this.getUTXOsFromMempool(address);
+        return mempoolUTXOS.filter(utxo => utxo.mintIndex.valueOf() === vout && utxo.mintTxid === txHash)[0].script;
+    }
+
     async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
         return this.getUTXOsFromMempool(address);
     }
