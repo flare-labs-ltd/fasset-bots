@@ -14,7 +14,9 @@ where MANAGEMENT_ADDRESS is your address from Metamask.
 
 3. Replace empty fields in apiKey (`native_rpc`, `xrp_rpc`, `indexer`) with api keys from your provider or delete them if not needed.
 
-4. Grant read access to `secrets.json`.
+4. Add mysql `username` and `password` in database.
+
+5. Grant read access to `secrets.json`.
 
 ```console
 chmod 600 secrets.json

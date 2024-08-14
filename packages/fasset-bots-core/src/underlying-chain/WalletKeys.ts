@@ -1,7 +1,9 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { WalletAddress } from "../entities/wallet";
-import { decryptText, encryptText } from "../utils/encryption";
 import { Secrets } from "../config";
+import { WalletAddress } from "../entities/wallet";
+import { CommandLineError } from "../utils/command-line-errors";
+import { decryptText, EncryptionMethod, encryptText } from "../utils/encryption";
+import { logger } from "../utils/logger";
 
 export interface IWalletKeys {
     getKey(address: string): Promise<string | undefined>;
@@ -40,7 +42,7 @@ export class DBWalletKeys implements IWalletKeys {
         if (!this.privateKeyCache.has(address)) {
             const wa = await this.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
             if (wa != null) {
-                const privateKey = decryptText(this.password, wa.encryptedPrivateKey);
+                const privateKey = this.decryptPrivateKey(wa.encryptedPrivateKey);
                 this.privateKeyCache.set(address, privateKey);
             }
         }
@@ -54,7 +56,20 @@ export class DBWalletKeys implements IWalletKeys {
         // persist
         const wa = new WalletAddress();
         wa.address = address;
-        wa.encryptedPrivateKey = encryptText(this.password, privateKey, true);
+        wa.encryptedPrivateKey = this.encryptPrivateKey(privateKey);
         await this.em.persist(wa).flush();
+    }
+
+    encryptPrivateKey(privateKey: string): string {
+        return encryptText(this.password, privateKey, EncryptionMethod.AES_GCM_SCRYPT_AUTH);
+    }
+
+    decryptPrivateKey(encryptedKey: string) {
+        try {
+            return decryptText(this.password, encryptedKey);
+        } catch (error) {
+            logger.error("Error decrypting database private key - wallet encryption password is most likely incorrect", error);
+            throw new CommandLineError("Error decrypting database private key - wallet encryption password is most likely incorrect");
+        }
     }
 }
