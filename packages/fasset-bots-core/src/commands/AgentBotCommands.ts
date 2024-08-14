@@ -7,7 +7,7 @@ import chalk from "chalk";
 import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
@@ -54,8 +54,13 @@ export class AgentBotCommands {
      * @returns instance of BotCliCommands class
      */
     static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
+        const botConfig = await AgentBotCommands.createBotConfig(secretsFile, configFileName, registerCleanup, validate);
+        return await AgentBotCommands.createBotCommands(botConfig, fAssetSymbol, validate);
+    }
+
+    static async createBotConfig(secretsFile: string, configFileName: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
         const secrets = Secrets.load(secretsFile);
-        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
+        const owner = AgentBotCommands.getOwnerAddressPair(secrets);
         // load config
         logger.info(`Owner ${owner.managementAddress} started to initialize cli environment.`);
         console.log(chalk.cyan("Initializing environment..."));
@@ -70,11 +75,17 @@ export class AgentBotCommands {
         // create config
         const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
         registerCleanup?.(() => closeBotConfig(botConfig));
+        return botConfig;
+    }
+
+    static async createBotCommands(botConfig: AgentBotConfig, fAssetSymbol: string, validate: boolean = true) {
+        const secrets = botConfig.secrets;
         // create context
         const chainConfig = botConfig.fAssets.get(fAssetSymbol);
         assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
         const context = await createAgentBotContext(botConfig, chainConfig);
         // verify keys
+        const owner = AgentBotCommands.getOwnerAddressPair(secrets);
         if (validate) {
             await AgentBotOwnerValidation.verifyAgentWhitelisted(context.agentOwnerRegistry, owner);
             await AgentBotOwnerValidation.verifyWorkAddress(context.agentOwnerRegistry, owner);
@@ -87,6 +98,10 @@ export class AgentBotCommands {
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
         logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new AgentBotCommands(context, chainConfig.agentBotSettings, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
+    }
+
+    static getOwnerAddressPair(secrets: Secrets) {
+        return new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
     }
 
     notifierFor(agentVault: string) {

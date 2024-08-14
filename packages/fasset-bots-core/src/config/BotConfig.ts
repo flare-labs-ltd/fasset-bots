@@ -28,6 +28,7 @@ import { createWalletClient, requireSupportedChainId } from "./create-wallet-cli
 import { EM, ORM } from "./orm";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
+    secrets: Secrets;
     orm?: ORM; // only for agent bot
     notifiers: NotifierTransport[];
     loopDelay: number;
@@ -95,7 +96,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
                 orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
             fAssets.set(symbol, fassetConfig);
         }
-        return {
+        const result: BotConfig = {
+            secrets: secrets,
             loopDelay: configFile.loopDelay,
             fAssets: fAssets,
             nativeChainInfo: createNativeChainInfo(configFile.nativeChainInfo),
@@ -104,7 +106,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
-        } as AgentBotConfig;
+        };
+        return result;
     } catch (error) {
         await orm?.close();
         throw error;
