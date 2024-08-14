@@ -1,17 +1,18 @@
-import {TransactionInfo, type WriteWalletInterface} from "../../src/interfaces/IWalletTransaction";
-import {TransactionEntity, TransactionStatus} from "../../src/entity/transaction";
-import {sleepMs} from "../../src/utils/utils";
-import {ChainType} from "../../src/utils/constants";
-import {EntityManager, RequiredEntityData} from "@mikro-orm/core";
-import {WALLET} from "../../src";
+import { TransactionInfo, type WriteWalletInterface } from "../../src/interfaces/IWalletTransaction";
+import { TransactionEntity, TransactionStatus } from "../../src/entity/transaction";
+import { sleepMs } from "../../src/utils/utils";
+import { ChainType } from "../../src/utils/constants";
+import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
+import { WALLET } from "../../src";
 import BN from "bn.js";
-import {fetchTransactionEntityById, getTransactionInfoById} from "../../src/db/dbutils";
-import {UTXOEntity} from "../../src/entity/utxo";
+import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
+import { UTXOEntity } from "../../src/entity/utxo";
 import { WalletAddressEntity } from "../../src/entity/wallet";
-import {updateMonitoringState} from "../../src/utils/lockManagement";
+import { updateMonitoringState } from "../../src/utils/lockManagement";
 import winston from "winston";
-import {logger} from "../../src/utils/logger";
+import { logger } from "../../src/utils/logger";
 import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import { isORMError } from "../../src/chain-clients/utils";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -56,9 +57,17 @@ async function loop(sleepIntervalMs: number, timeLimit: number, tx: TransactionE
 async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, rootEm: EntityManager, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
     let tx = await fetchTransactionEntityById(rootEm, txId);
     await loop(sleepInterval * 1000, timeLimit * 1000, tx,async () => {
-        rootEm.clear();
-        tx = await fetchTransactionEntityById(rootEm, txId);
-        return checkStatus(tx, [status]);
+        try {
+            rootEm.clear();
+            tx = await fetchTransactionEntityById(rootEm, txId);
+            return checkStatus(tx, [status]);
+        } catch (error) {
+            if (isORMError(error)) {
+                logger.error("Test util error: ", error)
+                return false;
+            }
+            throw error;
+        }
     });
 
     return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];

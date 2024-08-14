@@ -1,20 +1,17 @@
-import { SpentHeightEnum, UTXOEntity, WALLET } from "../../src";
+import { SpentHeightEnum, TransactionEntity, TransactionStatus, UTXOEntity, WALLET } from "../../src";
 import { DogecoinWalletConfig, FeeServiceConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { assert, expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
-import {
-    BTC_DOGE_DEC_PLACES,
-    ChainType, DEFAULT_FEE_INCREASE,
-    DOGE_DUST_AMOUNT,
-} from "../../src/utils/constants";
+import { BTC_DOGE_DEC_PLACES, ChainType, DEFAULT_FEE_INCREASE, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import { TransactionStatus } from "../../src/entity/transaction";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import {
-    addConsoleTransportForTests, addRequestTimers, calculateNewFeeForTx,
+    addConsoleTransportForTests,
+    addRequestTimers,
+    calculateNewFeeForTx,
     clearUTXOs,
     createTransactionEntity,
     loop,
@@ -28,6 +25,10 @@ import { logger } from "../../src/utils/logger";
 import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
 import { getTransactionInfoById } from "../../src/db/dbutils";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const sinon = require("sinon")
+import * as dbutils from "../../src/db/dbutils"
+import { DriverException } from "@mikro-orm/core";
 
 use(chaiAsPromised);
 
@@ -92,9 +93,9 @@ describe("Dogecoin wallet tests", () => {
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
-            enoughConfirmations: 2,
+            enoughConfirmations: 3,
             rateLimitOptions: {
-                maxRPS: 30,
+                maxRPS: 100,
                 timeoutMs: 2000,
             },
         };
@@ -104,7 +105,7 @@ describe("Dogecoin wallet tests", () => {
         void wClient.startMonitoringTransactionProgress();
 
         resetMonitoringOnForceExit(wClient);
-        addRequestTimers(wClient);
+        // addRequestTimers(wClient);
     });
 
     after(async () => {
@@ -386,7 +387,94 @@ describe("Dogecoin wallet tests", () => {
         wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
     });
 
+    it("If monitoring restarts wallet should run normally", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
+        const N = 2;
+        const amountToSendInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
+
+        await sleepMs(2000);
+        await wClient.stopMonitoring();
+
+        const isMonitoring = await wClient.isMonitoring();
+        expect(isMonitoring).to.be.false;
+
+        const initialTxIds = [];
+        for (let i = 0; i < N; i++) {
+            initialTxIds.push(await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi));
+        }
+
+        await sleepMs(2000);
+        void wClient.startMonitoringTransactionProgress();
+
+        for (let i = 0; i < N; i++) {
+            await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, initialTxIds[i]);
+        }
+    });
+
+    it.skip("Stress test", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+
+        const N = 10;
+        const wallets = [];
+        const amountToSendInSatoshi = toBNExp(1, DOGE_DECIMAL_PLACES);
+
+        for (let i = 0; i < N; i++) {
+            wallets.push(wClient.createWalletFromMnemonic(TEST_DOGE_ACCOUNTS[i].mnemonic));
+            console.info(wallets[i].address, (await wClient.getAccountBalance(wallets[i].address)).toNumber());
+        }
+
+        const initialTxIds = await Promise.all(wallets.map(async (wallet, i) => {
+            return await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, wallet.address, amountToSendInSatoshi);
+        }));
+
+        // Wait for accounts to receive transactions
+        await Promise.all(initialTxIds.map(async txId => {
+            await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+        }));
+
+        for (let i = 0; i < N; i++) {
+            console.info(wallets[i].address, (await wClient.getAccountBalance(wallets[i].address)).toNumber());
+        }
+
+        const transferTxIds = await Promise.all(wallets.map(async wallet => {
+            return await wClient.createPaymentTransaction(wallet.address, wallet.privateKey, fundedWallet.address, null);
+        }));
+
+        await Promise.all(transferTxIds.map(async txId => {
+            await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+        }));
+    });
+
+    it("DB down after creating transaction", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi);
+        const txInfo = await getTransactionInfoById(wClient.rootEm, id);
+        expect(txInfo.status).to.be.equal(TransactionStatus.TX_CREATED);
+
+        await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
+        await testOrm.close();
+        await sleepMs(5000);
+        await testOrm.connect();
+
+        await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+    });
+
+    it("updateTransactionEntity down", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi);
+
+        await waitForTxToFinishWithStatus(0.01, 15 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
+        sinon.stub(dbutils, "updateTransactionEntity").throws(new DriverException(new Error("DB down")));
+
+        await sleepMs(10000);
+        sinon.restore();
+
+        await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+    });
 
 
 
