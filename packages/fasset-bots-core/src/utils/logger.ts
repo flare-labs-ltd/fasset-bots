@@ -13,8 +13,8 @@ export function createCustomizedLogger(paths: LoggerPaths) {
         level: "info",
         datePattern: "YYYY-MM-DD",
         zippedArchive: true,
-        maxSize: "50m",
-        maxFiles: "14d",
+        maxSize: "500m",
+        maxFiles: "365d",
     };
     if (paths.json) {
         transports.push(new DailyRotateFile({
