@@ -476,19 +476,6 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
-
-
-
-        const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
-        const rewired = await setupRewiredWallet();
-        const core = rewired.getCore();
-        const tr = new core.Transaction(txEnt.raw);
-
-        const estimateFee = rewired.getEstimateFee(tr.inputs.length, tr.outputs.length);
-        expect((await estimateFee).toNumber()).to.be.equal(txEnt.fee?.toNumber());
-
-    });
-
 });
 
 async function setupRewiredWallet() {
