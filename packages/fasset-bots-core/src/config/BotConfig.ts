@@ -26,6 +26,7 @@ import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, Bo
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
+import { AgentBotDbUpgrades } from "../actors/AgentBotDbUpgrades";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     secrets: Secrets;
@@ -121,7 +122,9 @@ export function createNativeChainInfo(nativeChainInfo: BotNativeChainInfo): Nati
 export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOptions, databaseAccount?: DatabaseAccount) {
     if (type === "agent") {
         assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
-        return await overrideAndCreateOrm(ormOptions, databaseAccount);
+        const orm = await overrideAndCreateOrm(ormOptions, databaseAccount);
+        await AgentBotDbUpgrades.performUpgrades(orm);
+        return orm;
     }
 }
 

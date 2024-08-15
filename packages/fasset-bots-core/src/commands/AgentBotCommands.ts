@@ -54,8 +54,11 @@ export class AgentBotCommands {
      * @returns instance of BotCliCommands class
      */
     static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
+        console.log(chalk.cyan("Initializing environment..."));
         const botConfig = await AgentBotCommands.createBotConfig(secretsFile, configFileName, registerCleanup, validate);
-        return await AgentBotCommands.createBotCommands(botConfig, fAssetSymbol, validate);
+        const agentBotCommands = await AgentBotCommands.createBotCommands(botConfig, fAssetSymbol, validate);
+        console.log(chalk.cyan("Environment successfully initialized."));
+        return agentBotCommands;
     }
 
     static async createBotConfig(secretsFile: string, configFileName: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
@@ -63,7 +66,6 @@ export class AgentBotCommands {
         const owner = AgentBotCommands.getOwnerAddressPair(secrets);
         // load config
         logger.info(`Owner ${owner.managementAddress} started to initialize cli environment.`);
-        console.log(chalk.cyan("Initializing environment..."));
         const configFile = loadAgentConfigFile(configFileName, `Owner ${owner.managementAddress}`);
         // init web3 and accounts
         const workPrivateKey = secrets.required("owner.native.private_key");
@@ -94,7 +96,6 @@ export class AgentBotCommands {
         const underlyingAddress = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.address`);
         const underlyingPrivateKey = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.private_key`);
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
-        console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
         logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new AgentBotCommands(context, chainConfig.agentBotSettings, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
@@ -439,7 +440,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async closeVault(agentVault: string): Promise<void> {
-        const agentEnt = await this.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentEnt = await this.fetchAgentEntity(agentVault);
         const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
         if (agentInfo.publiclyAvailable) {
             await this.announceExitAvailableList(agentVault);
@@ -517,11 +518,27 @@ export class AgentBotCommands {
      * Lists active agents in owner's local db.
      */
     async listActiveAgents(): Promise<void> {
-        const query = this.orm.em.createQueryBuilder(AgentEntity);
-        const listOfAgents = await query.where({ active: true }).getResultList();
+        const listOfAgents = await this.getAllActiveAgents();
         for (const agent of listOfAgents) {
             console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, FAsset: ${agent.fassetSymbol}, Current event block: ${agent.currentEventBlock} `);
         }
+    }
+
+    /**
+     * Return all active agents belonging to this context's asset manager controller (on any asset manager).
+     */
+    async getAllActiveAgents() {
+        const assetManagers = await this.context.assetManagerController.getAssetManagers();
+        const query = this.orm.em.createQueryBuilder(AgentEntity);
+        return await query.where({ active: true, assetManager: { $in: assetManagers } }).getResultList();
+    }
+
+    /**
+     * Return all active agents belonging to this context's asset manager.
+     */
+    async getActiveAgentsForFAsset() {
+        const query = this.orm.em.createQueryBuilder(AgentEntity);
+        return await query.where({ active: true, assetManager: this.context.assetManager.address }).getResultList();
     }
 
     /**
@@ -565,9 +582,17 @@ export class AgentBotCommands {
      * @returns object containing instances of AgentBot and AgentEntity respectively
      */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; readAgentEnt: AgentEntity }> {
-        const readAgentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const readAgentEnt = await this.fetchAgentEntity(agentVault);
         const agentBot = await AgentBot.fromEntity(this.context, this.agentBotSettings, readAgentEnt, this.ownerUnderlyingAddress, this.notifiers);
         return { agentBot, readAgentEnt };
+    }
+
+    /**
+     * Return agent entity for given vault address.
+     * @param agentVault agent's vault address
+     */
+    async fetchAgentEntity(agentVault: string): Promise<AgentEntity> {
+        return await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault, assetManager: this.context.assetManager.address });
     }
 
     /**

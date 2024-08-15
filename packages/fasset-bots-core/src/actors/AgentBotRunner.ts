@@ -111,7 +111,7 @@ export class AgentBotRunner {
      * In every step it collects all active agent entities and for every one it construct AgentBot and runs its runsStep method, which handles required events and other methods.
      */
     async runStepSerial(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
             this.checkForWorkAddressChange();
             if (this.stopOrRestartRequested()) break;
@@ -129,7 +129,7 @@ export class AgentBotRunner {
     }
 
     async addNewAgentBots() {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
             if (this.runningAgentBots.has(agentEntity.vaultAddress)) continue;
             // create new bot
@@ -147,6 +147,11 @@ export class AgentBotRunner {
                 logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error starting agent ${agentEntity.vaultAddress}:`, error);
             }
         }
+    }
+
+    async activeAgents() {
+        const assetManagerAddresses = Array.from(this.contexts.values()).map(ctx => ctx.assetManager.address);
+        return await this.orm.em.find(AgentEntity, { active: true, assetManager: { $in: assetManagerAddresses } });
     }
 
     async newAgentBot(agentEntity: AgentEntity) {

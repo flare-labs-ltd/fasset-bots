@@ -14,6 +14,7 @@ import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { AgentInfoReader, CollateralPriceCalculator } from "./AgentInfoReader";
+import { ColumnPrinter } from "./ColumnPrinter";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
@@ -445,30 +446,4 @@ export class InfoBotCommands {
         }
     }
 
-}
-
-type ColumnType = [title: string, width: number, align: "l" | "r"];
-
-export class ColumnPrinter {
-    constructor(
-        public columns: ColumnType[],
-        public separator: string = "  "
-    ) {
-        for (const ct of this.columns) {
-            ct[1] = Math.max(ct[1], ct[0].length);
-        }
-    }
-
-    line(...items: string[]) {
-        const chunks = this.columns.map(([_, width, align], ind) => (align === "l" ? items[ind].padEnd(width) : items[ind].padStart(width)));
-        return chunks.join(this.separator);
-    }
-
-    printHeader() {
-        this.printLine(...this.columns.map((it) => it[0]));
-    }
-
-    printLine(...items: string[]) {
-        console.log(this.line(...items));
-    }
 }
