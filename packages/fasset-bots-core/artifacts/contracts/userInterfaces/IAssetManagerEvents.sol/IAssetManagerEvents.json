@@ -188,70 +188,77 @@
           "type": "address"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "collateralPool",
-          "type": "address"
-        },
-        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "collateralPool",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "collateralPoolToken",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "underlyingAddress",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "vaultCollateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "poolWNatToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "feeBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolFeeShareBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingVaultCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingPoolCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "buyFAssetByAgentFactorBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolExitCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupTokenPriceFactorBIPS",
+              "type": "uint256"
+            }
+          ],
           "indexed": false,
-          "internalType": "string",
-          "name": "underlyingAddress",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "vaultCollateralToken",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "feeBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolFeeShareBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "mintingVaultCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "mintingPoolCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "buyFAssetByAgentFactorBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolExitCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolTopupCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolTopupTokenPriceFactorBIPS",
-          "type": "uint256"
+          "internalType": "struct IAssetManagerEvents.AgentVaultCreationData",
+          "name": "creationData",
+          "type": "tuple"
         }
       ],
       "name": "AgentVaultCreated",
@@ -608,6 +615,25 @@
         }
       ],
       "name": "DustChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "EmergencyPauseCanceled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "pausedUntil",
+          "type": "uint256"
+        }
+      ],
+      "name": "EmergencyPauseTriggered",
       "type": "event"
     },
     {
