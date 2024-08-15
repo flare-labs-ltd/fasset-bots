@@ -19,7 +19,7 @@ import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
-import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
+import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, MAX_BIPS, errorIncluded, maxBN, requireNotNull, toBN, isEnumValue } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -590,7 +590,9 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async fetchAgentEntity(agentVault: string): Promise<AgentEntity> {
-        return await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault, assetManager: this.context.assetManager.address });
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault });
+        assertCmd(agentEnt.assetManager === this.context.assetManager.address, "Invalid agent vault address for current settings");
+        return agentEnt;
     }
 
     /**
