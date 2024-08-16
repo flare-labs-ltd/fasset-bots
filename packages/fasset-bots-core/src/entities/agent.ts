@@ -14,6 +14,9 @@ export class AgentEntity {
     @Property({ length: ADDRESS_LENGTH })
     collateralPoolAddress!: string;
 
+    @Property({ length: ADDRESS_LENGTH, nullable: true, index: true })
+    assetManager?: string;
+
     @Property()
     chainId!: string;
 
@@ -118,9 +121,9 @@ export class AgentEntity {
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
     dailyTasksTimestamp: BN = BN_ZERO;
 
-    // not used - here just to keep the non-null contraint from breaking; delete column when we support migrations
+    // not used - here just to keep the former non-null contraint from breaking; delete column when we support migrations
     @Property({ columnType: "varchar(20)", default: "obtainedProof" })
-    dailyProofState!: string;
+    dailyProofState?: string;
 
     @OneToMany(() => AgentUpdateSetting, updateSetting => updateSetting.agent)
     updateSettings = new Collection<AgentUpdateSetting>(this);
@@ -301,7 +304,6 @@ export class AgentUnderlyingPayment {
 }
 
 @Entity()
-@Unique({ properties: ["name", "validAt"] })
 export class AgentUpdateSetting {
     @PrimaryKey({ autoincrement: true })
     id!: number;

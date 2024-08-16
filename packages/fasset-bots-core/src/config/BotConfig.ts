@@ -26,8 +26,10 @@ import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, Bo
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
+import { AgentBotDbUpgrades } from "../actors/AgentBotDbUpgrades";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
+    secrets: Secrets;
     orm?: ORM; // only for agent bot
     notifiers: NotifierTransport[];
     loopDelay: number;
@@ -95,7 +97,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
                 orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
             fAssets.set(symbol, fassetConfig);
         }
-        return {
+        const result: BotConfig = {
+            secrets: secrets,
             loopDelay: configFile.loopDelay,
             fAssets: fAssets,
             nativeChainInfo: createNativeChainInfo(configFile.nativeChainInfo),
@@ -104,7 +107,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
-        } as AgentBotConfig;
+        };
+        return result;
     } catch (error) {
         await orm?.close();
         throw error;
@@ -118,14 +122,9 @@ export function createNativeChainInfo(nativeChainInfo: BotNativeChainInfo): Nati
 export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOptions, databaseAccount?: DatabaseAccount) {
     if (type === "agent") {
         assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
-        return await overrideAndCreateOrm(ormOptions, databaseAccount);
-    } else if (type === "user") {
-        const overrideOptions: OrmConfigOptions = {
-            type: "sqlite",
-            dbName: "simple-wallet-user.db",
-            allowGlobalContext: true,
-        }
-        return await overrideAndCreateOrm(overrideOptions, undefined, simpleWalletOptions);
+        const orm = await overrideAndCreateOrm(ormOptions, databaseAccount);
+        await AgentBotDbUpgrades.performUpgrades(orm);
+        return orm;
     }
 }
 

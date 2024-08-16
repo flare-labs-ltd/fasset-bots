@@ -115,7 +115,7 @@ export class AgentBotRunner {
      * In every step it collects all active agent entities and for every one it construct AgentBot and runs its runsStep method, which handles required events and other methods.
      */
     async runStepSerial(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
             this.checkForWorkAddressChange();
             if (this.stopOrRestartRequested()) break;
@@ -132,8 +132,8 @@ export class AgentBotRunner {
         }
     }
 
-    async addNewAgentBots(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+    async addNewAgentBots() {
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
             const runningAgentBot = this.runningAgentBots.get(agentEntity.vaultAddress);
             if (runningAgentBot) {
@@ -157,7 +157,12 @@ export class AgentBotRunner {
         }
     }
 
-    async newAgentBot(agentEntity: AgentEntity): Promise<AgentBot | null> {
+    async activeAgents() {
+        const assetManagerAddresses = Array.from(this.contexts.values()).map(ctx => ctx.assetManager.address);
+        return await this.orm.em.find(AgentEntity, { active: true, assetManager: { $in: assetManagerAddresses } });
+    }
+
+    async newAgentBot(agentEntity: AgentEntity) {
         const context = this.contexts.get(agentEntity.fassetSymbol);
         if (context == null) {
             console.warn(`Invalid fasset symbol ${agentEntity.fassetSymbol}`);
