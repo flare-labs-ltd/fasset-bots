@@ -609,7 +609,7 @@ describe("Agent bot unit tests", () => {
         const allAmountUBA = amountUBA.add(poolFee);
         await fundUnderlying(context, randomUnderlyingAddress, allAmountUBA);
         // self mint
-        const transactionHash = await agentBot.agent.wallet.addTransaction(
+        const transactionHash = await agentBot.agent.wallet.addTransactionAndWaitForItsFinalization(
             randomUnderlyingAddress,
             agentBot.agent.underlyingAddress,
             allAmountUBA,
@@ -672,7 +672,7 @@ describe("Agent bot unit tests", () => {
         await agentBot.minting.requestNonPaymentProofForMinting(orm.em, minting)
             .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
-        const transactionHash = await agentBot.agent.wallet.addTransaction(
+        const transactionHash = await agentBot.agent.wallet.addTransactionAndWaitForItsFinalization(
             randomUnderlyingAddress,
             agentBot.agent.underlyingAddress,
             1,
@@ -681,7 +681,7 @@ describe("Agent bot unit tests", () => {
         await agentBot.minting.requestPaymentProofForMinting(orm.em, minting, transactionHash, randomUnderlyingAddress)
             .catch(e => console.error(e));
         expect(minting.state).to.eq("started");
-        const transactionHash1 = await agentBot.agent.wallet.addTransaction(
+        const transactionHash1 = await agentBot.agent.wallet.addTransactionAndWaitForItsFinalization(
             agentBot.agent.underlyingAddress,
             randomUnderlyingAddress,
             1,

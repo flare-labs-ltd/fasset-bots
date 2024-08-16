@@ -72,7 +72,7 @@ program
                 To use it, first make sure your management address has been whitelisted, and then
                 execute ${chalk.green(`AgentOwnerRegistry.setWorkAddress(${workAddress})`)} on block explorer.`);
             console.error(squashSpace`${chalk.yellow("WARNING:")} Be careful - there can be only one work address per management address,
-                so make sure you don't owerwrite it.`);
+                so make sure you don't overwrite it.`);
         }
     });
 

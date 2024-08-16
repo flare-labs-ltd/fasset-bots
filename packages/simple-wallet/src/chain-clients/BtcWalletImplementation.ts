@@ -1,9 +1,9 @@
-import { BtcishWalletImplementation } from "./BtcishWalletImplementation";
+import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { ChainType } from "../utils/constants";
-import type { BitcoinRpcConfig } from "../interfaces/WriteWalletRpcInterface";
+import type { BitcoinWalletConfig } from "../interfaces/WalletTransactionInterface";
 
-export class BtcWalletImplementation extends BtcishWalletImplementation {
-   constructor(options: BitcoinRpcConfig) {
+export class BtcWalletImplementation extends UTXOWalletImplementation {
+   constructor(options: BitcoinWalletConfig) {
       super(options.inTestnet ? ChainType.testBTC : ChainType.BTC, options);
    }
 }

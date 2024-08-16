@@ -239,7 +239,7 @@ describe("Tracked state tests", () => {
         const allAmountUBA = amountUBA.add(poolFee);
         await fundUnderlying(context, randomUnderlyingAddress, allAmountUBA);
 
-        const transactionHash = await agentBLocal.wallet.addTransaction(
+        const transactionHash = await agentBLocal.wallet.addTransactionAndWaitForItsFinalization(
             randomUnderlyingAddress,
             agentBLocal.underlyingAddress,
             allAmountUBA,

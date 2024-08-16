@@ -1,27 +1,21 @@
+import { EntityManager } from "@mikro-orm/core";
+import { TransactionStatus } from "../entity/transaction";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 
-export interface WriteWalletRpcInterface {
+export interface WalletAccountGenerationInterface {
    chainType: ChainType;
 
    createWallet(): ICreateWalletResponse;
    createWalletFromMnemonic(mnemonic: string): ICreateWalletResponse;
+}
+
+export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    getAccountBalance(account: string): Promise<BN>;
    getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
-   preparePaymentTransaction(
-      source: string,
-      destination: string,
-      amount: BN | null,
-      fee?: BN,
-      note?: string,
-      maxFee?: BN,
-      sequence?: number
-   ): Promise<any>;
-   signTransaction(transaction: any, privateKey: string): Promise<string>;
-   submitTransaction(signedTx: string): Promise<any>;
-   executeLockedSignedTransactionAndWait(
+   createPaymentTransaction(
       source: string,
       privateKey: string,
       destination: string,
@@ -29,18 +23,24 @@ export interface WriteWalletRpcInterface {
       fee?: BN,
       note?: string,
       maxFee?: BN,
-      sequence?: number
-   ): Promise<any>;
+      executeUntilBlock?: number,
+      executeUntilTimestamp?: number//TODO
+   ): Promise<number>;
 
-   deleteAccount(
+   createDeleteAccountTransaction(
       source: string,
       privateKey: string,
       destination: string,
       fee?: BN,
       note?: string,
       maxFee?: BN,
-      sequence?: number
-   ): Promise<any>;
+   ): Promise<number>;
+
+   getTransactionInfo(dbId: number): Promise<TransactionInfo>;
+
+   startMonitoringTransactionProgress(): Promise<void>;
+   stopMonitoring(): void;
+   isMonitoring(): boolean;
 }
 
 export interface ICreateWalletResponse {
@@ -87,10 +87,12 @@ export interface StuckTransaction {
    blockOffset?: number; // How many block to wait for transaction to be validated
    retries?: number; // How many times should transaction retry to successfully submit
    feeIncrease?: number; // Factor to increase fee in resubmitting process
-   lastResortFee?: number; // fee to use when all retries fail
+   executionBlockOffset?: number; //
 }
 
-export interface BaseRpcConfig {
+export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
+
+export interface BaseWalletConfig {
    url: string;
    inTestnet?: boolean;
    apiTokenKey?: string;
@@ -98,10 +100,44 @@ export interface BaseRpcConfig {
    password?: string; // probably never used
    rateLimitOptions?: RateLimitOptions;
    stuckTransactionOptions?: StuckTransaction;
+   enoughConfirmations?: number,
+   feeServiceConfig?: FeeServiceConfig;
+   em: EntityManager;
+   walletKeys: IWalletKeys;
 }
 
-export type RippleRpcConfig = BaseRpcConfig;
-export type BitcoinRpcConfig = BaseRpcConfig;
-export type LitecoinRpcConfig = BaseRpcConfig;
-export type DogecoinRpcConfig = BaseRpcConfig;
-export type AlgoRpcConfig = BaseRpcConfig;
+export type RippleWalletConfig = BaseWalletConfig;
+export type BitcoinWalletConfig = BaseWalletConfig;
+export type DogecoinWalletConfig = BaseWalletConfig;
+
+export interface SignedObject {
+   txBlob: string;
+   txHash: string;
+}
+
+export interface TransactionInfo {
+   dbId: number;
+   replacedByDdId: number | null,
+   transactionHash: string | null;
+   status: TransactionStatus;
+}
+
+export interface IWalletKeys {
+   getKey(address: string): Promise<string | undefined>;
+   addKey(address: string, privateKey: string): Promise<void>;
+}
+
+export interface FeeServiceConfig {
+   indexerUrl: string;
+   rateLimitOptions?: RateLimitOptions;
+   sleepTimeMs: number;
+   numberOfBlocksInHistory: number;
+}
+
+export interface BlockStats {
+   blockHeight: number;
+   blockTime: number;
+   timeSincePreviousBlock: number;
+   averageFeePerKB: BN;
+   decilesFeePerKB: BN[];
+}

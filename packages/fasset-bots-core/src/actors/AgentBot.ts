@@ -194,7 +194,7 @@ export class AgentBot {
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)
         const smallest_amount = 1;
         await checkUnderlyingFunds(context, underlyingAddress, smallest_amount, underlyingAddress);
-        const txHash = await context.wallet.addTransaction(underlyingAddress, underlyingAddress, smallest_amount, reference);
+        const txHash = await context.wallet.addTransactionAndWaitForItsFinalization(underlyingAddress, underlyingAddress, smallest_amount, reference);
         await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         const proof = await context.attestationProvider.provePayment(txHash, underlyingAddress, underlyingAddress);
         await context.assetManager.proveUnderlyingAddressEOA(web3DeepNormalize(proof), { from: owner.workAddress });
@@ -245,13 +245,13 @@ export class AgentBot {
      * @param vaultUnderlyingAddress agent's underlying address
      */
     static async activateUnderlyingAccount(context: IAssetAgentContext, owner: OwnerAddressPair, ownerUnderlyingAddress: string, vaultUnderlyingAddress: string): Promise<void> {
-        const starterAmount = context.chainInfo.minimumAccountBalance;
-        if (starterAmount == BN_ZERO) return;
+        const starterAmount = toBN(context.chainInfo.minimumAccountBalance);
+        if (starterAmount.eq(BN_ZERO)) return;
         const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
         try {
             const reference = owner.managementAddress;
             await checkUnderlyingFunds(context, ownerUnderlyingAddress, starterAmount, vaultUnderlyingAddress);
-            const txHash = await context.wallet.addTransaction(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
+            const txHash = await context.wallet.addTransactionAndWaitForItsFinalization(ownerUnderlyingAddress, vaultUnderlyingAddress, starterAmount, reference);
             const transaction = await context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             /* istanbul ignore next */
             if (!transaction || transaction?.status != TX_SUCCESS) {

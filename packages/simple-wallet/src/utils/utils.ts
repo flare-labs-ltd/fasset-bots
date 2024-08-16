@@ -8,12 +8,10 @@ import {
    DOGE_MAINNET,
    DOGE_TESTNET,
    LOCK_ADDRESS_FACTOR,
-   LTC_LEDGER_CLOSE_TIME_MS,
-   LTC_MAINNET,
-   LTC_TESTNET,
    XRP_LEDGER_CLOSE_TIME_MS,
 } from "./constants";
-import { StuckTransaction } from "../interfaces/WriteWalletRpcInterface";
+import { StuckTransaction } from "../interfaces/WalletTransactionInterface";
+import BN from "bn.js";
 
 function MccError(error: any) {
    try {
@@ -26,31 +24,6 @@ function MccError(error: any) {
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
-}
-
-export function wallet_utxo_ensure_data(data: any) {
-   if (data.statusText !== "OK") {
-      throw MccError(data);
-   }
-}
-
-export function algo_ensure_data(data: any) {
-   const error_codes = [400, 401, 404, 500, 503];
-   if (error_codes.includes(data.status)) {
-      throw MccError(data);
-   }
-}
-
-export function xrp_ensure_data(data: any) {
-   if (data.result.status === "error") {
-      if (data.result.error === "txnNotFound") {
-         throw MccError(data.status);
-      }
-      if (data.result.error === "lgrNotFound") {
-         throw MccError(data.status);
-      }
-      throw MccError(data);
-   }
 }
 
 export function bytesToHex(a: Iterable<number> | ArrayLike<number>): string {
@@ -111,9 +84,6 @@ export function getAvgBlockTime(chainType: ChainType): number {
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return DOGE_LEDGER_CLOSE_TIME_MS;
-      case ChainType.LTC:
-      case ChainType.testLTC:
-         return LTC_LEDGER_CLOSE_TIME_MS;
       case ChainType.XRP:
       case ChainType.testXRP:
          return XRP_LEDGER_CLOSE_TIME_MS;
@@ -127,31 +97,23 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.BTC:
       case ChainType.testBTC:
          return {
-            blockOffset: 1,
-            retries: 2,
-            feeIncrease: 3,
-         };
-      case ChainType.LTC:
-      case ChainType.testLTC:
-         return {
-            blockOffset: 3,
-            retries: 1,
-            feeIncrease: 2,
+            blockOffset: 2,
+            feeIncrease: 1.5,
+            executionBlockOffset: 1,
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 3,
-            retries: 1,
+            blockOffset: 4,
             feeIncrease: 2,
+            executionBlockOffset: 2
          };
       case ChainType.XRP:
       case ChainType.testXRP:
          return {
-            blockOffset: 10,
-            retries: 1,
+            blockOffset: 6,
             feeIncrease: 2,
-            lastResortFee: 1e6,
+            executionBlockOffset: 2
          };
       default:
          throw new Error(`Constants not defined for chain type ${chainType}`);
@@ -168,11 +130,23 @@ export function getCurrentNetwork(chainType: ChainType) {
          return DOGE_MAINNET;
       case ChainType.testDOGE:
          return DOGE_TESTNET;
-      case ChainType.LTC:
-         return LTC_MAINNET;
-      case ChainType.testLTC:
-         return LTC_TESTNET;
       default:
          throw new Error(`Unsupported chain type ${chainType}`);
    }
+}
+
+//TODO add for timestamp
+export function shouldExecuteTransaction(executeUntilBlock: number | null, latestBlock: number, executionBlockOffset: number): boolean {
+   if (!executeUntilBlock || (executeUntilBlock && (executeUntilBlock - latestBlock) >= executionBlockOffset)) {
+      return true;
+   }
+   return false;
+}
+
+
+export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
+   if (maxFee && fee.gt(maxFee)) {
+      return true;
+   }
+   return false;
 }

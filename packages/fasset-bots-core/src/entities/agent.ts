@@ -20,7 +20,7 @@ export class AgentEntity {
     @Property()
     fassetSymbol!: string;
 
-    // This is management address, which is immutable. The actuasl address used in all trabsactions will be the work address,
+    // This is management address, which is immutable. The actual address used in all transactions will be the work address,
     // which is mutable and not recorded in the database. It can be obtained from chain by calling `agentOwnerRegistry.getWorkAddress(ownerAddress)`.
     @Property()
     ownerAddress!: string;
@@ -75,6 +75,9 @@ export class AgentEntity {
 
     @Property()
     destroyVaultCollateralWithdrawalAllowedAtAmount: string = "";
+
+    @Property({ nullable: true })
+    waitingToEmptyUnderlyingAddressTxId?: number;// number of transaction id in db
 
     // agent exit available list
 
@@ -211,6 +214,9 @@ export class AgentRedemption {
     // 'PAID' state data
 
     @Property({ nullable: true })
+    txDbId?: number;
+
+    @Property({ nullable: true })
     txHash?: string;
 
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
@@ -280,7 +286,10 @@ export class AgentUnderlyingPayment {
     // 'PAID' state data
 
     @Property({ nullable: true })
-    txHash!: string;
+    txDbId?: number;
+
+    @Property({ nullable: true })
+    txHash?: string;
 
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
 

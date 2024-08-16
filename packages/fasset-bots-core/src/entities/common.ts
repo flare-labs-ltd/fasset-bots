@@ -31,6 +31,7 @@ export enum AgentRedemptionFinalState {
 }
 
 export enum AgentUnderlyingPaymentState {
+    PAYING = "paying",
     PAID = "paid",
     REQUESTED_PROOF = "requestedProof",
     DONE = "done",

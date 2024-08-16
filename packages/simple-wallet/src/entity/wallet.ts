@@ -1,11 +1,13 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
-import { ADDRESS_LENGTH } from "./common";
 
 @Entity()
-export class WalletAddress {
-    @PrimaryKey({ length: ADDRESS_LENGTH })
+export class WalletAddressEntity {
+    @PrimaryKey()
     address!: string;
 
     @Property()
     encryptedPrivateKey!: string;
+
+    @Property()
+    isDeleting: boolean = false;
 }
