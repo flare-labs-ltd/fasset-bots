@@ -3,6 +3,7 @@ import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, 
 import { BNish, BN_ZERO, fail, systemTimestamp, toBN } from "../utils/helpers";
 import type { IBlockChainWallet, TransactionOptionsWithFee, SpentReceivedObject } from "../underlying-chain/interfaces/IBlockChainWallet";
 import BN from "bn.js";
+import { TransactionInfo, TransactionStatus } from "@flarelabs/simple-wallet";
 
 export type MockTransactionOptions = { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -223,16 +224,33 @@ export class MockChain implements IBlockChain {
 export class MockChainWallet implements IBlockChainWallet {
     static deepCopyWithObjectCreate = true;
 
+    transactionList: MockChainTransaction[] = []
     constructor(public chain: MockChain) {}
 
-    async deleteAccount(from: string, to: string, reference: string | null, options?: TransactionOptionsWithFee | undefined): Promise<any> {
+    isMonitoring(): boolean {
+        throw new Error("Method not implemented.");
+    }
+
+    startMonitoringTransactionProgress(): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    stopMonitoring(): void {
+        throw new Error("Method not implemented.");
+    }
+
+    async deleteAccount(from: string, to: string, reference: string | null, options?: TransactionOptionsWithFee | undefined): Promise<number> {
         const value = toBN(await this.getBalance(from));
         const fee = toBN(await this.getTransactionFee());
         const transaction = this.createTransaction(from, to, value.sub(fee), reference, options);
         this.chain.addTransaction(transaction);
-        return transaction.hash;
+        this.transactionList.push(transaction);
+        return this.transactionList.length - 1;
     }
-
+    async checkTransactionStatus(txDbId: number): Promise<TransactionInfo> {
+        const tx = this.transactionList[txDbId];
+        const status = tx.status == TX_SUCCESS ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_FAILED;
+        return { dbId: txDbId, replacedByDdId: null,  transactionHash: tx.hash, status: status };
+    }
     async getBalance(address: string): Promise<BN> {
         return this.chain.balances[address] ?? BN_ZERO;
     }
@@ -242,14 +260,22 @@ export class MockChainWallet implements IBlockChainWallet {
     addExistingAccount(): Promise<string> {
         throw new Error("Method not implemented.");
     }
-    async addTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<string> {
+    async addTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<number> {
         const transaction = this.createTransaction(from, to, value, reference, options);
         this.chain.addTransaction(transaction);
+        this.transactionList.push(transaction);
+        return this.transactionList.length - 1;
+    }
+    async addTransactionAndWaitForItsFinalization(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): Promise<string> {
+        const transaction = this.createTransaction(from, to, value, reference, options);
+        this.chain.addTransaction(transaction);
+        this.transactionList.push(transaction);
         return transaction.hash;
     }
     async addMultiTransaction(spent: SpentReceivedObject, received: SpentReceivedObject, reference: string | null, options?: MockTransactionOptions): Promise<string> {
         const transaction = this.createMultiTransaction(spent, received, reference, options);
         this.chain.addTransaction(transaction);
+        this.transactionList.push(transaction);
         return transaction.hash;
     }
     createTransaction(from: string, to: string, value: BNish, reference: string | null, options?: MockTransactionOptionsWithFee): MockChainTransaction {
@@ -267,7 +293,6 @@ export class MockChainWallet implements IBlockChainWallet {
         const receivedObj: SpentReceivedObject = { [to]: [{ value: received }] };
         return this.createMultiTransaction(spentObj, receivedObj, reference, options);
     }
-
     createMultiTransaction(spent_: SpentReceivedObject, received_: SpentReceivedObject, reference: string | null, options?: MockTransactionOptions): MockChainTransaction {
         const inputs: TxInputOutput[] = Object.entries(spent_).flatMap(([address, utxos]): TxInputOutput[] => {
             return utxos.map(utxo => [address, toBN(utxo.value)]);

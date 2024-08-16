@@ -3,8 +3,9 @@ import "source-map-support/register";
 
 import { BlockchainWalletHelper, ChainId, DBWalletKeys, VerificationPrivateApiClient } from "@flarelabs/fasset-bots-core";
 import {
-    BotConfigFile, BotFAssetInfo, ChainAccount, Secrets, createBlockchainWalletHelper, createBotConfig, createNativeContext,
-    loadConfigFile, loadContracts, overrideAndCreateOrm
+    BotConfigFile, BotFAssetInfo, ChainAccount, OrmConfigOptions, Secrets, createBlockchainWalletHelper, createBotConfig, createBotOrm, createNativeContext,
+    loadConfigFile, loadContracts, overrideAndCreateOrm,
+    simpleWalletOptions
 } from "@flarelabs/fasset-bots-core/config";
 import {
     CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, logger,
@@ -56,15 +57,24 @@ program
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
             await context.fAsset.transfer(addressTo, amountNat, { from: accountFrom.address });
         } else if (token.type === "underlying") {
+            const orm = await createCliOrm();
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
             await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
             const minBN = currency.parse(token.chainInfo.minimumAccountBalance ?? "0");
             await enoughUnderlyingFunds(wallet, accountFrom.address, addressTo, amountNat, minBN);
-            await wallet.addTransaction(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+            try {
+                const stopBot = () => {
+                    console.log("Stopping wallet monitoring...");
+                    wallet.stopMonitoring()
+                }
+                process.on("SIGINT", stopBot);
+                process.on("SIGTERM", stopBot);
+                await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+            } finally {}
         }
     });
 
@@ -100,9 +110,10 @@ program
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));
         } else if (token.type === "underlying") {
+            const orm = await createCliOrm();
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = createBlockchainWalletHelper("user", secrets, chainId, undefined, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
             const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));
@@ -251,4 +262,12 @@ async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddre
     } else {
         throw new CommandLineError("Not enough funds in ${sourceAddress}.")
     }
+}
+
+async function createCliOrm() {
+    const overrideOptions: OrmConfigOptions = {
+        dbName: "simple-wallet-transfer.db",
+        type: "sqlite"
+    }
+    return await overrideAndCreateOrm(overrideOptions, undefined, simpleWalletOptions);
 }

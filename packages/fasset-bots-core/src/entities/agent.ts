@@ -14,13 +14,16 @@ export class AgentEntity {
     @Property({ length: ADDRESS_LENGTH })
     collateralPoolAddress!: string;
 
+    @Property({ length: ADDRESS_LENGTH, nullable: true, index: true })
+    assetManager?: string;
+
     @Property()
     chainId!: string;
 
     @Property()
     fassetSymbol!: string;
 
-    // This is management address, which is immutable. The actuasl address used in all trabsactions will be the work address,
+    // This is management address, which is immutable. The actual address used in all transactions will be the work address,
     // which is mutable and not recorded in the database. It can be obtained from chain by calling `agentOwnerRegistry.getWorkAddress(ownerAddress)`.
     @Property()
     ownerAddress!: string;
@@ -76,6 +79,9 @@ export class AgentEntity {
     @Property()
     destroyVaultCollateralWithdrawalAllowedAtAmount: string = "";
 
+    @Property({ nullable: true })
+    waitingToEmptyUnderlyingAddressTxId?: number;// number of transaction id in db
+
     // agent exit available list
 
     @Property({ type: BNType })
@@ -115,9 +121,9 @@ export class AgentEntity {
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
     dailyTasksTimestamp: BN = BN_ZERO;
 
-    // not used - here just to keep the non-null contraint from breaking; delete column when we support migrations
+    // not used - here just to keep the former non-null contraint from breaking; delete column when we support migrations
     @Property({ columnType: "varchar(20)", default: "obtainedProof" })
-    dailyProofState!: string;
+    dailyProofState?: string;
 
     @OneToMany(() => AgentUpdateSetting, updateSetting => updateSetting.agent)
     updateSettings = new Collection<AgentUpdateSetting>(this);
@@ -211,6 +217,9 @@ export class AgentRedemption {
     // 'PAID' state data
 
     @Property({ nullable: true })
+    txDbId?: number;
+
+    @Property({ nullable: true })
     txHash?: string;
 
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
@@ -280,7 +289,10 @@ export class AgentUnderlyingPayment {
     // 'PAID' state data
 
     @Property({ nullable: true })
-    txHash!: string;
+    txDbId?: number;
+
+    @Property({ nullable: true })
+    txHash?: string;
 
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
 
@@ -292,7 +304,6 @@ export class AgentUnderlyingPayment {
 }
 
 @Entity()
-@Unique({ properties: ["name", "validAt"] })
 export class AgentUpdateSetting {
     @PrimaryKey({ autoincrement: true })
     id!: number;

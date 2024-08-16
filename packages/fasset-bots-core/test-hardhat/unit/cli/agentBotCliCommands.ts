@@ -21,7 +21,6 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentSettingName, AgentUpdateSettingState } from "../../../src/entities/common";
-import { CollateralClass } from "../../../src";
 use(chaiAsPromised);
 use(spies);
 

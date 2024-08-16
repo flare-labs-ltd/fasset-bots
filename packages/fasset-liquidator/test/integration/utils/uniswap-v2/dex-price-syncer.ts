@@ -2,10 +2,10 @@ import { WeiPerEther, Wallet, JsonRpcProvider, type Signer } from "ethers"
 import { relativeTokenPrice, relativeTokenDexPrice } from "../../../calculations/calculations"
 import { mulFactor } from "../../../utils"
 import { logRemovedLiquidity } from "./log-format"
-import { waitFinalize } from "../finalization"
+import { sleep, waitFinalize } from "../finalization"
 import { getContracts } from '../contracts'
 import { removeLiquidity, safelyGetReserves } from "./wrappers"
-import { adjustLiquidityForSlippage, syncDexReservesWithFtsoPrices } from "./pool-sync"
+import { syncDexReservesWithFtsoPrices } from "./pool-sync"
 import { FTSO_SYMBOLS } from "../../../config"
 import type { IERC20, IERC20Metadata } from "../../../../types"
 import type { Contracts } from "../interfaces/contracts"
@@ -14,23 +14,20 @@ import type { Contracts } from "../interfaces/contracts"
 type MaxRelativeSpendings = { [symbol: string]: number | undefined } | number
 type MaxAbsoluteSpendings = { [symbol: string]: bigint }
 
+const DEX_SYNC_SLEEP_MS = 60_000
+
 export interface PoolConfig {
     symbolA: string
     symbolB: string
-    slippage?: {
-        amountA: bigint
-        bips: number
-    }
-    sync?: boolean
 }
 
-export type Config = {
+export type DexFtsoPriceSyncerConfig = {
     maxRelativeSpendings?: MaxRelativeSpendings
     maxAbsoluteSpendings?: MaxAbsoluteSpendings
     pools: PoolConfig[]
 }
 
-export class DexManipulator {
+export class DexFtsoPriceSyncer {
     public readonly symbols: { [symbol: string]: string }
     public readonly symbolToToken: Map<string, IERC20Metadata>
 
@@ -41,14 +38,14 @@ export class DexManipulator {
         public contracts: Contracts
     ) {
         this.symbols = FTSO_SYMBOLS[network]
-        this.symbolToToken = DexManipulator.supportedTokens(this.symbols, contracts)
+        this.symbolToToken = DexFtsoPriceSyncer.supportedTokens(this.symbols, contracts)
     }
 
-    public static async create(network: "coston", rpcUrl: string, assetManager: string, signerPrivateKey: string): Promise<DexManipulator> {
+    public static async create(network: "coston", rpcUrl: string, assetManager: string, signerPrivateKey: string): Promise<DexFtsoPriceSyncer> {
         const provider = new JsonRpcProvider(rpcUrl)
         const signer = new Wallet(signerPrivateKey, provider)
         const contracts = await getContracts(assetManager, network, provider)
-        return new DexManipulator(network, provider, signer, contracts)
+        return new DexFtsoPriceSyncer(network, provider, signer, contracts)
     }
 
     // adjust for new / different tokens (according to network)
@@ -62,7 +59,18 @@ export class DexManipulator {
         ])
     }
 
-    public async adjustDex(config: Config, greedySpend: boolean): Promise<void> {
+    public async run(config: DexFtsoPriceSyncerConfig, greedySpend: boolean): Promise<void> {
+        while (true) {
+            try {
+                await this.syncDex(config, greedySpend)
+            } catch (error) {
+                console.error("Error runninx DexFtsoPriceSyncer bot", error)
+            }
+            await sleep(DEX_SYNC_SLEEP_MS)
+        }
+    }
+
+    public async syncDex(config: DexFtsoPriceSyncerConfig, greedySpend: boolean): Promise<void> {
         if (config.maxAbsoluteSpendings === undefined) {
             config.maxAbsoluteSpendings = await this.distributeSpendings(config, greedySpend)
         }
@@ -70,7 +78,7 @@ export class DexManipulator {
             const tokenA = this.symbolToToken.get(pool.symbolA)!
             const tokenB = this.symbolToToken.get(pool.symbolB)!
             // sync pool with the ftso price
-            if (pool.sync === true) {
+            try {
                 await syncDexReservesWithFtsoPrices(
                     this.contracts.uniswapV2, this.contracts.priceReader,
                     tokenA, tokenB, pool.symbolA, pool.symbolB,
@@ -78,23 +86,14 @@ export class DexManipulator {
                     config.maxAbsoluteSpendings[pool.symbolB],
                     this.signer, this.provider, true
                 )
-            }
-            // adjust liquidity for slippage
-            if (pool.slippage !== undefined) {
-                await adjustLiquidityForSlippage(
-                    this.contracts.uniswapV2, this.contracts.priceReader,
-                    tokenA, tokenB, pool.symbolA, pool.symbolB,
-                    config.maxAbsoluteSpendings[pool.symbolA],
-                    config.maxAbsoluteSpendings[pool.symbolB],
-                    pool.slippage.amountA, pool.slippage.bips,
-                    this.signer, this.provider
-                )
+            } catch (error: any) {
+                console.error(`Error syncing pool (${pool.symbolA}, ${pool.symbolB})`, error.toString())
             }
         }
     }
 
-    public async removeAllLiquidity(config: Config): Promise<void> {
-        for (const { symbolA, symbolB } of config.pools) {
+    public async removeAllLiquidity(config: PoolConfig[]): Promise<void> {
+        for (const { symbolA, symbolB } of config) {
             console.log(`removing liquidity from (${symbolA}, ${symbolB}) pool`)
             const tokenA = this.symbolToToken.get(symbolA)!
             const tokenB = this.symbolToToken.get(symbolB)!
@@ -124,8 +123,8 @@ export class DexManipulator {
     }
 
     public async getFtsoPriceForPair(symbolA: string, symbolB: string): Promise<bigint> {
-        const { 0: priceA } = await this.contracts.priceReader.getPrice(symbolA)
-        const { 0: priceB } = await this.contracts.priceReader.getPrice(symbolB)
+        const { _price: priceA } = await this.contracts.priceReader.getPrice(symbolA)
+        const { _price: priceB } = await this.contracts.priceReader.getPrice(symbolB)
         return relativeTokenPrice(priceA, priceB)
     }
 
@@ -138,7 +137,7 @@ export class DexManipulator {
 
     // determine amounts of max tokens to be spent for each token from user's specified balance percentages
     // greedy determines whether to spend all tokens on a single pair or distribute them across all pairs
-    private async distributeSpendings(config: Config, greedy: boolean): Promise<MaxAbsoluteSpendings> {
+    private async distributeSpendings(config: DexFtsoPriceSyncerConfig, greedy: boolean): Promise<MaxAbsoluteSpendings> {
         const maxSpent: MaxAbsoluteSpendings = {}
         for (const pairs of config.pools) {
             for (const symbol of [pairs.symbolA, pairs.symbolB]) {

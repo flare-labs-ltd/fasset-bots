@@ -389,16 +389,12 @@ export function randomChoice<K>(array: K[]): K | undefined {
     return array[Math.floor(Math.random() * array.length)];
 }
 
-export function iteratorToArray<K>(iter: Iterable<K>): Array<K> {
-    const ret = [];
-    for (const elt of iter) {
-        ret.push(elt);
-    }
-    return ret;
-}
-
 export function* enumerate<T>(array: T[]): Iterable<[T, number]> {
     for (let i = 0; i < array.length; i++) {
         yield [array[i], i];
     }
+}
+
+export function isEnumValue<T extends string>(enumCls: { [key: string]: T }, value: string): value is T {
+    return Object.values(enumCls).includes(value as any);
 }

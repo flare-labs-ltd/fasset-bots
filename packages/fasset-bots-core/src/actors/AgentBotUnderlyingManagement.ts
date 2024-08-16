@@ -14,6 +14,7 @@ import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+import { TransactionStatus } from "@flarelabs/simple-wallet";
 
 export class AgentBotUnderlyingManagement {
     static deepCopyWithObjectCreate = true;
@@ -64,12 +65,12 @@ export class AgentBotUnderlyingManagement {
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
-        const txHash = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
-            return await this.agent.performTopupPayment(amount, this.ownerUnderlyingAddress);
+        const txDbId = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
+            return await this.agent.initiateTopupPayment(amount, this.ownerUnderlyingAddress);
         });
-        await this.createAgentUnderlyingPayment(em, txHash, AgentUnderlyingPaymentType.TOP_UP);
-        logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner sent underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
-            to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with txHash ${txHash}.`);
+        await this.createAgentUnderlyingPayment(em, txDbId, AgentUnderlyingPaymentType.TOP_UP);
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner initiated underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
+            to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with transactions database id  ${txDbId}.`);
         await this.checkForLowOwnerUnderlyingBalance();
     }
 
@@ -91,23 +92,29 @@ export class AgentBotUnderlyingManagement {
     /**
      * Stores sent underlying payment.
      * @param rootEm entity manager
+     * @param txHash transaction hash
      * @param type enum for underlying payment type from entity AgentUnderlyingPayment
      */
-    async createAgentUnderlyingPayment(rootEm: EM, txHash: string, type: AgentUnderlyingPaymentType): Promise<void> {
+    async createAgentUnderlyingPayment(rootEm: EM, txHashOrTxDbId: string | number, type: AgentUnderlyingPaymentType): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             rootEm.create(
                 AgentUnderlyingPayment,
                 {
                     agentAddress: this.agent.vaultAddress,
                     state: AgentUnderlyingPaymentState.PAID,
-                    txHash: txHash,
+                    txHash: typeof txHashOrTxDbId === 'string' ? txHashOrTxDbId : null,
+                    txDbId: typeof txHashOrTxDbId === 'number' ? txHashOrTxDbId : null,
                     type: type,
                 } as RequiredEntityData<AgentUnderlyingPayment>,
                 { persist: true }
             );
         });
-        await this.notifier.sendAgentUnderlyingPaymentCreated(txHash, type);
-        logger.info(`Agent ${this.agent.vaultAddress} send underlying ${type} payment ${txHash}.`);
+        await this.notifier.sendAgentUnderlyingPaymentCreated(txHashOrTxDbId, type);
+        if (typeof txHashOrTxDbId == 'string') {
+            logger.info(`Agent ${this.agent.vaultAddress} send underlying ${type} payment ${txHashOrTxDbId}.`);
+        } else {
+            logger.info(`Agent ${this.agent.vaultAddress} initiated underlying ${type} payment with transaction database id ${txHashOrTxDbId}.`);
+        }
     }
 
     /**
@@ -175,12 +182,26 @@ export class AgentBotUnderlyingManagement {
      */
     async checkPaymentProofAvailable(rootEm: EM, underlyingPayment: Readonly<AgentUnderlyingPayment>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} is available.`);
-        assertNotNull(underlyingPayment.txHash);
-        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-        if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
-            await this.requestPaymentProof(rootEm, underlyingPayment);
-            await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
+        assertNotNull(underlyingPayment.txDbId);
+        const info = await this.context.wallet.checkTransactionStatus(underlyingPayment.txDbId);
+        if ((info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED)
+             && info.transactionHash
+        ) {
+            underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                txHash: info.transactionHash
+            });
+            assertNotNull(underlyingPayment.txHash);
+            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
+            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+            if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                await this.requestPaymentProof(rootEm, underlyingPayment);
+                await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
+            }
+        } else if (info.status == TransactionStatus.TX_REPLACED) {
+            assertNotNull(info.replacedByDdId);
+            await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                txDbId: info.replacedByDdId
+            });
         }
     }
 
@@ -195,7 +216,7 @@ export class AgentBotUnderlyingManagement {
             const sourceAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? null : this.agent.underlyingAddress;
             const tragetAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? this.agent.underlyingAddress : null;
             const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
-                return await this.context.attestationProvider.requestPaymentProof(underlyingPayment.txHash, sourceAddress, tragetAddress);
+                return await this.context.attestationProvider.requestPaymentProof(underlyingPayment.txHash!, sourceAddress, tragetAddress);
             });
             underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
                 state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
@@ -254,7 +275,7 @@ export class AgentBotUnderlyingManagement {
                 in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
             // wait for one more round and then reset to state PAID, which will eventually resubmit request
             if (await this.bot.enoughTimePassedToObtainProof(underlyingPayment)) {
-                await this.notifier.sendAgentUnderlyingPaymentNoProofObtained(underlyingPayment.txHash, underlyingPayment.type, underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData);
+                await this.notifier.sendAgentUnderlyingPaymentNoProofObtained(underlyingPayment.txHash!, underlyingPayment.type, underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData);
                 logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining payment proof for underlying payment ${underlyingPayment.txHash}.`);
                 underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
                     state: AgentUnderlyingPaymentState.PAID,

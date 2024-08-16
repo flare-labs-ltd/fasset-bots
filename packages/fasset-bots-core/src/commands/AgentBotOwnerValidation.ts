@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { AgentOwnerRegistryInstance, FAssetInstance } from "../../typechain-truffle";
-import { BotConfigFile, createWalletClient } from "../config";
+import { BotConfigFile, createBotConfig, createWalletClient } from "../config";
 import { AssetContractRetriever } from "../config/AssetContractRetriever";
 import { loadConfigFile } from "../config/config-file-loader";
 import { Secrets } from "../config/secrets";
@@ -15,6 +15,7 @@ import { stripIndent } from "../utils/formatting";
 import { ZERO_ADDRESS, requireNotNull } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
+import { ORM } from "../config/orm";
 
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 
@@ -45,10 +46,12 @@ export class AgentBotOwnerValidation {
         public agentOwnerRegistry: AgentOwnerRegistryInstance,
         public fassets: Map<string, FAssetInstance>,    // fasset symbol => fasset
         public reporter: Reporter = throwingReporter,
+        public orm: ORM
     ) {}
 
     static async create(secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const apiKey = secrets.optional("apiKey.native_rpc");
         await initWeb3(authenticatedHttpProvider(configFile.rpcUrl, apiKey), [], null);
@@ -57,14 +60,17 @@ export class AgentBotOwnerValidation {
         const agentOwnerRegistry = await contractRetriever.getContract(AgentOwnerRegistry);
         const fassets = new Map<string, FAssetInstance>();
         for (const [symbol, { fasset }] of contractRetriever.assetManagers) fassets.set(symbol, fasset);
-        return new AgentBotOwnerValidation(secrets, configFile, agentOwnerRegistry, fassets, reporter);
+        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
+        return new AgentBotOwnerValidation(secrets, configFile, agentOwnerRegistry, fassets, reporter, botConfig.orm);
     }
 
     static async fromContext(context: IAssetAgentContext, secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const fassets = new Map<string, FAssetInstance>([[context.fAssetSymbol, context.fAsset]]);
-        return new AgentBotOwnerValidation(secrets, configFile, context.agentOwnerRegistry, fassets, reporter);
+        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
+        return new AgentBotOwnerValidation(secrets, configFile, context.agentOwnerRegistry, fassets, reporter, botConfig.orm);
     }
 
     async validate(fassetSymbols: string[]) {
@@ -155,7 +161,7 @@ export class AgentBotOwnerValidation {
 
     async createWalletTokenBalance(fassetSymbol: string) {
         const fassetInfo = this.configFile.fAssets[fassetSymbol];
-        const walletClient = createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl));
+        const walletClient = await createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl), this.orm.em);
         const wallet = new BlockchainWalletHelper(walletClient, new MemoryWalletKeys());
         const fasset = requireNotNull(this.fassets.get(fassetSymbol));
         return new WalletTokenBalance(wallet, await fasset.assetSymbol(), Number(await fasset.decimals()));

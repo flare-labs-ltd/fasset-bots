@@ -5,10 +5,8 @@ This is a Typescript library that allows querying basic wallet functions from an
 ## Supported blockchains
 
 - [BTC](https://developer.bitcoin.org/index.html)
-- [LTC](https://litecoin.org/)
 - [DOGE](https://dogecoin.com/)
 - [XRP](https://xrpl.org/docs.html)
-- [ALGO](https://developer.algorand.org/docs/)
 
 ## Installation
 
@@ -32,10 +30,8 @@ yarn
 Examples for **creating a wallet**, **preparing transaction**, **signing transaction**, **submitting transaction** and **getting balance** can be found in the following test files. Examples are working with the `.env` file provided above.
 
 
-- [ALGO examples](./test/ALGO/wallet.test.ts),
 - [BTC examples](./test/BTC/wallet.test.ts),
 - [DOGE examples](./test/DOGE/wallet.test.ts),
-- [LTC examples](./test/LTC/wallet.test.ts),
 - [XRP examples](./test/XRP/wallet.test.ts).
 
 ## Implementation
@@ -86,10 +82,8 @@ Implemented functions:
 
 Test files are stored in directory `test` and are split into subdirectories. Test directly linked to blockchains can be found in:
 
-- [`test/ALGO`](./test/ALGO),
 - [`test/BTC`](./test/BTC),
 - [`test/DOGE`](./test/DOGE),
-- [`test/LTC`](./test/LTC),
 - [`test/XRP`](./test/XRP).
 
 Other tests can be found in [`test/OTHER`](./test/OTHER).
@@ -113,10 +107,6 @@ Beware currently timeout on coverage tests in set to ```500000ms```.
 
 For account to be activated some minimum balance should be satisfied.
 
-#### ALGO:
-- [Minimum balance](https://developer.algorand.org/docs/get-details/accounts/#minimum-balance) is 0.1 ALGO
-
-
 #### XRP:
 - [Minimum balance](https://xrpl.org/accounts.html) is 10 XRP
 
@@ -124,18 +114,11 @@ For account to be activated some minimum balance should be satisfied.
 
 https://docs.lmnl.app/docs/testnet-faucets-guide
 
-#### ALGO:
-- https://dispenser.testnet.aws.algodev.network - 5 ALGO
-- https://bank.testnet.algorand.network - 10 ALGO
-
 #### BTC:
 - https://bitcoinfaucet.uo1.net - 0.0007 BTC per hour
 
 #### DOGE:
 - https://dogecoin-faucet.ruan.dev - 1000 DOGE per hour (locked on address)
-
-#### LTC:
-- http://litecointf.salmen.website - 1.5 LTC per hour (locked at the network level)
 
 #### XRP:
 - https://test.bithomp.com/faucet - 1000 XRP
@@ -144,10 +127,6 @@ https://docs.lmnl.app/docs/testnet-faucets-guide
 ## Blockchain explorers
 Following are some of mainnet and testnet explorers:
 
-#### ALGO:
-- Mainnet explorer: https://explorer.perawallet.app
-- Testnet explorer: https://testnet.explorer.perawallet.app
-
 #### BTC:
 - Mainnet explorer: https://sochain.com/btc
 - Testnet explorer: https://sochain.com/testnet/btc
@@ -155,10 +134,6 @@ Following are some of mainnet and testnet explorers:
 #### DOGE:
 - Mainnet explorer: https://sochain.com/doge
 - Testnet explorer: https://sochain.com/testnet/doge
-
-#### LTC:
-- Mainnet explorer: https://sochain.com/ltc
-- Testnet explorer: https://sochain.com/testnet/ltc
 
 #### XRP:
 - Mainnet explorer: https://livenet.xrpl.org/

@@ -32,7 +32,7 @@ export class FuzzingAgentBot {
         const mintingUBA = mintedAmountUBA.add(poolFeeUBA);
         // perform payment
         checkedCast(chain, MockChain).mint(this.ownerUnderlyingAddress, mintingUBA);
-        const txHash = await agent.wallet.addTransaction(this.ownerUnderlyingAddress, agent.underlyingAddress, mintingUBA, PaymentReference.selfMint(agent.vaultAddress));
+        const txHash = await agent.wallet.addTransactionAndWaitForItsFinalization(this.ownerUnderlyingAddress, agent.underlyingAddress, mintingUBA, PaymentReference.selfMint(agent.vaultAddress));
         // wait for finalization
         await this.agentBot.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash); //TODO - check if it is ok
         // execute

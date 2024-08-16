@@ -1,6 +1,7 @@
 export * from "./fasset/AssetManagerTypes";
 export { ActorBaseRunner } from "./actors/ActorBaseRunner";
 export { AgentBotCommands } from "./commands/AgentBotCommands";
+export { AgentBotDbUpgrades } from "./actors/AgentBotDbUpgrades";
 export { AgentBotOwnerValidation, throwingReporter, printingReporter } from "./commands/AgentBotOwnerValidation";
 export { AgentBotRunner } from "./actors/AgentBotRunner";
 export { TimeKeeper, TimeKeeperQueryWindow, TimekeeperTimingConfig } from "./actors/TimeKeeper";

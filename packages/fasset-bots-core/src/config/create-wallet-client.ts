@@ -2,6 +2,8 @@ import { StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
+import { DBWalletKeys } from "../underlying-chain/WalletKeys";
+import { EntityManager } from "@mikro-orm/core";
 
 const supportedSourceIds = [ChainId.XRP, ChainId.BTC, ChainId.DOGE, ChainId.testXRP, ChainId.testBTC, ChainId.testDOGE];
 
@@ -22,39 +24,47 @@ export function supportedChainId(chainId: ChainId) {
  * @param inTestnet if testnet should be used, optional parameter
  * @returns instance of Wallet implementation according to sourceId
  */
-export function createWalletClient(
+export async function createWalletClient(
     secrets: Secrets,
     chainId: ChainId,
     walletUrl: string,
+    em: EntityManager,
     options: StuckTransaction = {}
-): WalletClient {
+): Promise<WalletClient> {
     requireSupportedChainId(chainId);
+    const walletKeys = DBWalletKeys.from(em, secrets);
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        return new WALLET.BTC({
+        return await WALLET.BTC.initialize({
             url: walletUrl,
             username: "",
             password: "",
             inTestnet: chainId === ChainId.testBTC ? true : false,
             apiTokenKey: secrets.optional("apiKey.btc_rpc"),
             stuckTransactionOptions: options,
+            em,
+            walletKeys
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        return new WALLET.DOGE({
+        return await WALLET.DOGE.initialize({
             url: walletUrl,
             username: "",
             password: "",
             inTestnet: chainId === ChainId.testDOGE ? true : false,
             apiTokenKey: secrets.optional("apiKey.doge_rpc"),
             stuckTransactionOptions: options,
+            em,
+            walletKeys
         }); // UtxoMccCreate
     } else {
-        return new WALLET.XRP({
+        return await WALLET.XRP.initialize({
             url: walletUrl,
             username: "",
             password: "",
             apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
             inTestnet: chainId === ChainId.testXRP ? true : false,
             stuckTransactionOptions: options,
+            em,
+            walletKeys
         }); // XrpMccCreate
     }
 }

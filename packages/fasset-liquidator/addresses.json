@@ -11,12 +11,12 @@
     },
     "coston": {
         "collaterals": {
-            "USDC": "0x988136EC5228b0b637CfcE14bFEc53D0C4ddC27d",
-            "USDT": "0x179ACDe40EEb06702b7C37F7BbcaB663D7048AEf",
-            "WETH": "0xC63b4A26A80d54AbC679eb3c50bcb79dbCaaCfCa"
+            "USDC": "0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6",
+            "USDT": "0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5",
+            "WETH": "0x17c3E6318cb45B4267998940d7D65BA95A32954F"
         },
         "WNAT": "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91",
-        "uniswapV2": "0xe197F7c335cD933308b821815B8c0009c851a97a",
+        "uniswapV2": "0xf0D01450C037DB2903CF5Ff638Dd1e2e6B0EEDF4",
         "flashLender": "0x8D8F6E6A2593170E043523c5A52bd292b2CFdEB0"
     }
 }

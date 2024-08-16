@@ -66,6 +66,14 @@ FASSET_BOT_SECRETS="../../secrets.json"
 
 To run fasset-bots backend, run the command `yarn start_agent_api` or `yarn start_agent_api_debug` from the root of repository. In another terminal you can also run your agent-bot with `yarn run-agent` (but only after you generate secrets either on frontend or manually). On the frontend you will be able to config `secrets.json` file. After you have them generated you can run your agent.
 
+### Enable responding to agent pings
+
+The status of an agent can be tracked by outside sources using the AgentPing smart contract. This way dApps can check if an agent is online or offline. But by default the agent will not respond to pings from untrusted senders. To add an address to which your agent will respond to you need to add it in the `trustedPingSenders` parameter that is under `agentBotSettings` in `fasset-bots/packages/fasset-bots-core/run-config/coston-bot.json`. For example if we want out agent to respond to addresses `0x0048508b510502555ED47E98dE98Dd6426dDd0C4` and `0xb03fF2AF427FEFb73bcf3263338F42271E30cfD1` we would add these addresses to the `trustedPingSenders` array and the configuration would look like this:
+```json
+    "trustedPingSenders": ["0x0048508b510502555ED47E98dE98Dd6426dDd0C4","0xb03fF2AF427FEFb73bcf3263338F42271E30cfD1"],
+```
+The specific addresses to add to this configuration will be communicated to you from the Flare team by Telegram.
+
 ## Setting up only fasset-bots backend (if you already have setup the basic fasset-bots)
 If you already have setup fasset-bots and you already have a `secrets.json`, then you only need to setup a `.env` file in `fasset-bots/packages/fasset-bots-api`. Create a `.env` file in `fasset-bots/packages/fasset-bots-api` and paste this:
 ```env

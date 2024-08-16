@@ -11,6 +11,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
+import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 export interface ITimeKeeperService {
     get(symbol: string): ITimeKeeper;
@@ -41,6 +42,8 @@ export class AgentBotRunner {
 
     public serviceAccounts = new Map<string, string>();
 
+    private simpleWalletBackgroundTasks: Map<string, IBlockChainWallet> = new Map();
+
     @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
@@ -52,11 +55,12 @@ export class AgentBotRunner {
             }
         } finally {
             this.running = false;
+            this.stopAllWalletMonitoring();
         }
     }
 
     parallel() {
-        // paralle has same value for all chains, so just use first
+        // parallel has same value for all chains, so just use first
         return firstValue(this.settings)?.parallel ?? false;
     }
 
@@ -111,7 +115,7 @@ export class AgentBotRunner {
      * In every step it collects all active agent entities and for every one it construct AgentBot and runs its runsStep method, which handles required events and other methods.
      */
     async runStepSerial(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
             this.checkForWorkAddressChange();
             if (this.stopOrRestartRequested()) break;
@@ -129,16 +133,20 @@ export class AgentBotRunner {
     }
 
     async addNewAgentBots() {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
-            if (this.runningAgentBots.has(agentEntity.vaultAddress)) continue;
+            const runningAgentBot = this.runningAgentBots.get(agentEntity.vaultAddress);
+            if (runningAgentBot) {
+                this.checkIfWalletIsRunning(agentEntity.chainId, runningAgentBot);
+                continue;
+            }
             // create new bot
             try {
                 const agentBot = await this.newAgentBot(agentEntity);
                 if (agentBot == null) continue;
                 void agentBot.runThreads(this.orm.em).catch((error) => {
-                    logger.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
-                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unxpectedly:`, error);
+                    logger.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
+                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
                 });
                 this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner added running agent ${agentBot.agent.vaultAddress}.`);
@@ -147,6 +155,11 @@ export class AgentBotRunner {
                 logger.error(`Owner's ${agentEntity.ownerAddress} AgentBotRunner ran into error starting agent ${agentEntity.vaultAddress}:`, error);
             }
         }
+    }
+
+    async activeAgents() {
+        const assetManagerAddresses = Array.from(this.contexts.values()).map(ctx => ctx.assetManager.address);
+        return await this.orm.em.find(AgentEntity, { active: true, assetManager: { $in: assetManagerAddresses } });
     }
 
     async newAgentBot(agentEntity: AgentEntity) {
@@ -164,10 +177,13 @@ export class AgentBotRunner {
         agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
         agentBot.locks = this.locks;
         agentBot.loopDelay = this.loopDelay;
+
+        // add wallet to the background loop
+        this.addSimpleWalletToLoop(agentEntity.chainId, agentBot);
         return agentBot;
     }
 
-    removeStoppedAgentBots() {
+    removeStoppedAgentBots(): void {
         const agentBotEntries = Array.from(this.runningAgentBots.entries());
         for (const [address, agentBot] of agentBotEntries) {
             if (!agentBot.running()) {
@@ -176,7 +192,7 @@ export class AgentBotRunner {
         }
     }
 
-    checkForWorkAddressChange() {
+    checkForWorkAddressChange(): void {
         if (this.secrets.filePath === "MEMORY") return;     // memory secrets (for tests)
         const newSecrets = Secrets.load(this.secrets.filePath);
         if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
@@ -187,7 +203,7 @@ export class AgentBotRunner {
         }
     }
 
-    async fundServiceAccounts() {
+    async fundServiceAccounts(): Promise<void> {
         const settings = firstValue(this.settings);
         const fundingAddress = this.secrets.optional("owner.native.address");
         if (!settings || !fundingAddress) return;
@@ -197,7 +213,7 @@ export class AgentBotRunner {
         }
     }
 
-    async fundAccount(from: string, account: string, minBalance: BN, name: string, notifier?: AgentNotifier) {
+    async fundAccount(from: string, account: string, minBalance: BN, name: string, notifier?: AgentNotifier): Promise<void> {
         try {
             const nativeBR = new EVMNativeTokenBalance("NAT", 18);
             const balance = await nativeBR.balance(account);
@@ -240,5 +256,41 @@ export class AgentBotRunner {
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
+    }
+
+    addSimpleWalletToLoop(chainId: string, agentBot: AgentBot): void {
+        const wallet = this.simpleWalletBackgroundTasks.get(chainId);
+        if (wallet) {
+            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
+            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
+        } else {
+            const newWallet = agentBot.context.wallet
+            this.simpleWalletBackgroundTasks.set(chainId, newWallet);
+            logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.agentVault}.`);
+            void newWallet.startMonitoringTransactionProgress().catch((error) => {
+                logger.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
+                console.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
+            });//start in background
+        }
+    }
+
+    stopAllWalletMonitoring(): void {
+        this.simpleWalletBackgroundTasks.forEach((wallet, chainId) => {
+            wallet.stopMonitoring();
+            logger.info(`Stopped monitoring wallet for chain ${chainId}.`);
+        });
+    }
+
+    checkIfWalletIsRunning(chainId: string, agentBot: AgentBot): boolean {
+        logger.info(`Checking if monitoring wallet for chain ${chainId} is running.`);
+        const wallet = this.simpleWalletBackgroundTasks.get(chainId);
+        if (wallet?.isMonitoring()) {
+            logger.info(`Monitoring wallet for chain ${chainId} is running.`)
+            return true;
+        } else {
+            logger.info(`Monitoring wallet for chain ${chainId} is NOT running.`)
+            this.addSimpleWalletToLoop(chainId, agentBot);
+            return false;
+        }
     }
 }

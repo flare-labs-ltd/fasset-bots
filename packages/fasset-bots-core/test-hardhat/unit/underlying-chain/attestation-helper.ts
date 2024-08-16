@@ -40,14 +40,14 @@ describe("Attestation client unit tests", () => {
         });
 
         it("Should prove payment proof", async () => {
-            const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+            const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             chain.mine(chain.finalizationBlocks + 1);
             const provePayment = await context.attestationProvider.provePayment(transaction, underlying1, underlying2);
             expect(provePayment).to.not.be.null;
         });
 
         it("Should prove balance decreasing transaction proof", async () => {
-            const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+            const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             chain.mine(chain.finalizationBlocks + 1);
             const proveBalanceDecreasingTransaction = await context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1);
             expect(proveBalanceDecreasingTransaction).to.not.be.null;
@@ -66,7 +66,7 @@ describe("Attestation client unit tests", () => {
         });
 
         it("Should not request payment proof - transaction not found", async () => {
-            const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+            const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             const invalidTransaction = transaction.slice(0, 50);
             await expect(context.attestationProvider.provePayment(invalidTransaction, underlying1, underlying2))
                 .to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`)
@@ -74,7 +74,7 @@ describe("Attestation client unit tests", () => {
         });
 
         it("Should not request balance decreasing transaction proof - transaction not found", async () => {
-            const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+            const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             const invalidTransaction = transaction.slice(0, 50);
             await expect(context.attestationProvider.requestBalanceDecreasingTransactionProof(invalidTransaction, underlying1))
                 .to.eventually.be.rejectedWith(`transaction not found ${invalidTransaction}`)
@@ -100,7 +100,7 @@ describe("Attestation client unit tests", () => {
         it("Should not receive referenced payment nonexistence proof - overflow block not found", async () => {
             const reference = "reference";
             const amount = 1;
-            await context.wallet.addTransaction(underlying1, underlying2, amount, reference);
+            await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, amount, reference);
             const blockNumber = await context.blockchainIndexer.getBlockHeight();
             const blockTimestamp = (await context.blockchainIndexer.getBlockAt(blockNumber))?.timestamp;
             const endBlock = blockNumber + 10;
@@ -110,7 +110,7 @@ describe("Attestation client unit tests", () => {
         });
 
         it("Should not find address index", async () => {
-            const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+            const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             chain.mine(chain.finalizationBlocks + 1);
             await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying1))
                 .to.eventually.be.rejectedWith(`address ${underlying1} not used in transaction`)
@@ -132,7 +132,7 @@ describe("Attestation client unit tests", () => {
 
         it("Should not prove payment proof", async () => {
             chain = checkedCast(context.blockchainIndexer.chain, MockChain);
-            const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+            const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             chain.mine(chain.finalizationBlocks + 1);
             await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2))
                 .to.eventually.be.rejectedWith(`StateConnectorClient: cannot submit request`)
@@ -141,7 +141,7 @@ describe("Attestation client unit tests", () => {
 
         it("Should not prove balance decreasing transaction", async () => {
             chain = checkedCast(context.blockchainIndexer.chain, MockChain);
-            const transaction = await context.wallet.addTransaction(underlying1, underlying2, 1, null);
+            const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             chain.mine(chain.finalizationBlocks + 1);
             await expect(context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1))
                 .to.eventually.be.rejectedWith(`StateConnectorClient: cannot submit request`)

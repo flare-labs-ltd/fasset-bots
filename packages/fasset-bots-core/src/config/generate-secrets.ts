@@ -1,11 +1,10 @@
-import { WALLET, WalletClient } from "@flarelabs/simple-wallet";
 import crypto from "node:crypto";
 import Web3 from "web3";
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError, requireNotNull } from "../utils";
 import { loadConfigFile } from "./config-file-loader";
 import { ChainAccount, SecretsFile } from "./config-files/SecretsFile";
-import { ICreateWalletResponse } from "../../../simple-wallet/src/interfaces/WriteWalletRpcInterface";
+import { BtcAccountGeneration, DogeAccountGeneration, ICreateWalletResponse, WalletAccount, XrpAccountGeneration } from "@flarelabs/simple-wallet";
 
 export type SecretsUser = "user" | "agent" | "other";
 
@@ -66,28 +65,16 @@ export function generateUnderlyingAccount(chainName: string): ICreateWalletRespo
     return walletClient.createWallet();
 }
 
-function createStubWalletClient(chainId: ChainId): WalletClient {
+function createStubWalletClient(chainId: ChainId): WalletAccount {
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        return new WALLET.BTC({
-            url: "",
-            username: "",
-            password: "",
-            inTestnet: chainId === ChainId.testBTC ? true : false,
-        }); // UtxoMccCreate
+        const inTestnet: boolean = ChainId.testBTC ? true : false;
+        return new BtcAccountGeneration(inTestnet);
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        return new WALLET.DOGE({
-            url: "",
-            username: "",
-            password: "",
-            inTestnet: chainId === ChainId.testDOGE ? true : false,
-        }); // UtxoMccCreate
+        const inTestnet: boolean = ChainId.testDOGE ? true : false;
+        return new DogeAccountGeneration(inTestnet);
     } else if (chainId === ChainId.XRP || chainId === ChainId.testXRP) {
-        return new WALLET.XRP({
-            url: "",
-            username: "",
-            password: "",
-            inTestnet: chainId === ChainId.testXRP ? true : false,
-        }); // XrpMccCreate
+        const inTestnet: boolean = ChainId.testXRP ? true : false;
+        return new XrpAccountGeneration(inTestnet);
     } else {
         throw new CommandLineError(`Chain name ${chainId} not supported.`);
     }

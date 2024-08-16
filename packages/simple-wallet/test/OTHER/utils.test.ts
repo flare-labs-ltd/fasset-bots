@@ -1,68 +1,21 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { algo_ensure_data, bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x, wallet_utxo_ensure_data, xrp_ensure_data } from "../../src/utils/utils";
+import { bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 import { ChainType } from "../../src/utils/constants";
+import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 
-const BTCMccConnectionTest = {
+const BTCMccConnectionTestInitial = {
    url: process.env.BTC_URL ?? "",
    username: "",
    password: "",
-   inTestnet: true
+   inTestnet: true,
+
 };
 const invalidChainType = "0x494e56414c494400000000000000000000000000000000000000000000000000" as ChainType;
 
 describe("Util tests", () => {
-   it("Should fail if status not 'OK'", async () => {
-      const data = {
-         statusText: "FAIL",
-      };
-      const fn = () => {
-         return wallet_utxo_ensure_data(data);
-      };
-      expect(fn).to.throw(Error);
-   });
-
-   it("Should not fail if status is 'OK'", async () => {
-      const data = {
-         statusText: "OK",
-      };
-      const fn = () => {
-         return wallet_utxo_ensure_data(data);
-      };
-      expect(fn).to.not.throw(Error);
-   });
-
-   it("Should fail if not desired error code or error message", async () => {
-      const dataAlgo = {
-         status: 400,
-      };
-      const fn = () => {
-         return algo_ensure_data(dataAlgo);
-      };
-      expect(fn).to.throw(Error);
-      const dataXrp = {
-         result: {
-            status: "error",
-            error: "txnNotFound"
-         }
-      };
-      const fn2 = () => {
-         return xrp_ensure_data(dataXrp);
-      };
-      expect(fn2).to.throw(Error);
-      dataXrp.result.error = "lgrNotFound"
-      const fn3 = () => {
-         return xrp_ensure_data(dataXrp);
-      };
-      expect(fn3).to.throw(Error);
-      dataXrp.result.error = "someOther"
-      const fn4 = () => {
-         return xrp_ensure_data(dataXrp);
-      };
-      expect(fn4).to.throw(Error);
-   });
-
    it("Should fail if env variable not defined", async () => {
       const envVariable = "I_AM_NOT_DEFINED";
       const fn = () => {
@@ -72,7 +25,10 @@ describe("Util tests", () => {
    });
 
    it("Should fail if unsupported network", async () => {
-      const wClient = new WALLET.BTC(BTCMccConnectionTest);
+      const testOrm = await initializeTestMikroORM();
+      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+      const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
+      const wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
       wClient.chainType = invalidChainType;
       const fn = () => {
          return getCurrentNetwork(wClient.chainType);
@@ -162,15 +118,4 @@ describe("Util tests", () => {
       expect(fn2).to.throw(Error);
    });
 
-   it("Should get stuck transactions constants", async function () {
-      const c = stuckTransactionConstants(ChainType.LTC);
-      expect(c.blockOffset).to.eq(3);
-      expect(c.retries).to.eq(1);
-      expect(c.feeIncrease).to.eq(2);
-   });
-
-   it("Should get current network", async function () {
-      const c = getCurrentNetwork(ChainType.LTC);
-      expect(c.bech32).to.eq("ltc");
-   });
 });
