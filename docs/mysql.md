@@ -77,7 +77,7 @@ After installation, you can verify MySQL is running and connect to it using MySQ
 
 ## Creating a New User in MySQL
 
-First, we need to create a new user in MySQL that will be used by `fasset-bots` to connect to the database. In this example, we are going to create a user with the username `fassetbot` and password `VerySafePassword`.
+First, we need to create a new user in MySQL that will be used by `fasset-bots` to connect to the database. In this example, we are going to create a user with the username `fassetbot` and password `VerySafePassword` on `localhost`.
 
 ### Steps:
 
@@ -96,7 +96,7 @@ First, we need to create a new user in MySQL that will be used by `fasset-bots` 
 3. **Grant Privileges:**
    - After creating the user, you need to grant appropriate privileges to the user. Use the `GRANT` statement to give permissions to the user. For example, to grant all privileges on all databases:
      ```sql
-     GRANT ALL PRIVILEGES ON *.* TO 'fassetbot'@'localhost' WITH GRANT OPTION;
+     GRANT ALL PRIVILEGES ON fasset_bots.* TO 'fassetbot'@'localhost' WITH GRANT OPTION;
      ```
 
 4. **Flush Privileges:**
