@@ -99,7 +99,9 @@ function createMethodCalls(instance: MiniTruffleContractInstance, method: AbiIte
         const encResult = await executeMethodCall(instance._settings, { ...config, to: instance.address, data: encodedArgs });
         /* istanbul ignore next: method.outputs cannot really be undefined - web3 contract fails if it is */
         const outputs = method.outputs ?? [];
-        return convertResults(outputs, coder.decodeParameters(outputs, encResult));
+        const decodedOutputs = coder.decodeParameters(outputs, encResult);
+        validateMethodResultEncoding(outputs, encResult, decodedOutputs);
+        return convertResults(outputs, decodedOutputs);
     };
     if (isConstant(method)) {
         return callFn;
@@ -123,6 +125,17 @@ function createMethodCalls(instance: MiniTruffleContractInstance, method: AbiIte
     sendFn.sendTransaction = sendFn;
     sendFn.estimateGas = estimateGasFn;
     return sendFn;
+}
+
+function validateMethodResultEncoding(outputs: AbiOutput[], encResult: string, decodedOutputs: Record<string,any>) {
+    const outputList: any[] = [];
+    for (let i = 0; i < decodedOutputs.__length__; i++) {
+        outputList.push(decodedOutputs[i]);
+    }
+    const reencodedResult = coder.encodeParameters(outputs, outputList);
+    if (reencodedResult !== encResult) {
+        throw new InvalidMethodInvocationError("Method result re-encoding mismatch. Probably versions of deployed contracts and used ABI do not agree.");
+    }
 }
 
 /**

@@ -184,6 +184,17 @@ describe("mini truffle and artifacts tests", () => {
             await withSettings(fpr, { gas: "auto" }).setDecimals("DOGE", 5);
             await expectRevertWithCorrectStack(fpr.setDecimals("BTC", 5, { gas: Math.floor(gas / 2) }), "Transaction ran out of gas");
         });
+
+        it("method result format should be validated", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const fpr = await FakePriceReader.new(accounts[0]);
+            await fpr.setDecimals("XRP", 6);
+            await fpr.setPrice("XRP", 100000);
+            // hack method ABI to make decoding wrong
+            const fprCtr = fpr as unknown as MiniTruffleContractInstance;
+            fprCtr.abi.find(it => it.name === "getPrice")?.outputs?.pop();
+            await expectRevert(fpr.getPrice("XRP"), "Method result re-encoding mismatch. Probably versions of deployed contracts and used ABI do not agree.");
+        });
     });
 
     describe("different finalization settings", () => {

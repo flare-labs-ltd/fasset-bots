@@ -35,6 +35,16 @@ export class LazyTokenBalance {
         this.tokenBalance ??= await this.initializer();
         return this.tokenBalance.format(amount, format);
     }
+
+    async symbol() {
+        this.tokenBalance ??= await this.initializer();
+        return this.tokenBalance.symbol;
+    }
+
+    async decimals() {
+        this.tokenBalance ??= await this.initializer();
+        return this.tokenBalance.decimals;
+    }
 }
 
 export class AgentTokenBalances {
