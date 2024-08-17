@@ -12,14 +12,17 @@ import {toBN, toBNExp} from "../../src/utils/bnutils";
 import {fetchTransactionEntityById, updateTransactionEntity} from "../../src/db/dbutils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import {
-    createAndSignXRPTransactionWithStatus,
+    addConsoleTransportForTests,
+    createAndSignXRPTransactionWithStatus, loop, resetMonitoringOnForceExit, setMonitoringStatus,
     setWalletStatusInDB,
     TEST_WALLET_XRP,
     waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus
 } from "../test_util/util";
-import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
-import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
+import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
+import {fetchMonitoringState} from "../../src/utils/lockManagement";
+import { logger } from "../../src/utils/logger";
 
 use(chaiAsPromised);
 
@@ -27,16 +30,16 @@ const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWallet
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
 const XRPMccConnectionTestInitial = {
-   url: process.env.XRP_URL ?? "",
-   username: "",
-   password: "",
-   stuckTransactionOptions: {
-      blockOffset: 10,
-   },
-   rateLimitOptions: {
-      timeoutMs: 60000,
-   },
-   inTestnet: true
+    url: process.env.XRP_URL ?? "",
+    username: "",
+    password: "",
+    stuckTransactionOptions: {
+        blockOffset: 10,
+    },
+    rateLimitOptions: {
+        timeoutMs: 60000,
+    },
+    inTestnet: true
 };
 let XRPMccConnectionTest: RippleWalletConfig;
 
@@ -57,16 +60,32 @@ let wClient: WALLET.XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
 
 describe("Xrp wallet tests", () => {
-   before(async () => {
-      const testOrm = await initializeTestMikroORM();
-      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-      XRPMccConnectionTest = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
-      void wClient.startMonitoringTransactionProgress();
-   });
+    let removeConsoleTransport: () => void;
+
+    before(async () => {
+        removeConsoleTransport = addConsoleTransportForTests(logger);
+
+        const testOrm = await initializeTestMikroORM();
+        const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+        XRPMccConnectionTest = {...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys};
+        wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
+        void wClient.startMonitoringTransactionProgress();
+
+        resetMonitoringOnForceExit(wClient);
+    });
 
     after(async () => {
-        wClient.stopMonitoring();
+        await wClient.stopMonitoring();
+        try {
+            await loop(100, 2000, null, async () => {
+                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
+                if (!monitoringState || !monitoringState.isMonitoring) return true;
+            });
+        } catch (e) {
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+        }
+
+        removeConsoleTransport();
     });
 
     it("Should create account", async () => {

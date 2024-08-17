@@ -49,6 +49,9 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     }
     if (users.includes("user")) {
         secrets.user = generateAccount(chainIds);
+        secrets.wallet = {
+            encryption_password: crypto.randomBytes(15).toString("base64"),
+        };
     }
     if (users.includes("other")) {
         secrets.challenger = generateNativeAccount();

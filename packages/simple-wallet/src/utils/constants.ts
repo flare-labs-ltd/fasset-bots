@@ -5,6 +5,8 @@ export const LOCK_ADDRESS_FACTOR = 1.2;
 
 export const MNEMONIC_STRENGTH = 256;
 
+export const DEFAULT_FEE_INCREASE = 2;
+
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 
@@ -115,11 +117,3 @@ export const UTXO_OVERHEAD_SIZE = 10;
 export const UTXO_INPUT_SIZE_SEGWIT = 68;
 export const UTXO_OUTPUT_SIZE_SEGWIT = 31;
 export const UTXO_OVERHEAD_SIZE_SEGWIT = 10.5;
-
-// UTXO default fee per kb
-// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
-// https://github.com/dogecoin/dogecoin/blob/0b46a40ed125d7bf4b5a485b91350bc8bdc48fc8/doc/man/dogecoin-qt.1
-export const DOGE_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
-// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-ltc/lib/transaction/transaction.js#L81
-// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib/lib/transaction/transaction.js#L80
-export const BTC_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);

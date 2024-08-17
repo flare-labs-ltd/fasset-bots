@@ -55,7 +55,7 @@ export class AgentBotRunner {
             }
         } finally {
             this.running = false;
-            this.stopAllWalletMonitoring();
+            await this.stopAllWalletMonitoring();
         }
     }
 
@@ -261,12 +261,12 @@ export class AgentBotRunner {
     addSimpleWalletToLoop(chainId: string, agentBot: AgentBot): void {
         const wallet = this.simpleWalletBackgroundTasks.get(chainId);
         if (wallet) {
-            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
-            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.agentVault} tried to.`);
+            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.vaultAddress} tried to start it.`);
         } else {
             const newWallet = agentBot.context.wallet
             this.simpleWalletBackgroundTasks.set(chainId, newWallet);
-            logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.agentVault}.`);
+            console.info(`Background wallet task for chain ${chainId} was added.`);
+            logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.vaultAddress}.`);
             void newWallet.startMonitoringTransactionProgress().catch((error) => {
                 logger.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
                 console.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
@@ -274,11 +274,11 @@ export class AgentBotRunner {
         }
     }
 
-    stopAllWalletMonitoring(): void {
-        this.simpleWalletBackgroundTasks.forEach((wallet, chainId) => {
-            wallet.stopMonitoring();
+    async stopAllWalletMonitoring(): Promise<void> {
+        for (const [chainId, wallet] of this.simpleWalletBackgroundTasks) {
+            await wallet.stopMonitoring();
             logger.info(`Stopped monitoring wallet for chain ${chainId}.`);
-        });
+        }
     }
 
     checkIfWalletIsRunning(chainId: string, agentBot: AgentBot): boolean {
