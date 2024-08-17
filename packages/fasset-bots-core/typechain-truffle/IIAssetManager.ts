@@ -125,30 +125,38 @@ export interface AgentVaultCreated {
   args: {
     owner: string;
     agentVault: string;
-    collateralPool: string;
-    underlyingAddress: string;
-    vaultCollateralToken: string;
-    feeBIPS: BN;
-    poolFeeShareBIPS: BN;
-    mintingVaultCollateralRatioBIPS: BN;
-    mintingPoolCollateralRatioBIPS: BN;
-    buyFAssetByAgentFactorBIPS: BN;
-    poolExitCollateralRatioBIPS: BN;
-    poolTopupCollateralRatioBIPS: BN;
-    poolTopupTokenPriceFactorBIPS: BN;
+    creationData: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
     0: string;
     1: string;
-    2: string;
-    3: string;
-    4: string;
-    5: BN;
-    6: BN;
-    7: BN;
-    8: BN;
-    9: BN;
-    10: BN;
-    11: BN;
-    12: BN;
+    2: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
   };
 }
 
@@ -323,6 +331,19 @@ export interface DustChanged {
     dustUBA: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface EmergencyPauseCanceled {
+  name: "EmergencyPauseCanceled";
+  args: {};
+}
+
+export interface EmergencyPauseTriggered {
+  name: "EmergencyPauseTriggered";
+  args: {
+    pausedUntil: BN;
+    0: BN;
   };
 }
 
@@ -779,6 +800,8 @@ export type AllEvents =
   | DiamondCut
   | DuplicatePaymentConfirmed
   | DustChanged
+  | EmergencyPauseCanceled
+  | EmergencyPauseTriggered
   | FullLiquidationStarted
   | GovernanceCallTimelocked
   | GovernanceInitialised
@@ -1982,6 +2005,37 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  emergencyPause: {
+    (
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  emergencyPauseDetails(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
+
+  emergencyPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  emergencyPausedUntil(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   endLiquidation: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -2420,6 +2474,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ownerManagementAddress: string;
     ownerWorkAddress: string;
     collateralPool: string;
+    collateralPoolToken: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
     feeBIPS: BN;
@@ -2431,6 +2486,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     totalVaultCollateralWei: BN;
     freeVaultCollateralWei: BN;
     vaultCollateralRatioBIPS: BN;
+    poolWNatToken: string;
     totalPoolCollateralNATWei: BN;
     freePoolCollateralNATWei: BN;
     poolCollateralRatioBIPS: BN;
@@ -2603,6 +2659,8 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     liquidationCollateralFactorBIPS: BN[];
     liquidationFactorVaultCollateralBIPS: BN[];
     diamondCutMinTimelockSeconds: BN;
+    maxEmergencyPauseDurationSeconds: BN;
+    emergencyPauseDurationResetAfterSeconds: BN;
   }>;
 
   getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -2780,6 +2838,8 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
   mintingPaymentDefault: {
     (
       _proof: {
@@ -2887,7 +2947,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  pause: {
+  pauseMinting: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -2895,8 +2955,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
-
-  paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -3339,6 +3397,15 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  resetEmergencyPauseTotalDuration: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
   selfClose: {
     (
       _agentVault: string,
@@ -3617,7 +3684,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
 
   terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
-  unpause: {
+  unpauseMinting: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -5045,6 +5112,37 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    emergencyPause: {
+      (
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    emergencyPauseDetails(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
+
+    emergencyPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    emergencyPausedUntil(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
     endLiquidation: {
       (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -5483,6 +5581,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ownerManagementAddress: string;
       ownerWorkAddress: string;
       collateralPool: string;
+      collateralPoolToken: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
       feeBIPS: BN;
@@ -5494,6 +5593,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       totalVaultCollateralWei: BN;
       freeVaultCollateralWei: BN;
       vaultCollateralRatioBIPS: BN;
+      poolWNatToken: string;
       totalPoolCollateralNATWei: BN;
       freePoolCollateralNATWei: BN;
       poolCollateralRatioBIPS: BN;
@@ -5666,6 +5766,8 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       liquidationCollateralFactorBIPS: BN[];
       liquidationFactorVaultCollateralBIPS: BN[];
       diamondCutMinTimelockSeconds: BN;
+      maxEmergencyPauseDurationSeconds: BN;
+      emergencyPauseDurationResetAfterSeconds: BN;
     }>;
 
     getWNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
@@ -5843,6 +5945,8 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
     mintingPaymentDefault: {
       (
         _proof: {
@@ -5950,7 +6054,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    pause: {
+    pauseMinting: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -5958,8 +6062,6 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
-
-    paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -6402,6 +6504,15 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    resetEmergencyPauseTotalDuration: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
     selfClose: {
       (
         _agentVault: string,
@@ -6680,7 +6791,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
 
     terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
-    unpause: {
+    unpauseMinting: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;

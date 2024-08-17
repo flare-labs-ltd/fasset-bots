@@ -21,23 +21,25 @@ export class TrackedAgentState {
         data: InitialAgentData
     ) {
         this.vaultAddress = data.agentVault;
-        this.underlyingAddress = data.underlyingAddress;
-        this.collateralPoolAddress = data.collateralPool;
-        this.agentSettings.vaultCollateralToken = data.vaultCollateralToken;
-        this.agentSettings.feeBIPS = toBN(data.feeBIPS);
-        this.agentSettings.poolFeeShareBIPS = toBN(data.poolFeeShareBIPS);
-        this.agentSettings.mintingVaultCollateralRatioBIPS = toBN(data.mintingVaultCollateralRatioBIPS);
-        this.agentSettings.mintingPoolCollateralRatioBIPS = toBN(data.mintingPoolCollateralRatioBIPS);
-        this.agentSettings.poolExitCollateralRatioBIPS = toBN(data.poolExitCollateralRatioBIPS);
-        this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(data.buyFAssetByAgentFactorBIPS);
-        this.agentSettings.poolTopupCollateralRatioBIPS = toBN(data.poolTopupCollateralRatioBIPS);
-        this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(data.poolTopupTokenPriceFactorBIPS);
+        this.underlyingAddress = data.creationData.underlyingAddress;
+        this.collateralPoolAddress = data.creationData.collateralPool;
+        this.collateralPoolTokenAddress = data.creationData.collateralPoolToken;
+        this.agentSettings.vaultCollateralToken = data.creationData.vaultCollateralToken;
+        this.agentSettings.feeBIPS = toBN(data.creationData.feeBIPS);
+        this.agentSettings.poolFeeShareBIPS = toBN(data.creationData.poolFeeShareBIPS);
+        this.agentSettings.mintingVaultCollateralRatioBIPS = toBN(data.creationData.mintingVaultCollateralRatioBIPS);
+        this.agentSettings.mintingPoolCollateralRatioBIPS = toBN(data.creationData.mintingPoolCollateralRatioBIPS);
+        this.agentSettings.poolExitCollateralRatioBIPS = toBN(data.creationData.poolExitCollateralRatioBIPS);
+        this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(data.creationData.buyFAssetByAgentFactorBIPS);
+        this.agentSettings.poolTopupCollateralRatioBIPS = toBN(data.creationData.poolTopupCollateralRatioBIPS);
+        this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(data.creationData.poolTopupTokenPriceFactorBIPS);
     }
 
     // identifying addresses
     vaultAddress: string;
     underlyingAddress: string;
     collateralPoolAddress: string;
+    collateralPoolTokenAddress: string;
 
     //status
     status = AgentStatus.NORMAL;

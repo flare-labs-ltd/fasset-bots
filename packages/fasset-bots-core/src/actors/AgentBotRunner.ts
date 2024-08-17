@@ -149,6 +149,8 @@ export class AgentBotRunner {
                     console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
                 });
                 this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
+                console.log(squashSpace`Running agent ${agentBot.agent.vaultAddress} for ${await agentBot.context.fAsset.symbol()}
+                    with vault collateral ${await agentBot.tokens.vaultCollateral.symbol()}.`);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner added running agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with adding running agent ${agentEntity.vaultAddress}: ${error}`);

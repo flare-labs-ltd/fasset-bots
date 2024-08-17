@@ -186,6 +186,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         liquidationCollateralFactorBIPS: (number | BN | string)[];
         liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
         diamondCutMinTimelockSeconds: number | BN | string;
+        maxEmergencyPauseDurationSeconds: number | BN | string;
+        emergencyPauseDurationResetAfterSeconds: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -257,6 +259,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         liquidationCollateralFactorBIPS: (number | BN | string)[];
         liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
         diamondCutMinTimelockSeconds: number | BN | string;
+        maxEmergencyPauseDurationSeconds: number | BN | string;
+        emergencyPauseDurationResetAfterSeconds: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -328,6 +332,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         liquidationCollateralFactorBIPS: (number | BN | string)[];
         liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
         diamondCutMinTimelockSeconds: number | BN | string;
+        maxEmergencyPauseDurationSeconds: number | BN | string;
+        emergencyPauseDurationResetAfterSeconds: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -399,6 +405,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         liquidationCollateralFactorBIPS: (number | BN | string)[];
         liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
         diamondCutMinTimelockSeconds: number | BN | string;
+        maxEmergencyPauseDurationSeconds: number | BN | string;
+        emergencyPauseDurationResetAfterSeconds: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -553,6 +561,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           liquidationCollateralFactorBIPS: (number | BN | string)[];
           liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
           diamondCutMinTimelockSeconds: number | BN | string;
+          maxEmergencyPauseDurationSeconds: number | BN | string;
+          emergencyPauseDurationResetAfterSeconds: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;
@@ -624,6 +634,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           liquidationCollateralFactorBIPS: (number | BN | string)[];
           liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
           diamondCutMinTimelockSeconds: number | BN | string;
+          maxEmergencyPauseDurationSeconds: number | BN | string;
+          emergencyPauseDurationResetAfterSeconds: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;
@@ -695,6 +707,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           liquidationCollateralFactorBIPS: (number | BN | string)[];
           liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
           diamondCutMinTimelockSeconds: number | BN | string;
+          maxEmergencyPauseDurationSeconds: number | BN | string;
+          emergencyPauseDurationResetAfterSeconds: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;
@@ -766,6 +780,8 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           liquidationCollateralFactorBIPS: (number | BN | string)[];
           liquidationFactorVaultCollateralBIPS: (number | BN | string)[];
           diamondCutMinTimelockSeconds: number | BN | string;
+          maxEmergencyPauseDurationSeconds: number | BN | string;
+          emergencyPauseDurationResetAfterSeconds: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;

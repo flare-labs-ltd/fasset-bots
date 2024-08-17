@@ -8,15 +8,7 @@ import BN from "bn.js";
 import { EventData, PastEventOptions } from "web3-eth-contract";
 
 export interface FAssetContract extends Truffle.Contract<FAssetInstance> {
-  "new"(
-    _governance: string,
-    _name: string,
-    _symbol: string,
-    _assetName: string,
-    _assetSymbol: string,
-    _decimals: number | BN | string,
-    meta?: Truffle.TransactionDetails
-  ): Promise<FAssetInstance>;
+  "new"(meta?: Truffle.TransactionDetails): Promise<FAssetInstance>;
 }
 
 export interface Approval {
@@ -39,54 +31,6 @@ export interface CreatedTotalSupplyCache {
   };
 }
 
-export interface GovernanceCallTimelocked {
-  name: "GovernanceCallTimelocked";
-  args: {
-    selector: string;
-    allowedAfterTimestamp: BN;
-    encodedCall: string;
-    0: string;
-    1: BN;
-    2: string;
-  };
-}
-
-export interface GovernanceInitialised {
-  name: "GovernanceInitialised";
-  args: {
-    initialGovernance: string;
-    0: string;
-  };
-}
-
-export interface GovernedProductionModeEntered {
-  name: "GovernedProductionModeEntered";
-  args: {
-    governanceSettings: string;
-    0: string;
-  };
-}
-
-export interface TimelockedGovernanceCallCanceled {
-  name: "TimelockedGovernanceCallCanceled";
-  args: {
-    selector: string;
-    timestamp: BN;
-    0: string;
-    1: BN;
-  };
-}
-
-export interface TimelockedGovernanceCallExecuted {
-  name: "TimelockedGovernanceCallExecuted";
-  args: {
-    selector: string;
-    timestamp: BN;
-    0: string;
-    1: BN;
-  };
-}
-
 export interface Transfer {
   name: "Transfer";
   args: {
@@ -99,28 +43,7 @@ export interface Transfer {
   };
 }
 
-export interface VotePowerContractChanged {
-  name: "VotePowerContractChanged";
-  args: {
-    _contractType: BN;
-    _oldContractAddress: string;
-    _newContractAddress: string;
-    0: BN;
-    1: string;
-    2: string;
-  };
-}
-
-export type AllEvents =
-  | Approval
-  | CreatedTotalSupplyCache
-  | GovernanceCallTimelocked
-  | GovernanceInitialised
-  | GovernedProductionModeEntered
-  | TimelockedGovernanceCallCanceled
-  | TimelockedGovernanceCallExecuted
-  | Transfer
-  | VotePowerContractChanged;
+export type AllEvents = Approval | CreatedTotalSupplyCache | Transfer;
 
 export interface FAssetInstance extends Truffle.ContractInstance {
   allowance(
@@ -192,35 +115,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  batchDelegate: {
-    (
-      _delegatees: string[],
-      _bips: (number | BN | string)[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _delegatees: string[],
-      _bips: (number | BN | string)[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _delegatees: string[],
-      _bips: (number | BN | string)[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _delegatees: string[],
-      _bips: (number | BN | string)[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  batchVotePowerOfAt(
-    _owners: string[],
-    _blockNumber: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN[]>;
-
   burn: {
     (
       _owner: string,
@@ -240,24 +134,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     estimateGas(
       _owner: string,
       _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  cancelGovernanceCall: {
-    (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _selector: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _selector: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _selector: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -295,92 +171,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  delegate: {
-    (
-      _to: string,
-      _bips: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _to: string,
-      _bips: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _to: string,
-      _bips: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _to: string,
-      _bips: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  delegateExplicit: {
-    (
-      _to: string,
-      _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _to: string,
-      _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _to: string,
-      _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _to: string,
-      _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  delegatesOf(
-    _owner: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: string[]; 1: BN[]; 2: BN; 3: BN }>;
-
-  delegatesOfAt(
-    _owner: string,
-    _blockNumber: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: string[]; 1: BN[]; 2: BN; 3: BN }>;
-
-  delegationModeOf(
-    _who: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  executeGovernanceCall: {
-    (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _selector: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _selector: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _selector: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  governanceVotePower(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
   increaseAllowance: {
     (
       spender: string,
@@ -404,21 +194,37 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  initialise: {
+  initialize: {
     (
-      _initialGovernance: string,
+      name_: string,
+      symbol_: string,
+      assetName_: string,
+      assetSymbol_: string,
+      decimals_: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _initialGovernance: string,
+      name_: string,
+      symbol_: string,
+      assetName_: string,
+      assetSymbol_: string,
+      decimals_: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _initialGovernance: string,
+      name_: string,
+      symbol_: string,
+      assetName_: string,
+      assetSymbol_: string,
+      decimals_: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _initialGovernance: string,
+      name_: string,
+      symbol_: string,
+      assetName_: string,
+      assetSymbol_: string,
+      decimals_: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -447,35 +253,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
   };
 
   name(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
-
-  readVotePowerContract(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string>;
-
-  revokeDelegationAt: {
-    (
-      _who: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _who: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _who: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _who: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
 
   setAssetManager: {
     (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -551,74 +328,10 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  setGovernanceVotePower: {
-    (
-      _governanceVotePower: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _governanceVotePower: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _governanceVotePower: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _governanceVotePower: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setReadVpContract: {
-    (_vpContract: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _vpContract: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _vpContract: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _vpContract: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setWriteVpContract: {
-    (_vpContract: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _vpContract: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _vpContract: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _vpContract: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   supportsInterface(
     _interfaceId: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
-
-  switchToProductionMode: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
 
   symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -635,36 +348,12 @@ export interface FAssetInstance extends Truffle.ContractInstance {
 
   terminatedAt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  timelockedCalls(
-    arg0: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: BN; 1: string }>;
-
   totalSupply(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   totalSupplyAt(
     _blockNumber: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
-
-  totalSupplyCacheCleanup: {
-    (
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
 
   totalSupplyHistoryCleanup: {
     (
@@ -685,50 +374,24 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  totalVotePower(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  totalVotePowerAt(
-    _blockNumber: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  totalVotePowerAtCached: {
-    (
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
   transfer: {
     (
-      recipient: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      recipient: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
     sendTransaction(
-      recipient: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      recipient: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -736,130 +399,30 @@ export interface FAssetInstance extends Truffle.ContractInstance {
 
   transferFrom: {
     (
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
     sendTransaction(
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      sender: string,
-      recipient: string,
+      from: string,
+      to: string,
       amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  undelegateAll: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
-  undelegateAllExplicit: {
-    (
-      _delegateAddresses: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _delegateAddresses: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _delegateAddresses: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _delegateAddresses: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  undelegatedVotePowerOf(
-    _owner: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  undelegatedVotePowerOfAt(
-    _owner: string,
-    _blockNumber: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  votePowerFromTo(
-    _from: string,
-    _to: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  votePowerFromToAt(
-    _from: string,
-    _to: string,
-    _blockNumber: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  votePowerOf(
-    _owner: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  votePowerOfAt(
-    _owner: string,
-    _blockNumber: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  votePowerOfAtCached: {
-    (
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-    sendTransaction(
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  votePowerOfAtIgnoringRevocation(
-    _owner: string,
-    _blockNumber: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  vpContractInitialized(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<boolean>;
-
-  writeVotePowerContract(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<string>;
 
   methods: {
     allowance(
@@ -931,35 +494,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
-    batchDelegate: {
-      (
-        _delegatees: string[],
-        _bips: (number | BN | string)[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _delegatees: string[],
-        _bips: (number | BN | string)[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _delegatees: string[],
-        _bips: (number | BN | string)[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _delegatees: string[],
-        _bips: (number | BN | string)[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    batchVotePowerOfAt(
-      _owners: string[],
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN[]>;
-
     burn: {
       (
         _owner: string,
@@ -979,24 +513,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       estimateGas(
         _owner: string,
         _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    cancelGovernanceCall: {
-      (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _selector: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _selector: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _selector: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -1034,94 +550,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    delegate: {
-      (
-        _to: string,
-        _bips: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _to: string,
-        _bips: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _to: string,
-        _bips: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _to: string,
-        _bips: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    delegateExplicit: {
-      (
-        _to: string,
-        _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _to: string,
-        _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _to: string,
-        _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _to: string,
-        _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    delegatesOf(
-      _owner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: string[]; 1: BN[]; 2: BN; 3: BN }>;
-
-    delegatesOfAt(
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: string[]; 1: BN[]; 2: BN; 3: BN }>;
-
-    delegationModeOf(
-      _who: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    executeGovernanceCall: {
-      (_selector: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _selector: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _selector: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _selector: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    governanceVotePower(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-
     increaseAllowance: {
       (
         spender: string,
@@ -1145,21 +573,37 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    initialise: {
+    initialize: {
       (
-        _initialGovernance: string,
+        name_: string,
+        symbol_: string,
+        assetName_: string,
+        assetSymbol_: string,
+        decimals_: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _initialGovernance: string,
+        name_: string,
+        symbol_: string,
+        assetName_: string,
+        assetSymbol_: string,
+        decimals_: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _initialGovernance: string,
+        name_: string,
+        symbol_: string,
+        assetName_: string,
+        assetSymbol_: string,
+        decimals_: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _initialGovernance: string,
+        name_: string,
+        symbol_: string,
+        assetName_: string,
+        assetSymbol_: string,
+        decimals_: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -1188,35 +632,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     };
 
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
-
-    readVotePowerContract(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-
-    revokeDelegationAt: {
-      (
-        _who: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _who: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _who: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _who: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
 
     setAssetManager: {
       (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -1293,74 +708,10 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    setGovernanceVotePower: {
-      (
-        _governanceVotePower: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _governanceVotePower: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _governanceVotePower: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _governanceVotePower: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setReadVpContract: {
-      (_vpContract: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _vpContract: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _vpContract: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _vpContract: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setWriteVpContract: {
-      (_vpContract: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _vpContract: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _vpContract: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _vpContract: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
     supportsInterface(
       _interfaceId: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
-
-    switchToProductionMode: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
 
     symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -1377,36 +728,12 @@ export interface FAssetInstance extends Truffle.ContractInstance {
 
     terminatedAt(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-    timelockedCalls(
-      arg0: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: BN; 1: string }>;
-
     totalSupply(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     totalSupplyAt(
       _blockNumber: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
-
-    totalSupplyCacheCleanup: {
-      (
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
 
     totalSupplyHistoryCleanup: {
       (
@@ -1427,50 +754,24 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    totalVotePower(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    totalVotePowerAt(
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    totalVotePowerAtCached: {
-      (
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
     transfer: {
       (
-        recipient: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        recipient: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<boolean>;
       sendTransaction(
-        recipient: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        recipient: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
@@ -1478,130 +779,30 @@ export interface FAssetInstance extends Truffle.ContractInstance {
 
     transferFrom: {
       (
-        sender: string,
-        recipient: string,
+        from: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        sender: string,
-        recipient: string,
+        from: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<boolean>;
       sendTransaction(
-        sender: string,
-        recipient: string,
+        from: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        sender: string,
-        recipient: string,
+        from: string,
+        to: string,
         amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    undelegateAll: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
-    undelegateAllExplicit: {
-      (
-        _delegateAddresses: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _delegateAddresses: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _delegateAddresses: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _delegateAddresses: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    undelegatedVotePowerOf(
-      _owner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    undelegatedVotePowerOfAt(
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    votePowerFromTo(
-      _from: string,
-      _to: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    votePowerFromToAt(
-      _from: string,
-      _to: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    votePowerOf(
-      _owner: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    votePowerOfAt(
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    votePowerOfAtCached: {
-      (
-        _owner: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _owner: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<BN>;
-      sendTransaction(
-        _owner: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _owner: string,
-        _blockNumber: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    votePowerOfAtIgnoringRevocation(
-      _owner: string,
-      _blockNumber: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    vpContractInitialized(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
-
-    writeVotePowerContract(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

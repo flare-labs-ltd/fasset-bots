@@ -362,6 +362,8 @@ function createTestAssetManagerSettings(
         liquidationCollateralFactorBIPS: parameters.liquidationCollateralFactorBIPS.map(bnToString),
         liquidationFactorVaultCollateralBIPS: parameters.liquidationFactorVaultCollateralBIPS.map(bnToString),
         diamondCutMinTimelockSeconds: bnToString(parameters.diamondCutMinTimelockSeconds),
+        maxEmergencyPauseDurationSeconds: bnToString(parameters.maxEmergencyPauseDurationSeconds),
+        emergencyPauseDurationResetAfterSeconds: bnToString(parameters.emergencyPauseDurationResetAfterSeconds),
         redemptionPaymentExtensionSeconds: bnToString(15),
     };
 }
