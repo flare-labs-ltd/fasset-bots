@@ -173,7 +173,7 @@ export class EcosystemFactory {
         const fAssetReserves = this.defaultMintedUBA * BigInt(10) / BigInt(9)
         return {
             ...this._baseEcosystem,
-            name: 'dex1 has high slippage on vault / f-asset pool',
+            name: 'dex1 has high slippage on vault - f-asset pool',
             // make dex1 f-assets have same price but low liquidity
             dex1FAssetReserve: fAssetReserves,
             dex1VaultReserve: priceBasedInitialDexReserve(
@@ -192,7 +192,7 @@ export class EcosystemFactory {
     public get unhealthyEcosystemWithHighVaultFAssetDexPrice(): EcosystemConfig {
         return {
             ...this.healthyEcosystemWithVaultUnderwater,
-            name: 'too high f-asset price on vault / f-asset pool',
+            name: 'too high f-asset price on vault - f-asset pool',
             // make dex f-assets 100x more expensive than on the ftso
             dex1FAssetReserve: this.healthyEcosystemWithVaultUnderwater.dex1FAssetReserve / BigInt(100),
         }
