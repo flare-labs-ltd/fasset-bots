@@ -9,11 +9,11 @@ import {toBN} from "../utils/bnutils";
 import BN from "bn.js";
 
 export class FeeService {
-    private client: AxiosInstance;
+    client: AxiosInstance;
     private indexerUrl: string;
 
     private monitoring: boolean = true;
-    history: BlockStats[];
+    private history: BlockStats[];
 
     private numberOfBlocksInHistory;
     private sleepTimeMs;
@@ -108,7 +108,7 @@ export class FeeService {
 
     async getCurrentBlockHeight() {
         try {
-            const response = await this.client.get(`${this.indexerUrl}/api`);
+            const response = await this.client.get(`${this.indexerUrl}/api/v2/info`);
             return response.data?.blockbook?.bestHeight ?? 0;
         } catch (error) {
             return 0;

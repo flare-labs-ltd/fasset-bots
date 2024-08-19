@@ -67,12 +67,22 @@ program
             const minBN = currency.parse(token.chainInfo.minimumAccountBalance ?? "0");
             await enoughUnderlyingFunds(wallet, accountFrom.address, addressTo, amountNat, minBN);
             try {
-                const stopBot = () => {
+                const stopBot = async () => {
                     console.log("Stopping wallet monitoring...");
-                    wallet.stopMonitoring()
+                    return wallet.stopMonitoring();
                 }
-                process.on("SIGINT", stopBot);
-                process.on("SIGTERM", stopBot);
+                process.on("SIGINT", () => {
+                    stopBot().then().catch(logger.error);
+                });
+                process.on("SIGTERM", () => {
+                    stopBot().then().catch(logger.error);
+                });
+                process.on("SIGQUIT", () => {
+                    stopBot().then().catch(logger.error);
+                });
+                process.on("SIGHUP", () => {
+                    stopBot().then().catch(logger.error);
+                });
                 await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
             } finally {}
         }

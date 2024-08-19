@@ -36,7 +36,7 @@ export interface SystemStateManagementFacetInstance
     ): Promise<number>;
   };
 
-  pause: {
+  pauseMinting: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -54,7 +54,7 @@ export interface SystemStateManagementFacetInstance
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
-  unpause: {
+  unpauseMinting: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -82,7 +82,7 @@ export interface SystemStateManagementFacetInstance
       ): Promise<number>;
     };
 
-    pause: {
+    pauseMinting: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -100,7 +100,7 @@ export interface SystemStateManagementFacetInstance
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
-    unpause: {
+    unpauseMinting: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;

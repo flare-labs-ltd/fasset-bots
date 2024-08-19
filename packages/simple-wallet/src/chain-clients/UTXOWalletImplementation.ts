@@ -2,15 +2,17 @@ import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import * as bitcore from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
-import {excludeNullFields, sleepMs, stuckTransactionConstants, unPrefix0x} from "../utils/utils";
-import {toBN, toNumber} from "../utils/bnutils";
+import {excludeNullFields, getDefaultFeePerKB, sleepMs, stuckTransactionConstants, unPrefix0x} from "../utils/utils";
+import {toBN, toBNExp, toNumber} from "../utils/bnutils";
 import {
+   BTC_DOGE_DEC_PLACES,
    BTC_DUST_AMOUNT,
-   BTC_FEE_PER_KB, BTC_LEDGER_CLOSE_TIME_MS,
+   BTC_LEDGER_CLOSE_TIME_MS,
    ChainType,
+   DEFAULT_FEE_INCREASE,
    DEFAULT_RATE_LIMIT_OPTIONS,
    DOGE_DUST_AMOUNT,
-   DOGE_FEE_PER_KB, DOGE_LEDGER_CLOSE_TIME_MS,
+   DOGE_LEDGER_CLOSE_TIME_MS,
    UTXO_INPUT_SIZE,
    UTXO_INPUT_SIZE_SEGWIT,
    UTXO_OUTPUT_SIZE,
@@ -68,7 +70,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    feeService?: FeeService;
 
    monitoring: boolean = false;
-   enoughConfirmations: number = 2;
+   enoughConfirmations: number;
    mempoolWaitingTime: number = 60000; // 1min
 
    restartInDueToError: number = 2000; //2s
@@ -110,7 +112,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
       this.rootEm = createConfig.em;
       this.walletKeys = createConfig.walletKeys;
-      this.enoughConfirmations = createConfig.enoughConfirmations ?? this.enoughConfirmations;
+      this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
       if (createConfig.feeServiceConfig) {
          this.feeService = new FeeService(createConfig.feeServiceConfig);
       }
@@ -149,7 +151,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     */
    async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
       const tx = await this.preparePaymentTransaction(params.source, params.destination, params.amount);
-      return this.getEstimateFee(tx.inputs.length, tx.outputs.length);
+      return toBN(tx.getFee());
    }
 
    /**
@@ -250,13 +252,17 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
    // MONITORING /////////////////////////////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
 
-   isMonitoring(): boolean {
-      return this.monitoring === true;
+   async isMonitoring(): Promise<boolean> {
+      const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+      return monitoringState?.isMonitoring || false;
    }
 
-   stopMonitoring() {
+   async stopMonitoring() {
       this.monitoring = false;
       this.feeService?.stopMonitoring();
+      await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+         monitoringEnt.isMonitoring = false;
+      });
    }
 
    /**
@@ -266,7 +272,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       try {
          const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
          if (!monitoringState) {
-            this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, isMonitoring: true } as RequiredEntityData<MonitoringStateEntity>,);
+            this.rootEm.create(MonitoringStateEntity, {
+               chainType: this.chainType,
+               isMonitoring: true
+            } as RequiredEntityData<MonitoringStateEntity>,);
             await this.rootEm.flush();
             this.monitoring = true;
          } else if (monitoringState.isMonitoring) {
@@ -279,7 +288,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             this.monitoring = true;
          }
          logger.info(`Monitoring started for chain ${this.chainType}`);
-         console.info(`Monitoring started for chain ${this.chainType}`);
 
          while (this.monitoring) {
             try {
@@ -303,19 +311,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
             await sleepMs(this.restartInDueToError);
          }
-      } finally {
-         this.monitoring = false;
-         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-            monitoringEnt.isMonitoring = false;
-         });
-         logger.info(`Monitoring started for chain ${this.chainType} stopped.`);
+         logger.info(`Monitoring stopped for chain ${this.chainType}.`);
+      } catch (e) {
+         logger.error(`Monitoring failed for chain ${this.chainType} error: ${e}.`);
       }
    }
 
    shouldStopMonitoring() {
       if (!this.monitoring) {
          logger.info(`Monitoring should be stopped for chain ${this.chainType}`);
-         console.info(`Monitoring should be stopped for chain ${this.chainType}`);
          return true;
       }
       return false;
@@ -327,7 +331,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          await this.getCurrentBlockHeight();
          return true;
       } catch (error) {
-         logger.error("Cannot ger response from server", error);
+         logger.error("Cannot get response from server", error);
          return false;
       }
    }
@@ -349,7 +353,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             txEnt.executeUntilBlock = currentBlock + this.blockOffset;
          });
       }
-      const transaction = await this.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount || null, txEnt.fee, txEnt.reference, txEnt.executeUntilBlock);
+      const transaction = await this.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount || null, txEnt.fee, txEnt.reference);
       const privateKey = await this.walletKeys.getKey(txEnt.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, txEnt.id);
@@ -385,7 +389,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                });
             }
             logger.info(`Transaction ${txEnt.id} (${txEnt.transactionHash}) was accepted`);
-            console.info(`Transaction ${txEnt.id} (${txEnt.transactionHash}) was accepted`);
             return;
          }
       } catch (e) {
@@ -394,7 +397,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!
       const currentBlockHeight = await this.getCurrentBlockHeight();
       if (currentBlockHeight - txEnt.submittedInBlock > this.enoughConfirmations) {
-         console.error(`Transaction ${txEnt.transactionHash} is probably not going to be accepted!`);
          await failTransaction(this.rootEm, txEnt.id, `Not accepted after ${this.enoughConfirmations} blocks`);
       }
    }
@@ -453,7 +455,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       amountInSatoshi: BN | null,
       feeInSatoshi?: BN,
       note?: string,
-      executeUntilBlock?: number
    ): Promise<bitcore.Transaction> {
       const isPayment = amountInSatoshi != null;
       const core = this.getCore();
@@ -478,15 +479,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       if (feeInSatoshi) {
          tr.fee(toNumber(feeInSatoshi));
       }
-      if (isPayment && !feeInSatoshi) {//TODO
-         tr.fee(toNumber(await this.getEstimateFee(utxos.length)));
+      if (isPayment && !feeInSatoshi) {
+         const feeRatePerKB = await this.getFeePerKB();
+         tr.feePerKb(Number(feeRatePerKB));
       }
-      // } else {//TODO-urska
-         // const feeRate = await this.getCurrentFeeRate();
-         // if (feeRate) {
-         //    tr.feePerKb(feeRate);
-         // }
-      // }
       return tr;
    }
 
@@ -517,7 +513,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
          await failTransaction(this.rootEm, transaction.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}`);
          return TransactionStatus.TX_FAILED;
       } else if (!transaction.executeUntilBlock) {
-         console.warn(`Transaction ${txId} does not have 'executeUntilBlock' defined`);
          logger.warn(`Transaction ${txId} does not have 'executeUntilBlock' defined`);
       }
       try {
@@ -628,13 +623,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
       await storeUTXOS(this.rootEm, address, mempoolUTXOs);
    }
 
-   async getCurrentFeeRate(nextBlocks: number = 2): Promise<number|null> {
+   async getCurrentFeeRate(nextBlocks: number = 2): Promise<BN> {
       try {
       const res = await this.client.get(`/fee/${nextBlocks}`);
-      return res.data.feerate;
+      const rateInSatoshies = toBNExp(res.data.feerate, BTC_DOGE_DEC_PLACES);
+      return rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
       } catch (e) {
          logger.error(`Cannot obtain fee rate`, e);
-         return null;
+         return getDefaultFeePerKB(this.chainType);
       }
    }
 
@@ -660,10 +656,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             if (axios.isAxiosError(e)) {
                const responseData = e.response?.data;
                logger.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
-               console.warn(`Transaction ${txId} not yet seen in mempool`, responseData)
             } else {
                logger.warn(`Transaction ${txId} not yet seen in mempool`, e)
-               console.warn(`Transaction ${txId} not yet seen in mempool`, e)
             }
             await sleepMs(1000);
          }
@@ -735,12 +729,16 @@ return submitResp;*/
    /**
     * @returns default fee per byte
     */
-   private getDefaultFeePerB(): BN {
-      if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-         return DOGE_FEE_PER_KB.divn(1000);
-      } else {
-         return BTC_FEE_PER_KB.divn(1000);
+   private async getFeePerKB(): Promise<BN> {
+      if (this.feeService) {
+         const feeStats = await this.feeService.getLatestFeeStats();
+         if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
+            return feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+         } else if (feeStats.averageFeePerKB.gtn(0)) {
+            return feeStats.averageFeePerKB.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+         }
       }
+      return await this.getCurrentFeeRate();
    }
 
    private getDefaultBlockTime() {
@@ -752,19 +750,12 @@ return submitResp;*/
    }
 
    private async getEstimateFee(inputLength: number, outputLength: number = 2): Promise<BN> {
-      let defaultFeePerB = this.getDefaultFeePerB();
-      if (this.feeService) {
-         const feeStats = await this.feeService.getLatestFeeStats();
-         if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
-            defaultFeePerB = feeStats.decilesFeePerKB[this.feeDecileIndex].divn(1000);
-         } else if (feeStats.averageFeePerKB.gtn(0)) {
-            defaultFeePerB = feeStats.averageFeePerKB.divn(1000);
-         }
-      }
+      const feePerKb = await this.getFeePerKB();
+      const feePerb = feePerKb.divn(1000);
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-         return defaultFeePerB.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
+         return feePerb.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
       } else {
-         return defaultFeePerB.muln(inputLength * UTXO_INPUT_SIZE_SEGWIT + outputLength * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT);
+         return feePerb.muln(inputLength * UTXO_INPUT_SIZE_SEGWIT + outputLength * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT);
       }
    }
 
@@ -778,7 +769,7 @@ return submitResp;*/
    private async checkIfShouldStillSubmit(executeUntilBlock: number | null, executeUntilTimestamp:  number | null): Promise<boolean> {
       const currentBlockHeight = await this.getCurrentBlockHeight();
       if (executeUntilBlock && currentBlockHeight - executeUntilBlock > this.executionBlockOffset ||
-          executeUntilTimestamp && new Date().getTime() - executeUntilTimestamp > this.executionBlockOffset * this.getDefaultBlockTime()) {
+          executeUntilTimestamp && new Date().getTime() - executeUntilTimestamp > this.executionBlockOffset * this.getDefaultBlockTime()) {//TODO-urska (is this good estimate?)
          return false;
       }
       return true;

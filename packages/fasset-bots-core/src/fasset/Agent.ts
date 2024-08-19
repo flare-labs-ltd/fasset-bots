@@ -119,7 +119,7 @@ export class Agent {
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
         // get collateral pool
-        const collateralPool = await CollateralPool.at(event.args.collateralPool);
+        const collateralPool = await CollateralPool.at(event.args.creationData.collateralPool);
         // get pool token
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);

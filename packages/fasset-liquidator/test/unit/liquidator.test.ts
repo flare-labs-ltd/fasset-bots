@@ -145,7 +145,7 @@ describe("Tests for the Liquidator contract", () => {
                 // store test results, so we can graph how close the profit was to the maximum
                 storeTestResult(
                     { ecosystem: config, assets: assetConfig, paths: swapPaths, liquidatedFAsset },
-                    `TestResult|${config.name}|${swapPaths[0].join("-")}|${swapPaths[1].join("-")}`
+                    `TestResult!${config.name}!${swapPaths[0].join("-")}!${swapPaths[1].join("-")}`
                 )
                 // check that executed liquidation was at least as profitable as the full one would have been
                 const profit = await contracts.vault.balanceOf(signers.rewardee)

@@ -335,17 +335,21 @@ export class TrackedState {
         const agent = this.createAgent({
             agentVault: vaultAddress,
             owner: agentInfo.ownerManagementAddress,
-            underlyingAddress: agentInfo.underlyingAddressString,
-            collateralPool: agentInfo.collateralPool,
-            vaultCollateralToken: agentInfo.vaultCollateralToken,
-            feeBIPS: agentInfo.feeBIPS,
-            poolFeeShareBIPS: agentInfo.poolFeeShareBIPS,
-            mintingVaultCollateralRatioBIPS: agentInfo.mintingVaultCollateralRatioBIPS,
-            mintingPoolCollateralRatioBIPS: agentInfo.mintingPoolCollateralRatioBIPS,
-            buyFAssetByAgentFactorBIPS: agentInfo.buyFAssetByAgentFactorBIPS,
-            poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,
-            poolTopupCollateralRatioBIPS: agentInfo.poolTopupCollateralRatioBIPS,
-            poolTopupTokenPriceFactorBIPS: agentInfo.poolTopupTokenPriceFactorBIPS,
+            creationData: {
+                underlyingAddress: agentInfo.underlyingAddressString,
+                collateralPool: agentInfo.collateralPool,
+                collateralPoolToken: agentInfo.collateralPoolToken,
+                vaultCollateralToken: agentInfo.vaultCollateralToken,
+                poolWNatToken: agentInfo.poolWNatToken,
+                feeBIPS: agentInfo.feeBIPS,
+                poolFeeShareBIPS: agentInfo.poolFeeShareBIPS,
+                mintingVaultCollateralRatioBIPS: agentInfo.mintingVaultCollateralRatioBIPS,
+                mintingPoolCollateralRatioBIPS: agentInfo.mintingPoolCollateralRatioBIPS,
+                buyFAssetByAgentFactorBIPS: agentInfo.buyFAssetByAgentFactorBIPS,
+                poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,
+                poolTopupCollateralRatioBIPS: agentInfo.poolTopupCollateralRatioBIPS,
+                poolTopupTokenPriceFactorBIPS: agentInfo.poolTopupTokenPriceFactorBIPS,
+            }
         });
         agent.initialize(agentInfo);
         return agent;

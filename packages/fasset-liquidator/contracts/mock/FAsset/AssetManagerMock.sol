@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "fasset/contracts/utils/lib/MathUtils.sol";
 import "fasset/contracts/utils/lib/SafePct.sol";
-import "fasset/contracts/fasset/mock/FakePriceReader.sol";
+import "fasset/contracts/assetManager/mock/FakePriceReader.sol";
 import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "fasset/contracts/userInterfaces/data/AssetManagerSettings.sol";
-import "fasset/contracts/fasset/library/CollateralTypes.sol";
+import "fasset/contracts/assetManager/library/CollateralTypes.sol";
 import "./AgentMock.sol";
 
 contract AssetManagerMock {

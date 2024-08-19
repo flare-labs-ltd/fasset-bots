@@ -410,6 +410,16 @@ program
         await cli.upgradeWNatContract(agentVault);
     });
 
+program
+    .command("fixWalletMonitoringDB")
+    .description("set all wallet monitoring to false")
+    .action(async () => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        await cli.fixWalletMonitoringDB(options.secrets, options.config);
+    });
+
+
 toplevelRun(async () => {
     try {
         await program.parseAsync();

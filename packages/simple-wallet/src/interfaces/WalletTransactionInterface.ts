@@ -12,7 +12,7 @@ export interface WalletAccountGenerationInterface {
 
 export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
-   getAccountBalance(account: string): Promise<BN>;
+   getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN>;
    getCurrentTransactionFee(params: FeeParams): Promise<BN>;
 
    createPaymentTransaction(
@@ -39,8 +39,8 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
    getTransactionInfo(dbId: number): Promise<TransactionInfo>;
 
    startMonitoringTransactionProgress(): Promise<void>;
-   stopMonitoring(): void;
-   isMonitoring(): boolean;
+   stopMonitoring(): Promise<void>;
+   isMonitoring(): Promise<boolean>;
 }
 
 export interface ICreateWalletResponse {
@@ -88,6 +88,7 @@ export interface StuckTransaction {
    retries?: number; // How many times should transaction retry to successfully submit
    feeIncrease?: number; // Factor to increase fee in resubmitting process
    executionBlockOffset?: number; //
+   enoughConfirmations? : number; // number of confirmations to be declared successful
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";

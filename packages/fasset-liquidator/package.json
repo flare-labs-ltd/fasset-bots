@@ -52,6 +52,6 @@
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
     "ethers": "^6.7.1",
-    "fasset": "git+https://github.com/flare-labs-ltd/fassets.git#open_beta"
+    "fasset": "git+https://github.com/flare-labs-ltd/fassets.git#1.0.0-beta.12"
   }
 }

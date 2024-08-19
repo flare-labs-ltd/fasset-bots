@@ -240,20 +240,24 @@ export async function convertFromUSD5(amount: BNish, collateralToken: Collateral
 
 export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<InitialAgentData> {
     const agentInfo = await agent.getAgentInfo();
-    const initialAgentData = {
+    const initialAgentData: InitialAgentData = {
         owner: agent.owner.managementAddress,
         agentVault: agent.vaultAddress,
-        collateralPool: agentInfo.collateralPool,
-        underlyingAddress: agent.underlyingAddress,
-        vaultCollateralToken: agentInfo.vaultCollateralToken,
-        feeBIPS: toBN(agentInfo.feeBIPS),
-        poolFeeShareBIPS: toBN(agentInfo.poolFeeShareBIPS),
-        mintingVaultCollateralRatioBIPS: toBN(agentInfo.mintingVaultCollateralRatioBIPS),
-        mintingPoolCollateralRatioBIPS: toBN(agentInfo.mintingPoolCollateralRatioBIPS),
-        buyFAssetByAgentFactorBIPS: toBN(agentInfo.buyFAssetByAgentFactorBIPS),
-        poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),
-        poolTopupCollateralRatioBIPS: toBN(agentInfo.poolTopupCollateralRatioBIPS),
-        poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
+        creationData: {
+            collateralPool: agentInfo.collateralPool,
+            collateralPoolToken: agentInfo.collateralPoolToken,
+            underlyingAddress: agent.underlyingAddress,
+            vaultCollateralToken: agentInfo.vaultCollateralToken,
+            poolWNatToken: agentInfo.poolWNatToken,
+            feeBIPS: toBN(agentInfo.feeBIPS),
+            poolFeeShareBIPS: toBN(agentInfo.poolFeeShareBIPS),
+            mintingVaultCollateralRatioBIPS: toBN(agentInfo.mintingVaultCollateralRatioBIPS),
+            mintingPoolCollateralRatioBIPS: toBN(agentInfo.mintingPoolCollateralRatioBIPS),
+            buyFAssetByAgentFactorBIPS: toBN(agentInfo.buyFAssetByAgentFactorBIPS),
+            poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),
+            poolTopupCollateralRatioBIPS: toBN(agentInfo.poolTopupCollateralRatioBIPS),
+            poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
+        }
     };
     return initialAgentData;
 }

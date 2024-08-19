@@ -33,6 +33,7 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
     ownerManagementAddress: string;
     ownerWorkAddress: string;
     collateralPool: string;
+    collateralPoolToken: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
     feeBIPS: BN;
@@ -44,6 +45,7 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
     totalVaultCollateralWei: BN;
     freeVaultCollateralWei: BN;
     vaultCollateralRatioBIPS: BN;
+    poolWNatToken: string;
     totalPoolCollateralNATWei: BN;
     freePoolCollateralNATWei: BN;
     poolCollateralRatioBIPS: BN;
@@ -121,6 +123,7 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
       ownerManagementAddress: string;
       ownerWorkAddress: string;
       collateralPool: string;
+      collateralPoolToken: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
       feeBIPS: BN;
@@ -132,6 +135,7 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
       totalVaultCollateralWei: BN;
       freeVaultCollateralWei: BN;
       vaultCollateralRatioBIPS: BN;
+      poolWNatToken: string;
       totalPoolCollateralNATWei: BN;
       freePoolCollateralNATWei: BN;
       poolCollateralRatioBIPS: BN;

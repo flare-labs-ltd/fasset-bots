@@ -104,30 +104,38 @@ export interface AgentVaultCreated {
   args: {
     owner: string;
     agentVault: string;
-    collateralPool: string;
-    underlyingAddress: string;
-    vaultCollateralToken: string;
-    feeBIPS: BN;
-    poolFeeShareBIPS: BN;
-    mintingVaultCollateralRatioBIPS: BN;
-    mintingPoolCollateralRatioBIPS: BN;
-    buyFAssetByAgentFactorBIPS: BN;
-    poolExitCollateralRatioBIPS: BN;
-    poolTopupCollateralRatioBIPS: BN;
-    poolTopupTokenPriceFactorBIPS: BN;
+    creationData: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
     0: string;
     1: string;
-    2: string;
-    3: string;
-    4: string;
-    5: BN;
-    6: BN;
-    7: BN;
-    8: BN;
-    9: BN;
-    10: BN;
-    11: BN;
-    12: BN;
+    2: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
   };
 }
 
@@ -286,6 +294,19 @@ export interface DustChanged {
     dustUBA: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface EmergencyPauseCanceled {
+  name: "EmergencyPauseCanceled";
+  args: {};
+}
+
+export interface EmergencyPauseTriggered {
+  name: "EmergencyPauseTriggered";
+  args: {
+    pausedUntil: BN;
+    0: BN;
   };
 }
 
@@ -731,6 +752,8 @@ export type AllEvents =
   | CurrentUnderlyingBlockUpdated
   | DuplicatePaymentConfirmed
   | DustChanged
+  | EmergencyPauseCanceled
+  | EmergencyPauseTriggered
   | FullLiquidationStarted
   | GovernanceCallTimelocked
   | GovernanceInitialised
@@ -853,6 +876,24 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
+  addEmergencyPauseSender: {
+    (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   assetManagerExists(
     _assetManager: string,
     txDetails?: Truffle.TransactionDetails
@@ -903,6 +944,29 @@ export interface AssetManagerControllerInstance
       _class: number | BN | string,
       _token: string,
       _invalidationTimeSec: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  emergencyPause: {
+    (
+      _assetManagers: string[],
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _duration: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -961,7 +1025,7 @@ export interface AssetManagerControllerInstance
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
-  pause: {
+  pauseMinting: {
     (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -999,7 +1063,43 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
+  removeEmergencyPauseSender: {
+    (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _address: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   replacedBy(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  resetEmergencyPauseTotalDuration: {
+    (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _assetManagers: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
 
   setAgentExitAvailableTimelockSeconds: {
     (
@@ -1231,6 +1331,52 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
+  setCleanerContract: {
+    (
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCleanupBlockNumberManager: {
+    (
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setCollateralPoolFactory: {
     (
       _assetManagers: string[],
@@ -1404,6 +1550,33 @@ export interface AssetManagerControllerInstance
     estimateGas(
       _assetManagers: string[],
       _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setEmergencyPauseParameters: {
+    (
+      _assetManagers: string[],
+      _maxEmergencyPauseDurationSeconds: number | BN | string,
+      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _maxEmergencyPauseDurationSeconds: number | BN | string,
+      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _maxEmergencyPauseDurationSeconds: number | BN | string,
+      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _maxEmergencyPauseDurationSeconds: number | BN | string,
+      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1916,7 +2089,7 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
-  unpause: {
+  unpauseMinting: {
     (_assetManagers: string[], txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -1971,6 +2144,33 @@ export interface AssetManagerControllerInstance
     ): Promise<string>;
     estimateGas(
       _assetManagers: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeFAssetImplementation: {
+    (
+      _assetManagers: string[],
+      _implementation: string,
+      _callData: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _implementation: string,
+      _callData: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _implementation: string,
+      _callData: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _implementation: string,
+      _callData: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2061,6 +2261,24 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
+    addEmergencyPauseSender: {
+      (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     assetManagerExists(
       _assetManager: string,
       txDetails?: Truffle.TransactionDetails
@@ -2111,6 +2329,29 @@ export interface AssetManagerControllerInstance
         _class: number | BN | string,
         _token: string,
         _invalidationTimeSec: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    emergencyPause: {
+      (
+        _assetManagers: string[],
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _duration: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -2169,7 +2410,7 @@ export interface AssetManagerControllerInstance
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
-    pause: {
+    pauseMinting: {
       (
         _assetManagers: string[],
         txDetails?: Truffle.TransactionDetails
@@ -2208,7 +2449,44 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
+    removeEmergencyPauseSender: {
+      (_address: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _address: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     replacedBy(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    resetEmergencyPauseTotalDuration: {
+      (
+        _assetManagers: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     setAgentExitAvailableTimelockSeconds: {
       (
@@ -2440,6 +2718,52 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
+    setCleanerContract: {
+      (
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCleanupBlockNumberManager: {
+      (
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     setCollateralPoolFactory: {
       (
         _assetManagers: string[],
@@ -2613,6 +2937,33 @@ export interface AssetManagerControllerInstance
       estimateGas(
         _assetManagers: string[],
         _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setEmergencyPauseParameters: {
+      (
+        _assetManagers: string[],
+        _maxEmergencyPauseDurationSeconds: number | BN | string,
+        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _maxEmergencyPauseDurationSeconds: number | BN | string,
+        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _maxEmergencyPauseDurationSeconds: number | BN | string,
+        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _maxEmergencyPauseDurationSeconds: number | BN | string,
+        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3126,7 +3477,7 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
-    unpause: {
+    unpauseMinting: {
       (
         _assetManagers: string[],
         txDetails?: Truffle.TransactionDetails
@@ -3183,6 +3534,33 @@ export interface AssetManagerControllerInstance
       ): Promise<string>;
       estimateGas(
         _assetManagers: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeFAssetImplementation: {
+      (
+        _assetManagers: string[],
+        _implementation: string,
+        _callData: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _implementation: string,
+        _callData: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _implementation: string,
+        _callData: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _implementation: string,
+        _callData: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
