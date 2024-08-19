@@ -82,12 +82,15 @@
         "https://attestation-coston.aflabs.net/attestation-client"
     ],
     "ormOptions": {
-        "type": "sqlite",
-        "dbName": "fasset-bots-coston.CONTROLLER.db",
+        "type": "mysql",
+        "dbName": "fasset_bots-coston",
+        "host": "localhost",
+        "port": 3306,
         "allowGlobalContext": true,
         "pool": {
             "min": 0,
-            "max": 2
+            "max": 80,
+            "acquireTimeoutMillis": 60000
         }
     },
     "liquidationStrategy": {
