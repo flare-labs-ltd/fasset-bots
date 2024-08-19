@@ -5,14 +5,14 @@ import { ChainType } from "../../src/utils/constants";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { WALLET } from "../../src";
 import BN from "bn.js";
-import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
+import { fetchTransactionEntityById, getTransactionInfoById, updateMonitoringState } from "../../src/db/dbutils";
 import { UTXOEntity } from "../../src/entity/utxo";
 import { WalletAddressEntity } from "../../src/entity/wallet";
-import { updateMonitoringState } from "../../src/utils/lockManagement";
 import winston from "winston";
 import { logger } from "../../src/utils/logger";
 import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { isORMError } from "../../src/chain-clients/utils";
+import { toBN } from "../../src/utils/bnutils";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -161,9 +161,9 @@ async function setWalletStatusInDB(rootEm: EntityManager, address: string, isDel
     });
 }
 
-async function setMonitoringStatus(rootEm: EntityManager, chainType: ChainType, monitoring: boolean) {
+async function setMonitoringStatus(rootEm: EntityManager, chainType: ChainType, monitoring: number) {
     await updateMonitoringState(rootEm, chainType, async (monitoringEnt) => {
-        monitoringEnt.isMonitoring = monitoring;
+        monitoringEnt.lastPingInTimestamp = toBN(monitoring);
     });
 }
 

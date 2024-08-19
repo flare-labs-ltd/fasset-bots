@@ -1,4 +1,4 @@
-import { SpentHeightEnum, TransactionEntity, TransactionStatus, UTXOEntity, WALLET } from "../../src";
+import { SpentHeightEnum, TransactionStatus, UTXOEntity, WALLET } from "../../src";
 import { DogecoinWalletConfig, FeeServiceConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { assert, expect, use } from "chai";
@@ -10,7 +10,6 @@ import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
-    addRequestTimers,
     calculateNewFeeForTx,
     clearUTXOs,
     createTransactionEntity,
@@ -20,7 +19,6 @@ import {
     waitForTxToFinishWithStatus,
 } from "../test_util/util";
 import BN from "bn.js";
-import { fetchMonitoringState } from "../../src/utils/lockManagement";
 import { logger } from "../../src/utils/logger";
 import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
@@ -112,11 +110,10 @@ describe("Dogecoin wallet tests", () => {
         await wClient.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
-                if (!monitoringState || !monitoringState.isMonitoring) return true;
+                if (!wClient.isMonitoring) return true;
             });
         } catch (e) {
-            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
 
         removeConsoleLogging();

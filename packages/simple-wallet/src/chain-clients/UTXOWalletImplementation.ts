@@ -2,19 +2,21 @@ import axios, { AxiosRequestConfig } from "axios";
 import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
 import * as dogecore from "bitcore-lib-doge";
-import { excludeNullFields, getDefaultFeePerKB, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
+import { excludeNullFields, getDefaultFeePerKB, getRandomInt, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toBNExp, toNumber } from "../utils/bnutils";
 import {
     BTC_DOGE_DEC_PLACES,
     BTC_DUST_AMOUNT,
     BTC_FEE_SECURITY_MARGIN,
     BTC_LEDGER_CLOSE_TIME_MS,
+    BUFFER_PING_INTERVAL,
     ChainType,
     DEFAULT_FEE_INCREASE,
     DEFAULT_RATE_LIMIT_OPTIONS,
     DOGE_DUST_AMOUNT,
     DOGE_FEE_SECURITY_MARGIN,
     DOGE_LEDGER_CLOSE_TIME_MS,
+    PING_INTERVAL,
     UTXO_INPUT_SIZE,
     UTXO_INPUT_SIZE_SEGWIT,
     UTXO_OUTPUT_SIZE,
@@ -53,8 +55,9 @@ import {
     storeUTXOS,
     updateTransactionEntity,
     updateUTXOEntity,
+    fetchMonitoringState,
+    updateMonitoringState
 } from "../db/dbutils";
-import { fetchMonitoringState, updateMonitoringState } from "../utils/lockManagement";
 import { MonitoringStateEntity } from "../entity/monitoring_state";
 import { logger } from "../utils/logger";
 import { UTXOAccountGeneration } from "./account-generation/UTXOAccountGeneration";
@@ -265,16 +268,20 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     async isMonitoring(): Promise<boolean> {
         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-        return monitoringState?.isMonitoring || false;
-    }
+        if (!monitoringState) {
+           return false;
+        }
+        const now = (new Date()).getTime();
+        const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
+        return elapsed < BUFFER_PING_INTERVAL;
+     }
 
-    async stopMonitoring() {
-        this.monitoring = false;
-        this.feeService?.stopMonitoring();
+     async stopMonitoring(): Promise<void> {
         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-            monitoringEnt.isMonitoring = false;
+           monitoringEnt.lastPingInTimestamp = toBN(0);
         });
-    }
+        this.monitoring = false;
+     }
 
     /**
      * Background processing
@@ -283,22 +290,28 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         try {
             const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
             if (!monitoringState) {
-                this.rootEm.create(MonitoringStateEntity, {
-                    chainType: this.chainType,
-                    isMonitoring: true,
-                } as RequiredEntityData<MonitoringStateEntity>);
-                await this.rootEm.flush();
-                this.monitoring = true;
-            } else if (monitoringState.isMonitoring) {
-                logger.info(`Monitoring for chain ${this.chainType} is already running.`);
-                return;
-            } else {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-                    monitoringEnt.isMonitoring = true;
-                });
-                this.monitoring = true;
+               this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, lastPingInTimestamp: toBN((new Date()).getTime()) } as RequiredEntityData<MonitoringStateEntity>,);
+               await this.rootEm.flush();
+            } else if (monitoringState.lastPingInTimestamp) {
+               const now = (new Date()).getTime();
+               if ((now - monitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
+                  await sleepMs(BUFFER_PING_INTERVAL + getRandomInt(0, 500));
+                  // recheck the monitoring state
+                  const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+                  const newNow = (new Date()).getTime();
+                  if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
+                     logger.info(`Another monitoring instance is already running for chain ${this.chainType}.`);
+                     return;
+                  }
+               }
             }
+            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+               monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
+            });
+            this.monitoring = true;
             logger.info(`Monitoring started for chain ${this.chainType}`);
+
+            void this.updatePing();
 
             while (this.monitoring) {
                 try {
@@ -347,6 +360,19 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
     }
 
+    private async updatePing(): Promise<void> {
+        while (this.monitoring) {
+           try {
+              await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                 monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
+              });
+              await sleepMs(PING_INTERVAL);
+           } catch (error) {
+              logger.error(`Error updating ping status for chain ${this.chainType}`, error);
+              this.monitoring = false;// TODO-urska -> better handle
+           }
+        }
+     }
     ///////////////////////////////////////////////////////////////////////////////////////
     // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////

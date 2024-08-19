@@ -7,6 +7,9 @@ export const MNEMONIC_STRENGTH = 256;
 
 export const DEFAULT_FEE_INCREASE = 2;
 
+export const PING_INTERVAL = 10_000; // 10seconds
+export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
+
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 

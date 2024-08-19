@@ -21,7 +21,6 @@ import {
 } from "../test_util/util";
 import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {fetchMonitoringState} from "../../src/utils/lockManagement";
 import { logger } from "../../src/utils/logger";
 
 use(chaiAsPromised);
@@ -79,11 +78,10 @@ describe("Xrp wallet tests", () => {
         await wClient.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
-                if (!monitoringState || !monitoringState.isMonitoring) return true;
+                if (!wClient.isMonitoring) return true;
             });
         } catch (e) {
-            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
 
         removeConsoleTransport();

@@ -27,6 +27,10 @@ export function bytesToHex(a: Iterable<number> | ArrayLike<number>): string {
    }).join("");
 }
 
+export function getRandomInt(min: number, max: number): number {
+   return Math.floor(Math.random() * (max - min)) + min;
+}
+
 export function uint8ArrToString(a: Uint8Array): string {
    return Buffer.from(a).toString("base64");
 }

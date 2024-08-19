@@ -11,6 +11,7 @@ import { Transaction } from "bitcore-lib";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
 import { WalletUTXOTracker } from "../entity/walletUTXOTracker";
 import Output = Transaction.Output;
+import { MonitoringStateEntity } from "../entity/monitoring_state";
 
 
 // transaction operations
@@ -325,4 +326,19 @@ export async function checkWalletMempoolTxCount(rootEm: EntityManager, address: 
             await em.persistAndFlush(utxoTrackerEnt);
         }
     })
+}
+
+// locking
+export async function fetchMonitoringState(rootEm: EntityManager, chainType: string): Promise<MonitoringStateEntity | null> {
+    return await rootEm.findOne(MonitoringStateEntity, { chainType } as FilterQuery<MonitoringStateEntity>, { refresh: true });
+}
+
+
+export async function updateMonitoringState(rootEm: EntityManager, chainType: string, modify: (stateEnt: MonitoringStateEntity) => Promise<void>): Promise<void> {
+    await rootEm.transactional(async (em) => {
+        const stateEnt = await fetchMonitoringState(rootEm, chainType);
+        if (!stateEnt) return;
+        await modify(stateEnt);
+        await em.persistAndFlush(stateEnt);
+    });
 }

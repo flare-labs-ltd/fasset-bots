@@ -9,9 +9,9 @@ import {expect, use} from "chai";
 
 use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
-import {toBN, toBNExp} from "../../src/utils/bnutils";
+import {toBN} from "../../src/utils/bnutils";
 import rewire from "rewire";
-import {fetchTransactionEntityById} from "../../src/db/dbutils";
+import {fetchTransactionEntityById, fetchMonitoringState} from "../../src/db/dbutils";
 import {sleepMs} from "../../src/utils/utils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
@@ -23,7 +23,6 @@ import {
     setMonitoringStatus,
     waitForTxToFinishWithStatus
 } from "../test_util/util";
-import {fetchMonitoringState, updateMonitoringState} from "../../src/utils/lockManagement";
 import {logger} from "../../src/utils/logger";
 import BN from "bn.js";
 
@@ -109,11 +108,10 @@ describe("Bitcoin wallet tests", () => {
         await wClient.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
-                if (!monitoringState || !monitoringState.isMonitoring) return true;
+                if (!wClient.isMonitoring) return true;
             });
         } catch (e) {
-            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
 
         removeConsoleLogging();
@@ -206,9 +204,9 @@ describe("Bitcoin wallet tests", () => {
 
         const ids = []
         for (let i = 0; i < N_TRANSACTIONS; i++) {
-            let id;
+            // let id;
             // if (Math.random() > 0.5) {
-            id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi.muln(2));
+            const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi.muln(2));
             // }
             // else {
             //     id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendSatoshi, feeInSatoshi);
