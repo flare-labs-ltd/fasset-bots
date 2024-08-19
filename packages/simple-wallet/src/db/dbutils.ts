@@ -276,14 +276,3 @@ export async function setAccountIsDeleting(rootEm: EntityManager, address: strin
         }
     });
 }
-
-export async function decreaseWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType, numTxs: number): Promise<void> {
-    await rootEm.transactional(async (em) => {
-        const ent = await em.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
-        if (ent && ent.numTxsInMempool - numTxs > 0) {
-            ent.numTxsInMempool = ent.numTxsInMempool - numTxs;
-            logger.info(`Updating mempool tx count to ${ent.numTxsInMempool - numTxs}`);
-            await em.persistAndFlush(ent);
-        }
-    });
-}

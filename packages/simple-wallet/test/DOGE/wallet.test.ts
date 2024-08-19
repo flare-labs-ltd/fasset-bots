@@ -476,11 +476,11 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
-    it.skip("asdf", async () => {
+    it.skip("Waiting into inf", async () => {
         while (true) {
             await sleepMs(2000);
         }
-    })
+    });
 });
 
 async function setupRewiredWallet() {
