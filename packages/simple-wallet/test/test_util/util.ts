@@ -63,14 +63,20 @@ async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: num
             return checkStatus(tx, [status]);
         } catch (error) {
             if (isORMError(error)) {
-                logger.error("Test util error: ", error)
+                logger.error("Test util error: ", error);
                 return false;
             }
             throw error;
         }
     });
 
-    return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];
+    try {
+        return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];
+    } catch (error) {
+        logger.error("Test util error: ", error);
+        await sleepMs(1000);
+        return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];
+    }
 }
 
 async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit: number, wClient: WALLET.XRP | WALLET.BTC | WALLET.DOGE, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {

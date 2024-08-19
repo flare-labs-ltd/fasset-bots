@@ -3,8 +3,8 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
-import { fetchTransactionEntityByHash } from "../db/dbutils";
 import { EntityManager } from "@mikro-orm/core";
+import { TransactionOutputEntity } from "../entity/transactionOutput";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -40,13 +40,38 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
+        const final = [];
 
-        return res.data.map((utxo: any) => ({
-            mintTxid: utxo.txid,
-            mintIndex: utxo.vout,
-            value: utxo.value,
-            script: "",
-        }));
+        for (const utxo of res.data) {
+            const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
+                vout: utxo.vout,
+                transactionHash: utxo.txid,
+            });
+
+            final.push({
+                mintTxid: utxo.txid,
+                mintIndex: utxo.vout,
+                value: utxo.value,
+                script: txOutputEnt ? txOutputEnt.script : "",
+                confirmed: utxo.confirmations > 0,
+            });
+        }
+
+        return final;
+        // return res.data.map(async (utxo: any) => {
+        //     const res = await this.rootEm.findOne(TransactionOutputEntity, {
+        //         vout: utxo.vout,
+        //         transactionHash: utxo.txid,
+        //     });
+        //
+        //     return {
+        //         mintTxid: utxo.txid,
+        //         mintIndex: utxo.vout,
+        //         value: utxo.value,
+        //         script: res ? res.script : "",
+        //         confirmed: utxo.confirmations > 0,
+        //     };
+        // });
     }
 
     async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {

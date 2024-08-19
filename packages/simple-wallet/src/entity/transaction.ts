@@ -80,6 +80,9 @@ export class TransactionEntity {
 
     @OneToMany(() => TransactionOutputEntity, output => output.transaction)
     outputs = new Collection<TransactionOutputEntity>(this);
+
+    @OneToMany(() => TransactionOutputEntity, input => input.transaction)
+    inputs = new Collection<TransactionOutputEntity>(this);
 }
 
 export enum TransactionStatus {
