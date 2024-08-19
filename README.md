@@ -25,6 +25,8 @@ Install `fasset-bots`
 
     yarn && yarn build
 
+Install mysql and create a user by following this [guide](./docs/mysql.md)
+
 ## Setup
 
 ### Agent Bot

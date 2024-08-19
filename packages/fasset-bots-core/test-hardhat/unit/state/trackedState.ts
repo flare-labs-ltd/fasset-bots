@@ -32,33 +32,23 @@ const agentDestroyedArgs = {
     agentVault: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
 } as EventArgs<AgentDestroyed>;
 const agentCreatedArgs = {
-    "0": "0xedCdC766aA7DbB84004428ee0d35075375270E9B",
-    "1": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
-    "2": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
-    "3": "UNDERLYING_ACCOUNT_78988",
-    "4": "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
-    "5": toBN(0),
-    "6": toBN(0),
-    "7": toBN(0),
-    "8": toBN(0),
-    "9": toBN(0),
-    "10": toBN(0),
-    "11": toBN(0),
-    "12": toBN(0),
-    __length__: 13,
     owner: "0xedCdC766aA7DbB84004428ee0d35075375270E9B",
     agentVault: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
-    collateralPool: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
-    underlyingAddress: "UNDERLYING_ACCOUNT_78988",
-    vaultCollateralToken: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
-    feeBIPS: toBN(0),
-    poolFeeShareBIPS: toBN(0),
-    mintingVaultCollateralRatioBIPS: toBN(0),
-    mintingPoolCollateralRatioBIPS: toBN(0),
-    buyFAssetByAgentFactorBIPS: toBN(0),
-    poolExitCollateralRatioBIPS: toBN(0),
-    poolTopupCollateralRatioBIPS: toBN(0),
-    poolTopupTokenPriceFactorBIPS: toBN(0),
+    creationData: {
+        collateralPool: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
+        collateralPoolToken: "0xfd1cC06cf865b9635Be915931Ca35e5Fa7561Dcf",
+        underlyingAddress: "UNDERLYING_ACCOUNT_78988",
+        vaultCollateralToken: "0x094f7F426E4729d967216C2468DD1d44E2396e3d",
+        poolWNatToken: "0xF81c8917353E76E180dDf97aD328c0C3C6Fe38F7",
+        feeBIPS: toBN(0),
+        poolFeeShareBIPS: toBN(0),
+        mintingVaultCollateralRatioBIPS: toBN(0),
+        mintingPoolCollateralRatioBIPS: toBN(0),
+        buyFAssetByAgentFactorBIPS: toBN(0),
+        poolExitCollateralRatioBIPS: toBN(0),
+        poolTopupCollateralRatioBIPS: toBN(0),
+        poolTopupTokenPriceFactorBIPS: toBN(0),
+    }
 } as EventArgs<AgentVaultCreated>;
 
 const depositUSDC = toBNExp(1_000_000, 6);
@@ -139,7 +129,7 @@ describe("Tracked state tests", () => {
         trackedState.createAgent(agentCreatedArgs);
         const agent = trackedState.getAgent(agentCreatedArgs.agentVault);
         expect(agent!.vaultAddress).to.eq(agentCreatedArgs.agentVault);
-        expect(agent!.underlyingAddress).to.eq(agentCreatedArgs.underlyingAddress);
+        expect(agent!.underlyingAddress).to.eq(agentCreatedArgs.creationData.underlyingAddress);
         const agentUndefined = trackedState.getAgent("");
         expect(agentUndefined).to.be.undefined;
     });
@@ -712,6 +702,6 @@ describe("Tracked state tests", () => {
         const agent = trackedState.getAgent(agentCreatedArgs.agentVault);
         const settings = agent?.getTrackedStateAgentSettings();
         expect(settings?.vaultAddress).to.eq(agentCreatedArgs.agentVault);
-        expect(settings?.collateralPoolAddress).to.eq(agentCreatedArgs.collateralPool);
+        expect(settings?.collateralPoolAddress).to.eq(agentCreatedArgs.creationData.collateralPool);
     });
 });

@@ -198,6 +198,14 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
 }
 ```
 
+### Enable responding to agent pings
+
+The status of an agent can be tracked by outside sources using the AgentPing smart contract. This way dApps can check if an agent is online or offline. But by default the agent will not respond to pings from untrusted senders. To add an address to which your agent will respond to you need to add it in the `trustedPingSenders` parameter that is under `agentBotSettings` in `fasset-bots/packages/fasset-bots-core/run-config/coston-bot.json`. For example if we want out agent to respond to addresses `0x0048508b510502555ED47E98dE98Dd6426dDd0C4` and `0xb03fF2AF427FEFb73bcf3263338F42271E30cfD1` we would add these addresses to the `trustedPingSenders` array and the configuration would look like this:
+```json
+    "trustedPingSenders": ["0x0048508b510502555ED47E98dE98Dd6426dDd0C4","0xb03fF2AF427FEFb73bcf3263338F42271E30cfD1"],
+```
+The specific addresses to add to this configuration will be communicated to you from the Flare team by Telegram.
+
 ## .env
 
 See [`.env.template`](../.env.template).
@@ -205,8 +213,10 @@ See [`.env.template`](../.env.template).
 Example:
 
 ```env
-## Path to config file for the agent bot (and other bots)
-FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
+## Path to config file for the agent bot (and other bots) for MYSQL
+FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot-mysql.json"
+## If you want to use sqlite (not recommended) uncomment the line below and comment the line above
+#FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
 
 ## Path to secrets file for the agent bot (and other bots)
 FASSET_BOT_SECRETS="./secrets.json"
@@ -218,10 +228,13 @@ FASSET_BOT_SECRETS="./secrets.json"
 # FASSET_USER_CONFIG="./packages/fasset-bots-core/run-config/coston-user.json"
 
 ## (Optional) Path to secrets json file for users, instead you can use `-s` parameter.
-# FASSET_USER_SECRETS=""
+FASSET_USER_SECRETS="./secrets.json"
 
 ## (Optional) Path to directory, used for storing unexecuted minting. Defaults to `fasset` subdirectory in user's home directory.
 # FASSET_USER_DATA_DIR=""
+
+## (Optional) Path to database file for the bot (if sqlite is enabled).
+#FASSET_BOT_SQLITE_DB ="./fasset-bots-coston.db"
 ```
 
 ## Secrets file

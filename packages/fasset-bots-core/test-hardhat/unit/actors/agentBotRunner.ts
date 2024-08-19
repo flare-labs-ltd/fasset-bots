@@ -60,7 +60,6 @@ describe("Agent bot runner tests", () => {
 
     it("Should create agent bot runner and run it", async () => {
         context.blockchainIndexer.chain.mine(10);
-        const spyWarn = spy.on(console, "warn");
         // create agents
         await createTestAgentBot(context, orm, ownerAddress, undefined, false);
         const otherContext = await createTestAssetContext(accounts[0], testChainInfo.btc);
@@ -80,7 +79,6 @@ describe("Agent bot runner tests", () => {
         // run
         await agentBotRunner.runStep();
         expect(agentEntities.length).to.eq(3);
-        expect(spyWarn).to.have.been.called.once;
         agentBotRunner.requestStop();
         if (agentBotRunner.parallel()) {
             while (agentBotRunner.running) {

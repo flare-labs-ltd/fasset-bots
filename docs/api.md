@@ -4,8 +4,10 @@
 In the root of the repository create .env file and paste the following lines:
 
 ```env
-## Path to config file for the agent bot (and other bots)
-FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
+## Path to config file for the agent bot (and other bots) for MYSQL
+FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot-mysql.json"
+## If you want to use sqlite (not recommended) uncomment the line below and comment the line above
+#FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"
 
 ## Path to secrets file for the agent bot (and other bots)
 FASSET_BOT_SECRETS="./secrets.json"
@@ -21,15 +23,12 @@ FASSET_USER_SECRETS="./secrets.json"
 
 ## (Optional) Path to directory, used for storing unexecuted minting. Defaults to `fasset` subdirectory in user's home directory.
 # FASSET_USER_DATA_DIR=""
-
-## (Optional) Path to database file for the bot.
-FASSET_BOT_SQLITE_DB ="./fasset-bots-coston.db"
 ```
-Alternatively if you already have .env file, add only the `FASSET_BOT_SQLITE_DB ="./fasset-bots-coston.db"` line to the file. To enable alerts to be sent to backend and be shown on frontend, create a file named `alerts.json` in the root of the repository (make sure not to commit it if you make changes to the repo) and paste the following text into it:
+Alternatively if you already have .env file, add only the `FASSET_BOT_SQLITE_DB ="./fasset-bots-coston.db"` line to the file (add this only if you use sqlite database). To enable alerts to be sent to backend and be shown on frontend, create a file named `alerts.json` in the root of the repository and paste the following text into it:
 
 ```json
 {
-	"extends": "coston-bot.json",
+	"extends": "coston-bot-mysql.json",
 	"apiNotifierConfigs": [
     	{
         	"apiKey": "",
@@ -38,11 +37,13 @@ Alternatively if you already have .env file, add only the `FASSET_BOT_SQLITE_DB 
 	]
 }
 ```
-Here the apiUrl is the url where the fasset-bots are deployed. Then, you will have to direct the `FASSET_BOT_CONFIG` to this file so in the `.env` file in the root of the directory replace the line `FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"` with `FASSET_BOT_CONFIG="./alerts.json"`
+Change the "extends" value to "coston-bot.json" if you want to use sqlite database. Here the apiUrl is the url where the fasset-bots are deployed. Then, you will have to direct the `FASSET_BOT_CONFIG` to this file so in the `.env` file in the root of the directory replace the line `FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"` with `FASSET_BOT_CONFIG="./alerts.json"`.
 To configure backend, in `fasset-bots/packages/fasset-bots-api` create another `.env` file and paste the following text:
 ```env
-## Path to config file for the agent bot (and other bots)
-FASSET_BOT_CONFIG="../fasset-bots-core/run-config/coston-bot.json"
+## Path to config file for the agent bot (and other bots) for MYSQL
+FASSET_BOT_CONFIG="../fasset-bots-core/run-config/coston-bot-mysql.json"
+## If you want to use sqlite (not recommended) uncomment the line below and comment the line above
+#FASSET_BOT_CONFIG="../fasset-bots-core/run-config/coston-bot.json"
 
 ## Path to secrets file for the agent bot (and other bots)
 FASSET_BOT_SECRETS="../../secrets.json"
@@ -60,16 +61,26 @@ FASSET_BOT_SECRETS="../../secrets.json"
 # FASSET_USER_DATA_DIR=""
 
 ## (Optional) Path to database file for the bot.
-FASSET_BOT_SQLITE_DB ="../../fasset-bots-coston.db"
+# FASSET_BOT_SQLITE_DB=""
 ```
 
-To run fasset-bots backend, run the command `yarn start_agent_api_debug` from the root of repository. In another terminal you can also run your agent-bot with `yarn run-agent` (but only after you generate secrets either on frontend or manually). On the frontend you will be able to config `secrets.json` file. After you have them generated you can run your agent.
+To run fasset-bots backend, run the command `yarn start_agent_api` or `yarn start_agent_api_debug` from the root of repository. In another terminal you can also run your agent-bot with `yarn run-agent` (but only after you generate secrets either on frontend or manually). On the frontend you will be able to config `secrets.json` file. After you have them generated you can run your agent.
+
+### Enable responding to agent pings
+
+The status of an agent can be tracked by outside sources using the AgentPing smart contract. This way dApps can check if an agent is online or offline. But by default the agent will not respond to pings from untrusted senders. To add an address to which your agent will respond to you need to add it in the `trustedPingSenders` parameter that is under `agentBotSettings` in `fasset-bots/packages/fasset-bots-core/run-config/coston-bot.json`. For example if we want out agent to respond to addresses `0x0048508b510502555ED47E98dE98Dd6426dDd0C4` and `0xb03fF2AF427FEFb73bcf3263338F42271E30cfD1` we would add these addresses to the `trustedPingSenders` array and the configuration would look like this:
+```json
+    "trustedPingSenders": ["0x0048508b510502555ED47E98dE98Dd6426dDd0C4","0xb03fF2AF427FEFb73bcf3263338F42271E30cfD1"],
+```
+The specific addresses to add to this configuration will be communicated to you from the Flare team by Telegram.
 
 ## Setting up only fasset-bots backend (if you already have setup the basic fasset-bots)
 If you already have setup fasset-bots and you already have a `secrets.json`, then you only need to setup a `.env` file in `fasset-bots/packages/fasset-bots-api`. Create a `.env` file in `fasset-bots/packages/fasset-bots-api` and paste this:
 ```env
-## Path to config file for the agent bot (and other bots)
-FASSET_BOT_CONFIG="../fasset-bots-core/run-config/coston-bot.json"
+## Path to config file for the agent bot (and other bots) for MYSQL
+FASSET_BOT_CONFIG="../fasset-bots-core/run-config/coston-bot-mysql.json"
+## If you want to use sqlite (not recommended) uncomment the line below and comment the line above
+#FASSET_BOT_CONFIG="../fasset-bots-core/run-config/coston-bot.json"
 
 ## Path to secrets file for the agent bot (and other bots)
 FASSET_BOT_SECRETS="../../secrets.json"
@@ -86,9 +97,10 @@ FASSET_BOT_SECRETS="../../secrets.json"
 ## (Optional) Path to directory, used for storing unexecuted minting. Defaults to `fasset` subdirectory in user's home directory.
 # FASSET_USER_DATA_DIR=""
 
-## (Optional) Path to database file for the bot.
-FASSET_BOT_SQLITE_DB ="../../fasset-bots-coston.SOME_HEX.db"
+## (Optional) Path to database file for the bot (if you use sqlite).
+#FASSET_BOT_SQLITE_DB ="../../fasset-bots-coston.SOME_HEX.db"
 ```
+### If the configured databse is sqlite
 Now you will need to edit the `FASSET_BOT_SQLITE_DB`. Here there are 2 options:
 - If you already have some agent vaults, i.e. you are not setting up fasset-bots from the beginning, you will probably already have a .db file in the root of the fasset-bots repository. The name of the file will probably be something like `fasset-bots-coston.SOME_HEX_VALUE.db` (SOME_HEX_VALUE will be a hex value). If that is the case then during setup you do not need to have `FASSET_BOT_SQLITE_DB`  in both of the `.env` files. You only need to add this variable in the `.env`, that is in the `fasset-bots/packages/fasset-bots-api` and the value needs to be the same as is the name of your database. So if you have a .db file named `fasset-bots-coston.123.db`, then in the `.env` in `fasset-bots/packages/fasset-bots-api` you need to add `FASSET_BOT_SQLITE_DB ="../../fasset-bots-coston.123.db"`.
 - The second option is that if you don’t have any vaults, and do not have a .db file, then you should do the following (this will set the name of the database that will be created when you will create vaults):
@@ -98,7 +110,7 @@ To enable alerts to be sent to backend and be shown on frontend, create a file n
 
 ```json
 {
-	"extends": "coston-bot.json",
+	"extends": "coston-bot-mysql.json",
 	"apiNotifierConfigs": [
     	{
         	"apiKey": "",
@@ -107,17 +119,18 @@ To enable alerts to be sent to backend and be shown on frontend, create a file n
 	]
 }
 ```
-Then, you will have to direct the `FASSET_BOT_CONFIG` to this file so in the `.env` file in the root of the directory replace the line `FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"` with `FASSET_BOT_CONFIG="./alerts.json"`.
-To run fasset-bots backend, run the command `yarn start_agent_api_debug` from the root of repository. In another terminal you can also run your agent-bot with `yarn run-agent`.
+Change the "extends" value to "coston-bot.json" if you want to use sqlite database. Then, you will have to direct the `FASSET_BOT_CONFIG` to this file so in the `.env` file in the root of the directory replace the line `FASSET_BOT_CONFIG="./packages/fasset-bots-core/run-config/coston-bot.json"` with `FASSET_BOT_CONFIG="./alerts.json"`.
+To run fasset-bots backend, run the command `yarn start_agent_api` or `yarn start_agent_api_debug` from the root of repository. In another terminal you can also run your agent-bot with `yarn run-agent`.
 
 ### IMPORTANT NOTES:
 - If you already have secrets file in fasset-bots repository, you do not have to generate them again. Just make sure you have both `.env` files created and that they are filled as stated above.
 - Agent-bot will not work before you have secrets file.
-- Make sure you have `FASSET_BOT_SQLITE_DB` variable in both `.env` files and that the variable is set correctly as stated above.
+- If you are using sqlite, make sure you have `FASSET_BOT_SQLITE_DB` variable in both `.env` files and that the variable is set correctly as stated above.
 - If you are not on a linux based system, some features might not work correctly (such as showing age offline/online, as we read the processes on the device the backend is running on).
 - Make sure that in `.env` in fasset-bots root you have `FASSET_BOT_SECRETS="./secrets.json"` and in `.env` in `fasset-bots/packages/fasset-bots-api` you have `FASSET_BOT_SECRETS="../../secrets.json"` as is written above.
-- IMPORTANT!!!: If you already have some agent vaults, i.e. you are not setting up fasset-bots from the beginning, you will probably already have a .db file in the root of the fasset-bots repository. The name of the file will probably be something like `fasset-bots-coston.SOME_HEX_VALUE.db`. If that is the case then during setup you do not need to have `FASSET_BOT_SQLITE_DB`  in both of the `.env` files. You only need to add this variable in the `.env`, that is in the `fasset-bots/packages/fasset-bots-api` and the value needs to be the same as is the name of your database. So if you have a .db file named `fasset-bots-coston.123.db`, then in the .env in `fasset-bots/packages/fasset-bots-api` you need to add `FASSET_BOT_SQLITE_DB ="../../fasset-bots-coston.123.db"`.
+- IMPORTANT, IF USING SQLITE!!!: If you already have some agent vaults, i.e. you are not setting up fasset-bots from the beginning, you will probably already have a .db file in the root of the fasset-bots repository. The name of the file will probably be something like `fasset-bots-coston.SOME_HEX_VALUE.db`. If that is the case then during setup you do not need to have `FASSET_BOT_SQLITE_DB`  in both of the `.env` files. You only need to add this variable in the `.env`, that is in the `fasset-bots/packages/fasset-bots-api` and the value needs to be the same as is the name of your database. So if you have a .db file named `fasset-bots-coston.123.db`, then in the .env in `fasset-bots/packages/fasset-bots-api` you need to add `FASSET_BOT_SQLITE_DB ="../../fasset-bots-coston.123.db"`.
 - If you want your frontend to receive alerts, don’t forget to setup agent bot alerts as stated above.
+- Variable `FASSET_BOT_SQLITE_DB` is only needed if you use sqlite database.
 
 
 ## Run

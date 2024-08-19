@@ -101,30 +101,38 @@ export interface AgentVaultCreated {
   args: {
     owner: string;
     agentVault: string;
-    collateralPool: string;
-    underlyingAddress: string;
-    vaultCollateralToken: string;
-    feeBIPS: BN;
-    poolFeeShareBIPS: BN;
-    mintingVaultCollateralRatioBIPS: BN;
-    mintingPoolCollateralRatioBIPS: BN;
-    buyFAssetByAgentFactorBIPS: BN;
-    poolExitCollateralRatioBIPS: BN;
-    poolTopupCollateralRatioBIPS: BN;
-    poolTopupTokenPriceFactorBIPS: BN;
+    creationData: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
     0: string;
     1: string;
-    2: string;
-    3: string;
-    4: string;
-    5: BN;
-    6: BN;
-    7: BN;
-    8: BN;
-    9: BN;
-    10: BN;
-    11: BN;
-    12: BN;
+    2: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
   };
 }
 
@@ -283,6 +291,19 @@ export interface DustChanged {
     dustUBA: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface EmergencyPauseCanceled {
+  name: "EmergencyPauseCanceled";
+  args: {};
+}
+
+export interface EmergencyPauseTriggered {
+  name: "EmergencyPauseTriggered";
+  args: {
+    pausedUntil: BN;
+    0: BN;
   };
 }
 
@@ -684,6 +705,8 @@ export type AllEvents =
   | CurrentUnderlyingBlockUpdated
   | DuplicatePaymentConfirmed
   | DustChanged
+  | EmergencyPauseCanceled
+  | EmergencyPauseTriggered
   | FullLiquidationStarted
   | IllegalPaymentConfirmed
   | LiquidationEnded

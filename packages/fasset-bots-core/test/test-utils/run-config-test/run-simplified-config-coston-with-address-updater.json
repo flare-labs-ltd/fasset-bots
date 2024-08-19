@@ -24,6 +24,7 @@
         "poolCollateralReserveFactor": "0.1",
         "trustedPingSenders": [],
         "minBalanceOnServiceAccount": "2",
+        "minBalanceOnWorkAccount": "200",
         "fAssets": {
             "FTestXRP": {
                 "recommendedOwnerBalance": "50",
@@ -35,5 +36,5 @@
     "attestationProviderUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
     ],
-    "assetManagerController": "0x1417bfE7Ad0c9963EE0D28f3B2c328aE02151cEb"
+    "assetManagerController": "0xe9AE92e02355Fad189422b0F376eDcf0465B435b"
 }

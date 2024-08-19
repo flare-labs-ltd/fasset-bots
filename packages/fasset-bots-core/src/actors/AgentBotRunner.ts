@@ -115,7 +115,7 @@ export class AgentBotRunner {
      * In every step it collects all active agent entities and for every one it construct AgentBot and runs its runsStep method, which handles required events and other methods.
      */
     async runStepSerial(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
             this.checkForWorkAddressChange();
             if (this.stopOrRestartRequested()) break;
@@ -132,8 +132,8 @@ export class AgentBotRunner {
         }
     }
 
-    async addNewAgentBots(): Promise<void> {
-        const agentEntities = await this.orm.em.find(AgentEntity, { active: true });
+    async addNewAgentBots() {
+        const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
             const runningAgentBot = this.runningAgentBots.get(agentEntity.vaultAddress);
             if (runningAgentBot) {
@@ -149,6 +149,8 @@ export class AgentBotRunner {
                     console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
                 });
                 this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
+                console.log(squashSpace`Running agent ${agentBot.agent.vaultAddress} for ${await agentBot.context.fAsset.symbol()}
+                    with vault collateral ${await agentBot.tokens.vaultCollateral.symbol()}.`);
                 logger.info(`Owner's ${agentEntity.ownerAddress} AgentBotRunner added running agent ${agentBot.agent.vaultAddress}.`);
             } catch (error) {
                 console.error(`Error with adding running agent ${agentEntity.vaultAddress}: ${error}`);
@@ -157,7 +159,12 @@ export class AgentBotRunner {
         }
     }
 
-    async newAgentBot(agentEntity: AgentEntity): Promise<AgentBot | null> {
+    async activeAgents() {
+        const assetManagerAddresses = Array.from(this.contexts.values()).map(ctx => ctx.assetManager.address);
+        return await this.orm.em.find(AgentEntity, { active: true, assetManager: { $in: assetManagerAddresses } });
+    }
+
+    async newAgentBot(agentEntity: AgentEntity) {
         const context = this.contexts.get(agentEntity.fassetSymbol);
         if (context == null) {
             console.warn(`Invalid fasset symbol ${agentEntity.fassetSymbol}`);

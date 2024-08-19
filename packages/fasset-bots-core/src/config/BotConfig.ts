@@ -26,8 +26,10 @@ import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, Bo
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
+import { AgentBotDbUpgrades } from "../actors/AgentBotDbUpgrades";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
+    secrets: Secrets;
     orm?: ORM; // only for agent bot
     notifiers: NotifierTransport[];
     loopDelay: number;
@@ -60,6 +62,7 @@ export interface AgentBotSettings {
     recommendedOwnerUnderlyingBalance: BN;
     minimumFreeUnderlyingBalance: BN;
     minBalanceOnServiceAccount: BN;
+    minBalanceOnWorkAccount: BN;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
@@ -94,7 +97,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
                 orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
             fAssets.set(symbol, fassetConfig);
         }
-        return {
+        const result: BotConfig = {
+            secrets: secrets,
             loopDelay: configFile.loopDelay,
             fAssets: fAssets,
             nativeChainInfo: createNativeChainInfo(configFile.nativeChainInfo),
@@ -103,7 +107,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
-        } as AgentBotConfig;
+        };
+        return result;
     } catch (error) {
         await orm?.close();
         throw error;
@@ -117,7 +122,9 @@ export function createNativeChainInfo(nativeChainInfo: BotNativeChainInfo): Nati
 export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOptions, databaseAccount?: DatabaseAccount) {
     if (type === "agent") {
         assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
-        return await overrideAndCreateOrm(ormOptions, databaseAccount);
+        const orm = await overrideAndCreateOrm(ormOptions, databaseAccount);
+        await AgentBotDbUpgrades.performUpgrades(orm);
+        return orm;
     } else if (type === "user") {
         const overrideOptions: OrmConfigOptions = {
             type: "sqlite",
@@ -219,6 +226,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
         minimumFreeUnderlyingBalance: underlying.parse(fassetSettings.minimumFreeUnderlyingBalance),
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
         minBalanceOnServiceAccount: native.parse(agentBotSettings.minBalanceOnServiceAccount),
+        minBalanceOnWorkAccount: native.parse(agentBotSettings.minBalanceOnWorkAccount),
     }
 }
 

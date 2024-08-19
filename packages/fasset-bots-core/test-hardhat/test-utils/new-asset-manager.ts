@@ -20,6 +20,7 @@ const AssetManager = artifacts.require('AssetManager');
 const AssetManagerInit = artifacts.require('AssetManagerInit');
 const GovernedFacet = artifacts.require('GovernedFacet');
 const FAsset = artifacts.require('FAsset');
+const FAssetProxy = artifacts.require('FAssetProxy');
 
 export async function newAssetManager(
     governanceAddress: string,
@@ -39,7 +40,9 @@ export async function newAssetManager(
     // 0x8... is not a contract, but it is valid non-zero address so it will work in tests where we don't switch to production mode
     const governanceSettings = options?.governanceSettings ?? "0x8000000000000000000000000000000000000000";
     const updateExecutor = options?.updateExecutor ?? governanceAddress;
-    const fAsset = await FAsset.new(governanceAddress, name, symbol, assetName, assetSymbol, decimals);
+    const fAssetImpl = await FAsset.new();
+    const fAssetProxy = await FAssetProxy.new(fAssetImpl.address, name, symbol, assetName, assetSymbol, decimals);
+    const fAsset = await FAsset.at(fAssetProxy.address);
     const assetManagerControllerAddress = typeof assetManagerController === 'string' ? assetManagerController : assetManagerController.address;
     assetManagerSettings = web3DeepNormalize({
         ...assetManagerSettings,
@@ -126,6 +129,7 @@ export async function deployAssetManagerFacets(): Promise<[DiamondCut[], AssetMa
         await deployFacet('SettingsManagementFacet', interfaceSelectors),
         await deployFacet('AgentVaultAndPoolSupportFacet', interfaceSelectors),
         await deployFacet('SystemStateManagementFacet', interfaceSelectors),
+        await deployFacet('EmergencyPauseFacet', interfaceSelectors),
         await deployFacet('AgentPingFacet', interfaceSelectors),
     ];
     // verify every required selector is included in some cut

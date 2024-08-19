@@ -1,7 +1,7 @@
 import type { ContractTransactionReceipt, ContractTransactionResponse, JsonRpcProvider, Signer } from "ethers"
 
 
-async function sleep(milliseconds: number) {
+export async function sleep(milliseconds: number) {
     await new Promise((resolve: any) => {
         setTimeout(() => {
             resolve()

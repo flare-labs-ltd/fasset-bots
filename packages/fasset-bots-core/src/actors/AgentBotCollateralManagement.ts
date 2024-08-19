@@ -3,13 +3,11 @@ import { AgentBotSettings } from "../config";
 import { Agent } from "../fasset/Agent";
 import { AgentInfo, AgentStatus, CollateralClass } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
-import { BN_ZERO, MAX_BIPS, minBN, toBN, toBNExp } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, minBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentBot } from "./AgentBot";
 import { AgentTokenBalances } from "./AgentTokenBalances";
-
-const MIN_OWNER_BALANCE = toBNExp(200, 18);
 
 export class AgentBotCollateralManagement {
     static deepCopyWithObjectCreate = true;
@@ -78,7 +76,7 @@ export class AgentBotCollateralManagement {
             const requiredCrPoolBIPS = toBN(poolCollateralPrice.collateral.ccbMinCollateralRatioBIPS).muln(this.agentBotSettings.liquidationPreventionFactor);
             const requiredTopUpPool = await this.requiredTopUp(requiredCrPoolBIPS, agentInfo, poolCollateralPrice);
             const ownerBalance = await this.tokens.native.balance(this.agent.owner.workAddress);
-            const topupPool = minBN(requiredTopUpPool, ownerBalance.sub(MIN_OWNER_BALANCE));
+            const topupPool = minBN(requiredTopUpPool, ownerBalance.sub(this.agentBotSettings.minBalanceOnWorkAccount));
             if (topupPool.gt(BN_ZERO)) {
                 const topupPoolF = await this.tokens.poolCollateral.format(topupPool);
                 try {
@@ -124,7 +122,7 @@ export class AgentBotCollateralManagement {
             const nativeLowBalance = this.ownerNativeLowBalance(agentInfo);
             if (ownerBalanceNative.lte(nativeLowBalance)) {
                 const nativeBalanceF = await this.tokens.native.format(ownerBalanceNative);
-                if (ownerBalanceNative.lte(MIN_OWNER_BALANCE)) {
+                if (ownerBalanceNative.lte(this.agentBotSettings.minBalanceOnWorkAccount)) {
                     await this.notifier.sendCriticalLowBalanceOnOwnersAddress(this.agent.owner.workAddress, nativeBalanceF);
                     logger.warn(`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner} has criticaly low native balance ${nativeBalanceF}.`);
                 } else {

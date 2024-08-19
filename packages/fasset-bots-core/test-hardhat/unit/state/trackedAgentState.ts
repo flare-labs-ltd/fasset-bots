@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { AgentBot } from "../../../src/actors/AgentBot";
 import { ORM } from "../../../src/config/orm";
 import { AgentStatus, CollateralClass } from "../../../src/fasset/AssetManagerTypes";
-import { TrackedAgentState } from "../../../src/state/TrackedAgentState";
+import { InitialAgentData, TrackedAgentState } from "../../../src/state/TrackedAgentState";
 import { TrackedState } from "../../../src/state/TrackedState";
 import { toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
@@ -12,20 +12,24 @@ import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetConte
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, mintVaultCollateralToOwner } from "../../test-utils/helpers";
 
-const agentCreated = {
+const agentCreated: InitialAgentData = {
     owner: "0x92561F28Ec438Ee9831D00D1D59fbDC981b762b2",
     agentVault: "0xEA6aBEf9ea06253364Bb6cf53065dAFD2ca122FC",
-    collateralPool: "0xCd17f01812099F7B76098f9bdCb93eC1DfDF24de",
-    underlyingAddress: "UNDERLYING_ACCOUNT_26086",
-    vaultCollateralToken: "0x52d3b94181f8654db2530b0fEe1B19173f519C52",
-    feeBIPS: toBN(1000),
-    poolFeeShareBIPS: toBN(4000),
-    mintingVaultCollateralRatioBIPS: toBN(16800),
-    mintingPoolCollateralRatioBIPS: toBN(26400),
-    buyFAssetByAgentFactorBIPS: toBN(9000),
-    poolExitCollateralRatioBIPS: toBN(28600),
-    poolTopupCollateralRatioBIPS: toBN(24200),
-    poolTopupTokenPriceFactorBIPS: toBN(8000),
+    creationData: {
+        collateralPool: "0xCd17f01812099F7B76098f9bdCb93eC1DfDF24de",
+        collateralPoolToken: "0xfd1cC06cf865b9635Be915931Ca35e5Fa7561Dcf",
+        underlyingAddress: "UNDERLYING_ACCOUNT_26086",
+        vaultCollateralToken: "0x52d3b94181f8654db2530b0fEe1B19173f519C52",
+        poolWNatToken: "0xF81c8917353E76E180dDf97aD328c0C3C6Fe38F7",
+        feeBIPS: toBN(1000),
+        poolFeeShareBIPS: toBN(4000),
+        mintingVaultCollateralRatioBIPS: toBN(16800),
+        mintingPoolCollateralRatioBIPS: toBN(26400),
+        buyFAssetByAgentFactorBIPS: toBN(9000),
+        poolExitCollateralRatioBIPS: toBN(28600),
+        poolTopupCollateralRatioBIPS: toBN(24200),
+        poolTopupTokenPriceFactorBIPS: toBN(8000),
+    }
 };
 
 describe("Tracked agent state tests", () => {

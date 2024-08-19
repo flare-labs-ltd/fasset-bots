@@ -41,6 +41,10 @@
                     "description": "Minimum balance needed for gas on request submitter and timekeeper account.",
                     "type": "string"
                 },
+                "minBalanceOnWorkAccount": {
+                    "description": "Minimum balance needed for gas and other things on agent work account.\nPool collateral topups always leav this amount.",
+                    "type": "string"
+                },
                 "parallel": {
                     "description": "If true, mintings and various redemption steps will run in parallel.\nWARNING: should not be used with sqlite database.",
                     "type": "boolean"
@@ -67,6 +71,7 @@
                 "fAssets",
                 "liquidationPreventionFactor",
                 "minBalanceOnServiceAccount",
+                "minBalanceOnWorkAccount",
                 "parallel",
                 "poolCollateralReserveFactor",
                 "trustedPingSenders",
@@ -90,6 +95,10 @@
                 },
                 "minBalanceOnServiceAccount": {
                     "description": "Minimum balance needed for gas on request submitter and timekeeper account.",
+                    "type": "string"
+                },
+                "minBalanceOnWorkAccount": {
+                    "description": "Minimum balance needed for gas and other things on agent work account.\nPool collateral topups always leav this amount.",
                     "type": "string"
                 },
                 "parallel": {

@@ -86,6 +86,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         minimumFreeUnderlyingBalance: toBNExp(0.01, 6),
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
         minBalanceOnServiceAccount: toBNExp(2, 18),
+        minBalanceOnWorkAccount: toBNExp(200, 18),
     };
 
     // const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];

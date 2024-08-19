@@ -125,30 +125,38 @@ export interface AgentVaultCreated {
   args: {
     owner: string;
     agentVault: string;
-    collateralPool: string;
-    underlyingAddress: string;
-    vaultCollateralToken: string;
-    feeBIPS: BN;
-    poolFeeShareBIPS: BN;
-    mintingVaultCollateralRatioBIPS: BN;
-    mintingPoolCollateralRatioBIPS: BN;
-    buyFAssetByAgentFactorBIPS: BN;
-    poolExitCollateralRatioBIPS: BN;
-    poolTopupCollateralRatioBIPS: BN;
-    poolTopupTokenPriceFactorBIPS: BN;
+    creationData: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
     0: string;
     1: string;
-    2: string;
-    3: string;
-    4: string;
-    5: BN;
-    6: BN;
-    7: BN;
-    8: BN;
-    9: BN;
-    10: BN;
-    11: BN;
-    12: BN;
+    2: {
+      collateralPool: string;
+      collateralPoolToken: string;
+      underlyingAddress: string;
+      vaultCollateralToken: string;
+      poolWNatToken: string;
+      feeBIPS: BN;
+      poolFeeShareBIPS: BN;
+      mintingVaultCollateralRatioBIPS: BN;
+      mintingPoolCollateralRatioBIPS: BN;
+      buyFAssetByAgentFactorBIPS: BN;
+      poolExitCollateralRatioBIPS: BN;
+      poolTopupCollateralRatioBIPS: BN;
+      poolTopupTokenPriceFactorBIPS: BN;
+    };
   };
 }
 
@@ -307,6 +315,19 @@ export interface DustChanged {
     dustUBA: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface EmergencyPauseCanceled {
+  name: "EmergencyPauseCanceled";
+  args: {};
+}
+
+export interface EmergencyPauseTriggered {
+  name: "EmergencyPauseTriggered";
+  args: {
+    pausedUntil: BN;
+    0: BN;
   };
 }
 
@@ -718,6 +739,8 @@ export type AllEvents =
   | CurrentUnderlyingBlockUpdated
   | DuplicatePaymentConfirmed
   | DustChanged
+  | EmergencyPauseCanceled
+  | EmergencyPauseTriggered
   | FullLiquidationStarted
   | IllegalPaymentConfirmed
   | LiquidationEnded
@@ -1720,6 +1743,10 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  emergencyPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  emergencyPausedUntil(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   endLiquidation: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -2140,6 +2167,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     ownerManagementAddress: string;
     ownerWorkAddress: string;
     collateralPool: string;
+    collateralPoolToken: string;
     underlyingAddressString: string;
     publiclyAvailable: boolean;
     feeBIPS: BN;
@@ -2151,6 +2179,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     totalVaultCollateralWei: BN;
     freeVaultCollateralWei: BN;
     vaultCollateralRatioBIPS: BN;
+    poolWNatToken: string;
     totalPoolCollateralNATWei: BN;
     freePoolCollateralNATWei: BN;
     poolCollateralRatioBIPS: BN;
@@ -2314,6 +2343,8 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     liquidationCollateralFactorBIPS: BN[];
     liquidationFactorVaultCollateralBIPS: BN[];
     diamondCutMinTimelockSeconds: BN;
+    maxEmergencyPauseDurationSeconds: BN;
+    emergencyPauseDurationResetAfterSeconds: BN;
   }>;
 
   illegalPaymentChallenge: {
@@ -2463,6 +2494,8 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
   mintingPaymentDefault: {
     (
       _proof: {
@@ -2569,8 +2602,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -4351,6 +4382,10 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    emergencyPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    emergencyPausedUntil(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
     endLiquidation: {
       (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -4771,6 +4806,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       ownerManagementAddress: string;
       ownerWorkAddress: string;
       collateralPool: string;
+      collateralPoolToken: string;
       underlyingAddressString: string;
       publiclyAvailable: boolean;
       feeBIPS: BN;
@@ -4782,6 +4818,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       totalVaultCollateralWei: BN;
       freeVaultCollateralWei: BN;
       vaultCollateralRatioBIPS: BN;
+      poolWNatToken: string;
       totalPoolCollateralNATWei: BN;
       freePoolCollateralNATWei: BN;
       poolCollateralRatioBIPS: BN;
@@ -4945,6 +4982,8 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       liquidationCollateralFactorBIPS: BN[];
       liquidationFactorVaultCollateralBIPS: BN[];
       diamondCutMinTimelockSeconds: BN;
+      maxEmergencyPauseDurationSeconds: BN;
+      emergencyPauseDurationResetAfterSeconds: BN;
     }>;
 
     illegalPaymentChallenge: {
@@ -5094,6 +5133,8 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
     mintingPaymentDefault: {
       (
         _proof: {
@@ -5200,8 +5241,6 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
 

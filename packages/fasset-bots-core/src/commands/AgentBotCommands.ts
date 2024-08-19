@@ -1,13 +1,12 @@
 import "dotenv/config";
 
 import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
-import { FilterQuery } from "@mikro-orm/core";
 import BN from "bn.js";
 import chalk from "chalk";
 import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
@@ -20,9 +19,9 @@ import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
-import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
+import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, errorIncluded, maxBN, requireNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, errorIncluded, maxBN, requireNotNull, toBN, isEnumValue } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -55,11 +54,18 @@ export class AgentBotCommands {
      * @returns instance of BotCliCommands class
      */
     static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
+        console.log(chalk.cyan("Initializing environment..."));
+        const botConfig = await AgentBotCommands.createBotConfig(secretsFile, configFileName, registerCleanup, validate);
+        const agentBotCommands = await AgentBotCommands.createBotCommands(botConfig, fAssetSymbol, validate);
+        console.log(chalk.cyan("Environment successfully initialized."));
+        return agentBotCommands;
+    }
+
+    static async createBotConfig(secretsFile: string, configFileName: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
         const secrets = Secrets.load(secretsFile);
-        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
+        const owner = AgentBotCommands.getOwnerAddressPair(secrets);
         // load config
         logger.info(`Owner ${owner.managementAddress} started to initialize cli environment.`);
-        console.log(chalk.cyan("Initializing environment..."));
         const configFile = loadAgentConfigFile(configFileName, `Owner ${owner.managementAddress}`);
         // init web3 and accounts
         const workPrivateKey = secrets.required("owner.native.private_key");
@@ -71,11 +77,17 @@ export class AgentBotCommands {
         // create config
         const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
         registerCleanup?.(() => closeBotConfig(botConfig));
+        return botConfig;
+    }
+
+    static async createBotCommands(botConfig: AgentBotConfig, fAssetSymbol: string, validate: boolean = true) {
+        const secrets = botConfig.secrets;
         // create context
         const chainConfig = botConfig.fAssets.get(fAssetSymbol);
         assertNotNullCmd(chainConfig, `Invalid FAsset symbol ${fAssetSymbol}`);
         const context = await createAgentBotContext(botConfig, chainConfig);
         // verify keys
+        const owner = AgentBotCommands.getOwnerAddressPair(secrets);
         if (validate) {
             await AgentBotOwnerValidation.verifyAgentWhitelisted(context.agentOwnerRegistry, owner);
             await AgentBotOwnerValidation.verifyWorkAddress(context.agentOwnerRegistry, owner);
@@ -84,10 +96,13 @@ export class AgentBotCommands {
         const underlyingAddress = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.address`);
         const underlyingPrivateKey = secrets.required(`owner.${chainConfig.chainInfo.chainId.chainName}.private_key`);
         await context.wallet.addExistingAccount(underlyingAddress, underlyingPrivateKey);
-        console.log(chalk.cyan("Environment successfully initialized."));
         logger.info(`Owner ${owner.managementAddress} successfully finished initializing cli environment.`);
         logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new AgentBotCommands(context, chainConfig.agentBotSettings, owner, underlyingAddress, botConfig.orm, botConfig.notifiers);
+    }
+
+    static getOwnerAddressPair(secrets: Secrets) {
+        return new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
     }
 
     notifierFor(agentVault: string) {
@@ -406,8 +421,7 @@ export class AgentBotCommands {
      * @param settingValue
      */
     async updateAgentSetting(agentVault: string, settingName: string, settingValue: string): Promise<void> {
-        const validName = Object.values(AgentSettingName).includes(settingName as AgentSettingName);
-        if (!validName) {
+        if (!isEnumValue(AgentSettingName, settingName)) {
             throw new CommandLineError(`Invalid setting name ${settingName}. Valid names are: ${Object.values(AgentSettingName).join(', ')}`);
         }
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
@@ -425,7 +439,7 @@ export class AgentBotCommands {
      * @param agentVault agent's vault address
      */
     async closeVault(agentVault: string): Promise<void> {
-        const agentEnt = await this.orm.em.getRepository(AgentEntity).findOneOrFail({ vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const agentEnt = await this.fetchAgentEntity(agentVault);
         const agentInfo = await this.context.assetManager.getAgentInfo(agentVault);
         if (agentInfo.publiclyAvailable) {
             await this.announceExitAvailableList(agentVault);
@@ -503,11 +517,27 @@ export class AgentBotCommands {
      * Lists active agents in owner's local db.
      */
     async listActiveAgents(): Promise<void> {
-        const query = this.orm.em.createQueryBuilder(AgentEntity);
-        const listOfAgents = await query.where({ active: true }).getResultList();
+        const listOfAgents = await this.getAllActiveAgents();
         for (const agent of listOfAgents) {
             console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, FAsset: ${agent.fassetSymbol}, Current event block: ${agent.currentEventBlock} `);
         }
+    }
+
+    /**
+     * Return all active agents belonging to this context's asset manager controller (on any asset manager).
+     */
+    async getAllActiveAgents() {
+        const assetManagers = await this.context.assetManagerController.getAssetManagers();
+        const query = this.orm.em.createQueryBuilder(AgentEntity);
+        return await query.where({ active: true, assetManager: { $in: assetManagers } }).getResultList();
+    }
+
+    /**
+     * Return all active agents belonging to this context's asset manager.
+     */
+    async getActiveAgentsForFAsset() {
+        const query = this.orm.em.createQueryBuilder(AgentEntity);
+        return await query.where({ active: true, assetManager: this.context.assetManager.address }).getResultList();
     }
 
     /**
@@ -551,9 +581,19 @@ export class AgentBotCommands {
      * @returns object containing instances of AgentBot and AgentEntity respectively
      */
     async getAgentBot(agentVault: string): Promise<{ agentBot: AgentBot; readAgentEnt: AgentEntity }> {
-        const readAgentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault } as FilterQuery<AgentEntity>);
+        const readAgentEnt = await this.fetchAgentEntity(agentVault);
         const agentBot = await AgentBot.fromEntity(this.context, this.agentBotSettings, readAgentEnt, this.ownerUnderlyingAddress, this.notifiers);
         return { agentBot, readAgentEnt };
+    }
+
+    /**
+     * Return agent entity for given vault address.
+     * @param agentVault agent's vault address
+     */
+    async fetchAgentEntity(agentVault: string): Promise<AgentEntity> {
+        const agentEnt = await this.orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentVault });
+        assertCmd(agentEnt.assetManager === this.context.assetManager.address, "Invalid agent vault address for current settings");
+        return agentEnt;
     }
 
     /**

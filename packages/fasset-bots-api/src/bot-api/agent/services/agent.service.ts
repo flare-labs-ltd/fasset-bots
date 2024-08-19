@@ -221,8 +221,7 @@ export class AgentService {
     async getAgentVaultsInfo(fAssetSymbol: string): Promise<AgentVaultStatus[]> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         // get agent infos
-        const query = cli.orm.em.createQueryBuilder(AgentEntity);
-        const agentVaults = await query.where({ active: true }).getResultList();
+        const agentVaults = await cli.getAllActiveAgents();
 
         const agentInfos: AgentVaultStatus[] = [];
         for (const agent of agentVaults) {
@@ -391,6 +390,7 @@ export class AgentService {
             const agentInfo = await this.getAgentInfo(fasset);
             const collateral: AllCollaterals = { fassetSymbol: fasset, collaterals: agentInfo.collaterals };
             collaterals.push(collateral);
+            break;
         }
         return collaterals;
     }
@@ -437,8 +437,9 @@ export class AgentService {
     async getVaultCollateralTokens(): Promise<VaultCollaterals[]> {
         const fassets = await this.getFassetSymbols();
         const collaterals: VaultCollaterals[] = [];
+        const botConfig = await AgentBotCommands.createBotConfig(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG);
         for (const fasset of fassets) {
-            const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
+            const cli = await AgentBotCommands.createBotCommands(botConfig, fasset);
             // get collateral data
             const collateralTypes = await cli.context.assetManager.getCollateralTypes();
             const collateralTokens: CollateralTemplate[] = [];
@@ -492,11 +493,10 @@ export class AgentService {
         for (const fasset in config.fAssets) {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
             const collateralTypes = await cli.context.assetManager.getCollateralTypes();
-            const query = cli.orm.em.createQueryBuilder(AgentEntity);
             // Get agent vaults for fasset from database
-            const agentVaults = await query.where({ fassetSymbol: fasset }).getResultList();
+            const agentVaults = await cli.getActiveAgentsForFAsset();
             if (agentVaults.length == 0){
-                break;
+                continue;
             }
             const settings = await cli.context.assetManager.getSettings();
             const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);

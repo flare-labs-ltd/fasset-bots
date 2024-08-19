@@ -1,14 +1,14 @@
-import { FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { EM } from "../config/orm";
 import { AgentEntity, AgentUpdateSetting } from "../entities/agent";
-import { AgentUpdateSettingState } from "../entities/common";
+import { AgentSettingName, AgentUpdateSettingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
+import { latestBlockTimestampBN } from "../utils";
 import { errorIncluded, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentBot } from "./AgentBot";
-import { latestBlockTimestampBN } from "../utils";
 
 export class AgentBotUpdateSettings {
     static deepCopyWithObjectCreate = true;
@@ -28,10 +28,10 @@ export class AgentBotUpdateSettings {
      * @param settingValidAt
      * @param readAgentEnt
      */
-    async createAgentUpdateSetting(rootEm: EM, settingName: string, settingValidAt: BN, readAgentEnt: AgentEntity): Promise<void> {
+    async createAgentUpdateSetting(rootEm: EM, settingName: AgentSettingName, settingValidAt: BN, readAgentEnt: AgentEntity): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             const settingAlreadyUpdating = await em.getRepository(AgentUpdateSetting)
-                .findOne({ name: settingName, state: AgentUpdateSettingState.WAITING } as FilterQuery<AgentUpdateSetting>);
+                .findOne({ agent: readAgentEnt, name: settingName, state: AgentUpdateSettingState.WAITING });
             // set previous setting request as Done, as it will be overwritten on smart contract.
             if (settingAlreadyUpdating) {
                 settingAlreadyUpdating.state = AgentUpdateSettingState.DONE;
