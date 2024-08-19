@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
 import { DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../../src/utils/constants";
-import { RippleWalletConfig } from "../../src/interfaces/WalletTransactionInterface";
+import { RippleWalletConfig } from "../../src/interfaces/IWalletTransaction";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 

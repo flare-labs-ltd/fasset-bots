@@ -2,7 +2,7 @@ import { Wallet as xrplWallet } from "xrpl"; // package has some member access i
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xrpl__typeless = require("xrpl");
 import { generateMnemonic } from "bip39";
-import { ICreateWalletResponse, WalletAccountGenerationInterface } from "../../interfaces/WalletTransactionInterface";
+import { ICreateWalletResponse, WalletAccountGenerationInterface } from "../../interfaces/IWalletTransaction";
 import { ChainType, MNEMONIC_STRENGTH } from "../../utils/constants";
 
 

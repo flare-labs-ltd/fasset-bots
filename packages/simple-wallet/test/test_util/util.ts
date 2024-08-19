@@ -1,16 +1,18 @@
-import {TransactionInfo, type WriteWalletInterface} from "../../src/interfaces/WalletTransactionInterface";
-import {TransactionEntity, TransactionStatus} from "../../src/entity/transaction";
-import {sleepMs} from "../../src/utils/utils";
-import {ChainType} from "../../src/utils/constants";
-import {EntityManager, RequiredEntityData} from "@mikro-orm/core";
-import {WALLET} from "../../src";
+import { TransactionInfo, type WriteWalletInterface } from "../../src/interfaces/IWalletTransaction";
+import { TransactionEntity, TransactionStatus } from "../../src/entity/transaction";
+import { sleepMs } from "../../src/utils/utils";
+import { ChainType } from "../../src/utils/constants";
+import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
+import { WALLET } from "../../src";
 import BN from "bn.js";
-import {fetchTransactionEntityById, getTransactionInfoById} from "../../src/db/dbutils";
-import {UTXOEntity} from "../../src/entity/utxo";
+import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
+import { UTXOEntity } from "../../src/entity/utxo";
 import { WalletAddressEntity } from "../../src/entity/wallet";
-import {updateMonitoringState} from "../../src/utils/lockManagement";
+import { updateMonitoringState } from "../../src/utils/lockManagement";
 import winston from "winston";
-import {logger} from "../../src/utils/logger";
+import { logger } from "../../src/utils/logger";
+import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import { isORMError } from "../../src/chain-clients/utils";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -55,9 +57,17 @@ async function loop(sleepIntervalMs: number, timeLimit: number, tx: TransactionE
 async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, rootEm: EntityManager, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
     let tx = await fetchTransactionEntityById(rootEm, txId);
     await loop(sleepInterval * 1000, timeLimit * 1000, tx,async () => {
-        rootEm.clear();
-        tx = await fetchTransactionEntityById(rootEm, txId);
-        return checkStatus(tx, [status]);
+        try {
+            rootEm.clear();
+            tx = await fetchTransactionEntityById(rootEm, txId);
+            return checkStatus(tx, [status]);
+        } catch (error) {
+            if (isORMError(error)) {
+                logger.error("Test util error: ", error)
+                return false;
+            }
+            throw error;
+        }
     });
 
     return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];
@@ -174,29 +184,86 @@ function addConsoleTransportForTests (logger: any) {
 
 function resetMonitoringOnForceExit<T extends WriteWalletInterface>(wClient: T) {
     process.on("SIGINT", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGINT")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });
     });
     process.on("SIGTERM", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGTERM")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });
     });
     process.on("SIGQUIT", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGQUIT")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });
     });
     process.on("SIGHUP", () => {
-        wClient.stopMonitoring().then(() => {process.exit(0)}).catch(err => {
+        wClient.stopMonitoring().then(() => {
+            logger.info("Stopped monitoring after SIGHUP")
+            process.exit(process.exitCode);
+        }).catch(err => {
             logger.error(err);
             process.exit(1);
         });
     });
+}
+
+function addRequestTimers(wClient: WALLET.DOGE | WALLET.BTC) {
+    interface AxiosRequestConfigWithMetadata extends AxiosRequestConfig {
+        metadata?: {
+            startTime: Date;
+        };
+    }
+
+    wClient.blockchainAPI.client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+        (config as AxiosRequestConfigWithMetadata).metadata = { startTime: new Date() };
+        return config;
+    }, error => {
+        return Promise.reject(error);
+    });
+
+    wClient.blockchainAPI.client.interceptors.response.use((response: AxiosResponse) => {
+        const config = response.config as AxiosRequestConfigWithMetadata;
+
+        if (config.metadata?.startTime) {
+            const endTime = new Date();
+            const duration = endTime.getTime() - config.metadata.startTime.getTime();
+
+            logger.info(`Request to ${config.url} took ${duration} ms`);
+        }
+
+        return response;
+    }, error => {
+        const config = error.config as AxiosRequestConfigWithMetadata;
+
+        if (config?.metadata?.startTime) {
+            const endTime = new Date();
+            const duration = endTime.getTime() - config.metadata.startTime.getTime();
+
+            logger.info(`Request to ${config.url} failed after ${duration} ms`);
+        }
+
+        return Promise.reject(error);
+    });
+}
+
+async function calculateNewFeeForTx(txId: number, feePerKb: BN, core: any, rootEm: EntityManager) {
+    const txEnt = await fetchTransactionEntityById(rootEm, txId);
+    const tr = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
+    return [txEnt.fee, tr.feePerKb(feePerKb).getFee()];
 }
 
 const END_STATUSES = [TransactionStatus.TX_REPLACED, TransactionStatus.TX_FAILED, TransactionStatus.TX_SUBMISSION_FAILED, TransactionStatus.TX_SUCCESS];
@@ -212,6 +279,7 @@ export {
 
     createTransactionEntity,
     createAndSignXRPTransactionWithStatus,
+    calculateNewFeeForTx,
 
     clearTransactions,
     clearUTXOs,
@@ -221,6 +289,7 @@ export {
 
     addConsoleTransportForTests,
     resetMonitoringOnForceExit,
+    addRequestTimers,
 
     TEST_WALLET_XRP,
     END_STATUSES

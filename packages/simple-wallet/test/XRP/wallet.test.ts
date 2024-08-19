@@ -2,7 +2,7 @@ import {WALLET} from "../../src";
 import {
     ICreateWalletResponse,
     RippleWalletConfig,
-} from "../../src/interfaces/WalletTransactionInterface";
+} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import {expect, use} from "chai";
 import WAValidator from "wallet-address-validator";
@@ -58,6 +58,7 @@ const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
 
 let wClient: WALLET.XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
+let targetWallet: ICreateWalletResponse; //testnet, account: r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq
 
 describe("Xrp wallet tests", () => {
     let removeConsoleTransport: () => void;
@@ -334,4 +335,27 @@ describe("Xrp wallet tests", () => {
         const balanceEnd = await wClient.getAccountBalance(fundedWallet.address);
         expect(balanceStart.sub(balanceEnd).sub(feeInDrops).toNumber()).to.be.equal(amountToSendDropsFirst.toNumber());
     });
+
+    it("Stress test", async () => {
+        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic)
+
+        const N_TRANSACTIONS = 10;
+
+        const ids = []
+        for (let i = 0; i < N_TRANSACTIONS; i++) {
+            let id;
+            if (Math.random() > 0.5) {
+                id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note);
+            } else {
+                id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendDropsFirst, feeInDrops, note);
+            }
+            ids.push(id);
+        }
+
+        for (const id of ids) {
+            await waitForTxToFinishWithStatus(2, 600, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        }
+    });
+
 });
