@@ -7,18 +7,18 @@ export class UTXOEntity {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Index({name: "source_spent_height_index"})
+    @Index({name: "source_index"})
     @Property()
     source!: string;
 
-    @Index({name: "mintTransactionHash_position_index"})
+    @Index({name: "mint_transaction_hash_index"})
     @Property()
     mintTransactionHash!: string;
 
     @Property({ nullable: true })
     spentTransactionHash?: string;
 
-    @Index({name: "mintTransactionHash_position_index"})
+    @Index({name: "mint_transaction_hash_position_index"})
     @Property()
     position!: number;
 
