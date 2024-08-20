@@ -24,6 +24,7 @@ export interface MempoolUTXOMWithoutScript {
     mintTxid: string,
     mintIndex: number,
     value: number,
+    confirmed: boolean,
 }
 
 export interface MempoolUTXO extends MempoolUTXOMWithoutScript {

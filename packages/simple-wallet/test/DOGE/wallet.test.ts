@@ -91,7 +91,7 @@ describe("Dogecoin wallet tests", () => {
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
-            enoughConfirmations: 3,
+            enoughConfirmations: 1,
             rateLimitOptions: {
                 maxRPS: 100,
                 timeoutMs: 2000,
@@ -409,11 +409,11 @@ describe("Dogecoin wallet tests", () => {
         }
     });
 
-    it.skip("Stress test", async () => {
+    it("Stress test", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
 
-        const N = 10;
+        const N = 60;
         const wallets = [];
         const amountToSendInSatoshi = toBNExp(1, DOGE_DECIMAL_PLACES);
 
@@ -473,6 +473,11 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
+    it.skip("Waiting into inf", async () => {
+        while (true) {
+            await sleepMs(2000);
+        }
+    });
 });
 
 async function setupRewiredWallet() {

@@ -5,6 +5,7 @@ import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { fetchTransactionEntityByHash } from "../db/dbutils";
 import { EntityManager } from "@mikro-orm/core";
+import { TransactionOutputEntity } from "../entity/transactionOutput";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -40,12 +41,19 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
+        return Promise.all(res.data.map(async (utxo: any) => {
+            const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
+                vout: utxo.vout,
+                transactionHash: utxo.txid,
+            });
 
-        return res.data.map((utxo: any) => ({
-            mintTxid: utxo.txid,
-            mintIndex: utxo.vout,
-            value: utxo.value,
-            script: "",
+            return {
+                mintTxid: utxo.txid,
+                mintIndex: utxo.vout,
+                value: utxo.value,
+                script: txOutputEnt?.script ?? "",
+                confirmed: utxo.confirmations > 0,
+            };
         }));
     }
 

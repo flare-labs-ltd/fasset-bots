@@ -91,9 +91,20 @@ export async function createTransactionOutputEntities(rootEm: EntityManager, tra
 function transformOutputToEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
     const entity = new TransactionOutputEntity();
     entity.transaction = transaction;
+    entity.transactionHash = transaction.transactionHash!;
     entity.vout = vout;
     entity.amount = toBN(output.satoshis);
     entity.script = JSON.parse(JSON.stringify(output)).script;
+    return entity;
+}
+
+export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number | undefined, script: string) {
+    const entity = new TransactionOutputEntity();
+    entity.transactionHash = txHash;
+    entity.vout = vout;
+    entity.amount = toBN(amount);
+    entity.script = script;
+    entity.transaction = txEnt;
     return entity;
 }
 
@@ -265,67 +276,6 @@ export async function setAccountIsDeleting(rootEm: EntityManager, address: strin
             await em.persistAndFlush(wa);
         }
     });
-}
-
-export async function getWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType) {
-    const ent = await rootEm.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
-    return ent?.numTxsInMempool ?? 0;
-}
-
-export async function increaseWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType, numUTXOs: number): Promise<void> {
-    await rootEm.transactional(async (em) => {
-        const wa = await em.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
-        if (!wa) {
-            return;
-        }
-
-        const ent = await em.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
-        if (!ent) {
-            await em.persistAndFlush(rootEm.create(
-                WalletUTXOTracker,
-                {
-                    chainType,
-                    numTxsInMempool: numUTXOs,
-                    walletAddress: wa,
-                } as RequiredEntityData<WalletUTXOTracker>,
-            ));
-            logger.info(`Creating mempool tx counter`);
-        } else {
-            logger.info(`Updating mempool tx count to ${ent.numTxsInMempool + 1}`);
-            ent.numTxsInMempool = ent.numTxsInMempool + 1;
-            await em.persistAndFlush(ent);
-        }
-    });
-}
-
-export async function decreaseWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType, numTxs: number): Promise<void> {
-    await rootEm.transactional(async (em) => {
-        const ent = await em.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
-        if (ent && ent.numTxsInMempool - numTxs > 0) {
-            ent.numTxsInMempool = ent.numTxsInMempool - numTxs;
-            logger.info(`Updating mempool tx count to ${ent.numTxsInMempool - numTxs}`);
-            await em.persistAndFlush(ent);
-        }
-    });
-}
-
-/**
- * Checks whether there has been an error in counting txs - and resets them
- */
-export async function checkWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType) {
-    await rootEm.transactional(async (em) => {
-        const utxoTrackerEnt = await rootEm.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
-        const res = await em.find(TransactionEntity, {
-            status: TransactionStatus.TX_SUBMITTED,
-            source: address,
-            chainType,
-        });
-
-        if (utxoTrackerEnt && utxoTrackerEnt.numTxsInMempool > 0 && utxoTrackerEnt.numTxsInMempool != res.length) {
-            utxoTrackerEnt.numTxsInMempool = res.length;
-            await em.persistAndFlush(utxoTrackerEnt);
-        }
-    })
 }
 
 // locking
