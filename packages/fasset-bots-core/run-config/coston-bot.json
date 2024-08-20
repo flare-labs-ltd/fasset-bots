@@ -32,22 +32,6 @@
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FakePriceReader"
-        },
-        "FTestBTC": {
-            "chainId": "testBTC",
-            "tokenName": "Test BTC",
-            "tokenSymbol": "testBTC",
-            "tokenDecimals": 8,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
-            "walletUrl": "https://api.bitcore.io/api/BTC/testnet/"
-        },
-        "FTestDOGE": {
-            "chainId": "testDOGE",
-            "tokenName": "Test DOGE",
-            "tokenSymbol": "testDOGE",
-            "tokenDecimals": 8,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/doge",
-            "walletUrl": "https://api.bitcore.io/api/DOGE/testnet/"
         }
     },
     "agentBotSettings": {
@@ -66,14 +50,6 @@
             "FSimCoinX": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "0.01"
-            },
-            "FTestBTC": {
-                "recommendedOwnerBalance": "0.0001",
-                "minimumFreeUnderlyingBalance": "0.00004"
-            },
-            "FTestDOGE": {
-                "recommendedOwnerBalance": "20",
-                "minimumFreeUnderlyingBalance": "0.4"
             }
         }
     },
