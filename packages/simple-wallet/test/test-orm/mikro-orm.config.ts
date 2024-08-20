@@ -5,7 +5,6 @@ import { UTXOEntity } from "../../src/entity/utxo";
 import { WalletAddressEntity } from "../../src/entity/wallet";
 import { SchemaUpdate } from "../../src/interfaces/IWalletTransaction";
 import { MonitoringStateEntity } from "../../src";
-import { WalletUTXOTracker } from "../../src/entity/walletUTXOTracker";
 
 export type ORM = MikroORM;
 
@@ -15,7 +14,7 @@ export type CreateOrmOptions = Options<AbstractSqlDriver> & {
     type: string;
 };
 const config: CreateOrmOptions = {
-    entities: [TransactionEntity, UTXOEntity, WalletAddressEntity, MonitoringStateEntity, WalletUTXOTracker],
+    entities: [TransactionEntity, UTXOEntity, WalletAddressEntity, MonitoringStateEntity],
     debug: false,
     allowGlobalContext: true,
     dbName: "simple-wallet-test-db",

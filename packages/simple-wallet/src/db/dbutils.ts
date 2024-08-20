@@ -9,7 +9,6 @@ import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { Transaction } from "bitcore-lib";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
-import { WalletUTXOTracker } from "../entity/walletUTXOTracker";
 import Output = Transaction.Output;
 import { MonitoringStateEntity } from "../entity/monitoring_state";
 
