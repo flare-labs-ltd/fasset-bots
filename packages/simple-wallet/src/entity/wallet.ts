@@ -1,4 +1,5 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { WalletUTXOTracker } from "./walletUTXOTracker";
 
 @Entity()
 export class WalletAddressEntity {
@@ -10,4 +11,7 @@ export class WalletAddressEntity {
 
     @Property()
     isDeleting: boolean = false;
+
+    @OneToMany(() => WalletUTXOTracker, utxoTracker => utxoTracker.walletAddress)
+    utxoTrackers = new Collection<WalletUTXOTracker>(this);
 }

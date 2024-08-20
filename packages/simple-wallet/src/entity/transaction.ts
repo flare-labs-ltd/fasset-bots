@@ -1,7 +1,8 @@
-import { Entity, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import {Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property} from "@mikro-orm/core";
 import BN from "bn.js";
-import { ChainType } from "../utils/constants";
-import { BNType } from "../utils/orm-types";
+import {ChainType} from "../utils/constants";
+import {BNType} from "../utils/orm-types";
+import {TransactionOutputEntity} from "./transactionOutput";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
@@ -32,26 +33,26 @@ export class TransactionEntity {
     @Property()
     submittedInBlock: number = 0; // 0 when tx is created
 
-    @Property()
-    submittedInTimestamp = 0; // server time - needed to track when tx appears in mempool
+    @Property({nullable: true})
+    submittedInTimestamp?: Date; // server time - needed to track when tx appears in mempool
 
     @Property({nullable: true})
-    acceptedToMempoolInTimestamp?: number;
-
-    @Property()
-    reachedFinalStatusInTimestamp: number = 0; // TX_REPLACED, TX_FAILED, TX_SUCCESS
+    acceptedToMempoolInTimestamp?: Date;
 
     @Property({nullable: true})
-    reachedStatusPreparedInTimestamp: number = 0;
+    reachedFinalStatusInTimestamp?: Date; // TX_REPLACED, TX_FAILED, TX_SUCCESS
 
     @Property({nullable: true})
-    reachedStatusPendingInTimestamp: number = 0;
+    reachedStatusPreparedInTimestamp?: Date;
+
+    @Property({nullable: true})
+    reachedStatusPendingInTimestamp?: Date;
 
     @Property({ nullable: true  })
     executeUntilBlock?: number;
 
     @Property({ nullable: true  })
-    executeUntilTimestamp?: number;
+    executeUntilTimestamp?: Date;
 
     @Property({ nullable: true  })
     confirmations?: number;
@@ -76,6 +77,9 @@ export class TransactionEntity {
 
     @Property({ onUpdate: () => new Date() })
     updatedAt: Date = new Date();
+
+    @OneToMany(() => TransactionOutputEntity, output => output.transaction)
+    outputs = new Collection<TransactionOutputEntity>(this);
 }
 
 export enum TransactionStatus {

@@ -1,16 +1,16 @@
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import {
-    DEFAULT_RATE_LIMIT_OPTIONS,
+    DEFAULT_RATE_LIMIT_OPTIONS, DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE,
 } from "../utils/constants";
 import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
 import {excludeNullFields, sleepMs} from "../utils/utils";
-import {BlockStats, FeeServiceConfig} from "../interfaces/WalletTransactionInterface";
+import {BlockStats, FeeServiceConfig} from "../interfaces/IWalletTransaction";
 import {toBN} from "../utils/bnutils";
 import BN from "bn.js";
+import {logger} from "../utils/logger";
 
 export class FeeService {
     client: AxiosInstance;
-    private indexerUrl: string;
 
     private monitoring: boolean = true;
     private history: BlockStats[];
@@ -24,7 +24,8 @@ export class FeeService {
             headers: excludeNullFields({
                 "Content-Type": "application/json",
             }),
-            timeout: config.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs,
+            timeout: config.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE.timeoutMs,
+            baseURL: config.indexerUrl,
         };
 
         const client = axios.create(createAxiosConfig);
@@ -32,7 +33,6 @@ export class FeeService {
             ...DEFAULT_RATE_LIMIT_OPTIONS,
             ...config.rateLimitOptions,
         });
-        this.indexerUrl = config.indexerUrl;
         this.numberOfBlocksInHistory = config.numberOfBlocksInHistory;
         this.sleepTimeMs = config.sleepTimeMs;
 
@@ -50,11 +50,11 @@ export class FeeService {
     }
 
     async startMonitoringFees(): Promise<void> {
-        console.info("Started monitoring fees");
+        logger.info("Started monitoring fees");
 
         while (this.monitoring) {
             const blockHeight = await this.getCurrentBlockHeight();
-            if (blockHeight == this.history[this.currentHistoryIndex].blockHeight) {
+            if (!blockHeight || blockHeight == this.history[this.currentHistoryIndex].blockHeight) {
                 await sleepMs(this.sleepTimeMs);
                 continue;
             }
@@ -62,7 +62,7 @@ export class FeeService {
             const feeStats = await this.getFeeStatsFromIndexer(blockHeight);
             const blockTime = await this.getBlockTime(blockHeight);
             if (feeStats.decilesFeePerKB.length == 11 && feeStats.averageFeePerKB.gtn(0) && blockTime > 0) {
-                console.info("Updating fee history");
+                logger.info("Updating fee history");
                 this.history[this.currentHistoryIndex % this.numberOfBlocksInHistory] = {
                     blockHeight: blockHeight,
                     blockTime: blockTime,
@@ -79,11 +79,15 @@ export class FeeService {
             await sleepMs(this.sleepTimeMs);
         }
 
-        console.info("Stopped monitoring fees");
+        logger.info("Stopped monitoring fees");
     }
 
     async setupHistory() {
         const currentBlockHeight = await this.getCurrentBlockHeight() - 1;
+
+        if (!currentBlockHeight) {
+            return;
+        }
 
         for (let i = 0; i < this.numberOfBlocksInHistory; i++) {
             const feeStats = await this.getFeeStatsFromIndexer(currentBlockHeight - i);
@@ -108,7 +112,7 @@ export class FeeService {
 
     async getCurrentBlockHeight() {
         try {
-            const response = await this.client.get(`${this.indexerUrl}/api/v2/info`);
+            const response = await this.client.get(`/info`);
             return response.data?.blockbook?.bestHeight ?? 0;
         } catch (error) {
             return 0;
@@ -117,7 +121,7 @@ export class FeeService {
 
     async getFeeStatsFromIndexer(blockHeight: number) {
         try {
-            const response = await this.client.get(`${this.indexerUrl}/api/v2/feestats/${blockHeight}`);
+            const response = await this.client.get(`/feestats/${blockHeight}`);
             const fees = response.data.decilesFeePerKb.filter((t: number) => t >= 0).map((t: number) => toBN(t));
 
             return {
@@ -132,7 +136,7 @@ export class FeeService {
 
     async getBlockTime(blockHeight: number) {
         try {
-            const response = await this.client.get(`${this.indexerUrl}/api/v2/block/${blockHeight}`);
+            const response = await this.client.get(`/block/${blockHeight}`);
             return response.data?.time ?? 0;
         } catch (e) {
             return 0;

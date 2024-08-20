@@ -1,12 +1,17 @@
-import { RequiredEntityData, FilterQuery, EntityManager } from "@mikro-orm/core";
+import { EntityManager, FilterQuery, RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
-import { TransactionInfo } from "../interfaces/WalletTransactionInterface";
+import { TransactionInfo } from "../interfaces/IWalletTransaction";
 import { logger } from "../utils/logger";
 import { WalletAddressEntity } from "../entity/wallet";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
-import { UTXOEntity, SpentHeightEnum } from "../entity/utxo";
+import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
+import { Transaction } from "bitcore-lib";
+import { TransactionOutputEntity } from "../entity/transactionOutput";
+import { WalletUTXOTracker } from "../entity/walletUTXOTracker";
+import Output = Transaction.Output;
+import { MonitoringStateEntity } from "../entity/monitoring_state";
 
 
 // transaction operations
@@ -20,7 +25,7 @@ export async function createInitialTransactionEntity(
     note?: string,
     maxFee?: BN,
     executeUntilBlock?: number,
-    executeUntilTimestamp?: number
+    executeUntilTimestamp?: number,
 ): Promise<TransactionEntity> {
     const ent = rootEm.create(
         TransactionEntity,
@@ -34,7 +39,7 @@ export async function createInitialTransactionEntity(
             executeUntilTimestamp: executeUntilTimestamp || null,
             reference: note || null,
             amount: amountInDrops,
-            fee: feeInDrops || null
+            fee: feeInDrops || null,
         } as RequiredEntityData<TransactionEntity>,
     );
     await rootEm.flush();
@@ -50,7 +55,10 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 }
 
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
-    return await rootEm.findOneOrFail(TransactionEntity, { id } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'] });
+    return await rootEm.findOneOrFail(TransactionEntity, { id } as FilterQuery<TransactionEntity>, {
+        refresh: true,
+        populate: ["replaced_by"],
+    });
 }
 
 export async function updateTransactionEntityByHash(rootEm: EntityManager, txHash: string, modify: (transactionEnt: TransactionEntity) => Promise<void>): Promise<void> {
@@ -62,11 +70,31 @@ export async function updateTransactionEntityByHash(rootEm: EntityManager, txHas
 }
 
 export async function fetchTransactionEntityByHash(rootEm: EntityManager, txHash: string): Promise<TransactionEntity> {
-    return await rootEm.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'] });
+    return await rootEm.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, {
+        refresh: true,
+        populate: ["replaced_by"],
+    });
 }
 
 export async function fetchTransactionEntities(rootEm: EntityManager, chainType: ChainType, status: TransactionStatus): Promise<TransactionEntity[]> {
-    return await rootEm.find(TransactionEntity, { status, chainType } as FilterQuery<TransactionEntity>, { refresh: true, populate: ['replaced_by'], orderBy: { id: 'ASC' } });
+    return await rootEm.find(TransactionEntity, {
+        status,
+        chainType,
+    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by"], orderBy: { id: "ASC" } });
+}
+
+export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txEnt: TransactionEntity): Promise<void> {
+    const outputEntities = transaction.outputs.map(((output, index) => transformOutputToEntity(index, output, txEnt)));
+    await rootEm.persistAndFlush(outputEntities);
+}
+
+function transformOutputToEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
+    const entity = new TransactionOutputEntity();
+    entity.transaction = transaction;
+    entity.vout = vout;
+    entity.amount = toBN(output.satoshis);
+    entity.script = JSON.parse(JSON.stringify(output)).script;
+    return entity;
 }
 
 // utxo operations
@@ -87,7 +115,10 @@ export async function createUTXOEntity(rootEm: EntityManager, source: string, tx
 }
 
 export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string, position: number): Promise<UTXOEntity> {
-    return await rootEm.findOneOrFail(UTXOEntity, { mintTransactionHash: mintTxHash, position: position } as FilterQuery<UTXOEntity>, { refresh: true });
+    return await rootEm.findOneOrFail(UTXOEntity, {
+        mintTransactionHash: mintTxHash,
+        position: position,
+    } as FilterQuery<UTXOEntity>, { refresh: true });
 }
 
 export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, position: number, modify: (utxoEnt: UTXOEntity) => Promise<void>): Promise<void> {
@@ -99,11 +130,23 @@ export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, po
 }
 
 export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string): Promise<UTXOEntity[]> {
-    return await rootEm.find(UTXOEntity, { source: source, spentHeight: SpentHeightEnum.UNSPENT } as FilterQuery<UTXOEntity>, { refresh: true });
+    return await rootEm.find(UTXOEntity, {
+        source: source,
+        spentHeight: SpentHeightEnum.UNSPENT,
+    } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { value: "desc" } });
 }
 
 export async function fetchUTXOsByTxHash(rootEm: EntityManager, txHash: string): Promise<UTXOEntity[]> {
     return await rootEm.find(UTXOEntity, { mintTransactionHash: txHash } as FilterQuery<UTXOEntity>, { refresh: true });
+}
+
+export async function fetchUTXOs(rootEm: EntityManager, inputs: Transaction.Input[]): Promise<UTXOEntity[]> {
+    return await rootEm.find(UTXOEntity, {
+        $or: inputs.map(input => ({
+            mint_transaction_hash: input.prevTxId.toString("hex"),
+            position: input.outputIndex,
+        })),
+    });
 }
 
 export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolUTXOs: any[]): Promise<void> {
@@ -113,8 +156,33 @@ export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolU
         } catch (e) {
             await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script);
         }
-
     }
+}
+
+export async function correctUTXOInconsistencies(rootEm: EntityManager, address: string, mempoolUTXOs: any[]): Promise<void> {
+    await rootEm.transactional(async (em) => {
+        const condition = mempoolUTXOs.map((utxo) => ({
+            $not: {
+                mintTransactionHash: { $like: utxo.mintTxid },
+                position: utxo.mintIndex,
+            },
+        }));
+        const utxoEnts = await em.find(UTXOEntity, {
+            source: address,
+            spentHeight: SpentHeightEnum.UNSPENT,
+            $and: condition,
+        }) as UTXOEntity[];
+
+        utxoEnts.forEach(utxoEnt => {
+            utxoEnt.spentHeight = SpentHeightEnum.SPENT;
+        });
+
+        if (utxoEnts.length > 0) {
+            logger.info(`Fixed ${utxoEnts.length} UTXO inconsistencies`);
+        }
+
+        await em.persistAndFlush(utxoEnts);
+    });
 }
 
 // replaced transaction
@@ -147,7 +215,7 @@ export async function getTransactionInfoById(rootEm: EntityManager, dbId: number
         dbId: dbId,
         transactionHash: txEntOriginal.transactionHash || null,
         status: txEntOriginal.status,
-        replacedByDdId: dbId == txEntReplaced.id ? null : txEntReplaced.id
+        replacedByDdId: dbId == txEntReplaced.id ? null : txEntReplaced.id,
     };
 }
 
@@ -160,14 +228,12 @@ export async function handleMissingPrivateKey(rootEm: EntityManager, txId: numbe
 export async function failTransaction(rootEm: EntityManager, txId: number, reason: string, error?: Error): Promise<void> {
     await updateTransactionEntity(rootEm, txId, async (txEnt) => {
         txEnt.status = TransactionStatus.TX_FAILED;
-        txEnt.reachedFinalStatusInTimestamp = new Date().getTime();
+        txEnt.reachedFinalStatusInTimestamp = new Date();
     });
     if (error) {
         logger.error(`Transaction ${txId} failed: ${reason}`, error);
-        console.error(`Transaction ${txId} failed: ${reason}`, error);
     } else {
         logger.error(`Transaction ${txId} failed: ${reason}`);
-        console.error(`Transaction ${txId} failed: ${reason}`);
     }
 }
 
@@ -175,14 +241,13 @@ export async function processTransactions(rootEm: EntityManager, chainType: Chai
     const transactionEntities = await fetchTransactionEntities(rootEm, chainType, status);
     logger.info(`Fetching ${transactionEntities.length} transactions with status ${status}`);
     for (const txEnt of transactionEntities) {
-       try {
-          await processFunction(txEnt);
-       } catch (e) {
-          logger.error(`Cannot process transaction ${txEnt.id}`, e);
-          console.error(`Error while processing ${txEnt.id}`, e);
-       }
+        try {
+            await processFunction(txEnt);
+        } catch (e) {
+            logger.error(`Cannot process transaction ${txEnt.id}`, e);
+        }
     }
- }
+}
 
 export async function checkIfIsDeleting(rootEm: EntityManager, address: string): Promise<boolean> {
     const wa = await rootEm.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
@@ -199,5 +264,81 @@ export async function setAccountIsDeleting(rootEm: EntityManager, address: strin
             wa.isDeleting = true;
             await em.persistAndFlush(wa);
         }
+    });
+}
+
+export async function getWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType) {
+    const ent = await rootEm.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
+    return ent?.numTxsInMempool ?? 0;
+}
+
+export async function increaseWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType, numUTXOs: number): Promise<void> {
+    await rootEm.transactional(async (em) => {
+        const wa = await em.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
+        if (!wa) {
+            return;
+        }
+
+        const ent = await em.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
+        if (!ent) {
+            await em.persistAndFlush(rootEm.create(
+                WalletUTXOTracker,
+                {
+                    chainType,
+                    numTxsInMempool: numUTXOs,
+                    walletAddress: wa,
+                } as RequiredEntityData<WalletUTXOTracker>,
+            ));
+            logger.info(`Creating mempool tx counter`);
+        } else {
+            logger.info(`Updating mempool tx count to ${ent.numTxsInMempool + 1}`);
+            ent.numTxsInMempool = ent.numTxsInMempool + 1;
+            await em.persistAndFlush(ent);
+        }
+    });
+}
+
+export async function decreaseWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType, numTxs: number): Promise<void> {
+    await rootEm.transactional(async (em) => {
+        const ent = await em.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
+        if (ent && ent.numTxsInMempool - numTxs > 0) {
+            ent.numTxsInMempool = ent.numTxsInMempool - numTxs;
+            logger.info(`Updating mempool tx count to ${ent.numTxsInMempool - numTxs}`);
+            await em.persistAndFlush(ent);
+        }
+    });
+}
+
+/**
+ * Checks whether there has been an error in counting txs - and resets them
+ */
+export async function checkWalletMempoolTxCount(rootEm: EntityManager, address: string, chainType: ChainType) {
+    await rootEm.transactional(async (em) => {
+        const utxoTrackerEnt = await rootEm.findOne(WalletUTXOTracker, { walletAddress: { address: address }, chainType: chainType });
+        const res = await em.find(TransactionEntity, {
+            status: TransactionStatus.TX_SUBMITTED,
+            source: address,
+            chainType,
+        });
+
+        if (utxoTrackerEnt && utxoTrackerEnt.numTxsInMempool > 0 && utxoTrackerEnt.numTxsInMempool != res.length) {
+            utxoTrackerEnt.numTxsInMempool = res.length;
+            await em.persistAndFlush(utxoTrackerEnt);
+        }
+    })
+}
+
+// locking
+export async function fetchMonitoringState(rootEm: EntityManager, chainType: string): Promise<MonitoringStateEntity | null> {
+    return await rootEm.findOne(MonitoringStateEntity, { chainType } as FilterQuery<MonitoringStateEntity>, { refresh: true });
+}
+
+
+export async function updateMonitoringState(rootEm: EntityManager, chainType: string, modify: (stateEnt: MonitoringStateEntity) => Promise<void>): Promise<void> {
+    await rootEm.transactional(async (em) => {
+        const stateEnt = await fetchMonitoringState(rootEm, chainType);
+        if (!stateEnt) return;
+        await modify(stateEnt);
+        await em.persistAndFlush(stateEnt);
     });
 }

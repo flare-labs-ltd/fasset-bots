@@ -3,7 +3,7 @@ import {
     BitcoinWalletConfig,
     FeeServiceConfig,
     ICreateWalletResponse
-} from "../../src/interfaces/WalletTransactionInterface";
+} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import {expect, use} from "chai";
 
@@ -11,16 +11,20 @@ use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import {toBN} from "../../src/utils/bnutils";
 import rewire from "rewire";
-import {fetchTransactionEntityById} from "../../src/db/dbutils";
+import {fetchTransactionEntityById, fetchMonitoringState} from "../../src/db/dbutils";
 import {sleepMs} from "../../src/utils/utils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {toBNExp} from "../../src/utils/bnutils";
-import {BTC_DOGE_DEC_PLACES} from "../../src/utils/constants";
-import {addConsoleTransportForTests, loop, resetMonitoringOnForceExit, setMonitoringStatus} from "../test_util/util";
-import {fetchMonitoringState} from "../../src/utils/lockManagement";
+import {
+    addConsoleTransportForTests,
+    loop,
+    resetMonitoringOnForceExit,
+    setMonitoringStatus,
+    waitForTxToFinishWithStatus
+} from "../test_util/util";
 import {logger} from "../../src/utils/logger";
+import BN from "bn.js";
 
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
@@ -28,8 +32,9 @@ const walletSecret = "wallet_secret";
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
+const blockchainAPI = "blockbook";
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
+    url: process.env.BLOCKBOOK_BTC_URL ?? "",
     username: "",
     password: "",
     apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",
@@ -38,10 +43,10 @@ const BTCMccConnectionTestInitial = {
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
 const feeServiceConfig: FeeServiceConfig = {
-    indexerUrl: "https://blockbook.htz.matheo.si:19130",
+    indexerUrl: process.env.BLOCKBOOK_BTC_URL ?? "",
     sleepTimeMs: 1000,
     numberOfBlocksInHistory: 3,
-}
+};
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -65,11 +70,12 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 // first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
 
 const amountToSendSatoshi = toBN(10000);
-const feeInSatoshi = toBN(120000);
-const maxFeeInSatoshi = toBN(110000);
+const feeInSatoshi = toBN(1200);
+const maxFeeInSatoshi = toBN(1100);
 
 let wClient: WALLET.BTC;
 let fundedWallet: ICreateWalletResponse;
+let targetWallet: ICreateWalletResponse;
 
 describe("Bitcoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -81,6 +87,7 @@ describe("Bitcoin wallet tests", () => {
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
+            api: blockchainAPI,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
@@ -92,6 +99,8 @@ describe("Bitcoin wallet tests", () => {
         void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
 
+        await sleepMs(200);
+
         resetMonitoringOnForceExit(wClient);
     });
 
@@ -99,11 +108,10 @@ describe("Bitcoin wallet tests", () => {
         await wClient.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
-                if (!monitoringState || !monitoringState.isMonitoring) return true;
+                if (!wClient.isMonitoring) return true;
             });
         } catch (e) {
-            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
 
         removeConsoleLogging();
@@ -132,7 +140,7 @@ describe("Bitcoin wallet tests", () => {
         expect(typeof tr).to.equal("object");
     });
 
-    it("Should not create transaction: maxFee > fee", async () => {
+    it("Should not create transaction: fee > maxFee", async () => {
         const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
         rewired.orm = await initializeTestMikroORM();
         fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
@@ -180,6 +188,44 @@ describe("Bitcoin wallet tests", () => {
         const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, null, null, "Note", maxFeeInSatoshi);
 
         expect(transaction.getFee()).to.be.gt(0);
+    });
+
+    it("Should get account balance", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const accountBalance = await wClient.getAccountBalance(fundedWallet.address);
+        expect(accountBalance.gt(new BN(0))).to.be.true;
+    });
+
+    it.skip("Stress test", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+
+        const N_TRANSACTIONS = 15;
+
+        const ids = []
+        for (let i = 0; i < N_TRANSACTIONS; i++) {
+            // let id;
+            // if (Math.random() > 0.5) {
+            const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi.muln(2));
+            // }
+            // else {
+            //     id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendSatoshi, feeInSatoshi);
+            // }
+            ids.push(id);
+        }
+
+        while (1) {
+            await sleepMs(2000);
+        }
+    });
+
+    it("Transaction with a too low fee should be updated with a higher fee", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const startFee = new BN(0.0000000001);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, startFee);
+        expect(id).to.be.gt(0);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        expect(txEnt.fee?.toNumber()).to.be.gt(startFee.toNumber());
     });
 
     //TODO

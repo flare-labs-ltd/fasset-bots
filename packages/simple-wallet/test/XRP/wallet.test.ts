@@ -2,7 +2,7 @@ import {WALLET} from "../../src";
 import {
     ICreateWalletResponse,
     RippleWalletConfig,
-} from "../../src/interfaces/WalletTransactionInterface";
+} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import {expect, use} from "chai";
 import WAValidator from "wallet-address-validator";
@@ -21,7 +21,6 @@ import {
 } from "../test_util/util";
 import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {fetchMonitoringState} from "../../src/utils/lockManagement";
 import { logger } from "../../src/utils/logger";
 
 use(chaiAsPromised);
@@ -58,6 +57,7 @@ const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
 
 let wClient: WALLET.XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
+let targetWallet: ICreateWalletResponse; //testnet, account: r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq
 
 describe("Xrp wallet tests", () => {
     let removeConsoleTransport: () => void;
@@ -78,11 +78,10 @@ describe("Xrp wallet tests", () => {
         await wClient.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                const monitoringState = await fetchMonitoringState(wClient.rootEm, wClient.chainType);
-                if (!monitoringState || !monitoringState.isMonitoring) return true;
+                if (!wClient.isMonitoring) return true;
             });
         } catch (e) {
-            await setMonitoringStatus(wClient.rootEm, wClient.chainType, false);
+            await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
 
         removeConsoleTransport();
@@ -217,7 +216,7 @@ describe("Xrp wallet tests", () => {
         expect(balance.gt(balance2));
     });
 
-    it("Should receive account balance", async () => {
+    it("Should receive account balance is 0", async () => {
         const newAccount = wClient.createWallet();
         const bn = await wClient.getAccountBalance(newAccount.address);
         expect(bn).to.not.be.null;
@@ -334,4 +333,27 @@ describe("Xrp wallet tests", () => {
         const balanceEnd = await wClient.getAccountBalance(fundedWallet.address);
         expect(balanceStart.sub(balanceEnd).sub(feeInDrops).toNumber()).to.be.equal(amountToSendDropsFirst.toNumber());
     });
+
+    it("Stress test", async () => {
+        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic)
+
+        const N_TRANSACTIONS = 10;
+
+        const ids = []
+        for (let i = 0; i < N_TRANSACTIONS; i++) {
+            let id;
+            if (Math.random() > 0.5) {
+                id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note);
+            } else {
+                id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendDropsFirst, feeInDrops, note);
+            }
+            ids.push(id);
+        }
+
+        for (const id of ids) {
+            await waitForTxToFinishWithStatus(2, 600, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        }
+    });
+
 });

@@ -1,5 +1,5 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { IWalletKeys } from "../../../simple-wallet/src/interfaces/WalletTransactionInterface";
+import { IWalletKeys } from "../../src/interfaces/IWalletTransaction";
 import { WalletAddressEntity } from "../../src/entity/wallet";
 
 export class UnprotectedDBWalletKeys implements IWalletKeys {

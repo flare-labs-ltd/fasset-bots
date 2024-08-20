@@ -718,19 +718,4 @@ export class AgentBotCommands {
             throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
         }
     }
-
-    async fixWalletMonitoringDB(secretsFilePath: string, configFilePath: string): Promise<void> {
-        const secrets = Secrets.load(secretsFilePath);
-        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
-        const configFile = loadAgentConfigFile(configFilePath, `Owner ${owner.managementAddress}`);
-        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
-
-        const monitors: MonitoringStateEntity[] = await botConfig.orm.em.find(MonitoringStateEntity, {});
-        for (const monitor of monitors ) {
-            if (monitor.isMonitoring == true) {
-                monitor.isMonitoring = false;
-                await botConfig.orm.em.persistAndFlush(monitor);
-            }
-        }
-    }
 }
