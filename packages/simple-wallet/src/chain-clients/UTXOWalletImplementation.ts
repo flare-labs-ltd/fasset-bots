@@ -277,30 +277,39 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      }
 
      async stopMonitoring(): Promise<void> {
-        await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-           monitoringEnt.lastPingInTimestamp = toBN(0);
-        });
-        this.monitoring = false;
-     }
+        if (this.monitoring == true) {
+           await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+              monitoringEnt.lastPingInTimestamp = toBN(0);
+           });
+           this.monitoring = false;
+        }
+    }
 
     /**
      * Background processing
      */
     async startMonitoringTransactionProgress(): Promise<void> {
+        const randomMs = getRandomInt(0, 500)
+        await sleepMs(randomMs); // to avoid multiple instances starting at the same time
         try {
             const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
             if (!monitoringState) {
+               logger.info(`Monitoring created for chain ${this.chainType}`);
                this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, lastPingInTimestamp: toBN((new Date()).getTime()) } as RequiredEntityData<MonitoringStateEntity>,);
                await this.rootEm.flush();
             } else if (monitoringState.lastPingInTimestamp) {
+               logger.info(`Monitoring possibly running for chain ${this.chainType}`);
+               // refetch
+               const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType)
                const now = (new Date()).getTime();
-               if ((now - monitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                  await sleepMs(BUFFER_PING_INTERVAL + getRandomInt(0, 500));
+               if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
+                  logger.info(`Monitoring checking if already running for chain ${this.chainType} ...`);
+                  await sleepMs(BUFFER_PING_INTERVAL + randomMs);
                   // recheck the monitoring state
                   const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
                   const newNow = (new Date()).getTime();
                   if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                     logger.info(`Another monitoring instance is already running for chain ${this.chainType}.`);
+                     logger.info(`Another monitoring instance is already running for chain ${this.chainType}`);
                      return;
                   }
                }
@@ -369,7 +378,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
               await sleepMs(PING_INTERVAL);
            } catch (error) {
               logger.error(`Error updating ping status for chain ${this.chainType}`, error);
-              this.monitoring = false;// TODO-urska -> better handle
+              this.monitoring = false;// TODO-urska -> better handle - retry multiple times?
            }
         }
      }
