@@ -1,29 +1,13 @@
 import axios, { AxiosRequestConfig } from "axios";
 import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
-import * as dogecore from "bitcore-lib-doge";
-import { excludeNullFields, getDefaultFeePerKB, getRandomInt, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
-import { toBN, toBNExp, toNumber } from "../utils/bnutils";
-import { excludeNullFields, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
+import { excludeNullFields, getRandomInt, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import {
-    BTC_DOGE_DEC_PLACES,
-    BTC_DUST_AMOUNT,
-    BTC_FEE_SECURITY_MARGIN,
-    BTC_LEDGER_CLOSE_TIME_MS,
     BUFFER_PING_INTERVAL,
     ChainType,
     DEFAULT_RATE_LIMIT_OPTIONS,
-    DOGE_DUST_AMOUNT,
-    DOGE_FEE_SECURITY_MARGIN,
-    DOGE_LEDGER_CLOSE_TIME_MS,
     PING_INTERVAL,
-    UTXO_INPUT_SIZE,
-    UTXO_INPUT_SIZE_SEGWIT,
-    UTXO_OUTPUT_SIZE,
-    UTXO_OUTPUT_SIZE_SEGWIT,
-    UTXO_OVERHEAD_SIZE,
-    UTXO_OVERHEAD_SIZE_SEGWIT,
 } from "../utils/constants";
 import type {
     BaseWalletConfig,
@@ -345,17 +329,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             return true;
         }
         return false;
-    }
-
-    async checkUTXONetworkStatus(): Promise<boolean> {
-        //TODO - maybe can be more robust if also take into account response
-        try {
-            await this.getCurrentBlockHeight();
-            return true;
-        } catch (error) {
-            logger.error(`Cannot get response from server ${error}`);
-            return false;
-        }
     }
 
     private async updatePing(): Promise<void> {
