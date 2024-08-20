@@ -216,7 +216,7 @@ describe("Xrp wallet tests", () => {
         expect(balance.gt(balance2));
     });
 
-    it("Should receive account balance", async () => {
+    it("Should receive account balance is 0", async () => {
         const newAccount = wClient.createWallet();
         const bn = await wClient.getAccountBalance(newAccount.address);
         expect(bn).to.not.be.null;

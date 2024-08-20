@@ -258,15 +258,19 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * Background processing
     */
    async startMonitoringTransactionProgress(): Promise<void> {
+      const randomMs = getRandomInt(0, 500)
+      await sleepMs(randomMs); // to avoid multiple instances starting at the same time
       try {
          const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
          if (!monitoringState) {
             this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, lastPingInTimestamp: toBN((new Date()).getTime()) } as RequiredEntityData<MonitoringStateEntity>,);
             await this.rootEm.flush();
          } else if (monitoringState.lastPingInTimestamp) {
+            // refetch
+            const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType)
             const now = (new Date()).getTime();
-            if ((now - monitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-               await sleepMs(BUFFER_PING_INTERVAL + getRandomInt(0, 500));
+            if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
+               await sleepMs(BUFFER_PING_INTERVAL + randomMs);
                // recheck the monitoring state
                const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
                const newNow = (new Date()).getTime();
