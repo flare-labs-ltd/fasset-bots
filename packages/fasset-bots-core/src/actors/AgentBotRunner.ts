@@ -135,11 +135,6 @@ export class AgentBotRunner {
     async addNewAgentBots() {
         const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
-            const runningAgentBot = this.runningAgentBots.get(agentEntity.vaultAddress);
-            if (runningAgentBot) {
-                this.checkIfWalletIsRunning(agentEntity.chainId, runningAgentBot);
-                continue;
-            }
             // create new bot
             try {
                 const agentBot = await this.newAgentBot(agentEntity);
@@ -181,7 +176,7 @@ export class AgentBotRunner {
         agentBot.loopDelay = this.loopDelay;
 
         // add wallet to the background loop
-        this.addSimpleWalletToLoop(agentEntity.chainId, agentBot);
+        this.addSimpleWalletToLoop(agentBot);
         return agentBot;
     }
 
@@ -260,39 +255,22 @@ export class AgentBotRunner {
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
     }
 
-    addSimpleWalletToLoop(chainId: string, agentBot: AgentBot): void {
-        const wallet = this.simpleWalletBackgroundTasks.get(chainId);
-        if (wallet) {
-            logger.info(`Existing background wallet task for chain ${chainId} will be used. Agent ${agentBot.agent.vaultAddress} tried to start it.`);
-        } else {
-            const newWallet = agentBot.context.wallet
-            this.simpleWalletBackgroundTasks.set(chainId, newWallet);
-            console.info(`Background wallet task for chain ${chainId} was added.`);
-            logger.info(`Background wallet task for chain ${chainId} was added. Initiated by agent ${agentBot.agent.vaultAddress}.`);
-            void newWallet.startMonitoringTransactionProgress().catch((error) => {
-                logger.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
-                console.error(`Agent bot ${agentBot.agent?.vaultAddress} monitoring for ${chainId} ended unexpectedly:`, error);
-            });//start in background
+    addSimpleWalletToLoop(agentBot: AgentBot): void {
+        if (this.simpleWalletBackgroundTasks.get(agentBot.agent.vaultAddress)) {
+            return;
         }
+        const newWallet = agentBot.context.wallet
+        this.simpleWalletBackgroundTasks.set(agentBot.agent.vaultAddress, newWallet);
+        void newWallet.startMonitoringTransactionProgress();
     }
 
     async stopAllWalletMonitoring(): Promise<void> {
-        for (const [chainId, wallet] of this.simpleWalletBackgroundTasks) {
+        for (const [vaultAddress, wallet] of this.simpleWalletBackgroundTasks) {
             await wallet.stopMonitoring();
-            logger.info(`Stopped monitoring wallet for chain ${chainId}.`);
+            logger.info(`Stopped monitoring wallet for agent ${vaultAddress}.`);
         }
+        //clear simpleWalletBackgroundTasks
+        this.simpleWalletBackgroundTasks.clear();
     }
 
-    checkIfWalletIsRunning(chainId: string, agentBot: AgentBot): boolean {
-        logger.info(`Checking if monitoring wallet for chain ${chainId} is running.`);
-        const wallet = this.simpleWalletBackgroundTasks.get(chainId);
-        if (wallet?.isMonitoring()) {
-            logger.info(`Monitoring wallet for chain ${chainId} is running.`)
-            return true;
-        } else {
-            logger.info(`Monitoring wallet for chain ${chainId} is NOT running.`)
-            this.addSimpleWalletToLoop(chainId, agentBot);
-            return false;
-        }
-    }
 }

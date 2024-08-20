@@ -117,7 +117,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             });
         const data = response.data?.abiEncodedRequest;
         if (data == null) {
-            logger.error(`Problem in prepare request: ${JSON.stringify(response.data)}`);
+            logger.error(`Problem in prepare request: ${JSON.stringify(response.data)} for request ${formatArgs(request)}`);
             throw new StateConnectorClientError(`Cannot submit proof request`);
         }
         const txRes = await this.stateConnector.requestAttestations(data, { from: this.account });
