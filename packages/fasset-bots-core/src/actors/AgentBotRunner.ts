@@ -261,7 +261,10 @@ export class AgentBotRunner {
         }
         const newWallet = agentBot.context.wallet
         this.simpleWalletBackgroundTasks.set(agentBot.agent.vaultAddress, newWallet);
-        void newWallet.startMonitoringTransactionProgress();
+        void newWallet.startMonitoringTransactionProgress().catch((error) => {
+            logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
+            console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+        });
     }
 
     async stopAllWalletMonitoring(): Promise<void> {
