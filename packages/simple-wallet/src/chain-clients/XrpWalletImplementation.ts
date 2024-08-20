@@ -248,10 +248,12 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async stopMonitoring(): Promise<void> {
-      await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-         monitoringEnt.lastPingInTimestamp = toBN(0);
-      });
-      this.monitoring = false;
+      if (this.monitoring == true) {
+         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+            monitoringEnt.lastPingInTimestamp = toBN(0);
+         });
+         this.monitoring = false;
+      }
    }
 
    /**
@@ -278,7 +280,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
                const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
                const newNow = (new Date()).getTime();
                if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                  logger.info(`Another monitoring instance is already running for chain ${this.chainType}.`);
+                  logger.info(`Another monitoring instance is already running for chain ${this.chainType}`);
                   return;
                }
             }
@@ -352,7 +354,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             await sleepMs(PING_INTERVAL);
          } catch (error) {
             logger.error(`Error updating ping status for chain ${this.chainType}`, error);
-            this.monitoring = false;// TODO-urska -> better handle
+            this.monitoring = false;// TODO-urska -> better handle - retry multiple times?
          }
       }
    }
