@@ -27,6 +27,7 @@ import { getTransactionInfoById } from "../../src/db/dbutils";
 const sinon = require("sinon")
 import * as dbutils from "../../src/db/dbutils"
 import { DriverException } from "@mikro-orm/core";
+import { getCore } from "../../src/chain-clients/UTXOUtils";
 
 use(chaiAsPromised);
 
@@ -91,7 +92,7 @@ describe("Dogecoin wallet tests", () => {
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
-            enoughConfirmations: 3,
+            enoughConfirmations: 1,
             rateLimitOptions: {
                 maxRPS: 100,
                 timeoutMs: 2000,
@@ -168,7 +169,7 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should receive latest blockHeight", async () => {
-        const index = await wClient.getCurrentBlockHeight();
+        const index = await wClient.blockchainAPI.getCurrentBlockHeight();
         expect(index).not.to.be.null;
     });
 
@@ -200,7 +201,7 @@ describe("Dogecoin wallet tests", () => {
     it("Transaction with executeUntilBlock before current block height should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const currentBlock = await wClient.getCurrentBlockHeight();
+        const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", feeInSatoshi, currentBlock - 5);
         expect(id).to.be.gt(0);
 
@@ -211,7 +212,7 @@ describe("Dogecoin wallet tests", () => {
     it("Transaction with executeUntilBlock too low should fail (executeUntilBlock - currentBlockHeight < executionBlockOffset)", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const currentBlock = await wClient.getCurrentBlockHeight();
+        const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", feeInSatoshi, currentBlock + 1);
         expect(id).to.be.gt(0);
 
@@ -222,7 +223,7 @@ describe("Dogecoin wallet tests", () => {
     it("Should submit TX_PREPARED that are in DB", async () => {
         const rewired = await setupRewiredWallet();
 
-        const executeUntilBlock = await rewired.getCurrentBlockHeight() + rewired.blockOffset;
+        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
         const transaction = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note, txEnt.executeUntilBlock);
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
@@ -237,7 +238,7 @@ describe("Dogecoin wallet tests", () => {
         const rewired = await setupRewiredWallet();
 
         const fee = feeInSatoshi;
-        const executeUntilBlock = await rewired.getCurrentBlockHeight() + rewired.blockOffset;
+        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
         const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, executeUntilBlock);
         const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
@@ -325,7 +326,8 @@ describe("Dogecoin wallet tests", () => {
         const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
             config => Promise.reject(`Down`),
         );
-        await sleepMs(10000);
+        await sleepMs(5000);
+        console.info("API connection up");
         wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
@@ -346,10 +348,11 @@ describe("Dogecoin wallet tests", () => {
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(0.1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
-        const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, getDefaultFeePerKB(ChainType.testDOGE), (await setupRewiredWallet()).getCore(), wClient.rootEm);
+        const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, getDefaultFeePerKB(ChainType.testDOGE), getCore((await setupRewiredWallet()).chainType), wClient.rootEm);
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
 
         wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+        console.info();
     });
 
     it("If fee service is down the getCurrentFeeRate should be used", async () => {
@@ -378,7 +381,7 @@ describe("Dogecoin wallet tests", () => {
         expect(id).to.be.gt(0);
 
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
-        const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, feeRateInSatoshi, (await setupRewiredWallet()).getCore(), wClient.rootEm);
+        const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, feeRateInSatoshi, getCore((await setupRewiredWallet()).chainType), wClient.rootEm);
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
 
         wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
@@ -409,11 +412,11 @@ describe("Dogecoin wallet tests", () => {
         }
     });
 
-    it.skip("Stress test", async () => {
+    it("Stress test", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
 
-        const N = 10;
+        const N = 60;
         const wallets = [];
         const amountToSendInSatoshi = toBNExp(1, DOGE_DECIMAL_PLACES);
 
@@ -473,6 +476,11 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
+    it.skip("Waiting into inf", async () => {
+        while (true) {
+            await sleepMs(2000);
+        }
+    });
 });
 
 async function setupRewiredWallet() {

@@ -1,28 +1,13 @@
 import axios, { AxiosRequestConfig } from "axios";
 import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
-import * as dogecore from "bitcore-lib-doge";
-import { excludeNullFields, getDefaultFeePerKB, getRandomInt, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
-import { toBN, toBNExp, toNumber } from "../utils/bnutils";
+import { excludeNullFields, getRandomInt, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
+import { toBN, toNumber } from "../utils/bnutils";
 import {
-    BTC_DOGE_DEC_PLACES,
-    BTC_DUST_AMOUNT,
-    BTC_FEE_SECURITY_MARGIN,
-    BTC_LEDGER_CLOSE_TIME_MS,
     BUFFER_PING_INTERVAL,
     ChainType,
-    DEFAULT_FEE_INCREASE,
     DEFAULT_RATE_LIMIT_OPTIONS,
-    DOGE_DUST_AMOUNT,
-    DOGE_FEE_SECURITY_MARGIN,
-    DOGE_LEDGER_CLOSE_TIME_MS,
     PING_INTERVAL,
-    UTXO_INPUT_SIZE,
-    UTXO_INPUT_SIZE_SEGWIT,
-    UTXO_OUTPUT_SIZE,
-    UTXO_OUTPUT_SIZE_SEGWIT,
-    UTXO_OVERHEAD_SIZE,
-    UTXO_OVERHEAD_SIZE_SEGWIT,
 } from "../utils/constants";
 import type {
     BaseWalletConfig,
@@ -35,21 +20,18 @@ import type {
     WriteWalletInterface,
 } from "../interfaces/IWalletTransaction";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-import BN from "bn.js";
+import BN, { max } from "bn.js";
 import {
-    checkIfIsDeleting, checkWalletMempoolTxCount,
+    checkIfIsDeleting,
     correctUTXOInconsistencies,
     createInitialTransactionEntity,
     createTransactionOutputEntities,
-    decreaseWalletMempoolTxCount,
     failTransaction,
     fetchTransactionEntityById,
     fetchUnspentUTXOs,
     fetchUTXOs,
     getTransactionInfoById,
-    getWalletMempoolTxCount,
     handleMissingPrivateKey,
-    increaseWalletMempoolTxCount,
     processTransactions,
     setAccountIsDeleting,
     storeUTXOS,
@@ -68,9 +50,16 @@ import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { IBlockchainAPI } from "../interfaces/IBlockchainAPI";
 import { BitcoreAPI } from "../blockchain-apis/BitcoreAPI";
 import { BlockbookAPI } from "../blockchain-apis/BlockbookAPI";
-import { isORMError } from "./utils";
+import { errorMessage, isORMError } from "./utils";
+import { InvalidFeeError, NotEnoughUTXOsError } from "../@types/errors";
 import UnspentOutput = Transaction.UnspentOutput;
-
+import {
+    checkIfFeeTooHigh, checkIfShouldStillSubmit,
+    checkUTXONetworkStatus,
+    getCore, getDustAmount,
+    getEstimatedNumberOfOutputs,
+    getEstimateFee, getFeePerKB, getNumberOfAncestorsInMempool, hasTooHighOrLowFee,
+} from "./UTXOUtils";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;
@@ -113,7 +102,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 return (status >= 200 && status < 300) || status == 500;
             },
         };
-        this.blockchainAPI = createConfig.api === "bitcore" ? new BitcoreAPI(createAxiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(createAxiosConfig, createConfig.rateLimitOptions, this.rootEm);
+        this.blockchainAPI = createConfig.api === "bitcore" ? new BitcoreAPI(createAxiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(createAxiosConfig, createConfig.rateLimitOptions, createConfig.em);
         const resubmit = stuckTransactionConstants(this.chainType);
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
@@ -152,7 +141,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 return toBN(totalAddressesBalance!).add(mainAccountBalance);
             }
         } catch (error) {
-            logger.error(`Cannot get account balance for ${account} and other addresses ${otherAddresses}`, error);
+            logger.error(`Cannot get account balance for ${account} and other addresses ${otherAddresses}: ${errorMessage(error)}`);
             throw error;
         }
     }
@@ -218,6 +207,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @param {BN|undefined} feeInSatoshi - automatically set if undefined
      * @param {string|undefined} note
      * @param {BN|undefined} maxFeeInSatoshi
+     * @param executeUntilBlock
+     * @param executeUntilTimestamp
      * @returns {Object} - containing transaction id tx_id and optional result
      */
     async createDeleteAccountTransaction(
@@ -250,16 +241,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             executeUntilBlock,
             executeUntilTimestamp,
         );
-        const txExternalId = ent.id;
-        return txExternalId;
-    }
-
-    /**
-     * @param {number} dbId
-     * @returns {Object} - containing transaction info
-     */
-    async getTransactionInfo(dbId: number): Promise<TransactionInfo> {
-        return await getTransactionInfoById(this.rootEm, dbId);
+        return ent.id;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -277,30 +259,39 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      }
 
      async stopMonitoring(): Promise<void> {
-        await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-           monitoringEnt.lastPingInTimestamp = toBN(0);
-        });
-        this.monitoring = false;
-     }
+        if (this.monitoring == true) {
+           await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+              monitoringEnt.lastPingInTimestamp = toBN(0);
+           });
+           this.monitoring = false;
+        }
+    }
 
     /**
      * Background processing
      */
     async startMonitoringTransactionProgress(): Promise<void> {
+        const randomMs = getRandomInt(0, 500)
+        await sleepMs(randomMs); // to avoid multiple instances starting at the same time
         try {
             const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
             if (!monitoringState) {
+               logger.info(`Monitoring created for chain ${this.chainType}`);
                this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, lastPingInTimestamp: toBN((new Date()).getTime()) } as RequiredEntityData<MonitoringStateEntity>,);
                await this.rootEm.flush();
             } else if (monitoringState.lastPingInTimestamp) {
+               logger.info(`Monitoring possibly running for chain ${this.chainType}`);
+               // refetch
+               const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType)
                const now = (new Date()).getTime();
-               if ((now - monitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                  await sleepMs(BUFFER_PING_INTERVAL + getRandomInt(0, 500));
+               if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
+                  logger.info(`Monitoring checking if already running for chain ${this.chainType} ...`);
+                  await sleepMs(BUFFER_PING_INTERVAL + randomMs);
                   // recheck the monitoring state
                   const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
                   const newNow = (new Date()).getTime();
                   if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                     logger.info(`Another monitoring instance is already running for chain ${this.chainType}.`);
+                     logger.info(`Another monitoring instance is already running for chain ${this.chainType}`);
                      return;
                   }
                }
@@ -315,7 +306,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
             while (this.monitoring) {
                 try {
-                    const networkUp = await this.checkUTXONetworkStatus();
+                    const networkUp = await checkUTXONetworkStatus(this);
                     if (!networkUp) {
                         logger.error(`Network is down - trying again in ${this.restartInDueNoResponse}`);
                         await sleepMs(this.restartInDueNoResponse);
@@ -331,13 +322,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
                     if (this.shouldStopMonitoring()) break;
                 } catch (error) {
-                    logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
+                    logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}: ${errorMessage(error)}`);
                 }
                 await sleepMs(this.restartInDueToError);
             }
             logger.info(`Monitoring stopped for chain ${this.chainType}.`);
-        } catch (e) {
-            logger.error(`Monitoring failed for chain ${this.chainType} error: ${e}.`);
+        } catch (error) {
+            logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
         }
     }
 
@@ -349,17 +340,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         return false;
     }
 
-    async checkUTXONetworkStatus(): Promise<boolean> {
-        //TODO - maybe can be more robust if also take into account response
-        try {
-            await this.getCurrentBlockHeight();
-            return true;
-        } catch (error) {
-            logger.error("Cannot get response from server", error);
-            return false;
-        }
-    }
-
     private async updatePing(): Promise<void> {
         while (this.monitoring) {
            try {
@@ -369,7 +349,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
               await sleepMs(PING_INTERVAL);
            } catch (error) {
               logger.error(`Error updating ping status for chain ${this.chainType}`, error);
-              this.monitoring = false;// TODO-urska -> better handle
+              this.monitoring = false;// TODO-urska -> better handle - retry multiple times?
            }
         }
      }
@@ -377,7 +357,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
     async prepareAndSubmitCreatedTransaction(txEnt: TransactionEntity): Promise<void> {
-        const currentBlock = await this.getCurrentBlockHeight();
+        const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
         const currentTimestamp = new Date().getTime();
         if (txEnt.executeUntilBlock && currentBlock >= txEnt.executeUntilBlock) {
             await failTransaction(this.rootEm, txEnt.id, `Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
@@ -396,23 +376,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
         try {
             const transaction = await this.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount || null, txEnt.fee, txEnt.reference);
-
-            // TODO: This should be done better - because every tx in mempool can have up to 24 children
-            const mempoolTxCount = (await getWalletMempoolTxCount(this.rootEm, txEnt.source, this.chainType));
-            if (mempoolTxCount + transaction.inputs.length > this.mempoolChainLengthLimit) {
-                logger.info(`Mempool chain can't be updated - length is ${mempoolTxCount + 1} > ${this.mempoolChainLengthLimit}`);
-                await checkWalletMempoolTxCount(this.rootEm, txEnt.source, this.chainType);
-                return;
-            } else {
-                await increaseWalletMempoolTxCount(this.rootEm, txEnt.source, this.chainType, 1);
-            }
-
             const privateKey = await this.walletKeys.getKey(txEnt.source);
+
             if (!privateKey) {
                 await handleMissingPrivateKey(this.rootEm, txEnt.id);
                 return;
             }
-            if (this.checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee || null)) {
+            if (checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee || null)) {
                 await failTransaction(this.rootEm, txEnt.id, `Fee restriction (fee: ${transaction.getFee()}, maxFee: ${txEnt.maxFee?.toString()})`);
             } else {
                 // save tx in db
@@ -431,10 +401,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.fee = error instanceof InvalidFeeError ? error.correctFee : txEntToUpdate.fee; // The check is needed because of the compiler
                 });
             } else if (error instanceof NotEnoughUTXOsError) {
-                logger.error(error.message);
+                logger.warn(`Not enough UTXOs for transaction ${txEnt.id}, fetching them from mempool`);
                 await this.fillUTXOsFromMempool(txEnt.source);
+            } else {
+                logger.error(`prepareAndSubmitCreatedTransaction failed with: ${errorMessage(error)}`);
             }
-            logger.error(`prepareAndSubmitCreatedTransaction failed with: ${error}`);
             return;
         }
 
@@ -450,7 +421,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
                     txEntToUpdate.reachedFinalStatusInTimestamp = new Date();
                 });
-                const core = this.getCore();
+                const core = getCore(this.chainType);
                 const tr = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
                 const utxos = await fetchUTXOs(this.rootEm, tr.inputs);
 
@@ -461,26 +432,24 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 }
                 await createTransactionOutputEntities(this.rootEm, tr, txEnt);
                 logger.info(`Transaction ${txEnt.id} (${txEnt.transactionHash}) was accepted`);
-                await decreaseWalletMempoolTxCount(this.rootEm, txEnt.source, this.chainType, tr.inputs.length);
                 return;
             }
-        } catch (e) {
-            if (!axios.isAxiosError(e) || isORMError(e)) { // We don't want to fail tx if error is caused by DB
-                logger.error(`checkSubmittedTransaction failed with error`, e);
+        } catch (error) {
+            if (!axios.isAxiosError(error) || isORMError(error)) { // We don't want to fail tx if error is caused by DB
+                logger.error(`checkSubmittedTransaction failed with ${errorMessage(error)}`);
                 return;
             }
-            logger.error(`Transaction ${txEnt.transactionHash} cannot be fetched from node`, e);
+            logger.error(`Transaction ${txEnt.transactionHash} cannot be fetched from node: ${errorMessage(error)}`);
         }
         //TODO handle stuck transactions -> if not accepted in next two block?: could do rbf, but than all dependant will change too!
-        const currentBlockHeight = await this.getCurrentBlockHeight();
+        const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
         if (currentBlockHeight - txEnt.submittedInBlock > this.enoughConfirmations) {
             await failTransaction(this.rootEm, txEnt.id, `Not accepted after ${this.enoughConfirmations} blocks`);
-            await this.decreaseMempoolChainLength(txEnt);
         }
     }
 
     async submitPreparedTransactions(txEnt: TransactionEntity): Promise<void> {
-        const core = this.getCore();
+        const core = getCore(this.chainType);
         const transaction = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
 
         const privateKey = await this.walletKeys.getKey(txEnt.source);
@@ -503,13 +472,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                 txEnt.transactionHash = signed.txHash;
             });
-        } catch (e: any) {
-            if (isORMError(e)) { // We don't want to fail tx if error is caused by DB
-                logger.error(`signAndSubmitProcess failed with DB error: ${e}`);
+        } catch (error: any) {
+            if (isORMError(error)) { // We don't want to fail tx if error is caused by DB
+                logger.error(`signAndSubmitProcess failed with DB error: ${errorMessage(error)}`);
                 return;
             }
-            await failTransaction(this.rootEm, txId, `Cannot sign transaction ${txId}`, e);
-            await this.decreaseMempoolChainLength(txId);
+            await failTransaction(this.rootEm, txId, `Cannot sign transaction ${txId}: ${errorMessage(error)}`, error);
             return;
         }
         // submit
@@ -540,12 +508,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         note?: string,
     ): Promise<bitcore.Transaction> {
         const isPayment = amountInSatoshi != null;
-        const core = this.getCore();
-        const utxos = await this.fetchUTXOs(source, amountInSatoshi, feeInSatoshi, this.getEstimatedNumberOfOutputs(amountInSatoshi, note));
+        const core = getCore(this.chainType);
+        const utxos = await this.fetchUTXOs(source, amountInSatoshi, feeInSatoshi, getEstimatedNumberOfOutputs(amountInSatoshi, note));
 
 
         if (amountInSatoshi == null) {
-            feeInSatoshi = await this.getEstimateFee(utxos.length);
+            feeInSatoshi = await getEstimateFee(this, utxos.length);
             amountInSatoshi = (await this.getAccountBalance(source)).sub(feeInSatoshi);
         }
 
@@ -553,9 +521,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             return accumulator + transaction.satoshis;
         }, 0);
 
-        if (amountInSatoshi.lte(this.getDustAmount())) {
+        if (amountInSatoshi.lte(getDustAmount(this.chainType))) {
             throw new Error(
-                `Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${this.getDustAmount().toString()}`,
+                `Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
             );
         }
         if (toBN(utxosAmount).sub(amountInSatoshi).lten(0)) {
@@ -572,9 +540,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         tr.enableRBF();
         if (feeInSatoshi) {
             const bitcoreEstFee = toBN(tr.getFee());
-            if (this.hasTooHighOrLowFee(this.chainType, feeInSatoshi, bitcoreEstFee)) {
-                const estFee = await this.getEstimateFee(tr.inputs.length, tr.outputs.length);
-                const correctFee = this.hasTooHighOrLowFee(this.chainType, estFee, bitcoreEstFee) ? toBN(bitcoreEstFee) : estFee;
+            if (hasTooHighOrLowFee(this.chainType, feeInSatoshi, bitcoreEstFee)) {
+                const estFee = await getEstimateFee(this, tr.inputs.length, tr.outputs.length);
+                const correctFee = hasTooHighOrLowFee(this.chainType, estFee, bitcoreEstFee) ? toBN(bitcoreEstFee) : estFee;
                 throw new InvalidFeeError(
                     `Provided fee ${feeInSatoshi.toNumber()} fails bitcore serialization checks! bitcoreEstFee: ${bitcoreEstFee}, estFee: ${estFee.toNumber()}`,
                     correctFee,
@@ -583,20 +551,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             tr.fee(toNumber(feeInSatoshi));
         }
         if (isPayment && !feeInSatoshi) {
-            const feeRatePerKB = await this.getFeePerKB();
+            const feeRatePerKB = await getFeePerKB(this);
             tr.feePerKb(Number(feeRatePerKB));
         }
         return tr;
-    }
-
-    // Util for bitcore-lib serialization checks
-    private hasTooHighOrLowFee(chainType: ChainType, fee: BN, estFee: BN) {
-        // https://github.com/bitpay/bitcore/blob/35b6f07bf33f79c0cd198a25c94ba63905b03a5f/packages/bitcore-lib/lib/transaction/transaction.js#L267
-        if (chainType == ChainType.BTC || chainType == ChainType.testBTC) {
-            return fee.lt(estFee.divn(BTC_FEE_SECURITY_MARGIN)) || fee.gt(estFee.muln(BTC_FEE_SECURITY_MARGIN));
-        } else {
-            return fee.lt(estFee.divn(DOGE_FEE_SECURITY_MARGIN)) || fee.gt(estFee.muln(DOGE_FEE_SECURITY_MARGIN));
-        }
     }
 
     /**
@@ -616,16 +574,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     private async submitTransaction(signedTx: string, txId: number): Promise<TransactionStatus> {
         // check if there is still time to submit
         const transaction = await fetchTransactionEntityById(this.rootEm, txId);
-        const currentBlockHeight = await this.getCurrentBlockHeight();
+        const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
         const currentTimestamp = new Date().getTime();
 
         if (transaction.executeUntilBlock && transaction.executeUntilBlock - currentBlockHeight < this.executionBlockOffset) {
             await failTransaction(this.rootEm, txId, `Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentBlockHeight}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}`);
-            await this.decreaseMempoolChainLength(txId);
             return TransactionStatus.TX_FAILED;
         } else if (transaction.executeUntilTimestamp && currentTimestamp >= transaction.executeUntilTimestamp.getTime()) {
             await failTransaction(this.rootEm, transaction.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}`);
-            await this.decreaseMempoolChainLength(txId);
             return TransactionStatus.TX_FAILED;
         } else if (!transaction.executeUntilBlock) {
             logger.warn(`Transaction ${txId} does not have 'executeUntilBlock' defined`);
@@ -633,7 +589,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         try {
             const resp = await this.blockchainAPI.sendTransaction(signedTx);
             if (resp.status == 200) {
-                const submittedBlockHeight = await this.getCurrentBlockHeight();
+                const submittedBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                     txEnt.status = TransactionStatus.TX_PENDING;
                     txEnt.submittedInBlock = submittedBlockHeight;
@@ -647,24 +603,24 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await this.updateTransactionInputSpentStatus(txId, SpentHeightEnum.UNSPENT);
                 return TransactionStatus.TX_FAILED;
             }
-        } catch (e: any) {
-            if (isORMError(e)) { // We don't want to fail tx if error is caused by DB
-                logger.error(`submitTransaction failed with DB error`, e);
+        } catch (error: any) {
+            if (isORMError(error)) { // We don't want to fail tx if error is caused by DB
+                logger.error(`submitTransaction failed with DB error: ${errorMessage(error)}`);
                 return TransactionStatus.TX_PREPARED;
-            } else if (axios.isAxiosError(e)) {
-                logger.error(`submitTransaction failed with Axios error (${e.response?.data?.error}):`, e);
-                if (e.response?.data?.error?.indexOf("too-long-mempool-chain") >= 0) {
+            } else if (axios.isAxiosError(error)) {
+                logger.error(`submitTransaction failed with Axios error (${error.response?.data?.error}): ${errorMessage(error)}`);
+                if (error.response?.data?.error?.indexOf("too-long-mempool-chain") >= 0) {
+                    logger.error(`too-long-mempool-chain`, error);
                     return TransactionStatus.TX_PREPARED;
-                } else if (e.response?.data?.error?.indexOf("transaction already in block chain") >= 0) {
+                } else if (error.response?.data?.error?.indexOf("transaction already in block chain") >= 0) {
                     return TransactionStatus.TX_PENDING;
                 }
                 return TransactionStatus.TX_PREPARED;
             }
 
             // TODO in case of network problems
-            await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed`, e);
+            await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed ${errorMessage(error)}`, error);
             await this.updateTransactionInputSpentStatus(txId, SpentHeightEnum.UNSPENT);
-            await this.decreaseMempoolChainLength(txId);
             return TransactionStatus.TX_FAILED;
         }
     }
@@ -682,7 +638,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const allUTXOs: UTXO[] = [];
 
         for (const utxo of utxos) {
-            if (!utxo.script) {
+            if (!utxo.script || utxo.script.length < 1) {
                 utxo.script = await this.blockchainAPI.getUTXOScript(address, utxo.mintTransactionHash, utxo.position);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, utxoEnt => utxoEnt.script = utxo.script);
             }
@@ -749,12 +705,17 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const neededUTXOs = [];
         let sum = 0;
         for (const utxo of allUTXOS) {
+            const numAncestors = await getNumberOfAncestorsInMempool(this, utxo.mintTransactionHash);
+            if (numAncestors >= this.mempoolChainLengthLimit) {
+                logger.info(`numAncestors ${numAncestors} > ${this.mempoolChainLengthLimit}`);
+                continue;
+            }
             neededUTXOs.push(utxo);
             const value = Number(utxo.value);
             sum += value;
-            const est_fee = await this.getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
+            const est_fee = await getEstimateFee(this, neededUTXOs.length, estimatedNumOfOutputs);
             // multiply estimated fee by 2 to ensure enough funds TODO: is it enough?
-            if (toBN(sum).gt(amountInSatoshi.add(this.max(est_fee, feeInSatoshi).muln(2)))) {
+            if (toBN(sum).gt(amountInSatoshi.add(max(est_fee, feeInSatoshi).muln(2)))) {
                 return neededUTXOs;
             }
         }
@@ -764,21 +725,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     private async fillUTXOsFromMempool(address: string) {
         const utxos = await this.blockchainAPI.getUTXOsFromMempool(address);
         await storeUTXOS(this.rootEm, address, utxos);
-    }
-
-    async getCurrentFeeRate(nextBlocks: number = 2): Promise<BN> {
-        try {
-            const fee = await this.blockchainAPI.getCurrentFeeRate(nextBlocks);
-            const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
-            return rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
-        } catch (e) {
-            logger.error(`Cannot obtain fee rate`, e);
-            return getDefaultFeePerKB(this.chainType);
-        }
-    }
-
-    async getCurrentBlockHeight(): Promise<number> {
-        return this.blockchainAPI.getCurrentBlockHeight();
     }
 
     private async waitForTransactionToAppearInMempool(txId: number, retry: number = 0): Promise<void> {
@@ -808,140 +754,47 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         // transaction was not accepted in mempool by one minute => replace by fee one time
         if (retry > 0) {
             await failTransaction(this.rootEm, txId, `Transaction ${txId} was not accepted in mempool`);
-            await this.decreaseMempoolChainLength(txEnt);
         } else {
-            if (!(await this.checkIfShouldStillSubmit(txEnt.executeUntilBlock || null, txEnt.executeUntilTimestamp?.getTime() || null))) {
-                const currentBlock = await this.getCurrentBlockHeight();
+            if (!(await checkIfShouldStillSubmit(this, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.getTime()))) {
+                const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
                 await failTransaction(this.rootEm, txId, `Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
             }
             //TODO fail for now
             //await this.tryToReplaceByFee(txHash);
             await failTransaction(this.rootEm, txId, `Need to implement rbf`);
-            await this.decreaseMempoolChainLength(txEnt);
         }
     }
 
     private async tryToReplaceByFee(txHash: string): Promise<ISubmitTransactionResponse> {
         throw new Error(`Cannot replaceByFee transaction ${txHash}.`);
-        /*
-  const retryTx = await fetchTransactionEntity(this.rootEm, txHash);
-  const newTransaction = JSON.parse(retryTx.raw.toString());
-  const newFee = newTransaction.getFee() * this.feeIncrease;
-  if (this.checkIfFeeTooHigh(toBN(newFee), retryTx.maxFee)) {
-     await updateTransactionEntity(this.rootEm, txHash, async (txEnt) => {
-        txEnt.status = TransactionStatus.TX_FAILED;
-     });
-     throw new Error(`Transaction ${txHash} failed due to fee restriction`)
-  }
-  const privateKey = ""; //TODO fetch private key from
-  const blob = await this.signTransaction(newTransaction, privateKey);
-  const submitResp = await this.submitTransaction(blob);
-  const submittedBlockHeight = await this.getCurrentBlockHeight();
-  await createTransactionEntity(this.rootEm, newTransaction, retryTx.source, retryTx.destination, submitResp.txId, submittedBlockHeight, retryTx.maxFee);
-  const newTxEnt = await fetchTransactionEntity(this.rootEm, submitResp.txId);
-  await updateTransactionEntity(this.rootEm, txHash, async (txEnt) => {
-     txEnt.replaced_by = newTxEnt;
-     txEnt.status = TransactionStatus.TX_REPLACED;
-  });
-  await this.waitForTransactionToAppearInMempool(submitResp.txId, 1);
-  return submitResp;*/
-    }
-
-    private checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
-        if (maxFee && fee.gt(maxFee)) {
-            return true;
-        }
-        return false;
-    }
-
-    private getCore(): typeof bitcore {
-        if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-            return dogecore;
-        } else {
-            return bitcore;
-        }
-    }
-
-    private getDustAmount(): BN {
-        if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-            return DOGE_DUST_AMOUNT;
-        } else {
-            return BTC_DUST_AMOUNT;
-        }
+        // const retryTx = await fetchTransactionEntity(this.rootEm, txHash);
+        // const newTransaction = JSON.parse(retryTx.raw.toString());
+        // const newFee = newTransaction.getFee() * this.feeIncrease;
+        // if (this.checkIfFeeTooHigh(toBN(newFee), retryTx.maxFee)) {
+        //     await updateTransactionEntity(this.rootEm, txHash, async (txEnt) => {
+        //         txEnt.status = TransactionStatus.TX_FAILED;
+        //     });
+        //     throw new Error(`Transaction ${txHash} failed due to fee restriction`);
+        // }
+        // const privateKey = ""; //TODO fetch private key from
+        // const blob = await this.signTransaction(newTransaction, privateKey);
+        // const submitResp = await this.submitTransaction(blob);
+        // const submittedBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
+        // await createInitialTransactionEntity(this.rootEm, newTransaction, retryTx.source, retryTx.destination, submitResp.txId, submittedBlockHeight, retryTx.maxFee);
+        // const newTxEnt = await fetchTransactionEntity(this.rootEm, submitResp.txId);
+        // await updateTransactionEntity(this.rootEm, txHash, async (txEnt) => {
+        //     txEnt.replaced_by = newTxEnt;
+        //     txEnt.status = TransactionStatus.TX_REPLACED;
+        // });
+        // await this.waitForTransactionToAppearInMempool(submitResp.txId, 1);
+        // return submitResp;
     }
 
     /**
-     * @returns default fee per byte
+     * @param {number} dbId
+     * @returns {Object} - containing transaction info
      */
-    private async getFeePerKB(): Promise<BN> {
-        if (this.feeService) {
-            const feeStats = await this.feeService.getLatestFeeStats();
-            if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
-                return feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
-            } else if (feeStats.averageFeePerKB.gtn(0)) {
-                return feeStats.averageFeePerKB.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
-            }
-        }
-        return await this.getCurrentFeeRate();
-    }
-
-    private getDefaultBlockTime() {
-        if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-            return DOGE_LEDGER_CLOSE_TIME_MS;
-        } else {
-            return BTC_LEDGER_CLOSE_TIME_MS;
-        }
-    }
-
-    private async getEstimateFee(inputLength: number, outputLength: number = 2): Promise<BN> {
-        const feePerKb = await this.getFeePerKB();
-        const feePerb = feePerKb.divn(1000);
-        if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-            return feePerb.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
-        } else {
-            return feePerb.muln(inputLength * UTXO_INPUT_SIZE_SEGWIT + outputLength * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT);
-        }
-    }
-
-    private getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: string) {
-        if (amountInSatoshi == null && note) return 2; // destination and note
-        if (amountInSatoshi == null && !note) return 1; // destination
-        if (note) return 3; // destination, change (returned funds) and note
-        return 2; // destination and change
-    }
-
-    private async checkIfShouldStillSubmit(executeUntilBlock: number | null, executeUntilTimestamp: number | null): Promise<boolean> {
-        const currentBlockHeight = await this.getCurrentBlockHeight();
-        if (executeUntilBlock && currentBlockHeight - executeUntilBlock > this.executionBlockOffset ||
-            executeUntilTimestamp && new Date().getTime() - executeUntilTimestamp > this.executionBlockOffset * this.getDefaultBlockTime()) { //TODO-urska (is this good estimate?)
-            return false;
-        }
-        return true;
-    }
-
-    private max(a: BN, b: BN): BN {
-        return a.gt(b) ? a : b;
-    }
-
-    private async decreaseMempoolChainLength(tx: number | TransactionEntity) {
-        const txEnt = tx instanceof TransactionEntity ? tx : await fetchTransactionEntityById(this.rootEm, tx);
-        await decreaseWalletMempoolTxCount(this.rootEm, txEnt.source, this.chainType, 1);
-    }
-}
-
-class InvalidFeeError extends Error {
-    public readonly correctFee: BN;
-    public readonly prototype: InvalidFeeError;
-
-    constructor(message: string, correctFee: BN) {
-        super(message);
-        this.correctFee = correctFee;
-        this.prototype = InvalidFeeError.prototype;
-    }
-}
-
-class NotEnoughUTXOsError extends Error {
-    constructor(message: string) {
-        super(message);
+    async getTransactionInfo(dbId: number): Promise<TransactionInfo> {
+        return await getTransactionInfoById(this.rootEm, dbId);
     }
 }
