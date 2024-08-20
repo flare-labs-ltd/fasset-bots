@@ -263,13 +263,16 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       try {
          const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
          if (!monitoringState) {
+            logger.info(`Monitoring created for chain ${this.chainType}`);
             this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, lastPingInTimestamp: toBN((new Date()).getTime()) } as RequiredEntityData<MonitoringStateEntity>,);
             await this.rootEm.flush();
          } else if (monitoringState.lastPingInTimestamp) {
+            logger.info(`Monitoring possibly running for chain ${this.chainType}`);
             // refetch
             const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType)
             const now = (new Date()).getTime();
             if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
+               logger.info(`Monitoring checking if already running for chain ${this.chainType} ...`);
                await sleepMs(BUFFER_PING_INTERVAL + randomMs);
                // recheck the monitoring state
                const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
