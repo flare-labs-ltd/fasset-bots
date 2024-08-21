@@ -18,7 +18,7 @@ import { validateAddress } from "../utils/validation";
 
 const ERC20 = artifacts.require("IERC20Metadata");
 
-const program = programWithCommonOptions("user", "all_fassets");
+const program = programWithCommonOptions("agent", "all_fassets");
 
 program.name("tokens").description("Command line token balance and transfer");
 
