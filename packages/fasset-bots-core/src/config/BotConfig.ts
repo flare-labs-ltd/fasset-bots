@@ -126,12 +126,9 @@ export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOp
         await AgentBotDbUpgrades.performUpgrades(orm);
         return orm;
     } else if (type === "user") {
-        const overrideOptions: OrmConfigOptions = {
-            type: "sqlite",
-            dbName: "simple-wallet-user.db",
-            allowGlobalContext: true,
-        }
-        return await overrideAndCreateOrm(overrideOptions, undefined, simpleWalletOptions);
+        assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
+        const orm = await overrideAndCreateOrm(ormOptions, databaseAccount);
+        return orm;
     }
 }
 

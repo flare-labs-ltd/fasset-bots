@@ -57,7 +57,10 @@ program
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
             await context.fAsset.transfer(addressTo, amountNat, { from: accountFrom.address });
         } else if (token.type === "underlying") {
-            const orm = await createCliOrm();
+            const orm = await createBotOrm("user", config.ormOptions, secrets.data.database);
+            if (!orm) {
+                throw new CommandLineError(`Undfined orm for underlying payment`);
+            }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
             const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
@@ -83,7 +86,8 @@ program
                 process.on("SIGHUP", () => {
                     stopBot().then().catch(logger.error);
                 });
-                await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                const txHash = await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                console.info(`Payment transaction ${txHash}. Check transaction status in database or explorer.`);
             } finally {}
         }
     });
@@ -120,7 +124,10 @@ program
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));
         } else if (token.type === "underlying") {
-            const orm = await createCliOrm();
+            const orm = await createBotOrm("user", config.ormOptions, secrets.data.database);
+            if (!orm) {
+                throw new CommandLineError(`Undfined orm for underlying payment`);
+            }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
             const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
