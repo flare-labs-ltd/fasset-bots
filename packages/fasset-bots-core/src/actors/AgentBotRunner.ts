@@ -50,6 +50,10 @@ export class AgentBotRunner {
         this.restartRequested = false;
         this.running = true;
         try {
+            void this.ensureWalletMonitoringRunning().catch((error) => {
+                logger.error(`Ensure wallet monitoring is running ended unexpectedly:`, error);
+                console.error(`Ensure wallet monitoring is running ended unexpectedly ended unexpectedly:`, error);
+            });
             while (!this.readyToStop()) {
                 await this.runStep();
             }
@@ -256,15 +260,35 @@ export class AgentBotRunner {
     }
 
     addSimpleWalletToLoop(agentBot: AgentBot): void {
-        if (this.simpleWalletBackgroundTasks.get(agentBot.agent.vaultAddress)) {
+        const vaultAddress = agentBot.agent.vaultAddress;
+        if (this.simpleWalletBackgroundTasks.get(vaultAddress)) {
             return;
         }
         const newWallet = agentBot.context.wallet
-        this.simpleWalletBackgroundTasks.set(agentBot.agent.vaultAddress, newWallet);
+        this.simpleWalletBackgroundTasks.set(vaultAddress, newWallet);
         void newWallet.startMonitoringTransactionProgress().catch((error) => {
             logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
             console.error(`Background task to monitor wallet ended unexpectedly:`, error);
         });
+    }
+
+    async ensureWalletMonitoringRunning() {
+        const sleepFor = 30_000;
+        while (!this.readyToStop()) {
+            await sleep(sleepFor);
+            if (this.readyToStop()) return;
+            for (const [_, wallet] of this.simpleWalletBackgroundTasks) {
+                const isMonitoring = await wallet.isMonitoring();
+                if (!isMonitoring) {
+                    logger.info(`Wallet monitoring restarted.`);
+                    console.info(`Wallet monitoring restarted.`);
+                    void wallet.startMonitoringTransactionProgress().catch((error) => {
+                        logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                        console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                    });
+                }
+            }
+        }
     }
 
     async stopAllWalletMonitoring(): Promise<void> {

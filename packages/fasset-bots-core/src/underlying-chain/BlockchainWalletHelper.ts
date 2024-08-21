@@ -128,6 +128,4 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
             });
         }
     }
-
-
 }
