@@ -248,6 +248,7 @@ async function initEnvironment(secretsFile: string, configFile: string) {
 }
 
 async function transferNatFromDeployer(secretsFile: string, configFile: string, amount: string, toAddress: string) {
+    validateAddress(toAddress, `Invalid recipient address ${toAddress}`);
     const [secrets, config] = await initEnvironment(secretsFile, configFile);
     const deployerPrivateKey = secrets.required("deployer.private_key");
     const apiKey = secrets.required("apiKey.native_rpc");
