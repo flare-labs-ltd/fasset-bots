@@ -724,19 +724,4 @@ export class AgentBotCommands {
         await agentBot.agent.performPayment(destination, amount);
         console.log(`made an illegal payment of ${amount} to ${destination} from ${agentVault}`);
     }
-
-    async fixWalletMonitoringDB(secretsFilePath: string, configFilePath: string): Promise<void> {
-        const secrets = Secrets.load(secretsFilePath);
-        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
-        const configFile = loadAgentConfigFile(configFilePath, `Owner ${owner.managementAddress}`);
-        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
-
-        const monitors: MonitoringStateEntity[] = await botConfig.orm.em.find(MonitoringStateEntity, {});
-        for (const monitor of monitors ) {
-            if (monitor.isMonitoring == true) {
-                monitor.isMonitoring = false;
-                await botConfig.orm.em.persistAndFlush(monitor);
-            }
-        }
-    }
 }

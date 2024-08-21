@@ -4,7 +4,7 @@ import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation
 import { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
 import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
 import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
-import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/WalletTransactionInterface";
+import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/IWalletTransaction";
 
 
 export * from "./entity/transaction";
@@ -12,11 +12,11 @@ export * from "./entity/wallet";
 export * from "./entity/utxo";
 export * from "./entity/monitoring_state";
 export type * from "./types";
-export type { StuckTransaction } from "./interfaces/WalletTransactionInterface";
+export type { StuckTransaction } from "./interfaces/IWalletTransaction";
 export { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
 export { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
 export { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
-export * from "./interfaces/WalletTransactionInterface";
+export * from "./interfaces/IWalletTransaction";
 
 export module WALLET {
 

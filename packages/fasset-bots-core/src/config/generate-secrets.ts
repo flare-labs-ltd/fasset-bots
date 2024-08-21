@@ -46,6 +46,10 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
         secrets.owner.management = { address: requireNotNull(agentManagementAddress) } as any;
         secrets.requestSubmitter = generateNativeAccount();
         secrets.timeKeeper = generateNativeAccount();
+        secrets.database = {
+            user: "",
+            password: ""
+        }
     }
     if (users.includes("user")) {
         secrets.user = generateAccount(chainIds);

@@ -456,7 +456,8 @@ describe("testBTC blockchain tests via indexer", () => {
 
     it("Should retrieve block height", async () => {
         const retrievedHeight = await blockChainIndexerClient.getBlockHeight();
-        expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
+        // add finalizationBlocks due to temporary "hack" (testBTC indexer returns last seen block on chain and not last confirm as other indexers)
+        expect(retrievedHeight + blockChainIndexerClient.finalizationBlocks).to.be.greaterThanOrEqual(blockId);
     });
 
     it("Should retrieve transaction block", async () => {
