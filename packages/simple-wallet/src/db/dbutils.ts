@@ -11,6 +11,7 @@ import { Transaction } from "bitcore-lib";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
 import Output = Transaction.Output;
 import { MonitoringStateEntity } from "../entity/monitoring_state";
+import { entropyToMnemonic } from "bip39";
 
 
 // transaction operations
@@ -82,12 +83,13 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
     } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by"], orderBy: { id: "ASC" } });
 }
 
-export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txEnt: TransactionEntity): Promise<void> {
-    const outputEntities = transaction.outputs.map(((output, index) => transformOutputToEntity(index, output, txEnt)));
+export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number): Promise<void> {
+    const txEnt = await fetchTransactionEntityById(rootEm, txId);
+    const outputEntities = transaction.outputs.map(((output, index) => transformOutputToTxOutputEntity(index, output, txEnt)));
     await rootEm.persistAndFlush(outputEntities);
 }
 
-function transformOutputToEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
+function transformOutputToTxOutputEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
     const entity = new TransactionOutputEntity();
     entity.transaction = transaction;
     entity.transactionHash = transaction.transactionHash!;
@@ -97,13 +99,29 @@ function transformOutputToEntity(vout: number, output: Output, transaction: Tran
     return entity;
 }
 
-export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number | undefined, script: string) {
+export function transformUTXOEntToTxOutputEntity(utxo: UTXOEntity, transaction: TransactionEntity | null, isInput?: boolean): TransactionOutputEntity {
+    const entity = new TransactionOutputEntity();
+
+    if(transaction) {
+        entity.transaction = transaction;
+    }
+
+    entity.transactionHash = utxo.mintTransactionHash;
+    entity.vout = utxo.position;
+    entity.amount = utxo.value;
+    entity.script = utxo.script!;
+    entity.isInput = isInput ?? false;
+    return entity;
+}
+
+export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number | undefined, script: string, isInput?: boolean): TransactionOutputEntity {
     const entity = new TransactionOutputEntity();
     entity.transactionHash = txHash;
     entity.vout = vout;
     entity.amount = toBN(amount);
     entity.script = script;
     entity.transaction = txEnt;
+    entity.isInput = isInput ?? false;
     return entity;
 }
 

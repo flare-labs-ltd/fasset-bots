@@ -136,7 +136,7 @@ describe("Bitcoin wallet tests", () => {
         const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
         rewired.orm = await initializeTestMikroORM();
         fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-        const tr = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
+        const [tr,] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
         expect(typeof tr).to.equal("object");
     });
 
@@ -185,7 +185,7 @@ describe("Bitcoin wallet tests", () => {
         void rewired.feeService?.startMonitoringFees();
 
         fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-        const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, null, null, "Note", maxFeeInSatoshi);
+        const [transaction,] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, null, null, "Note", maxFeeInSatoshi);
 
         expect(transaction.getFee()).to.be.gt(0);
     });

@@ -1,8 +1,9 @@
-import {Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property} from "@mikro-orm/core";
+import { Collection, Entity, Filter, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
 import {TransactionOutputEntity} from "./transactionOutput";
+import { UTXOEntity } from "./utxo";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
@@ -79,10 +80,10 @@ export class TransactionEntity {
     updatedAt: Date = new Date();
 
     @OneToMany(() => TransactionOutputEntity, output => output.transaction)
-    outputs = new Collection<TransactionOutputEntity>(this);
+    inputsAndOutputs = new Collection<TransactionOutputEntity>(this);
 
-    @OneToMany(() => TransactionOutputEntity, input => input.transaction)
-    inputs = new Collection<TransactionOutputEntity>(this);
+    @OneToMany(() => UTXOEntity, utxo => utxo.transaction)
+    utxos = new Collection<UTXOEntity>(this);
 }
 
 export enum TransactionStatus {

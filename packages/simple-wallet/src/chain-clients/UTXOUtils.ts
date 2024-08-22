@@ -12,8 +12,10 @@ import {
     DOGE_LEDGER_CLOSE_TIME_MS,
     UTXO_INPUT_SIZE,
     UTXO_INPUT_SIZE_SEGWIT,
-    UTXO_OUTPUT_SIZE, UTXO_OUTPUT_SIZE_SEGWIT,
-    UTXO_OVERHEAD_SIZE, UTXO_OVERHEAD_SIZE_SEGWIT,
+    UTXO_OUTPUT_SIZE,
+    UTXO_OUTPUT_SIZE_SEGWIT,
+    UTXO_OVERHEAD_SIZE,
+    UTXO_OVERHEAD_SIZE_SEGWIT,
 } from "../utils/constants";
 import BN from "bn.js";
 import { toBN, toBNExp } from "../utils/bnutils";
@@ -21,8 +23,9 @@ import { getDefaultFeePerKB } from "../utils/utils";
 import * as bitcore from "bitcore-lib";
 import dogecore from "bitcore-lib-doge";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
-import { RequiredEntityData } from "@mikro-orm/core";
+import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
+import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 
 /*
  * FEE CALCULATION
@@ -139,10 +142,10 @@ export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation,
 // I think we need this only for the start, when we don't know the
 export async function getTransactionEntityByHash(client: UTXOWalletImplementation, txHash: string) {
 
-    let txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs"] });
+    let txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputsAndOutputs"] });
     if (!txEnt) {
         const tr = await client.blockchainAPI.getTransaction(txHash);
-        logger.warn(`Tx not in db, fetched from api: ${tr}`);
+        logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
         if (tr) {
             const txEnt = client.rootEm.create(TransactionEntity, {
                 chainType: client.chainType,
@@ -154,14 +157,14 @@ export async function getTransactionEntityByHash(client: UTXOWalletImplementatio
             } as RequiredEntityData<TransactionEntity>);
 
             const inputs =
-                tr.data.vin.map((t: any) => createTransactionOutputEntity(txEnt!, txHash, t.value, t.vout, t.hex));
-            txEnt.inputs.add(inputs);
+                tr.data.vin.map((t: any) => createTransactionOutputEntity(txEnt!, t.txid, t.value, t.vout, t.hex, true));
+            txEnt.inputsAndOutputs.add(inputs);
 
             await client.rootEm.persistAndFlush(txEnt);
             await client.rootEm.persistAndFlush(inputs);
         }
 
-        txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs"] });
+        txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputsAndOutputs"] });
     }
 
     return txEnt;
@@ -172,10 +175,33 @@ export async function getNumberOfAncestorsInMempool(client: UTXOWalletImplementa
     if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS) {
         return 0;
     } else {
-        let numAncestorsInMempool = 1;
-        for (const input of txEnt.inputs.getItems()) {
-            numAncestorsInMempool += await getNumberOfAncestorsInMempool(client, input.transactionHash);
+        let numAncestorsInMempool = 0;
+        for (const input of txEnt!.inputsAndOutputs.getItems().filter(t => t.isInput)) {
+            numAncestorsInMempool += 1 + await getNumberOfAncestorsInMempool(client, input.transactionHash);
         }
         return numAncestorsInMempool;
     }
+}
+
+export async function freeTransactionUTXOs(rootEm: EntityManager, txHash: string, address: string) {
+    await rootEm.transactional(async em => {
+        const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
+        for (const utxo of utxos) {
+            utxo.spentHeight = SpentHeightEnum.UNSPENT;
+        }
+        await em.persistAndFlush(utxos);
+    })
+}
+
+export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string) {
+    // TODO If this proves to be to slow MySQL has CTE for recursive queries ...
+    const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address  });
+    const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } });
+    let sub: any[] = descendants;
+    for (const descendant of descendants) {
+        if (descendant.transactionHash) {
+            sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));
+        }
+    }
+    return sub;
 }

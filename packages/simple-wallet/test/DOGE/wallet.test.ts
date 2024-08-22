@@ -15,19 +15,21 @@ import {
     createTransactionEntity,
     loop,
     resetMonitoringOnForceExit,
-    setMonitoringStatus,
+    setMonitoringStatus, waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus,
 } from "../test_util/util";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
 import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
-import { getTransactionInfoById } from "../../src/db/dbutils";
+import { createInitialTransactionEntity, getTransactionInfoById } from "../../src/db/dbutils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon")
 import * as dbutils from "../../src/db/dbutils"
 import { DriverException } from "@mikro-orm/core";
-import { getCore } from "../../src/chain-clients/UTXOUtils";
+import { getCore, getNumberOfAncestorsInMempool, getTransactionDescendants } from "../../src/chain-clients/UTXOUtils";
+import { toBN } from "web3-utils";
+import * as utxoUtils from "../../src/chain-clients/UTXOUtils"
 
 use(chaiAsPromised);
 
@@ -92,7 +94,7 @@ describe("Dogecoin wallet tests", () => {
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
-            enoughConfirmations: 1,
+            enoughConfirmations: 2,
             rateLimitOptions: {
                 maxRPS: 100,
                 timeoutMs: 2000,
@@ -105,6 +107,8 @@ describe("Dogecoin wallet tests", () => {
 
         resetMonitoringOnForceExit(wClient);
         // addRequestTimers(wClient);
+
+        await sleepMs(500);
     });
 
     after(async () => {
@@ -139,7 +143,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should prepare and execute transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi.muln(30), undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
@@ -225,7 +229,7 @@ describe("Dogecoin wallet tests", () => {
 
         const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
-        const transaction = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note, txEnt.executeUntilBlock);
+        const [transaction, ] = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note, txEnt.executeUntilBlock);
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
         txEnt.status = TransactionStatus.TX_PREPARED;
         await rewired.rootEm.flush();
@@ -240,7 +244,7 @@ describe("Dogecoin wallet tests", () => {
         const fee = feeInSatoshi;
         const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
-        const transaction = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, executeUntilBlock);
+        const [transaction, ] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, executeUntilBlock);
         const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
 
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
@@ -476,7 +480,7 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
-    it.skip("Waiting into inf", async () => {
+    it.skip("Monitoring into infinity", async () => {
         while (true) {
             await sleepMs(2000);
         }

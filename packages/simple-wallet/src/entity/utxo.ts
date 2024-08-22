@@ -1,6 +1,7 @@
-import { Entity, Index, PrimaryKey, Property } from "@mikro-orm/core";
+import { Entity, Index, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import { BNType } from "../utils/orm-types";
+import { TransactionEntity } from "./transaction";
 
 @Entity({ tableName: "utxo" })
 export class UTXOEntity {
@@ -29,7 +30,7 @@ export class UTXOEntity {
     @Property({ type: BNType })
     value!: BN;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, type: "text"})
     script?: string;
 
     @Property({ onCreate: () => new Date() })
@@ -37,6 +38,9 @@ export class UTXOEntity {
 
     @Property({ onUpdate: () => new Date() })
     updatedAt: Date = new Date();
+
+    @ManyToOne(() => TransactionEntity, {nullable: true})
+    transaction?: TransactionEntity;
 }
 
 export enum SpentHeightEnum {
