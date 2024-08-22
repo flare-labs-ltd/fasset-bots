@@ -63,7 +63,7 @@ program
             }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.walletApiType ?? null);
             await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
@@ -130,7 +130,7 @@ program
             }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.walletApiType ?? null);
             const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));

@@ -31,7 +31,7 @@ describe("XRP transaction integration tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, null);
         void walletHelper.walletClient.startMonitoringTransactionProgress();
     });
 

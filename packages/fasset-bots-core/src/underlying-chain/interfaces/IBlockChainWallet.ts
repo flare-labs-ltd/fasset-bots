@@ -3,6 +3,8 @@ import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
 
+export type WalletApiType = "blockbook" | "bitcore";
+
 export type UTXO = {
     value: NumberLike;
     // ... Add any other properties you want, like txid, vout, etc.

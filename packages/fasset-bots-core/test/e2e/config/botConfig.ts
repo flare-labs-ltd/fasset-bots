@@ -21,6 +21,7 @@ const walletBTCUrl = "https://api.bitcore.io/api/BTC/mainnet/";
 const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/mainnet/";
 const walletTestXRPUrl = "https://s.altnet.rippletest.net:51234";
 const walletXRPUrl = "https://s1.ripple.com:51234/";
+const walletApiType = "bitcore";
 
 describe("Bot config tests", () => {
     let secrets: Secrets;
@@ -50,20 +51,20 @@ describe("Bot config tests", () => {
     it("Should create wallet clients", async () => {
         const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
         const orm = botConfig.orm!;
-        const testBTC = await createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl, orm.em);
+        const testBTC = await createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl,orm.em, walletApiType);
         expect(testBTC.chainType).to.eq(ChainId.testBTC.sourceId);
-        const testDOGE = await createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl, orm.em);
+        const testDOGE = await createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl,orm.em, walletApiType);
         expect(testDOGE.chainType).to.eq(ChainId.testDOGE.sourceId);
-        const testXRP = await createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl, orm.em);
+        const testXRP = await createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl,orm.em,  null);
         expect(testXRP.chainType).to.eq(ChainId.testXRP.sourceId);
-        const btc = await createWalletClient(secrets, ChainId.BTC, walletBTCUrl, orm.em);
+        const btc = await createWalletClient(secrets, ChainId.BTC, walletBTCUrl, orm.em, walletApiType);
         expect(btc.chainType).to.eq(ChainId.BTC.sourceId);
-        const doge = await createWalletClient(secrets, ChainId.DOGE, walletDOGEUrl, orm.em);
+        const doge = await createWalletClient(secrets, ChainId.DOGE, walletDOGEUrl, orm.em, walletApiType);
         expect(doge.chainType).to.eq(ChainId.DOGE.sourceId);
-        const xrp = await createWalletClient(secrets, ChainId.XRP, walletXRPUrl, orm.em);
+        const xrp = await createWalletClient(secrets, ChainId.XRP, walletXRPUrl, orm.em, null);
         expect(xrp.chainType).to.eq(ChainId.XRP.sourceId);
         const invalidSourceId = ChainId.ALGO;
-        await expect(createWalletClient(secrets, invalidSourceId, "", orm.em))
+        await expect(createWalletClient(secrets, invalidSourceId, "", orm.em, null))
         .to.eventually.be.rejectedWith(`SourceId ${invalidSourceId} not supported.`)
         .and.be.an.instanceOf(Error);
     });
@@ -84,14 +85,14 @@ describe("Bot config tests", () => {
 
     it("Should create block chain wallet helper", async () => {
         const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
-        const btc = await createBlockchainWalletHelper(secrets, ChainId.testBTC, botConfig.orm.em, walletTestBTCUrl);
+        const btc = await createBlockchainWalletHelper(secrets, ChainId.testBTC, botConfig.orm.em, walletTestBTCUrl, walletApiType);
         expect(btc.walletClient.chainType).to.eq(ChainId.testBTC.sourceId);
-        const doge = await createBlockchainWalletHelper(secrets, ChainId.testDOGE, botConfig.orm.em, walletTestDOGEUrl);
+        const doge = await createBlockchainWalletHelper(secrets, ChainId.testDOGE, botConfig.orm.em, walletTestDOGEUrl, walletApiType);
         expect(doge.walletClient.chainType).to.eq(ChainId.testDOGE.sourceId);
-        const xrp = await createBlockchainWalletHelper(secrets, ChainId.testXRP, botConfig.orm.em, walletTestXRPUrl);
+        const xrp = await createBlockchainWalletHelper(secrets, ChainId.testXRP, botConfig.orm.em, walletTestXRPUrl, null);
         expect(xrp.walletClient.chainType).to.eq(ChainId.testXRP.sourceId);
         const invalidSourceId = ChainId.ALGO;
-        await expect(createBlockchainWalletHelper(secrets, invalidSourceId, botConfig.orm.em, ""))
+        await expect(createBlockchainWalletHelper(secrets, invalidSourceId, botConfig.orm.em, "", null))
         .to.eventually.be.rejectedWith(`SourceId ${invalidSourceId.chainName} not supported.`)
         .and.be.an.instanceOf(Error);
     });
