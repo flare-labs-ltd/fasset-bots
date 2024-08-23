@@ -335,7 +335,7 @@ export class AgentBot {
      */
     async startThread(rootEm: EM, name: string, loop: boolean, method: (em: EM) => Promise<void>) {
         await loggerAsyncStorage.run(name, async () => {
-            logger.info("Thread started.")
+            logger.info(`Thread started ${name}.`);
             const threadEm = rootEm.fork();
             while (!this.stopRequested()) {
                 try {
@@ -348,7 +348,7 @@ export class AgentBot {
                 logger.info(`Finished handling, sleeping ${this.loopDelay / 1000}s`);
                 await sleepUntil(this.loopDelay, () => this.stopRequested());
             }
-            logger.info("Thread ended.")
+            logger.info(`Thread ended ${name}.`);
         })
     }
 
