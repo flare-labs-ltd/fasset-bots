@@ -143,7 +143,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should prepare and execute transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi.muln(30), undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
@@ -484,6 +484,50 @@ describe("Dogecoin wallet tests", () => {
         while (true) {
             await sleepMs(2000);
         }
+    });
+
+
+    it("should get tx desc", async () => {
+        const newVar = await getTransactionDescendants(wClient.rootEm, "56cdf8b427a959bcfb60b1b86a7c592ecab8630d079629b8af5b2f47ec128103", fundedAddress);
+        console.info();
+
+        const number = await getNumberOfAncestorsInMempool(wClient, "56cdf8b427a959bcfb60b1b86a7c592ecab8630d079629b8af5b2f47ec128103");
+    });
+
+
+    it.skip("Should replace transaction", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
+        const stub = sinon.stub(utxoUtils, "hasTooHighOrLowFee");
+        const feeIncrease = wClient.feeIncrease;
+
+        stub.returns(false);
+        wClient.feeIncrease *= 10000;
+
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, toBN("1000001"), toBN("100"), note, undefined);
+        expect(id).to.be.gt(0);
+        await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
+
+        stub.restore();
+        wClient.feeIncrease = feeIncrease;
+    });
+
+    it("Should replace a chain of transactions")
+
+    it.skip("blasdfas", async () => {
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
+        const initialTxIds = [];
+
+        for (let i = 0; i < 5; i++) {
+            initialTxIds.push(await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendInSatoshi.divn(3)));
+        }
+
+        // Wait for accounts to receive transactions
+        await Promise.all(initialTxIds.map(async txId => {
+            await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+        }));
     });
 });
 
