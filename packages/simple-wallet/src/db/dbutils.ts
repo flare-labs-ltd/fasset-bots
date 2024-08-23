@@ -9,9 +9,8 @@ import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { Transaction } from "bitcore-lib";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
-import Output = Transaction.Output;
 import { MonitoringStateEntity } from "../entity/monitoring_state";
-import { entropyToMnemonic } from "bip39";
+import Output = Transaction.Output;
 
 
 // transaction operations
@@ -26,6 +25,7 @@ export async function createInitialTransactionEntity(
     maxFee?: BN,
     executeUntilBlock?: number,
     executeUntilTimestamp?: number,
+    replacementFor?: TransactionEntity
 ): Promise<TransactionEntity> {
     const ent = rootEm.create(
         TransactionEntity,
@@ -40,6 +40,7 @@ export async function createInitialTransactionEntity(
             reference: note || null,
             amount: amountInDrops,
             fee: feeInDrops || null,
+            rbfReplacementFor: replacementFor || null,
         } as RequiredEntityData<TransactionEntity>,
     );
     await rootEm.flush();
@@ -57,7 +58,7 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { id } as FilterQuery<TransactionEntity>, {
         refresh: true,
-        populate: ["replaced_by"],
+        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputsAndOutputs"],
     });
 }
 
@@ -72,7 +73,7 @@ export async function updateTransactionEntityByHash(rootEm: EntityManager, txHas
 export async function fetchTransactionEntityByHash(rootEm: EntityManager, txHash: string): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, {
         refresh: true,
-        populate: ["replaced_by"],
+        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputsAndOutputs"],
     });
 }
 
@@ -80,7 +81,7 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
     return await rootEm.find(TransactionEntity, {
         status,
         chainType,
-    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by"], orderBy: { id: "ASC" } });
+    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputsAndOutputs"], orderBy: { id: "ASC" } });
 }
 
 export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number): Promise<void> {
@@ -126,7 +127,7 @@ export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: 
 }
 
 // utxo operations
-export async function createUTXOEntity(rootEm: EntityManager, source: string, txHash: string, position: number, value: BN, script: string, spentTxHash: string | null = null): Promise<void> {
+export async function createUTXOEntity(rootEm: EntityManager, source: string, txHash: string, position: number, value: BN, script: string, spentTxHash: string | null = null, confirmed: boolean): Promise<void> {
     rootEm.create(
         UTXOEntity,
         {
@@ -137,6 +138,7 @@ export async function createUTXOEntity(rootEm: EntityManager, source: string, tx
             value: value,
             script: script,
             spentTransactionHash: spentTxHash,
+            confirmed: confirmed,
         } as RequiredEntityData<UTXOEntity>,
     );
     await rootEm.flush();
@@ -157,11 +159,12 @@ export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, po
     });
 }
 
-export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string): Promise<UTXOEntity[]> {
-    return await rootEm.find(UTXOEntity, {
+export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, onlyConfirmed?: boolean): Promise<UTXOEntity[]> {
+    const res = await rootEm.find(UTXOEntity, {
         source: source,
         spentHeight: SpentHeightEnum.UNSPENT,
-    } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { value: "desc" } });
+    } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { value: "desc", confirmed: "desc" } });
+    return onlyConfirmed ? res.filter(t => t.confirmed) : res;
 }
 
 export async function fetchUTXOsByTxHash(rootEm: EntityManager, txHash: string): Promise<UTXOEntity[]> {
@@ -182,7 +185,7 @@ export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolU
         try {
             await fetchUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex);
         } catch (e) {
-            await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script);
+            await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }
 }
@@ -210,6 +213,20 @@ export async function correctUTXOInconsistencies(rootEm: EntityManager, address:
         }
 
         await em.persistAndFlush(utxoEnts);
+    });
+}
+
+export async function removeUTXOsAndAddReplacement(rootEm: EntityManager, txId: number, replacementTx: TransactionEntity): Promise<void> {
+    await rootEm.transactional(async (em) => {
+        const utxos = await em.find(UTXOEntity, { transaction: { id: txId } });
+        utxos.forEach(utxo => {
+            utxo.spentHeight = SpentHeightEnum.UNSPENT;
+            utxo.transaction = undefined;
+        });
+        await em.persistAndFlush(utxos);
+        const txEnt = await fetchTransactionEntityById(em, txId);
+        txEnt.status = TransactionStatus.TX_REPLACED;
+        txEnt.replaced_by = replacementTx;
     });
 }
 

@@ -1,4 +1,4 @@
-import { Collection, Entity, Filter, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -72,6 +72,9 @@ export class TransactionEntity {
 
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity;
+
+    @OneToOne(() => TransactionEntity, { nullable: true })
+    rbfReplacementFor?: TransactionEntity;
 
     @Property({ onCreate: () => new Date() })
     createdAt: Date = new Date();

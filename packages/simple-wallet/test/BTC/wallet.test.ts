@@ -144,7 +144,7 @@ describe("Bitcoin wallet tests", () => {
         const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
         rewired.orm = await initializeTestMikroORM();
         fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-        await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note", maxFeeInSatoshi)).to.eventually
+        await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note")).to.eventually
             .be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);
     });
 
@@ -185,7 +185,7 @@ describe("Bitcoin wallet tests", () => {
         void rewired.feeService?.startMonitoringFees();
 
         fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-        const [transaction,] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, null, null, "Note", maxFeeInSatoshi);
+        const [transaction,] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, null, null, "Note");
 
         expect(transaction.getFee()).to.be.gt(0);
     });

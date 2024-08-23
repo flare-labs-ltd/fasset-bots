@@ -41,6 +41,9 @@ export class UTXOEntity {
 
     @ManyToOne(() => TransactionEntity, {nullable: true})
     transaction?: TransactionEntity;
+
+    @Property()
+    confirmed: boolean = false;
 }
 
 export enum SpentHeightEnum {

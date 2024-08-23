@@ -22,12 +22,14 @@ import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
 import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
-import { createInitialTransactionEntity, getTransactionInfoById } from "../../src/db/dbutils";
+import {
+    getTransactionInfoById,
+} from "../../src/db/dbutils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon")
 import * as dbutils from "../../src/db/dbutils"
 import { DriverException } from "@mikro-orm/core";
-import { getCore, getNumberOfAncestorsInMempool, getTransactionDescendants } from "../../src/chain-clients/UTXOUtils";
+import { getCore } from "../../src/chain-clients/UTXOUtils";
 import { toBN } from "web3-utils";
 import * as utxoUtils from "../../src/chain-clients/UTXOUtils"
 
@@ -159,7 +161,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should not create transaction: amount = dust amount", async () => {
         const rewired = await setupRewiredWallet();
-        await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note", maxFeeInSatoshi)).to
+        await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note")).to
             .eventually.be.rejectedWith(`Will not prepare transaction for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
 
@@ -229,7 +231,7 @@ describe("Dogecoin wallet tests", () => {
 
         const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
-        const [transaction, ] = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note, txEnt.executeUntilBlock);
+        const [transaction, ] = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note);
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
         txEnt.status = TransactionStatus.TX_PREPARED;
         await rewired.rootEm.flush();
@@ -244,7 +246,7 @@ describe("Dogecoin wallet tests", () => {
         const fee = feeInSatoshi;
         const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
-        const [transaction, ] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, executeUntilBlock);
+        const [transaction, ] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note);
         const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
 
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
@@ -486,6 +488,22 @@ describe("Dogecoin wallet tests", () => {
         }
     });
 
+
+    it("Should replace transaction", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
+        const stub = sinon.stub(utxoUtils, "hasTooHighOrLowFee");
+        stub.returns(false);
+
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, toBN("1000001"), toBN("100"), note, undefined);
+        expect(id).to.be.gt(0);
+
+        // Wait for TX to be written into db and then reset the logic for fees
+        await waitForTxToFinishWithStatus(50, 5000, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
+        stub.restore();
+
+        await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
+    });
 
 });
 
