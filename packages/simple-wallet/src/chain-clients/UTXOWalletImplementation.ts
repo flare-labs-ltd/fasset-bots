@@ -1,8 +1,7 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios from "axios";
 import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
 import {
-    excludeNullFields,
     getDefaultFeePerKB,
     getRandomInt,
     sleepMs,
@@ -10,11 +9,9 @@ import {
     unPrefix0x,
 } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
-import { BUFFER_PING_INTERVAL, ChainType, DEFAULT_RATE_LIMIT_OPTIONS, PING_INTERVAL } from "../utils/constants";
-import type {
-    BaseWalletConfig,
-    IWalletKeys,
-    SignedObject,
+import { BUFFER_PING_INTERVAL, ChainType, PING_INTERVAL } from "../utils/constants";
+import {
+    BaseWalletConfig, IWalletKeys, SignedObject,
     TransactionInfo,
     UTXO,
     UTXOFeeParams,
@@ -49,9 +46,6 @@ import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { FeeService } from "../fee-service/service";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
-import { IBlockchainAPI } from "../interfaces/IBlockchainAPI";
-import { BitcoreAPI } from "../blockchain-apis/BitcoreAPI";
-import { BlockbookAPI } from "../blockchain-apis/BlockbookAPI";
 import { errorMessage, isORMError } from "./utils";
 import {
     checkIfFeeTooHigh,
@@ -69,6 +63,7 @@ import {
 } from "./UTXOUtils";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
 import UnspentOutput = Transaction.UnspentOutput;
+import { BlockchainAPIWrapper } from "../blockchain-apis/BlockchainAPIWrapper";
 import { InvalidFeeError, LessThanDustAmountError, NotEnoughUTXOsError } from "../utils/errors";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
@@ -81,7 +76,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     executionBlockOffset: number;
     feeDecileIndex: number = 8; // 8-th decile
     feeService?: FeeService;
-    blockchainAPI: IBlockchainAPI;
+    blockchainAPI: BlockchainAPIWrapper;
     mempoolChainLengthLimit: number = 25;
 
     monitoring: boolean = false;
@@ -94,26 +89,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
         this.inTestnet = createConfig.inTestnet ?? false;
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: createConfig.url,
-            headers: excludeNullFields({
-                "Content-Type": "application/json",
-                "x-apikey": createConfig.apiTokenKey,
-            }),
-            auth:
-                createConfig.username && createConfig.password
-                    ? {
-                        username: createConfig.username,
-                        password: createConfig.password,
-                    }
-                    : undefined,
-            timeout: createConfig.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs,
-            validateStatus: function(status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
-        this.blockchainAPI = createConfig.api === "bitcore" ? new BitcoreAPI(createAxiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(createAxiosConfig, createConfig.rateLimitOptions, createConfig.em);
+        this.blockchainAPI = new BlockchainAPIWrapper(createConfig);
         const resubmit = stuckTransactionConstants(this.chainType);
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;

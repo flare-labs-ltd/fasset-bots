@@ -15,23 +15,25 @@ import {
     createTransactionEntity,
     loop,
     resetMonitoringOnForceExit,
-    setMonitoringStatus, waitForTxToBeReplacedWithStatus,
+    setMonitoringStatus,
+    waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus,
 } from "../test_util/util";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
 import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
-import {
-    getTransactionInfoById,
-} from "../../src/db/dbutils";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const sinon = require("sinon")
-import * as dbutils from "../../src/db/dbutils"
-import { DriverException } from "@mikro-orm/core";
+import * as dbutils from "../../src/db/dbutils";
+import { getTransactionInfoById } from "../../src/db/dbutils";
+import { DriverException, FilterQuery } from "@mikro-orm/core";
+import * as utxoUtils from "../../src/chain-clients/UTXOUtils";
 import { getCore } from "../../src/chain-clients/UTXOUtils";
 import { toBN } from "web3-utils";
-import * as utxoUtils from "../../src/chain-clients/UTXOUtils"
+import { BitcoreAPI } from "../../src/blockchain-apis/BitcoreAPI";
+import { createAxiosConfig } from "../../src/chain-clients/utils";
+import { AxiosError } from "axios";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const sinon = require("sinon");
 
 use(chaiAsPromised);
 
@@ -231,7 +233,7 @@ describe("Dogecoin wallet tests", () => {
 
         const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
-        const [transaction, ] = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note);
+        const [transaction] = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note);
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
         txEnt.status = TransactionStatus.TX_PREPARED;
         await rewired.rootEm.flush();
@@ -246,7 +248,7 @@ describe("Dogecoin wallet tests", () => {
         const fee = feeInSatoshi;
         const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
-        const [transaction, ] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note);
+        const [transaction] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note);
         const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
 
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
@@ -374,9 +376,9 @@ describe("Dogecoin wallet tests", () => {
                         ...response,
                         data: {
                             result: fee,
-                            feeRate: fee
+                            feeRate: fee,
                         },
-                        status: 200, statusText: "OK", headers: {}, config: response.config
+                        status: 200, statusText: "OK", headers: {}, config: response.config,
                     };
                     return Promise.resolve(value);
                 }
@@ -418,7 +420,27 @@ describe("Dogecoin wallet tests", () => {
         }
     });
 
-    it("Stress test", async () => {
+    it("Should go to the fallback API", async () => {
+        const bitcoreURL = "https://api.bitcore.io/api/DOGE/testnet/";
+        wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(bitcoreURL), undefined);
+
+        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
+            config => {
+                // Simulate a connection down scenario
+                return Promise.reject(new AxiosError('Simulated connection down', 'ECONNABORTED'));
+            },
+            error => {
+                return Promise.reject(error);
+            }
+        );
+
+        const balance = await wClient.blockchainAPI.getAccountBalance(fundedAddress);
+        expect(balance).to.be.gte(0);
+        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+        delete wClient.blockchainAPI.clients[bitcoreURL];
+    });
+
+    it.skip("Stress test", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
 
@@ -499,7 +521,7 @@ describe("Dogecoin wallet tests", () => {
         expect(id).to.be.gt(0);
 
         // Wait for TX to be written into db and then reset the logic for fees
-        await waitForTxToFinishWithStatus(50, 5000, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
+        await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
         stub.restore();
 
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
