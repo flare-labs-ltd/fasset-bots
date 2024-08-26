@@ -647,9 +647,7 @@ describe("Agent bot unit tests", () => {
             firstUnderlyingBlock: toBN(0),
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
-            paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
-            createdAt: new Date(),
-            updatedAt: new Date()
+            paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8"
         };
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
@@ -686,9 +684,7 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
-            txHash: transactionHash1,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            txHash: transactionHash1
         };
         await agentBot.redemption.requestPaymentProof(orm.em, redemption)
             .catch(e => console.error(e));
