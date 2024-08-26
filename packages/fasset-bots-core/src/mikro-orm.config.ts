@@ -12,14 +12,6 @@ const options: Options<AbstractSqlDriver> = {
     debug: false
 };
 
-export const simpleWalletOptions: Options<AbstractSqlDriver> = {// for user or cli
-    entities: [WalletAddressEntity, UTXOEntity, TransactionEntity, MonitoringStateEntity],
-    type: "sqlite",
-    dbName: "simple-wallet.db",
-    debug: false,
-    allowGlobalContext: true,
-};
-
 export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions, databaseAccount: DatabaseAccount | undefined, defaultOptions: Options<AbstractSqlDriver> = options): Promise<ORM> {
     const createOptions: CreateOrmOptions = { ...defaultOptions, ...databaseAccount, ...optionsOverride };
     return createOrm(createOptions);

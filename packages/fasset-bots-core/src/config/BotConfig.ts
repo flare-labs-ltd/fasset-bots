@@ -7,7 +7,7 @@ import { Secrets } from ".";
 import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
-import { overrideAndCreateOrm, simpleWalletOptions } from "../mikro-orm.config";
+import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../underlying-chain/ChainId";

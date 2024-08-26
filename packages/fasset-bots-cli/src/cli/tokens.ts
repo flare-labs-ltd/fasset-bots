@@ -3,9 +3,8 @@ import "source-map-support/register";
 
 import { BlockchainWalletHelper, ChainId, DBWalletKeys, VerificationPrivateApiClient } from "@flarelabs/fasset-bots-core";
 import {
-    BotConfigFile, BotFAssetInfo, ChainAccount, OrmConfigOptions, Secrets, createBlockchainWalletHelper, createBotConfig, createBotOrm, createNativeContext,
+    BotConfigFile, BotFAssetInfo, ChainAccount, Secrets, createBlockchainWalletHelper, createBotConfig, createBotOrm, createNativeContext,
     loadConfigFile, loadContracts, overrideAndCreateOrm,
-    simpleWalletOptions
 } from "@flarelabs/fasset-bots-core/config";
 import {
     CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, logger,
@@ -279,12 +278,4 @@ async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddre
     } else {
         throw new CommandLineError("Not enough funds in ${sourceAddress}.")
     }
-}
-
-async function createCliOrm() {
-    const overrideOptions: OrmConfigOptions = {
-        dbName: "simple-wallet-transfer.db",
-        type: "sqlite"
-    }
-    return await overrideAndCreateOrm(overrideOptions, undefined, simpleWalletOptions);
 }
