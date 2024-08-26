@@ -72,10 +72,10 @@ export class TransactionEntity {
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity;
 
-    @Property({ onCreate: () => new Date() })
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();
 
-    @Property({ onUpdate: () => new Date() })
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     updatedAt: Date = new Date();
 
     @OneToMany(() => TransactionOutputEntity, output => output.transaction)

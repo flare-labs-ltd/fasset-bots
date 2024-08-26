@@ -127,6 +127,12 @@ export class AgentEntity {
 
     @OneToMany(() => AgentUpdateSetting, updateSetting => updateSetting.agent)
     updateSettings = new Collection<AgentUpdateSetting>(this);
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
@@ -175,6 +181,12 @@ export class AgentMinting {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 // For agent, redemption needs to be tracked, so that agent pays it, obtains proof of payment and confirms it.
@@ -235,6 +247,12 @@ export class AgentRedemption {
 
     @Property({ nullable: true })
     finalState?: AgentRedemptionFinalState;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 @Entity()
@@ -267,6 +285,12 @@ export class Event {
         this.handled = handled;
         this.agent = agent;
     }
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 
@@ -301,6 +325,12 @@ export class AgentUnderlyingPayment {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 @Entity()
@@ -319,4 +349,10 @@ export class AgentUpdateSetting {
 
     @Property({ type: BNType })
     validAt!: BN;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
