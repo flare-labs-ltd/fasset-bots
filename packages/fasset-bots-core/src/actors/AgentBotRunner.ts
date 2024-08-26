@@ -139,6 +139,10 @@ export class AgentBotRunner {
     async addNewAgentBots() {
         const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
+            const runningAgentBot = this.runningAgentBots.get(agentEntity.vaultAddress);
+            if (runningAgentBot) {
+                continue;
+            }
             // create new bot
             try {
                 const agentBot = await this.newAgentBot(agentEntity);

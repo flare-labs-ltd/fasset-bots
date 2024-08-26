@@ -10,7 +10,7 @@ import { AttestationHelperError, attestationProved } from "../underlying-chain/A
 import { ITransaction, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { EventArgs } from "../utils/events/common";
-import { BN_ZERO, MAX_BIPS, assertNotNull, messageForExpectedError, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, assertNotNull, errorIncluded, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -140,6 +140,14 @@ export class AgentBotMinting {
         } catch (error) {
             console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
+            if (errorIncluded(error, ["invalid crt id"])) {
+                const minting = await this.findMinting(rootEm, { id });
+                await this.updateMinting(rootEm, minting, {
+                    state: AgentMintingState.DONE,
+                });
+                logger.error(`Agent ${this.agent.vaultAddress} closed minting ${id} due to "invalid crt id"`);
+                console.error(`Agent ${this.agent.vaultAddress} closed minting ${id} due to "invalid crt id"`);
+            }
         }
     }
 

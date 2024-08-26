@@ -46,6 +46,9 @@ test/e2e/actors/tmp.ts
 tsconfig.tsbuildinfo
 tmp.*
 
+# run-config
+packages/fasset-bots-core/run-config/coston-bot-demo.json
+
 # config file with various keys and addresses
 secrets.json
 
