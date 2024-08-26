@@ -195,6 +195,7 @@ export class InfoBotCommands {
             ["Collateral", 12, "l"],
             ["Minted lots", 12, "r"],
             ["Free lots", 12, "r"],
+            ["Minting fee", 12, "r"],
             ["Public", 6, "l"],
             ["Status", 16, "l"],
         ]);
@@ -223,8 +224,9 @@ export class InfoBotCommands {
             const freeLots = Number(info.freeCollateralLots);
             const available = info.publiclyAvailable ? "YES" : "no";
             const status = AgentStatus[Number(info.status)];
+            const mintedFee = Number(info.feeBIPS) / 100;
             printer.printLine(vaultAddr, ownerName.slice(0, 20), info.ownerManagementAddress,
-                collateral.slice(0, 12), mintedLots.toFixed(2), freeLots.toFixed(0), available, status);
+                collateral.slice(0, 12), mintedLots.toFixed(2), freeLots.toFixed(0), mintedFee.toFixed(2), available, status);
             ++countAll;
             totalMinted += mintedLots;
             if (info.publiclyAvailable && status === "NORMAL") {
