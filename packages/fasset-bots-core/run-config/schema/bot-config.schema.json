@@ -122,6 +122,13 @@
                 "tokenSymbol": {
                     "type": "string"
                 },
+                "walletApiType": {
+                    "enum": [
+                        "bitcore",
+                        "blockbook"
+                    ],
+                    "type": "string"
+                },
                 "walletUrl": {
                     "type": "string"
                 }

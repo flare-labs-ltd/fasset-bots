@@ -18,7 +18,7 @@ import { validateAddress } from "../utils/validation";
 
 const ERC20 = artifacts.require("IERC20Metadata");
 
-const program = programWithCommonOptions("user", "all_fassets");
+const program = programWithCommonOptions("agent", "all_fassets");
 
 program.name("tokens").description("Command line token balance and transfer");
 
@@ -57,10 +57,13 @@ program
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
             await context.fAsset.transfer(addressTo, amountNat, { from: accountFrom.address });
         } else if (token.type === "underlying") {
-            const orm = await createCliOrm();
+            const orm = await createBotOrm("user", config.ormOptions, secrets.data.database);
+            if (!orm) {
+                throw new CommandLineError(`Undfined orm for underlying payment`);
+            }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.walletApiType ?? null);
             await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
@@ -83,7 +86,8 @@ program
                 process.on("SIGHUP", () => {
                     stopBot().then().catch(logger.error);
                 });
-                await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                const txHash = await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                console.info(`Payment transaction ${txHash}. Check transaction status in database or explorer.`);
             } finally {}
         }
     });
@@ -120,10 +124,13 @@ program
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));
         } else if (token.type === "underlying") {
-            const orm = await createCliOrm();
+            const orm = await createBotOrm("user", config.ormOptions, secrets.data.database);
+            if (!orm) {
+                throw new CommandLineError(`Undfined orm for underlying payment`);
+            }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl));
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.walletApiType ?? null);
             const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));

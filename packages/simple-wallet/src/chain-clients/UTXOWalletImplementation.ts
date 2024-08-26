@@ -53,7 +53,6 @@ import { IBlockchainAPI } from "../interfaces/IBlockchainAPI";
 import { BitcoreAPI } from "../blockchain-apis/BitcoreAPI";
 import { BlockbookAPI } from "../blockchain-apis/BlockbookAPI";
 import { errorMessage, isORMError } from "./utils";
-import { InvalidFeeError, LessThanDustAmountError, NotEnoughUTXOsError } from "../@types/errors";
 import {
     checkIfFeeTooHigh,
     checkIfShouldStillSubmit,
@@ -70,6 +69,7 @@ import {
 } from "./UTXOUtils";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
 import UnspentOutput = Transaction.UnspentOutput;
+import { InvalidFeeError, LessThanDustAmountError, NotEnoughUTXOsError } from "../utils/errors";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;

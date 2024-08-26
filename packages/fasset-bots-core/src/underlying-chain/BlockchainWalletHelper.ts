@@ -82,7 +82,10 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     // background task (monitoring in simple-wallet) should be running
     async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number): Promise<string> {
         try {
-            void this.startMonitoringTransactionProgress();
+            void this.startMonitoringTransactionProgress().catch((error) => {
+                logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+            });
             let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock);
             logger.info(`Transactions txDbId ${id} was sent: ${sourceAddress}, ${targetAddress}, ${amount.toString()}, ${reference}, ${formatArgs(options)} and ${executeUntilBlock}`);
             let info = await this.checkTransactionStatus(id);
@@ -119,9 +122,10 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     private async ensureWalletMonitoringRunning() {
         const isMonitoring = await this.isMonitoring();
         if (!isMonitoring) {
-            void this.startMonitoringTransactionProgress();
+            void this.startMonitoringTransactionProgress().catch((error) => {
+                logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+            });
         }
     }
-
-
 }

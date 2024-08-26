@@ -14,7 +14,7 @@ import { ChainId } from "../underlying-chain/ChainId";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { IBlockChainWallet, WalletApiType } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { Currency, RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull, toBNExp } from "../utils";
@@ -126,12 +126,9 @@ export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOp
         await AgentBotDbUpgrades.performUpgrades(orm);
         return orm;
     } else if (type === "user") {
-        const overrideOptions: OrmConfigOptions = {
-            type: "sqlite",
-            dbName: "simple-wallet-user.db",
-            allowGlobalContext: true,
-        }
-        return await overrideAndCreateOrm(overrideOptions, undefined, simpleWalletOptions);
+        assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
+        const orm = await overrideAndCreateOrm(ormOptions, databaseAccount);
+        return orm;
     }
 }
 
@@ -181,7 +178,7 @@ export async function createBotFAssetConfig(
     };
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, walletOptions);
+        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, fassetInfo.walletApiType ?? null, walletOptions);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
@@ -254,10 +251,11 @@ export async function createBlockchainWalletHelper(
     chainId: ChainId,
     em: EntityManager,
     walletUrl: string,
+    walletApiType: WalletApiType | null,
     options?: StuckTransaction
 ): Promise<BlockchainWalletHelper> {
     requireSupportedChainId(chainId);
-    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, options);
+    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, walletApiType, options);
     const walletKeys = DBWalletKeys.from(requireNotNull(em), secrets);
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }
