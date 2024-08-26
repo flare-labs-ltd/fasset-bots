@@ -5,22 +5,22 @@ import { BlockbookAPI } from "./BlockbookAPI";
 import { createAxiosConfig } from "../chain-clients/utils";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { logger } from "../utils/logger";
+import { ChainType } from "../utils/constants";
 
 export class BlockchainAPIWrapper implements IBlockchainAPI {
     client: AxiosInstance;
     clients: any = {};
 
-    constructor(createConfig: BaseWalletConfig) {
-        const axiosConfig = createAxiosConfig(createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey, createConfig.username, createConfig.password);
+    constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
+        const axiosConfig = createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey, createConfig.username, createConfig.password);
 
         this.clients[createConfig.url] = (createConfig.api === "bitcore" ? new BitcoreAPI(axiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em));;
         this.client = this.clients[createConfig.url].client;
 
         if (createConfig.fallbackAPIs) {
             for (const fallbackAPI of createConfig.fallbackAPIs) {
-                const axiosConfig = createAxiosConfig(fallbackAPI.url, createConfig.rateLimitOptions, fallbackAPI.apiTokenKey, fallbackAPI.username, fallbackAPI.password);
+                const axiosConfig = createAxiosConfig(chainType, fallbackAPI.url, createConfig.rateLimitOptions, fallbackAPI.apiTokenKey, fallbackAPI.username, fallbackAPI.password);
                 this.clients[fallbackAPI.url] = (fallbackAPI.type === "bitcore" ? new BitcoreAPI(axiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em));
-
             }
         }
     }
@@ -57,13 +57,13 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         return this.tryWithClients((client: IBlockchainAPI) => client.sendTransaction(tx));
     }
 
-    private async tryWithClients<T>(operation: (client: any) => Promise<T>): Promise<T> {
+    private async tryWithClients<T>(operation: (client: IBlockchainAPI) => Promise<T>): Promise<T> {
         for (const url of Object.keys(this.clients)) {
             try {
                 const result = await operation(this.clients[url]);
                 return result;
             } catch (error) {
-                logger.warn(`Client with ${url} failed: ${error}`);
+                logger.warn(`Client ${url} failed with: ${error}`);
             }
         }
         throw new Error("All clients failed to fetch data.");

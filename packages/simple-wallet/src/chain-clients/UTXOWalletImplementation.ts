@@ -89,7 +89,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
         this.inTestnet = createConfig.inTestnet ?? false;
-        this.blockchainAPI = new BlockchainAPIWrapper(createConfig);
+        this.blockchainAPI = new BlockchainAPIWrapper(createConfig, this.chainType);
         const resubmit = stuckTransactionConstants(this.chainType);
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;

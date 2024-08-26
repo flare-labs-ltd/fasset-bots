@@ -1,27 +1,30 @@
-import {WALLET} from "../../src";
-import {
-    ICreateWalletResponse,
-    RippleWalletConfig,
-} from "../../src/interfaces/IWalletTransaction";
+import { WALLET } from "../../src";
+import { ICreateWalletResponse, RippleWalletConfig } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
-import {expect, use} from "chai";
+import { expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
-import {XRP_DECIMAL_PLACES} from "../../src/utils/constants";
-import {toBN, toBNExp} from "../../src/utils/bnutils";
-import {fetchTransactionEntityById, updateTransactionEntity} from "../../src/db/dbutils";
-import {TransactionStatus} from "../../src/entity/transaction";
+import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
+import { toBN, toBNExp } from "../../src/utils/bnutils";
+import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import { TransactionStatus } from "../../src/entity/transaction";
 import {
     addConsoleTransportForTests,
-    createAndSignXRPTransactionWithStatus, loop, resetMonitoringOnForceExit, setMonitoringStatus,
+    createAndSignXRPTransactionWithStatus,
+    loop,
+    resetMonitoringOnForceExit,
+    setMonitoringStatus,
     setWalletStatusInDB,
     TEST_WALLET_XRP,
     waitForTxToBeReplacedWithStatus,
-    waitForTxToFinishWithStatus
+    waitForTxToFinishWithStatus,
 } from "../test_util/util";
-import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
-import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
+import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
+import axiosRateLimit from "../../src/axios-rate-limiter/axios-rate-limit";
+import axios, { AxiosError } from "axios";
+import { createAxiosConfig } from "../../src/chain-clients/utils";
 
 use(chaiAsPromised);
 
@@ -38,7 +41,7 @@ const XRPMccConnectionTestInitial = {
     rateLimitOptions: {
         timeoutMs: 60000,
     },
-    inTestnet: true
+    inTestnet: true,
 };
 let XRPMccConnectionTest: RippleWalletConfig;
 
@@ -58,6 +61,8 @@ const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
 let wClient: WALLET.XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
 let targetWallet: ICreateWalletResponse; //testnet, account: r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq
+let testOrm: ORM;
+let unprotectedDBWalletKeys: UnprotectedDBWalletKeys;
 
 describe("Xrp wallet tests", () => {
     let removeConsoleTransport: () => void;
@@ -65,9 +70,9 @@ describe("Xrp wallet tests", () => {
     before(async () => {
         removeConsoleTransport = addConsoleTransportForTests(logger);
 
-        const testOrm = await initializeTestMikroORM();
-        const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-        XRPMccConnectionTest = {...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys};
+        testOrm = await initializeTestMikroORM();
+        unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+        XRPMccConnectionTest = { ...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
         wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
 
@@ -135,7 +140,7 @@ describe("Xrp wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note);
         expect(id).to.be.gt(0);
 
-        const [tx,] = await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_FAILED, id);
+        const [tx] = await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_FAILED, id);
         expect(tx.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
@@ -165,14 +170,14 @@ describe("Xrp wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops);
         expect(id).to.be.gt(0);
 
-        const [tx,] = await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
+        const [tx] = await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
         expect(tx.maxFee!.lt(tx.fee!)).to.be.true;
     });
 
     it("Should receive fee", async () => {
-        const feeP = await wClient.getCurrentTransactionFee({isPayment: true});
+        const feeP = await wClient.getCurrentTransactionFee({ isPayment: true });
         expect(feeP).not.to.be.null;
-        const fee = await wClient.getCurrentTransactionFee({isPayment: false});
+        const fee = await wClient.getCurrentTransactionFee({ isPayment: false });
         expect(fee).not.to.be.null;
         expect(fee.gt(feeP)).to.be.true;
     });
@@ -225,7 +230,7 @@ describe("Xrp wallet tests", () => {
         const bn2 = await wClient.getAccountBalance("x");
         expect(bn2).to.not.be.null;
         expect(bn2.toNumber()).to.be.equal(0);
-    })
+    });
 
     it("Should successfully resubmit transaction with fee < minFee", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
@@ -233,7 +238,7 @@ describe("Xrp wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note);
         expect(id).to.be.gt(0);
 
-        const [txEnt,] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
+        const [txEnt] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
         expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
@@ -246,7 +251,7 @@ describe("Xrp wallet tests", () => {
         expect(txInfo.status).to.equal(TransactionStatus.TX_PENDING);
         [, txInfo] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, txEnt.id);
 
-        expect(txInfo!.replacedByDdId)
+        expect(txInfo!.replacedByDdId);
         expect(txInfo!.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
@@ -275,7 +280,7 @@ describe("Xrp wallet tests", () => {
         expect(txInfo.status).to.equal(TransactionStatus.TX_SUBMISSION_FAILED);
 
         [, txInfo] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, txEnt.id);
-        expect(txInfo.replacedByDdId)
+        expect(txInfo.replacedByDdId);
         expect(txInfo.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
@@ -316,7 +321,7 @@ describe("Xrp wallet tests", () => {
         await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, true);
 
         await expect(
-            wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops)
+            wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops),
         ).to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedWallet.address} is deleting`);
 
         await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, false);
@@ -336,11 +341,11 @@ describe("Xrp wallet tests", () => {
 
     it("Stress test", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic)
+        targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
 
         const N_TRANSACTIONS = 10;
 
-        const ids = []
+        const ids = [];
         for (let i = 0; i < N_TRANSACTIONS; i++) {
             let id;
             if (Math.random() > 0.5) {
@@ -354,6 +359,30 @@ describe("Xrp wallet tests", () => {
         for (const id of ids) {
             await waitForTxToFinishWithStatus(2, 600, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
+    });
+
+    it("Should successfully use fallback APIs", async () => {
+        const url = "https://xrpl-testnet-api.flare.network/";
+
+        wClient.blockchainAPI.clients[url] = axiosRateLimit(
+            axios.create(createAxiosConfig(ChainType.testXRP, url)), {
+                ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
+            });
+
+        const interceptorId = wClient.blockchainAPI.clients[process.env.XRP_URL ?? ""].interceptors.request.use(
+            (config: any) => {
+                return Promise.reject(new AxiosError("Simulated connection down", "ECONNABORTED"));
+            },
+            (error: any) => {
+                return Promise.reject(error);
+            },
+        );
+
+        const balance = await wClient.getAccountBalance(fundedAddress);
+        expect(balance.toNumber()).to.be.gt(0);
+
+        wClient.blockchainAPI.clients[process.env.XRP_URL ?? ""].interceptors.request.eject(interceptorId);
+        delete wClient.blockchainAPI.clients[url];
     });
 
 });

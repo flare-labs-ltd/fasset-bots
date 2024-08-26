@@ -92,7 +92,7 @@ export interface StuckTransaction {
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
-export type BlockchainAPIName = "bitcore" | "blockbook";
+export type BlockchainAPIName = "bitcore" | "blockbook" | "xrp";
 export interface BlockchainAPI {
    type: BlockchainAPIName;
    url: string;

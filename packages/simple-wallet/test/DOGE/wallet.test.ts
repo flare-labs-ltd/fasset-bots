@@ -25,7 +25,7 @@ import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
 import * as dbutils from "../../src/db/dbutils";
 import { getTransactionInfoById } from "../../src/db/dbutils";
-import { DriverException, FilterQuery } from "@mikro-orm/core";
+import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/UTXOUtils";
 import { getCore } from "../../src/chain-clients/UTXOUtils";
 import { toBN } from "web3-utils";
@@ -422,7 +422,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should go to the fallback API", async () => {
         const bitcoreURL = "https://api.bitcore.io/api/DOGE/testnet/";
-        wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(bitcoreURL), undefined);
+        wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(ChainType.testDOGE, bitcoreURL), undefined);
 
         const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
             config => {
