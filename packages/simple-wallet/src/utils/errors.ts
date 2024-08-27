@@ -16,3 +16,9 @@ export class NotEnoughUTXOsError extends Error {
         super(message);
     }
 }
+
+export class LessThanDustAmountError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}

@@ -1,8 +1,9 @@
-import {Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property} from "@mikro-orm/core";
+import { Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
 import {TransactionOutputEntity} from "./transactionOutput";
+import { UTXOEntity } from "./utxo";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
@@ -72,17 +73,20 @@ export class TransactionEntity {
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity;
 
+    @OneToOne(() => TransactionEntity, { nullable: true })
+    rbfReplacementFor?: TransactionEntity;
+
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
-    createdAt: Date = new Date();
+    creaedAt: Date = new Date();
 
     @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     updatedAt: Date = new Date();
 
     @OneToMany(() => TransactionOutputEntity, output => output.transaction)
-    outputs = new Collection<TransactionOutputEntity>(this);
+    inputsAndOutputs = new Collection<TransactionOutputEntity>(this);
 
-    @OneToMany(() => TransactionOutputEntity, input => input.transaction)
-    inputs = new Collection<TransactionOutputEntity>(this);
+    @OneToMany(() => UTXOEntity, utxo => utxo.transaction)
+    utxos = new Collection<UTXOEntity>(this);
 }
 
 export enum TransactionStatus {
