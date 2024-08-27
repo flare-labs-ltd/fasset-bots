@@ -23,7 +23,6 @@
         "tokens": "node packages/fasset-bots-cli/dist/src/cli/tokens.js",
         "test-governance": "node packages/fasset-bots-cli/dist/src/cli/test-governance.js",
         "fake-price-reader": "node packages/fasset-bots-cli/dist/src/cli/fake-price-reader.js",
-        "db-utils": "node packages/fasset-bots-cli/dist/src/cli/db-utils.js",
         "---------BOTS-RUN---SCRIPTS": "",
         "run-agent": "node packages/fasset-bots-cli/dist/src/run/run-agent",
         "run-challenger": "node packages/fasset-bots-cli/dist/src/run/run-challenger",

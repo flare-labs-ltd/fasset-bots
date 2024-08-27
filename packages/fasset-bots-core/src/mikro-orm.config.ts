@@ -10,10 +10,6 @@ const options: Options<AbstractSqlDriver> = {
     entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity, MonitoringStateEntity],
     dbName: "fasset-bots.db",
     debug: false,
-    migrations: {
-        path: "./packages/fasset-bots-core/dist/src/migrations/",
-        pathTs: "./packages/fasset-bots-core/src/migrations/"
-    }
 };
 
 export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions, databaseAccount: DatabaseAccount | undefined, defaultOptions: Options<AbstractSqlDriver> = options): Promise<ORM> {

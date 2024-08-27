@@ -83,10 +83,8 @@
     "dependencies": {
         "@flarelabs/simple-wallet": "workspace:*",
         "@flarenetwork/state-connector-protocol": "1.0.0-beta.4",
-        "@mikro-orm/cli": "5.8.4",
         "@mikro-orm/core": "5.8.4",
         "@mikro-orm/knex": "5.8.4",
-        "@mikro-orm/migrations": "5.8.4",
         "@mikro-orm/mysql": "5.8.4",
         "@mikro-orm/postgresql": "5.8.4",
         "@mikro-orm/sqlite": "5.8.4",
