@@ -527,6 +527,25 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
     });
 
+    it("Should replace chain of transactions", async () => {
+        const addressWithMnemonic = TEST_DOGE_ACCOUNTS[90];
+
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const testWallet = wClient.createWalletFromMnemonic(addressWithMnemonic.mnemonic);
+
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, testWallet.address, amountToSendInSatoshi.muln(1.5));
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+
+        const stub = sinon.stub(utxoUtils, "hasTooHighOrLowFee");
+        const id2 = await wClient.createPaymentTransaction(testWallet.address, testWallet.privateKey, fundedWallet.address, toBN("1000001"), toBN("50000"), note);
+        const id3 = await wClient.createPaymentTransaction(testWallet.address, testWallet.privateKey, fundedWallet.address, toBN("1000002"), toBN("51000"), note);
+        await waitForTxToFinishWithStatus(0.5, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_SUCCESS], id3);
+        stub.restore();
+
+        await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id2);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id3);
+    });
+
 });
 
 async function setupRewiredWallet() {
