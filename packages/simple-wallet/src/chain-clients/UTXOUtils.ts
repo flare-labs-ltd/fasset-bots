@@ -157,7 +157,7 @@ export async function getTransactionEntityByHash(client: UTXOWalletImplementatio
             } as RequiredEntityData<TransactionEntity>);
 
             const inputs =
-                tr.data.vin.map((t: any) => createTransactionOutputEntity(txEnt!, t.txid, t.value, t.vout, t.hex, true));
+                tr.data.vin.map((t: any) => createTransactionOutputEntity(txEnt!, t.txid, t.value, t.vout, t.hex ?? "", true));
             txEnt.inputsAndOutputs.add(inputs);
 
             await client.rootEm.persistAndFlush(txEnt);
