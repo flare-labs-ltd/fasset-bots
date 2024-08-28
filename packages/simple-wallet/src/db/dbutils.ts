@@ -91,28 +91,11 @@ export async function createTransactionOutputEntities(rootEm: EntityManager, tra
 }
 
 function transformOutputToTxOutputEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
-    const entity = new TransactionOutputEntity();
-    entity.transaction = transaction;
-    entity.transactionHash = transaction.transactionHash!;
-    entity.vout = vout;
-    entity.amount = toBN(output.satoshis);
-    entity.script = JSON.parse(JSON.stringify(output)).script;
-    return entity;
+    return createTransactionOutputEntity(transaction, transaction.transactionHash ?? "", toBN(output.satoshis), vout, JSON.parse(JSON.stringify(output)).script ?? "");
 }
 
-export function transformUTXOEntToTxOutputEntity(utxo: UTXOEntity, transaction: TransactionEntity | null, isInput?: boolean): TransactionOutputEntity {
-    const entity = new TransactionOutputEntity();
-
-    if(transaction) {
-        entity.transaction = transaction;
-    }
-
-    entity.transactionHash = utxo.mintTransactionHash;
-    entity.vout = utxo.position;
-    entity.amount = utxo.value;
-    entity.script = utxo.script!;
-    entity.isInput = isInput ?? false;
-    return entity;
+export function transformUTXOEntToTxOutputEntity(utxo: UTXOEntity, transaction: TransactionEntity, isInput?: boolean): TransactionOutputEntity {
+    return createTransactionOutputEntity(transaction, utxo.mintTransactionHash, utxo.value, utxo.position, utxo.script ?? "", isInput ?? false);
 }
 
 export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number | undefined, script: string, isInput?: boolean): TransactionOutputEntity {

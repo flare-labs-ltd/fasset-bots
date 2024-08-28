@@ -92,9 +92,9 @@ export interface StuckTransaction {
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
-export type BlockchainAPIName = "bitcore" | "blockbook" | "xrp";
-export interface BlockchainAPI {
-   type: BlockchainAPIName;
+export type WalletApiType = "bitcore" | "blockbook";
+export interface WalletApi {
+   type: WalletApiType;
    url: string;
    apiTokenKey?: string;
    username?: string; // probably never used
@@ -103,7 +103,7 @@ export interface BlockchainAPI {
 
 export interface BaseWalletConfig {
    url: string;
-   api?: BlockchainAPIName;
+   api?: WalletApiType;
    inTestnet?: boolean;
    apiTokenKey?: string;
    username?: string; // probably never used
@@ -116,7 +116,7 @@ export interface BaseWalletConfig {
    relayFeePerB?: number,
    em: EntityManager;
    walletKeys: IWalletKeys;
-   fallbackAPIs?: BlockchainAPI[]
+   fallbackAPIs?: WalletApi[]
 }
 
 export type RippleWalletConfig = BaseWalletConfig;
