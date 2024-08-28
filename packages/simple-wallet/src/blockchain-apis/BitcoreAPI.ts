@@ -38,7 +38,16 @@ export class BitcoreAPI implements IBlockchainAPI {
         const res = await this.client.get(`/address/${address}?unspent=true&limit=0&excludeconflicting=true`);
         // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
         // utxo.mintHeight > -3 => excludeConflicting; utxo.spentHeight == -2 -> unspent
-        return (res.data as any[]).filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2).sort((a, b) => a.value - b.value);
+        return (res.data as any[])
+            .filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2)
+            .sort((a, b) => a.value - b.value)
+            .map(utxo => ({
+                mintTxid: utxo.mintTxid,
+                mintIndex: utxo.mintIndex,
+                value: utxo.value,
+                confirmed: utxo.mintHeight > 0,
+                script: utxo.script,
+            }));
     }
 
     async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
