@@ -26,6 +26,7 @@ import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
+import { errorMessage } from "./utils";
 
 /*
  * FEE CALCULATION
@@ -72,7 +73,7 @@ export async function getCurrentFeeRate(client: UTXOWalletImplementation, nextBl
         const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
         return rateInSatoshies.muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE);
     } catch (e) {
-        logger.error(`Cannot obtain fee rate ${e}`);
+        logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
         return getDefaultFeePerKB(client.chainType);
     }
 }
@@ -102,7 +103,7 @@ export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): 
         await client.blockchainAPI.getCurrentBlockHeight();
         return true;
     } catch (error) {
-        logger.error(`Cannot get response from server ${error}`);
+        logger.error(`Cannot get response from server ${errorMessage(error)}`);
         return false;
     }
 }
@@ -139,7 +140,6 @@ export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation,
     return true;
 }
 
-// I think we need this only for the start, when we don't know the
 export async function getTransactionEntityByHash(client: UTXOWalletImplementation, txHash: string) {
 
     let txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputsAndOutputs"] });
@@ -157,7 +157,7 @@ export async function getTransactionEntityByHash(client: UTXOWalletImplementatio
             } as RequiredEntityData<TransactionEntity>);
 
             const inputs =
-                tr.data.vin.map((t: any) => createTransactionOutputEntity(txEnt!, t.txid, t.value, t.vout, t.hex ?? "", true));
+                tr.data.vin.map((t: any) => createTransactionOutputEntity(txEnt!, t.txid, t.value, t.vout ?? 0, t.hex ?? "", true));
             txEnt.inputsAndOutputs.add(inputs);
 
             await client.rootEm.persistAndFlush(txEnt);
@@ -172,7 +172,7 @@ export async function getTransactionEntityByHash(client: UTXOWalletImplementatio
 
 export async function getNumberOfAncestorsInMempool(client: UTXOWalletImplementation, txHash: string): Promise<number> {
     const txEnt = await getTransactionEntityByHash(client, txHash);
-    if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS) {
+    if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS || txEnt.status === TransactionStatus.TX_FAILED || TransactionStatus.TX_SUBMISSION_FAILED) {
         return 0;
     } else {
         let numAncestorsInMempool = 0;

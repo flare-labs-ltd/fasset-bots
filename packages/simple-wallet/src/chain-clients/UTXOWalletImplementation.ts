@@ -378,7 +378,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await failTransaction(this.rootEm, txEnt.id, `Fee restriction (fee: ${transaction.getFee()}, maxFee: ${txEnt.maxFee?.toString()})`);
             } else {
                 // save tx in db
-                const inputs = await Promise.all(dbUTXOs.map(async utxo => transformUTXOEntToTxOutputEntity(utxo, await getTransactionEntityByHash(this, utxo.mintTransactionHash), true)));
+                const inputs: TransactionOutputEntity[] = [];
+                for (const utxo of dbUTXOs) {
+                    const tx = await getTransactionEntityByHash(this, utxo.mintTransactionHash);
+                    if (tx) {
+                        inputs.push(transformUTXOEntToTxOutputEntity(utxo, tx, true));
+                    } else {
+                        logger.warn(`Transaction with hash ${utxo.mintTransactionHash} could not be found on api`);
+                    }
+                }
                 await this.rootEm.persistAndFlush(inputs);
                 await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => {
                     txEntToUpdate.raw = Buffer.from(JSON.stringify(transaction));
@@ -822,7 +830,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     private async calculateTotalFeeOfTxAndDescendants(em: EntityManager, oldTx: TransactionEntity) {
         const descendants = await getTransactionDescendants(em, oldTx.transactionHash!, oldTx.source);
-        return [oldTx].concat(descendants).reduce((acc: BN, txEnt) => acc.add(txEnt.fee!), new BN(0));
+        return [oldTx].concat(descendants).reduce((acc: BN, txEnt) => acc.add(txEnt.fee ?? new BN(0)), new BN(0));
     }
 
     /**

@@ -61,7 +61,7 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getUTXOScript(address: string, txHash: string, vout: number) {
         const res = await this.client.get(`/tx-specific/${txHash}`);
-        return res.data.vout[vout].scriptPubKey.hex;
+        return res.data.vout[vout]?.scriptPubKey?.hex ?? "";
     }
 
     async sendTransaction(tx: string): Promise<axios.AxiosResponse> {
