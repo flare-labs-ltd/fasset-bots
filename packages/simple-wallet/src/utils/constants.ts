@@ -121,7 +121,7 @@ export const UTXO_INPUT_SIZE = 134; //148?
 export const UTXO_OUTPUT_SIZE = 34;
 export const UTXO_OVERHEAD_SIZE = 10;
 
-export const UTXO_INPUT_SIZE_SEGWIT = 68;
+export const UTXO_INPUT_SIZE_SEGWIT = 68.5;
 export const UTXO_OUTPUT_SIZE_SEGWIT = 31;
 export const UTXO_OVERHEAD_SIZE_SEGWIT = 10.5;
 
