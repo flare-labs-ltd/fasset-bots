@@ -259,7 +259,7 @@ export class AgentBotRedemption {
         try {
             // TODO: what if there are too little funds on underlying address to pay for fee?
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
-                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp).toNumber());
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,
