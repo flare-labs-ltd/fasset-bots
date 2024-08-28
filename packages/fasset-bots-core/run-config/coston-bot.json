@@ -32,6 +32,15 @@
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FakePriceReader"
+        },
+        "FTestBTC": {
+            "chainId": "testBTC",
+            "tokenName": "Test BTC",
+            "tokenSymbol": "testBTC",
+            "tokenDecimals": 8,
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
+            "walletUrl": "https://testbtc.indexers.flare.space/api/v2",
+            "walletApiType": "blockbook"
         }
     },
     "agentBotSettings": {
@@ -50,6 +59,10 @@
             "FSimCoinX": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "0.01"
+            },
+            "FTestBTC": {
+                "recommendedOwnerBalance": "0.001",
+                "minimumFreeUnderlyingBalance": "0.0004"
             }
         }
     },
