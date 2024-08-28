@@ -61,8 +61,8 @@
                 "minimumFreeUnderlyingBalance": "0.01"
             },
             "FTestBTC": {
-                "recommendedOwnerBalance": "0.001",
-                "minimumFreeUnderlyingBalance": "0.0004"
+                "recommendedOwnerBalance": "0.1",
+                "minimumFreeUnderlyingBalance": "0.01"
             }
         }
     },
