@@ -92,7 +92,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
             let info = await this.checkTransactionStatus(id);
             while (!info.transactionHash ||
                 (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
-            {
+            {//TODO - FIX?? if failed and no tx_hash - infinity loop
                 await sleep(2000); //sleep for 2 seconds
                 info = await this.checkTransactionStatus(id);
                 logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
