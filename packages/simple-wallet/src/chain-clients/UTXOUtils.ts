@@ -70,6 +70,9 @@ export function hasTooHighOrLowFee(chainType: ChainType, fee: BN, estFee: BN) {
 export async function getCurrentFeeRate(client: UTXOWalletImplementation, nextBlocks: number = 2): Promise<BN> {
     try {
         const fee = await client.blockchainAPI.getCurrentFeeRate(nextBlocks);
+        if (fee.toString() === "-1") {
+            throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
+        }
         const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
         return rateInSatoshies.muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE);
     } catch (e) {
@@ -133,8 +136,15 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
 
 export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation, executeUntilBlock?: number, executeUntilTimestamp?: number): Promise<boolean> {
     const currentBlockHeight = await client.blockchainAPI.getCurrentBlockHeight();
-    if (executeUntilBlock && currentBlockHeight - executeUntilBlock > client.executionBlockOffset &&
-        executeUntilTimestamp && new Date().getTime() - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)) { //TODO-urska (is this good estimate?)
+    const blockRestriction = !!executeUntilBlock && (currentBlockHeight.number - executeUntilBlock > client.executionBlockOffset);
+    // It probably should be following, but due to inconsistant blocktime on btc, we use currentTime
+    //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)
+    const timeRestriction = !!executeUntilTimestamp && (new Date().getTime() - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)); //TODO-urska (is this good estimate
+    if (executeUntilBlock && !executeUntilTimestamp && blockRestriction) {
+        return false;
+    } else if (!executeUntilBlock && executeUntilTimestamp && timeRestriction) {
+        return false;
+    } else if (blockRestriction && timeRestriction) {
         return false;
     }
     return true;

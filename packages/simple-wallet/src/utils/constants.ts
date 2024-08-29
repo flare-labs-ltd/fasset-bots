@@ -99,9 +99,9 @@ export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
 }
 
 // Approximate times between blocks, in milliseconds
-export const BTC_LEDGER_CLOSE_TIME_MS = 600000; // 10min
-export const DOGE_LEDGER_CLOSE_TIME_MS = 60000; // 60s
-export const XRP_LEDGER_CLOSE_TIME_MS = 4000; // 4s
+export const BTC_LEDGER_CLOSE_TIME_MS = 600_000; // 10min
+export const DOGE_LEDGER_CLOSE_TIME_MS = 60_000; // 60s
+export const XRP_LEDGER_CLOSE_TIME_MS = 4_000; // 4s
 
 // Number of decimal places
 export const BTC_DOGE_DEC_PLACES = 8;

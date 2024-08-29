@@ -266,7 +266,7 @@ export class AgentBotRedemption {
                 state: AgentRedemptionState.PAID,
             });
             await this.notifier.sendRedemptionPaid(redemption.requestId);
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} initiated payment for redemption ${redemption.requestId}
                 with txDbId ${txDbId}; target underlying address ${redemption.paymentAddress}, payment reference
                 ${redemption.paymentReference}, amount ${paymentAmount}.`);
         } catch (error) {

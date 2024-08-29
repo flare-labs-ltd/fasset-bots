@@ -1,4 +1,4 @@
-import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
@@ -20,9 +20,14 @@ export class BitcoreAPI implements IBlockchainAPI {
         return res.data?.confirmed;
     }
 
-    async getCurrentBlockHeight(): Promise<number> {
-        const res = await this.client.get(`/`);
-        return res.data.blockbook.bestHeight;
+    async getCurrentBlockHeight(): Promise<BlockData> {
+        const res = await this.client.get(`/block/tip`);
+        const blockNumber = res.data.height;
+        const blockTimestamp = new Date(res.data.time).getTime();
+        return {
+            number: blockNumber,
+            timestamp: blockTimestamp
+        };
     }
 
     async getCurrentFeeRate(nextBlocks: number): Promise<number> {

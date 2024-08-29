@@ -391,7 +391,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendRedemptionPaid(requestId: BNish) {
-        await this.info(AgentNotificationKey.REDEMPTION_PAID, `Redemption ${requestId} was paid for ${this.address}.`);
+        await this.info(AgentNotificationKey.REDEMPTION_PAID, `Redemption payment ${requestId} was initiated for ${this.address}.`);
     }
 
     async sendRedemptionPaymentFailed(requestId: BNish) {

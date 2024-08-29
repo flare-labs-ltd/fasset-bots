@@ -15,7 +15,7 @@ export interface IBlockchainAPI {
 
     getCurrentFeeRate(nextBlocks: number): Promise<number>;
 
-    getCurrentBlockHeight(): Promise<number>;
+    getCurrentBlockHeight(): Promise<BlockData>;
 
     getTransaction(txHash: string | undefined): Promise<AxiosResponse>;
 }
@@ -31,3 +31,7 @@ export interface MempoolUTXO extends MempoolUTXOMWithoutScript {
     script: string,
 }
 
+export interface BlockData{
+    number: number,
+    timestamp: number
+}
