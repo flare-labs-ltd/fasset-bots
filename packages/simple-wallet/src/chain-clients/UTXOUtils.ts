@@ -131,6 +131,11 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
     return 2; // destination and change
 }
 
+// TODO: what's a good approximation for num of inputs
+export function getEstimatedNumberOfInputs(amountInSatoshi: BN | null, note?: string) {
+    return 3;
+}
+
 export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation, executeUntilBlock?: number, executeUntilTimestamp?: number): Promise<boolean> {
     const currentBlockHeight = await client.blockchainAPI.getCurrentBlockHeight();
     if (executeUntilBlock && currentBlockHeight - executeUntilBlock > client.executionBlockOffset &&

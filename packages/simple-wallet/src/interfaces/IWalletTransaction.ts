@@ -71,6 +71,7 @@ export interface UTXOFeeParams {
    source: string;
    destination: string;
    amount: BN | null;
+   note?: string;
 }
 
 export type FeeParams = XRPFeeParams | UTXOFeeParams;

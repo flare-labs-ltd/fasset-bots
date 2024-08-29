@@ -21,7 +21,7 @@ export class BitcoreAPI implements IBlockchainAPI {
     }
 
     async getCurrentBlockHeight(): Promise<number> {
-        const res = await this.client.get(`/`);
+        const res = await this.client.get(`/block/tip`);
         return res.data.blockbook.bestHeight;
     }
 

@@ -52,7 +52,7 @@ import {
     checkIfShouldStillSubmit,
     checkUTXONetworkStatus,
     getCore,
-    getDustAmount,
+    getDustAmount, getEstimatedNumberOfInputs,
     getEstimatedNumberOfOutputs,
     getEstimateFee,
     getFeePerKB,
@@ -139,8 +139,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @returns {BN} - current transaction/network fee in satoshis
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
-        const [tx] = await this.preparePaymentTransaction(params.source, params.destination, params.amount);
-        return toBN(tx.getFee());
+        try {
+            const [tx] = await this.preparePaymentTransaction(params.source, params.destination, params.amount);
+            return toBN(tx.getFee());
+        } catch (e) {
+            return getEstimateFee(this, getEstimatedNumberOfInputs(params.amount, params.note), getEstimatedNumberOfOutputs(params.amount, params.note))
+        }
     }
 
     /**
@@ -448,7 +452,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
 
         const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
-        if (currentBlockHeight - txEnt.submittedInBlock > this.enoughConfirmations) {
+        if (!txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") && !txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") && currentBlockHeight - txEnt.submittedInBlock > this.enoughConfirmations) {
             await this.tryToReplaceByFee(txEnt.id);
         }
     }
@@ -792,7 +796,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
                 await failTransaction(this.rootEm, txId, `waitForTransactionToAppearInMempool: Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
             }
-            await this.tryToReplaceByFee(txId);
+            if (!txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") && !txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION")) {
+                await this.tryToReplaceByFee(txId);
+            }
         }
     }
 
