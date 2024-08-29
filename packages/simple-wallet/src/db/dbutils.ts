@@ -36,7 +36,7 @@ export async function createInitialTransactionEntity(
             status: TransactionStatus.TX_CREATED,
             maxFee: maxFee || null,
             executeUntilBlock: executeUntilBlock || null,
-            executeUntilTimestamp: executeUntilTimestamp || null,
+            executeUntilTimestamp: executeUntilTimestamp ? new Date(executeUntilTimestamp * 1000) : null,
             reference: note || null,
             amount: amountInDrops,
             fee: feeInDrops || null,

@@ -166,7 +166,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         executeUntilBlock?: number,
         executeUntilTimestamp?: number,
     ): Promise<number> {
-        logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}`);
+        logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp}`);
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
@@ -350,10 +350,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
         const currentTimestamp = new Date().getTime();
         if (txEnt.executeUntilBlock && currentBlock >= txEnt.executeUntilBlock) {
-            await failTransaction(this.rootEm, txEnt.id, `Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
+            await failTransaction(this.rootEm, txEnt.id, `prepareAndSubmitCreatedTransaction: Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
             return;
         } else if (txEnt.executeUntilTimestamp && currentTimestamp >= txEnt.executeUntilTimestamp.getTime()) {
-            await failTransaction(this.rootEm, txEnt.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp.getTime()}`);
+            await failTransaction(this.rootEm, txEnt.id, `prepareAndSubmitCreatedTransaction: Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp.getTime()}`);
             return;
         } else if (!txEnt.executeUntilBlock) {
             await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
