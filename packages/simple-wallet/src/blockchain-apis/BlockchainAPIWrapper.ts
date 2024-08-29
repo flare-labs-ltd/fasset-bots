@@ -1,4 +1,4 @@
-import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import { BitcoreAPI } from "./BitcoreAPI";
 import { BlockbookAPI } from "./BlockbookAPI";
@@ -29,7 +29,7 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getAccountBalance(account), "getAccountBalance");
     }
 
-    async getCurrentBlockHeight(): Promise<number> {
+    async getCurrentBlockHeight(): Promise<BlockData> {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentBlockHeight(), "getCurrentBlockHeight");
     }
 
