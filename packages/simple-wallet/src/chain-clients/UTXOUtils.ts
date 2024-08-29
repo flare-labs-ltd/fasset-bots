@@ -133,7 +133,7 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
 
 export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation, executeUntilBlock?: number, executeUntilTimestamp?: number): Promise<boolean> {
     const currentBlockHeight = await client.blockchainAPI.getCurrentBlockHeight();
-    if (executeUntilBlock && currentBlockHeight - executeUntilBlock > client.executionBlockOffset ||
+    if (executeUntilBlock && currentBlockHeight - executeUntilBlock > client.executionBlockOffset &&
         executeUntilTimestamp && new Date().getTime() - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)) { //TODO-urska (is this good estimate?)
         return false;
     }

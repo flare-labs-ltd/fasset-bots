@@ -301,7 +301,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         await sleepMs(this.restartInDueNoResponse);
                         continue;
                     }
-
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
                     if (this.shouldStopMonitoring()) break;
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, this.checkPendingTransaction.bind(this));
@@ -349,11 +348,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     async prepareAndSubmitCreatedTransaction(txEnt: TransactionEntity): Promise<void> {
         const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
         const currentTimestamp = new Date().getTime();
-        if (txEnt.executeUntilBlock && currentBlock >= txEnt.executeUntilBlock) {
-            await failTransaction(this.rootEm, txEnt.id, `prepareAndSubmitCreatedTransaction: Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
-            return;
-        } else if (txEnt.executeUntilTimestamp && currentTimestamp >= txEnt.executeUntilTimestamp.getTime()) {
-            await failTransaction(this.rootEm, txEnt.id, `prepareAndSubmitCreatedTransaction: Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp.getTime()}`);
+       const shouldSubmit = await checkIfShouldStillSubmit(this, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.getTime());
+        if (!shouldSubmit) {
+            await failTransaction(
+                this.rootEm,
+                txEnt.id,
+                `prepareAndSubmitCreatedTransaction: Both conditions met: Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock} AND Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp?.getTime()}`);
             return;
         } else if (!txEnt.executeUntilBlock) {
             await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
@@ -596,12 +596,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const transaction = await fetchTransactionEntityById(this.rootEm, txId);
         const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
         const currentTimestamp = new Date().getTime();
-
-        if (transaction.executeUntilBlock && transaction.executeUntilBlock - currentBlockHeight < this.executionBlockOffset) {
-            await failTransaction(this.rootEm, txId, `Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentBlockHeight}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}`);
-            return TransactionStatus.TX_FAILED;
-        } else if (transaction.executeUntilTimestamp && currentTimestamp >= transaction.executeUntilTimestamp.getTime()) {
-            await failTransaction(this.rootEm, transaction.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}`);
+        const shouldSubmit = await checkIfShouldStillSubmit(this, transaction.executeUntilBlock, transaction.executeUntilTimestamp?.getTime());
+        if (!shouldSubmit) {
+            await failTransaction(
+                this.rootEm,
+                txId,
+                `Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentBlockHeight}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}.
+                Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}.`);
             return TransactionStatus.TX_FAILED;
         } else if (!transaction.executeUntilBlock) {
             logger.warn(`Transaction ${txId} does not have 'executeUntilBlock' defined`);
@@ -786,9 +787,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         if (retry == 0) {
             await failTransaction(this.rootEm, txId, `Transaction ${txId} was not accepted in mempool`);
         } else {
-            if (!(await checkIfShouldStillSubmit(this, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.getTime()))) {
+            const shouldSubmit = await checkIfShouldStillSubmit(this, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.getTime());
+            if (!shouldSubmit) {
                 const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
-                await failTransaction(this.rootEm, txId, `Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
+                await failTransaction(this.rootEm, txId, `waitForTransactionToAppearInMempool: Current ledger ${currentBlock} >= last transaction ledger ${txEnt.executeUntilBlock}`);
             }
             await this.tryToReplaceByFee(txId);
         }
@@ -799,13 +801,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const newFee = (await this.calculateTotalFeeOfTxAndDescendants(this.rootEm, oldTx)).muln(this.feeIncrease);
 
         if (checkIfFeeTooHigh(newFee, oldTx.maxFee)) {
-            await failTransaction(this.rootEm, txId, `Transaction ${txId} failed due to fee restriction`);
+            await failTransaction(this.rootEm, txId, `tryToReplaceByFee: Transaction ${txId} failed due to fee restriction`);
             return;
         }
 
         if (!(await checkIfShouldStillSubmit(this, oldTx.executeUntilBlock, oldTx.executeUntilTimestamp?.getTime()))) {
             const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
-            await failTransaction(this.rootEm, txId, `Current ledger ${currentBlock} >= last transaction ledger ${oldTx.executeUntilBlock}`);
+            await failTransaction(this.rootEm, txId, `tryToReplaceByFee: Current ledger ${currentBlock} >= last transaction ledger ${oldTx.executeUntilBlock}`);
             return;
         }
 
@@ -817,7 +819,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             txEnt.status = TransactionStatus.TX_REPLACED;
         });
 
-        logger.info(`Trying to RBF transaction ${txId}`);
+        logger.info(`tryToReplaceByFee: Trying to RBF transaction ${txId}`);
         await this.prepareAndSubmitCreatedTransaction(replacementTx);
 
         const descendants = await getTransactionDescendants(this.rootEm, oldTx.transactionHash!, oldTx.source);
