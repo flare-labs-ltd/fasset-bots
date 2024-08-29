@@ -9,7 +9,7 @@ import {
     unPrefix0x,
 } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
-import { BUFFER_PING_INTERVAL, ChainType, PING_INTERVAL } from "../utils/constants";
+import { BUFFER_PING_INTERVAL, ChainType, DEFAULT_FEE_INCREASE, PING_INTERVAL } from "../utils/constants";
 import {
     BaseWalletConfig, IWalletKeys, SignedObject,
     TransactionInfo,
@@ -536,8 +536,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 `Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
             );
         }
+
         if (toBN(utxosAmount).sub(amountInSatoshi).lten(0)) {
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction.`);
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction.`);//TODO - do not fetch indefinitely - maybe check if fee quite high?
         }
 
         const tr = new core.Transaction().from(utxos.map((utxo) => new UnspentOutput(utxo))).to(destination, toNumber(amountInSatoshi));
@@ -720,7 +721,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         if (amountInSatoshi == null) {
             return dbUTXOS;
         }
-
         const needed = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi, feeInSatoshi, txForReplacement);
         if (needed) {
             return needed;
@@ -750,8 +750,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             neededUTXOs.push(utxo);
             sum = sum.add(utxo.value);
             const est_fee = await getEstimateFee(this, neededUTXOs.length, estimatedNumOfOutputs);
-            // multiply estimated fee by 2 to ensure enough funds TODO: is it enough?
-            if (toBN(sum).gt(amountInSatoshi.add(max(est_fee, feeInSatoshi).muln(2)))) {
+            // multiply estimated fee by 1.4 to ensure enough funds TODO: is it enough?
+            if (toBN(sum).gt(amountInSatoshi.add(max(est_fee, feeInSatoshi).muln(DEFAULT_FEE_INCREASE)))) {
                 return neededUTXOs;
             }
         }

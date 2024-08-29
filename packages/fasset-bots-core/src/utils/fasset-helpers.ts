@@ -68,7 +68,7 @@ export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAd
         const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
         logger.error(`Cannot perform underlying payment from ${sourceAddress}${destinationInfo}.
         Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
-        throw new Error(`Not enough funds on underlying address ${sourceAddress}`);
+        throw new Error(`Not enough funds on underlying address ${sourceAddress}. Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
     }
 }
 
