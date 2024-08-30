@@ -535,6 +535,17 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
     });
 
+    it.skip("Should prepare and execute transaction", async () => {
+        const source = "";
+        const source_pk = "";
+        const target = "";
+        const amountToSendInSats = toBN("");
+        const noteToSend = "Transfer";
+        const id = await wClient.createPaymentTransaction(source, source_pk, target, amountToSendInSats, undefined, noteToSend);
+        expect(id).to.be.gt(0);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+    });
+
 });
 
 async function setupRewiredWallet() {
