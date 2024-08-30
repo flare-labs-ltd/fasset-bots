@@ -77,7 +77,7 @@ export async function getCurrentFeeRate(client: UTXOWalletImplementation, nextBl
         return rateInSatoshies.muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE);
     } catch (e) {
         logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
-        return getDefaultFeePerKB(client.chainType);
+        return getDefaultFeePerKB(client.chainType).muln(DEFAULT_FEE_INCREASE);
     }
 }
 
