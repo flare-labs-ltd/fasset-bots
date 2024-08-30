@@ -67,7 +67,7 @@ export function hasTooHighOrLowFee(chainType: ChainType, fee: BN, estFee: BN) {
     }
 }
 
-export async function getCurrentFeeRate(client: UTXOWalletImplementation, nextBlocks: number = 2): Promise<BN> {
+export async function getCurrentFeeRate(client: UTXOWalletImplementation, nextBlocks: number = 6): Promise<BN> {
     try {
         const fee = await client.blockchainAPI.getCurrentFeeRate(nextBlocks);
         if (fee.toString() === "-1") {
