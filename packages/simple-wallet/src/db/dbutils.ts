@@ -28,24 +28,27 @@ export async function createInitialTransactionEntity(
     executeUntilTimestamp?: number,
     replacementFor?: TransactionEntity
 ): Promise<TransactionEntity> {
-    const ent = rootEm.create(
-        TransactionEntity,
-        {
-            chainType,
-            source,
-            destination,
-            status: TransactionStatus.TX_CREATED,
-            maxFee: maxFee || null,
-            executeUntilBlock: executeUntilBlock || null,
-            executeUntilTimestamp: executeUntilTimestamp ? new Date(executeUntilTimestamp * 1000) : null,
-            reference: note || null,
-            amount: amountInDrops,
-            fee: feeInDrops || null,
-            rbfReplacementFor: replacementFor || null,
-        } as RequiredEntityData<TransactionEntity>,
-    );
-    await rootEm.flush();
-    return ent;
+    logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops}; replacing ${replacementFor?.id} (${replacementFor?.transactionHash}).`);
+    return await rootEm.transactional(async (em) => {
+        const ent = em.create(
+            TransactionEntity,
+            {
+                chainType,
+                source,
+                destination,
+                status: TransactionStatus.TX_CREATED,
+                maxFee: maxFee || null,
+                executeUntilBlock: executeUntilBlock || null,
+                executeUntilTimestamp: executeUntilTimestamp ? new Date(executeUntilTimestamp * 1000) : null,
+                reference: note || null,
+                amount: amountInDrops,
+                fee: feeInDrops || null,
+                rbfReplacementFor: replacementFor || null,
+            } as RequiredEntityData<TransactionEntity>,
+        );
+        await em.flush();
+        return ent;
+    });
 }
 
 export async function updateTransactionEntity(rootEm: EntityManager, id: number, modify: (transactionEnt: TransactionEntity) => Promise<void>): Promise<void> {

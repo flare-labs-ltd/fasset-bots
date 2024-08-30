@@ -381,7 +381,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.executeUntilBlock = currentBlock.number + this.blockOffset;
             });
         }
-
+        logger.info(`Preparing tx ${txEnt.id}`);
         // TODO: determine how often this should be run - if there will be lots of UTXOs api fetches and updates can become too slow (but do we want to risk inconsistency?)
         await correctUTXOInconsistencies(this.rootEm, txEnt.source, await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType));
 
@@ -417,6 +417,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.utxos.set(dbUTXOs);
                     txEntToUpdate.inputs.add(inputs);
                 });
+                logger.info(`Tx ${txEnt.id} prepared.`);
                 await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
             }
         } catch (error) {
@@ -439,6 +440,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void> {
+        logger.info(`Submitted tx ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
         try {
             const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
             // success
@@ -472,12 +474,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
 
         const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
-        if (!txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") && !txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") && currentBlockHeight.number - txEnt.submittedInBlock > this.enoughConfirmations) {
+        if (!txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") && !txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") && (currentBlockHeight.number - txEnt.submittedInBlock) > (this.enoughConfirmations * 2)) {//TODO - ? how long do we wait?
             await this.tryToReplaceByFee(txEnt.id);
         }
     }
 
     async submitPreparedTransactions(txEnt: TransactionEntity): Promise<void> {
+        logger.info(`Checking prepared ${txEnt.id}.`);
         const core = getCore(this.chainType);
         const transaction = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
 
@@ -490,13 +493,16 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
+        logger.info(`Checking pending ${txEnt.id}.`);
         await this.waitForTransactionToAppearInMempool(txEnt.id);
     }
 
     async signAndSubmitProcess(txId: number, privateKey: string, transaction: bitcore.Transaction): Promise<void> {
+        logger.info(`Submitting tx ${txId}.`);
         let signed = { txBlob: "", txHash: "" }; //TODO do it better
         try {
             signed = await this.signTransaction(transaction, privateKey);
+            logger.info(`Tx ${txId} is signed.`);
             // save tx in db
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                 txEnt.transactionHash = signed.txHash;
@@ -526,12 +532,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
 
         const txStatus = await this.submitTransaction(signed.txBlob, txId);
+        logger.info(`Tx ${txId} is submitted.`);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         if (txStatus == TransactionStatus.TX_PENDING) {
             await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => {
                 txEntToUpdate.reachedStatusPendingInTimestamp = new Date();
             });
             await this.waitForTransactionToAppearInMempool(txEnt.id, 0);
+            logger.info(`Tx ${txId} is accepted in mempool.`);
         }
     }
 
@@ -801,6 +809,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     private async waitForTransactionToAppearInMempool(txId: number, retry: number = 0): Promise<void> {
+        logger.info(`Tx ${txId} is waiting to be accepted in mempool.`);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         const start = txEnt.submittedInTimestamp!.getTime();
         do {
@@ -840,6 +849,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async tryToReplaceByFee(txId: number): Promise<void> {
+        logger.info(`Tx ${txId}  is being replaced.`);
         const oldTx = await fetchTransactionEntityById(this.rootEm, txId);
         const newFee = (await this.calculateTotalFeeOfTxAndDescendants(this.rootEm, oldTx)).muln(this.feeIncrease);
 
