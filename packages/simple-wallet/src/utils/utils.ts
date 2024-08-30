@@ -151,6 +151,19 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    return false;
 }
 
+// as in attestaion
+export function getConfirmedAfter(chainType: ChainType): number {
+   switch (chainType) {
+      case ChainType.BTC:
+      case ChainType.testBTC:
+         return 6;
+      case ChainType.DOGE:
+      case ChainType.testDOGE:
+         return 60;
+      default:
+         throw new Error(`Unsupported chain type ${chainType}`);
+   }
+}
 
 export function getDefaultFeePerKB(chainType: ChainType): BN {
    switch (chainType) {

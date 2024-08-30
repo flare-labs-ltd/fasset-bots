@@ -139,10 +139,28 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
         try {
-            const [tx] = await this.preparePaymentTransaction(params.source, params.destination, params.amount);
-            return toBN(tx.getFee());
+            const utxos = await this.blockchainAPI.getUTXOsFromMempool(params.source, this.chainType);
+            const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
+            let est_fee = await getEstimateFee(this, utxos.length, numOfOut);
+
+            if (params.amount == null) {
+                return est_fee;
+            } else {
+                const neededUTXOs: any[] = [];
+                let sum = toBN(0);
+                for (const utxo of utxos) {
+                    neededUTXOs.push(utxo);
+                    sum = sum.add(toBN(utxo.value));
+                    est_fee = await getEstimateFee(this, neededUTXOs.length, numOfOut);
+                    // multiply estimated fee by 1.4 to ensure enough funds TODO: is it enough?
+                    if (toBN(sum).gt(params.amount.add(est_fee).muln(DEFAULT_FEE_INCREASE))) {
+                        break;
+                    }
+                }
+                return est_fee;
+            }
         } catch (e) {
-            return getEstimateFee(this, getEstimatedNumberOfInputs(params.amount, params.note), getEstimatedNumberOfOutputs(params.amount, params.note));
+            return getEstimateFee(this, getEstimatedNumberOfInputs(params.amount), getEstimatedNumberOfOutputs(params.amount, params.note));
         }
     }
 
@@ -365,7 +383,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
 
         // TODO: determine how often this should be run - if there will be lots of UTXOs api fetches and updates can become too slow (but do we want to risk inconsistency?)
-        await correctUTXOInconsistencies(this.rootEm, txEnt.source, await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source));
+        await correctUTXOInconsistencies(this.rootEm, txEnt.source, await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType));
 
         try {
             // rbfReplacementFor is used since the RBF needs to use at least of the UTXOs spent by the original transaction
@@ -661,7 +679,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     return TransactionStatus.TX_FAILED; // TODO should we invalidate the transaction and create a new one?
                 } else if (error.response?.data?.error?.indexOf("bad-txns-inputs-") >= 0) {
                     const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-                    await correctUTXOInconsistencies(this.rootEm, txEnt.source, await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source));
+                    await correctUTXOInconsistencies(this.rootEm, txEnt.source, await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType));
                     txEnt.inputs.removeAll();
                     txEnt.outputs.removeAll();
                     await this.rootEm.persistAndFlush(txEnt);
@@ -694,7 +712,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     vout: utxo.vout,
                     transactionHash: utxo.txid,
                 });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(address, utxo.mintTransactionHash, utxo.position);
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(address, utxo.mintTransactionHash, utxo.position, this.chainType);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, utxoEnt => utxoEnt.script = utxo.script);
             }
             const item = {
@@ -778,7 +796,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     private async fillUTXOsFromMempool(address: string) {
-        const utxos = await this.blockchainAPI.getUTXOsFromMempool(address);
+        const utxos = await this.blockchainAPI.getUTXOsFromMempool(address, this.chainType);
         await storeUTXOS(this.rootEm, address, utxos);
     }
 

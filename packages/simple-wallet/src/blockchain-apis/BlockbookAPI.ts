@@ -1,9 +1,10 @@
 import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
+import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
+import { getConfirmedAfter } from "../utils/utils";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -53,12 +54,13 @@ export class BlockbookAPI implements IBlockchainAPI {
         }));
     }
 
-    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
+    async getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]> {
         const res = await this.client.get(`/utxo/${address}`);
         return res.data.map((utxo: any) => ({
             mintTxid: utxo.txid,
             mintIndex: utxo.vout,
             value: utxo.value,
+            confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
         }));
     }
 

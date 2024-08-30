@@ -58,7 +58,7 @@ program
         } else if (token.type === "underlying") {
             const orm = await createBotOrm("user", config.ormOptions, secrets.data.database);
             if (!orm) {
-                throw new CommandLineError(`Undfined orm for underlying payment`);
+                throw new CommandLineError(`Undefined orm for underlying payment`);
             }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
@@ -276,6 +276,6 @@ async function enoughUnderlyingFunds(wallet: BlockchainWalletHelper, sourceAddre
     if (senderBalance.gte(requiredBalance)) {
         return;
     } else {
-        throw new CommandLineError(`Not enough funds in ${sourceAddress}.`);
+        throw new CommandLineError(`Not enough funds in ${sourceAddress}. Balance ${senderBalance.toString()}, fee ${fee.toString()}, amount ${amount.toString()}, required ${requiredBalance.toString()}. (all in uba)`);
     }
 }

@@ -41,16 +41,16 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getTransaction(txHash), "getTransaction");
     }
 
-    async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOScript(address, txHash, vout), "getUTXOScript");
+    async getUTXOScript(address: string, txHash: string, vout: number, chainType: ChainType): Promise<string> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOScript(address, txHash, vout, chainType), "getUTXOScript");
     }
 
-    async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsFromMempool(address), "getUTXOsFromMempool");
+    async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsFromMempool(address, chainType), "getUTXOsFromMempool");
     }
 
-    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsWithoutScriptFromMempool(address), "getUTXOsWithoutScriptFromMempool");
+    async getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsWithoutScriptFromMempool(address, chainType), "getUTXOsWithoutScriptFromMempool");
     }
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {
