@@ -15,8 +15,6 @@
     "./test-hardhat/**/*",
     "./hardhat.config.ts",
     "../simple-wallet/src/@types",
-    "test-data/flr_test_accounts.ts",
-    "test-data/btc_test_accounts.ts",
   ],
   "references": [
     {

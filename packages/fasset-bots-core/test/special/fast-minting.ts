@@ -3,8 +3,8 @@ import { Redeemer } from "../../src/mock/Redeemer";
 import { logger, sendWeb3Transaction, toStringExp, web3 } from "../../src/utils";
 import * as simpleWallet from "@flarelabs/simple-wallet";
 import { Minter } from "../../src/mock/Minter";
-import { BTC_TEST_ACCOUNTS} from "../../test-data/btc_test_accounts";
-import { FLR_TEST_ACCOUNTS} from "../../test-data/flr_test_accounts";
+import { BTC_TEST_ACCOUNTS} from "./btc_test_accounts";
+import { FLR_TEST_ACCOUNTS} from "./flr_test_accounts";
 import {
     BotConfigFile, createBlockchainWalletHelper,
     createBotConfig,
