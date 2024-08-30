@@ -16,6 +16,7 @@ import { toBN } from "web3-utils";
 import winston from "winston";
 import fs from "node:fs";
 import { TransactionEntity } from "@flarelabs/simple-wallet";
+import BN from "bn.js";
 
 const BTCFundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
 const BTCFundedPrivateKey = "cQTqCyHAPJdg2Aej1Xfw7RN5tck3G9L5udKm2rU4rSJ4WLtrCr5K"
@@ -26,7 +27,10 @@ let blockchainWalletHelper: BlockchainWalletHelper;
 
 describe("Fast minting", function (){
 
-    let removeConsoleLogging: () => void;
+    const N = 15;
+    const amountToSend = toBN(1_000_000);
+    const AGENT_ADDRESS = "0x37344D952e89fd1fdb39337d3Ffb28a1b719BBed";
+    const N_LOTS = 1;
 
     before(async () => {
         addConsoleTransportForTests(logger);
@@ -45,21 +49,16 @@ describe("Fast minting", function (){
         await blockchainWalletHelper.stopMonitoring();
     })
 
-    it("Fund accounts", async () => {
+    it("Fund accounts", async function() {
         this.timeout(15 * 60 * 1000);
-
-        const amountToSend = toBN(100000);
-        await Promise.all(BTC_TEST_ACCOUNTS.slice(0, 30).map(async acc => {
+        await Promise.all(BTC_TEST_ACCOUNTS.slice(0, N).map(async acc => {
             await blockchainWalletHelper.addTransactionAndWaitForItsFinalization(BTCFundedAddress, acc.address, amountToSend, "test");
         }));
     });
 
     it("Fast minting and redeeming", async function() {
-        this.timeout(15 * 60 * 1000);
+        this.timeout(80 * 60 * 1000); // 90min
 
-        const N = 5;
-        const AGENT_ADDRESS = "0x37344D952e89fd1fdb39337d3Ffb28a1b719BBed";
-        const N_LOTS = 1;
         if (!(N >= 1)) throw new Error("Missing or invalid arg N");
         if (N > BTC_TEST_ACCOUNTS.length) throw new Error("N should not be greater than number of test accounts");
 
@@ -69,6 +68,7 @@ describe("Fast minting", function (){
 
         const botConfigFile = loadConfigFile(process.env.FASSET_BOT_CONFIG!);
         const lotSize = await parent.context.assetManager.lotSize();
+        logger.info(`LOT SIZE: ${lotSize.toNumber()}`);
 
         for (let i = 0; i < N; i++) {
             try {
@@ -101,6 +101,7 @@ describe("Fast minting", function (){
             }
         }
 
+        logger.info("STARTING MINTING");
         await Promise.all(minters.map(async (minter, i) => {
             try {
                 const crt = await minter.reserveCollateral(AGENT_ADDRESS, N_LOTS);
@@ -111,6 +112,7 @@ describe("Fast minting", function (){
             }
         }));
 
+        logger.info("STARTING REDEEMING");
         await Promise.all(redeemers.map(async (redeemer, i) => {
             try {
                 console.log(`Redeeming 1 lot by redeemer ${i} at ${redeemer.address}`);
@@ -153,12 +155,11 @@ async function setupWallet(config: BotConfigFile, secrets: Secrets) {
         throw new Error(`Undefined orm`);
     }
     const chainId = ChainId.testBTC;
-    return await createBlockchainWalletHelper(secrets, chainId, orm.em, "https://testbtc.indexers.flare.space/api/v2", "blockbook", config.walletOptions);
+    return await  createBlockchainWalletHelper(secrets, chainId, orm.em, "https://testbtc.indexers.flare.space/api/v2", "blockbook", config.walletOptions);
 }
 
-async function fundAccounts() {
-    const amountToSend = toBN(60000);
-    await Promise.all(BTC_TEST_ACCOUNTS.slice(0, 5).map(async acc => {
+async function fundAccounts(N: number, amountToSend: BN) {
+    await Promise.all(BTC_TEST_ACCOUNTS.slice(0, N).map(async acc => {
         await blockchainWalletHelper.addTransactionAndWaitForItsFinalization(BTCFundedAddress, acc.address, amountToSend, "test");
     }));
 }
