@@ -11,6 +11,7 @@ import { Transaction } from "bitcore-lib";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
 import { MonitoringStateEntity } from "../entity/monitoring_state";
 import Output = Transaction.Output;
+import { TransactionInputEntity } from "../entity/transactionInput";
 
 
 // transaction operations
@@ -58,7 +59,7 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { id } as FilterQuery<TransactionEntity>, {
         refresh: true,
-        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputsAndOutputs"],
+        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs"],
     });
 }
 
@@ -73,7 +74,7 @@ export async function updateTransactionEntityByHash(rootEm: EntityManager, txHas
 export async function fetchTransactionEntityByHash(rootEm: EntityManager, txHash: string): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, {
         refresh: true,
-        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputsAndOutputs"],
+        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs"],
     });
 }
 
@@ -81,7 +82,7 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
     return await rootEm.find(TransactionEntity, {
         status,
         chainType,
-    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputsAndOutputs"], orderBy: { id: "ASC" } });
+    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs"], orderBy: { id: "ASC" } });
 }
 
 export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number): Promise<void> {
@@ -94,18 +95,27 @@ function transformOutputToTxOutputEntity(vout: number, output: Output, transacti
     return createTransactionOutputEntity(transaction, transaction.transactionHash ?? "", toBN(output.satoshis), vout, JSON.parse(JSON.stringify(output)).script ?? "");
 }
 
-export function transformUTXOEntToTxOutputEntity(utxo: UTXOEntity, transaction: TransactionEntity, isInput?: boolean): TransactionOutputEntity {
-    return createTransactionOutputEntity(transaction, utxo.mintTransactionHash, utxo.value, utxo.position, utxo.script ?? "", isInput ?? false);
+export function transformUTXOEntToTxInputEntity(utxo: UTXOEntity, transaction: TransactionEntity, isInput?: boolean): TransactionInputEntity {
+    return createTransactionInputEntity(transaction, utxo.mintTransactionHash, utxo.value, utxo.position, utxo.script ?? "");
 }
 
-export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number | undefined, script: string, isInput?: boolean): TransactionOutputEntity {
+export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number | undefined, script: string): TransactionOutputEntity {
     const entity = new TransactionOutputEntity();
     entity.transactionHash = txHash;
     entity.vout = vout;
     entity.amount = toBN(amount);
     entity.script = script;
     entity.transaction = txEnt;
-    entity.isInput = isInput ?? false;
+    return entity;
+}
+
+export function createTransactionInputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number | undefined, script: string): TransactionOutputEntity {
+    const entity = new TransactionInputEntity();
+    entity.transactionHash = txHash;
+    entity.vout = vout;
+    entity.amount = toBN(amount);
+    entity.script = script;
+    entity.transaction = txEnt;
     return entity;
 }
 
@@ -152,6 +162,18 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, o
 
 export async function fetchUTXOsByTxHash(rootEm: EntityManager, txHash: string): Promise<UTXOEntity[]> {
     return await rootEm.find(UTXOEntity, { mintTransactionHash: txHash } as FilterQuery<UTXOEntity>, { refresh: true });
+}
+
+export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Promise<UTXOEntity[]> {
+    return await rootEm.transactional(async (em) => {
+        const txEnt = await em.findOne(TransactionEntity, { id: txId }, { populate: ["inputs"] });
+        return await rootEm.find(UTXOEntity, {
+            $or: txEnt?.inputs.map(input => ({
+                mint_transaction_hash: input.transactionHash,
+                position: input.vout,
+            })),
+        });
+    });
 }
 
 export async function fetchUTXOs(rootEm: EntityManager, inputs: Transaction.Input[]): Promise<UTXOEntity[]> {

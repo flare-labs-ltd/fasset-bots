@@ -1,17 +1,13 @@
 import axios from "axios";
 import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
-import {
-    getDefaultFeePerKB,
-    getRandomInt,
-    sleepMs,
-    stuckTransactionConstants,
-    unPrefix0x,
-} from "../utils/utils";
+import { getDefaultFeePerKB, getRandomInt, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import { BUFFER_PING_INTERVAL, ChainType, DEFAULT_FEE_INCREASE, PING_INTERVAL } from "../utils/constants";
 import {
-    BaseWalletConfig, IWalletKeys, SignedObject,
+    BaseWalletConfig,
+    IWalletKeys,
+    SignedObject,
     TransactionInfo,
     UTXO,
     UTXOFeeParams,
@@ -28,13 +24,14 @@ import {
     fetchMonitoringState,
     fetchTransactionEntityById,
     fetchUnspentUTXOs,
-    fetchUTXOs,
+    fetchUTXOs, fetchUTXOsByTxId,
     getTransactionInfoById,
     handleMissingPrivateKey,
-    processTransactions, removeUTXOsAndAddReplacement,
+    processTransactions,
+    removeUTXOsAndAddReplacement,
     setAccountIsDeleting,
     storeUTXOS,
-    transformUTXOEntToTxOutputEntity,
+    transformUTXOEntToTxInputEntity,
     updateMonitoringState,
     updateTransactionEntity,
     updateUTXOEntity,
@@ -52,7 +49,8 @@ import {
     checkIfShouldStillSubmit,
     checkUTXONetworkStatus,
     getCore,
-    getDustAmount, getEstimatedNumberOfInputs,
+    getDustAmount,
+    getEstimatedNumberOfInputs,
     getEstimatedNumberOfOutputs,
     getEstimateFee,
     getFeePerKB,
@@ -62,9 +60,10 @@ import {
     hasTooHighOrLowFee,
 } from "./UTXOUtils";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
-import UnspentOutput = Transaction.UnspentOutput;
 import { BlockchainAPIWrapper } from "../blockchain-apis/BlockchainAPIWrapper";
 import { InvalidFeeError, LessThanDustAmountError, NotEnoughUTXOsError } from "../utils/errors";
+import { TransactionInputEntity } from "../entity/transactionInput";
+import UnspentOutput = Transaction.UnspentOutput;
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;
@@ -143,7 +142,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const [tx] = await this.preparePaymentTransaction(params.source, params.destination, params.amount);
             return toBN(tx.getFee());
         } catch (e) {
-            return getEstimateFee(this, getEstimatedNumberOfInputs(params.amount, params.note), getEstimatedNumberOfOutputs(params.amount, params.note))
+            return getEstimateFee(this, getEstimatedNumberOfInputs(params.amount, params.note), getEstimatedNumberOfOutputs(params.amount, params.note));
         }
     }
 
@@ -352,7 +351,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     async prepareAndSubmitCreatedTransaction(txEnt: TransactionEntity): Promise<void> {
         const currentBlock = await this.blockchainAPI.getCurrentBlockHeight();
         const currentTimestamp = new Date().getTime();
-       const shouldSubmit = await checkIfShouldStillSubmit(this, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.getTime());
+        const shouldSubmit = await checkIfShouldStillSubmit(this, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.getTime());
         if (!shouldSubmit) {
             await failTransaction(
                 this.rootEm,
@@ -382,11 +381,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await failTransaction(this.rootEm, txEnt.id, `Fee restriction (fee: ${transaction.getFee()}, maxFee: ${txEnt.maxFee?.toString()})`);
             } else {
                 // save tx in db
-                const inputs: TransactionOutputEntity[] = [];
+                const inputs: TransactionInputEntity[] = [];
                 for (const utxo of dbUTXOs) {
                     const tx = await getTransactionEntityByHash(this, utxo.mintTransactionHash);
                     if (tx) {
-                        inputs.push(transformUTXOEntToTxOutputEntity(utxo, tx, true));
+                        inputs.push(transformUTXOEntToTxInputEntity(utxo, tx));
                     } else {
                         logger.warn(`Transaction with hash ${utxo.mintTransactionHash} could not be found on api`);
                     }
@@ -398,7 +397,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.reachedStatusPreparedInTimestamp = new Date();
                     txEntToUpdate.fee = toBN(transaction.getFee()); // set the new fee if the original one was null/wrong
                     txEntToUpdate.utxos.set(dbUTXOs);
-                    txEntToUpdate.inputsAndOutputs.add(inputs);
+                    txEntToUpdate.inputs.add(inputs);
                 });
                 await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
             }
@@ -431,6 +430,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
                     txEntToUpdate.reachedFinalStatusInTimestamp = new Date();
                 });
+                if (txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") || txEnt.destination.includes("FETCHED_DESTINATION")) {
+                    return;
+                }
                 const core = getCore(this.chainType);
                 const tr = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
                 const utxos = await fetchUTXOs(this.rootEm, tr.inputs);
@@ -491,6 +493,20 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             return;
         }
         // submit
+
+        const utxoEnts = await fetchUTXOsByTxId(this.rootEm, txId);
+        for (const utxo of utxoEnts) { // If there's an UTXO that's already been SENT/SPENT we should create tx again
+            if (utxo.spentHeight !== SpentHeightEnum.UNSPENT) {
+                logger.warn(`Transaction with id ${txId} tried to use already SENT/SPENT utxo with hash ${utxo.mintTransactionHash}`);
+                await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
+                    txEnt.status = TransactionStatus.TX_CREATED;
+                    txEnt.inputs.removeAll();
+                    txEnt.outputs.removeAll();
+                });
+                return;
+            }
+        }
+
         const txStatus = await this.submitTransaction(signed.txBlob, txId);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         if (txStatus == TransactionStatus.TX_PENDING) {
@@ -643,9 +659,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 } else if (error.response?.data?.error?.indexOf("insufficient fee") >= 0) {
                     logger.error(`Transaction ${txId} submission failed because of 'insufficient fee'`);
                     return TransactionStatus.TX_FAILED; // TODO should we invalidate the transaction and create a new one?
-                } else if (error.response?.data?.error?.indexOf("bad-txns-inputs-spent") >= 0) {
+                } else if (error.response?.data?.error?.indexOf("bad-txns-inputs-") >= 0) {
                     const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
                     await correctUTXOInconsistencies(this.rootEm, txEnt.source, await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source));
+                    txEnt.inputs.removeAll();
+                    txEnt.outputs.removeAll();
+                    await this.rootEm.persistAndFlush(txEnt);
                 }
                 return TransactionStatus.TX_PREPARED;
             }
@@ -744,7 +763,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         for (const utxo of allUTXOS) {
             const numAncestors = await getNumberOfAncestorsInMempool(this, utxo.mintTransactionHash);
             if (numAncestors >= this.mempoolChainLengthLimit) {
-                logger.info(`numAncestors ${numAncestors} > ${this.mempoolChainLengthLimit}`);
+                logger.info(`Number of UTXO mempool ancestors ${numAncestors} is greater than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
                 continue;
             }
             neededUTXOs.push(utxo);

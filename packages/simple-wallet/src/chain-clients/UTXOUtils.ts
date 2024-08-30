@@ -1,5 +1,5 @@
 import { logger } from "../utils/logger";
-import { createTransactionOutputEntity } from "../db/dbutils";
+import { createTransactionInputEntity } from "../db/dbutils";
 import {
     BTC_DOGE_DEC_PLACES,
     BTC_DUST_AMOUNT,
@@ -157,29 +157,38 @@ export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation,
 
 export async function getTransactionEntityByHash(client: UTXOWalletImplementation, txHash: string) {
 
-    let txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputsAndOutputs"] });
+    let txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
+    if (txEnt && (txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED || txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED)) {
+        const tr = await client.blockchainAPI.getTransaction(txHash);
+        if (tr && tr.data.blockHash && tr.data.confirmations >= client.enoughConfirmations) {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+            await client.rootEm.persistAndFlush(txEnt);
+        }
+    }
     if (!txEnt) {
         const tr = await client.blockchainAPI.getTransaction(txHash);
         logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
         if (tr) {
-            const txEnt = client.rootEm.create(TransactionEntity, {
-                chainType: client.chainType,
-                source: tr.data.vin[0].addresses[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
-                destination: "FETCHED_VIA_API_UNKNOWN_DESTINATION",
-                transactionHash: txHash,
-                fee: toBN(tr.data.fees ?? tr.data.fee),
-                status: tr.data.blockHash ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_SUBMITTED,
-            } as RequiredEntityData<TransactionEntity>);
+            await client.rootEm.transactional(async em => {
+                const txEnt = em.create(TransactionEntity, {
+                    chainType: client.chainType,
+                    source: tr.data.vin[0].addresses[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
+                    destination: "FETCHED_VIA_API_UNKNOWN_DESTINATION",
+                    transactionHash: txHash,
+                    fee: toBN(tr.data.fees ?? tr.data.fee),
+                    status: tr.data.blockHash && tr.data.confirmations >= client.enoughConfirmations ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_SUBMITTED,
+                } as RequiredEntityData<TransactionEntity>);
 
-            const inputs =
-                tr.data.vin.map((t: any) => createTransactionOutputEntity(txEnt!, t.txid, t.value, t.vout ?? 0, t.hex ?? "", true));
-            txEnt.inputsAndOutputs.add(inputs);
+                const inputs =
+                    tr.data.vin.map((t: any) => createTransactionInputEntity(txEnt!, t.txid, t.value, t.vout ?? 0, t.hex ?? ""));
+                txEnt.inputs.add(inputs);
 
-            await client.rootEm.persistAndFlush(txEnt);
-            await client.rootEm.persistAndFlush(inputs);
+                await em.persistAndFlush(txEnt);
+                await em.persistAndFlush(inputs);
+            })
         }
 
-        txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputsAndOutputs"] });
+        txEnt = await client.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
     }
 
     return txEnt;
@@ -187,12 +196,15 @@ export async function getTransactionEntityByHash(client: UTXOWalletImplementatio
 
 export async function getNumberOfAncestorsInMempool(client: UTXOWalletImplementation, txHash: string): Promise<number> {
     const txEnt = await getTransactionEntityByHash(client, txHash);
-    if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS || txEnt.status === TransactionStatus.TX_FAILED || TransactionStatus.TX_SUBMISSION_FAILED) {
+    if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS || txEnt.status === TransactionStatus.TX_FAILED || txEnt.status === TransactionStatus.TX_SUBMISSION_FAILED) {
         return 0;
     } else {
         let numAncestorsInMempool = 0;
-        for (const input of txEnt!.inputsAndOutputs.getItems().filter(t => t.isInput)) {
+        for (const input of txEnt!.inputs.getItems().filter(t => t.transactionHash !== txHash)) { // this filter is here because of a weird orm bug
             numAncestorsInMempool += 1 + await getNumberOfAncestorsInMempool(client, input.transactionHash);
+            if (numAncestorsInMempool >= 25) {
+                return 25;
+            }
         }
         return numAncestorsInMempool;
     }
