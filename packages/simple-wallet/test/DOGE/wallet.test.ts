@@ -231,7 +231,7 @@ describe("Dogecoin wallet tests", () => {
     it("Should submit TX_PREPARED that are in DB", async () => {
         const rewired = await setupRewiredWallet();
 
-        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
+        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight().number + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
         const [transaction] = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note);
         txEnt.raw = Buffer.from(JSON.stringify(transaction));
@@ -246,7 +246,7 @@ describe("Dogecoin wallet tests", () => {
         const rewired = await setupRewiredWallet();
 
         const fee = feeInSatoshi;
-        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
+        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight().number + rewired.blockOffset;
         const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
         const [transaction] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note);
         const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
@@ -288,7 +288,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Transaction with execute until timestamp too low should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", undefined, undefined, new Date().getTime() - 10);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", undefined, undefined, (new Date().getTime() - 10) / 1000);
         expect(id).to.be.gt(0);
 
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
