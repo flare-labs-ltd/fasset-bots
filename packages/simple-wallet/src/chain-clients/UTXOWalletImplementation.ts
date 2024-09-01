@@ -580,7 +580,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
 
         if (toBN(utxosAmount).sub(amountInSatoshi).lten(0)) {
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction.`);//TODO - do not fetch indefinitely - maybe check if fee quite high?
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction; utxos: ${utxos}, utxosAmount: ${utxosAmount.toString()}, ${amountInSatoshi.toString()}`);//TODO - do not fetch indefinitely - maybe check if fee quite high?
         }
 
         const tr = new core.Transaction().from(utxos.map((utxo) => new UnspentOutput(utxo))).to(destination, toNumber(amountInSatoshi));
