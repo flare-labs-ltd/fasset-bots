@@ -292,7 +292,6 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
 
 export async function processTransactions(rootEm: EntityManager, chainType: ChainType, status: TransactionStatus, processFunction: (txEnt: TransactionEntity) => Promise<void>): Promise<void> {
     const transactionEntities = await fetchTransactionEntities(rootEm, chainType, status);
-    logger.info(`Fetching ${transactionEntities.length} transactions with status ${status}`);
     for (const txEnt of transactionEntities) {
         try {
             await processFunction(txEnt);
@@ -311,6 +310,7 @@ export async function checkIfIsDeleting(rootEm: EntityManager, address: string):
 }
 
 export async function setAccountIsDeleting(rootEm: EntityManager, address: string): Promise<void> {
+    logger.info(`Settings ${address} to be deleted.`);
     await rootEm.transactional(async (em) => {
         const wa = await rootEm.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
         if (wa) {
