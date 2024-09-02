@@ -47,6 +47,7 @@ export async function createInitialTransactionEntity(
             } as RequiredEntityData<TransactionEntity>,
         );
         await em.flush();
+        logger.info(`Created transaction ${ent.id}.`);
         return ent;
     });
 }

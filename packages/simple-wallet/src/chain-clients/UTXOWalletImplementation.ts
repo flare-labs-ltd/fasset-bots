@@ -187,7 +187,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         executeUntilBlock?: number,
         executeUntilTimestamp?: number,
     ): Promise<number> {
-        logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp}`);
+        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp}`);
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
@@ -374,14 +374,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             await failTransaction(
                 this.rootEm,
                 txEnt.id,
-                `prepareAndSubmitCreatedTransaction: Both conditions met: Current ledger ${currentBlock.number} >= last transaction ledger ${txEnt.executeUntilBlock} AND Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp?.getTime()}`);
+                `prepareAndSubmitCreatedTransaction: Both conditions met for transaction ${txEnt.id}: Current ledger ${currentBlock.number} >= last transaction ledger ${txEnt.executeUntilBlock} AND Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp?.getTime()}`);
             return;
         } else if (!txEnt.executeUntilBlock) {
             await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
                 txEnt.executeUntilBlock = currentBlock.number + this.blockOffset;
             });
         }
-        logger.info(`Preparing tx ${txEnt.id}`);
+        logger.info(`Preparing transaction ${txEnt.id}`);
         // TODO: determine how often this should be run - if there will be lots of UTXOs api fetches and updates can become too slow (but do we want to risk inconsistency?)
         await correctUTXOInconsistencies(this.rootEm, txEnt.source, await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType));
 
@@ -405,7 +405,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     if (tx) {
                         inputs.push(transformUTXOEntToTxInputEntity(utxo, tx));
                     } else {
-                        logger.warn(`Transaction with hash ${utxo.mintTransactionHash} could not be found on api`);
+                        logger.warn(`Transaction ${txEnt.id}: Transaction (utxo) with hash ${utxo.mintTransactionHash} could not be found on api`);
                     }
                 }
                 await this.rootEm.persistAndFlush(inputs);
@@ -417,7 +417,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.utxos.set(dbUTXOs);
                     txEntToUpdate.inputs.add(inputs);
                 });
-                logger.info(`Tx ${txEnt.id} prepared.`);
+                logger.info(`Transaction ${txEnt.id} prepared.`);
                 await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
             }
         } catch (error) {
@@ -440,7 +440,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void> {
-        logger.info(`Submitted tx ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
+        logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
         try {
             const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
             // success
@@ -470,7 +470,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with ${errorMessage(error)}`);
                 return;
             }
-            logger.error(`Transaction ${txEnt.transactionHash} cannot be fetched from node: ${errorMessage(error)}`);
+            logger.error(`Transaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${errorMessage(error)}`);
         }
 
         const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
@@ -480,7 +480,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async submitPreparedTransactions(txEnt: TransactionEntity): Promise<void> {
-        logger.info(`Checking prepared ${txEnt.id}.`);
+        logger.info(`Checking prepared transaction ${txEnt.id}.`);
         const core = getCore(this.chainType);
         const transaction = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
 
@@ -493,16 +493,16 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
-        logger.info(`Checking pending ${txEnt.id}.`);
+        logger.info(`Checking pending transaction ${txEnt.id}.`);
         await this.waitForTransactionToAppearInMempool(txEnt.id);
     }
 
     async signAndSubmitProcess(txId: number, privateKey: string, transaction: bitcore.Transaction): Promise<void> {
-        logger.info(`Submitting tx ${txId}.`);
+        logger.info(`Submitting transaction ${txId}.`);
         let signed = { txBlob: "", txHash: "" }; //TODO do it better
         try {
             signed = await this.signTransaction(transaction, privateKey);
-            logger.info(`Tx ${txId} is signed.`);
+            logger.info(`Transaction ${txId} is signed.`);
             // save tx in db
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                 txEnt.transactionHash = signed.txHash;
@@ -521,7 +521,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const utxoEnts = await fetchUTXOsByTxId(this.rootEm, txId);
         for (const utxo of utxoEnts) { // If there's an UTXO that's already been SENT/SPENT we should create tx again
             if (utxo.spentHeight !== SpentHeightEnum.UNSPENT) {
-                logger.warn(`Transaction with id ${txId} tried to use already SENT/SPENT utxo with hash ${utxo.mintTransactionHash}`);
+                logger.warn(`Transaction ${txId} tried to use already SENT/SPENT utxo with hash ${utxo.mintTransactionHash}`);
                 await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                     txEnt.status = TransactionStatus.TX_CREATED;
                     txEnt.inputs.removeAll();
@@ -532,14 +532,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
 
         const txStatus = await this.submitTransaction(signed.txBlob, txId);
-        logger.info(`Tx ${txId} is submitted.`);
+        logger.info(`Transaction ${txId} is submitted.`);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         if (txStatus == TransactionStatus.TX_PENDING) {
             await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => {
                 txEntToUpdate.reachedStatusPendingInTimestamp = new Date();
             });
             await this.waitForTransactionToAppearInMempool(txEnt.id, 0);
-            logger.info(`Tx ${txId} is accepted in mempool.`);
+            logger.info(`Transaction ${txId} is accepted in mempool.`);
         }
     }
 
@@ -678,7 +678,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else if (axios.isAxiosError(error)) {
                 logger.error(`Transaction ${txId} submission failed with Axios error (${error.response?.data?.error}): ${errorMessage(error)}`);
                 if (error.response?.data?.error?.indexOf("too-long-mempool-chain") >= 0) {
-                    logger.error(`too-long-mempool-chain`, error);
+                    logger.error(`Transaction ${txId} has too-long-mempool-chain`, error);
                     return TransactionStatus.TX_PREPARED;
                 } else if (error.response?.data?.error?.indexOf("transaction already in block chain") >= 0) {
                     return TransactionStatus.TX_PENDING;
@@ -809,7 +809,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     private async waitForTransactionToAppearInMempool(txId: number, retry: number = 0): Promise<void> {
-        logger.info(`Tx ${txId} is waiting to be accepted in mempool.`);
+        logger.info(`Transaction ${txId} is waiting to be accepted in mempool.`);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         const start = txEnt.submittedInTimestamp!.getTime();
         do {
@@ -849,7 +849,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async tryToReplaceByFee(txId: number): Promise<void> {
-        logger.info(`Tx ${txId}  is being replaced.`);
+        logger.info(`Transaction ${txId}  is being replaced.`);
         const oldTx = await fetchTransactionEntityById(this.rootEm, txId);
         const newFee = (await this.calculateTotalFeeOfTxAndDescendants(this.rootEm, oldTx)).muln(this.feeIncrease);
 
