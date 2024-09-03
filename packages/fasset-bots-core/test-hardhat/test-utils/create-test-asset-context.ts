@@ -143,6 +143,8 @@ export async function createTestChainContracts(governance: string, updateExecuto
         TestUSDC: newContract("TestUSDC", "FakeERC20.sol", testUSDC.address),
         TestUSDT: newContract("TestUSDT", "FakeERC20.sol", testUSDT.address),
         TestETH: newContract("TestETH", "FakeERC20.sol", testETH.address),
+        Relay: newContract("Relay", "Relay.sol", ZERO_ADDRESS),
+        FtsoV2PriceStore: newContract("FtsoV2PriceStore", "FtsoV2PriceStore.sol", ZERO_ADDRESS),
     };
     return contracts;
 }

@@ -27,6 +27,8 @@ export interface ChainContracts {
     CollateralPoolTokenFactory: Contract;
     PriceReader: Contract;
     AgentOwnerRegistry: Contract;
+    Relay: Contract;
+    FtsoV2PriceStore: Contract;
     // others (asset managers & fassets & everything from flare-smart-contract)
     [key: string]: Contract | undefined;
 }
