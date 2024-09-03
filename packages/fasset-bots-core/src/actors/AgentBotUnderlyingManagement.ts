@@ -51,6 +51,7 @@ export class AgentBotUnderlyingManagement {
             logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
             await this.underlyingTopUp(em, topupAmount);
         } else {
+            console.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${this.agentBotSettings.minimumFreeUnderlyingBalance}.`);
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
         }
     }
