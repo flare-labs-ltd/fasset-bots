@@ -7,7 +7,7 @@ import { AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../enti
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { squashSpace } from "../utils/formatting";
+import { formatArgs, squashSpace } from "../utils/formatting";
 import { assertNotNull, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -61,7 +61,13 @@ export class AgentBotUnderlyingManagement {
      * @param amount amount to transfer from owner's underlying address to agent's underlying address
      * @param agentVault agent's vault address
      */
-    async underlyingTopUp(em: EM, amount: BN): Promise<void> {
+    async underlyingTopUp(em: EM, amount: BN): Promise<boolean> {
+        // check if top up in progress
+        const checkIfTopUpInProgress = await em.find(AgentUnderlyingPayment, { agentAddress: this.agent.vaultAddress, type: AgentUnderlyingPaymentType.TOP_UP, state: { $ne: AgentUnderlyingPaymentState.DONE } });
+        if (checkIfTopUpInProgress.length > 0) {
+            logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress has top up in progress.`)
+            return false;
+        }
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
@@ -72,6 +78,7 @@ export class AgentBotUnderlyingManagement {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner initiated underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
             to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with transactions database id  ${txDbId}.`);
         await this.checkForLowOwnerUnderlyingBalance();
+        return true;
     }
 
     async checkForLowOwnerUnderlyingBalance() {

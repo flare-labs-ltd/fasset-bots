@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
 import { Secrets, loadAgentSettings, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, Currencies, errorIncluded, logger, requireNotNullCmd, squashSpace, toBIPS, toBN } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
@@ -44,7 +44,33 @@ program
             const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
             const validator = await AgentBotOwnerValidation.fromContext(cli.context, options.secrets, options.config);
             await validator.validate([options.fasset]);
-            await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
+            const agent = await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
+            // check for top up
+            console.warn("Make sure run-agent script is running")
+            const minFreeUnderlyingBalance = cli.agentBotSettings.minimumFreeUnderlyingBalance;
+            if (minFreeUnderlyingBalance) {
+                const { agentBot } = await cli.getAgentBot(agent.vaultAddress);
+                const agentInfo = await agent.getAgentInfo();
+                const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
+                logger.info(`Agent's ${agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
+                console.log("min ", minFreeUnderlyingBalance.toString())
+                console.log("free", freeUnderlyingBalance.toString())
+                if (freeUnderlyingBalance.lte(minFreeUnderlyingBalance)) {
+                    const topupAmount = minFreeUnderlyingBalance.sub(freeUnderlyingBalance);
+                    const estimatedFee = toBN(await cli.context.wallet.getTransactionFee({
+                        source: agent.underlyingAddress,
+                        destination: agentBot.ownerUnderlyingAddress,
+                        amount: topupAmount,
+                        isPayment: true
+                    }));
+                    logger.info(`Agent's ${agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
+                    console.log(`Agent's ${agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`)
+                    const topupInitiared = await agentBot.underlyingManagement.underlyingTopUp(cli.orm.em, topupAmount);
+                    if (topupInitiared === false) {
+                        logger.warn(`Agent ${agent.vaultAddress} could not top up. Make sure, you initiate top up manually from cli, to avoid getting fully liquidated.`);
+                    }
+                } // yarn agent should be running!
+            }
         } else {
             if (agentSettingsPath != null) {
                 console.error(`File ${agentSettingsPath} does not exist.`);
@@ -158,6 +184,41 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.updateAgentSetting(agentVault, settingName, settingValue);
+    });
+
+program
+    .command("underlyingTopUp")
+    .description("agent underlying top up")
+    .argument("<agentVaultAddress>")// TODO top up for certain amount
+    .action(async (agentVault: string) => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+
+        console.warn("Ensure run-agent is running to successfully top up.");
+        const minFreeUnderlyingBalance = cli.agentBotSettings.minimumFreeUnderlyingBalance;
+        if (minFreeUnderlyingBalance) {
+            const { agentBot } = await cli.getAgentBot(agentVault);
+            const agentInfo = await agentBot.agent.getAgentInfo();
+            const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
+            logger.info(`Agent's ${agentBot.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
+            console.log("min ", minFreeUnderlyingBalance.toString())
+            console.log("free", freeUnderlyingBalance.toString())
+            if (freeUnderlyingBalance.lte(minFreeUnderlyingBalance)) {
+                const topupAmount = minFreeUnderlyingBalance.sub(freeUnderlyingBalance);
+                const estimatedFee = toBN(await cli.context.wallet.getTransactionFee({
+                    source: agentBot.agent.underlyingAddress,
+                    destination: agentBot.ownerUnderlyingAddress,
+                    amount: topupAmount,
+                    isPayment: true
+                }));
+                logger.info(`Agent's ${agentBot.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
+                console.log(`Agent's ${agentBot.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`)
+                const topupInitiared = await agentBot.underlyingManagement.underlyingTopUp(cli.orm.em, topupAmount);
+                if (topupInitiared === false) {
+                    console.warn(`Agent ${agentBot.agent.vaultAddress} could not top up. Top up already in progress.`);
+                }
+            }
+        }
     });
 
 program
