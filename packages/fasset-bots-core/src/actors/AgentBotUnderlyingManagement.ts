@@ -65,6 +65,7 @@ export class AgentBotUnderlyingManagement {
         // check if top up in progress
         const checkIfTopUpInProgress = await em.find(AgentUnderlyingPayment, { agentAddress: this.agent.vaultAddress, type: AgentUnderlyingPaymentType.TOP_UP, state: { $ne: AgentUnderlyingPaymentState.DONE } });
         if (checkIfTopUpInProgress.length > 0) {
+            logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress.`);
             logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress.`)
             return false;
         }
