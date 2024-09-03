@@ -32,9 +32,11 @@ export class BlockbookAPI implements IBlockchainAPI {
         };
     }
 
-    async getCurrentFeeRate(nextBlocks: number): Promise<number> {
-        const res = await this.client.get(`/estimatefee/${nextBlocks}`);
-        return res.data.result;
+    async getCurrentFeeRate(nextBlocks: number): Promise<number> {//TODO- unify with bitcore?
+        const block = await this.getCurrentBlockHeight();
+        const res = await this.client.get(`/feestats/${block.number}`);
+        const BTC_PER_SATOSHI = 1 / 100000000;
+        return res.data.averageFeePerKb * BTC_PER_SATOSHI;
     }
 
     async getTransaction(txHash: string | undefined): Promise<axios.AxiosResponse<any>> {
