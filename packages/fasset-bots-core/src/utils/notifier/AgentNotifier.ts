@@ -54,7 +54,7 @@ export enum AgentNotificationKey {
     LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS",
     CRITICALLY_LOW_OWNERS_NATIVE_BALANCE = "CRITICALLY LOW BALANCE IN OWNER'S ADDRESS",
     LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS",
-    CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL",
+    CONFIRM_UNDERLYING = "CONFIRM UNDERLYING PAYMENT",
     CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT",
     ACTIVE_WITHDRAWAL = "ACTIVE WITHDRAWAL",
     NO_ACTIVE_WITHDRAWAL = "NO ACTIVE WITHDRAWAL",
@@ -299,7 +299,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendConfirmWithdrawUnderlying(type: string) {
-        await this.info(AgentNotificationKey.CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
+        await this.info(AgentNotificationKey.CANCEL_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
     }
 
     async sendCancelWithdrawUnderlying() {

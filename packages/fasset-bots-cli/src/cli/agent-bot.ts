@@ -53,8 +53,6 @@ program
                 const agentInfo = await agent.getAgentInfo();
                 const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
                 logger.info(`Agent's ${agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
-                console.log("min ", minFreeUnderlyingBalance.toString())
-                console.log("free", freeUnderlyingBalance.toString())
                 if (freeUnderlyingBalance.lte(minFreeUnderlyingBalance)) {
                     const topupAmount = minFreeUnderlyingBalance.sub(freeUnderlyingBalance);
                     const estimatedFee = toBN(await cli.context.wallet.getTransactionFee({
@@ -201,8 +199,6 @@ program
             const agentInfo = await agentBot.agent.getAgentInfo();
             const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
             logger.info(`Agent's ${agentBot.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
-            console.log("min ", minFreeUnderlyingBalance.toString())
-            console.log("free", freeUnderlyingBalance.toString())
             if (freeUnderlyingBalance.lte(minFreeUnderlyingBalance)) {
                 const topupAmount = minFreeUnderlyingBalance.sub(freeUnderlyingBalance);
                 const estimatedFee = toBN(await cli.context.wallet.getTransactionFee({
