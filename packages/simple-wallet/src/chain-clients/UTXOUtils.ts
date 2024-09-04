@@ -40,20 +40,23 @@ export async function getFeePerKB(client: UTXOWalletImplementation): Promise<BN>
         const feeStats = await client.feeService.getLatestFeeStats();
         if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
             const fee = feeStats.decilesFeePerKB[client.feeDecileIndex].muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE);
-            return enforceMinimalFee(fee);
+            return enforceMinimalAndMaximalFee(fee);
         } else if (feeStats.averageFeePerKB.gtn(0)) {
             const fee = feeStats.averageFeePerKB.muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE);
-            return enforceMinimalFee(fee);
+            return enforceMinimalAndMaximalFee(fee);
         }
     }
     return await getCurrentFeeRate(client);
 }
 
-function enforceMinimalFee(feePerKB: BN) {
-    const minFee = toBN(5000); //5000sats/kb
+function enforceMinimalAndMaximalFee(feePerKB: BN) {
+    const minFee = toBN(10000); //10000 sats/kb
+    const maxFee = toBN(500000); //500000 sats/kb
     if (feePerKB.lt(minFee)) {
         return minFee
-    } else {
+    } else if (feePerKB.gt(maxFee))
+        return maxFee
+    else {
         return feePerKB
     }
 }
@@ -85,7 +88,7 @@ export async function getCurrentFeeRate(client: UTXOWalletImplementation, nextBl
             throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
         }
         const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
-        return enforceMinimalFee(rateInSatoshies.muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE));
+        return enforceMinimalAndMaximalFee(rateInSatoshies.muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE));
     } catch (e) {
         logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
         return getDefaultFeePerKB(client.chainType).muln(client.feeIncrease ?? DEFAULT_FEE_INCREASE);
