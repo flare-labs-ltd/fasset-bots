@@ -299,7 +299,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendConfirmWithdrawUnderlying(type: string) {
-        await this.info(AgentNotificationKey.CANCEL_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
+        await this.info(AgentNotificationKey.CONFIRM_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
     }
 
     async sendCancelWithdrawUnderlying() {

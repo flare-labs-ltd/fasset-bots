@@ -279,6 +279,8 @@ export class AgentBotUnderlyingManagement {
             await this.notifier.sendConfirmWithdrawUnderlying(underlyingPayment.type);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} confirmed underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
                 with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
+            const agentInfo = await this.agent.getAgentInfo();
+            console.log(`Agent ${this.agent.vaultAddress} free underlying is ${agentInfo.freeUnderlyingBalanceUBA.toString()}`)
         } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
                 in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
