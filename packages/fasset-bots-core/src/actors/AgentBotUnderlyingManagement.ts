@@ -40,8 +40,8 @@ export class AgentBotUnderlyingManagement {
         const agentInfo = await this.agent.getAgentInfo();
         const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
         const minimumFreeUnderlyingBalance = toBN(this.agentBotSettings.minimumFreeUnderlyingBalance);
-        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
-        if (freeUnderlyingBalance.lte(minimumFreeUnderlyingBalance)) {
+        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is minimumFreeUnderlyingBalance. Top up is required ${freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)}`.);
+        if (freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)) {
             const topupAmount = minimumFreeUnderlyingBalance;
             const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
                 source: this.agent.underlyingAddress,
