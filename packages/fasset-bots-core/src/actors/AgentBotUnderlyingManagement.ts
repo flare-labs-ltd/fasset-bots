@@ -189,7 +189,7 @@ export class AgentBotUnderlyingManagement {
      * @param underlyingPayment AgentUnderlyingPayment entity
      */
     async checkPaymentProofAvailable(rootEm: EM, underlyingPayment: Readonly<AgentUnderlyingPayment>): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} is available.`);
+        logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment database id ${underlyingPayment.txDbId} is available.`);
         assertNotNull(underlyingPayment.txDbId);
         const info = await this.context.wallet.checkTransactionStatus(underlyingPayment.txDbId);
         if ((info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED)
