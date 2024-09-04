@@ -7,7 +7,7 @@ import { AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../enti
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
-import { formatArgs, squashSpace } from "../utils/formatting";
+import { squashSpace } from "../utils/formatting";
 import { assertNotNull, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -39,9 +39,10 @@ export class AgentBotUnderlyingManagement {
         logger.info(`Agent ${this.agent.vaultAddress} is checking free underlying balance.`);
         const agentInfo = await this.agent.getAgentInfo();
         const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
+        const minimumFreeUnderlyingBalance = toBN(this.agentBotSettings.minimumFreeUnderlyingBalance);
         logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
-        if (freeUnderlyingBalance.lte(this.agentBotSettings.minimumFreeUnderlyingBalance)) {
-            const topupAmount = this.agentBotSettings.minimumFreeUnderlyingBalance.sub(freeUnderlyingBalance);
+        if (freeUnderlyingBalance.lte(minimumFreeUnderlyingBalance)) {
+            const topupAmount = minimumFreeUnderlyingBalance;
             const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
                 source: this.agent.underlyingAddress,
                 destination: this.ownerUnderlyingAddress,
@@ -51,8 +52,7 @@ export class AgentBotUnderlyingManagement {
             logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
             await this.underlyingTopUp(em, topupAmount);
         } else {
-            console.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${this.agentBotSettings.minimumFreeUnderlyingBalance}.`);
-            logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
+            logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${minimumFreeUnderlyingBalance.toString()}.`);
         }
     }
 
@@ -67,7 +67,6 @@ export class AgentBotUnderlyingManagement {
         const checkIfTopUpInProgress = await em.find(AgentUnderlyingPayment, { agentAddress: this.agent.vaultAddress, type: AgentUnderlyingPaymentType.TOP_UP, state: { $ne: AgentUnderlyingPaymentState.DONE } });
         if (checkIfTopUpInProgress.length > 0) {
             logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress.`);
-            logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress.`)
             return false;
         }
         const amountF = await this.tokens.underlying.format(amount);
