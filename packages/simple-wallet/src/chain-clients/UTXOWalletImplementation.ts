@@ -450,7 +450,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
                     txEntToUpdate.reachedFinalStatusInTimestamp = new Date();
                 });
-                if (txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") || txEnt.destination.includes("FETCHED_DESTINATION")) {
+                if (txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") || txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION")) {
                     return;
                 }
                 const core = getCore(this.chainType);
