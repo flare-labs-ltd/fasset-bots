@@ -50,17 +50,17 @@ async function loop(sleepIntervalMs: number, timeLimit: number, tx: TransactionE
  *
  * @param sleepInterval in seconds
  * @param timeLimit in seconds
- * @param orm
+ * @param rootEm
  * @param status
  * @param txId
  */
-async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, rootEm: EntityManager, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
+async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, rootEm: EntityManager, status: TransactionStatus | TransactionStatus[], txId: number): Promise<[TransactionEntity, TransactionInfo]> {
     let tx = await fetchTransactionEntityById(rootEm, txId);
     await loop(sleepInterval * 1000, timeLimit * 1000, tx,async () => {
         try {
             rootEm.clear();
             tx = await fetchTransactionEntityById(rootEm, txId);
-            return checkStatus(tx, [status]);
+            return checkStatus(tx, Array.isArray(status) ? status :[status]);
         } catch (error) {
             if (isORMError(error)) {
                 logger.error("Test util error: ", error);

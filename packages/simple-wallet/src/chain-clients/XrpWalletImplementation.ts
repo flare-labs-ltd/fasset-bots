@@ -41,13 +41,14 @@ import { XrpAccountGeneration } from "./account-generation/XrpAccountGeneration"
 import { TransactionStatus, TransactionEntity } from "../entity/transaction";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { MonitoringStateEntity } from "../entity/monitoring_state";
+import { XRPBlockchainAPI } from "../blockchain-apis/XRPBlockchainAPI";
 
 const DROPS_PER_XRP = 1000000.0;
 
 export class XrpWalletImplementation extends XrpAccountGeneration implements WriteWalletInterface {
    chainType: ChainType;
    inTestnet: boolean;
-   client: AxiosInstance;
+   blockchainAPI: XRPBlockchainAPI;
    blockOffset: number; // number of blocks added to define executeUntilBlock (only if not provided in original data)
    feeIncrease: number;
    executionBlockOffset: number; //buffer before submitting -> will submit only if (currentLedger - executeUntilBlock) >= executionBlockOffset
@@ -65,32 +66,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
-
-      const createAxiosConfig: AxiosRequestConfig = {
-         baseURL: createConfig.url,
-         headers: excludeNullFields({
-            "Content-Type": "application/json",
-            "x-apikey": createConfig.apiTokenKey,
-         }),
-         auth:
-            createConfig.username && createConfig.password
-               ? {
-                  username: createConfig.username,
-                  password: createConfig.password,
-               }
-               : undefined,
-         timeout: createConfig.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs,
-         validateStatus: function (status: number) {
-            /* istanbul ignore next */
-            return (status >= 200 && status < 300) || status == 500;
-         },
-      };
-      // don't need rpc auth as we are always sending signed transactions
-      const client = axios.create(createAxiosConfig);
-      this.client = axiosRateLimit(client, {
-         ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
-         ...createConfig.rateLimitOptions,
-      });
+      this.blockchainAPI = new XRPBlockchainAPI(this.chainType, createConfig);
       const resubmit = stuckTransactionConstants(this.chainType);
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
@@ -435,7 +411,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async checkSubmittedTransaction(tx: TransactionEntity): Promise<void> {
-      const txResp = await this.client.post("", { method: "tx", params: [{ transaction: tx.transactionHash }] });
+      const txResp = await this.blockchainAPI.getTransaction(tx.transactionHash);
       if (txResp.data.result.validated) {
          await updateTransactionEntity(this.rootEm, tx.id, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
@@ -485,10 +461,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
       const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
       do {
-         const txResp = await this.client.post("", {
-            method: "tx",
-            params: [{ transaction: txEnt.transactionHash }],
-         });
+         const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
          if (txResp.data.result.validated) {
             // transaction completed - update tx in db
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
@@ -642,12 +615,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          }
       }
       try {
-         const params = {
+         const res = await this.blockchainAPI.submitTransaction({
             tx_blob: txBlob,
-         };
-         const res = await this.client.post("", {
-            method: "submit",
-            params: [params],
          });
          const currentBlockHeight = await this.getLatestValidatedLedgerIndex()
          await updateTransactionEntity(this.rootEm, txDbId, async (txEnt) => {
@@ -750,10 +719,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          signer_lists: true,
          ledger_index: "current",
       } as AccountInfoRequest;
-      const res = await this.client.post("", {
-         method: "account_info",
-         params: [params],
-      });
+      const res = await this.blockchainAPI.getAccountInfo(params);
       return res.data;
    }
 
@@ -761,10 +727,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @returns {Object} - server info
     */
    async getServerInfo(): Promise<xrpl.ServerInfoResponse> {
-      const res = await this.client.post("", {
-         method: "server_info",
-         params: [],
-      });
+      const res = await this.blockchainAPI.getServerInfo();
       return res.data;
    }
 

@@ -1,11 +1,11 @@
-import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
+import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
-import { fetchTransactionEntityByHash } from "../db/dbutils";
 import { EntityManager } from "@mikro-orm/core";
-import { TransactionOutputEntity } from "../entity/transactionOutput";
+import { getConfirmedAfter } from "../utils/utils";
+import { logger } from "../utils/logger";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -25,14 +25,20 @@ export class BlockbookAPI implements IBlockchainAPI {
         return res.data?.balance;
     }
 
-    async getCurrentBlockHeight(): Promise<number> {
+    async getCurrentBlockHeight(): Promise<BlockData> {
         const res = await this.client.get(``);
-        return res.data.blockbook.bestHeight;
+        return {
+            number: res.data.blockbook.bestHeight,
+            timestamp: res.data.blockbook.lastBlockTime
+        };
     }
 
-    async getCurrentFeeRate(nextBlocks: number): Promise<number> {
-        const res = await this.client.get(`/estimatefee/${nextBlocks}`);
-        return res.data.result;
+    async getCurrentFeeRate(nextBlocks: number): Promise<number> {//TODO- unify with bitcore?
+        const block = await this.getCurrentBlockHeight();
+        const res = await this.client.get(`/feestats/${block.number}`);
+        const BTC_PER_SATOSHI = 1 / 100000000;
+        const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI
+        return fee;
     }
 
     async getTransaction(txHash: string | undefined): Promise<axios.AxiosResponse<any>> {
@@ -42,33 +48,29 @@ export class BlockbookAPI implements IBlockchainAPI {
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
         return Promise.all(res.data.map(async (utxo: any) => {
-            const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
-                vout: utxo.vout,
-                transactionHash: utxo.txid,
-            });
-
             return {
                 mintTxid: utxo.txid,
                 mintIndex: utxo.vout,
                 value: utxo.value,
-                script: txOutputEnt?.script ?? "",
+                script: "",
                 confirmed: utxo.confirmations > 0,
             };
         }));
     }
 
-    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
+    async getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]> {
         const res = await this.client.get(`/utxo/${address}`);
         return res.data.map((utxo: any) => ({
             mintTxid: utxo.txid,
             mintIndex: utxo.vout,
             value: utxo.value,
+            confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
         }));
     }
 
     async getUTXOScript(address: string, txHash: string, vout: number) {
         const res = await this.client.get(`/tx-specific/${txHash}`);
-        return res.data.vout[vout].scriptPubKey.hex;
+        return res.data.vout[vout]?.scriptPubKey?.hex ?? "";
     }
 
     async sendTransaction(tx: string): Promise<axios.AxiosResponse> {

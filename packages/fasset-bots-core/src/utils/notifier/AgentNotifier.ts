@@ -54,13 +54,13 @@ export enum AgentNotificationKey {
     LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS",
     CRITICALLY_LOW_OWNERS_NATIVE_BALANCE = "CRITICALLY LOW BALANCE IN OWNER'S ADDRESS",
     LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS",
-    CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL",
+    CONFIRM_UNDERLYING = "CONFIRM UNDERLYING PAYMENT",
     CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT",
     ACTIVE_WITHDRAWAL = "ACTIVE WITHDRAWAL",
     NO_ACTIVE_WITHDRAWAL = "NO ACTIVE WITHDRAWAL",
     WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL",
     UNDERLYING_PAYMENT_PAID = "UNDERLYING PAYMENT",
-    UNDERLYING_PAYMENT_PROOF = " UNDERLYING PAYMENT PROOF REQUESTED",
+    UNDERLYING_PAYMENT_PROOF = "UNDERLYING PAYMENT PROOF REQUESTED",
     UNDERLYING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR UNDERLYING PAYMENT",
     // pool
     BUY_POOL_TOKENS = "BUY POOL TOKENS",
@@ -299,7 +299,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendConfirmWithdrawUnderlying(type: string) {
-        await this.info(AgentNotificationKey.CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
+        await this.info(AgentNotificationKey.CONFIRM_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
     }
 
     async sendCancelWithdrawUnderlying() {
@@ -391,7 +391,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendRedemptionPaid(requestId: BNish) {
-        await this.info(AgentNotificationKey.REDEMPTION_PAID, `Redemption ${requestId} was paid for ${this.address}.`);
+        await this.info(AgentNotificationKey.REDEMPTION_PAID, `Redemption payment ${requestId} was initiated for ${this.address}.`);
     }
 
     async sendRedemptionPaymentFailed(requestId: BNish) {

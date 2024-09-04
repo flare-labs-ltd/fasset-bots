@@ -5,7 +5,7 @@ export const LOCK_ADDRESS_FACTOR = 1.2;
 
 export const MNEMONIC_STRENGTH = 256;
 
-export const DEFAULT_FEE_INCREASE = 2;
+export const DEFAULT_FEE_INCREASE = 1;
 
 export const PING_INTERVAL = 10_000; // 10seconds
 export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
@@ -99,9 +99,9 @@ export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
 }
 
 // Approximate times between blocks, in milliseconds
-export const BTC_LEDGER_CLOSE_TIME_MS = 600000; // 10min
-export const DOGE_LEDGER_CLOSE_TIME_MS = 60000; // 60s
-export const XRP_LEDGER_CLOSE_TIME_MS = 4000; // 4s
+export const BTC_LEDGER_CLOSE_TIME_MS = 600_000; // 10min
+export const DOGE_LEDGER_CLOSE_TIME_MS = 60_000; // 60s
+export const XRP_LEDGER_CLOSE_TIME_MS = 4_000; // 4s
 
 // Number of decimal places
 export const BTC_DOGE_DEC_PLACES = 8;
@@ -121,7 +121,7 @@ export const UTXO_INPUT_SIZE = 134; //148?
 export const UTXO_OUTPUT_SIZE = 34;
 export const UTXO_OVERHEAD_SIZE = 10;
 
-export const UTXO_INPUT_SIZE_SEGWIT = 68;
+export const UTXO_INPUT_SIZE_SEGWIT = 68.5;
 export const UTXO_OUTPUT_SIZE_SEGWIT = 31;
 export const UTXO_OVERHEAD_SIZE_SEGWIT = 10.5;
 

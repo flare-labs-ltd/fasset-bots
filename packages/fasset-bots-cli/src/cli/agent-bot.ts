@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
 import { Secrets, loadAgentSettings, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, Currencies, errorIncluded, logger, requireNotNullCmd, squashSpace, toBIPS, toBN } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
@@ -44,7 +44,14 @@ program
             const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
             const validator = await AgentBotOwnerValidation.fromContext(cli.context, options.secrets, options.config);
             await validator.validate([options.fasset]);
-            await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
+            const agent = await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
+            // check for top up
+            const minFreeUnderlyingBalance = cli.agentBotSettings.minimumFreeUnderlyingBalance;
+            if (minFreeUnderlyingBalance) {
+                console.warn("Topping up underlying. Make sure run-agent script is running")
+                const { agentBot } = await cli.getAgentBot(agent.vaultAddress);
+                await agentBot.underlyingManagement.checkUnderlyingBalanceAndTopup(cli.orm.em);
+            }
         } else {
             if (agentSettingsPath != null) {
                 console.error(`File ${agentSettingsPath} does not exist.`);
@@ -158,6 +165,21 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.updateAgentSetting(agentVault, settingName, settingValue);
+    });
+
+program
+    .command("underlyingTopUp")
+    .description("agent underlying top up")
+    .argument("<agentVaultAddress>")// TODO top up for certain amount?
+    .action(async (agentVault: string) => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        console.warn("Ensure run-agent is running to successfully top up.");
+        const minFreeUnderlyingBalance = cli.agentBotSettings.minimumFreeUnderlyingBalance;
+        if (minFreeUnderlyingBalance) {
+            const { agentBot } = await cli.getAgentBot(agentVault);
+            await agentBot.underlyingManagement.checkUnderlyingBalanceAndTopup(cli.orm.em);
+        }
     });
 
 program

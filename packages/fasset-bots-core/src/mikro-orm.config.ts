@@ -9,15 +9,7 @@ import { MonitoringStateEntity, TransactionEntity, UTXOEntity, WalletAddressEnti
 const options: Options<AbstractSqlDriver> = {
     entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity, MonitoringStateEntity],
     dbName: "fasset-bots.db",
-    debug: false
-};
-
-export const simpleWalletOptions: Options<AbstractSqlDriver> = {// for user or cli
-    entities: [WalletAddressEntity, UTXOEntity, TransactionEntity, MonitoringStateEntity],
-    type: "sqlite",
-    dbName: "simple-wallet.db",
     debug: false,
-    allowGlobalContext: true,
 };
 
 export async function overrideAndCreateOrm(optionsOverride: CreateOrmOptions, databaseAccount: DatabaseAccount | undefined, defaultOptions: Options<AbstractSqlDriver> = options): Promise<ORM> {

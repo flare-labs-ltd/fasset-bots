@@ -11,13 +11,16 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         private walletKeys: IWalletKeys
     ) {}
 
+    requestStopVal: boolean = false;
+
     async addTransaction(
         sourceAddress: string,
         targetAddress: string,
         amount: string | number | BN,
         reference: string | null,
         options?: TransactionOptionsWithFee,
-        executeUntilBlock?: number
+        executeUntilBlock?: number,
+        executeUntilTimestamp?: number
     ): Promise<number> {
         const value = toBN(amount);
         const fee = undefined;
@@ -25,7 +28,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         const note = reference ? unPrefix0x(reference) : undefined;
         const privateKey = await this.walletKeys.getKey(sourceAddress);
         if (privateKey) {
-            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, privateKey, targetAddress, value, fee, note, maxFee, executeUntilBlock);
+            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, privateKey, targetAddress, value, fee, note, maxFee, executeUntilBlock, executeUntilTimestamp);
             return dbId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
@@ -80,19 +83,18 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     }
 
     // background task (monitoring in simple-wallet) should be running
-    async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number): Promise<string> {
+    async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number, executeUntilTimestamp?: number): Promise<string> {
         try {
             void this.startMonitoringTransactionProgress().catch((error) => {
                 logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
                 console.error(`Background task to monitor wallet ended unexpectedly:`, error);
             });
-            let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock);
+            let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock, executeUntilTimestamp);
             logger.info(`Transactions txDbId ${id} was sent: ${sourceAddress}, ${targetAddress}, ${amount.toString()}, ${reference}, ${formatArgs(options)} and ${executeUntilBlock}`);
             let info = await this.checkTransactionStatus(id);
-            while (!info.transactionHash ||
-                (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
+            while (!this.requestStopVal && (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
             {
-                await sleep(2000); //sleep for 2 seconds
+                await sleep(5000); //sleep for 5 seconds
                 info = await this.checkTransactionStatus(id);
                 logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
                 if (info.status == TransactionStatus.TX_REPLACED && info.replacedByDdId) {
@@ -100,6 +102,14 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                     info = await this.checkTransactionStatus(id);
                 }
                 await this.ensureWalletMonitoringRunning();
+            }
+            if (this.requestStopVal) {
+                logger.warn(`Transaction monitoring was stopped due to termination signal.`);
+                console.warn(`Transaction monitoring was stopped due to termination signal.`);
+            }
+            if (!info.transactionHash) {
+                logger.error(`Cannot obtain transaction hash for ${sourceAddress}, ${targetAddress}, ${amount}, ${reference}`);
+                throw new Error(`Cannot obtain transaction hash for ${sourceAddress}, ${targetAddress}, ${amount}, ${reference}`);
             }
             return info.transactionHash;
         } finally {
@@ -109,6 +119,10 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
 
     async startMonitoringTransactionProgress(): Promise<void> {
         await this.walletClient.startMonitoringTransactionProgress();
+    }
+
+    async requestStop(value: boolean): Promise<void> {
+        this.requestStopVal = value;
     }
 
     async stopMonitoring(): Promise<void> {

@@ -95,17 +95,17 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.BTC:
       case ChainType.testBTC:
          return {
-            blockOffset: 4,//accepted in next x blocks
+            blockOffset: 6,//accepted in next x blocks
             feeIncrease: 2,
-            executionBlockOffset: 1,
-            enoughConfirmations: 4
+            executionBlockOffset: 1,//submit if "one block time" left
+            enoughConfirmations: 2
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 8,
+            blockOffset: 8,//accepted in next x blocks
             feeIncrease: 2,
-            executionBlockOffset: 2,
+            executionBlockOffset: 3,//submit if "one block time" left
             enoughConfirmations: 10
          };
       case ChainType.XRP:
@@ -151,6 +151,19 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    return false;
 }
 
+// as in attestaion
+export function getConfirmedAfter(chainType: ChainType): number {
+   switch (chainType) {
+      case ChainType.BTC:
+      case ChainType.testBTC:
+         return 6;
+      case ChainType.DOGE:
+      case ChainType.testDOGE:
+         return 60;
+      default:
+         throw new Error(`Unsupported chain type ${chainType}`);
+   }
+}
 
 export function getDefaultFeePerKB(chainType: ChainType): BN {
    switch (chainType) {

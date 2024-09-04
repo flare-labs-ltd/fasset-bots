@@ -39,9 +39,10 @@ export class AgentBotUnderlyingManagement {
         logger.info(`Agent ${this.agent.vaultAddress} is checking free underlying balance.`);
         const agentInfo = await this.agent.getAgentInfo();
         const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
-        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}.`);
-        if (freeUnderlyingBalance.lte(this.agentBotSettings.minimumFreeUnderlyingBalance)) {
-            const topupAmount = this.agentBotSettings.minimumFreeUnderlyingBalance.sub(freeUnderlyingBalance);
+        const minimumFreeUnderlyingBalance = toBN(this.agentBotSettings.minimumFreeUnderlyingBalance);
+        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is minimumFreeUnderlyingBalance. Top up is required ${freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)}.`);
+        if (freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)) {
+            const topupAmount = minimumFreeUnderlyingBalance;
             const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
                 source: this.agent.underlyingAddress,
                 destination: this.ownerUnderlyingAddress,
@@ -51,7 +52,7 @@ export class AgentBotUnderlyingManagement {
             logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
             await this.underlyingTopUp(em, topupAmount);
         } else {
-            logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up.`);
+            logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${minimumFreeUnderlyingBalance.toString()}.`);
         }
     }
 
@@ -61,7 +62,13 @@ export class AgentBotUnderlyingManagement {
      * @param amount amount to transfer from owner's underlying address to agent's underlying address
      * @param agentVault agent's vault address
      */
-    async underlyingTopUp(em: EM, amount: BN): Promise<void> {
+    async underlyingTopUp(em: EM, amount: BN): Promise<boolean> {
+        // check if top up in progress
+        const checkIfTopUpInProgress = await em.find(AgentUnderlyingPayment, { agentAddress: this.agent.vaultAddress, type: AgentUnderlyingPaymentType.TOP_UP, state: { $ne: AgentUnderlyingPaymentState.DONE } });
+        if (checkIfTopUpInProgress.length > 0) {
+            logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress.`);
+            return false;
+        }
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
@@ -72,6 +79,7 @@ export class AgentBotUnderlyingManagement {
         logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner initiated underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
             to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with transactions database id  ${txDbId}.`);
         await this.checkForLowOwnerUnderlyingBalance();
+        return true;
     }
 
     async checkForLowOwnerUnderlyingBalance() {
@@ -181,7 +189,7 @@ export class AgentBotUnderlyingManagement {
      * @param underlyingPayment AgentUnderlyingPayment entity
      */
     async checkPaymentProofAvailable(rootEm: EM, underlyingPayment: Readonly<AgentUnderlyingPayment>): Promise<void> {
-        logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash} is available.`);
+        logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment database id ${underlyingPayment.txDbId} is available.`);
         assertNotNull(underlyingPayment.txDbId);
         const info = await this.context.wallet.checkTransactionStatus(underlyingPayment.txDbId);
         if ((info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED)
@@ -270,6 +278,8 @@ export class AgentBotUnderlyingManagement {
             await this.notifier.sendConfirmWithdrawUnderlying(underlyingPayment.type);
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} confirmed underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
                 with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
+            const agentInfo = await this.agent.getAgentInfo();
+            console.log(`Agent ${this.agent.vaultAddress} free underlying is ${agentInfo.freeUnderlyingBalanceUBA.toString()}`)
         } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
                 in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);

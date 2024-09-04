@@ -1,10 +1,10 @@
-import { Entity, ManyToMany, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
-import {BNType} from "../utils/orm-types";
+import { Entity, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { BNType } from "../utils/orm-types";
 import BN from "bn.js";
 import { TransactionEntity } from "./transaction";
 
-@Entity({tableName: "transaction_output"})
-export class TransactionOutputEntity {
+@Entity({ tableName: "transaction_input" })
+export class TransactionInputEntity {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
@@ -28,5 +28,4 @@ export class TransactionOutputEntity {
 
     @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     updatedAt: Date = new Date();
-
 }

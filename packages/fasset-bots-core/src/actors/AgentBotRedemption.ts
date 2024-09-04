@@ -259,14 +259,14 @@ export class AgentBotRedemption {
         try {
             // TODO: what if there are too little funds on underlying address to pay for fee?
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
-                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference);
+                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp).toNumber());
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,
                 state: AgentRedemptionState.PAID,
             });
             await this.notifier.sendRedemptionPaid(redemption.requestId);
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} paid for redemption ${redemption.requestId}
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} initiated payment for redemption ${redemption.requestId}
                 with txDbId ${txDbId}; target underlying address ${redemption.paymentAddress}, payment reference
                 ${redemption.paymentReference}, amount ${paymentAmount}.`);
         } catch (error) {

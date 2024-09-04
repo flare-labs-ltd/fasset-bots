@@ -17,6 +17,7 @@ export { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAcco
 export { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
 export { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
 export * from "./interfaces/IWalletTransaction";
+export { logger } from "./utils/logger";
 
 export module WALLET {
 

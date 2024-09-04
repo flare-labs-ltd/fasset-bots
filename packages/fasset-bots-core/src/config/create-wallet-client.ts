@@ -4,6 +4,7 @@ import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { EntityManager } from "@mikro-orm/core";
+import { WalletApiType } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 const supportedSourceIds = [ChainId.XRP, ChainId.BTC, ChainId.DOGE, ChainId.testXRP, ChainId.testBTC, ChainId.testDOGE];
 
@@ -29,11 +30,15 @@ export async function createWalletClient(
     chainId: ChainId,
     walletUrl: string,
     em: EntityManager,
+    walletApiType: WalletApiType | null,
     options: StuckTransaction = {}
 ): Promise<WalletClient> {
     requireSupportedChainId(chainId);
     const walletKeys = DBWalletKeys.from(em, secrets);
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
+        if (!walletApiType) {
+            throw new CommandLineError(`WalletApiType is missing for ${chainId.chainName}.`);
+        }
         return await WALLET.BTC.initialize({
             url: walletUrl,
             username: "",
@@ -42,9 +47,13 @@ export async function createWalletClient(
             apiTokenKey: secrets.optional("apiKey.btc_rpc"),
             stuckTransactionOptions: options,
             em,
-            walletKeys
+            walletKeys,
+            api: walletApiType
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
+        if (!walletApiType) {
+            throw new CommandLineError(`WalletApiType is missing for ${chainId.chainName}.`);
+        }
         return await WALLET.DOGE.initialize({
             url: walletUrl,
             username: "",
@@ -53,7 +62,8 @@ export async function createWalletClient(
             apiTokenKey: secrets.optional("apiKey.doge_rpc"),
             stuckTransactionOptions: options,
             em,
-            walletKeys
+            walletKeys,
+            api: walletApiType
         }); // UtxoMccCreate
     } else {
         return await WALLET.XRP.initialize({

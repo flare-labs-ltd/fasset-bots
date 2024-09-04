@@ -18,7 +18,7 @@ describe("XRP network helper tests", () => {
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       const wClient: WALLET.XRP = await WALLET.XRP.initialize(XRPMccConnectionTest);
-      expect(wClient.client.defaults.auth).to.not.be.undefined;
+      expect(wClient.blockchainAPI.client.defaults.auth).to.not.be.undefined;
    });
 
    it("Should create config with custom timeouts", async () => {
@@ -32,7 +32,7 @@ describe("XRP network helper tests", () => {
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       const wClient: WALLET.XRP = await WALLET.XRP.initialize(XRPMccConnectionTest);
-      expect(wClient.client.defaults.timeout).to.eq(XRPMccConnectionTest.rateLimitOptions!.timeoutMs);
+      expect(wClient.blockchainAPI.client.defaults.timeout).to.eq(XRPMccConnectionTest.rateLimitOptions!.timeoutMs);
    });
 
    it("Should create config with default settings", async () => {
@@ -43,7 +43,7 @@ describe("XRP network helper tests", () => {
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       const wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
-      expect(wClient.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs);
+      expect(wClient.blockchainAPI.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs);
    });
 
    it("Should create config with predefined 'stuckTransactionConstants'", async () => {
@@ -52,7 +52,7 @@ describe("XRP network helper tests", () => {
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       const wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
-      expect(wClient.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs);
+      expect(wClient.blockchainAPI.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs);
       expect(wClient.blockOffset).to.eq(XRPMccConnectionTest.stuckTransactionOptions!.blockOffset);
       expect(wClient.feeIncrease).to.eq(XRPMccConnectionTest.stuckTransactionOptions!.feeIncrease);
    });

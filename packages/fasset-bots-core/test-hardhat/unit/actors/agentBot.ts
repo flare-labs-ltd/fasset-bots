@@ -145,17 +145,16 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyLog = spy.on(console, "error");
         // create redemption with invalid state
-        const rd = orm.em.create(AgentRedemption, {
-            state: "invalid" as AgentRedemptionState,
-            agentAddress: "",
-            requestId: "",
-            paymentAddress: "",
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            paymentReference: "",
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-        });
+        const rd = new AgentRedemption();
+        rd.state = "invalid" as AgentRedemptionState;
+        rd.agentAddress = "";
+        rd.requestId = toBN("");
+        rd.paymentAddress = ""
+        rd.valueUBA = toBN(0);
+        rd.feeUBA = toBN(0);
+        rd.paymentReference = "";
+        rd.lastUnderlyingBlock = toBN(0);
+        rd.lastUnderlyingTimestamp = toBN(0);
         await orm.em.persistAndFlush(rd);
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.redemption.handleOpenRedemption(orm.em, rd.state, rd);
@@ -166,18 +165,17 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyLog = spy.on(console, "error");
         // create minting with invalid state
-        const mt = orm.em.create(AgentMinting, {
-            state: "invalid" as AgentMintingState,
-            agentAddress: "",
-            agentUnderlyingAddress: "",
-            requestId: toBN(0),
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            firstUnderlyingBlock: toBN(0),
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            paymentReference: "",
-        });
+        const mt = new AgentMinting();
+        mt.state = "invalid" as AgentMintingState;
+        mt.agentAddress = "";
+        mt.requestId = toBN("");
+        mt.agentUnderlyingAddress = ""
+        mt.valueUBA = toBN(0);
+        mt.feeUBA = toBN(0);
+        mt.firstUnderlyingBlock = toBN(0);
+        mt.paymentReference = "";
+        mt.lastUnderlyingBlock = toBN(0);
+        mt.lastUnderlyingTimestamp = toBN(0);
         await orm.em.persistAndFlush(mt);
         await agentBot.minting.nextMintingStep(orm.em, mt.id);
         expect(spyLog).to.have.been.called.once;
@@ -193,28 +191,28 @@ describe("Agent bot unit tests", () => {
     it("Should return open redemptions", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         // create redemptions
-        const rd1 = orm.em.create(AgentRedemption, {
-            state: AgentRedemptionState.STARTED,
-            agentAddress: agentBot.agent.vaultAddress,
-            requestId: "000",
-            paymentAddress: "",
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            paymentReference: "",
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-        });
-        const rd2 = orm.em.create(AgentRedemption, {
-            state: AgentRedemptionState.DONE,
-            agentAddress: agentBot.agent.vaultAddress,
-            requestId: "001",
-            paymentAddress: "",
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            paymentReference: "",
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-        });
+        const rd1 = new AgentRedemption();
+        rd1.state = AgentRedemptionState.STARTED;
+        rd1.agentAddress = agentBot.agent.vaultAddress;
+        rd1.requestId = toBN("000");
+        rd1.paymentAddress = ""
+        rd1.valueUBA = toBN(0);
+        rd1.feeUBA = toBN(0);
+        rd1.paymentReference = "";
+        rd1.lastUnderlyingBlock = toBN(0);
+        rd1.lastUnderlyingTimestamp = toBN(0);
+
+        const rd2 = new AgentRedemption();
+        rd2.state = AgentRedemptionState.DONE;
+        rd2.agentAddress = agentBot.agent.vaultAddress;
+        rd2.requestId = toBN("001");
+        rd2.paymentAddress = ""
+        rd2.valueUBA = toBN(0);
+        rd2.feeUBA = toBN(0);
+        rd2.paymentReference = "";
+        rd2.lastUnderlyingBlock = toBN(0);
+        rd2.lastUnderlyingTimestamp = toBN(0);
+
         await orm.em.persistAndFlush([rd1, rd2]);
         const started = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.STARTED, 100);
         const done = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.DONE, 100);
@@ -226,20 +224,19 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.context.attestationProvider, "obtainReferencedPaymentNonexistenceProof");
         // create minting
-        const mt = orm.em.create(AgentMinting, {
-            state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
-            agentAddress: "",
-            agentUnderlyingAddress: "",
-            requestId: toBN(0),
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            firstUnderlyingBlock: toBN(0),
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            paymentReference: "",
-            proofRequestRound: 1,
-            proofRequestData: "",
-        });
+        const mt = new AgentMinting();
+        mt.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
+        mt.agentAddress = "";
+        mt.requestId = toBN(0);
+        mt.agentUnderlyingAddress = ""
+        mt.valueUBA = toBN(0);
+        mt.feeUBA = toBN(0);
+        mt.firstUnderlyingBlock = toBN(0);
+        mt.paymentReference = "";
+        mt.lastUnderlyingBlock = toBN(0);
+        mt.lastUnderlyingTimestamp = toBN(0);
+        mt.proofRequestRound = 1;
+        mt.proofRequestData = "";
         await agentBot.minting.checkNonPayment(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
@@ -248,20 +245,19 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
         // create minting
-        const mt = orm.em.create(AgentMinting, {
-            state: AgentMintingState.REQUEST_PAYMENT_PROOF,
-            agentAddress: "",
-            agentUnderlyingAddress: "",
-            requestId: toBN(0),
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            firstUnderlyingBlock: toBN(0),
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            paymentReference: "",
-            proofRequestRound: 1,
-            proofRequestData: "",
-        });
+        const mt = new AgentMinting();
+        mt.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
+        mt.agentAddress = "";
+        mt.requestId = toBN(0);
+        mt.agentUnderlyingAddress = ""
+        mt.valueUBA = toBN(0);
+        mt.feeUBA = toBN(0);
+        mt.firstUnderlyingBlock = toBN(0);
+        mt.paymentReference = "";
+        mt.lastUnderlyingBlock = toBN(0);
+        mt.lastUnderlyingTimestamp = toBN(0);
+        mt.proofRequestRound = 1;
+        mt.proofRequestData = "";
         await agentBot.minting.checkPaymentAndExecuteMinting(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
     });
@@ -270,19 +266,18 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
         // create redemption
-        const rd = orm.em.create(AgentRedemption, {
-            state: AgentRedemptionState.REQUESTED_PROOF,
-            agentAddress: agentBot.agent.vaultAddress,
-            requestId: "003",
-            paymentAddress: "",
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            paymentReference: "",
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            proofRequestRound: 1,
-            proofRequestData: "",
-        });
+        const rd = new AgentRedemption();
+        rd.state = AgentRedemptionState.REQUESTED_PROOF;
+        rd.agentAddress = agentBot.agent.vaultAddress;
+        rd.requestId = toBN("003");
+        rd.paymentAddress = ""
+        rd.valueUBA = toBN(0);
+        rd.feeUBA = toBN(0);
+        rd.paymentReference = "";
+        rd.lastUnderlyingBlock = toBN(0);
+        rd.lastUnderlyingTimestamp = toBN(0);
+        rd.proofRequestRound = 1;
+        rd.proofRequestData = "";
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
@@ -291,19 +286,18 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
         // create redemption
-        const rd = orm.em.create(AgentRedemption, {
-            state: AgentRedemptionState.REQUESTED_PROOF,
-            agentAddress: agentBot.agent.vaultAddress,
-            requestId: "003",
-            paymentAddress: "",
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            paymentReference: "",
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            proofRequestRound: 1,
-            proofRequestData: "",
-        });
+        const rd = new AgentRedemption();
+        rd.state = AgentRedemptionState.REQUESTED_PROOF;
+        rd.agentAddress = agentBot.agent.vaultAddress;
+        rd.requestId = toBN("003");
+        rd.paymentAddress = ""
+        rd.valueUBA = toBN(0);
+        rd.feeUBA = toBN(0);
+        rd.paymentReference = "";
+        rd.lastUnderlyingBlock = toBN(0);
+        rd.lastUnderlyingTimestamp = toBN(0);
+        rd.proofRequestRound = 1;
+        rd.proofRequestData = "";
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
@@ -312,14 +306,13 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.context.attestationProvider, "obtainPaymentProof");
         // create underlying payment
-        const up = orm.em.create(AgentUnderlyingPayment, {
-            state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
-            type: AgentUnderlyingPaymentType.TOP_UP,
-            agentAddress: agentBot.agent.vaultAddress,
-            txHash: "hash",
-            proofRequestRound: 1,
-            proofRequestData: "data",
-        });
+        const up = new AgentUnderlyingPayment();
+        up.state = AgentUnderlyingPaymentState.REQUESTED_PROOF;
+        up.agentAddress = agentBot.agent.vaultAddress;
+        up.type = AgentUnderlyingPaymentType.TOP_UP;
+        up.txHash = "hash";
+        up.proofRequestRound = 1;
+        up.proofRequestData = "data";
         await agentBot.underlyingManagement.checkConfirmPayment(orm.em, up);
         expect(spyProof).to.have.been.called.once;
     });
@@ -329,20 +322,19 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.notifier, "sendMintingDefaultFailure");
         // create minting
-        const mt = orm.em.create(AgentMinting, {
-            state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,
-            agentAddress: "",
-            agentUnderlyingAddress: "",
-            requestId: toBN(0),
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            firstUnderlyingBlock: toBN(0),
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            paymentReference: "",
-            proofRequestRound: 0,
-            proofRequestData: "",
-        });
+        const mt = new AgentMinting();
+        mt.state = AgentMintingState.REQUEST_NON_PAYMENT_PROOF;
+        mt.agentAddress = "";
+        mt.requestId = toBN(0);
+        mt.agentUnderlyingAddress = ""
+        mt.valueUBA = toBN(0);
+        mt.feeUBA = toBN(0);
+        mt.firstUnderlyingBlock = toBN(0);
+        mt.paymentReference = "";
+        mt.lastUnderlyingBlock = toBN(0);
+        mt.lastUnderlyingTimestamp = toBN(0);
+        mt.proofRequestRound = 0;
+        mt.proofRequestData = "";
         await orm.em.persistAndFlush(mt);
         await agentBot.minting.checkNonPayment(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
@@ -353,20 +345,19 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.notifier, "sendMintingNoProofObtained");
         // create minting
-        const mt = orm.em.create(AgentMinting, {
-            state: AgentMintingState.REQUEST_PAYMENT_PROOF,
-            agentAddress: "",
-            agentUnderlyingAddress: "",
-            requestId: toBN(0),
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            firstUnderlyingBlock: toBN(0),
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            paymentReference: "",
-            proofRequestRound: 0,
-            proofRequestData: "",
-        });
+        const mt = new AgentMinting();
+        mt.state = AgentMintingState.REQUEST_PAYMENT_PROOF;
+        mt.agentAddress = "";
+        mt.requestId = toBN(0);
+        mt.agentUnderlyingAddress = ""
+        mt.valueUBA = toBN(0);
+        mt.feeUBA = toBN(0);
+        mt.firstUnderlyingBlock = toBN(0);
+        mt.paymentReference = "";
+        mt.lastUnderlyingBlock = toBN(0);
+        mt.lastUnderlyingTimestamp = toBN(0);
+        mt.proofRequestRound = 0;
+        mt.proofRequestData = "";
         await orm.em.persistAndFlush(mt);
         await agentBot.minting.checkPaymentAndExecuteMinting(orm.em, mt);
         expect(spyProof).to.have.been.called.once;
@@ -377,19 +368,18 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.notifier, "sendRedemptionNoProofObtained");
         // create redemption
-        const rd = orm.em.create(AgentRedemption, {
-            state: AgentRedemptionState.REQUESTED_PROOF,
-            agentAddress: agentBot.agent.vaultAddress,
-            requestId: "003",
-            paymentAddress: "",
-            valueUBA: toBN(0),
-            feeUBA: toBN(0),
-            paymentReference: "",
-            lastUnderlyingBlock: toBN(0),
-            lastUnderlyingTimestamp: toBN(0),
-            proofRequestRound: 0,
-            proofRequestData: "",
-        });
+        const rd = new AgentRedemption();
+        rd.state = AgentRedemptionState.REQUESTED_PROOF;
+        rd.agentAddress = agentBot.agent.vaultAddress;
+        rd.requestId = toBN("003");
+        rd.paymentAddress = ""
+        rd.valueUBA = toBN(0);
+        rd.feeUBA = toBN(0);
+        rd.paymentReference = "";
+        rd.lastUnderlyingBlock = toBN(0);
+        rd.lastUnderlyingTimestamp = toBN(0);
+        rd.proofRequestRound = 0;
+        rd.proofRequestData = "";
         await orm.em.persistAndFlush(rd);
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
@@ -410,14 +400,13 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyProof = spy.on(agentBot.notifier, "sendAgentUnderlyingPaymentNoProofObtained");
         // create underlying payment
-        const up = orm.em.create(AgentUnderlyingPayment, {
-            state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
-            type: AgentUnderlyingPaymentType.TOP_UP,
-            agentAddress: agentBot.agent.vaultAddress,
-            txHash: "hash",
-            proofRequestRound: 0,
-            proofRequestData: "data",
-        });
+        const up = new AgentUnderlyingPayment();
+        up.state = AgentUnderlyingPaymentState.REQUESTED_PROOF;
+        up.agentAddress = agentBot.agent.vaultAddress;
+        up.type = AgentUnderlyingPaymentType.TOP_UP;
+        up.txHash = "hash";
+        up.proofRequestRound = 0;
+        up.proofRequestData = "data";
         await orm.em.persistAndFlush(up);
         await agentBot.underlyingManagement.checkConfirmPayment(orm.em, up);
         expect(spyProof).to.have.been.called.once;
@@ -466,12 +455,11 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         // announce updates
         const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
-        const updateSettingFee = orm.em.create(AgentUpdateSetting, {
-            agent: await agentBot.fetchAgentEntity(orm.em),
-            name: AgentSettingName.FEE,
-            state: AgentUpdateSettingState.WAITING,
-            validAt: validAtFeeBIPS
-        });
+        const updateSettingFee = new AgentUpdateSetting();
+        updateSettingFee.state = AgentUpdateSettingState.WAITING;
+        updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
+        updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.validAt = validAtFeeBIPS;
         await orm.em.persist(updateSettingFee).flush();
         // not yet allowed
         await agentBot.handleTimelockedProcesses(orm.em);
@@ -482,12 +470,11 @@ describe("Agent bot unit tests", () => {
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.DONE);
         // announce and try to update an expired update
         const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
-        const updateSettingPoolTopup = orm.em.create(AgentUpdateSetting, {
-            agent: await agentBot.fetchAgentEntity(orm.em),
-            name: AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR,
-            state: AgentUpdateSettingState.WAITING,
-            validAt: validAt2
-        });
+        const updateSettingPoolTopup = new AgentUpdateSetting();
+        updateSettingPoolTopup.state = AgentUpdateSettingState.WAITING;
+        updateSettingPoolTopup.agent = await agentBot.fetchAgentEntity(orm.em);
+        updateSettingPoolTopup.name = AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR;
+        updateSettingPoolTopup.validAt = validAt2;
         await orm.em.persist(updateSettingPoolTopup).flush();
         // cannot update, update expired
         await time.increaseTo(validAt2.add(invalidUpdateSeconds));
@@ -500,13 +487,11 @@ describe("Agent bot unit tests", () => {
         const feeBIPS = toBN((await agentBot.agent.getAgentInfo()).feeBIPS);
         //Announce updates
         const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", feeBIPS.muln(10));
-        const updateSettingFee = orm.em.create(AgentUpdateSetting, {
-            agent: await agentBot.fetchAgentEntity(orm.em),
-            name: AgentSettingName.FEE,
-            state: AgentUpdateSettingState.WAITING,
-            validAt: validAtFeeBIPS
-        });
-
+        const updateSettingFee = new AgentUpdateSetting();
+        updateSettingFee.state = AgentUpdateSettingState.WAITING;
+        updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
+        updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.validAt = validAtFeeBIPS;
         await orm.em.persist(updateSettingFee).flush();
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.WAITING);
         //allowed
@@ -663,6 +648,8 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingBlock: toBN(0),
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
+            createdAt: new Date(),
+            updatedAt: new Date()
         };
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
@@ -700,6 +687,8 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
             txHash: transactionHash1,
+            createdAt: new Date(),
+            updatedAt: new Date()
         };
         await agentBot.redemption.requestPaymentProof(orm.em, redemption)
             .catch(e => console.error(e));
@@ -845,14 +834,13 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyLog = spy.on(console, "error");
         // create underlying payment with invalid state
-        const up = orm.em.create(AgentUnderlyingPayment, {
-            state: "invalid" as AgentUnderlyingPaymentState,
-            type: AgentUnderlyingPaymentType.TOP_UP,
-            agentAddress: agentBot.agent.vaultAddress,
-            txHash: "hash",
-            proofRequestRound: 1,
-            proofRequestData: "data",
-        });
+        const up = new AgentUnderlyingPayment();
+        up.state = "invalid" as AgentUnderlyingPaymentState;
+        up.agentAddress = agentBot.agent.vaultAddress;
+        up.type = AgentUnderlyingPaymentType.TOP_UP;
+        up.txHash = "hash";
+        up.proofRequestRound = 1;
+        up.proofRequestData = "data";
         await orm.em.persistAndFlush(up);
         await agentBot.underlyingManagement.nextUnderlyingPaymentStep(orm.em, up.id);
         expect(spyLog).to.have.been.called.once;

@@ -8,6 +8,7 @@ import {BlockStats, FeeServiceConfig} from "../interfaces/IWalletTransaction";
 import {toBN} from "../utils/bnutils";
 import BN from "bn.js";
 import {logger} from "../utils/logger";
+import { errorMessage } from "../chain-clients/utils";
 
 export class FeeService {
     client: AxiosInstance;
@@ -37,9 +38,6 @@ export class FeeService {
         this.sleepTimeMs = config.sleepTimeMs;
 
         this.history = [];
-
-        // TODO: find better solution for this, since matheo is using self-signed cert
-        process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = "0";
     }
 
     async getLatestFeeStats() {
@@ -112,9 +110,10 @@ export class FeeService {
 
     async getCurrentBlockHeight() {
         try {
-            const response = await this.client.get(`/info`);
+            const response = await this.client.get(``);
             return response.data?.blockbook?.bestHeight ?? 0;
         } catch (error) {
+            logger.error(`Fee service failed to fetch block height ${errorMessage(error)}`);
             return 0;
         }
     }

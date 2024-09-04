@@ -71,6 +71,7 @@ export interface UTXOFeeParams {
    source: string;
    destination: string;
    amount: BN | null;
+   note?: string;
 }
 
 export type FeeParams = XRPFeeParams | UTXOFeeParams;
@@ -92,11 +93,18 @@ export interface StuckTransaction {
 }
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
-export type BlockchainAPI = "bitcore" | "blockbook";
+export type WalletApiType = "bitcore" | "blockbook";
+export interface WalletApi {
+   type: WalletApiType;
+   url: string;
+   apiTokenKey?: string;
+   username?: string; // probably never used
+   password?: string; // probably never used
+}
 
 export interface BaseWalletConfig {
    url: string;
-   api?: BlockchainAPI;
+   api?: WalletApiType;
    inTestnet?: boolean;
    apiTokenKey?: string;
    username?: string; // probably never used
@@ -106,8 +114,10 @@ export interface BaseWalletConfig {
    enoughConfirmations?: number,
    feeServiceConfig?: FeeServiceConfig;
    feeDecileIndex?: number, // the decile from which to use the fee if there's a fee-service running (eg 8 is 8-th decile)
+   relayFeePerB?: number,
    em: EntityManager;
    walletKeys: IWalletKeys;
+   fallbackAPIs?: WalletApi[]
 }
 
 export type RippleWalletConfig = BaseWalletConfig;

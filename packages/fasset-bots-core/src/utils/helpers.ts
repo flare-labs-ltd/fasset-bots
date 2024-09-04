@@ -32,7 +32,7 @@ export const MAX_UINT256 = toBN(1).shln(256).subn(1);
 export const DEFAULT_TIMEOUT = 15000;
 export const DEFAULT_RETRIES = 3;
 
-export const TRANSACTION_FEE_FACTOR = 2;
+export const TRANSACTION_FEE_FACTOR = 1.4;
 
 /**
  * Asynchronously wait `ms` milliseconds.
