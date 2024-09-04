@@ -38,8 +38,6 @@ export class BlockbookAPI implements IBlockchainAPI {
         const res = await this.client.get(`/feestats/${block.number}`);
         const BTC_PER_SATOSHI = 1 / 100000000;
         const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI
-        logger.info(`Received fee: ${fee} in for block ${block.number}`);
-        console.info(`Received fee: ${fee} in for block ${block.number}`);
         return fee;
     }
 
