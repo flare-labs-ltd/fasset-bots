@@ -618,8 +618,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
             tr.fee(toNumber(feeInSatoshi));
         }
+        console.log(`Transaction ${txDbId} prepare test check: ${isPayment && !feeInSatoshi}`);
         if (isPayment && !feeInSatoshi) {
             const feeRatePerKB = await getFeePerKB(this);
+            console.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`)
             logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`)
             tr.feePerKb(Number(feeRatePerKB));
         }
