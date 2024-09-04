@@ -18,7 +18,8 @@
     "------------ build ---------------": "----------------- build -----------------",
     "build": "tsc --allowJs && cp addresses.json dist",
     "------------ cli ---------------": "----------------- cli -----------------",
-    "cli": "yarn ts-node src/cli.ts"
+    "cli": "yarn ts-node src/cli.ts",
+    "cli-prod": "node dist/src/cli.js"
   },
   "license": "MIT",
   "devDependencies": {
