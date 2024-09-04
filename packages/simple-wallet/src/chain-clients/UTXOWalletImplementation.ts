@@ -388,7 +388,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         try {
             // rbfReplacementFor is used since the RBF needs to use at least of the UTXOs spent by the original transaction
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
-            const [transaction, dbUTXOs] = await this.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount || null, txEnt.fee, txEnt.reference, rbfReplacementFor);
+            const [transaction, dbUTXOs] = await this.preparePaymentTransaction(txEnt.id,txEnt.source, txEnt.destination, txEnt.amount || null, txEnt.fee, txEnt.reference, rbfReplacementFor);
             const privateKey = await this.walletKeys.getKey(txEnt.source);
 
             if (!privateKey) {
@@ -553,6 +553,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @returns {Object} - BTC/DOGE transaction object
      */
     private async preparePaymentTransaction(
+        txDbId: number,
         source: string,
         destination: string,
         amountInSatoshi: BN | null,
@@ -575,12 +576,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
         if (amountInSatoshi.lte(getDustAmount(this.chainType))) {
             throw new LessThanDustAmountError(
-                `Will not prepare transaction for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
+                `Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
             );
         }
 
         if (toBN(utxosAmount).sub(amountInSatoshi).lten(0)) {
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction; utxos: ${utxos}, utxosAmount: ${utxosAmount.toString()}, ${amountInSatoshi.toString()}`);//TODO - do not fetch indefinitely - maybe check if fee quite high?
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxos: ${utxos}, utxosAmount: ${utxosAmount.toString()}, ${amountInSatoshi.toString()}`);//TODO - do not fetch indefinitely - maybe check if fee quite high?
         }
 
         const tr = new core.Transaction().from(utxos.map((utxo) => new UnspentOutput(utxo))).to(destination, toNumber(amountInSatoshi));
@@ -597,7 +598,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const estFee = await getEstimateFee(this, tr.inputs.length, tr.outputs.length);
                 const correctFee = hasTooHighOrLowFee(this.chainType, estFee, bitcoreEstFee) ? toBN(bitcoreEstFee) : estFee;
                 throw new InvalidFeeError(
-                    `Provided fee ${feeInSatoshi.toNumber()} fails bitcore serialization checks! bitcoreEstFee: ${bitcoreEstFee}, estFee: ${estFee.toNumber()}`,
+                    `Transaction ${txDbId}: Provided fee ${feeInSatoshi.toNumber()} fails bitcore serialization checks! bitcoreEstFee: ${bitcoreEstFee}, estFee: ${estFee.toNumber()}`,
                     correctFee,
                 );
             }
@@ -610,7 +611,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     // Set the new fee to (sum of all descendant fees + size of replacement tx * relayFee) * feeIncrease
                     const correctFee = totalFee.add(relayFee.muln(this.relayFeePerB)).muln(this.feeIncrease); // TODO: Is this a good fee?
                     throw new InvalidFeeError(
-                        `Additional fee ${feeInSatoshi.toNumber()} for replacement tx is lower than relay fee`,
+                        `Transaction ${txDbId}: Additional fee ${feeInSatoshi.toNumber()} for replacement tx is lower than relay fee`,
                         correctFee,
                     );
                 }
@@ -619,6 +620,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
         if (isPayment && !feeInSatoshi) {
             const feeRatePerKB = await getFeePerKB(this);
+            logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`)
             tr.feePerKb(Number(feeRatePerKB));
         }
         return [tr, dbUTXOs];

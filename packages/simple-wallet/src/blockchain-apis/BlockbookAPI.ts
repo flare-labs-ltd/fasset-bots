@@ -5,6 +5,7 @@ import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
 import { getConfirmedAfter } from "../utils/utils";
+import { logger } from "../utils/logger";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -36,7 +37,9 @@ export class BlockbookAPI implements IBlockchainAPI {
         const block = await this.getCurrentBlockHeight();
         const res = await this.client.get(`/feestats/${block.number}`);
         const BTC_PER_SATOSHI = 1 / 100000000;
-        return res.data.averageFeePerKb * BTC_PER_SATOSHI;
+        const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI
+        logger.info(`Received fee: ${fee} in for block ${block.number}`);
+        return fee;
     }
 
     async getTransaction(txHash: string | undefined): Promise<axios.AxiosResponse<any>> {
