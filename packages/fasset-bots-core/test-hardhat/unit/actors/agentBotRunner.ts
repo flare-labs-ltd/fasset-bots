@@ -104,11 +104,18 @@ describe("Agent bot runner tests", () => {
             // create runner
             const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
             const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
-            // run
+            // run step
             await agentBotRunner.runStep();
-            await stopRunner(agentBotRunner);
             // check
             expect(spyTopup).to.be.called.once;
+            // create another bot - it should be picked by the runner on next step
+            await createTestAgentBot(context, orm, ownerAddress, undefined, false);
+            // run step
+            await agentBotRunner.runStep();
+            // finish
+            await stopRunner(agentBotRunner);
+            // check for 2
+            expect(spyTopup).to.be.called.exactly(2);
         } finally {
             spy.restore(AgentBotUnderlyingManagement.prototype);
         }
