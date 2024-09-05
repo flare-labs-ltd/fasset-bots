@@ -1,5 +1,5 @@
 import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
@@ -36,7 +36,7 @@ export class BitcoreAPI implements IBlockchainAPI {
         return res.data.feerate;
     }
 
-    async getTransaction(txHash: string | undefined): Promise<axios.AxiosResponse> {
+    async getTransaction(txHash: string | undefined): Promise<AxiosResponse> {
         return this.client.get(`/tx/${txHash}`);
     }
 
@@ -65,7 +65,7 @@ export class BitcoreAPI implements IBlockchainAPI {
         return this.getUTXOsFromMempool(address, chainType);
     }
 
-    async sendTransaction(tx: string): Promise<axios.AxiosResponse> {
+    async sendTransaction(tx: string): Promise<AxiosResponse> {
         return this.client.post(`/tx/send`, { rawTx: tx });
     }
 

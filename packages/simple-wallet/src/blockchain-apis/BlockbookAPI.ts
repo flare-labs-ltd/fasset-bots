@@ -1,5 +1,5 @@
 import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
@@ -16,6 +16,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         this.client = axiosRateLimit(client, {
             ...DEFAULT_RATE_LIMIT_OPTIONS,
             ...rateLimitOptions,
+
         });
         this.rootEm = rootEm;
     }
@@ -41,7 +42,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         return fee;
     }
 
-    async getTransaction(txHash: string | undefined): Promise<axios.AxiosResponse<any>> {
+    async getTransaction(txHash: string | undefined): Promise<AxiosResponse<any>> {
         return await this.client.get(`/tx/${txHash}`);
     }
 
@@ -73,7 +74,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         return res.data.vout[vout]?.scriptPubKey?.hex ?? "";
     }
 
-    async sendTransaction(tx: string): Promise<axios.AxiosResponse> {
+    async sendTransaction(tx: string): Promise<AxiosResponse> {
         return await this.client.get(`/sendtx/${tx}`);
     }
 
