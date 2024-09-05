@@ -44,14 +44,7 @@ program
             const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
             const validator = await AgentBotOwnerValidation.fromContext(cli.context, options.secrets, options.config);
             await validator.validate([options.fasset]);
-            const agent = await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
-            // check for top up
-            const minFreeUnderlyingBalance = cli.agentBotSettings.minimumFreeUnderlyingBalance;
-            if (minFreeUnderlyingBalance) {
-                console.warn("Topping up underlying. Make sure run-agent script is running")
-                const { agentBot } = await cli.getAgentBot(agent.vaultAddress);
-                await agentBot.underlyingManagement.checkUnderlyingBalanceAndTopup(cli.orm.em);
-            }
+            await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
         } else {
             if (agentSettingsPath != null) {
                 console.error(`File ${agentSettingsPath} does not exist.`);
