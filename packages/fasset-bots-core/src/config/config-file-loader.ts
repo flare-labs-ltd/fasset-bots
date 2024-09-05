@@ -68,7 +68,7 @@ function mergeFAssets(overrideFile: string, configFAssets: Record<string, any>, 
     return resultFAssets;
 }
 
-function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
+export function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
     try {
         const json = JsonLoader.loadSimple(fPath);
         if ("extends" in (json as any)) {

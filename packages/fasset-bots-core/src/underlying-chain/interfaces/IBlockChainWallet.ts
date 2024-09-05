@@ -1,9 +1,20 @@
-import { FeeParams, TransactionInfo } from "@flarelabs/simple-wallet";
+import { FeeParams, RateLimitOptions, TransactionInfo } from "../../../../simple-wallet/src/index";
 import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
 
 export type WalletApiType = "blockbook" | "bitcore";
+
+export interface FeeServiceOptions {
+    rateLimitOptions?: RateLimitOptions;
+    sleepTimeMs: number;
+    numberOfBlocksInHistory: number;
+}
+
+export interface WalletApi {
+    type: WalletApiType;
+    url: string;
+}
 
 export type UTXO = {
     value: NumberLike;
