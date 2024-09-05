@@ -3,9 +3,9 @@ import xrpl, { convertStringToHex, encodeForSigning, encode as xrplEncode, hashe
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
-import { sleepMs, bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getRandomInt } from "../utils/utils";
+import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../utils/utils";
 import { toBN } from "../utils/bnutils";
-import { BUFFER_PING_INTERVAL, ChainType, DELETE_ACCOUNT_OFFSET, PING_INTERVAL } from "../utils/constants";
+import { ChainType, DELETE_ACCOUNT_OFFSET } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type {
    ICreateWalletResponse,
@@ -24,12 +24,8 @@ import {
    fetchTransactionEntityById,
    failTransaction,
    handleMissingPrivateKey,
-   processTransactions,
    checkIfIsDeleting,
-   setAccountIsDeleting,
-   fetchMonitoringState,
-   updateMonitoringState
-} from "../db/dbutils";
+   setAccountIsDeleting} from "../db/dbutils";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
@@ -37,10 +33,9 @@ const secp256k1 = new elliptic.ec("secp256k1");
 import { logger } from "../utils/logger";
 import { XrpAccountGeneration } from "./account-generation/XrpAccountGeneration";
 import { TransactionStatus, TransactionEntity } from "../entity/transaction";
-import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
-import { MonitoringStateEntity } from "../entity/monitoring_state";
+import { EntityManager } from "@mikro-orm/core";
 import { XRPBlockchainAPI } from "../blockchain-apis/XRPBlockchainAPI";
-import { errorMessage } from "./utils";
+import { TransactionMonitor } from "./monitoring/TransactionMonitor";
 
 const DROPS_PER_XRP = 1000000.0;
 
@@ -60,6 +55,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    restartInDueToError: number = 2000; //2s
    restartInDueNoResponse: number = 20000; //20s
 
+   private monitor: TransactionMonitor;
+
    constructor(createConfig: RippleWalletConfig) {
       super(createConfig.inTestnet ?? false);
       this.inTestnet = createConfig.inTestnet ?? false;
@@ -74,6 +71,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
       this.rootEm = createConfig.em;
       this.walletKeys = createConfig.walletKeys;
+
+      this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
    }
 
    /**
@@ -212,101 +211,23 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    // MONITORING /////////////////////////////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
 
+   async startMonitoringTransactionProgress(): Promise<void> {
+      await this.monitor.startMonitoringTransactionProgress(
+          this.submitPreparedTransactions.bind(this),
+          this.resubmitPendingTransaction.bind(this),
+          this.prepareAndSubmitCreatedTransaction.bind(this),
+          this.checkSubmittedTransaction.bind(this),
+          async () => this.checkXrpNetworkStatus(),
+          this.resubmitSubmissionFailedTransactions.bind(this)
+      );
+   }
+
    async isMonitoring(): Promise<boolean> {
-      const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-      if (!monitoringState) {
-         return false;
-      }
-      const now = (new Date()).getTime();
-      const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
-      return elapsed < BUFFER_PING_INTERVAL;
+      return await this.monitor.isMonitoring();
    }
 
    async stopMonitoring(): Promise<void> {
-      if (this.monitoring == true) {
-         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-            monitoringEnt.lastPingInTimestamp = toBN(0);
-         });
-         this.monitoring = false;
-      }
-   }
-
-   /**
-    * Background processing
-    */
-   async startMonitoringTransactionProgress(): Promise<void> {
-      const randomMs = getRandomInt(0, 500)
-      await sleepMs(randomMs); // to avoid multiple instances starting at the same time
-      try {
-         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-         if (!monitoringState) {
-            logger.info(`Monitoring created for chain ${this.chainType}`);
-            this.rootEm.create(MonitoringStateEntity, { chainType: this.chainType, lastPingInTimestamp: toBN((new Date()).getTime()) } as RequiredEntityData<MonitoringStateEntity>,);
-            await this.rootEm.flush();
-         } else if (monitoringState.lastPingInTimestamp) {
-            logger.info(`Monitoring possibly running for chain ${this.chainType}`);
-            // refetch
-            const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType)
-            const now = (new Date()).getTime();
-            if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
-               logger.info(`Monitoring checking if already running for chain ${this.chainType} ...`);
-               await sleepMs(BUFFER_PING_INTERVAL + randomMs);
-               // recheck the monitoring state
-               const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-               const newNow = (new Date()).getTime();
-               if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                  logger.info(`Another monitoring instance is already running for chain ${this.chainType}`);
-                  return;
-               }
-            }
-         }
-         await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-            monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
-         });
-         this.monitoring = true;
-         logger.info(`Monitoring started for chain ${this.chainType}`);
-
-         void this.updatePing();
-
-         while (this.monitoring) {
-            try {
-               const networkUp = await this.checkXrpNetworkStatus();
-               if (!networkUp) {
-                  logger.error(`Network is down - trying again in ${this.restartInDueNoResponse}`);
-                  await sleepMs(this.restartInDueNoResponse);
-                  continue;
-               }
-
-               await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
-               if (this.shouldStopMonitoring()) break;
-               await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, this.resubmitSubmissionFailedTransactions.bind(this));
-               if (this.shouldStopMonitoring()) break;
-               await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, this.resubmitPendingTransaction.bind(this));
-               if (this.shouldStopMonitoring()) break;
-               await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
-               if (this.shouldStopMonitoring()) break;
-               await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
-               if (this.shouldStopMonitoring()) break;
-            } catch (error) {
-               logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}`, error);
-            }
-            await sleepMs(this.restartInDueToError);
-            if (this.shouldStopMonitoring()) {
-               break;
-            }
-         }
-         logger.info(`Monitoring stopped for chain ${this.chainType}.`);
-      } catch (error) {
-         logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
-      }
-   }
-
-   shouldStopMonitoring() {
-      if (!this.monitoring) {
-         logger.info(`Monitoring should be stopped for chain ${this.chainType}`);
-         return true;
-      }
-      return false;
+      await this.monitor.stopMonitoring();
    }
 
    async checkXrpNetworkStatus(): Promise<boolean> {
@@ -317,20 +238,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       } catch (error) {
          logger.error("Cannot ger response from server", error);
          return false;
-      }
-   }
-
-   private async updatePing(): Promise<void> {
-      while (this.monitoring) {
-         try {
-            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-               monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
-            });
-            await sleepMs(PING_INTERVAL);
-         } catch (error) {
-            logger.error(`Error updating ping status for chain ${this.chainType}`, error);
-            this.monitoring = false;// TODO-urska -> better handle - retry multiple times?
-         }
       }
    }
    ///////////////////////////////////////////////////////////////////////////////////////

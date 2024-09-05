@@ -1,9 +1,9 @@
 import axios from "axios";
 import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
-import { getDefaultFeePerKB, getRandomInt, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
+import { getDefaultFeePerKB, sleepMs, stuckTransactionConstants, unPrefix0x } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
-import { BUFFER_PING_INTERVAL, ChainType, DEFAULT_FEE_INCREASE, PING_INTERVAL } from "../utils/constants";
+import { ChainType, DEFAULT_FEE_INCREASE } from "../utils/constants";
 import {
     BaseWalletConfig,
     IWalletKeys,
@@ -21,28 +21,24 @@ import {
     createInitialTransactionEntity,
     createTransactionOutputEntities,
     failTransaction,
-    fetchMonitoringState,
     fetchTransactionEntityById,
     fetchUnspentUTXOs,
     fetchUTXOs, fetchUTXOsByTxId,
     getTransactionInfoById,
     handleMissingPrivateKey,
-    processTransactions,
     removeUTXOsAndAddReplacement,
     setAccountIsDeleting,
     storeUTXOS,
     transformUTXOEntToTxInputEntity,
-    updateMonitoringState,
     updateTransactionEntity,
     updateUTXOEntity,
 } from "../db/dbutils";
-import { MonitoringStateEntity } from "../entity/monitoring_state";
 import { logger } from "../utils/logger";
 import { UTXOAccountGeneration } from "./account-generation/UTXOAccountGeneration";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { FeeService } from "../fee-service/service";
-import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
+import { EntityManager } from "@mikro-orm/core";
 import { errorMessage, isORMError } from "./utils";
 import {
     checkIfFeeTooHigh,
@@ -64,6 +60,7 @@ import { BlockchainAPIWrapper } from "../blockchain-apis/BlockchainAPIWrapper";
 import { InvalidFeeError, LessThanDustAmountError, NotEnoughUTXOsError } from "../utils/errors";
 import { TransactionInputEntity } from "../entity/transactionInput";
 import UnspentOutput = Transaction.UnspentOutput;
+import { TransactionMonitor } from "./monitoring/TransactionMonitor";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;
@@ -85,6 +82,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     restartInDueToError: number = 2000; //2s
     restartInDueNoResponse: number = 20000; //20s
 
+    private monitor: TransactionMonitor;
+
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
         this.inTestnet = createConfig.inTestnet ?? false;
@@ -103,6 +102,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         if (createConfig.feeServiceConfig) {
             this.feeService = new FeeService(createConfig.feeServiceConfig);
         }
+        this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
     }
 
     /**
@@ -256,113 +256,23 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     ///////////////////////////////////////////////////////////////////////////////////////
     // MONITORING /////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
+    async startMonitoringTransactionProgress(): Promise<void> {
+        await this.monitor.startMonitoringTransactionProgress(
+            this.submitPreparedTransactions.bind(this),
+            this.checkPendingTransaction.bind(this),
+            this.prepareAndSubmitCreatedTransaction.bind(this),
+            this.checkSubmittedTransaction.bind(this),
+            async () => checkUTXONetworkStatus(this),
+        );
+    }
 
     async isMonitoring(): Promise<boolean> {
-        const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-        if (!monitoringState) {
-            return false;
-        }
-        const now = (new Date()).getTime();
-        const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
-        return elapsed < BUFFER_PING_INTERVAL;
+        return await this.monitor.isMonitoring();
     }
 
     async stopMonitoring(): Promise<void> {
-        await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-            monitoringEnt.lastPingInTimestamp = toBN(0);
-        });
-        this.monitoring = false;
+        await this.monitor.stopMonitoring();
     }
-
-    /**
-     * Background processing
-     */
-    async startMonitoringTransactionProgress(): Promise<void> {
-        const randomMs = getRandomInt(0, 500);
-        await sleepMs(randomMs); // to avoid multiple instances starting at the same time
-        try {
-            const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-            if (!monitoringState) {
-                logger.info(`Monitoring created for chain ${this.chainType}`);
-                this.rootEm.create(MonitoringStateEntity, {
-                    chainType: this.chainType,
-                    lastPingInTimestamp: toBN((new Date()).getTime()),
-                } as RequiredEntityData<MonitoringStateEntity>);
-                await this.rootEm.flush();
-            } else if (monitoringState.lastPingInTimestamp) {
-                logger.info(`Monitoring possibly running for chain ${this.chainType}`);
-                // refetch
-                const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-                const now = (new Date()).getTime();
-                if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
-                    logger.info(`Monitoring checking if already running for chain ${this.chainType} ...`);
-                    await sleepMs(BUFFER_PING_INTERVAL + randomMs);
-                    // recheck the monitoring state
-                    const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-                    const newNow = (new Date()).getTime();
-                    if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                        logger.info(`Another monitoring instance is already running for chain ${this.chainType}`);
-                        return;
-                    }
-                }
-            }
-            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-                monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
-            });
-            this.monitoring = true;
-            logger.info(`Monitoring started for chain ${this.chainType}`);
-
-            void this.updatePing();
-
-            while (this.monitoring) {
-                try {
-                    const networkUp = await checkUTXONetworkStatus(this);
-                    if (!networkUp) {
-                        logger.error(`Network is down - trying again in ${this.restartInDueNoResponse}`);
-                        await sleepMs(this.restartInDueNoResponse);
-                        continue;
-                    }
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, this.submitPreparedTransactions.bind(this));
-                    if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, this.checkPendingTransaction.bind(this));
-                    if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, this.prepareAndSubmitCreatedTransaction.bind(this));
-                    if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, this.checkSubmittedTransaction.bind(this));
-                    if (this.shouldStopMonitoring()) break;
-                } catch (error) {
-                    logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}: ${errorMessage(error)}`);
-                }
-                await sleepMs(this.restartInDueToError);
-            }
-            logger.info(`Monitoring stopped for chain ${this.chainType}.`);
-        } catch (error) {
-            logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
-        }
-    }
-
-    shouldStopMonitoring() {
-        if (!this.monitoring) {
-            logger.info(`Monitoring should be stopped for chain ${this.chainType}`);
-            return true;
-        }
-        return false;
-    }
-
-    private async updatePing(): Promise<void> {
-        while (this.monitoring) {
-            try {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-                    monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
-                });
-                await sleepMs(PING_INTERVAL);
-            } catch (error) {
-                logger.error(`Error updating ping status for chain ${this.chainType}`, error);
-                this.monitoring = false;// TODO-urska -> better handle - retry multiple times?
-            }
-        }
-    }
-
     ///////////////////////////////////////////////////////////////////////////////////////
     // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
