@@ -66,6 +66,9 @@ export class AgentBotTransientStorage {
 
     // the block when outdated agent was last reported
     lastOutdatedEventReported = 0;
+
+    // certain operation (e.g. initial underlying topup) are only run once at the start of session for each agent bot
+    botInitalizationCompleted = false;
 }
 
 export class AgentBotLocks {
@@ -283,6 +286,16 @@ export class AgentBot {
     }
 
     /**
+     * This method will be run once for each bot when run-agent is started and
+     * when a new agent vault is created and detected by the run-agent.
+     */
+    async runBotInitialOperations(rootEm: EM) {
+        if (this.transientStorage.botInitalizationCompleted) return;
+        await this.underlyingManagement.checkUnderlyingBalanceAndTopup(rootEm);
+        this.transientStorage.botInitalizationCompleted = true;
+    }
+
+    /**
      * Run all bot operations in parallel.
      * @param rootEm the database entity manager
      */
@@ -327,7 +340,7 @@ export class AgentBot {
     }
 
     /**
-     * Start theread and optionally run it in a loop.
+     * Start the read and optionally run it in a loop.
      * @param rootEm the entity manager, will be forked for thread
      * @param loop if true, the thread loops until `stopRequested()` is true
      * @param method the thread method (if loop is true, it will be run repeatedly)
