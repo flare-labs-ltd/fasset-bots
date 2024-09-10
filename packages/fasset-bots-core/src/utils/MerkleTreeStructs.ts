@@ -2,8 +2,6 @@ import { EncodingUtils } from "./EncodingUtils";
 import { ethers } from "ethers";
 const coder = ethers.AbiCoder.defaultAbiCoder();
 
-
-
 export interface FeedResult {
     readonly votingRoundId: number;
     readonly id: string; // Needs to be 0x-prefixed for abi encoding

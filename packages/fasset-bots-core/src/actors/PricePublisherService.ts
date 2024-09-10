@@ -1,12 +1,12 @@
 import { web3 } from "../utils";
-import { sleepms, waitFinalize3Factory, getUnixEpochTimestamp } from "../utils/utils";
+import { sleepms, getUnixEpochTimestamp, waitFinalize } from "../utils/utils";
 import { logger } from "../utils/logger";
-import { FeedResult, hashPriceFeedResult, hashRandomResult, IPriceFeedData, RandomResult, TreeResult } from "../utils/MerkleTreeStructs";
+import { FeedResult, hashPriceFeedResult, hashRandomResult, IPriceFeedData, RandomResult } from "../utils/MerkleTreeStructs";
 import axios from 'axios';
 import { MerkleTree } from "../utils/MerkleTree";
-import { PricePublisherState } from "../entities/pricePublisherState";
+import { PricePublisherState } from "../entities/agent";
 import { EM } from "../config/orm";
-
+import { waitFinalizeOptions } from "../config";
 
 export interface ContractEventBatch {
     contractName: string;
@@ -20,8 +20,11 @@ export class PricePublisherService {
     constructor(
         private entityManager: EM,
         private contractsMap: Map<string, any>,
+        private privateKey: string,
+        private maxDelayMs: number,
+        private feedApiPath: string,
     ) {
-        this.waitFinalize3 = waitFinalize3Factory(web3);
+        this.waitFinalize3 = waitFinalize(web3, waitFinalizeOptions);
     }
 
     private pending: number = 0;
@@ -32,7 +35,7 @@ export class PricePublisherService {
         return this.contractsMap.get(name);
     }
 
-    public async readEvents(rps: number, batchSize: number) {
+    public async run(rps: number, batchSize: number) {
         logger.info(`waiting for network connection...`);
         let nextBlockToProcess: number;
         let firstRun = true;
@@ -51,7 +54,7 @@ export class PricePublisherService {
                 // wait for a new block
                 if (nextBlockToProcess > currentBlockNumber) {
                     logger.info(`waiting for a new block | next block to process: ${nextBlockToProcess} | last block: ${currentBlockNumber}`);
-                    // await sleepms(4000);
+                    await sleepms(4000);
                     continue;
                 }
 
@@ -79,9 +82,6 @@ export class PricePublisherService {
             { orderBy: { id: 'DESC' } }
         );
         if (!res) {
-            // if (this.configurationService.indexingStartBlock != null) {
-            //     return this.configurationService.indexingStartBlock - 1;
-            // }
             return currentBlockNumber - 1;
         }
         return res.valueNumber;
@@ -90,7 +90,6 @@ export class PricePublisherService {
     private async saveLastProcessedBlock(newLastProcessedBlock: number) {
         const state = new PricePublisherState();
         state.name = 'lastProcessedBlock';
-        // state.network = this.configurationService.network;
         state.valueNumber = newLastProcessedBlock;
         state.timestamp = getUnixEpochTimestamp();
 
@@ -135,7 +134,7 @@ export class PricePublisherService {
                 const params = event.returnValues;
                 // ftso scaling protocol id
                 if (params.protocolId == 100) {
-                    logger.info(`ProtocolMessageRelayed: ${JSON.stringify(params, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2)} in block ${event.blockNumber}`);
+                    logger.info(`Event ProtocolMessageRelayed emitted for voting round: ${params.votingRoundId} in block ${event.blockNumber}`);
                     await this.getFeedData(Number(params.votingRoundId));
                 }
             }
@@ -143,10 +142,9 @@ export class PricePublisherService {
     }
 
     private async getFeedData(votingRoundId: number) {
-        const nodes: { body: TreeResult; hash?: string; merkleProof: string[] }[] = [];
+        let feedValues: { body: FeedResult; merkleProof: string[] }[] = [];
 
-        const path = "http://127.0.0.1:31004/data";
-        const response = await axios.get(`${path}/${votingRoundId}`, {
+        const response = await axios.get(`${this.feedApiPath}/${votingRoundId}`, {
             headers: {
                 'x-api-key': "abcdef"
             }
@@ -155,40 +153,36 @@ export class PricePublisherService {
         const data: IPriceFeedData = response.data;
         const tree: (FeedResult | RandomResult)[] = data.tree;
 
-        for (let i = 0; i < tree.length; i++) {
-            if (i == 0) {
-                nodes.push({
-                    body: tree[i],
-                    hash: hashRandomResult(tree[i] as RandomResult),
-                    merkleProof: []
-                });
-            } else {
-                nodes.push({
-                    body: tree[i],
-                    hash: hashPriceFeedResult(tree[i] as FeedResult),
-                    merkleProof: []
-                });
-            }
-        }
-        const merkleTree = new MerkleTree((nodes as any).map((n: { hash: string }) => n.hash));
-        for (const node of nodes) {
-            node.merkleProof = merkleTree.getProof(node.hash as any) as any;
-            delete node.hash;
-        }
-        // remove node with random
-        nodes.shift();
+		const randomResult = tree.find(x => !(x as any).id) as RandomResult;
+		const feedResults = tree.filter(x => (x as any).id) as FeedResult[];
+        const merkleTree = new MerkleTree([
+			hashRandomResult(randomResult),
+			...feedResults.map(result => hashPriceFeedResult(result)),
+		]);
+        feedValues = feedResults.map(result => ({
+			body: result,
+			merkleProof: merkleTree.getProof(hashPriceFeedResult(result)) as string[],
+		}));
 
-        // filter out leaves with feedIds for fAssets
         const ftsoV2PriceStore = await this.getContract("FtsoV2PriceStore");
+        // filter out leaves with feedIds for fAssets
         const feedIds = await ftsoV2PriceStore.methods.getFeedIds().call();
-        const nodesFasset = nodes.filter((node: any) => feedIds.includes(node.body.id));
+        const nodesFasset = feedValues.filter((feed: any) => feedIds.includes(feed.body.id));
         // sort nodes by order of feedIds array
         nodesFasset.sort((a: any, b: any) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
+        // random delay between 0 and maxDelayMs
+        await sleepms(Math.random() * this.maxDelayMs);
+        // check if prices are already published
+        const lastPublishedVotingRoundId = await ftsoV2PriceStore.methods.lastPublishedVotingRoundId().call();
+        if (lastPublishedVotingRoundId >= votingRoundId) {
+            logger.info(`Prices for voting round ${votingRoundId} already published`);
+            return;
+        }
         await this.publishFeeds(nodesFasset);
     }
 
     private async publishFeeds(nodes: any[]): Promise<boolean> {
-        const wallet = web3.eth.accounts.privateKeyToAccount(process.env.PRICE_PUBLISHER_PRIVATE_KEY as string);
+        const wallet = web3.eth.accounts.privateKeyToAccount(this.privateKey);
         const ftsoV2PriceStore = await this.getContract("FtsoV2PriceStore");
         const fnToEncode = ftsoV2PriceStore.methods.publishPrices(nodes);
         return await this.signAndFinalize3(wallet, ftsoV2PriceStore.options.address, fnToEncode);
@@ -196,28 +190,40 @@ export class PricePublisherService {
 
     private async signAndFinalize3(fromWallet: any, toAddress: string, fnToEncode: any): Promise<boolean> {
         const nonce = Number((await web3.eth.getTransactionCount(fromWallet.address)));
-        let gasPrice: string | bigint = await web3.eth.getGasPrice();
-        gasPrice = BigInt(gasPrice) * BigInt(150) / BigInt(100);
+        // getBlockNumber sometimes returns a block beyond head block
+        const lastBlock = await web3.eth.getBlockNumber() - 3;
+        // get fee history for the last 50 blocks
+        let gasPrice: bigint;
+        try {
+          const feeHistory = await web3.eth.getFeeHistory(50, lastBlock, [0]);
+          const baseFee = feeHistory.baseFeePerGas;
+          // get max fee of the last 50 blocks
+          let maxFee = BigInt(0);
+          for (const fee of baseFee) {
+            if (BigInt(fee) > maxFee) {
+              maxFee = BigInt(fee);
+            }
+          }
+          gasPrice = maxFee * BigInt(2);
+        } catch (e) {
+          logger.info("using getFeeHistory failed; will use getGasPrice instead");
+          gasPrice = BigInt(await web3.eth.getGasPrice()) * BigInt(2);
+        }
+
         const rawTX = {
-            nonce: nonce,
-            from: fromWallet.address,
-            to: toAddress,
-            gas: "8000000",
-            gasPrice: gasPrice.toString(), //"40000000000",
-            data: fnToEncode.encodeABI()
+          nonce: nonce,
+          from: fromWallet.address,
+          to: toAddress,
+          gas: "8000000",
+          gasPrice: gasPrice.toString(),
+          data: fnToEncode.encodeABI()
         };
         const signedTx = await fromWallet.signTransaction(rawTX);
-        // try {
-        // 	let estimatedGas = await this.contractService.web3.eth.estimateGas(rawTX);
-        // 	this.logger.info("estimated gas: " + estimatedGas);
-        // } catch (e) {
-        // 	this.logger.error("estimateGas error: " + e);
-        // }
 
         try {
             this.pending++;
             logger.info(`Send - pending: ${this.pending}, nonce: ${nonce}, from ${fromWallet.address}, to contract ${toAddress}`);
-            const receipt = await this.waitFinalize3(fromWallet.address, async () => web3.eth.sendSignedTransaction(signedTx.rawTransaction));
+            await this.waitFinalize3(fromWallet.address, async () => web3.eth.sendSignedTransaction(signedTx.rawTransaction));
             // this.logger.info("gas used " + JSON.stringify(receipt.gasUsed, bigIntReplacer));
             return true;
         } catch (e: any) {
@@ -227,7 +233,7 @@ export class PricePublisherService {
                 logger.info("from: " + fromWallet.address + " | to: " + toAddress + " | signAndFinalize3 error: " + e.reason);
             } else {
                 logger.info(fromWallet.address + " | signAndFinalize3 error: " + e);
-                console.dir(e);
+                // console.dir(e);
             }
             return false;
         }

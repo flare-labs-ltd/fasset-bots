@@ -1,20 +1,8 @@
-import { PricePublisherState } from "../entities/pricePublisherState";
 import { requireNotNull } from "../utils";
-import { getWeb3Contract } from "../utils/utils";
+import { getWeb3Contract, WaitFinalizeOptions } from "../utils/utils";
 import { loadContracts } from "./contracts";
-import { createOrm, CreateOrmOptions, ORM } from "./orm";
 import { web3 } from "../utils";
 
-export async function createPricePublisherOrm(): Promise<ORM> {
-    const options: CreateOrmOptions = {
-        type: "sqlite",
-        dbName: "price-publisher.db",
-        entities: [PricePublisherState],
-        allowGlobalContext: true,
-        schemaUpdate: "full"
-    };
-    return createOrm(options);
-}
 
 export async function createContractsMap(contractsJsonPath: string, contracts: string[]): Promise<Map<string, any>> {
     const contractsMap = new Map<string, any>();
@@ -26,3 +14,5 @@ export async function createContractsMap(contractsJsonPath: string, contracts: s
     }
     return contractsMap;
 }
+
+export const waitFinalizeOptions: WaitFinalizeOptions = { extraBlocks: 2, retries: 3, sleepMS: 1000 };

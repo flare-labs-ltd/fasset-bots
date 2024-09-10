@@ -8,6 +8,10 @@ export interface DatabaseAccount {
     password: string;
 }
 
+export interface PricePublisher extends ChainAccount {
+    price_feed_api_path: string;
+}
+
 export type SecretsFile = {
     wallet?: {
         encryption_password: string;
@@ -27,4 +31,5 @@ export type SecretsFile = {
     systemKeeper?: ChainAccount;
     deployer?: ChainAccount;
     database?: DatabaseAccount;
+    pricePublisher?: PricePublisher;
 }

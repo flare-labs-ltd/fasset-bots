@@ -303,3 +303,18 @@ export class AgentUpdateSetting {
     @Property({ type: BNType })
     validAt!: BN;
 }
+
+@Entity({ tableName: 'price-publisher-state' })
+export class PricePublisherState {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property({ type: 'varchar' })
+    name!: string;
+
+    @Property()
+    valueNumber: number = 0;
+
+    @Property()
+    timestamp: number = 0;
+}

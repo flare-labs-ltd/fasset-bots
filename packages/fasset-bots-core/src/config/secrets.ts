@@ -21,6 +21,12 @@ export class Secrets {
         throw new Error(`Secret variable ${key} not defined or not typeof string`);
     }
 
+    stringExistsAndIsNonZero(key: string): [boolean, string] {
+        const value = valueForKeyPath(this.data, key);
+        if (typeof value === "string" && value !== "") return [true, value];
+        return [false, ""];
+    }
+
     optional(key: string): string | undefined {
         const value = valueForKeyPath(this.data, key);
         if (value == undefined) return undefined;

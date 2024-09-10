@@ -63,5 +63,7 @@
     },
     "challengeStrategy": {
         "className": "DefaultChallengeStrategy"
-    }
+    },
+    "pricePublisherContracts": ["Relay", "FtsoV2PriceStore"],
+    "pricePublisherMaxDelayMs": 10000
 }

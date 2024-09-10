@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig, PricePublisherService } from "@flarelabs/fasset-bots-core";
-import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile, createPricePublisherOrm, loadContracts, createContractsMap } from "@flarelabs/fasset-bots-core/config";
+import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile, loadContracts, createContractsMap } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, requireNotNull } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -26,14 +26,19 @@ program.action(async () => {
         const ownerAddress: string = secrets.required("owner.native.address");
         const ownerPrivateKey: string = secrets.required("owner.native.private_key");
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [ownerPrivateKey], ownerAddress);
-        // const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
+        const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
         // create timekeepers
         // const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, timekeeperConfig);
         // timekeeperService.startAll();
-        const pricePublisherOrm = await createPricePublisherOrm();
-        const contractsMap = await createContractsMap(runConfig.contractsJsonFile as any, ["Relay", "FtsoV2PriceStore"]);
-        const pricePublisherService = new PricePublisherService(pricePublisherOrm.em, contractsMap);
-        await pricePublisherService.readEvents(3, 30);
+        const priceFeedApiPath = secrets.stringExistsAndIsNonZero("pricePublisher.price_feed_api_path");
+        // run price publisher only if price feed api path is set
+        if (priceFeedApiPath[0]) {
+            const contractsMap = await createContractsMap(runConfig.contractsJsonFile as any, runConfig.pricePublisherContracts as any);
+            const pricePublisherPrivateKey = secrets.required("pricePublisher.private_key");
+            const pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisherPrivateKey, runConfig.pricePublisherMaxDelayMs as any, priceFeedApiPath[1]);
+            await pricePublisherService.run(3, 30);
+        }
+
         // create runner and agents
         // const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         // store owner's underlying address

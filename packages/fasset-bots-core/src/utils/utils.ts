@@ -1,6 +1,7 @@
 import Web3 from 'web3';
 import * as fs from 'fs';
 import { glob} from 'glob';
+import { logger } from "../utils/logger";
 
 export async function sleepms(ms: number) {
     await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -25,7 +26,7 @@ export function waitFinalize3Factory(web3: Web3) {
             } else {
                 throw new Error('Response timeout');
             }
-            console.log(`Delay backoff ${delay} (${cnt})`);
+            logger.info(`Delay backoff ${delay} (${cnt})`);
         }
         return res;
     };
@@ -50,7 +51,7 @@ export async function getWeb3Contract(web3: any, address: string, name: string):
         const abi = getAbi(`packages/fasset-bots-core/artifacts/${abiPath}`);
         return new web3.eth.Contract(abi, address);
     } catch (e: any) {
-        console.error(`getWeb3Contract error - ABI not found: ${e}`);
+        logger.error(`getWeb3Contract error - ABI not found: ${e}`);
     }
 }
 
@@ -65,4 +66,32 @@ export function getAbi(abiPath: string) {
         abi = abi.abi;
     }
     return abi;
+}
+
+export function waitFinalize(web3: Web3, options: WaitFinalizeOptions = waitFinalizeDefaults) {
+    return async (address: string, func: () => Promise<any>) => {
+        const nonce = await web3.eth.getTransactionCount(address);
+        const res = await func();
+        while (await web3.eth.getTransactionCount(address) == nonce) {
+            await sleepms(options.sleepMS);
+        }
+        for (let i = 0; i < options.retries; i++) {
+            const block = await web3.eth.getBlockNumber();
+            while (await web3.eth.getBlockNumber() - block < options.extraBlocks) {
+                await sleepms(options.sleepMS);
+            }
+            // only end if the nonce didn't revert (and repeat up to 3 times)
+            if (await web3.eth.getTransactionCount(address) > nonce) break;
+            logger.warn(`Nonce reverted after ${i + 1} retries, retrying again...`);
+        }
+        return res;
+    }
+}
+
+export const waitFinalizeDefaults: WaitFinalizeOptions = { extraBlocks: 2, retries: 3, sleepMS: 1000 };
+
+export interface WaitFinalizeOptions {
+    extraBlocks: number;
+    retries: number;
+    sleepMS: number;
 }

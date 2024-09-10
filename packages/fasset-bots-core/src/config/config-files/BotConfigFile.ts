@@ -72,6 +72,8 @@ export interface BotConfigFile {
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator
     challengeStrategy?: BotStrategyDefinition; // only for challenge
+    pricePublisherContracts?: string[]; // only for price publisher
+    pricePublisherMaxDelayMs?: number; // only for price publisher
 }
 
 export interface AgentBotFassetSettingsJson {
