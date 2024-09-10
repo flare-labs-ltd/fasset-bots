@@ -89,10 +89,9 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
     } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs"], orderBy: { id: "ASC" } });
 }
 
-export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number): Promise<void> {
+export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number) {
     const txEnt = await fetchTransactionEntityById(rootEm, txId);
-    const outputEntities = transaction.outputs.map(((output, index) => transformOutputToTxOutputEntity(index, output, txEnt)));
-    await rootEm.persistAndFlush(outputEntities);
+    return transaction.outputs.map(((output, index) => transformOutputToTxOutputEntity(index, output, txEnt)));
 }
 
 function transformOutputToTxOutputEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {

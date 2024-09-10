@@ -28,7 +28,7 @@ import { createAxiosConfig } from "../../src/chain-clients/utils";
 
 use(chaiAsPromised);
 
-const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/XrpWalletImplementation");
+const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/implementations/XrpWalletImplementation");
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
 const XRPMccConnectionTestInitial = {

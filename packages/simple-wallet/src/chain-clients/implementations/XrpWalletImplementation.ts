@@ -3,9 +3,9 @@ import xrpl, { convertStringToHex, encodeForSigning, encode as xrplEncode, hashe
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
-import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../utils/utils";
-import { toBN } from "../utils/bnutils";
-import { ChainType, DELETE_ACCOUNT_OFFSET } from "../utils/constants";
+import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../../utils/utils";
+import { toBN } from "../../utils/bnutils";
+import { ChainType, DELETE_ACCOUNT_OFFSET } from "../../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type {
    ICreateWalletResponse,
@@ -15,7 +15,7 @@ import type {
    SignedObject,
    TransactionInfo,
    IWalletKeys,
-} from "../interfaces/IWalletTransaction";
+} from "../../interfaces/IWalletTransaction";
 import BN from "bn.js";
 import {
    updateTransactionEntity,
@@ -25,17 +25,17 @@ import {
    failTransaction,
    handleMissingPrivateKey,
    checkIfIsDeleting,
-   setAccountIsDeleting} from "../db/dbutils";
+   setAccountIsDeleting} from "../../db/dbutils";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
 
-import { logger } from "../utils/logger";
-import { XrpAccountGeneration } from "./account-generation/XrpAccountGeneration";
-import { TransactionStatus, TransactionEntity } from "../entity/transaction";
+import { logger } from "../../utils/logger";
+import { XrpAccountGeneration } from "../account-generation/XrpAccountGeneration";
+import { TransactionStatus, TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
-import { XRPBlockchainAPI } from "../blockchain-apis/XRPBlockchainAPI";
-import { TransactionMonitor } from "./monitoring/TransactionMonitor";
+import { XRPBlockchainAPI } from "../../blockchain-apis/XRPBlockchainAPI";
+import { TransactionMonitor } from "../monitoring/TransactionMonitor";
 
 const DROPS_PER_XRP = 1000000.0;
 
