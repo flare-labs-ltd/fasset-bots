@@ -470,7 +470,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
     });
 
-    it.only("Should replace transaction by fee", async () => {
+    it("Should replace transaction by fee", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "note");
         expect(id).to.be.gt(0);
