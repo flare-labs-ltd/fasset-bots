@@ -21,7 +21,7 @@ import {
 } from "../test_util/util";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
-import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
+import { getCurrentTimestampInSeconds, getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
 import * as dbutils from "../../src/db/dbutils";
 import { getTransactionInfoById } from "../../src/db/dbutils";
@@ -30,11 +30,11 @@ import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { toBN } from "web3-utils";
 import { BitcoreAPI } from "../../src/blockchain-apis/BitcoreAPI";
-import { createAxiosConfig } from "../../src/chain-clients/utils";
 import { AxiosError } from "axios";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService"
+import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 
@@ -293,7 +293,7 @@ describe("Dogecoin wallet tests", () => {
     it("Transaction with execute until timestamp too low should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", undefined, undefined, new Date().getTime() / 1000 - 1000);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", undefined, undefined, toBN(getCurrentTimestampInSeconds() - 10));
         expect(id).to.be.gt(0);
 
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);

@@ -2,9 +2,11 @@ import { logger } from "../../utils/logger";
 import {
     BTC_DUST_AMOUNT,
     BTC_LEDGER_CLOSE_TIME_MS,
+    BTC_MIN_ALLOWED_AMOUNT_TO_SEND,
     ChainType,
     DOGE_DUST_AMOUNT,
     DOGE_LEDGER_CLOSE_TIME_MS,
+    DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
 } from "../../utils/constants";
 import BN from "bn.js";
 import { toBN } from "../../utils/bnutils";
@@ -14,21 +16,30 @@ import { TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { UTXOEntity } from "../../entity/utxo";
-import { errorMessage } from "../utils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/BlockchainAPIWrapper";
+import { errorMessage } from "../../utils/axios-error-utils";
 
 /*
  * COMMON UTILS
  */
 
-export function getDefaultBlockTime(chainType: ChainType): number {
+export function getDefaultBlockTimeInSeconds(chainType: ChainType): number {
     if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-        return DOGE_LEDGER_CLOSE_TIME_MS;
+        return DOGE_LEDGER_CLOSE_TIME_MS / 1000;
     } else {
-        return BTC_LEDGER_CLOSE_TIME_MS;
+        return BTC_LEDGER_CLOSE_TIME_MS / 1000;
     }
 }
+
+export function getMinAmountToSend(chainType: ChainType): BN {
+    if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
+        return DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;
+    } else {
+        return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
+    }
+}
+
 
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
     //TODO - maybe can be more robust if also take into account response
@@ -63,23 +74,6 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
     if (note) return 3; // destination, change (returned funds) and note
     return 2; // destination and change
 }
-
-export async function checkIfShouldStillSubmit(chainType: ChainType, executionBlockOffset: number, executeUntilBlock?: number, executeUntilTimestamp?: Date): Promise<boolean> {
-    const currentBlockHeight = await ServiceRepository.get(BlockchainAPIWrapper).getCurrentBlockHeight();
-    const blockRestriction = !!executeUntilBlock && (currentBlockHeight.number - executeUntilBlock > executionBlockOffset);
-    // It probably should be following, but due to inconsistent blocktime on btc, we use currentTime
-    //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > executionBlockOffset * getDefaultBlockTime(client)
-    const timeRestriction = !!executeUntilTimestamp && (new Date().getTime() - executeUntilTimestamp?.getTime() > executionBlockOffset * getDefaultBlockTime(chainType)); //TODO-urska (is this good estimate
-    if (executeUntilBlock && !executeUntilTimestamp && blockRestriction) {
-        return false;
-    } else if (!executeUntilBlock && executeUntilTimestamp && timeRestriction) {
-        return false;
-    } else if (blockRestriction && timeRestriction) {
-        return false;
-    }
-    return true;
-}
-
 
 export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
     // TODO If this proves to be to slow MySQL has CTE for recursive queries ...

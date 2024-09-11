@@ -12,6 +12,7 @@ import { TransactionOutputEntity } from "../entity/transactionOutput";
 import { MonitoringStateEntity } from "../entity/monitoring_state";
 import Output = Transaction.Output;
 import { TransactionInputEntity } from "../entity/transactionInput";
+import { getCurrentTimestampInSeconds } from "../utils/utils";
 
 
 // transaction operations
@@ -25,7 +26,7 @@ export async function createInitialTransactionEntity(
     note?: string,
     maxFee?: BN,
     executeUntilBlock?: number,
-    executeUntilTimestamp?: number,
+    executeUntilTimestamp?: BN,
     replacementFor?: TransactionEntity
 ): Promise<TransactionEntity> {
     logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops}; replacing ${replacementFor?.id} (${replacementFor?.transactionHash}).`);
@@ -39,7 +40,7 @@ export async function createInitialTransactionEntity(
                 status: TransactionStatus.TX_CREATED,
                 maxFee: maxFee || null,
                 executeUntilBlock: executeUntilBlock || null,
-                executeUntilTimestamp: executeUntilTimestamp ? new Date(executeUntilTimestamp * 1000) : null,
+                executeUntilTimestamp: executeUntilTimestamp || null,
                 reference: note || null,
                 amount: amountInDrops,
                 fee: feeInDrops || null,
@@ -281,7 +282,7 @@ export async function handleMissingPrivateKey(rootEm: EntityManager, txId: numbe
 export async function failTransaction(rootEm: EntityManager, txId: number, reason: string, error?: Error): Promise<void> {
     await updateTransactionEntity(rootEm, txId, async (txEnt) => {
         txEnt.status = TransactionStatus.TX_FAILED;
-        txEnt.reachedFinalStatusInTimestamp = new Date();
+        txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
     });
     if (error) {
         logger.error(`Transaction ${txId} failed: ${reason}`, error);

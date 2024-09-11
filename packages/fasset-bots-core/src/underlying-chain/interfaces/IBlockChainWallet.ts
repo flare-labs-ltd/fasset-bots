@@ -45,7 +45,7 @@ export interface IBlockChainWallet {
         reference: string | null,
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
-        executeUntilTimestamp?: number,
+        executeUntilTimestamp?: BN,
     ): Promise<number>;
 
     // Add a generic transaction from a set of source addresses to a set of target addresses.
@@ -86,7 +86,7 @@ export interface IBlockChainWallet {
         reference: string | null,
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
-        executeUntilTimestamp?: number,
+        executeUntilTimestamp?: BN,
     ): Promise<string>;
 
     // Returns info about transaction (txHash, status, replacedById)

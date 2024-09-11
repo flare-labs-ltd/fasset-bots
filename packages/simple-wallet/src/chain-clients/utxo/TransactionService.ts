@@ -20,11 +20,11 @@ import {
 
 } from "./UTXOUtils";
 import { getDefaultFeePerKB, unPrefix0x } from "../../utils/utils";
-import { InvalidFeeError, LessThanDustAmountError, NotEnoughUTXOsError } from "../../utils/errors";
 import UnspentOutput = Transaction.UnspentOutput;
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
+import { LessThanDustAmountError, NotEnoughUTXOsError, InvalidFeeError } from "../../utils/axios-error-utils";
 
 export class TransactionService implements IService {
 
@@ -45,7 +45,7 @@ export class TransactionService implements IService {
         note?: string,
         maxFeeInSatoshi?: BN,
         executeUntilBlock?: number,
-        executeUntilTimestamp?: number,
+        executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp}`);
         const em = ServiceRepository.get(EntityManager);
@@ -76,7 +76,7 @@ export class TransactionService implements IService {
         note?: string,
         maxFeeInSatoshi?: BN,
         executeUntilBlock?: number,
-        executeUntilTimestamp?: number,
+        executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
         const em = ServiceRepository.get(EntityManager);
@@ -161,7 +161,7 @@ export class TransactionService implements IService {
                 );
             }
             // https://github.com/bitcoin/bitcoin/blob/55d663cb15151773cd043fc9535d6245f8ba6c99/doc/policy/mempool-replacements.md?plain=1#L37
-            if (txForReplacement) {
+            if (txForReplacement) {//TODO
                 const totalFee = await this.transactionFeeService.calculateTotalFeeOfTxAndDescendants(ServiceRepository.get(EntityManager), txForReplacement);
                 const relayFee = bitcoreEstFee.div(getDefaultFeePerKB(this.chainType)).muln(1000);
 

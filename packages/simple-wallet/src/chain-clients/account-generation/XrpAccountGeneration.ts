@@ -40,4 +40,22 @@ export class XrpAccountGeneration implements WalletAccountGenerationInterface {
          mnemonic: mnemonic,
       } as ICreateWalletResponse;
    }
+
+   /**
+    * @param {string} seed - seed used for wallet creation
+    * @param {string|undefined} algorithm
+    * @returns {Object} - wallet
+    */
+      createWalletFromSeed(seed: string, algorithm?: "ed25519" | "ecdsa-secp256k1"): ICreateWalletResponse {
+         return xrpl__typeless.Wallet.fromSeed(seed, { algorithm: algorithm });
+      }
+
+      /**
+       * @param {string} entropy - entropy used for wallet creation
+       * @param {string|undefined} algorithm
+       * @returns {Object} - wallet
+       */
+      createWalletFromEntropy(entropy: Uint8Array, algorithm?: "ed25519" | "ecdsa-secp256k1"): ICreateWalletResponse {
+         return xrpl__typeless.Wallet.fromEntropy(entropy, { algorithm: algorithm });
+      }
 }

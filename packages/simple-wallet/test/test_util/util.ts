@@ -11,8 +11,8 @@ import { WalletAddressEntity } from "../../src/entity/wallet";
 import winston from "winston";
 import { logger } from "../../src/utils/logger";
 import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
-import { isORMError } from "../../src/chain-clients/utils";
 import { toBN } from "../../src/utils/bnutils";
+import { isORMError } from "../../src/utils/axios-error-utils";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -105,7 +105,7 @@ function createTransactionEntity(
     note?: string,
     maxFee?: BN,
     executeUntilBlock?: number,
-    executeUntilTimestamp?: number
+    executeUntilTimestamp?: BN
 ) {
     return rootEm.create(
         TransactionEntity,

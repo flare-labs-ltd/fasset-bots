@@ -24,7 +24,7 @@ import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
 import axiosRateLimit from "../../src/axios-rate-limiter/axios-rate-limit";
 import axios, { AxiosError } from "axios";
-import { createAxiosConfig } from "../../src/chain-clients/utils";
+import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 
 use(chaiAsPromised);
 

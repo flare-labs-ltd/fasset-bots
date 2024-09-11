@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
-import { getConfirmedAfter } from "../utils/utils";
+import { getConfirmedAfter, getDateTimestampInSeconds } from "../utils/utils";
 
 export class BitcoreAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -24,7 +24,7 @@ export class BitcoreAPI implements IBlockchainAPI {
     async getCurrentBlockHeight(): Promise<BlockData> {
         const res = await this.client.get(`/block/tip`);
         const blockNumber = res.data.height;
-        const blockTimestamp = new Date(res.data.time).getTime();
+        const blockTimestamp = getDateTimestampInSeconds(res.data.time);
         return {
             number: blockNumber,
             timestamp: blockTimestamp

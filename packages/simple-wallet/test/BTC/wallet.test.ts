@@ -12,7 +12,7 @@ import WAValidator from "wallet-address-validator";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
 import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
-import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
+import { getCurrentTimestampInSeconds, getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
@@ -28,13 +28,13 @@ import BN from "bn.js";
 import { BTC_DOGE_DEC_PLACES, ChainType, DEFAULT_FEE_INCREASE } from "../../src/utils/constants";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { BitcoreAPI } from "../../src/blockchain-apis/BitcoreAPI";
-import { createAxiosConfig } from "../../src/chain-clients/utils";
 import { AxiosError } from "axios";
 import * as dbutils from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
+import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 
@@ -288,7 +288,7 @@ describe("Bitcoin wallet tests", () => {
     it("Transaction with execute until timestamp too low should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "Submit", undefined, undefined, new Date().getTime() - 10);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "Submit", undefined, undefined, toBN(getCurrentTimestampInSeconds() - 10));
         expect(id).to.be.gt(0);
 
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);

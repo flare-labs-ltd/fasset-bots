@@ -3,7 +3,7 @@ import xrpl, { convertStringToHex, encodeForSigning, encode as xrplEncode, hashe
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
-import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh } from "../../utils/utils";
+import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit } from "../../utils/utils";
 import { toBN } from "../../utils/bnutils";
 import { ChainType, DELETE_ACCOUNT_OFFSET } from "../../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
@@ -48,12 +48,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    executionBlockOffset: number; //buffer before submitting -> will submit only if (currentLedger - executeUntilBlock) >= executionBlockOffset
    rootEm!: EntityManager;
    walletKeys!: IWalletKeys;
-
-   monitoring: boolean = false;
-   executionTimestampOffset: number = 10; //TODO
-
-   restartInDueToError: number = 2000; //2s
-   restartInDueNoResponse: number = 20000; //20s
 
    private monitor: TransactionMonitor;
 
@@ -131,7 +125,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       note?: string,
       maxFeeInDrops?: BN,
       executeUntilBlock?: number,
-      executeUntilTimestamp?: number
+      executeUntilTimestamp?: BN
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops} and reference ${note}`);
       if (await checkIfIsDeleting(this.rootEm, source)) {
@@ -173,7 +167,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       note?: string,
       maxFeeInDrops?: BN,
       executeUntilBlock?: number,
-      executeUntilTimestamp?: number
+      executeUntilTimestamp?: BN
    ): Promise<number> {
       logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
       if (await checkIfIsDeleting(this.rootEm, source)) {
@@ -244,6 +238,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
    async resubmitSubmissionFailedTransactions(tx: TransactionEntity): Promise<void> {
+      logger.info(`Resubmitting submitted transaction ${tx.id} is being resubmitted.`);
       const transaction = JSON.parse(tx.raw!);
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
@@ -255,6 +250,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async resubmitPendingTransaction(tx: TransactionEntity): Promise<void> {
+      logger.info(`Pending transaction ${tx.id} is being resubmitted.`);
       const transaction = JSON.parse(tx.raw!);
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
@@ -269,6 +265,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async submitPreparedTransactions(tx: TransactionEntity): Promise<void> {
+      logger.info(`Prepared transaction ${tx.id} is being submitted.`);
       const transaction = JSON.parse(tx.raw!);
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
@@ -280,14 +277,20 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    async prepareAndSubmitCreatedTransaction(tx: TransactionEntity): Promise<void> {
       const currentLedger = await this.getLatestValidatedLedgerIndex();
-      const currentTimestamp = new Date().getTime();
-      if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
-         await failTransaction(this.rootEm, tx.id, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
+      const currentTimestamp = toBN(getCurrentTimestampInSeconds());
+      const shouldSubmit = await checkIfShouldStillSubmit(this, currentLedger, tx.executeUntilBlock, tx.executeUntilTimestamp);
+      if (!shouldSubmit) {
+         await failTransaction(
+             this.rootEm,
+             tx.id,
+             `prepareAndSubmitCreatedTransaction: Both conditions met for transaction ${tx.id}: Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock} AND Current timestamp ${currentTimestamp} >= execute until timestamp ${tx.executeUntilTimestamp?.toString()}`);
          return;
-      } else if (tx.executeUntilTimestamp && currentTimestamp >= tx.executeUntilTimestamp.getTime()) {
-         await failTransaction(this.rootEm, tx.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${tx.executeUntilTimestamp}`);
-         return;
+      } else if (!tx.executeUntilBlock) {
+         await updateTransactionEntity(this.rootEm, tx.id, async (txEnt) => {
+             txEnt.executeUntilBlock = currentLedger + this.blockOffset;
+         });
       }
+     logger.info(`Preparing transaction ${tx.id}`);
       //prepare
       const transaction = await this.preparePaymentTransaction(
          tx.source,
@@ -310,35 +313,40 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEnt.raw = JSON.stringify(transaction);
             txEnt.executeUntilBlock = transaction.LastLedgerSequence;
             txEnt.status = TransactionStatus.TX_PREPARED;
-            txEnt.reachedStatusPreparedInTimestamp = new Date();
+            txEnt.reachedStatusPreparedInTimestamp = currentTimestamp;
          });
+         logger.info(`Transaction ${tx.id} prepared.`);
          await this.signAndSubmitProcess(tx.id, privateKey, transaction);
       }
    }
 
    async checkSubmittedTransaction(tx: TransactionEntity): Promise<void> {
+      logger.info(`Submitted transaction ${tx.id} (${tx.transactionHash}) is being checked.`);
       const txResp = await this.blockchainAPI.getTransaction(tx.transactionHash);
+      const currentTimestamp = toBN(getCurrentTimestampInSeconds());
       if (txResp.data.result.validated) {
          await updateTransactionEntity(this.rootEm, tx.id, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
-            txEnt.reachedFinalStatusInTimestamp = new Date();
+            txEnt.reachedFinalStatusInTimestamp = toBN(currentTimestamp);
          });
          logger.info(`Transaction ${tx.id} was accepted`);
       } else {
          const currentLedger = await this.getLatestValidatedLedgerIndex();
-         const currentTimestamp = new Date().getTime();
-
-         if (tx.executeUntilBlock && currentLedger >= tx.executeUntilBlock) {
-            await failTransaction(this.rootEm, tx.id, `Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock}`);
-            //TODO sanity check [Account Sequence is less than or equal to transaction Sequence] => all good
-         } else if (tx.executeUntilTimestamp && currentTimestamp >= tx.executeUntilTimestamp.getTime()) {
-            await failTransaction(this.rootEm, tx.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${tx.executeUntilTimestamp}`);
+         const shouldSubmit = await checkIfShouldStillSubmit(this, currentLedger, tx.executeUntilBlock, tx.executeUntilTimestamp);
+         if (!shouldSubmit) {
+            await failTransaction(
+                this.rootEm,
+                tx.id,
+                `checkSubmittedTransaction: Both conditions met for transaction ${tx.id}: Current ledger ${currentLedger} >= last transaction ledger ${tx.executeUntilBlock} AND Current timestamp ${currentTimestamp} >= execute until timestamp ${tx.executeUntilTimestamp?.toString()}`);
+            return;
          }
       }
    }
 
    async signAndSubmitProcess(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete): Promise<void> {
+      logger.info(`Submitting transaction ${txId}.`);
       const signed = await this.signTransaction(transaction, privateKey);
+      logger.info(`Transaction ${txId} is signed.`);
       // save tx in db
       await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
          txEnt.transactionHash = signed.txHash;
@@ -351,7 +359,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       }
       if (txStatus == TransactionStatus.TX_PENDING) {
          await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
-            txEnt.reachedStatusPendingInTimestamp = new Date();
+            txEnt.reachedStatusPendingInTimestamp = toBN(getCurrentTimestampInSeconds());
          })
          if (await this.checkIfTransactionAppears(txId)) {
             return
@@ -372,7 +380,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             // transaction completed - update tx in db
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUCCESS;
-               txEnt.reachedFinalStatusInTimestamp = new Date();
+               txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
             });
             logger.info(`Transaction ${txId} was accepted`);
             return true;
@@ -382,6 +390,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete, newFee: BN) {
+      logger.info(`Transaction ${txId} is being resubmitted.`);
       const origTx = await fetchTransactionEntityById(this.rootEm, txId);
       if (checkIfFeeTooHigh(newFee, origTx.maxFee || null)) {
          await failTransaction(this.rootEm, txId, `Cannot resubmit transaction ${txId}. Due to fee restriction (fee: ${newFee}, maxFee: ${origTx.maxFee?.toString()})`);
@@ -400,14 +409,17 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             originalTx.reference,
             originalTx.maxFee,
             originalTx.executeUntilBlock,
-            originalTx.executeUntilTimestamp?.getTime()
+            originalTx.executeUntilTimestamp
          );
          await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_REPLACED;
             txEnt.replaced_by = resubmittedTx;
-            txEnt.reachedFinalStatusInTimestamp = new Date();
+            txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
          });
+         logger.info(`Transaction ${txId} was replaced by ${resubmittedTx.id}.`);
+
          const signed = await this.signTransaction(newTransaction, privateKey);
+         logger.info(`Transaction ${resubmittedTx.id} is signed.`);
          const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
          // save tx in db
          await updateTransactionEntity(this.rootEm, resubmittedTx.id, async (txEnt) => {
@@ -496,26 +508,28 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @returns {boolean} - should replace fn or not; replace in case insufficient fee
     */
    async submitTransaction(txBlob: string, txDbId: number, retry: number = 0): Promise<TransactionStatus> {
+      logger.info(`Transaction ${txDbId} is being submitted.`);
       // check if there is still time to submit
       const transaction = await fetchTransactionEntityById(this.rootEm, txDbId);
       const currentLedger = await this.getLatestValidatedLedgerIndex();
-      const currentTimestamp = new Date().getTime();
+      const currentTimestamp = toBN(getCurrentTimestampInSeconds());
 
-      if (transaction.executeUntilBlock && transaction.executeUntilBlock - currentLedger < this.executionBlockOffset) {
-         await failTransaction(this.rootEm, txDbId, `Transaction ${txDbId} has no time left to be submitted: currentLedger: ${currentLedger}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}`);
-         return TransactionStatus.TX_FAILED;
-      } else if (!transaction.executeUntilBlock) {
-         logger.warn(`Transaction ${txDbId} does not have 'executeUntilBlock' defined`);
-      } else if (transaction.executeUntilTimestamp && currentTimestamp >= transaction.executeUntilTimestamp.getTime()) {
-         await failTransaction(this.rootEm, transaction.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}`);
-         return TransactionStatus.TX_FAILED;
+      const shouldSubmit = await checkIfShouldStillSubmit(this, currentLedger, transaction.executeUntilBlock, transaction.executeUntilTimestamp);
+      if (!shouldSubmit) {
+          await failTransaction(
+              this.rootEm,
+              txDbId,
+              `Transaction ${txDbId} has no time left to be submitted: currentBlockHeight: ${currentLedger}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}.
+              Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp?.toString()}.`);
+          return TransactionStatus.TX_FAILED;
       }
+
       const originalTx: xrpl.Payment | xrpl.AccountDelete = JSON.parse(transaction.raw!);
       if (originalTx.TransactionType == "AccountDelete") {
          if (originalTx.Sequence! + DELETE_ACCOUNT_OFFSET > currentLedger) {
             logger.warn(`AccountDelete transaction ${txDbId} does not yet satisfy requirements: sequence ${originalTx.Sequence}, currentLedger ${currentLedger}`);
             await updateTransactionEntity(this.rootEm, txDbId, async (txEnt: TransactionEntity) => {
-               txEnt.reachedStatusPreparedInTimestamp = new Date();
+               txEnt.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
             })
             return TransactionStatus.TX_PREPARED;
          }
@@ -539,7 +553,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             await updateTransactionEntity(this.rootEm, txDbId, async (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUBMITTED;
                txEnt.submittedInBlock = res.data.result.validated_ledger_index;
-               txEnt.submittedInTimestamp = new Date();
+               txEnt.submittedInTimestamp = currentTimestamp;
                txEnt.serverSubmitResponse = JSON.stringify(res.data.result);
             });
             logger.info(`Transaction ${txDbId} was submitted`);
@@ -551,7 +565,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       } catch (e) {
          await updateTransactionEntity(this.rootEm, txDbId, async (txEnt) => {
             txEnt.status = TransactionStatus.TX_PENDING;
-            txEnt.reachedStatusPendingInTimestamp = new Date();
+            txEnt.reachedStatusPendingInTimestamp = currentTimestamp;
          });
          logger.error(`Transaction ${txDbId} submission failed`, e);
          return TransactionStatus.TX_PENDING;
@@ -595,24 +609,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          publicKey: prefix + bytesToHex(ed25519.keyFromSecret(ed25519_privateKey).getPublic()),
       };
       return ed25519_keypair.publicKey;
-   }
-
-   /**
-    * @param {string} seed - seed used for wallet creation
-    * @param {string|undefined} algorithm
-    * @returns {Object} - wallet
-    */
-   createWalletFromSeed(seed: string, algorithm?: "ed25519" | "ecdsa-secp256k1"): ICreateWalletResponse {
-      return xrpl__typeless.Wallet.fromSeed(seed, { algorithm: algorithm });
-   }
-
-   /**
-    * @param {string} entropy - entropy used for wallet creation
-    * @param {string|undefined} algorithm
-    * @returns {Object} - wallet
-    */
-   createWalletFromEntropy(entropy: Uint8Array, algorithm?: "ed25519" | "ecdsa-secp256k1"): ICreateWalletResponse {
-      return xrpl__typeless.Wallet.fromEntropy(entropy, { algorithm: algorithm });
    }
 
    /**

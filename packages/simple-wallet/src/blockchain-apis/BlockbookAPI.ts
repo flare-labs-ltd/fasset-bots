@@ -4,7 +4,7 @@ import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
-import { getConfirmedAfter } from "../utils/utils";
+import { getConfirmedAfter, getDateTimestampInSeconds } from "../utils/utils";
 import { logger } from "../utils/logger";
 
 export class BlockbookAPI implements IBlockchainAPI {
@@ -30,7 +30,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         const res = await this.client.get(``);
         return {
             number: res.data.blockbook.bestHeight,
-            timestamp: res.data.blockbook.lastBlockTime
+            timestamp: getDateTimestampInSeconds(res.data.blockbook.lastBlockTime)
         };
     }
 
@@ -46,7 +46,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         return await this.client.get(`/tx/${txHash}`);
     }
 
-    async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
+    async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
         return Promise.all(res.data.map(async (utxo: any) => {
             return {
@@ -54,7 +54,7 @@ export class BlockbookAPI implements IBlockchainAPI {
                 mintIndex: utxo.vout,
                 value: utxo.value,
                 script: "",
-                confirmed: utxo.confirmations > 0,
+                confirmed: utxo.confirmations > getConfirmedAfter(chainType),
             };
         }));
     }

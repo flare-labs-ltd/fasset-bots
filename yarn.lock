@@ -1403,7 +1403,6 @@ __metadata:
     dogecoin-bip84: 0.0.5
     dotenv: 16.3.1
     elliptic: 6.5.4
-    fast-safe-stringify: 2.1.1
     rewire: 7.0.0
     ripple-address-codec: 4.2.4
     ripple-binary-codec: 1.4.2
