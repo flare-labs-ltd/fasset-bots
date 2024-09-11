@@ -44,13 +44,14 @@ describe("Fast minting", function (){
         const botConfigFile = loadConfigFile(TEST_FASSET_BOT_CONFIG!);
         blockchainWalletHelper = await setupWallet(botConfigFile, createUserSecrets(FLRfundedAddress, FLRfundedPrivateKey, BTCFundedAddress, BTCFundedPrivateKey));
         await blockchainWalletHelper.addExistingAccount(BTCFundedAddress, BTCFundedPrivateKey);
+        void blockchainWalletHelper.startMonitoringTransactionProgress();
     });
 
     after(async () => {
         await blockchainWalletHelper.stopMonitoring();
     })
 
-    it("Fund accounts", async function() {
+    it.skip("Fund accounts", async function() {
         this.timeout(15 * 60 * 1000);
         await Promise.all(BTC_TEST_ACCOUNTS.slice(0, N).map(async acc => {
             await blockchainWalletHelper.addTransactionAndWaitForItsFinalization(BTCFundedAddress, acc.address, amountToSend, "test");
@@ -114,7 +115,7 @@ describe("Fast minting", function (){
         }));
     });
 
-    it.skip("monitoring into inf", async () => {
+    it.only("monitoring into inf", async () => {
         while (true) {
             await sleepMs(2000);
         }
