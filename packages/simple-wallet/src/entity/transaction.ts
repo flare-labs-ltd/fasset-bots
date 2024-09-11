@@ -65,11 +65,11 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true  })
     amount?: BN;
 
-    @Property({ columnType: 'blob', nullable: true })
-    raw?: Buffer;
+    @Property({ columnType: 'text', nullable: true })
+    raw?: string;
 
-    @Property({ columnType: 'blob', nullable: true })
-    serverSubmitResponse?: Buffer;
+    @Property({ columnType: 'text', nullable: true })
+    serverSubmitResponse?: string;
 
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity;

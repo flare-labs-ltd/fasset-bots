@@ -135,8 +135,8 @@ async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source
 
     const txEnt = createTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
     const privateKey = await wClient.walletKeys.getKey(txEnt.source);
-    txEnt.raw = Buffer.from(JSON.stringify(transaction));
-    txEnt.transactionHash = (await wClient.signTransaction(JSON.parse(txEnt.raw!.toString()), privateKey!)).txHash;
+    txEnt.raw = JSON.stringify(transaction);
+    txEnt.transactionHash = (await wClient.signTransaction(JSON.parse(txEnt.raw!), privateKey!)).txHash;
     txEnt.status = status;
 
     await wClient.rootEm.flush();
@@ -268,7 +268,7 @@ function addRequestTimers(wClient: WALLET.DOGE | WALLET.BTC) {
 
 async function calculateNewFeeForTx(txId: number, feePerKb: BN, core: any, rootEm: EntityManager) {
     const txEnt = await fetchTransactionEntityById(rootEm, txId);
-    const tr = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
+    const tr = new core.Transaction(JSON.parse(txEnt.raw!));
     return [txEnt.fee, tr.feePerKb(feePerKb).getFee()];
 }
 

@@ -225,7 +225,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const inputs = await ServiceRepository.get(TransactionUTXOService).createInputsFromUTXOs(dbUTXOs, txEnt.id);
                 const outputs = await createTransactionOutputEntities(this.rootEm, transaction, txEnt.id);
                 await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => {
-                    txEntToUpdate.raw = Buffer.from(JSON.stringify(transaction));
+                    txEntToUpdate.raw = JSON.stringify(transaction);
                     txEntToUpdate.status = TransactionStatus.TX_PREPARED;
                     txEntToUpdate.reachedStatusPreparedInTimestamp = new Date();
                     txEntToUpdate.fee = toBN(transaction.getFee()); // set the new fee if the original one was null/wrong
@@ -291,7 +291,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     async submitPreparedTransactions(txEnt: TransactionEntity): Promise<void> {
         logger.info(`Checking prepared transaction ${txEnt.id}.`);
         const core = getCore(this.chainType);
-        const transaction = new core.Transaction(JSON.parse(txEnt.raw!.toString()));
+        const transaction = new core.Transaction(JSON.parse(txEnt.raw!));
 
         const privateKey = await this.walletKeys.getKey(txEnt.source);
         if (!privateKey) {

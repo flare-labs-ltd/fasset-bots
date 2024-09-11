@@ -136,7 +136,7 @@ export class TransactionUTXOService implements IService {
 
     async updateTransactionInputSpentStatus(txId: number, status: SpentHeightEnum) {
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-        const transaction = JSON.parse(txEnt.raw!.toString());
+        const transaction = JSON.parse(txEnt.raw!);
         for (const input of transaction.inputs) {
             await updateUTXOEntity(this.rootEm, input.prevTxId.toString("hex"), input.outputIndex, async (utxoEnt) => {
                 utxoEnt.spentHeight = status;

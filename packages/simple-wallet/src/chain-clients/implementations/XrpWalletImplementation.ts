@@ -244,7 +244,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    // HELPER OR CLIENT SPECIFIC FUNCTIONS ////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
    async resubmitSubmissionFailedTransactions(tx: TransactionEntity): Promise<void> {
-      const transaction = JSON.parse(tx.raw!.toString());
+      const transaction = JSON.parse(tx.raw!);
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, tx.id);
@@ -255,7 +255,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async resubmitPendingTransaction(tx: TransactionEntity): Promise<void> {
-      const transaction = JSON.parse(tx.raw!.toString());
+      const transaction = JSON.parse(tx.raw!);
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, tx.id);
@@ -269,7 +269,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async submitPreparedTransactions(tx: TransactionEntity): Promise<void> {
-      const transaction = JSON.parse(tx.raw!.toString());
+      const transaction = JSON.parse(tx.raw!);
       const privateKey = await this.walletKeys.getKey(tx.source);
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, tx.id);
@@ -307,7 +307,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       } else {
          // save tx in db
          await updateTransactionEntity(this.rootEm, tx.id, async (txEnt) => {
-            txEnt.raw = Buffer.from(JSON.stringify(transaction));
+            txEnt.raw = JSON.stringify(transaction);
             txEnt.executeUntilBlock = transaction.LastLedgerSequence;
             txEnt.status = TransactionStatus.TX_PREPARED;
             txEnt.reachedStatusPreparedInTimestamp = new Date();
@@ -411,7 +411,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          const currentBlockHeight = await this.getLatestValidatedLedgerIndex();
          // save tx in db
          await updateTransactionEntity(this.rootEm, resubmittedTx.id, async (txEnt) => {
-            txEnt.raw = Buffer.from(JSON.stringify(transaction));
+            txEnt.raw = JSON.stringify(transaction);
             txEnt.transactionHash = signed.txHash;
             txEnt.submittedInBlock = currentBlockHeight;
             txEnt.executeUntilBlock = transaction.LastLedgerSequence;//TODO
@@ -510,7 +510,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          await failTransaction(this.rootEm, transaction.id, `Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}`);
          return TransactionStatus.TX_FAILED;
       }
-      const originalTx: xrpl.Payment | xrpl.AccountDelete = JSON.parse(transaction.raw!.toString());
+      const originalTx: xrpl.Payment | xrpl.AccountDelete = JSON.parse(transaction.raw!);
       if (originalTx.TransactionType == "AccountDelete") {
          if (originalTx.Sequence! + DELETE_ACCOUNT_OFFSET > currentLedger) {
             logger.warn(`AccountDelete transaction ${txDbId} does not yet satisfy requirements: sequence ${originalTx.Sequence}, currentLedger ${currentLedger}`);
@@ -540,7 +540,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
                txEnt.status = TransactionStatus.TX_SUBMITTED;
                txEnt.submittedInBlock = res.data.result.validated_ledger_index;
                txEnt.submittedInTimestamp = new Date();
-               txEnt.serverSubmitResponse = Buffer.from(JSON.stringify(res.data.result));
+               txEnt.serverSubmitResponse = JSON.stringify(res.data.result);
             });
             logger.info(`Transaction ${txDbId} was submitted`);
             return TransactionStatus.TX_SUBMITTED;
