@@ -5,10 +5,14 @@ import {
     BTC_MAX_ALLOWED_FEE,
     BTC_MIN_ALLOWED_FEE,
     ChainType,
-    DEFAULT_FEE_INCREASE, DOGE_FEE_SECURITY_MARGIN,
-    UTXO_INPUT_SIZE, UTXO_INPUT_SIZE_SEGWIT,
-    UTXO_OUTPUT_SIZE, UTXO_OUTPUT_SIZE_SEGWIT,
-    UTXO_OVERHEAD_SIZE, UTXO_OVERHEAD_SIZE_SEGWIT,
+    DEFAULT_FEE_INCREASE,
+    DOGE_FEE_SECURITY_MARGIN,
+    UTXO_INPUT_SIZE,
+    UTXO_INPUT_SIZE_SEGWIT,
+    UTXO_OUTPUT_SIZE,
+    UTXO_OUTPUT_SIZE_SEGWIT,
+    UTXO_OVERHEAD_SIZE,
+    UTXO_OVERHEAD_SIZE_SEGWIT,
 } from "../../utils/constants";
 import BN from "bn.js";
 import { ServiceRepository } from "../../ServiceRepository";
@@ -25,7 +29,6 @@ import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-error-utils";
 
 export class TransactionFeeService implements IService {
-
     readonly feeDecileIndex: number;
     readonly feeIncrease: number;
     readonly relayFeePerB: number;
@@ -42,18 +45,20 @@ export class TransactionFeeService implements IService {
      * @returns default fee per byte
      */
     async getFeePerKB(): Promise<BN> {
-        const feeService = ServiceRepository.get(BlockchainFeeService);
-        if (feeService) {
+        try {
+            const feeService = ServiceRepository.get(BlockchainFeeService);
             const feeStats = await feeService.getLatestFeeStats();
-            if (feeStats.decilesFeePerKB.length == 11) { // In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
+            if (feeStats.decilesFeePerKB.length == 11) {// In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
                 const fee = feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
                 return this.enforceMinimalAndMaximalFee(this.chainType, fee);
             } else if (feeStats.averageFeePerKB.gtn(0)) {
                 const fee = feeStats.averageFeePerKB.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
                 return this.enforceMinimalAndMaximalFee(this.chainType, fee);
             }
+            return await this.getCurrentFeeRate();
+        } catch (error) {
+            return await this.getCurrentFeeRate();
         }
-        return await this.getCurrentFeeRate();
     }
 
     async getEstimateFee(inputLength: number, outputLength: number = 2): Promise<BN> {
@@ -66,10 +71,9 @@ export class TransactionFeeService implements IService {
         }
     }
 
-
     private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
         try {
-            const fee = await ServiceRepository.get(BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks);//TODO - fix for doge
+            const fee = await ServiceRepository.get(BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks); //TODO - fix for doge
             if (fee.toString() === "-1") {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
@@ -110,7 +114,6 @@ export class TransactionFeeService implements IService {
         } catch (error) {
             logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount}: ${errorMessage(error)}`);
             throw error;
-
         }
     }
 
@@ -136,13 +139,13 @@ export class TransactionFeeService implements IService {
             const minFee = BTC_MIN_ALLOWED_FEE;
             const maxFee = BTC_MAX_ALLOWED_FEE;
             if (feePerKB.lt(minFee)) {
-                return minFee
-            } else if (feePerKB.gt(maxFee))
-                return maxFee
+                return minFee;
+            } else if (feePerKB.gt(maxFee)) {
+                return maxFee;
+            }
             else {
-                return feePerKB
+                return feePerKB;
             }
         }
     }
-
 }

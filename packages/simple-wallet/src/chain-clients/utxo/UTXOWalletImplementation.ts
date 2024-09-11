@@ -402,7 +402,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const currentBlockHeight = await ServiceRepository.get(BlockchainAPIWrapper).getCurrentBlockHeight();
         const currentTimestamp = getCurrentTimestampInSeconds();
         const shouldSubmit = await checkIfShouldStillSubmit(this, currentBlockHeight.number, transaction.executeUntilBlock, transaction.executeUntilTimestamp);
-        if (!shouldSubmit) {
+        const txEntity = await fetchTransactionEntityById(this.rootEm, txId);
+        if (txEntity.rbfReplacementFor == null && !shouldSubmit) {
             await failTransaction(this.rootEm, txId,
                 `Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentBlockHeight.number}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}.
                 Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp}.`);
@@ -448,7 +449,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const rootEm = ServiceRepository.get(EntityManager);
         const txEnt = await fetchTransactionEntityById(rootEm, txId);
         const start = txEnt.submittedInTimestamp!;
-        while (toBN(getCurrentTimestampInSeconds()).div(start).ltn(this.mempoolWaitingTimeInS)) {
+        while (toBN(getCurrentTimestampInSeconds()).sub(start).ltn(this.mempoolWaitingTimeInS)) {
             try {
                 const txResp = await ServiceRepository.get(BlockchainAPIWrapper).getTransaction(txEnt.transactionHash);
                 if (txResp) {
@@ -483,7 +484,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
     }
 
-    async transactionAPISubmissionErrorHandler(txId: number, error: any) {
+    async transactionAPISubmissionErrorHandler(txId: number, error: any) {//TODO should be statuses updated on entities?
         logger.error(`Transaction ${txId} submission failed with Axios error (${error.response?.data?.error}): ${errorMessage(error)}`);
         if (error.response?.data?.error?.indexOf("too-long-mempool-chain") >= 0) {
             logger.error(`Transaction ${txId} has too-long-mempool-chain`, error);

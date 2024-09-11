@@ -160,7 +160,7 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, o
     const res = await rootEm.find(UTXOEntity, {
         source: source,
         spentHeight: SpentHeightEnum.UNSPENT,
-    } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { value: "desc", confirmed: "desc" } });
+    } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { confirmed: "desc", value: "desc" } });
     return onlyConfirmed ? res.filter(t => t.confirmed) : res;
 }
 
