@@ -11,7 +11,7 @@ use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import { fetchTransactionEntityById, fetchMonitoringState, getTransactionInfoById } from "../../src/db/dbutils";
+import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
 import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -33,7 +33,6 @@ import { AxiosError } from "axios";
 import * as dbutils from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
-import { BTC_TEST_ACCOUNTS } from "./btc_test_accounts";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
