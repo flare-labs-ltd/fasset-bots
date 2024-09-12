@@ -234,7 +234,7 @@ describe("Dogecoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const executeUntilBlock = (await wClient.blockchainAPI.getCurrentBlockHeight()).number + wClient.blockOffset;
-        const txEnt = createTransactionEntity(wClient.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
+        const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
         const [transaction] = await ServiceRepository.get(TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
@@ -250,7 +250,7 @@ describe("Dogecoin wallet tests", () => {
         const rewired = await setupRewiredWallet();
         const fee = feeInSatoshi;
         const executeUntilBlock = (await wClient.blockchainAPI.getCurrentBlockHeight()).number + wClient.blockOffset;
-        const txEnt = createTransactionEntity(wClient.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
+        const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
         const [transaction] = await ServiceRepository.get(TransactionService).preparePaymentTransaction(txEnt.id, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note);
         const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
 

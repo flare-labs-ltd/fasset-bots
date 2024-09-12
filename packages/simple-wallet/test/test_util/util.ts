@@ -95,7 +95,7 @@ async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit:
     return [await fetchTransactionEntityById(wClient.rootEm, txId), await wClient.getTransactionInfo(txId)];
 }
 
-function createTransactionEntity(
+async function createTransactionEntity(
     rootEm: EntityManager,
     chainType: ChainType,
     source: string,
@@ -106,22 +106,27 @@ function createTransactionEntity(
     maxFee?: BN,
     executeUntilBlock?: number,
     executeUntilTimestamp?: BN
-) {
-    return rootEm.create(
-        TransactionEntity,
-        {
-            chainType,
-            source,
-            destination,
-            status: TransactionStatus.TX_CREATED,
-            maxFee: maxFee || null,
-            executeUntilBlock: executeUntilBlock || null,
-            executeUntilTimestamp: executeUntilTimestamp || null,
-            reference: note || null,
-            amount: amountInDrops,
-            fee: feeInDrops || null
-        } as RequiredEntityData<TransactionEntity>,
-    );
+): Promise<TransactionEntity> {
+    return await rootEm.transactional(async (em) => {
+        const ent = em.create(
+            TransactionEntity,
+            {
+                chainType,
+                source,
+                destination,
+                status: TransactionStatus.TX_CREATED,
+                maxFee: maxFee || null,
+                executeUntilBlock: executeUntilBlock || null,
+                executeUntilTimestamp: executeUntilTimestamp || null,
+                reference: note || null,
+                amount: amountInDrops,
+                fee: feeInDrops || null
+            } as RequiredEntityData<TransactionEntity>,
+        );
+        await em.flush();
+        logger.info(`Created transaction ${ent.id}.`);
+        return ent;
+    });
 }
 
 async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source: string, target: string, amount: BN, note: string, fee: BN, status: TransactionStatus) {
@@ -133,7 +138,7 @@ async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source
         note,
     );
 
-    const txEnt = createTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
+    const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
     const privateKey = await wClient.walletKeys.getKey(txEnt.source);
     txEnt.raw = JSON.stringify(transaction);
     txEnt.transactionHash = (await wClient.signTransaction(JSON.parse(txEnt.raw!), privateKey!)).txHash;
