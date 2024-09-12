@@ -46,7 +46,7 @@ export class TransactionFeeService implements IService {
      */
     async getFeePerKB(): Promise<BN> {
         try {
-            const feeService = ServiceRepository.get(BlockchainFeeService);
+            const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
             const feeStats = await feeService.getLatestFeeStats();
             if (feeStats.decilesFeePerKB.length == 11) {// In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
                 const fee = feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
@@ -73,7 +73,7 @@ export class TransactionFeeService implements IService {
 
     private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
         try {
-            const fee = await ServiceRepository.get(BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks); //TODO - fix for doge
+            const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks); //TODO - fix for doge
             if (fee.toString() === "-1") {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
@@ -91,7 +91,7 @@ export class TransactionFeeService implements IService {
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
         try {
-            const utxos = await ServiceRepository.get(BlockchainAPIWrapper).getUTXOsFromMempool(params.source, this.chainType);
+            const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(params.source, this.chainType);
             const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
             let est_fee = await this.getEstimateFee(utxos.length, numOfOut);
 

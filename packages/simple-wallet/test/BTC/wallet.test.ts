@@ -174,14 +174,14 @@ describe("Bitcoin wallet tests", () => {
 
     it.skip("Should get fee for delete account", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const [transaction,] = await ServiceRepository.get(TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined, "Note");
+        const [transaction,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined, "Note");
         const fee = transaction.getFee();
         expect(fee).to.be.gt(0);
     });
 
     it("Should get account balance", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const accountBalance = await wClient.getAccountBalance(fundedWallet.address);
+        const accountBalance = await wClient.getAccountBalance("tb1qpcwvskfn0d2hjdvl3z4emgmgjrkldxd3qfalt8");
         expect(accountBalance.gt(new BN(0))).to.be.true;
     });
 
@@ -199,7 +199,7 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const executeUntilBlock = (await wClient.blockchainAPI.getCurrentBlockHeight()).number + wClient.blockOffset;
         const txEnt = createTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
-        const [transaction] = await ServiceRepository.get(TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
+        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
         await wClient.rootEm.flush();
