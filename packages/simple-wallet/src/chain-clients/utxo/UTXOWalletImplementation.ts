@@ -504,6 +504,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             txEnt.inputs.map(input => this.rootEm.remove(input));
             txEnt.outputs.map(output => this.rootEm.remove(output));
             await this.rootEm.persistAndFlush(txEnt);
+            await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
+                txEnt.status = TransactionStatus.TX_CREATED;
+            });
+            console.log("REMOVING2", txId);
         }
 
         return TransactionStatus.TX_PREPARED;
