@@ -44,7 +44,7 @@ export function getMinAmountToSend(chainType: ChainType): BN {
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
     //TODO - maybe can be more robust if also take into account response
     try {
-        await ServiceRepository.get(BlockchainAPIWrapper).getCurrentBlockHeight();
+        await ServiceRepository.get(client.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
         return true;
     } catch (error) {
         logger.error(`Cannot get response from server ${errorMessage(error)}`);
@@ -88,20 +88,21 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
     return sub;
 }
 
-export async function getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN> {
+export async function getAccountBalance(chainType: ChainType, account: string, otherAddresses?: string[]): Promise<BN> {
     try {
-        const accountBalance = await ServiceRepository.get(BlockchainAPIWrapper).getAccountBalance(account);
-        if (!accountBalance) {
+        const blockchainAPIWrapper = ServiceRepository.get(chainType, BlockchainAPIWrapper);
+        const accountBalance = await blockchainAPIWrapper.getAccountBalance(account);
+        if (accountBalance === undefined) {
             throw new Error("Account balance not found");
         }
         const mainAccountBalance = toBN(accountBalance);
         if (!otherAddresses) {
             return mainAccountBalance;
         } else {
-            const balancePromises = otherAddresses.map(address => ServiceRepository.get(BlockchainAPIWrapper).getAccountBalance(address));
+            const balancePromises = otherAddresses.map(address => blockchainAPIWrapper.getAccountBalance(address));
             const balanceResponses = await Promise.all(balancePromises);
             const totalAddressesBalance = balanceResponses.reduce((sum, balance) => {
-                return balance ? sum! + balance : balance;
+                return balance !== undefined ? sum! + balance : balance;
             }, 0);
             return toBN(totalAddressesBalance!).add(mainAccountBalance);
         }

@@ -25,6 +25,7 @@ import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
 import { LessThanDustAmountError, NotEnoughUTXOsError, InvalidFeeError } from "../../utils/axios-error-utils";
+import { UTXO } from "../../interfaces/IWalletTransaction";
 
 export class TransactionService implements IService {
 
@@ -33,7 +34,7 @@ export class TransactionService implements IService {
 
     constructor(chainType: ChainType) {
         this.chainType = chainType;
-        this.transactionFeeService = ServiceRepository.get(TransactionFeeService);
+        this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
     }
 
     async createPaymentTransaction(
@@ -48,7 +49,7 @@ export class TransactionService implements IService {
         executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp}`);
-        const em = ServiceRepository.get(EntityManager);
+        const em = ServiceRepository.get(this.chainType, EntityManager);
         if (await checkIfIsDeleting(em, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
@@ -79,7 +80,7 @@ export class TransactionService implements IService {
         executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
-        const em = ServiceRepository.get(EntityManager);
+        const em = ServiceRepository.get(this.chainType, EntityManager);
         if (await checkIfIsDeleting(em, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
@@ -121,11 +122,11 @@ export class TransactionService implements IService {
     ): Promise<[bitcore.Transaction, UTXOEntity[]]> {
         const isPayment = amountInSatoshi != null;
         const core = getCore(this.chainType);
-        const [utxos, dbUTXOs] = await ServiceRepository.get(TransactionUTXOService).fetchUTXOs(source, amountInSatoshi, feeInSatoshi, getEstimatedNumberOfOutputs(amountInSatoshi, note), txForReplacement);
+        const [utxos, dbUTXOs] = await ServiceRepository.get(this.chainType, TransactionUTXOService).fetchUTXOs(source, amountInSatoshi, feeInSatoshi, getEstimatedNumberOfOutputs(amountInSatoshi, note), txForReplacement);
 
         if (amountInSatoshi == null) {
             feeInSatoshi = await this.transactionFeeService.getEstimateFee(utxos.length);
-            amountInSatoshi = (await getAccountBalance(source)).sub(feeInSatoshi);
+            amountInSatoshi = (await getAccountBalance(this.chainType, source)).sub(feeInSatoshi);
         }
 
         const utxosAmount = utxos.reduce((accumulator, transaction) => {
@@ -164,7 +165,7 @@ export class TransactionService implements IService {
             }
             // https://github.com/bitcoin/bitcoin/blob/55d663cb15151773cd043fc9535d6245f8ba6c99/doc/policy/mempool-replacements.md?plain=1#L37
             if (txForReplacement) {//TODO
-                const totalFee = await this.transactionFeeService.calculateTotalFeeOfTxAndDescendants(ServiceRepository.get(EntityManager), txForReplacement);
+                const totalFee = await this.transactionFeeService.calculateTotalFeeOfTxAndDescendants(ServiceRepository.get(this.chainType, EntityManager), txForReplacement);
                 const relayFee = bitcoreEstFee.div(getDefaultFeePerKB(this.chainType)).muln(1000);
 
                 if (feeInSatoshi.sub(totalFee).lt(relayFee)) {

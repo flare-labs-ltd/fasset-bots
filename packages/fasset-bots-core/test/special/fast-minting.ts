@@ -3,8 +3,8 @@ import { Redeemer } from "../../src/mock/Redeemer";
 import { logger, sendWeb3Transaction, toStringExp, web3 } from "../../src/utils";
 import * as simpleWallet from "@flarelabs/simple-wallet";
 import { Minter } from "../../src/mock/Minter";
-import { BTC_TEST_ACCOUNTS} from "./btc_test_accounts";
-import { FLR_TEST_ACCOUNTS} from "./flr_test_accounts";
+import { BTC_TEST_ACCOUNTS } from "./btc_test_accounts";
+import { FLR_TEST_ACCOUNTS } from "./flr_test_accounts";
 import {
     BotConfigFile, createBlockchainWalletHelper,
     createBotOrm,
@@ -17,13 +17,13 @@ import fs from "node:fs";
 import BN from "bn.js";
 
 const BTCFundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
-const BTCFundedPrivateKey = "cQTqCyHAPJdg2Aej1Xfw7RN5tck3G9L5udKm2rU4rSJ4WLtrCr5K"
+const BTCFundedPrivateKey = "cQTqCyHAPJdg2Aej1Xfw7RN5tck3G9L5udKm2rU4rSJ4WLtrCr5K";
 
 const FLRfundedAddress = "";
 const FLRfundedPrivateKey = "";
 let blockchainWalletHelper: BlockchainWalletHelper;
 
-describe("Fast minting", function (){
+describe("Fast minting", function() {
 
     const N = 15;
     const amountToSend = toBN(1_000_000);
@@ -32,8 +32,8 @@ describe("Fast minting", function (){
     const MINT_N_LOTS = 1;
     const REDEEM_N_LOTS = 1;
 
-    const TEST_FASSET_BOT_CONFIG = '../../test-data/extend-coston.json';
-    const FASSET_BOT_SECRETS = '../../secrets.json';
+    const TEST_FASSET_BOT_CONFIG = "../../test-data/extend-coston.json";
+    const FASSET_BOT_SECRETS = "../../secrets.json";
     const FASSET_USER_DATA_DIR = "../../user-data";
 
 
@@ -49,7 +49,7 @@ describe("Fast minting", function (){
 
     after(async () => {
         await blockchainWalletHelper.stopMonitoring();
-    })
+    });
 
     it.skip("Fund accounts", async function() {
         this.timeout(15 * 60 * 1000);
@@ -87,7 +87,12 @@ describe("Fast minting", function (){
                 console.log(`Created minter ${i} at address ${minter.address}`);
                 console.log(`Created redeemer ${i} at address ${redeemer.address}`);
 
-                await sendWeb3Transaction({ from: parent.nativeAddress, to: FLRAccount.address, value: toStringExp(5, 18), gas: 100_000 });
+                await sendWeb3Transaction({
+                    from: parent.nativeAddress,
+                    to: FLRAccount.address,
+                    value: toStringExp(5, 18),
+                    gas: 100_000,
+                });
             } catch (error) {
                 console.error(`Error while preparing for minting: ${errorMessage(error)}`);
             }
@@ -123,7 +128,7 @@ describe("Fast minting", function (){
 
     it.skip("Create web3 accounts", async () => {
 
-        const accounts= [];
+        const accounts = [];
         for (let i = 0; i < 100; i++) {
             const account = web3.eth.accounts.create();
             accounts.push({
@@ -147,7 +152,7 @@ async function setupWallet(config: BotConfigFile, secrets: Secrets) {
         throw new Error(`Undefined orm`);
     }
     const chainId = ChainId.testBTC;
-    return await  createBlockchainWalletHelper(secrets, chainId, orm.em, "https://testbtc.indexers.flare.space/api/v2", "blockbook", config.walletOptions);
+    return await createBlockchainWalletHelper(secrets, chainId, orm.em, "https://testbtc.indexers.flare.space/api/v2", "blockbook", config.walletOptions);
 }
 
 async function fundAccounts(N: number, amountToSend: BN) {
@@ -169,25 +174,25 @@ function createUserSecrets(nativeAddress: string, nativePrivateKey: string, unde
             testBTC: {
                 address: underlyingAddress,
                 private_key: underlyingPrivateKey,
-            }
+            },
         },
         wallet: {
-            encryption_password: "np2qU6AGutPaaaEdbbbUkfzcccLeWxjEi5"
+            encryption_password: "np2qU6AGutPaaaEdbbbUkfzcccLeWxjEi5",
         },
         database: {
             user: "root",
             password: "root_password",
-        }
+        },
     };
 
     return new Secrets("MEMORY", secrets);
 }
 
-function addConsoleTransportForTests (logger: any) {
+function addConsoleTransportForTests(logger: any) {
     const consoleTransport = new winston.transports.Console({
         format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.simple()
+            winston.format.simple(),
         ),
     });
 

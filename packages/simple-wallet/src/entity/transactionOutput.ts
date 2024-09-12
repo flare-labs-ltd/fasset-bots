@@ -1,4 +1,4 @@
-import { Entity, ManyToMany, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Entity, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import {BNType} from "../utils/orm-types";
 import BN from "bn.js";
 import { TransactionEntity } from "./transaction";
@@ -11,8 +11,8 @@ export class TransactionOutputEntity {
     @Property()
     transactionHash!: string;
 
-    @Property({nullable: true})
-    vout?: number;
+    @Property()
+    vout!: number;
 
     @Property({type: BNType})
     amount!: BN;

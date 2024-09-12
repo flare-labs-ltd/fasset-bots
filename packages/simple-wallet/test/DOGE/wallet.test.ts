@@ -4,7 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 import { assert, expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
 import { BTC_DOGE_DEC_PLACES, ChainType, DEFAULT_FEE_INCREASE, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
-import { toBNExp } from "../../src/utils/bnutils";
+import { toBNExp, toNumber } from "../../src/utils/bnutils";
 import rewire from "rewire";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
@@ -165,7 +165,8 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
-        await expect(ServiceRepository.get(TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note")).to
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi, "Note")).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
 
@@ -235,7 +236,7 @@ describe("Dogecoin wallet tests", () => {
 
         const executeUntilBlock = (await wClient.blockchainAPI.getCurrentBlockHeight()).number + wClient.blockOffset;
         const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
-        const [transaction] = await ServiceRepository.get(TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
+        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
         await wClient.rootEm.flush();
@@ -251,7 +252,7 @@ describe("Dogecoin wallet tests", () => {
         const fee = feeInSatoshi;
         const executeUntilBlock = (await wClient.blockchainAPI.getCurrentBlockHeight()).number + wClient.blockOffset;
         const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note, undefined, executeUntilBlock);
-        const [transaction] = await ServiceRepository.get(TransactionService).preparePaymentTransaction(txEnt.id, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note);
+        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, fundedWallet.address, targetAddress, amountToSendInSatoshi, fee, note);
         const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
 
         txEnt.raw = JSON.stringify(transaction);
@@ -293,7 +294,7 @@ describe("Dogecoin wallet tests", () => {
     it("Transaction with execute until timestamp too low should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi, "Submit", undefined, undefined, toBN(getCurrentTimestampInSeconds() - 10));
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendInSatoshi, feeInSatoshi.divn(2), "Submit", undefined, undefined, toBN(getCurrentTimestampInSeconds() - 24 * 60 * 60));
         expect(id).to.be.gt(0);
 
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -523,7 +524,7 @@ describe("Dogecoin wallet tests", () => {
     it("Should replace transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const stub = sinon.stub(ServiceRepository.get(TransactionFeeService), "hasTooHighOrLowFee");
+        const stub = sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "hasTooHighOrLowFee");
         stub.returns(false);
 
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, toBN("1000001"), toBN("100"), note, undefined);

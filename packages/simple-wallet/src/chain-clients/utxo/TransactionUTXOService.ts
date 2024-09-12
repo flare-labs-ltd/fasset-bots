@@ -34,7 +34,7 @@ export class TransactionUTXOService implements IService {
         this.enoughConfirmations = enoughConfirmations;
         this.mempoolChainLengthLimit = mempoolChainLengthLimit;
 
-        this.rootEm = ServiceRepository.get(EntityManager);
+        this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
     }
 
     /**
@@ -56,7 +56,7 @@ export class TransactionUTXOService implements IService {
                     vout: utxo.vout,
                     transactionHash: utxo.txid,
                 });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(BlockchainAPIWrapper).getUTXOScript(address, utxo.mintTransactionHash, utxo.position, this.chainType);
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(address, utxo.mintTransactionHash, utxo.position, this.chainType);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, utxoEnt => utxoEnt.script = utxo.script);
             }
             const item = {
@@ -126,7 +126,7 @@ export class TransactionUTXOService implements IService {
                 neededUTXOs.push(utxo);
             }
             sum = sum.add(utxo.value);
-            const est_fee = await ServiceRepository.get(TransactionFeeService).getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
+            const est_fee = await ServiceRepository.get(this.chainType, TransactionFeeService).getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
             // multiply estimated fee by 1.4 to ensure enough funds TODO: is it enough?
             if (toBN(sum).gt(amountInSatoshi.add(max(est_fee, feeInSatoshi).muln(DEFAULT_FEE_INCREASE)))) {
                 return neededUTXOs;
@@ -136,7 +136,7 @@ export class TransactionUTXOService implements IService {
     }
 
     async fillUTXOsFromMempool(address: string) {
-        const utxos = await ServiceRepository.get(BlockchainAPIWrapper).getUTXOsFromMempool(address, this.chainType);
+        const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(address, this.chainType);
         await storeUTXOS(this.rootEm, address, utxos);
     }
 
@@ -175,7 +175,6 @@ export class TransactionUTXOService implements IService {
         return false;
     }
 
-
     async createInputsFromUTXOs(dbUTXOs: UTXOEntity[], txId: number) {
         const inputs: TransactionInputEntity[] = [];
         for (const utxo of dbUTXOs) {
@@ -194,14 +193,14 @@ export class TransactionUTXOService implements IService {
 
         let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
         if (txEnt && (txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED || txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED)) {
-            const tr = await ServiceRepository.get(BlockchainAPIWrapper).getTransaction(txHash);
+            const tr = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txHash);
             if (tr && tr.data.blockHash && tr.data.confirmations >= this.enoughConfirmations) {
                 txEnt.status = TransactionStatus.TX_SUCCESS;
                 await this.rootEm.persistAndFlush(txEnt);
             }
         }
         if (!txEnt) {
-            const tr = await ServiceRepository.get(BlockchainAPIWrapper).getTransaction(txHash);
+            const tr = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txHash);
             logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
             if (tr) {
                 await this.rootEm.transactional(async em => {
@@ -220,7 +219,7 @@ export class TransactionUTXOService implements IService {
 
                     await em.persistAndFlush(txEnt);
                     await em.persistAndFlush(inputs);
-                })
+                });
             }
 
             txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });

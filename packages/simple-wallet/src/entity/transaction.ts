@@ -78,7 +78,7 @@ export class TransactionEntity {
     rbfReplacementFor?: TransactionEntity;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
-    creaedAt: Date = new Date();
+    createdAt: Date = new Date();
 
     @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     updatedAt: Date = new Date();
