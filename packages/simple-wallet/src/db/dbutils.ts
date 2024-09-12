@@ -156,12 +156,15 @@ export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, po
     });
 }
 
-export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, onlyConfirmed?: boolean): Promise<UTXOEntity[]> {
+export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
     const res = await rootEm.find(UTXOEntity, {
         source: source,
         spentHeight: SpentHeightEnum.UNSPENT,
     } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { confirmed: "desc", value: "desc" } });
-    return onlyConfirmed ? res.filter(t => t.confirmed) : res;
+    const utxos = !!txForReplacement ? res.filter(t => t.confirmed) : res;
+    const alreadyUsed = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
+    console.log("txForReplacement?.utxos.getItems()",txForReplacement?.utxos.getItems());
+    return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
 }
 
 export async function fetchUTXOsByTxHash(rootEm: EntityManager, txHash: string): Promise<UTXOEntity[]> {

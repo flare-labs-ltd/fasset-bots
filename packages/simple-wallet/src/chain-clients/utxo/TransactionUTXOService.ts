@@ -83,11 +83,11 @@ export class TransactionUTXOService implements IService {
     private async listUnspent(address: string, amountInSatoshi: BN | null, feeInSatoshi: BN | undefined, estimatedNumOfOutputs: number, txForReplacement?: TransactionEntity): Promise<any[]> {
         // fetch db utxos
         logger.info(`Listing UTXOs for address ${address}`);
-        let dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, !!txForReplacement);
+        let dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, txForReplacement);
         // fill from mempool and refetch
         if (dbUTXOS.length == 0) {
             await this.fillUTXOsFromMempool(address);
-            dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, !!txForReplacement);
+            dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, txForReplacement);
         }
         if (amountInSatoshi == null) {
             return dbUTXOS;
@@ -98,7 +98,7 @@ export class TransactionUTXOService implements IService {
         }
         // not enough funds in db
         await this.fillUTXOsFromMempool(address);
-        dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, !!txForReplacement);
+        dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, txForReplacement);
         const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi, feeInSatoshi, txForReplacement);
         if (neededAfter) {
             return neededAfter;
@@ -113,12 +113,18 @@ export class TransactionUTXOService implements IService {
         let sum = neededUTXOs.reduce((acc, utxo) => acc.add(utxo.value), new BN(0));
 
         for (const utxo of allUTXOS) {
+            const isAlreadyInNeeded = neededUTXOs.some(existingUTXO =>
+                existingUTXO.mintTransactionHash === utxo.mintTransactionHash &&
+                existingUTXO.position === utxo.position
+            );
             const numAncestors = await this.getNumberOfAncestorsInMempool(utxo.mintTransactionHash);
             if (numAncestors >= this.mempoolChainLengthLimit) {
                 logger.info(`Number of UTXO mempool ancestors ${numAncestors} is greater than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
                 continue;
             }
-            neededUTXOs.push(utxo);
+            if (!isAlreadyInNeeded) {
+                neededUTXOs.push(utxo);
+            }
             sum = sum.add(utxo.value);
             const est_fee = await ServiceRepository.get(TransactionFeeService).getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
             // multiply estimated fee by 1.4 to ensure enough funds TODO: is it enough?
@@ -147,11 +153,9 @@ export class TransactionUTXOService implements IService {
     async checkIfTxUsesAlreadySpentUTXOs(txId: number) {
         const utxoEnts = await fetchUTXOsByTxId(this.rootEm, txId);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-
         if (txEnt.rbfReplacementFor) {
             return false;
         }
-
         for (const utxo of utxoEnts) { // If there's an UTXO that's already been SENT/SPENT we should create tx again
             if (utxo.spentHeight !== SpentHeightEnum.UNSPENT) {
                 logger.warn(`Transaction ${txId} tried to use already SENT/SPENT utxo with hash ${utxo.mintTransactionHash}`);

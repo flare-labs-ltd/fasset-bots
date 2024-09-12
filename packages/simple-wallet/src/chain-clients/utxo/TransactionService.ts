@@ -133,6 +133,7 @@ export class TransactionService implements IService {
         }, 0);
 
         if (amountInSatoshi.lte(getDustAmount(this.chainType))) {
+            logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
             throw new LessThanDustAmountError(
                 `Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
             );

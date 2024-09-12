@@ -376,7 +376,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const descendants = await getTransactionDescendants(rootEm, oldTx.transactionHash!, oldTx.source); // TODO-check
         for (const descendant of descendants) {
             const replacement = await createInitialTransactionEntity(rootEm, this.chainType, descendant.source, descendant.destination, descendant.amount || null,
-                descendant.fee?.muln(this.feeIncrease), descendant.reference, descendant.maxFee, descendant.executeUntilBlock, descendant.executeUntilTimestamp);
+                descendant.fee?.muln(this.feeIncrease), descendant.reference, descendant.maxFee, descendant.executeUntilBlock, descendant.executeUntilTimestamp, descendant);
             await removeUTXOsAndAddReplacement(rootEm, descendant.id, replacement);
         }
     }
@@ -448,7 +448,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
         const rootEm = ServiceRepository.get(EntityManager);
         const txEnt = await fetchTransactionEntityById(rootEm, txId);
-        const start = txEnt.submittedInTimestamp!;
+        const start = txEnt.reachedStatusPendingInTimestamp!;
         while (toBN(getCurrentTimestampInSeconds()).sub(start).ltn(this.mempoolWaitingTimeInS)) {
             try {
                 const txResp = await ServiceRepository.get(BlockchainAPIWrapper).getTransaction(txEnt.transactionHash);
@@ -470,18 +470,18 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
 
         // transaction was not accepted in mempool by one minute => replace by fee one time
-        if (retry == 0) {//TODO
-            await failTransaction(rootEm, txId, `Transaction ${txId} was not accepted in mempool`);
-        } else {
-            const currentBlock = await ServiceRepository.get(BlockchainAPIWrapper).getCurrentBlockHeight();
-            const shouldSubmit = await checkIfShouldStillSubmit(this, this.executionBlockOffset, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
-            if (!shouldSubmit) {
-                await failTransaction(rootEm, txId, `waitForTransactionToAppearInMempool: Current ledger ${currentBlock.number} >= last transaction ledger ${txEnt.executeUntilBlock}`);
-            }
-            if (!this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
-                await this.tryToReplaceByFee(txId, currentBlock);
-            }
-        }
+        // if (retry == 0) {//TODO
+        //     await failTransaction(rootEm, txId, `Transaction ${txId} was not accepted in mempool`);
+        // } else {
+        //     const currentBlock = await ServiceRepository.get(BlockchainAPIWrapper).getCurrentBlockHeight();
+        //     const shouldSubmit = await checkIfShouldStillSubmit(this, this.executionBlockOffset, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
+        //     if (!shouldSubmit) {
+        //         await failTransaction(rootEm, txId, `waitForTransactionToAppearInMempool: Current ledger ${currentBlock.number} >= last transaction ledger ${txEnt.executeUntilBlock}`);
+        //     }
+        //     if (!this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
+        //         await this.tryToReplaceByFee(txId, currentBlock);
+        //     }
+        // }
     }
 
     async transactionAPISubmissionErrorHandler(txId: number, error: any) {//TODO should be statuses updated on entities?
