@@ -1,13 +1,11 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import elliptic from "elliptic";
 import xrpl, { convertStringToHex, encodeForSigning, encode as xrplEncode, hashes as xrplHashes } from "xrpl"; // package has some member access issues
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
-import { excludeNullFields, sleepMs, bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getRandomInt } from "../utils/utils";
+import { sleepMs, bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getRandomInt } from "../utils/utils";
 import { toBN } from "../utils/bnutils";
-import { BUFFER_PING_INTERVAL, ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, DELETE_ACCOUNT_OFFSET, PING_INTERVAL } from "../utils/constants";
+import { BUFFER_PING_INTERVAL, ChainType, DELETE_ACCOUNT_OFFSET, PING_INTERVAL } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type {
    ICreateWalletResponse,
@@ -42,6 +40,7 @@ import { TransactionStatus, TransactionEntity } from "../entity/transaction";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { MonitoringStateEntity } from "../entity/monitoring_state";
 import { XRPBlockchainAPI } from "../blockchain-apis/XRPBlockchainAPI";
+import { errorMessage } from "./utils";
 
 const DROPS_PER_XRP = 1000000.0;
 
@@ -297,8 +296,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             }
          }
          logger.info(`Monitoring stopped for chain ${this.chainType}.`);
-      } catch (e) {
-         logger.error(`Monitoring failed for chain ${this.chainType} error: ${e}.`);
+      } catch (error) {
+         logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
       }
    }
 

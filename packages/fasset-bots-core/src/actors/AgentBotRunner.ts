@@ -185,9 +185,10 @@ export class AgentBotRunner {
         agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
         agentBot.locks = this.locks;
         agentBot.loopDelay = this.loopDelay;
-
         // add wallet to the background loop
         this.addSimpleWalletToLoop(agentBot);
+        // run initial topup etc.
+        await agentBot.runBotInitialOperations(this.orm.em);
         return agentBot;
     }
 

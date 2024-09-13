@@ -124,10 +124,10 @@ export class AgentBotCommands {
             fee: "0.25%",
             poolFeeShare: "40%",
             mintingVaultCollateralRatio: "1.6",
-            mintingPoolCollateralRatio: "2.4",
-            poolExitCollateralRatio: "2.6",
-            poolTopupCollateralRatio: "2.2",
-            poolTopupTokenPriceFactor: "0.8",
+            mintingPoolCollateralRatio: "2.3",
+            poolExitCollateralRatio: "2.3",
+            poolTopupCollateralRatio: "2.1",
+            poolTopupTokenPriceFactor: "0.9",
             buyFAssetByAgentFactor: "0.99",
         };
     }
