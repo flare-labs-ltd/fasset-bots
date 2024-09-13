@@ -2,8 +2,8 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig, PricePublisherService } from "@flarelabs/fasset-bots-core";
-import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile, loadContracts, createContractsMap } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, initWeb3, requireNotNull } from "@flarelabs/fasset-bots-core/utils";
+import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile, createContractsMap } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, initWeb3 } from "@flarelabs/fasset-bots-core/utils";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
@@ -28,8 +28,8 @@ program.action(async () => {
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [ownerPrivateKey], ownerAddress);
         const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
         // create timekeepers
-        // const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, timekeeperConfig);
-        // timekeeperService.startAll();
+        const timekeeperService = await TimeKeeperService.create(botConfig, ownerAddress, timekeeperConfig);
+        timekeeperService.startAll();
         const priceFeedApiPath = secrets.stringExistsAndIsNonZero("pricePublisher.price_feed_api_path");
         // run price publisher only if price feed api path is set
         if (priceFeedApiPath[0]) {
@@ -40,33 +40,33 @@ program.action(async () => {
         }
 
         // create runner and agents
-        // const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
+        const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         // store owner's underlying address
-        // for (const ctx of runner.contexts.values()) {
-        //     const chainName = ctx.chainInfo.chainId.chainName;
-        //     const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);
-        //     const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
-        //     await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
-        // }
-        // run
-        // try {
-        //     console.log("Agent bot started, press CTRL+C to end");
-        //     process.on("SIGINT", () => {
-        //         console.log("Stopping agent bot...");
-        //         runner.requestStop();
-        //     });
-        //     await runner.run();
-        // } finally {
-        //     await timekeeperService.stopAll();
-        //     await closeBotConfig(botConfig);
-        // }
-        // if (runner.stopRequested) {
-        //     break;
-        // } else if (runner.restartRequested) {
-        //     console.log("Agent bot restarting...");
-        //     continue;
-        // }
-        // break;
+        for (const ctx of runner.contexts.values()) {
+            const chainName = ctx.chainInfo.chainId.chainName;
+            const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);
+            const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
+            await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
+        }
+        run
+        try {
+            console.log("Agent bot started, press CTRL+C to end");
+            process.on("SIGINT", () => {
+                console.log("Stopping agent bot...");
+                runner.requestStop();
+            });
+            await runner.run();
+        } finally {
+            await timekeeperService.stopAll();
+            await closeBotConfig(botConfig);
+        }
+        if (runner.stopRequested) {
+            break;
+        } else if (runner.restartRequested) {
+            console.log("Agent bot restarting...");
+            continue;
+        }
+        break;
     }
     console.log("Agent bot stopped");
 });
