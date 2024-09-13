@@ -48,7 +48,7 @@ program.action(async () => {
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
         }
-        run
+        // run
         try {
             console.log("Agent bot started, press CTRL+C to end");
             process.on("SIGINT", () => {
