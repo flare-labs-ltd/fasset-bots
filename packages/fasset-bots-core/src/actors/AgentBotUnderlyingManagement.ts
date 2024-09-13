@@ -42,15 +42,7 @@ export class AgentBotUnderlyingManagement {
         const minimumFreeUnderlyingBalance = toBN(this.agentBotSettings.minimumFreeUnderlyingBalance);
         logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is minimumFreeUnderlyingBalance. Top up is required ${freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)}.`);
         if (freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)) {
-            const topupAmount = minimumFreeUnderlyingBalance;
-            const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
-                source: this.agent.underlyingAddress,
-                destination: this.ownerUnderlyingAddress,
-                amount: topupAmount,
-                isPayment: true
-            }));
-            logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
-            await this.underlyingTopUp(em, topupAmount);
+            await this.underlyingTopUp(em, minimumFreeUnderlyingBalance);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${minimumFreeUnderlyingBalance.toString()}.`);
         }
@@ -69,9 +61,19 @@ export class AgentBotUnderlyingManagement {
             logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress.`);
             return false;
         }
+        // log
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+        // check and log the fee
+        const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
+            source: this.agent.underlyingAddress,
+            destination: this.ownerUnderlyingAddress,
+            amount: amount,
+            isPayment: true
+        }));
+        logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
+        // start payment
         const txDbId = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
             return await this.agent.initiateTopupPayment(amount, this.ownerUnderlyingAddress);
         });

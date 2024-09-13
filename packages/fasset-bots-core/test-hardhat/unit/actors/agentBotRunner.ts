@@ -1,8 +1,10 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { expect, spy, use } from "chai";
 import spies from "chai-spies";
+import { AgentBotRunner } from "../../../src";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity } from "../../../src/entities/agent";
+import { sleep, toBNExp } from "../../../src/utils";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
@@ -10,7 +12,7 @@ import { FaultyNotifierTransport } from "../../test-utils/FaultyNotifierTranspor
 import { TestAssetBotContext, createTestAssetContext, createTestSecrets } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotRunner } from "../../test-utils/helpers";
-import { sleep } from "../../../src/utils";
+import { AgentBotUnderlyingManagement } from "../../../src/actors/AgentBotUnderlyingManagement";
 use(spies);
 
 const loopDelay: number = 2;
@@ -34,6 +36,16 @@ describe("Agent bot runner tests", () => {
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         contexts.set(context.fAssetSymbol, context);
         return { orm, context, contexts };
+    }
+
+    async function stopRunner(agentBotRunner: AgentBotRunner) {
+        agentBotRunner.requestStop();
+        if (agentBotRunner.parallel()) {
+            while (agentBotRunner.running) {
+                await agentBotRunner.runStep();
+                await sleep(100);
+            }
+        }
     }
 
     beforeEach(async () => {
@@ -79,12 +91,33 @@ describe("Agent bot runner tests", () => {
         // run
         await agentBotRunner.runStep();
         expect(agentEntities.length).to.eq(3);
-        agentBotRunner.requestStop();
-        if (agentBotRunner.parallel()) {
-            while (agentBotRunner.running) {
-                await agentBotRunner.runStep();
-                await sleep(100);
-            }
+        await stopRunner(agentBotRunner);
+    });
+
+    it("Should perform automatic underlying topup", async () => {
+        const spyTopup = spy.on(AgentBotUnderlyingManagement.prototype, "underlyingTopUp");
+        try {
+            context.blockchainIndexer.chain.mint(ownerUnderlyingAddress, toBNExp(50, 6));
+            context.blockchainIndexer.chain.mine(10);
+            // create agents
+            await createTestAgentBot(context, orm, ownerAddress, undefined, false);
+            // create runner
+            const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
+            const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
+            // run step
+            await agentBotRunner.runStep();
+            // check
+            expect(spyTopup).to.be.called.once;
+            // create another bot - it should be picked by the runner on next step
+            await createTestAgentBot(context, orm, ownerAddress, undefined, false);
+            // run step
+            await agentBotRunner.runStep();
+            // finish
+            await stopRunner(agentBotRunner);
+            // check for 2
+            expect(spyTopup).to.be.called.exactly(2);
+        } finally {
+            spy.restore(AgentBotUnderlyingManagement.prototype);
         }
     });
 });
