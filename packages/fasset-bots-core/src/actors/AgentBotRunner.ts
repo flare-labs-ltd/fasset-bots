@@ -13,7 +13,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 
-export const FUND_MIN_INTERVAL = 60 * 3; // 3 minutes
+export const FUND_MIN_INTERVAL_MS = 60 * 3 * 1000; // 3 minutes
 
 export interface ITimeKeeperService {
     get(symbol: string): ITimeKeeper;
@@ -219,7 +219,7 @@ export class AgentBotRunner {
         for (const [name, address] of this.serviceAccounts) {
             const fundedAt = this.lastFundedAt.get(name) ?? 0;
             const now = Date.now();
-            if (now - fundedAt < FUND_MIN_INTERVAL) continue;
+            if (now - fundedAt < FUND_MIN_INTERVAL_MS) continue;
             await this.fundAccount(fundingAddress, address, settings.minBalanceOnServiceAccount, name, notifier);
             this.lastFundedAt.set(name, now);
         }
