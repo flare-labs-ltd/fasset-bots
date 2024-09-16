@@ -336,7 +336,6 @@ function createTestAssetManagerSettings(
         redemptionDefaultFactorVaultCollateralBIPS: toBIPS(1.1),
         redemptionDefaultFactorPoolBIPS: toBIPS(0.1),
         underlyingBlocksForPayment: chainInfo.underlyingBlocksForPayment,
-        //TODO
         underlyingSecondsForPayment: chainInfo.underlyingBlocksForPayment,
         attestationWindowSeconds: bnToString(parameters.attestationWindowSeconds),
         averageBlockTimeMS: bnToString(parameters.averageBlockTimeMS),

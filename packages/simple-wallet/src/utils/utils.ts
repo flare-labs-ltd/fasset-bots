@@ -117,15 +117,6 @@ export function getCurrentNetwork(chainType: ChainType) {
    }
 }
 
-//TODO add for timestamp
-export function shouldExecuteTransaction(executeUntilBlock: number | null, latestBlock: number, executionBlockOffset: number): boolean {
-   if (!executeUntilBlock || (executeUntilBlock && (executeUntilBlock - latestBlock) >= executionBlockOffset)) {
-      return true;
-   }
-   return false;
-}
-
-
 export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    if (maxFee && fee.gt(maxFee)) {
       return true;
@@ -164,10 +155,10 @@ export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation 
    // It probably should be following, but due to inconsistant blocktime on btc, we use currentTime
    //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)
    const now = toBN(getCurrentTimestampInSeconds());
-   if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { //legacy TODO-test
+   if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
        executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
    }
-   const timeRestriction = !!executeUntilTimestamp && (now.sub(executeUntilTimestamp).gten(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType))); //TODO-urska (is this good estimate
+   const timeRestriction = !!executeUntilTimestamp && (now.sub(executeUntilTimestamp).gten(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)));
 
    if (client.chainType === ChainType.testBTC || client.chainType === ChainType.BTC || client.chainType === ChainType.testDOGE || client.chainType === ChainType.DOGE) {
        if (blockRestriction) {

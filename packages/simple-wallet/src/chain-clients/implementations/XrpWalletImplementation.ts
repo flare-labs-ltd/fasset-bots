@@ -225,7 +225,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    async checkXrpNetworkStatus(): Promise<boolean> {
-      //TODO - maybe can be more robust if also take into account response
       try {
          await this.getServerInfo();
          return true;

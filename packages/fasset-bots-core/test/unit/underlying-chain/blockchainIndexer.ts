@@ -148,7 +148,6 @@ describe("testXRP blockchain tests via indexer", () => {
         secrets = Secrets.load(TEST_SECRETS);
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
         blockchainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        // TODO could be done better
         const info = await receiveBlockAndTransaction(chainId, blockchainIndexerClient, indexerUrl, indexerApiKey(secrets));
         if (info) {
             blockId = info?.blockNumber;
@@ -375,7 +374,6 @@ describe("testDOGE blockchain tests via indexer", () => {
         secrets = Secrets.load(TEST_SECRETS);
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        // TODO could be done better
         const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrl, indexerApiKey(secrets));
         if (info) {
             blockId = info?.blockNumber;
@@ -430,7 +428,6 @@ describe("testBTC blockchain tests via indexer", () => {
         secrets = Secrets.load(TEST_SECRETS);
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrl, chainId, indexerApiKey(secrets));
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        // TODO could be done better
         const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrl, indexerApiKey(secrets));
         if (info) {
             blockId = info?.blockNumber;

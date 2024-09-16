@@ -72,10 +72,10 @@ export class TransactionEntity {
     serverSubmitResponse?: string;
 
     @OneToOne(() => TransactionEntity, { nullable: true })
-    replaced_by?: TransactionEntity;
+    replaced_by?: TransactionEntity | null;
 
     @OneToOne(() => TransactionEntity, { nullable: true })
-    rbfReplacementFor?: TransactionEntity;
+    rbfReplacementFor?: TransactionEntity | null;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();
