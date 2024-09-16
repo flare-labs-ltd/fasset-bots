@@ -48,7 +48,7 @@
         "liquidationPreventionFactor": "1.2",
         "vaultCollateralReserveFactor": "0.1",
         "poolCollateralReserveFactor": "0.1",
-        "trustedPingSenders": [],
+        "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901"],
         "minBalanceOnServiceAccount": "2",
         "minBalanceOnWorkAccount": "200",
         "fAssets": {
