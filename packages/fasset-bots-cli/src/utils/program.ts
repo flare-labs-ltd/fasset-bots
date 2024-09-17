@@ -42,11 +42,11 @@ export function programWithCommonOptions(userType: UserTypeForOptions, fassets: 
         }
     }
 
-    function createFAssetOption() {
-        return program
+    function createFAssetOption(mandatory: boolean = true) {
+        const _program = program
             .createOption("-f, --fasset <fAssetSymbol>", `the symbol of the FAsset to mint, redeem or query`)
             .env("FASSET_DEFAULT")
-            .makeOptionMandatory();
+        return mandatory ? _program.makeOptionMandatory() : _program;
     }
 
     function normalizeFAssetNameCase(configFName: string, fasset: string) {
@@ -86,9 +86,7 @@ export function programWithCommonOptions(userType: UserTypeForOptions, fassets: 
     program.version(programVersion());
     program.addOption(createConfigOption());
     program.addOption(createSecretsOption());
-    if (fassets === "single_fasset") {
-        program.addOption(createFAssetOption());
-    }
+    program.addOption(createFAssetOption(fassets === "single_fasset"));
     program.hook("preAction", () => verifyFilesExist());
     return program;
 }
