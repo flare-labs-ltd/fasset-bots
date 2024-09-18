@@ -21,9 +21,7 @@ import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
 import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
-<<<<<<< HEAD
 import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
-=======
 import { TransactionService } from "./TransactionService";
 
 export interface TransactionData {
@@ -35,7 +33,6 @@ export interface TransactionData {
     useChange: boolean,
     note?: string
 }
->>>>>>> 152d0734de4d647257e7a7aa267f29bf4ac3b6be
 
 export class TransactionUTXOService implements IService {
     private readonly chainType: ChainType;
