@@ -188,11 +188,12 @@ export async function fetchUTXOsByTxHash(rootEm: EntityManager, txHash: string):
 
 export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Promise<UTXOEntity[]> {
     return await rootEm.transactional(async (em) => {
-        const txEnt = await em.findOne(TransactionEntity, { id: txId }, { populate: ["inputs"] });
+        const txEnt = await em.findOne(TransactionEntity, { id: txId });
+        const inputs: any[] = JSON.parse(txEnt?.raw!).inputs;
         return await rootEm.find(UTXOEntity, {
-            $or: txEnt?.inputs.map(input => ({
-                mint_transaction_hash: input.transactionHash,
-                position: input.vout,
+            $or: inputs.map(input => ({
+                mint_transaction_hash: input.prevTxId,
+                position: input.outputIndex,
             })),
         });
     });
@@ -210,7 +211,6 @@ export async function fetchUTXOs(rootEm: EntityManager, inputs: Transaction.Inpu
 export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
     for (const utxo of mempoolUTXOs) {
         try {
-            // const utxo = await fetchUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex);
             await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, async (utxoEnt) => {
                 utxoEnt.spentHeight = SpentHeightEnum.UNSPENT;
                 utxoEnt.confirmed = utxo.confirmed;
