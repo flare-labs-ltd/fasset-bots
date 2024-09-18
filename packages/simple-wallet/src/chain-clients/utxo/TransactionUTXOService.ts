@@ -20,6 +20,7 @@ import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { TransactionFeeService } from "./TransactionFeeService";
 import { toBN } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
+import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
 
 export class TransactionUTXOService implements IService {
 
@@ -136,7 +137,7 @@ export class TransactionUTXOService implements IService {
     }
 
     async fillUTXOsFromMempool(address: string) {
-        const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(address, this.chainType);
+        const utxos: MempoolUTXO[] = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(address, this.chainType);
         await storeUTXOS(this.rootEm, address, utxos);
     }
 
