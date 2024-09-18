@@ -4,28 +4,42 @@ import {
     fetchTransactionEntityById,
     fetchUnspentUTXOs,
     fetchUTXOsByTxId,
-    storeUTXOS, transformUTXOEntToTxInputEntity, updateTransactionEntity,
+    storeUTXOS,
+    transformUTXOEntToTxInputEntity,
+    updateTransactionEntity,
     updateUTXOEntity,
 } from "../../db/dbutils";
-import { UTXO } from "../../interfaces/IWalletTransaction";
-import BN, { max } from "bn.js";
+import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { TransactionOutputEntity } from "../../entity/transactionOutput";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/BlockchainAPIWrapper";
-import { ChainType, DEFAULT_FEE_INCREASE } from "../../utils/constants";
+import { ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
-import { TransactionFeeService } from "./TransactionFeeService";
-import { toBN } from "../../utils/bnutils";
+import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
+import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
+import { TransactionService } from "./TransactionService";
+
+export interface TransactionData {
+    source: string,
+    destination: string,
+    amount: BN,
+    fee?: BN,
+    feePerKB?: BN,
+    useChange: boolean,
+    note?: string
+}
 
 export class TransactionUTXOService implements IService {
-
     private readonly chainType: ChainType;
     private readonly enoughConfirmations: number;
     private readonly mempoolChainLengthLimit: number;
+
+    readonly maximumNumberOfUTXOs: number;
+    readonly minimumUTXOValue: BN;
 
     private readonly rootEm: EntityManager;
 
@@ -34,120 +48,205 @@ export class TransactionUTXOService implements IService {
         this.enoughConfirmations = enoughConfirmations;
         this.mempoolChainLengthLimit = mempoolChainLengthLimit;
 
+        this.maximumNumberOfUTXOs = 5;
+
+        if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
+            this.minimumUTXOValue = toBNExp(1, 7);
+        } else if (this.chainType === ChainType.testBTC || this.chainType === ChainType.BTC) {
+            this.minimumUTXOValue = toBNExp(1, 5);
+        } else {
+            this.minimumUTXOValue = toBNExp(1, 5);
+        }
+
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
     }
 
     /**
      * Retrieves unspent transactions in format accepted by transaction
-     * @param {string} address
-     * @param {BN|null} amountInSatoshi - if null => empty all funds
-     * @param feeInSatoshi
-     * @param {number} estimatedNumOfOutputs
+     * @param txData
      * @param txForReplacement
      * @returns {Object[]}
      */
-    async fetchUTXOs(address: string, amountInSatoshi: BN | null, feeInSatoshi: BN | undefined, estimatedNumOfOutputs: number, txForReplacement?: TransactionEntity): Promise<[UTXO[], UTXOEntity[]]> {
-        const dbUTXOs = await this.listUnspent(address, amountInSatoshi, feeInSatoshi, estimatedNumOfOutputs, txForReplacement);
-        const allUTXOs: UTXO[] = [];
+    async fetchUTXOs(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
+        const dbUTXOs = await this.listUnspent(txData, txForReplacement);
+        return this.handleMissingUTXOScripts(dbUTXOs, txData.source);
+    }
+
+    public async getAllUTXOs(address: string) {
+        await this.fillUTXOsFromMempool(address);
+        const dbUTXOs = await fetchUnspentUTXOs(this.rootEm, address);
 
         for (const utxo of dbUTXOs) {
             if (!utxo.script) {
                 const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
-                    vout: utxo.vout,
-                    transactionHash: utxo.txid,
+                    vout: utxo.position,
+                    transactionHash: utxo.mintTransactionHash,
                 });
                 utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(address, utxo.mintTransactionHash, utxo.position, this.chainType);
-                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, utxoEnt => utxoEnt.script = utxo.script);
+                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async utxoEnt => { utxoEnt.script = utxo.script });
             }
-            const item = {
-                txid: utxo.mintTransactionHash,
-                satoshis: Number(utxo.value),
-                outputIndex: utxo.position,
-                confirmations: -1,
-                scriptPubKey: utxo.script,
-            };
-            allUTXOs.push(item);
         }
-        return [allUTXOs, dbUTXOs];
+        return dbUTXOs;
     }
 
     /**
      * Retrieves unspent transactions
-     * @param {string} address
-     * @param {BN|null} amountInSatoshi - if null => empty all funds
-     * @param feeInSatoshi
-     * @param {number} estimatedNumOfOutputs
+     * @param txData
      * @param txForReplacement
      * @returns {Object[]}
      */
-    private async listUnspent(address: string, amountInSatoshi: BN | null, feeInSatoshi: BN | undefined, estimatedNumOfOutputs: number, txForReplacement?: TransactionEntity): Promise<any[]> {
-        // fetch db utxos
-        logger.info(`Listing UTXOs for address ${address}`);
-        let dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, txForReplacement);
-        // fill from mempool and refetch
-        if (dbUTXOS.length == 0) {
-            await this.fillUTXOsFromMempool(address);
-            dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, txForReplacement);
-        }
-        if (amountInSatoshi == null) {
-            return dbUTXOS;
-        }
-        const needed = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi, feeInSatoshi, txForReplacement);
+    private async listUnspent(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
+        logger.info(`Listing UTXOs for address ${txData.source}`);
+        const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
+
+        let dbUTXOS = await this.handleMissingUTXOScripts(await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement), txData.source);
+        const needed = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, false, currentFeeStatus);
         if (needed) {
             return needed;
         }
+
         // not enough funds in db
-        await this.fillUTXOsFromMempool(address);
-        dbUTXOS = await fetchUnspentUTXOs(this.rootEm, address, txForReplacement);
-        const neededAfter = await this.returnNeededUTXOs(dbUTXOS, estimatedNumOfOutputs, amountInSatoshi, feeInSatoshi, txForReplacement);
+        await this.fillUTXOsFromMempool(txData.source);
+        dbUTXOS = await this.handleMissingUTXOScripts(await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement), txData.source);
+        const neededAfter = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, true, currentFeeStatus);
         if (neededAfter) {
             return neededAfter;
         }
-        return dbUTXOS;
+        return [];
     }
 
-    private async returnNeededUTXOs(allUTXOS: UTXOEntity[], estimatedNumOfOutputs: number, amountInSatoshi: BN, feeInSatoshi?: BN, txForReplacement?: TransactionEntity): Promise<UTXOEntity[] | null> {
-        feeInSatoshi = feeInSatoshi ?? toBN(0);
+    private async selectUTXOs(allUTXOS: UTXOEntity[], txForReplacement: TransactionEntity | undefined, txData: TransactionData, fetchedMempool: boolean = false, feeStatus: FeeStatus) {
+        const rbfUTXOs = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
 
-        const neededUTXOs = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
-        let sum = neededUTXOs.reduce((acc, utxo) => acc.add(utxo.value), new BN(0));
+        if (!this.isEnoughUTXOs(rbfUTXOs.concat(allUTXOS), txData.amount, txData.fee)) {
+            return null;
+        }
 
-        for (const utxo of allUTXOS) {
-            const isAlreadyInNeeded = neededUTXOs.some(existingUTXO =>
-                existingUTXO.mintTransactionHash === utxo.mintTransactionHash &&
-                existingUTXO.position === utxo.position
-            );
-            const numAncestors = await this.getNumberOfAncestorsInMempool(utxo.mintTransactionHash);
-            if (numAncestors >= this.mempoolChainLengthLimit) {
-                logger.info(`Number of UTXO mempool ancestors ${numAncestors} is greater than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
-                continue;
+        const notMinimalUTXOs = allUTXOS.filter(utxo => utxo.value.gte(this.minimumUTXOValue));
+        let utxos: UTXOEntity[] = notMinimalUTXOs;
+
+        let usingMinimalUTXOs = false; // If we're using the UTXOs which are < this.minimumUTXOValue
+        if (!this.isEnoughUTXOs(rbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
+            if (fetchedMempool) {
+                utxos = allUTXOS;
+                usingMinimalUTXOs = true;
+            } else {
+                // refetch from mempool
+                return null;
             }
-            if (!isAlreadyInNeeded) {
-                neededUTXOs.push(utxo);
+        } else {
+            utxos = notMinimalUTXOs;
+        }
+
+        let res = null;
+        if (feeStatus == FeeStatus.HIGH) {
+            // order by value, confirmed
+            utxos.sort((a, b) => a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed));
+            res = await this.collectUTXOs(utxos, rbfUTXOs, txData, this.minimumUTXOValue);
+        } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
+            // check if we can build tx with utxos with utxo.value < amountToSend
+            const smallUTXOs = utxos.filter(utxo => utxo.value.lte(txData.amount));
+            if (this.isEnoughUTXOs(smallUTXOs, txData.amount, txData.fee)) {
+                res = await this.collectUTXOs(smallUTXOs, rbfUTXOs, txData, this.minimumUTXOValue);
             }
-            sum = sum.add(utxo.value);
-            const est_fee = await ServiceRepository.get(this.chainType, TransactionFeeService).getEstimateFee(neededUTXOs.length, estimatedNumOfOutputs);
-            // multiply estimated fee by 1.4 to ensure enough funds TODO: is it enough?
-            if (toBN(sum).gt(amountInSatoshi.add(max(est_fee, feeInSatoshi).muln(DEFAULT_FEE_INCREASE)))) {
-                return neededUTXOs;
+
+            if (!res) {
+                res = await this.collectUTXOs(utxos, rbfUTXOs, txData, this.minimumUTXOValue);
             }
         }
-        return null;
+
+        if (res && !usingMinimalUTXOs && feeStatus == FeeStatus.LOW && res.length < this.maximumNumberOfUTXOs) {
+            const minimalUTXOs = allUTXOS.filter(utxo => utxo.value.lt(this.minimumUTXOValue));
+            for (let i = 0; i < this.maximumNumberOfUTXOs - res.length && i < minimalUTXOs.length; i++) {
+                res.push(minimalUTXOs[i]);
+            }
+        }
+
+        return res;
+    }
+
+    private async collectUTXOs(utxos: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData, minimumUTXOValue: BN) {
+        const baseUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
+        const additionalUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= minimalUTXOSize output
+
+        const rbfUTXOsValue = rbfUTXOs.length > 0 ? this.calculateTransactionValue(txData, baseUTXOs) : new BN(0);
+        if (rbfUTXOsValue.gte(minimumUTXOValue)) {
+            return baseUTXOs;
+        }
+
+        let positiveValueReached = rbfUTXOsValue.gten(0) && rbfUTXOs.length > 0;
+
+        const utxoSet = new Set(utxos);
+
+        while (utxoSet.size > 0) {
+            for (const utxo of utxoSet) {
+                const numAncestors = await this.getNumberOfAncestorsInMempool(utxo.mintTransactionHash);
+                if (numAncestors >= this.mempoolChainLengthLimit) {
+                    logger.info(`Number of UTXO mempool ancestors ${numAncestors} is greater than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
+                    utxoSet.delete(utxo);
+                }
+
+                if (Math.random() > 0.5) {
+                    if (positiveValueReached) {
+                        additionalUTXOs.push(utxo);
+                    } else {
+                        baseUTXOs.push(utxo);
+                        additionalUTXOs.push(utxo);
+                    }
+
+                    utxoSet.delete(utxo);
+
+                    if (!positiveValueReached && this.calculateTransactionValue(txData, baseUTXOs).gten(0)) {
+                        positiveValueReached = true;
+                    }
+
+                    if (this.calculateTransactionValue(txData, additionalUTXOs).gte(minimumUTXOValue)) {
+                        return additionalUTXOs;
+                    }
+                }
+            }
+        }
+
+        return positiveValueReached ? baseUTXOs : null;
+    }
+
+    private async getNumberOfAncestorsInMempool(txHash: string): Promise<number> {
+        const txEnt = await this.getTransactionEntityByHash(txHash);
+        if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS || txEnt.status === TransactionStatus.TX_FAILED || txEnt.status === TransactionStatus.TX_SUBMISSION_FAILED) {
+            return 0;
+        } else {
+            let numAncestorsInMempool = 0;
+            for (const input of txEnt!.inputs.getItems().filter(t => t.transactionHash !== txHash)) { // this filter is here because of a weird orm bug
+                numAncestorsInMempool += 1 + await this.getNumberOfAncestorsInMempool(input.transactionHash);
+                if (numAncestorsInMempool >= 25) {
+                    return 25;
+                }
+            }
+            return numAncestorsInMempool;
+        }
+    }
+
+    private isEnoughUTXOs(utxos: UTXOEntity[], amount: BN, fee?: BN): boolean {
+        const disposableAmount = utxos.reduce((acc: BN, utxo: UTXOEntity) => acc.add(utxo.value), new BN(0));
+        return disposableAmount.sub(fee ?? new BN(0)).sub(amount).gten(0);
+    }
+
+    private calculateTransactionValue(txData: TransactionData, utxos: UTXOEntity[]) {
+        const tr = ServiceRepository.get(this.chainType, TransactionService).createBitcoreTransaction(txData.source, txData.destination, txData.amount, txData.fee, txData.feePerKB, utxos, txData.useChange, txData.note);
+        const val = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
+
+        if (txData.fee) {
+            return val.sub(txData.fee);
+        } else if (tr.getFee() < 0) {
+            return toBN(-10);
+        } else {
+            return val.sub(toBN(tr.getFee()));
+        }
     }
 
     async fillUTXOsFromMempool(address: string) {
         const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(address, this.chainType);
         await storeUTXOS(this.rootEm, address, utxos);
-    }
-
-    async updateTransactionInputSpentStatus(txId: number, status: SpentHeightEnum) {
-        const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-        const transaction = JSON.parse(txEnt.raw!);
-        for (const input of transaction.inputs) {
-            await updateUTXOEntity(this.rootEm, input.prevTxId.toString("hex"), input.outputIndex, async (utxoEnt) => {
-                utxoEnt.spentHeight = status;
-            });
-        }
     }
 
     async checkIfTxUsesAlreadySpentUTXOs(txId: number) {
@@ -175,20 +274,6 @@ export class TransactionUTXOService implements IService {
             }
         }
         return false;
-    }
-
-    async createInputsFromUTXOs(dbUTXOs: UTXOEntity[], txId: number) {
-        const inputs: TransactionInputEntity[] = [];
-        for (const utxo of dbUTXOs) {
-            const tx = await this.getTransactionEntityByHash(utxo.mintTransactionHash);
-            if (tx) {
-                inputs.push(transformUTXOEntToTxInputEntity(utxo, tx));
-            } else {
-                logger.warn(`Transaction ${txId}: Transaction (utxo) with hash ${utxo.mintTransactionHash} could not be found on api`);
-            }
-        }
-        await this.rootEm.persistAndFlush(inputs);
-        return inputs;
     }
 
     private async getTransactionEntityByHash(txHash: string) {
@@ -230,19 +315,43 @@ export class TransactionUTXOService implements IService {
         return txEnt;
     }
 
-    private async getNumberOfAncestorsInMempool(txHash: string): Promise<number> {
-        const txEnt = await this.getTransactionEntityByHash(txHash);
-        if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS || txEnt.status === TransactionStatus.TX_FAILED || txEnt.status === TransactionStatus.TX_SUBMISSION_FAILED) {
-            return 0;
-        } else {
-            let numAncestorsInMempool = 0;
-            for (const input of txEnt!.inputs.getItems().filter(t => t.transactionHash !== txHash)) { // this filter is here because of a weird orm bug
-                numAncestorsInMempool += 1 + await this.getNumberOfAncestorsInMempool(input.transactionHash);
-                if (numAncestorsInMempool >= 25) {
-                    return 25;
-                }
+    private async handleMissingUTXOScripts(utxos: UTXOEntity[], source: string) {
+        for (const utxo of utxos) {
+            if (!utxo.script) {
+                const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
+                    vout: utxo.position,
+                    transactionHash: utxo.mintTransactionHash,
+                });
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(source, utxo.mintTransactionHash, utxo.position, this.chainType);
+                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async utxoEnt => {utxoEnt.script = utxo.script});
             }
-            return numAncestorsInMempool;
+        }
+        return utxos;
+    }
+
+    async createInputsFromUTXOs(dbUTXOs: UTXOEntity[], txId: number) {
+        const inputs: TransactionInputEntity[] = [];
+        for (const utxo of dbUTXOs) {
+            const tx = await this.getTransactionEntityByHash(utxo.mintTransactionHash);
+            if (tx) {
+                inputs.push(transformUTXOEntToTxInputEntity(utxo, tx));
+            } else {
+                logger.warn(`Transaction ${txId}: Transaction (utxo) with hash ${utxo.mintTransactionHash} could not be found on api`);
+            }
+        }
+        await this.rootEm.persistAndFlush(inputs);
+        return inputs;
+    }
+
+
+    // TODO move to dbutils?
+    async updateTransactionInputSpentStatus(txId: number, status: SpentHeightEnum) {
+        const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
+        const transaction = JSON.parse(txEnt.raw!);
+        for (const input of transaction.inputs) {
+            await updateUTXOEntity(this.rootEm, input.prevTxId.toString("hex"), input.outputIndex, async (utxoEnt) => {
+                utxoEnt.spentHeight = status;
+            });
         }
     }
 }

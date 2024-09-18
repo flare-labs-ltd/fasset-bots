@@ -4,7 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 import { assert, expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
 import { BTC_DOGE_DEC_PLACES, ChainType, DEFAULT_FEE_INCREASE, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
-import { toBNExp, toNumber } from "../../src/utils/bnutils";
+import { toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
@@ -33,7 +33,7 @@ import { BitcoreAPI } from "../../src/blockchain-apis/BitcoreAPI";
 import { AxiosError } from "axios";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService"
+import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
@@ -514,7 +514,7 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
-    it.skip("Monitoring into infinity", async () => {
+    it("Monitoring into infinity", async () => {
         while (true) {
             await sleepMs(2000);
         }

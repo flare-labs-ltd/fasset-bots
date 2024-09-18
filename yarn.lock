@@ -1390,6 +1390,7 @@ __metadata:
     "@types/chai-as-promised": 7.1.6
     "@types/elliptic": 6.4.14
     "@types/node": 20.7.0
+    "@types/sinon": ^17.0.3
     axios: 1.5.1
     axios-retry: 3.8.0
     bip39: 3.0.4
@@ -3829,6 +3830,22 @@ __metadata:
     "@types/mime": "*"
     "@types/node": "*"
   checksum: afa52252f0ba94cdb5391e80f23e17fd629bdf2a31be8876e2c4490312ed6b0570822dd7de7cea04c9002049e207709563568b7f4ee10bb9f456321db1e83e40
+  languageName: node
+  linkType: hard
+
+"@types/sinon@npm:^17.0.3":
+  version: 17.0.3
+  resolution: "@types/sinon@npm:17.0.3"
+  dependencies:
+    "@types/sinonjs__fake-timers": "*"
+  checksum: c8e9956d9c90fe1ec1cc43085ae48897f93f9ea86e909ab47f255ea71f5229651faa070393950fb6923aef426c84e92b375503f9f8886ef44668b82a8ee49e9a
+  languageName: node
+  linkType: hard
+
+"@types/sinonjs__fake-timers@npm:*":
+  version: 8.1.5
+  resolution: "@types/sinonjs__fake-timers@npm:8.1.5"
+  checksum: 7e3c08f6c13df44f3ea7d9a5155ddf77e3f7314c156fa1c5a829a4f3763bafe2f75b1283b887f06e6b4296996a2f299b70f64ff82625f9af5885436e2524d10c
   languageName: node
   linkType: hard
 
