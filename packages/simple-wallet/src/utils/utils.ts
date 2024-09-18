@@ -160,11 +160,11 @@ export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation 
    }
    const timeRestriction = !!executeUntilTimestamp && (now.sub(executeUntilTimestamp).gten(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)));
 
-   if (client.chainType === ChainType.testBTC || client.chainType === ChainType.BTC || client.chainType === ChainType.testDOGE || client.chainType === ChainType.DOGE) {
-       if (blockRestriction) {
-           return false;
-       }
-   } else {
+   // if (client.chainType === ChainType.testBTC || client.chainType === ChainType.BTC || client.chainType === ChainType.testDOGE || client.chainType === ChainType.DOGE) {
+   //     if (blockRestriction) {
+   //         return false;
+   //     }
+   // } else {
        if (executeUntilBlock && !executeUntilTimestamp && blockRestriction) {
            return false;
        } else if (!executeUntilBlock && executeUntilTimestamp && timeRestriction) {
@@ -172,7 +172,7 @@ export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation 
        } else if (blockRestriction && timeRestriction) {
            return false;
        }
-   }
+   // }
    return true;
 }
 
