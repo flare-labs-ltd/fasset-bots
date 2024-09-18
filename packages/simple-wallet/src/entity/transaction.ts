@@ -1,4 +1,4 @@
-import { Collection, Entity, Index, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -95,8 +95,7 @@ export class TransactionEntity {
     @OneToMany(() => UTXOEntity, utxo => utxo.transaction)
     utxos = new Collection<UTXOEntity>(this);
 
-    @Index({name: "transaction_ancestor_id_index"})
-    @OneToOne(() => TransactionEntity, { nullable: true })
+    @ManyToOne(() => TransactionEntity, { nullable: true })
     ancestor?: TransactionEntity | null;
 }
 

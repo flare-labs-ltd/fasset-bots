@@ -13,6 +13,7 @@ import { MonitoringStateEntity } from "../entity/monitoring_state";
 import Output = Transaction.Output;
 import { TransactionInputEntity } from "../entity/transactionInput";
 import { getCurrentTimestampInSeconds } from "../utils/utils";
+import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
 
 
 // transaction operations
@@ -206,10 +207,14 @@ export async function fetchUTXOs(rootEm: EntityManager, inputs: Transaction.Inpu
     });
 }
 
-export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolUTXOs: any[]): Promise<void> {
+export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
     for (const utxo of mempoolUTXOs) {
         try {
-            await fetchUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex);
+            // const utxo = await fetchUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex);
+            await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, async (utxoEnt) => {
+                utxoEnt.spentHeight = SpentHeightEnum.UNSPENT;
+                utxoEnt.confirmed = utxo.confirmed;
+            });
         } catch (e) {
             await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
