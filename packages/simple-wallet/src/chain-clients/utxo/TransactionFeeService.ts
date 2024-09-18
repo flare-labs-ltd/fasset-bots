@@ -2,11 +2,17 @@ import { IService } from "../../interfaces/IService";
 import {
     BTC_DOGE_DEC_PLACES,
     BTC_FEE_SECURITY_MARGIN,
+    BTC_LOW_FEE_PER_KB,
     BTC_MAX_ALLOWED_FEE,
+    BTC_MID_FEE_PER_KB,
     BTC_MIN_ALLOWED_FEE,
     ChainType,
     DEFAULT_FEE_INCREASE,
     DOGE_FEE_SECURITY_MARGIN,
+    DOGE_LOW_FEE_PER_KB,
+    DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB,
+    TEST_DOGE_LOW_FEE_PER_KB,
+    TEST_DOGE_MID_FEE_PER_KB,
     UTXO_INPUT_SIZE,
     UTXO_INPUT_SIZE_SEGWIT,
     UTXO_OUTPUT_SIZE,
@@ -28,6 +34,10 @@ import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-error-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
+
+export enum FeeStatus {
+    LOW, MEDIUM, HIGH
+}
 
 export class TransactionFeeService implements IService {
     readonly feeDecileIndex: number;
@@ -80,7 +90,7 @@ export class TransactionFeeService implements IService {
     private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
         try {
             const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks); //TODO - fix for doge
-            if (fee.toString() === "-1") {
+            if (fee.toString() === "-1" || fee === 0) {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
             const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
@@ -160,6 +170,32 @@ export class TransactionFeeService implements IService {
             else {
                 return feePerKB;
             }
+        }
+    }
+
+    async getCurrentFeeStatus() {
+        const fee = await this.getFeePerKB();
+        switch (this.chainType) {
+            case ChainType.DOGE:
+                return this.getFeeStatusForChain(fee, DOGE_LOW_FEE_PER_KB, DOGE_MID_FEE_PER_KB);
+            case ChainType.testDOGE:
+                return this.getFeeStatusForChain(fee, TEST_DOGE_LOW_FEE_PER_KB, TEST_DOGE_MID_FEE_PER_KB);
+            case ChainType.BTC:
+                return this.getFeeStatusForChain(fee, BTC_LOW_FEE_PER_KB, BTC_MID_FEE_PER_KB);
+            case ChainType.testBTC:
+                return this.getFeeStatusForChain(fee, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB);
+            default:
+                return FeeStatus.MEDIUM;
+        }
+    }
+
+    private getFeeStatusForChain(fee: BN, lowFee: BN, medium: BN) {
+        if (fee.lt(lowFee)) { // 0,05 DOGE/kB
+            return FeeStatus.LOW;
+        } else if (fee.lt(medium)) { // 0,4 DOGE/kB
+            return FeeStatus.MEDIUM;
+        } else {
+            return FeeStatus.HIGH;
         }
     }
 }
