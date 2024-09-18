@@ -425,7 +425,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEnt.raw = JSON.stringify(transaction);
             txEnt.transactionHash = signed.txHash;
             txEnt.submittedInBlock = currentBlockHeight;
-            txEnt.executeUntilBlock = transaction.LastLedgerSequence;//TODO
+            txEnt.executeUntilBlock = transaction.LastLedgerSequence;
          });
          await this.submitTransaction(signed.txBlob, resubmittedTx.id, 1);
       }

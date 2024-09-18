@@ -127,6 +127,7 @@ export type DogecoinWalletConfig = BaseWalletConfig;
 export interface SignedObject {
    txBlob: string;
    txHash: string;
+   txSize?: number;
 }
 
 export interface TransactionInfo {

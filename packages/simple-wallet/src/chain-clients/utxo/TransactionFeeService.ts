@@ -27,6 +27,7 @@ import { getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUt
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-error-utils";
+import { updateTransactionEntity } from "../../db/dbutils";
 
 export class TransactionFeeService implements IService {
     readonly feeDecileIndex: number;
@@ -61,9 +62,14 @@ export class TransactionFeeService implements IService {
         }
     }
 
-    async getEstimateFee(inputLength: number, outputLength: number = 2): Promise<BN> {
-        const feePerKb = await this.getFeePerKB();
-        const feePerb = feePerKb.divn(1000);
+    async getEstimateFee(inputLength: number, outputLength: number = 2, feePerKb?: BN ): Promise<BN> {
+        let feePerKbToUse: BN;
+        if (feePerKb) {
+            feePerKbToUse = feePerKb;
+        } else {
+            feePerKbToUse =  await this.getFeePerKB();
+        }
+        const feePerb = feePerKbToUse.divn(1000);
         if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
             return feePerb.muln(inputLength * UTXO_INPUT_SIZE + outputLength * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE);
         } else {
@@ -117,13 +123,21 @@ export class TransactionFeeService implements IService {
         }
     }
 
-    async calculateTotalFeeOfTxAndDescendants(em: EntityManager, oldTx: TransactionEntity) {
+    async calculateTotalFeeOfDescendants(em: EntityManager, oldTx: TransactionEntity): Promise<BN> {
         const descendants = await getTransactionDescendants(em, oldTx.transactionHash!, oldTx.source);
-        return [oldTx].concat(descendants).reduce((acc: BN, txEnt) => acc.add(txEnt.fee ?? new BN(0)), new BN(0));
+        let feeToCover: BN = toBN(0);
+        for (const txEnt of descendants) {
+            logger.info(`Transaction ${oldTx.id} has descendant ${txEnt.id}`);
+            await updateTransactionEntity(em, txEnt.id, async (txEnt) => {
+                txEnt.ancestor = oldTx;
+            });
+            feeToCover = feeToCover.add(txEnt.fee ?? new BN(0))
+        }
+        return feeToCover;
     }
 
     // Util for bitcore-lib serialization checks
-    hasTooHighOrLowFee(fee: BN, estFee: BN) {
+    hasTooHighOrLowFee(fee: BN, estFee: BN): boolean {
         // https://github.com/bitpay/bitcore/blob/35b6f07bf33f79c0cd198a25c94ba63905b03a5f/packages/bitcore-lib/lib/transaction/transaction.js#L267
         if (this.chainType == ChainType.BTC || this.chainType == ChainType.testBTC) {
             return fee.lt(estFee.divn(BTC_FEE_SECURITY_MARGIN)) || fee.gt(estFee.muln(BTC_FEE_SECURITY_MARGIN));
@@ -132,8 +146,8 @@ export class TransactionFeeService implements IService {
         }
     }
 
-    enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN) {
-        if (chainType == ChainType.DOGE || ChainType.testDOGE) {
+    enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
+        if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
             return feePerKB;
         } else {
             const minFee = BTC_MIN_ALLOWED_FEE;

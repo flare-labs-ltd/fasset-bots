@@ -42,7 +42,6 @@ export function getMinAmountToSend(chainType: ChainType): BN {
 
 
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
-    //TODO - maybe can be more robust if also take into account response
     try {
         await ServiceRepository.get(client.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
         return true;

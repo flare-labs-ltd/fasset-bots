@@ -64,7 +64,7 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { id } as FilterQuery<TransactionEntity>, {
         refresh: true,
-        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs"],
+        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
     });
 }
 
@@ -79,7 +79,7 @@ export async function updateTransactionEntityByHash(rootEm: EntityManager, txHas
 export async function fetchTransactionEntityByHash(rootEm: EntityManager, txHash: string): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, {
         refresh: true,
-        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs"],
+        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
     });
 }
 
@@ -87,7 +87,7 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
     return await rootEm.find(TransactionEntity, {
         status,
         chainType,
-    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs"], orderBy: { id: "ASC" } });
+    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"], orderBy: { id: "ASC" } });
 }
 
 export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number) {
@@ -163,7 +163,22 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, t
     } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { confirmed: "desc", value: "desc" } });
     const utxos = !!txForReplacement ? res.filter(t => t.confirmed) : res;
     const alreadyUsed = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
-    return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
+
+    const ancestors = await rootEm.find(TransactionEntity, {
+        ancestor: {
+            $exists: true
+        }
+    });
+    const ancestorTransactionIds = ancestors.map(tx => tx.id);
+    const descendantTransactions = await rootEm.find(TransactionEntity, {
+        ancestor: { $in: ancestorTransactionIds }
+    });
+    const descendantTransactionIds = descendantTransactions.map(tx => tx.id);
+    const filteredUTXOs = utxos.filter(utxo => {
+        const transactionId = utxo.transaction?.id;
+        return transactionId === undefined || !descendantTransactionIds.includes(transactionId);
+    });
+    return [...alreadyUsed, ...filteredUTXOs]; // order is important for needed utxos later
 }
 
 export async function fetchUTXOsByTxHash(rootEm: EntityManager, txHash: string): Promise<UTXOEntity[]> {
@@ -211,7 +226,7 @@ export async function correctUTXOInconsistencies(rootEm: EntityManager, address:
         }));
         const utxoEnts = await em.find(UTXOEntity, {
             source: address,
-            spentHeight: SpentHeightEnum.UNSPENT,
+            spentHeight: { $in: [SpentHeightEnum.UNSPENT, SpentHeightEnum.SENT] },
             $and: condition,
         }) as UTXOEntity[];
 

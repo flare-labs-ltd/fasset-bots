@@ -162,6 +162,8 @@ export class TransactionUTXOService implements IService {
                 await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                     txEnt.status = TransactionStatus.TX_CREATED;
                     txEnt.utxos.removeAll();
+                    txEnt.raw = "";
+                    txEnt.transactionHash = "";
                 });
 
                 const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
