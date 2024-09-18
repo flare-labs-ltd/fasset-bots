@@ -516,10 +516,12 @@ export class AgentBotCommands {
     /**
      * Lists active agents in owner's local db.
      */
-    async listActiveAgents(): Promise<void> {
+    async listActiveAgents(fasset: string): Promise<void> {
         const listOfAgents = await this.getAllActiveAgents();
         for (const agent of listOfAgents) {
-            console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, FAsset: ${agent.fassetSymbol}, Current event block: ${agent.currentEventBlock} `);
+            if (fasset == agent.fassetSymbol) {
+                console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, FAsset: ${agent.fassetSymbol}, Current event block: ${agent.currentEventBlock} `);
+            }
         }
     }
 
