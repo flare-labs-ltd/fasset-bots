@@ -323,7 +323,7 @@ describe("AgentBot cli commands unit tests", () => {
     it("Should run command 'listActiveAgents'", async () => {
         await createAgent();
         const spyLog = spy.on(console, "log");
-        await botCliCommands.listActiveAgents("FTestXRP");
+        await botCliCommands.listActiveAgents(context.fAssetSymbol);
         expect(spyLog).to.be.called.gt(0);
     });
 

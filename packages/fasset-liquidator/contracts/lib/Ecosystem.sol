@@ -30,26 +30,21 @@ library Ecosystem {
     ) internal view returns (EcosystemData memory _data) {
         // extrapolate data
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
-        AgentInfo.Info memory agentInfo = assetManager.getAgentInfo(address(_agentVault));
-        AssetManagerSettings.Data memory settings = assetManager.getSettings();
         // addresses
         _data.assetManager = address(assetManager);
         _data.agentVault = _agentVault;
         // tokens
-        _data.fAssetToken = settings.fAsset;
-        _data.vaultCT = address(agentInfo.vaultCollateralToken);
+        _data.fAssetToken = address(assetManager.fAsset());
+        _data.vaultCT = address(assetManager.getAgentVaultCollateralToken(address(_agentVault)));
         _data.poolCT = address(assetManager.getWNat());
         // agent
-        _data.agentVaultCollateralWei = agentInfo.totalVaultCollateralWei;
-        _data.agentPoolCollateralWei = agentInfo.totalPoolCollateralNATWei;
-        _data.maxLiquidatedFAssetUBA = agentInfo.maxLiquidationAmountUBA;
-        _data.liquidationFactorVaultBips = agentInfo.liquidationPaymentFactorVaultBIPS;
-        _data.liquidationFactorPoolBips = agentInfo.liquidationPaymentFactorPoolBIPS;
-        _data.assetMintingGranularityUBA = settings.assetMintingGranularityUBA;
-        _data.assetMintingDecimals = settings.assetMintingDecimals;
+        ( _data.liquidationFactorVaultBips, _data.liquidationFactorPoolBips, _data.maxLiquidatedFAssetUBA)
+            = assetManager.getAgentLiquidationFactorsAndMaxAmount(address(_agentVault));
+        _data.assetMintingGranularityUBA = assetManager.assetMintingGranularityUBA();
+        _data.assetMintingDecimals = assetManager.assetMintingDecimals();
         // ftso prices
         (_data.priceFAssetAmgVaultCT, _data.priceFAssetAmgPoolCT)
-            = _getPrices(_data, IPriceReader(settings.priceReader));
+            = _getPrices(_data, IPriceReader(assetManager.priceReader()));
     }
 
     function getDexReserves(
