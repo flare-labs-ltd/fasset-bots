@@ -186,7 +186,7 @@ export class TransactionService implements IService {
             }
             // https://github.com/bitcoin/bitcoin/blob/55d663cb15151773cd043fc9535d6245f8ba6c99/doc/policy/mempool-replacements.md?plain=1#L37
             if (txForReplacement) {//TODO
-                const totalFee = await this.transactionFeeService.calculateTotalFeeOfTxAndDescendants(ServiceRepository.get(this.chainType, EntityManager), txForReplacement);
+                const totalFee = await this.transactionFeeService.calculateTotalFeeOfDescendants(ServiceRepository.get(this.chainType, EntityManager), txForReplacement);
                 const relayFee = bitcoreEstFee.div(getDefaultFeePerKB(this.chainType)).muln(1000);
 
                 if (feeInSatoshi.sub(totalFee).lt(relayFee)) {
