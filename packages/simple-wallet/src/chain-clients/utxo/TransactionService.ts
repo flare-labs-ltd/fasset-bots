@@ -155,8 +155,8 @@ export class TransactionService implements IService {
         const utxosAmount = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
 
         if (utxos.length === 0 || utxosAmount.lt(amountInSatoshi.add(feeInSatoshi ?? new BN(0)))) {
-            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}`)
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}`);
+            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`)
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`);//TODO - do not fetch indefinitely - maybe check if fee quite high?
         }
 
         if (amountInSatoshi.lte(getDustAmount(this.chainType))) {
@@ -170,35 +170,28 @@ export class TransactionService implements IService {
 
         // TODO If change is very small (slightly above dust amount) we just add it as fee (one output is 31vBytes + we need to use it as output next time that is 68vBytes)
         // Determine how much above dust amount do we consider - It would make sense up to average 100vBytes * 5sat/vByte? - and we do it only when current fee status is MID/HIGH
-
-        if (feeInSatoshi) {
-            // Fetch temporary UTXOs to ensure that extremely low fees are rejected before sending tx to mempool
-            const tmpUTXOs = await ServiceRepository.get(this.chainType, TransactionUTXOService).fetchUTXOs(txData, txForReplacement);
-            const bitcoreEstFee = toBN(this.createBitcoreTransaction(source, destination, amountInSatoshi, undefined, undefined, tmpUTXOs, true, note).getFee());
-
-            if (this.transactionFeeService.hasTooHighOrLowFee(feeInSatoshi, bitcoreEstFee)) {
-                const estFee = await this.transactionFeeService.getEstimateFee(tr.inputs.length, tr.outputs.length);
-                const correctFee = this.transactionFeeService.hasTooHighOrLowFee(estFee, bitcoreEstFee) ? toBN(bitcoreEstFee) : estFee;
-                throw new InvalidFeeError(
-                    `Transaction ${txDbId}: Provided fee ${feeInSatoshi.toNumber()} fails bitcore serialization checks! bitcoreEstFee: ${bitcoreEstFee}, estFee: ${estFee.toNumber()}`,
-                    correctFee,
-                );
-            }
-            // https://github.com/bitcoin/bitcoin/blob/55d663cb15151773cd043fc9535d6245f8ba6c99/doc/policy/mempool-replacements.md?plain=1#L37
-            if (txForReplacement) {//TODO
-                const totalFee = await this.transactionFeeService.calculateTotalFeeOfDescendants(ServiceRepository.get(this.chainType, EntityManager), txForReplacement);
-                const relayFee = bitcoreEstFee.div(getDefaultFeePerKB(this.chainType)).muln(1000);
-
-                if (feeInSatoshi.sub(totalFee).lt(relayFee)) {
-                    // Set the new fee to (sum of all descendant fees + size of replacement tx * relayFee) * feeIncrease
-                    const correctFee = totalFee.add(relayFee.muln(this.transactionFeeService.relayFeePerB)).muln(this.transactionFeeService.feeIncrease); // TODO: Is this a good fee?
-                    throw new InvalidFeeError(
-                        `Transaction ${txDbId}: Additional fee ${feeInSatoshi.toNumber()} for replacement tx is lower than relay fee`,
-                        correctFee,
-                    );
-                }
-            }
+        if (feeInSatoshi && !txForReplacement) {
             tr.fee(toNumber(feeInSatoshi));
+        }
+
+        if (isPayment && !feeInSatoshi || txForReplacement) {
+            let feeRatePerKB: BN = await this.transactionFeeService.getFeePerKB();
+            logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`);
+            if (txForReplacement && feeInSatoshi) {
+                const feeToCover: BN = feeInSatoshi;
+                if (txForReplacement.size && txForReplacement.fee) {
+                    const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000));
+                    if (feeRatePerKB.lt(minRequiredFeePerKb)) {
+                        feeRatePerKB = minRequiredFeePerKb.muln(1.4);
+                    }
+                    const estimateFee = await this.transactionFeeService.getEstimateFee(utxos.length, 3, feeRatePerKB);
+                    const newTxFee: BN = feeToCover.add(estimateFee);
+                    tr.fee(toNumber(newTxFee));
+                    logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
+                }
+            } else {
+                tr.feePerKb(Number(feeRatePerKB));
+            }
         }
 
         return [tr, utxos];
