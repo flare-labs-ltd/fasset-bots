@@ -280,7 +280,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
             } else if (error instanceof LessThanDustAmountError) {
                 await failTransaction(this.rootEm, txEnt.id, error.message);
-            } else if (axios.isAxiosError(error)) {
+            } else if (axios.isAxiosError(error)) {//TODO
                 logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with:`, error.response?.data);
                 let utxosToBeChecked;
                 if (txEnt.rbfReplacementFor) {
@@ -634,7 +634,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`Transaction ${txId} is rejected. Transaction ${txEnt.rbfReplacementFor.id} was accepted.`)
                 await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
                     txEnt.status = TransactionStatus.TX_SUCCESS;
-                    txEnt.replaced_by = null;
                 });
             }
             await correctUTXOInconsistencies(
@@ -649,10 +648,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.outputs.removeAll();
                 txEnt.raw = "";
                 txEnt.transactionHash = "";
-                txEnt.replaced_by = null;
-                txEnt.rbfReplacementFor = null;
             });
-            logger.info(`Transaction ${txId} changed status to Transaction ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`)
+            logger.info(`Transaction ${txId} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`)
             return TransactionStatus.TX_FAILED;
         }
 
