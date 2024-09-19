@@ -173,7 +173,7 @@ export class TransactionFeeService implements IService {
         }
     }
 
-    async getCurrentFeeStatus() {
+    async getCurrentFeeStatus(): Promise<FeeStatus> {
         const fee = await this.getFeePerKB();
         switch (this.chainType) {
             case ChainType.DOGE:
@@ -189,7 +189,7 @@ export class TransactionFeeService implements IService {
         }
     }
 
-    private getFeeStatusForChain(fee: BN, lowFee: BN, medium: BN) {
+    private getFeeStatusForChain(fee: BN, lowFee: BN, medium: BN): FeeStatus {
         if (fee.lt(lowFee)) { // 0,05 DOGE/kB
             return FeeStatus.LOW;
         } else if (fee.lt(medium)) { // 0,4 DOGE/kB
