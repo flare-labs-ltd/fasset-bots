@@ -398,6 +398,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.rbfReplacementFor = null;
             });
             logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`);
+            //TODO is it has replacement -> cancel replacement
         }
     }
 
@@ -619,10 +620,18 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         } else if (error.response?.data?.error?.indexOf("Fee exceeds maximum configured by user") >= 0) {
             logger.error(`Transaction ${txId} submission failed because of 'Fee exceeds maximum configured by user'`);
             return TransactionStatus.TX_FAILED; // TODO should we invalidate the transaction and create a new one?
+        } else if (error.response?.data?.error?.indexOf("Transaction already in block chain") >= 0) {//TODO-should not happen!
+            logger.error(`Transaction ${txId} submission failed because of 'Transaction already in block chain'`);
+            await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
+                txEnt.status = TransactionStatus.TX_SUCCESS;
+                txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
+            });
+            return TransactionStatus.TX_SUCCESS;
         } else if (error.response?.data?.error?.indexOf("bad-txns-inputs-") >= 0) {
             const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
             // presumably original was accepted
             if (error.response?.data?.error?.indexOf("bad-txns-inputs-missingorspent") >= 0 && txEnt.rbfReplacementFor) {
+                logger.info(`Transaction ${txId} is rejected. Transaction ${txEnt.rbfReplacementFor.id} was accepted.`)
                 await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
                     txEnt.status = TransactionStatus.TX_SUCCESS;
                     txEnt.replaced_by = null;
@@ -643,6 +652,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.replaced_by = null;
                 txEnt.rbfReplacementFor = null;
             });
+            logger.info(`Transaction ${txId} changed status to Transaction ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`)
             return TransactionStatus.TX_FAILED;
         }
 
