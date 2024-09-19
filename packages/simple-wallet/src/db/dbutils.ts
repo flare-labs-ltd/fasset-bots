@@ -212,7 +212,6 @@ export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolU
     for (const utxo of mempoolUTXOs) {
         try {
             await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, async (utxoEnt) => {
-                utxoEnt.spentHeight = SpentHeightEnum.UNSPENT;
                 utxoEnt.confirmed = utxo.confirmed;
             });
         } catch (e) {
