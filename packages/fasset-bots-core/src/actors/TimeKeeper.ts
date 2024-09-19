@@ -1,7 +1,7 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { ITimekeeperContext } from "../fasset-bots/IAssetBotContext";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
-import { DEFAULT_RETRIES, sleep, web3DeepNormalize } from "../utils";
+import { DEFAULT_RETRIES, latestBlockTimestamp, sleep, web3DeepNormalize } from "../utils";
 import { attestationWindowSeconds } from "../utils/fasset-helpers";
 import { logger } from "../utils/logger";
 import { CancelToken, PromiseCancelled, cancelableSleep } from "../utils/mini-truffle-contracts/cancelable-promises";
@@ -142,14 +142,17 @@ export class TimeKeeperUpdate {
         const delay = Math.floor(Math.random() * this.timing.maxUpdateTimeDelayMs);
         logger.info(`Will update underlying block after delay of ${delay}ms`);
         await cancelableSleep(delay, cancelUpdate);
-        const { 0: _underlyingBlock, 1: underlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
-        if (Number(proof.data.responseBody.blockTimestamp) - Number(underlyingTimestamp) < this.timing.maxUnderlyingTimestampAgeS) {
+        const { 0: lastUnderlyingBlock, 1: _lastUnderlyingTimestamp, 2: lastUpdatedAt } = await this.context.assetManager.currentUnderlyingBlock();
+        const currentNativeTs = await latestBlockTimestamp();
+        const shouldUpdate = Number(proof.data.requestBody.blockNumber) > Number(lastUnderlyingBlock)
+            && currentNativeTs - Number(lastUpdatedAt) >= this.timing.maxUnderlyingTimestampAgeS;
+        if (shouldUpdate) {
+            await this.context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: this.address });
+            const { 0: newUnderlyingBlock, 1: newUnderlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
+            logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${newUnderlyingBlock} timestamp=${newUnderlyingTimestamp}`);
+        } else {
             logger.info(`Underlying block already refreshed for asset manager ${this.context.assetManager.address}, skipping update.`);
-            return;
         }
-        await this.context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: this.address });
-        const { 0: newUnderlyingBlock, 1: newUnderlyingTimestamp } = await this.context.assetManager.currentUnderlyingBlock();
-        logger.info(`Underlying block updated for asset manager ${this.context.assetManager.address} with user ${this.address}: block=${newUnderlyingBlock} timestamp=${newUnderlyingTimestamp}`);
     }
 
     /**

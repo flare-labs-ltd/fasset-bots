@@ -8,11 +8,13 @@ import { OwnerAddressPair } from "../fasset/Agent";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { ERC20TokenBalance, latestBlockTimestampBN } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
+import { eventOrder } from "../utils/events/common";
+import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { formatFixed } from "../utils/formatting";
 import { BN_ZERO, BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, getOrCreateAsync, randomChoice, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
-import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 import { AgentInfoReader, CollateralPriceCalculator } from "./AgentInfoReader";
 import { ColumnPrinter } from "./ColumnPrinter";
 
@@ -448,4 +450,26 @@ export class InfoBotCommands {
         }
     }
 
+    async* readAssetManagerLogs(blockCount: number) {
+        const eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager });
+        // get all logs for this agent
+        const nci = this.context.nativeChainInfo;
+        const blockHeight = await web3.eth.getBlockNumber();
+        const lastFinalizedBlock = blockHeight - nci.finalizationBlocks;
+        const startBlock = Math.max(lastFinalizedBlock - blockCount, 0);
+        for (let lastBlockRead = startBlock; lastBlockRead <= lastFinalizedBlock; lastBlockRead += nci.readLogsChunkSize) {
+            // asset manager events
+            const logsAssetManager = await web3.eth.getPastLogs({
+                address: this.context.assetManager.address,
+                fromBlock: lastBlockRead,
+                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastFinalizedBlock),
+            });
+            const events = eventDecoder.decodeEvents(logsAssetManager);
+            // sort events first by their block numbers, then internally by their event index
+            events.sort(eventOrder);
+            for (const event of events) {
+                yield event;
+            }
+        }
+    }
 }

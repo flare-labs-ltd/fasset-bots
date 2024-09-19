@@ -73,8 +73,9 @@ export class Liquidator extends ActorBase {
             // perform liquidations
             await this.performLiquidations();
         } catch (error) {
-            console.error(`Error handling events and performing liquidations for liquidator ${this.address}: ${error}`);
-            logger.error(`Liquidator ${this.address} run into error while handling events and performing liquidations:`, error);
+            const fassetSymbol = this.context.fAssetSymbol;
+            console.error(`Error handling events and performing liquidations for ${fassetSymbol} liquidator ${this.address}: ${error}`);
+            logger.error(`Liquidator ${this.address} run into error while handling events and performing ${fassetSymbol} liquidations:`, error);
         } finally {
             this.handlingEvents = false;
         }
@@ -85,7 +86,8 @@ export class Liquidator extends ActorBase {
         const liquidatingAgents = Array.from(this.state.agents.values())
             .filter(agent => this.checkAgentForLiquidation(agent, timestamp));
         if (liquidatingAgents.length > 0) {
-            logger.info(`Liquidator ${this.address} performing liquidation on ${liquidatingAgents.length} agents.`);
+            const fassetSymbol = this.context.fAssetSymbol;
+            logger.info(`Liquidator ${this.address} performing ${fassetSymbol} liquidation on ${liquidatingAgents.length} agents.`);
             // sort by decreasing minted amount
             liquidatingAgents.sort((a, b) => -a.mintedUBA.cmp(b.mintedUBA));
             for (const agent of liquidatingAgents) {
@@ -94,8 +96,8 @@ export class Liquidator extends ActorBase {
                 }
                 const fbalance = await this.context.fAsset.balanceOf(this.address);
                 if (fbalance.eq(BN_ZERO)) {
-                    logger.info(`Liquidator ${this.address} has zero fAsset balance, cannot liquidate ${agent.vaultAddress}.`);
-                    console.log(`Liquidator ${this.address} has zero fAsset balance, cannot liquidate ${agent.vaultAddress}.`);
+                    logger.info(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
+                    console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
                     break;
                 }
                 await this.liquidateAgent(agent);
@@ -121,13 +123,14 @@ export class Liquidator extends ActorBase {
      * Checks if agent's status. If status is LIQUIDATION, then liquidate agent with all of the liquidator's fAssets.
      * @param agent instance of TrackedAgentState
      */
-    checkAgentForLiquidation(agent: TrackedAgentState, timestamp: BN) {
+    checkAgentForLiquidation(agent: TrackedAgentState, timestamp: BN): boolean {
         if (agent.status === AgentStatus.LIQUIDATION || agent.status === AgentStatus.FULL_LIQUIDATION) {
             return true;
         }
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus === AgentStatus.LIQUIDATION) {
-            logger.info(`Liquidator ${this.address} found that agent ${agent.vaultAddress} has liquidation status.`);
+            const fassetSymbol = this.context.fAssetSymbol;
+            logger.info(`Liquidator ${this.address} found that ${fassetSymbol} agent ${agent.vaultAddress} has liquidation status.`);
             return true;
         }
         // not in liquidation

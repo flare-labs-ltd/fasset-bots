@@ -24,7 +24,7 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
       note?: string,
       maxFee?: BN,
       executeUntilBlock?: number,
-      executeUntilTimestamp?: number//TODO
+      executeUntilTimestamp?: BN,
    ): Promise<number>;
 
    createDeleteAccountTransaction(
@@ -127,6 +127,7 @@ export type DogecoinWalletConfig = BaseWalletConfig;
 export interface SignedObject {
    txBlob: string;
    txHash: string;
+   txSize?: number;
 }
 
 export interface TransactionInfo {

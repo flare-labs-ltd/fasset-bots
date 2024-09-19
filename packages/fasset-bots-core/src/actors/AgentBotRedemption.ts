@@ -259,7 +259,7 @@ export class AgentBotRedemption {
         try {
             // TODO: what if there are too little funds on underlying address to pay for fee?
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
-                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp).toNumber());
+                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp));
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,
@@ -373,7 +373,7 @@ export class AgentBotRedemption {
     /**
      * When redemption is in state PAID it requests payment proof - see requestPaymentProof().
      * @param redemption AgentRedemption entity
-     */
+     *///TODO - what if replacement is rejected ans original accepted
     async checkPaymentProofAvailable(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
         assertNotNull(redemption.txDbId);

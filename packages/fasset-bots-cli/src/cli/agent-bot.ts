@@ -303,7 +303,7 @@ program
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.listActiveAgents();
+        await cli.listActiveAgents(options.fasset);
     });
 
 program

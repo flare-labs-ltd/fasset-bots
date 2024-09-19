@@ -8,9 +8,11 @@ import {BlockStats, FeeServiceConfig} from "../interfaces/IWalletTransaction";
 import {toBN} from "../utils/bnutils";
 import BN from "bn.js";
 import {logger} from "../utils/logger";
-import { errorMessage } from "../chain-clients/utils";
 
-export class FeeService {
+import { IService } from "../interfaces/IService";
+import { errorMessage } from "../utils/axios-error-utils";
+
+export class BlockchainFeeService implements IService {
     client: AxiosInstance;
 
     private monitoring: boolean = true;

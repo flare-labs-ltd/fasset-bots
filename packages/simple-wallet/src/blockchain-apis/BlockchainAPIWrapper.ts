@@ -2,10 +2,9 @@ import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } fro
 import { AxiosInstance, AxiosResponse } from "axios";
 import { BitcoreAPI } from "./BitcoreAPI";
 import { BlockbookAPI } from "./BlockbookAPI";
-import { createAxiosConfig } from "../chain-clients/utils";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { ChainType } from "../utils/constants";
-import { tryWithClients } from "./utils";
+import { createAxiosConfig, tryWithClients } from "../utils/axios-error-utils";
 
 export class BlockchainAPIWrapper implements IBlockchainAPI {
     client: AxiosInstance;
@@ -14,7 +13,7 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
     constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
         const axiosConfig = createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey, createConfig.username, createConfig.password);
 
-        this.clients[createConfig.url] = (createConfig.api === "bitcore" ? new BitcoreAPI(axiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em));;
+        this.clients[createConfig.url] = createConfig.api === "bitcore" ? new BitcoreAPI(axiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
         this.client = this.clients[createConfig.url].client;
 
         if (createConfig.fallbackAPIs) {

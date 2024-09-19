@@ -5,7 +5,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { EVMNativeTokenBalance, sendWeb3Transaction, squashSpace, web3 } from "../utils";
+import { EVMNativeTokenBalance, sendWeb3Transaction, SimpleRateLimiter, squashSpace, web3 } from "../utils";
 import { firstValue, getOrCreate, requireNotNull, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -46,6 +46,7 @@ export class AgentBotRunner {
     private lastFundedAt = new Map<string, number>();
 
     private simpleWalletBackgroundTasks: Map<string, IBlockChainWallet> = new Map();
+    private fundServiceRateLimit = new SimpleRateLimiter<string>(FUND_MIN_INTERVAL_MS);
 
     @CreateRequestContext()
     async run(): Promise<void> {
@@ -218,11 +219,8 @@ export class AgentBotRunner {
         if (!settings || !fundingAddress) return;
         const notifier = new AgentNotifier(fundingAddress, this.notifierTransports);
         for (const [name, address] of this.serviceAccounts) {
-            const fundedAt = this.lastFundedAt.get(name) ?? 0;
-            const now = Date.now();
-            if (now - fundedAt < FUND_MIN_INTERVAL_MS) continue;
+            if (!this.fundServiceRateLimit.allow(name)) continue
             await this.fundAccount(fundingAddress, address, settings.minBalanceOnServiceAccount, name, notifier);
-            this.lastFundedAt.set(name, now);
         }
     }
 

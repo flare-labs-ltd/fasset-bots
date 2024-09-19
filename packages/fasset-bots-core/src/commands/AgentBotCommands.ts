@@ -28,7 +28,6 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
-import { MonitoringStateEntity } from "@flarelabs/simple-wallet";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -516,8 +515,8 @@ export class AgentBotCommands {
     /**
      * Lists active agents in owner's local db.
      */
-    async listActiveAgents(): Promise<void> {
-        const listOfAgents = await this.getAllActiveAgents();
+    async listActiveAgents(fassetSymbol?: string): Promise<void> {
+        const listOfAgents = await this.getAllActiveAgents(fassetSymbol);
         for (const agent of listOfAgents) {
             console.log(`Vault: ${agent.vaultAddress}, Pool: ${agent.collateralPoolAddress}, Underlying: ${agent.underlyingAddress}, Chain: ${decodeAttestationName(agent.chainId)}, FAsset: ${agent.fassetSymbol}, Current event block: ${agent.currentEventBlock} `);
         }
@@ -526,10 +525,10 @@ export class AgentBotCommands {
     /**
      * Return all active agents belonging to this context's asset manager controller (on any asset manager).
      */
-    async getAllActiveAgents() {
+    async getAllActiveAgents(fassetSymbol?: string) {
         const assetManagers = await this.context.assetManagerController.getAssetManagers();
         const query = this.orm.em.createQueryBuilder(AgentEntity);
-        return await query.where({ active: true, assetManager: { $in: assetManagers } }).getResultList();
+        return await query.where({ fassetSymbol, active: true, assetManager: { $in: assetManagers } }).getResultList();
     }
 
     /**

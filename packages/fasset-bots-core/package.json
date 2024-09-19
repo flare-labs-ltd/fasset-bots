@@ -1,6 +1,6 @@
 {
     "name": "@flarelabs/fasset-bots-core",
-    "version": "1.0.0-beta.13",
+    "version": "1.0.0-beta.14",
     "description": "FAsset bots library",
     "author": "Flare Labs",
     "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
@@ -74,8 +74,10 @@
         "cover:testHH": "yarn coverage --silent yarn testHH_all; yarn coverage merge .nyc_output coverage/merge/testHH.json",
         "cover:report": "yarn coverage report -t coverage/merge --reporter html --reporter text",
         "---------GENERATE---SCRIPTS": "",
-        "generate-config-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files/BotConfigFile.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json && yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files/BotConfigFile.ts Schema_BotConfigFileOverride -o run-config/schema/bot-config-override.schema.json",
-        "generate-agent-settings-schema": "yarn typescript-json-schema --noExtraProps --required --strictNullChecks src/config/config-files/AgentSettingsConfig.ts Schema_AgentSettingsConfig -o run-config/schema/agent-settings.schema.json",
+        "On project build if the generate schema scripts below fail with '... or with a '--target' of 'es2015' or higher' edit the fasset-bots/packages/fasset-bots-core/node_modules/typescript-json-schema/dist/typescript-json-schema.js:getProgramFromFiles function, add 'options['target'] = ts.ScriptTarget.ES2018;' before the return": "",
+        "If you get ' Cannot find module '@ ... ' ... just replace the @ with relative path to the package": "",
+        "generate-config-schema": "yarn typescript-json-schema --esModuleInterop --noExtraProps --required --strictNullChecks src/config/config-files/BotConfigFile.ts Schema_BotConfigFile -o run-config/schema/bot-config.schema.json && yarn typescript-json-schema --esModuleInterop --noExtraProps --required --strictNullChecks src/config/config-files/BotConfigFile.ts Schema_BotConfigFileOverride -o run-config/schema/bot-config-override.schema.json",
+        "generate-agent-settings-schema": "yarn typescript-json-schema --esModuleInterop --noExtraProps --required --strictNullChecks src/config/config-files/AgentSettingsConfig.ts Schema_AgentSettingsConfig -o run-config/schema/agent-settings.schema.json",
         "---------INTERACTIVE---SCRIPTS": "",
         "console": "yarn hardhat console --no-compile",
         "console:coston": "yarn hardhat console --no-compile --network coston"

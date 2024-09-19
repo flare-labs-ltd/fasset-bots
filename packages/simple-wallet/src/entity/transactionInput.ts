@@ -11,8 +11,8 @@ export class TransactionInputEntity {
     @Property()
     transactionHash!: string;
 
-    @Property({nullable: true})
-    vout?: number;
+    @Property()
+    vout!: number;
 
     @Property({type: BNType})
     amount!: BN;
