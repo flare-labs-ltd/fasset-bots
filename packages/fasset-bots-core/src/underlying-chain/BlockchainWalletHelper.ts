@@ -20,7 +20,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         reference: string | null,
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
-        executeUntilTimestamp?: number
+        executeUntilTimestamp?: BN
     ): Promise<number> {
         const value = toBN(amount);
         const fee = undefined;
@@ -83,7 +83,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     }
 
     // background task (monitoring in simple-wallet) should be running
-    async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number, executeUntilTimestamp?: number): Promise<string> {
+    async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<string> {
         try {
             void this.startMonitoringTransactionProgress().catch((error) => {
                 logger.error(`Background task to monitor wallet ended unexpectedly:`, error);

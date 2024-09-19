@@ -1,4 +1,4 @@
-import { Collection, Entity, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -29,32 +29,35 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true })
     fee?: BN;
 
+    @Property({ nullable: true })
+    size?: number;
+
     @Property({ type: BNType, nullable: true })
     maxFee?: BN;
 
     @Property()
     submittedInBlock: number = 0; // 0 when tx is created
 
-    @Property({nullable: true})
-    submittedInTimestamp?: Date; // server time - needed to track when tx appears in mempool
+    @Property({ type: BNType, nullable: true })
+    submittedInTimestamp?: BN; // server time - needed to track when tx appears in mempool
 
-    @Property({nullable: true})
-    acceptedToMempoolInTimestamp?: Date;
+    @Property({ type: BNType, nullable: true })
+    acceptedToMempoolInTimestamp?: BN;
 
-    @Property({nullable: true})
-    reachedFinalStatusInTimestamp?: Date; // TX_REPLACED, TX_FAILED, TX_SUCCESS
+    @Property({ type: BNType, nullable: true })
+    reachedFinalStatusInTimestamp?: BN; // TX_REPLACED, TX_FAILED, TX_SUCCESS
 
-    @Property({nullable: true})
-    reachedStatusPreparedInTimestamp?: Date;
+    @Property({ type: BNType, nullable: true })
+    reachedStatusPreparedInTimestamp?: BN;
 
-    @Property({nullable: true})
-    reachedStatusPendingInTimestamp?: Date;
+    @Property({ type: BNType, nullable: true })
+    reachedStatusPendingInTimestamp?: BN;
 
     @Property({ nullable: true  })
     executeUntilBlock?: number;
 
-    @Property({ nullable: true  })
-    executeUntilTimestamp?: Date;
+    @Property({ type: BNType, nullable: true  })
+    executeUntilTimestamp?: BN;
 
     @Property({ nullable: true  })
     confirmations?: number;
@@ -65,20 +68,20 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true  })
     amount?: BN;
 
-    @Property({ columnType: 'blob', nullable: true })
-    raw?: Buffer;
+    @Property({ columnType: 'text', nullable: true })
+    raw?: string;
 
-    @Property({ columnType: 'blob', nullable: true })
-    serverSubmitResponse?: Buffer;
-
-    @OneToOne(() => TransactionEntity, { nullable: true })
-    replaced_by?: TransactionEntity;
+    @Property({ columnType: 'text', nullable: true })
+    serverSubmitResponse?: string;
 
     @OneToOne(() => TransactionEntity, { nullable: true })
-    rbfReplacementFor?: TransactionEntity;
+    replaced_by?: TransactionEntity | null;
+
+    @OneToOne(() => TransactionEntity, { nullable: true })
+    rbfReplacementFor?: TransactionEntity | null;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
-    creaedAt: Date = new Date();
+    createdAt: Date = new Date();
 
     @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     updatedAt: Date = new Date();
@@ -91,6 +94,9 @@ export class TransactionEntity {
 
     @OneToMany(() => UTXOEntity, utxo => utxo.transaction)
     utxos = new Collection<UTXOEntity>(this);
+
+    @ManyToOne(() => TransactionEntity, { nullable: true })
+    ancestor?: TransactionEntity | null;
 }
 
 export enum TransactionStatus {

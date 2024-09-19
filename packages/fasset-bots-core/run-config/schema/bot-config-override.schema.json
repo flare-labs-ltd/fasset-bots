@@ -162,6 +162,25 @@
             ],
             "type": "string"
         },
+        "FeeServiceOptions": {
+            "additionalProperties": false,
+            "properties": {
+                "numberOfBlocksInHistory": {
+                    "type": "number"
+                },
+                "rateLimitOptions": {
+                    "$ref": "#/definitions/RateLimitOptions"
+                },
+                "sleepTimeMs": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "numberOfBlocksInHistory",
+                "sleepTimeMs"
+            ],
+            "type": "object"
+        },
         "OrmConfigOptions": {
             "additionalProperties": {},
             "properties": {
@@ -238,8 +257,17 @@
                 "chainId": {
                     "type": "string"
                 },
+                "fallbackApis": {
+                    "items": {
+                        "$ref": "#/definitions/WalletApi"
+                    },
+                    "type": "array"
+                },
                 "faucet": {
                     "type": "string"
+                },
+                "feeServiceOptions": {
+                    "$ref": "#/definitions/FeeServiceOptions"
                 },
                 "indexerUrl": {
                     "type": "string"
@@ -249,6 +277,9 @@
                 },
                 "priceChangeEmitter": {
                     "type": "string"
+                },
+                "stuckTransactionOptions": {
+                    "$ref": "#/definitions/StuckTransaction"
                 },
                 "tokenDecimals": {
                     "type": "number"
@@ -295,6 +326,71 @@
                 }
             },
             "type": "object"
+        },
+        "RateLimitOptions": {
+            "additionalProperties": false,
+            "properties": {
+                "maxRPS": {
+                    "type": "number"
+                },
+                "maxRequests": {
+                    "type": "number"
+                },
+                "perMilliseconds": {
+                    "type": "number"
+                },
+                "retries": {
+                    "type": "number"
+                },
+                "timeoutMs": {
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "StuckTransaction": {
+            "additionalProperties": false,
+            "properties": {
+                "blockOffset": {
+                    "type": "number"
+                },
+                "enoughConfirmations": {
+                    "type": "number"
+                },
+                "executionBlockOffset": {
+                    "type": "number"
+                },
+                "feeIncrease": {
+                    "type": "number"
+                },
+                "retries": {
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "WalletApi": {
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "$ref": "#/definitions/WalletApiType"
+                },
+                "url": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "type",
+                "url"
+            ],
+            "type": "object"
+        },
+        "WalletApiType": {
+            "enum": [
+                "bitcore",
+                "blockbook"
+            ],
+            "type": "string"
         }
     },
     "properties": {

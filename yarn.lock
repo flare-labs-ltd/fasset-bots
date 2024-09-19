@@ -1280,6 +1280,7 @@ __metadata:
     web3: 1.10.2
   bin:
     agent-bot: dist/src/cli/agent-bot.js
+    api: dist/src/cli/add-fallbacks.js
     fake-price-reader: dist/src/cli/fake-price-reader.js
     key-gen: dist/src/cli/key-gen.js
     test-governance: dist/src/cli/test-governance.js
@@ -1402,7 +1403,6 @@ __metadata:
     dogecoin-bip84: 0.0.5
     dotenv: 16.3.1
     elliptic: 6.5.4
-    fast-safe-stringify: 2.1.1
     rewire: 7.0.0
     ripple-address-codec: 4.2.4
     ripple-binary-codec: 1.4.2

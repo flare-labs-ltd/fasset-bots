@@ -48,7 +48,7 @@
         "liquidationPreventionFactor": "1.2",
         "vaultCollateralReserveFactor": "0.1",
         "poolCollateralReserveFactor": "0.1",
-        "trustedPingSenders": [],
+        "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901"],
         "minBalanceOnServiceAccount": "2",
         "minBalanceOnWorkAccount": "200",
         "fAssets": {
@@ -61,8 +61,8 @@
                 "minimumFreeUnderlyingBalance": "0.01"
             },
             "FTestBTC": {
-                "recommendedOwnerBalance": "0.5",
-                "minimumFreeUnderlyingBalance": "0.1"
+                "recommendedOwnerBalance": "2",
+                "minimumFreeUnderlyingBalance": "0.5"
             }
         }
     },

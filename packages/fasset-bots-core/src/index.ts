@@ -19,3 +19,4 @@ export { BlockchainWalletHelper } from "./underlying-chain/BlockchainWalletHelpe
 export * from "./underlying-chain/WalletKeys";
 export { VerificationPrivateApiClient } from "./underlying-chain/VerificationPrivateApiClient";
 export { TokenPriceReader } from "./state/TokenPrice"
+export * from "./config/config-file-loader"

@@ -28,7 +28,6 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
-import { MonitoringStateEntity } from "@flarelabs/simple-wallet";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");

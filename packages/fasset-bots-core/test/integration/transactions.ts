@@ -36,7 +36,7 @@ describe("XRP transaction integration tests", () => {
     });
 
     after(async () => {
-        walletHelper.walletClient.stopMonitoring();
+        await walletHelper.walletClient.stopMonitoring();
     });
 
     it("Should send funds and retrieve transaction", async () => {

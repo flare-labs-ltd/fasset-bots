@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { bytesToHex, getAvgBlockTime, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
+import { bytesToHex, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 import { ChainType } from "../../src/utils/constants";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
@@ -108,10 +108,6 @@ describe("Util tests", () => {
    });
 
    it("Should fail on invalid/unsupported chainType", () => {
-      const fn1 = () => {
-         return getAvgBlockTime("invalid" as ChainType);
-      };
-      expect(fn1).to.throw(Error);
       const fn2 = () => {
          return stuckTransactionConstants("invalid" as ChainType);
       };
