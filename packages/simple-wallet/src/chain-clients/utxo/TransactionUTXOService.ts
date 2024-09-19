@@ -17,7 +17,7 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/BlockchainAPIWrapper";
 import { ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
+import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
 import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
@@ -181,7 +181,7 @@ export class TransactionUTXOService implements IService {
 
         while (utxoSet.size > 0) {
             for (const utxo of utxoSet) {
-                const numAncestors = await this.getNumberOfAncestorsInMempool(utxo.mintTransactionHash);
+                const numAncestors = await this.getNumberOfMempoolAncestors(utxo.mintTransactionHash);
                 if (numAncestors >= this.mempoolChainLengthLimit) {
                     logger.info(`Number of UTXO mempool ancestors ${numAncestors} is greater than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
                     utxoSet.delete(utxo);
@@ -211,19 +211,27 @@ export class TransactionUTXOService implements IService {
         return positiveValueReached ? baseUTXOs : null;
     }
 
-    private async getNumberOfAncestorsInMempool(txHash: string): Promise<number> {
+    public async getNumberOfMempoolAncestors(txHash: string): Promise<number> {
+        const ancestors = await this.getMempoolAncestors(txHash);
+        return ancestors
+            .filter(t => t.transactionHash !== txHash)
+            .length;
+    }
+
+    private async getMempoolAncestors(txHash: string): Promise<Loaded<TransactionEntity, "inputs" | "outputs">[]> {
         const txEnt = await this.getTransactionEntityByHash(txHash);
         if (!txEnt || txEnt.status === TransactionStatus.TX_SUCCESS || txEnt.status === TransactionStatus.TX_FAILED || txEnt.status === TransactionStatus.TX_SUBMISSION_FAILED) {
-            return 0;
+            return [];
         } else {
-            let numAncestorsInMempool = 0;
+            let ancestors = [txEnt];
             for (const input of txEnt!.inputs.getItems().filter(t => t.transactionHash !== txHash)) { // this filter is here because of a weird orm bug
-                numAncestorsInMempool += 1 + await this.getNumberOfAncestorsInMempool(input.transactionHash);
-                if (numAncestorsInMempool >= 25) {
-                    return 25;
+                const res = await this.getMempoolAncestors(input.transactionHash);
+                ancestors = [...ancestors, ...res];
+                if (ancestors.length >= 25) {
+                    return ancestors;
                 }
             }
-            return numAncestorsInMempool;
+            return ancestors;
         }
     }
 

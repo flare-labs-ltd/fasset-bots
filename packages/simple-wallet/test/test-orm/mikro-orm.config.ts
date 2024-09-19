@@ -33,4 +33,11 @@ export async function initializeTestMikroORM(): Promise<MikroORM> {
     return orm;
 }
 
+export async function initializeTestMikroORMWithConfig(config: CreateOrmOptions): Promise<MikroORM> {
+    const orm = await MikroORM.init(config);
+    await orm.getSchemaGenerator().ensureDatabase();
+    await orm.getSchemaGenerator().updateSchema();
+    return orm;
+}
+
 export default config;

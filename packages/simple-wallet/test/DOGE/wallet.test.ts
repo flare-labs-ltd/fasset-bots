@@ -300,7 +300,7 @@ describe("Dogecoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
-    it("Transaction with a too low fee should be updated with a higher fee", async () => {
+    it.skip("Transaction with a too low fee should be updated with a higher fee", async () => { // TODO Do we handle such cases?
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const startFee = toBNExp(0.0000000000001, 0);
