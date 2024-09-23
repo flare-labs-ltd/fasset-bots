@@ -15,8 +15,6 @@ struct EcosystemData {
     address vaultCT;
     address poolCT;
     // agent vars
-    uint256 agentVaultCollateralWei;
-    uint256 agentPoolCollateralWei;
     uint256 maxLiquidatedFAssetUBA;
     uint256 liquidationFactorVaultBips;
     uint256 liquidationFactorPoolBips;

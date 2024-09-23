@@ -1,11 +1,11 @@
 import chaiAsPromised from "chai-as-promised";
-import {FeeService} from "../../src/fee-service/service";
+import {BlockchainFeeService} from "../../src/fee-service/service";
 import {before} from "node:test";
 import {ChainType} from "../../src/utils/constants";
 import {expect} from "chai";
 import BN from "bn.js";
 
-let feeService: FeeService;
+let feeService: BlockchainFeeService;
 describe("Fee service tests BTC", () => {
     const chainType = ChainType.BTC;
     const feeServiceConfig = {
@@ -15,7 +15,7 @@ describe("Fee service tests BTC", () => {
     };
 
     before(async () => {
-        feeService = new FeeService(feeServiceConfig)
+        feeService = new BlockchainFeeService(feeServiceConfig)
     });
 
     it("Should get current block height", async () => {

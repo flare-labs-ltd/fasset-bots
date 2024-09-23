@@ -59,7 +59,7 @@ export class Minter {
 
     async performMintingPayment(crt: EventArgs<CollateralReserved>): Promise<string> {
         const paymentAmount = crt.valueUBA.add(crt.feeUBA);
-        return this.performPayment(crt.paymentAddress, paymentAmount, crt.paymentReference, toBN(crt.lastUnderlyingBlock).toNumber(), toBN(crt.lastUnderlyingTimestamp).toNumber());
+        return this.performPayment(crt.paymentAddress, paymentAmount, crt.paymentReference, toBN(crt.lastUnderlyingBlock).toNumber(), toBN(crt.lastUnderlyingTimestamp));
     }
 
     async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string) {
@@ -99,7 +99,7 @@ export class Minter {
         return await this.assetManager.collateralReservationFee(lots);
     }
 
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, untilBlockNumber?: number, untilBlockTimestamp?: number): Promise<string> {
+    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
         await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAmount, paymentAddress);
         return this.wallet.addTransactionAndWaitForItsFinalization(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, undefined, untilBlockNumber, untilBlockTimestamp);
     }

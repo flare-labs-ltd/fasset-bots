@@ -35,7 +35,7 @@ export function isBigNumber(x: any): x is BN | string {
     return BN.isBN(x) || (typeof x === "string" && /^\d+$/.test(x));
 }
 
-export function formatArgs(args: any) {
+export function formatArgsAsObject(args: any) {
     if (!args) return null;
     const result: any = {};
     for (const [key, value] of Object.entries(args)) {
@@ -43,7 +43,11 @@ export function formatArgs(args: any) {
             result[key] = formatArg(value);
         }
     }
-    return JSON.stringify(result);
+    return result;
+}
+
+export function formatArgs(args: any) {
+    return JSON.stringify(formatArgsAsObject(args));
 }
 
 function formatArg(value: unknown): string {

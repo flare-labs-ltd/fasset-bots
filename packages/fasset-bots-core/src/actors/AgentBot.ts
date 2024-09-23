@@ -13,7 +13,7 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion } from "../utils";
+import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion, SimpleRateLimiter } from "../utils";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
@@ -36,6 +36,8 @@ import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentBotUnderlyingWithdrawal } from "./AgentBotUnderlyingWithdrawal";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+
+const PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS = 2 * MINUTES * 1000;
 
 const AgentVault = artifacts.require("AgentVault");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -121,6 +123,8 @@ export class AgentBot {
     // internal
     private _running: boolean = false;
     private _stopRequested: boolean = false;
+
+    private pingResponseRateLimiter = new SimpleRateLimiter<string>(PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS);
 
     static async createUnderlyingAddress(context: IAssetAgentContext) {
         return await context.wallet.createAccount();
@@ -587,6 +591,8 @@ export class AgentBot {
         try {
             // only respond to pings from trusted senders
             if (!this.agentBotSettings.trustedPingSenders.has(args.sender.toLowerCase())) return;
+            // do not respond if ping is too frequent (DOS protection)
+            if (!this.pingResponseRateLimiter.allow(args.sender)) return;
             // log after checking for trusted
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentPing' with data ${formatArgs(args)}.`);
             const query = toBN(args.query);

@@ -1,6 +1,6 @@
-import { BtcWalletImplementation } from "./chain-clients/BtcWalletImplementation";
-import { DogeWalletImplementation } from "./chain-clients/DogeWalletImplementation";
-import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation";
+import { BtcWalletImplementation } from "./chain-clients/implementations/BtcWalletImplementation";
+import { DogeWalletImplementation } from "./chain-clients/implementations/DogeWalletImplementation";
+import { XrpWalletImplementation } from "./chain-clients/implementations/XrpWalletImplementation";
 import { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
 import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
 import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";

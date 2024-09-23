@@ -325,7 +325,7 @@ export class Agent {
      * @param options instance of TransactionOptionsWithFee
      * @returns transaction hash
      */
-    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: number): Promise<string> {
+    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
         await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
         return await this.wallet.addTransactionAndWaitForItsFinalization(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp);
     }
@@ -338,7 +338,7 @@ export class Agent {
      * @param options instance of TransactionOptionsWithFee
      * @returns transaction id from local database
      */
-    async initiatePayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: number): Promise<number> {
+    async initiatePayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<number> {
         await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
         return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp);
     }

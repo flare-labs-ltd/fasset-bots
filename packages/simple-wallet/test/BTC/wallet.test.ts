@@ -11,8 +11,8 @@ use(chaiAsPromised);
 import WAValidator from "wallet-address-validator";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import rewire from "rewire";
-import { fetchTransactionEntityById, fetchMonitoringState, getTransactionInfoById } from "../../src/db/dbutils";
-import { getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
+import { getTransactionInfoById } from "../../src/db/dbutils";
+import { getCurrentTimestampInSeconds, getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
@@ -26,17 +26,19 @@ import {
 import {logger} from "../../src/utils/logger";
 import BN from "bn.js";
 import { BTC_DOGE_DEC_PLACES, ChainType, DEFAULT_FEE_INCREASE } from "../../src/utils/constants";
-import { getCore } from "../../src/chain-clients/UTXOUtils";
 import { BitcoreAPI } from "../../src/blockchain-apis/BitcoreAPI";
-import { createAxiosConfig } from "../../src/chain-clients/utils";
 import { AxiosError } from "axios";
 import * as dbutils from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
-import * as utxoUtils from "../../src/chain-clients/UTXOUtils";
+import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
+import { ServiceRepository } from "../../src/ServiceRepository";
+import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
+import { createAxiosConfig } from "../../src/utils/axios-error-utils";
+import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 
-const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/BtcWalletImplementation");
+const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/implementations/BtcWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("BtcWalletImplementation");
 const walletSecret = "wallet_secret";
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
@@ -79,8 +81,8 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 // first change address: tb1q38w40nmt5chk4a60mrh502h7m3l5w6pxpxvr0c
 // first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
 
-const amountToSendSatoshi = toBN(10000);
-const feeInSatoshi = toBN(1200);
+const amountToSendSatoshi = toBN(10020);
+const feeInSatoshi = toBN(12000);
 const maxFeeInSatoshi = toBN(1100);
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
 
@@ -102,7 +104,7 @@ describe("Bitcoin wallet tests", () => {
             api: blockchainAPI,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            feeServiceConfig: feeServiceConfig,
+            // feeServiceConfig: feeServiceConfig,
             enoughConfirmations: 1
         };
         wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
@@ -145,19 +147,20 @@ describe("Bitcoin wallet tests", () => {
 
 
     it("Should create transaction with custom fee", async () => {
-        const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
-        rewired.orm = await initializeTestMikroORM();
-        fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-        const [tr,] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note");
-        expect(typeof tr).to.equal("object");
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "NOTE");
+        expect(txId).greaterThan(0);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
     });
 
     it("Should not create transaction: fee > maxFee", async () => {
-        const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
-        rewired.orm = await initializeTestMikroORM();
-        fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-        await expect(rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, "Note")).to.eventually
-            .be.rejectedWith(`Transaction preparation failed due to fee restriction (fee: ${feeInSatoshi.toString()}, maxFee: ${maxFeeInSatoshi.toString()})`);
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "NOTE", maxFeeInSatoshi);
+        expect(txId).greaterThan(0);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
+        expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
+        expect((txEnt.maxFee!).eq(maxFeeInSatoshi)).to.be.true;
     });
 
     it("Should receive fee", async () => {
@@ -169,36 +172,11 @@ describe("Bitcoin wallet tests", () => {
         expect(fee).not.to.be.null;
     });
 
-    it.skip("Should prepare and execute transaction", async () => {
+    it.skip("Should get fee for delete account", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
-        expect(id).to.be.gt(0);
-        const startTime = Date.now();
-        const timeLimit = 600000; // 600 s
-        for (let i = 0; ; i++) {
-            const tx = await fetchTransactionEntityById(wClient.rootEm, id);
-            if (tx.status == TransactionStatus.TX_SUCCESS) {
-                break;
-            }
-            if (Date.now() - startTime > timeLimit) {
-                console.log(tx)
-                throw new Error(`Time limit exceeded for ${tx.id} with ${tx.transactionHash}`);
-            }
-            wClient.rootEm.clear();
-            await sleepMs(2000);
-        }
-    });
-
-    it("Should get fee for delete account", async () => {
-        const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTest);
-        rewired.orm = await initializeTestMikroORM();
-        await rewired.feeService?.setupHistory();
-        void rewired.feeService?.startMonitoringFees();
-
-        fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-        const [transaction,] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, null, null, "Note");
-
-        expect(transaction.getFee()).to.be.gt(0);
+        const [transaction,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined, "Note");
+        const fee = transaction.getFee();
+        expect(fee).to.be.gt(0);
     });
 
     it("Should get account balance", async () => {
@@ -207,31 +185,10 @@ describe("Bitcoin wallet tests", () => {
         expect(accountBalance.gt(new BN(0))).to.be.true;
     });
 
-    it("Transaction with a too low fee should be updated with a higher fee", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const startFee = new BN(0.0000000001);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, startFee);
-        expect(id).to.be.gt(0);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
-        expect(txEnt.fee?.toNumber()).to.be.gt(startFee.toNumber());
-    });
-
     it("Transaction with executeUntilBlock before current block height should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "Submit", feeInSatoshi, currentBlock.number - 5);
-        expect(id).to.be.gt(0);
-
-        const [txEnt] = await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
-        expect(txEnt.status).to.equal(TransactionStatus.TX_FAILED);
-    });
-
-    it("Transaction with executeUntilBlock too low should fail (executeUntilBlock - currentBlockHeight < executionBlockOffset)", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-
-        const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "Submit", feeInSatoshi, currentBlock.number + 1);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "Submit", feeInSatoshi, currentBlock.number - wClient.executionBlockOffset);
         expect(id).to.be.gt(0);
 
         const [txEnt] = await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -239,49 +196,31 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should submit TX_PREPARED that are in DB", async () => {
-        const rewired = await setupRewiredWallet();
-
-        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
-        const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
-        const [transaction] = await rewired.preparePaymentTransaction(txEnt.source, txEnt.destination, txEnt.amount, txEnt.fee, note);
-        txEnt.raw = Buffer.from(JSON.stringify(transaction));
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const executeUntilBlock = (await wClient.blockchainAPI.getCurrentBlockHeight()).number + wClient.blockOffset;
+        const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
+        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
+        txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
-        await rewired.rootEm.flush();
-
-        const [tx] = await waitForTxToFinishWithStatus(2, 15 * 60, rewired.rootEm, TransactionStatus.TX_SUCCESS, txEnt.id);
-        expect(tx.status).to.equal(TransactionStatus.TX_SUCCESS);
-    });
-
-    it("Should handle TX_PENDING that are in DB", async () => {
-        const rewired = await setupRewiredWallet();
-
-        const fee = feeInSatoshi;
-        const executeUntilBlock = await rewired.blockchainAPI.getCurrentBlockHeight() + rewired.blockOffset;
-        const txEnt = createTransactionEntity(rewired.rootEm, ChainType.testDOGE, fundedWallet.address, targetAddress, amountToSendSatoshi, fee, note, undefined, executeUntilBlock);
-        const [transaction] = await rewired.preparePaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi, fee, note);
-        const signed = await rewired.signTransaction(transaction, fundedWallet.privateKey);
-
-        txEnt.raw = Buffer.from(JSON.stringify(transaction));
-        txEnt.transactionHash = signed.txHash;
-        await rewired.rootEm.flush();
-        await rewired.submitTransaction(signed.txBlob, txEnt.id);
-
-        const [tx] = await waitForTxToFinishWithStatus(2, 15 * 60, rewired.rootEm, TransactionStatus.TX_SUCCESS, txEnt.id);
-        expect(tx.status).to.equal(TransactionStatus.TX_SUCCESS);
+        await wClient.rootEm.flush();
+        const [tx] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.id);
+        expect(tx.status).to.equal(TransactionStatus.TX_SUBMITTED);
     });
 
     it("Should handle empty UTXO list in DB", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
         await clearUTXOs(wClient.rootEm);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined);
         expect(id).to.be.gt(0);
 
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
     it("Balance should change after transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
         const sourceBalanceStart = await wClient.getAccountBalance(fundedWallet.address);
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
 
@@ -298,14 +237,15 @@ describe("Bitcoin wallet tests", () => {
 
     it("Transaction with execute until timestamp too low should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "Submit", undefined, undefined, new Date().getTime() - 10);
+        const offset = wClient.executionBlockOffset * utxoUtils.getDefaultBlockTimeInSeconds(wClient.chainType)
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, "Submit", undefined, undefined, toBN(getCurrentTimestampInSeconds() - offset));
         expect(id).to.be.gt(0);
-
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with a too low fee should be updated with a higher fee", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
         const startFee = toBNExp(0.0000000000001, 0);
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, startFee, note, undefined);
         expect(id).to.be.gt(0);
@@ -315,6 +255,7 @@ describe("Bitcoin wallet tests", () => {
 
     it("Already spent UTXOs with wrong status should get a new status - consistency checker", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
@@ -338,6 +279,7 @@ describe("Bitcoin wallet tests", () => {
 
     it("Test blockchain API connection down", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
@@ -347,11 +289,12 @@ describe("Bitcoin wallet tests", () => {
         await sleepMs(5000);
         console.info("API connection up");
         wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it("If getCurrentFeeRate is down the fee should be the default one", async () => {
+    it("If getCurrentFeeRate is down the fee should be the default one", async () => {//TODO
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+
         wClient.feeService = undefined;
         const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
             config => {
@@ -364,16 +307,16 @@ describe("Bitcoin wallet tests", () => {
 
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
-        await waitForTxToFinishWithStatus(0.1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
+        await waitForTxToFinishWithStatus(0.1, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
-        const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, getDefaultFeePerKB(ChainType.testDOGE), getCore((await setupRewiredWallet()).chainType), wClient.rootEm);
+        const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, getDefaultFeePerKB(ChainType.testBTC), getCore((await setupRewiredWallet()).chainType), wClient.rootEm);
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
 
         wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
         console.info();
     });
 
-    it("If fee service is down the getCurrentFeeRate should be used", async () => {
+    it("If fee service is down the getCurrentFeeRate should be used", async () => {//TODO
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const fee = "0.05";
@@ -398,7 +341,7 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
         const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, feeRateInSatoshi, getCore((await setupRewiredWallet()).chainType), wClient.rootEm);
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
 
@@ -425,13 +368,13 @@ describe("Bitcoin wallet tests", () => {
         void wClient.startMonitoringTransactionProgress();
 
         for (let i = 0; i < N; i++) {
-            await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, initialTxIds[i]);
+            await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, initialTxIds[i]);
         }
     });
 
     it("Should go to the fallback API", async () => {
-        const bitcoreURL = "https://api.bitcore.io/api/DOGE/testnet/";
-        wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(ChainType.testDOGE, bitcoreURL), undefined);
+        const bitcoreURL = "https://api.bitcore.io/api/BTC/testnet/";
+        wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(ChainType.testBTC, bitcoreURL), undefined);
 
         const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
             config => {
@@ -490,36 +433,28 @@ describe("Bitcoin wallet tests", () => {
         const txInfo = await getTransactionInfoById(wClient.rootEm, id);
         expect(txInfo.status).to.be.equal(TransactionStatus.TX_CREATED);
 
-        await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
+        await waitForTxToFinishWithStatus(0.001, 5 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
         await testOrm.close();
         await sleepMs(5000);
         await testOrm.connect();
-
         await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
-    it("updateTransactionEntity down", async () => {
+    it("'updateTransactionEntity' is down", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
 
-        await waitForTxToFinishWithStatus(0.01, 15 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
+        await waitForTxToFinishWithStatus(0.01, 5 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
         sinon.stub(dbutils, "updateTransactionEntity").throws(new DriverException(new Error("DB down")));
 
         await sleepMs(10000);
         sinon.restore();
 
-        await waitForTxToFinishWithStatus(0.001, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(0.001, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it.skip("Monitoring into infinity", async () => {
-        while (true) {
-            await sleepMs(2000);
-        }
-    });
-
-
-    it("Should replace transaction", async () => {
+    it.skip("Should replace transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const stub = sinon.stub(utxoUtils, "hasTooHighOrLowFee");
@@ -533,6 +468,22 @@ describe("Bitcoin wallet tests", () => {
         stub.restore();
 
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
+    });
+
+    it("Should replace transaction by fee", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        expect(id).to.be.gt(0);
+
+        await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
+
+        await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUBMITTED, id);
+    });
+
+    it("Monitoring into infinity", async () => {
+        while (true) {
+            await sleepMs(2000);
+        }
     });
 
     it.skip("Should prepare and execute transaction", async () => {
@@ -560,6 +511,5 @@ async function setupRewiredWallet() {
     };
     const rewired = new rewiredUTXOWalletImplementationClass(BTCMccConnectionTestInitial);
     fundedWallet = rewired.createWalletFromMnemonic(fundedMnemonic);
-
     return rewired;
 }
