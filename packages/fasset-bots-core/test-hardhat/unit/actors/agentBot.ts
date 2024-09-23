@@ -133,7 +133,7 @@ describe("Agent bot unit tests", () => {
         expect(spyBalance2).to.have.been.called.once;
     });
 
-    it("Should prove EOA address", async () => {
+    it("Should prove EOA address - no funds", async () => {
         const spyEOA = spy.on(AgentBot, "proveEOAaddress");
         const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
         await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
@@ -704,11 +704,19 @@ describe("Agent bot unit tests", () => {
         expect(Number(agentEnt2.dailyTasksTimestamp)).to.be.equal(lastHandledTimestamp);
     });
 
-    it("Should not handle claims - no contracts", async () => {
+    it("Should not handle claims (FTSO rewards) - no contracts", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(2);
+    });
+
+    it("Should not handle claims - stop requested", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyError = spy.on(agentBot, "stopRequested");
+        agentBot.requestStop();
+        await agentBot.claims.checkForClaims();
+        expect(spyError).to.be.called.exactly(4);
     });
 
     it("Should handle claims", async () => {

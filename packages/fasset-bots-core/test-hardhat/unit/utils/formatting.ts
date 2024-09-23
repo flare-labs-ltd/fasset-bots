@@ -10,6 +10,7 @@ describe("Formatting unit tests", () => {
         const event2 = { address: "address", event: "event", args: { first: obj } };
         expect(formattingMethods.formatArgs(event1.args)).to.eq('{"first":"[0, 1, null]"}');
         expect(formattingMethods.formatArgs(event2.args)).to.eq('{"first":"{ second: [0, 1, null] }"}');
-        expect(formattingMethods.formatArgs(null)).to.be.null;
+        // json.stringify is called, so it returns the string 'null', not actual null
+        expect(formattingMethods.formatArgs(null)).to.equal("null");
     });
 });

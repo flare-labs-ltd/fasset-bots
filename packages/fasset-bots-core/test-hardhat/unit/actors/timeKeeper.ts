@@ -5,6 +5,7 @@ import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext, testTimekeeperTimingConfig } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
+import { ChainId } from "../../../src";
 use(spies);
 
 describe("Time keeper unit tests", () => {
@@ -50,6 +51,15 @@ describe("Time keeper unit tests", () => {
     it("Should not update underlying block - invalid timeKeeper's address", async () => {
         const spyConsole = spy.on(console, "error");
         const timeKeeper = new TimeKeeper(context, "timeKeeperAddress", testTimekeeperTimingConfig());
+        await timeKeeper.updateUnderlyingBlock();
+        expect(spyConsole).to.be.called.once;
+    });
+
+    it("Should not update underlying block - problems with attestation provider", async () => {
+        const spyConsole = spy.on(console, "error");
+        // break attestationProvider
+        context.attestationProvider.chainId = new ChainId("test chain", "iid");
+        const timeKeeper = new TimeKeeper(context, timeKeeperAddress, testTimekeeperTimingConfig());
         await timeKeeper.updateUnderlyingBlock();
         expect(spyConsole).to.be.called.once;
     });
