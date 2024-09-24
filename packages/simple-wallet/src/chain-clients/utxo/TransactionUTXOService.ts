@@ -66,7 +66,7 @@ export class TransactionUTXOService implements IService {
      * Retrieves unspent transactions in format accepted by transaction
      * @param txData
      * @param txForReplacement
-     * @returns {Object[]}
+     * @returns {UTXOEntity[]}
      */
     async fetchUTXOs(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
         const dbUTXOs = await this.listUnspent(txData, txForReplacement);
@@ -100,7 +100,8 @@ export class TransactionUTXOService implements IService {
         logger.info(`Listing UTXOs for address ${txData.source}`);
         const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
 
-        let dbUTXOS = await this.handleMissingUTXOScripts(await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement), txData.source);
+        let fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);
+        let dbUTXOS = await this.handleMissingUTXOScripts(fetchUnspent, txData.source);
         const needed = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, false, currentFeeStatus);
         if (needed) {
             return needed;
@@ -108,7 +109,8 @@ export class TransactionUTXOService implements IService {
 
         // not enough funds in db
         await this.fillUTXOsFromMempool(txData.source);
-        dbUTXOS = await this.handleMissingUTXOScripts(await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement), txData.source);
+        fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);
+        dbUTXOS = await this.handleMissingUTXOScripts(fetchUnspent, txData.source);
         const neededAfter = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, true, currentFeeStatus);
         if (neededAfter) {
             return neededAfter;

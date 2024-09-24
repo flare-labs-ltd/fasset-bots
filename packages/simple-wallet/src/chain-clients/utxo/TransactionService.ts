@@ -10,7 +10,6 @@ import { EntityManager } from "@mikro-orm/core";
 import {
     ChainType,
     DEFAULT_FEE_INCREASE,
-    UTXO_OUTPUT_SIZE, UTXO_OUTPUT_SIZE_SEGWIT,
 } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
@@ -20,13 +19,14 @@ import {
     getAccountBalance,
     getCore,
     getDustAmount,
+    getOutputSize,
 } from "./UTXOUtils";
-import { getDefaultFeePerKB, unPrefix0x } from "../../utils/utils";
+import { unPrefix0x } from "../../utils/utils";
 import UnspentOutput = Transaction.UnspentOutput;
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
-import { LessThanDustAmountError, InvalidFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import { LessThanDustAmountError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
 
 export class TransactionService implements IService {
@@ -143,8 +143,8 @@ export class TransactionService implements IService {
         if (amountInSatoshi == null) {
             utxos = await ServiceRepository.get(this.chainType, TransactionUTXOService).getAllUTXOs(source);
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
-            feeInSatoshi = toBN(this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note).getFee())
-                .sub(feePerKB.muln(this.getOutputSize()).divn(1000));
+            const bitcoreTx = this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
+            feeInSatoshi = toBN(bitcoreTx.getFee()).sub(feePerKB.muln(getOutputSize(this.chainType)).divn(1000));
             const balance = await getAccountBalance(this.chainType, source);
             amountInSatoshi = balance.sub(feeInSatoshi);
         } else {
@@ -232,13 +232,5 @@ export class TransactionService implements IService {
         }
 
         return tr;
-    }
-
-    private getOutputSize() {
-        if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
-            return UTXO_OUTPUT_SIZE;
-        } else {
-            return UTXO_OUTPUT_SIZE_SEGWIT;
-        }
     }
 }

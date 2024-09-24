@@ -69,14 +69,6 @@ export async function fetchTransactionEntityById(rootEm: EntityManager, id: numb
     });
 }
 
-export async function updateTransactionEntityByHash(rootEm: EntityManager, txHash: string, modify: (transactionEnt: TransactionEntity) => Promise<void>): Promise<void> {
-    await rootEm.transactional(async (em) => {
-        const transactionEnt: TransactionEntity = await fetchTransactionEntityByHash(rootEm, txHash);
-        await modify(transactionEnt);
-        await em.persistAndFlush(transactionEnt);
-    });
-}
-
 export async function fetchTransactionEntityByHash(rootEm: EntityManager, txHash: string): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, {
         refresh: true,
@@ -164,26 +156,7 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, t
     } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { confirmed: "desc", value: "desc" } });
     const utxos = !!txForReplacement ? res.filter(t => t.confirmed) : res;
     const alreadyUsed = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
-
-    const ancestors = await rootEm.find(TransactionEntity, {
-        ancestor: {
-            $exists: true
-        }
-    });
-    const ancestorTransactionIds = ancestors.map(tx => tx.id);
-    const descendantTransactions = await rootEm.find(TransactionEntity, {
-        ancestor: { $in: ancestorTransactionIds }
-    });
-    const descendantTransactionIds = descendantTransactions.map(tx => tx.id);
-    const filteredUTXOs = utxos.filter(utxo => {
-        const transactionId = utxo.transaction?.id;
-        return transactionId === undefined || !descendantTransactionIds.includes(transactionId);
-    });
-    return [...alreadyUsed, ...filteredUTXOs]; // order is important for needed utxos later
-}
-
-export async function fetchUTXOsByTxHash(rootEm: EntityManager, txHash: string): Promise<UTXOEntity[]> {
-    return await rootEm.find(UTXOEntity, { mintTransactionHash: txHash } as FilterQuery<UTXOEntity>, { refresh: true });
+    return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
 }
 
 export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Promise<UTXOEntity[]> {
@@ -246,32 +219,7 @@ export async function correctUTXOInconsistencies(rootEm: EntityManager, address:
     });
 }
 
-export async function removeUTXOsAndAddReplacement(rootEm: EntityManager, txId: number, replacementTx: TransactionEntity): Promise<void> {
-    await rootEm.transactional(async (em) => {
-        const utxos = await em.find(UTXOEntity, { transaction: { id: txId } });
-        utxos.forEach(utxo => {
-            utxo.spentHeight = SpentHeightEnum.UNSPENT;
-            utxo.transaction = undefined;
-        });
-        await em.persistAndFlush(utxos);
-        const txEnt = await fetchTransactionEntityById(em, txId);
-        txEnt.status = TransactionStatus.TX_REPLACED;
-        txEnt.replaced_by = replacementTx;
-    });
-}
-
 // replaced transaction
-export async function getReplacedTransactionByHash(rootEm: EntityManager, transactionHash: string): Promise<string> {
-
-    let txEnt = await fetchTransactionEntityByHash(rootEm, transactionHash);
-    let replaced = txEnt.replaced_by;
-    while (replaced && replaced.transactionHash) {
-        txEnt = await fetchTransactionEntityByHash(rootEm, replaced.transactionHash);
-        replaced = txEnt.replaced_by;
-    }
-    return txEnt.transactionHash!;
-}
-
 export async function getReplacedTransactionById(rootEm: EntityManager, dbId: number): Promise<TransactionEntity> {
     let txEnt = await fetchTransactionEntityById(rootEm, dbId);
     let replaced = txEnt.replaced_by;
@@ -282,7 +230,7 @@ export async function getReplacedTransactionById(rootEm: EntityManager, dbId: nu
     return txEnt;
 }
 
-// get transaction info TODO
+// get transaction info - TODO
 export async function getTransactionInfoById(rootEm: EntityManager, dbId: number): Promise<TransactionInfo> {
     const txEntReplaced = await getReplacedTransactionById(rootEm, dbId);
     const txEntOriginal = await fetchTransactionEntityById(rootEm, dbId);
@@ -348,7 +296,7 @@ export async function setAccountIsDeleting(rootEm: EntityManager, address: strin
     });
 }
 
-// locking
+// monitoring
 export async function fetchMonitoringState(rootEm: EntityManager, chainType: string): Promise<MonitoringStateEntity | null> {
     return await rootEm.findOne(MonitoringStateEntity, { chainType } as FilterQuery<MonitoringStateEntity>, { refresh: true });
 }

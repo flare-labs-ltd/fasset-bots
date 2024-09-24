@@ -7,6 +7,8 @@ import {
     DOGE_DUST_AMOUNT,
     DOGE_LEDGER_CLOSE_TIME_MS,
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
+    UTXO_OUTPUT_SIZE,
+    UTXO_OUTPUT_SIZE_SEGWIT,
 } from "../../utils/constants";
 import BN from "bn.js";
 import { toBN } from "../../utils/bnutils";
@@ -108,5 +110,13 @@ export async function getAccountBalance(chainType: ChainType, account: string, o
     } catch (error) {
         logger.error(`Cannot get account balance for ${account} and other addresses ${otherAddresses}: ${errorMessage(error)}`);
         throw error;
+    }
+}
+
+export function getOutputSize(chainType: ChainType) {
+    if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
+        return UTXO_OUTPUT_SIZE;
+    } else {
+        return UTXO_OUTPUT_SIZE_SEGWIT;
     }
 }

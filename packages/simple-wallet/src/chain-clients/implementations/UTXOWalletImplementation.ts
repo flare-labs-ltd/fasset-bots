@@ -29,7 +29,7 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { TransactionService } from "../utxo/TransactionService";
 import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../utxo/TransactionFeeService";
-import { errorMessage, InvalidFeeError, isORMError, LessThanDustAmountError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import { errorMessage, isORMError, LessThanDustAmountError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
 import { BlockData } from "../../interfaces/IBlockchainAPI";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
@@ -268,13 +268,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
             }
         } catch (error) {
-            if (error instanceof InvalidFeeError) {
-                //TODO
-                logger.info(`Setting new fee for transaction ${txEnt.id} to ${error.correctFee}`);
-                await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => {
-                    txEntToUpdate.fee = error instanceof InvalidFeeError ? error.correctFee : txEntToUpdate.fee; // The check is needed because of the compiler
-                });
-            } else if (error instanceof NotEnoughUTXOsError) {
+            if (error instanceof NotEnoughUTXOsError) {
                 logger.warn(`Not enough UTXOs for transaction ${txEnt.id}, fetching them from mempool`);
                 await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
             } else if (error instanceof LessThanDustAmountError) {
