@@ -135,4 +135,13 @@ describe("Agent bot runner tests", () => {
         await runPromise;
         expect(spyFund).to.be.called.exactly(2);
     });
+
+    it("Should request restart", async () => {
+        const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
+        expect(agentBotRunner.readyToStop()).to.be.false;
+        agentBotRunner.requestRestart();
+        expect(agentBotRunner.readyToStop()).to.be.true;
+        expect(agentBotRunner.restartRequested).to.be.true;
+    });
 });

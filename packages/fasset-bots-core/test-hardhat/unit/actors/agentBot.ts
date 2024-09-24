@@ -141,6 +141,17 @@ describe("Agent bot unit tests", () => {
         expect(spyEOA).to.have.been.called.once;
     });
 
+    // it.only("Should prove EOA address - funded", async () => {
+    //     const spyEOA = spy.on(AgentBot, "proveEOAaddress");
+    //     // await fundUnderlying(context, ownerUnderlyingAddress, toBN(100000000))
+    //     const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
+    //     await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
+    //     contextEOAProof.chainInfo.minimumAccountBalance = toBN(0);
+    //     await createTestAgentBot(contextEOAProof, orm, ownerAddress, ownerUnderlyingAddress)
+    //     // await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress, ownerUnderlyingAddress)).to.eventually.be.rejectedWith(/^Not enough funds on underlying address/).and.be.an.instanceOf(Error);
+    //     expect(spyEOA).to.have.been.called.once;
+    // });
+
     it("Should not do next redemption step due to invalid redemption state", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const spyLog = spy.on(console, "error");
