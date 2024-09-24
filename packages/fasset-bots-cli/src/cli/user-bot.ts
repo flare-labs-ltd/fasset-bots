@@ -136,7 +136,8 @@ program
     .option("--executor <executorAddress>", "optional executor's native address")
     .option("--executorFee <executorFee>", "optional executor's fee in NAT")
     .option("--repeat <number>", "repeat redemption this many times")
-    .action(async (numberOfLots: string, cmdOptions: { executor?: string, executorFee?: string, repeat?: string }) => {
+    .option("--redemptionTarget <redemptionTargetAddress>", "optional redemption target address")
+    .action(async (numberOfLots: string, cmdOptions: { executor?: string, executorFee?: string, repeat?: string, redemptionTarget?: string }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         validateInteger(numberOfLots, "Number of lots", { min: 1 });
@@ -147,9 +148,9 @@ program
         for (let _ = 0; _ < Number(cmdOptions.repeat ?? 1); _++) {
             try {
                 if (cmdOptions.executor && cmdOptions.executorFee) {
-                    await redeemerBot.redeem(numberOfLots, cmdOptions.executor, cmdOptions.executorFee);
+                    await redeemerBot.redeem(numberOfLots, cmdOptions.executor, cmdOptions.executorFee, cmdOptions.redemptionTarget);
                 } else {
-                    await redeemerBot.redeem(numberOfLots);
+                    await redeemerBot.redeem(numberOfLots, undefined, undefined, cmdOptions.redemptionTarget);
                 }
                 await sleep(20_000);
             } catch (error) {
@@ -288,6 +289,8 @@ program
             });
         }
     });
+program
+    .command("requestRedemption")
 
 async function getPoolAddress(bot: PoolUserBotCommands, poolAddressOrTokenSymbol: string) {
     return Web3.utils.isAddress(poolAddressOrTokenSymbol)

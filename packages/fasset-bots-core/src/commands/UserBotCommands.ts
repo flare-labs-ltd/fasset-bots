@@ -296,8 +296,8 @@ export class UserBotCommands {
      * @param executorAddress
      * @param executorFeeNatWei
      */
-    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<BN[]> {
-        const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
+    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish, redemptionTarget?: string): Promise<BN[]> {
+        const redeemer = new Redeemer(this.context, this.nativeAddress, redemptionTarget ?? this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
         logger.info(`User ${this.nativeAddress} is asking for redemption of ${lots} lots.`);
         const [requests, remainingLots] = await redeemer.requestRedemption(lots, executorAddress, executorFeeNatWei);
