@@ -31,7 +31,7 @@ program
         const options: { config: string; secrets: string, key: string } = program.opts();
 
         if (type !== "blockbook" && type !== "bitcore") {
-            console.error(`Type should be bitcore or blockbook`);
+            console.error(`Type should be 'bitcore' or 'blockbook'`);
             return;
         }
 
