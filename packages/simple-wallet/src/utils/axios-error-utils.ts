@@ -1,5 +1,5 @@
 import { logger } from "../utils/logger";
-import { DriverException, ValidationError } from "@mikro-orm/core";
+import { DriverException, UniqueConstraintViolationException, ValidationError } from "@mikro-orm/core";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { AxiosRequestConfig } from "axios";
 import { excludeNullFields } from "../utils/utils";
@@ -21,7 +21,7 @@ export async function tryWithClients<T>(clients: any, operation: (client: any) =
 }
 
 export function isORMError(e: any) {
-    return e instanceof ValidationError || e instanceof DriverException;
+    return e instanceof ValidationError || e instanceof DriverException || e instanceof UniqueConstraintViolationException;
 }
 
 export function errorMessage(e: any) {

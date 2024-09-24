@@ -373,7 +373,7 @@ export class AgentBotRedemption {
     /**
      * When redemption is in state PAID it requests payment proof - see requestPaymentProof().
      * @param redemption AgentRedemption entity
-     */
+     *///TODO - what if replacement is rejected ans original accepted
     async checkPaymentProofAvailable(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
         assertNotNull(redemption.txDbId);

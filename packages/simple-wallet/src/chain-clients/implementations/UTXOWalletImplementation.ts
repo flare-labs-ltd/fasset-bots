@@ -273,7 +273,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
             } else if (error instanceof LessThanDustAmountError) {
                 await failTransaction(this.rootEm, txEnt.id, error.message);
-            } else if (axios.isAxiosError(error)) {
+            } else if (axios.isAxiosError(error)) {//TODO
                 logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with:`, error.response?.data);
                 if (error.response?.data?.error?.indexOf("not found") >= 0) {
                     console.log("NOT FOUND")
@@ -410,6 +410,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             //     // txEnt.rbfReplacementFor = null;
             // });
             logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`);
+            //TODO is it has replacement -> cancel replacement
         }
     }
 
@@ -664,10 +665,18 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.transactionHash = "";
             });
             return TransactionStatus.TX_CREATED;
+        } else if (error.response?.data?.error?.indexOf("Transaction already in block chain") >= 0) {//TODO-should not happen!
+            logger.error(`Transaction ${txId} submission failed because of 'Transaction already in block chain'`);
+            await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
+                txEnt.status = TransactionStatus.TX_SUCCESS;
+                txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
+            });
+            return TransactionStatus.TX_SUCCESS;
         } else if (error.response?.data?.error?.indexOf("bad-txns-inputs-") >= 0) {
             const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
             // presumably original was accepted
             if (error.response?.data?.error?.indexOf("bad-txns-inputs-missingorspent") >= 0 && txEnt.rbfReplacementFor) {
+                logger.info(`Transaction ${txId} is rejected. Transaction ${txEnt.rbfReplacementFor.id} was accepted.`)
                 await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
                     txEnt.status = TransactionStatus.TX_SUCCESS;
                 });
@@ -685,6 +694,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.raw = "";
                 txEnt.transactionHash = "";
             });
+            logger.info(`Transaction ${txId} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`)
             return TransactionStatus.TX_FAILED;
         }
         return TransactionStatus.TX_PREPARED;

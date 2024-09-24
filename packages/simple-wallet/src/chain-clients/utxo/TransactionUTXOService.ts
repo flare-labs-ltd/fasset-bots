@@ -84,7 +84,9 @@ export class TransactionUTXOService implements IService {
                     transactionHash: utxo.mintTransactionHash,
                 });
                 utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(address, utxo.mintTransactionHash, utxo.position, this.chainType);
-                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async utxoEnt => { utxoEnt.script = utxo.script });
+                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
+                    utxoEnt.script = utxo.script
+                });
             }
         }
         return dbUTXOs;
