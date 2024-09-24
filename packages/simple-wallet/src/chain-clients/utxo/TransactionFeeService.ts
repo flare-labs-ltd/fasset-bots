@@ -1,14 +1,12 @@
 import { IService } from "../../interfaces/IService";
 import {
     BTC_DOGE_DEC_PLACES,
-    BTC_FEE_SECURITY_MARGIN,
     BTC_LOW_FEE_PER_KB,
     BTC_MAX_ALLOWED_FEE,
     BTC_MID_FEE_PER_KB,
     BTC_MIN_ALLOWED_FEE,
     ChainType,
     DEFAULT_FEE_INCREASE,
-    DOGE_FEE_SECURITY_MARGIN,
     DOGE_LOW_FEE_PER_KB,
     DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB,
     TEST_DOGE_LOW_FEE_PER_KB,
@@ -53,7 +51,7 @@ export class TransactionFeeService implements IService {
     }
 
     /**
-     * @returns default fee per byte
+     * @returns default fee per kilobyte
      */
     async getFeePerKB(): Promise<BN> {
         try {
@@ -61,10 +59,10 @@ export class TransactionFeeService implements IService {
             const feeStats = await feeService.getLatestFeeStats();
             if (feeStats.decilesFeePerKB.length == 11) {// In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
                 const fee = feeStats.decilesFeePerKB[this.feeDecileIndex];
-                return this.enforceMinimalAndMaximalFee(this.chainType, fee);
+                return this.enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
             } else if (feeStats.averageFeePerKB.gtn(0)) {
                 const fee = feeStats.averageFeePerKB;
-                return this.enforceMinimalAndMaximalFee(this.chainType, fee);
+                return this.enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
             }
             return await this.getCurrentFeeRate();
         } catch (error) {
@@ -89,7 +87,7 @@ export class TransactionFeeService implements IService {
 
     private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
         try {
-            const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks); //TODO - fix for doge
+            const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks);
             if (fee.toString() === "-1" || fee === 0) {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
@@ -97,7 +95,7 @@ export class TransactionFeeService implements IService {
             return this.enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
         } catch (e) {
             logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
-            return getDefaultFeePerKB(this.chainType).muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+            return getDefaultFeePerKB(this.chainType);
         }
     }
 
@@ -120,8 +118,7 @@ export class TransactionFeeService implements IService {
                     neededUTXOs.push(utxo);
                     sum = sum.add(toBN(utxo.value));
                     est_fee = await this.getEstimateFee(neededUTXOs.length, numOfOut);
-                    // multiply estimated fee by 1.4 to ensure enough funds TODO: is it enough?
-                    if (sum.gt(params.amount.add(est_fee).muln(DEFAULT_FEE_INCREASE))) {
+                    if (sum.gt(params.amount.add(est_fee))) {
                         break;
                     }
                 }
@@ -144,16 +141,6 @@ export class TransactionFeeService implements IService {
             feeToCover = feeToCover.add(txEnt.fee ?? new BN(0))
         }
         return feeToCover;
-    }
-
-    // Util for bitcore-lib serialization checks
-    hasTooHighOrLowFee(fee: BN, estFee: BN): boolean {
-        // https://github.com/bitpay/bitcore/blob/35b6f07bf33f79c0cd198a25c94ba63905b03a5f/packages/bitcore-lib/lib/transaction/transaction.js#L267
-        if (this.chainType == ChainType.BTC || this.chainType == ChainType.testBTC) {
-            return fee.lt(estFee.divn(BTC_FEE_SECURITY_MARGIN)) || fee.gt(estFee.muln(BTC_FEE_SECURITY_MARGIN));
-        } else {
-            return fee.lt(estFee.divn(DOGE_FEE_SECURITY_MARGIN)) || fee.gt(estFee.muln(DOGE_FEE_SECURITY_MARGIN));
-        }
     }
 
     enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {

@@ -521,18 +521,18 @@ describe("Dogecoin wallet tests", () => {
     });
 
 
-    it("Should replace transaction", async () => {
+    it("Should replace transaction", async () => {//TODO
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const stub = sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "hasTooHighOrLowFee");
-        stub.returns(false);
+        // const stub = sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "hasTooHighOrLowFee");
+        // stub.returns(false);
 
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, toBN("1000001"), toBN("100"), note, undefined);
         expect(id).to.be.gt(0);
 
         // Wait for TX to be written into db and then reset the logic for fees
         await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
-        stub.restore();
+        // stub.restore();
 
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
     });

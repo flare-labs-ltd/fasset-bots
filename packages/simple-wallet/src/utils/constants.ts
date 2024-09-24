@@ -113,11 +113,6 @@ export const UTXO_INPUT_SIZE_SEGWIT = 68.5;
 export const UTXO_OUTPUT_SIZE_SEGWIT = 31;
 export const UTXO_OVERHEAD_SIZE_SEGWIT = 10.5;
 
-// https://github.com/bitpay/bitcore/blob/35b6f07bf33f79c0cd198a25c94ba63905b03a5f/packages/bitcore-lib/lib/transaction/transaction.js#L71
-export const BTC_FEE_SECURITY_MARGIN = 150;
-// https://github.com/bitpay/bitcore/blob/35b6f07bf33f79c0cd198a25c94ba63905b03a5f/packages/bitcore-lib-doge/lib/transaction/transaction.js#L71
-export const DOGE_FEE_SECURITY_MARGIN = 15;
-
 // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
 export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.0001, BTC_DOGE_DEC_PLACES);
 // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87

@@ -465,15 +465,15 @@ describe("Bitcoin wallet tests", () => {
     it.skip("Should replace transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
-        const stub = sinon.stub(utxoUtils, "hasTooHighOrLowFee");
-        stub.returns(false);
+        // const stub = sinon.stub(utxoUtils, "hasTooHighOrLowFee");
+        // stub.returns(false);
 
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi.divn(5), feeInSatoshi.divn(10), note, undefined);
         expect(id).to.be.gt(0);
 
         // Wait for TX to be written into db and then reset the logic for fees
         await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
-        stub.restore();
+        // stub.restore();
 
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
     });

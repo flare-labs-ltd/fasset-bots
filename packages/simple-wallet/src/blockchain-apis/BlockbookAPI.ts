@@ -33,7 +33,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         };
     }
 
-    async getCurrentFeeRate(nextBlocks: number): Promise<number> {
+    async getCurrentFeeRate(): Promise<number> {
         const block = await this.getCurrentBlockHeight();
         const res = await this.client.get(`/feestats/${block.number}`);
         const BTC_PER_SATOSHI = 1 / 100000000;

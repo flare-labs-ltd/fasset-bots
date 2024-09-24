@@ -134,7 +134,7 @@ export class TransactionService implements IService {
 
         let utxos;
         const feePerKBOriginal = await ServiceRepository.get(this.chainType, TransactionFeeService).getFeePerKB();
-        const feePerKB = feePerKBOriginal.muln(this.transactionFeeService.feeIncrease ?? DEFAULT_FEE_INCREASE);
+        const feePerKB = feePerKBOriginal;
 
         if (isPayment && !feeInSatoshi) {
             txData.feePerKB = feePerKB;
