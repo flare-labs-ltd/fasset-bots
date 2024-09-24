@@ -14,7 +14,7 @@ import * as bitcore from "bitcore-lib";
 import dogecore from "bitcore-lib-doge";
 import { TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
-import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
+import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplementation";
 import { UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";

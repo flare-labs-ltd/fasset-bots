@@ -30,7 +30,7 @@ export async function createInitialTransactionEntity(
     executeUntilTimestamp?: BN,
     replacementFor?: TransactionEntity
 ): Promise<TransactionEntity> {
-    logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops}; replacing ${replacementFor?.id} (${replacementFor?.transactionHash}).`);
+    logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops};${replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ''}`);
     return await rootEm.transactional(async (em) => {
         const ent = em.create(
             TransactionEntity,
@@ -282,7 +282,7 @@ export async function getReplacedTransactionById(rootEm: EntityManager, dbId: nu
     return txEnt;
 }
 
-// get transaction info
+// get transaction info TODO
 export async function getTransactionInfoById(rootEm: EntityManager, dbId: number): Promise<TransactionInfo> {
     const txEntReplaced = await getReplacedTransactionById(rootEm, dbId);
     const txEntOriginal = await fetchTransactionEntityById(rootEm, dbId);
@@ -296,8 +296,14 @@ export async function getTransactionInfoById(rootEm: EntityManager, dbId: number
 
 
 //others
-export async function handleMissingPrivateKey(rootEm: EntityManager, txId: number): Promise<void> {
-    await failTransaction(rootEm, txId, `Cannot prepare transaction ${txId}. Missing private key.`);
+export async function handleMissingPrivateKey(rootEm: EntityManager, txId: number, failedInFunction: string): Promise<void> {
+    await failTransaction(rootEm, txId, `${failedInFunction}: Cannot prepare transaction ${txId}. Missing private key.`);
+}
+
+export async function handleNoTimeToSubmitLeft(rootEm: EntityManager, txId: number, currentLedger: number, executionBlockOffset: number, failedInFunction: string, executeUntilBlock?: number, executeUntilTimestamp?: string): Promise<void> {
+    const currentTimestamp = toBN(getCurrentTimestampInSeconds());
+    await failTransaction(rootEm, txId,`${failedInFunction}: Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentLedger}, executeUntilBlock: ${executeUntilBlock}, offset ${executionBlockOffset}.
+              Current timestamp ${currentTimestamp} >= execute until timestamp ${executeUntilTimestamp}.`);
 }
 
 export async function failTransaction(rootEm: EntityManager, txId: number, reason: string, error?: Error): Promise<void> {
