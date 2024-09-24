@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { bytesToHex, getCurrentNetwork, isValidBytes32Hex, isValidHexString, prefix0x, requireEnv, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
+import { bytesToHex, getCurrentNetwork, isValidHexString, prefix0x, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 import { ChainType } from "../../src/utils/constants";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
@@ -16,14 +16,6 @@ const BTCMccConnectionTestInitial = {
 const invalidChainType = "0x494e56414c494400000000000000000000000000000000000000000000000000" as ChainType;
 
 describe("Util tests", () => {
-   it("Should fail if env variable not defined", async () => {
-      const envVariable = "I_AM_NOT_DEFINED";
-      const fn = () => {
-         return requireEnv(envVariable);
-      };
-      expect(fn).to.throw(`Environment value ${envVariable} not defined`);
-   });
-
    it("Should fail if unsupported network", async () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
@@ -79,10 +71,6 @@ describe("Util tests", () => {
    it("Should validate 32Hex and hex", async function () {
       const valid = "0x10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
       const invalid = "0x10000000000000000000000000000000000000000beefbeaddeafdeaddeedcaZ";
-      const isValid1 = isValidBytes32Hex(valid);
-      expect(isValid1).to.be.true;
-      const isValid2 = isValidBytes32Hex(invalid);
-      expect(isValid2).to.be.false;
       const isValid3 = isValidHexString(valid);
       expect(isValid3).to.be.true;
       const isValid4 = isValidHexString(invalid);
@@ -113,5 +101,4 @@ describe("Util tests", () => {
       };
       expect(fn2).to.throw(Error);
    });
-
 });

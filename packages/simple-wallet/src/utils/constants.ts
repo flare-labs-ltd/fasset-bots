@@ -124,15 +124,6 @@ export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES
 export const BTC_MIN_ALLOWED_FEE = toBN(10000); //10000 sats/kb
 export const BTC_MAX_ALLOWED_FEE = toBN(2000000); //2000000 sats/kb
 
-
-// UTXO default fee per kb
-// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
-// https://github.com/dogecoin/dogecoin/blob/0b46a40ed125d7bf4b5a485b91350bc8bdc48fc8/doc/man/dogecoin-qt.1
-export const DOGE_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
-// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib-ltc/lib/transaction/transaction.js#L81
-// https://github.com/bitpay/bitcore/blob/f607651fdd6a6d6e76ebec271ff68885cd0f7ac1/packages/bitcore-lib/lib/transaction/transaction.js#L80
-export const BTC_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);
-
 // Derived from https://test.jochen-hoenicke.de/queue/ and https://mempool.space
 export const BTC_LOW_FEE_PER_KB = toBN(10 * 1000); // 10 sat/vB
 export const BTC_MID_FEE_PER_KB = toBN(60 * 1000); // 60 sat/vB
@@ -145,7 +136,6 @@ export const DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);  // 0,5 DOGE/kB
 
 export const TEST_DOGE_LOW_FEE_PER_KB = toBN(5000 * 1000);
 export const TEST_DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);
-
 
 //////////////////////
 export const DROPS_PER_XRP = 1000000.0;

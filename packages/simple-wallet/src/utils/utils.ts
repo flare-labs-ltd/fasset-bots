@@ -13,7 +13,6 @@ import { toBN } from "./bnutils";
 import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
-import crypto from "crypto";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -30,14 +29,6 @@ export function getRandomInt(min: number, max: number): number {
    return Math.floor(Math.random() * (max - min)) + min;
 }
 
-export function uint8ArrToString(a: Uint8Array): string {
-   return Buffer.from(a).toString("base64");
-}
-
-export function stringToUint8Arr(data: string): Uint8Array {
-   return new Uint8Array(Buffer.from(data, "base64"));
-}
-
 export function unPrefix0x(tx: string) {
    return tx.startsWith("0x") ? tx.slice(2) : tx;
 }
@@ -46,18 +37,8 @@ export function prefix0x(tx: string) {
    return tx.startsWith("0x") ? tx : "0x" + tx;
 }
 
-export function isValidBytes32Hex(address: string) {
-   return /^(0x|0X)?[0-9a-fA-F]{64}$/i.test(address);
-}
-
 export function isValidHexString(maybeHexString: string) {
    return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
-}
-
-export function requireEnv(name: string) {
-   const value = process.env[name];
-   if (value != null) return value;
-   throw new Error(`Environment value ${name} not defined`);
 }
 
 export function excludeNullFields<T>(dict: Record<string, T>): Record<string, NonNullable<T>> {
