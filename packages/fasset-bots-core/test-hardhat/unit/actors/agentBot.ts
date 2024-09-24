@@ -97,6 +97,15 @@ describe("Agent bot unit tests", () => {
         const [events, lastBlock] = await agentBot.eventReader.readNewEvents(orm.em, 10);
         expect(events.length).to.eq(0);
     });
+    
+    it("Should report outdated agents", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const latest = await time.latestBlock();
+        const lastReport = agentBot.transientStorage.lastOutdatedEventReported;
+        await agentBot.eventReader.reportOutdatedAgent(parseInt(latest.toString()) - 10, parseInt(latest.toString()), 3, 3)
+        const newReport = agentBot.transientStorage.lastOutdatedEventReported;
+        expect(newReport).to.be.gt(lastReport);
+    });
 
     it("Should top up collateral", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
