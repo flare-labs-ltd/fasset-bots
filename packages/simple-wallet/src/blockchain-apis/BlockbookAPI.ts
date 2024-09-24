@@ -5,7 +5,6 @@ import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
 import { getConfirmedAfter, getDateTimestampInSeconds } from "../utils/utils";
-import { logger } from "../utils/logger";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -77,5 +76,4 @@ export class BlockbookAPI implements IBlockchainAPI {
     async sendTransaction(tx: string): Promise<AxiosResponse> {
         return await this.client.get(`/sendtx/${tx}`);
     }
-
 }

@@ -14,7 +14,7 @@ import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { TransactionOutputEntity } from "../../entity/transactionOutput";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/BlockchainAPIWrapper";
+import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";

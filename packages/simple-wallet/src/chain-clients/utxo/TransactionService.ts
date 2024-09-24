@@ -9,6 +9,7 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { EntityManager } from "@mikro-orm/core";
 import {
     ChainType,
+    DEFAULT_FEE_INCREASE,
     UTXO_OUTPUT_SIZE, UTXO_OUTPUT_SIZE_SEGWIT,
 } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
@@ -132,22 +133,20 @@ export class TransactionService implements IService {
         } as TransactionData;
 
         let utxos;
-        let feePerKB;
+        const feePerKBOriginal = await ServiceRepository.get(this.chainType, TransactionFeeService).getFeePerKB();
+        const feePerKB = feePerKBOriginal.muln(this.transactionFeeService.feeIncrease ?? DEFAULT_FEE_INCREASE);
 
         if (isPayment && !feeInSatoshi) {
-            feePerKB = await ServiceRepository.get(this.chainType, TransactionFeeService).getFeePerKB();
             txData.feePerKB = feePerKB;
         }
 
         if (amountInSatoshi == null) {
             utxos = await ServiceRepository.get(this.chainType, TransactionUTXOService).getAllUTXOs(source);
-
-            feePerKB = await ServiceRepository.get(this.chainType, TransactionFeeService).getFeePerKB();
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
             feeInSatoshi = toBN(this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note).getFee())
                 .sub(feePerKB.muln(this.getOutputSize()).divn(1000));
-
-            amountInSatoshi = (await getAccountBalance(this.chainType, source)).sub(feeInSatoshi);
+            const balance = await getAccountBalance(this.chainType, source);
+            amountInSatoshi = balance.sub(feeInSatoshi);
         } else {
             utxos = await ServiceRepository.get(this.chainType, TransactionUTXOService).fetchUTXOs(txData, txForReplacement);
         }
@@ -180,9 +179,9 @@ export class TransactionService implements IService {
             if (txForReplacement && feeInSatoshi) {
                 const feeToCover: BN = feeInSatoshi;
                 if (txForReplacement.size && txForReplacement.fee) {
-                    const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000));
+                    const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease ?? DEFAULT_FEE_INCREASE);
                     if (feeRatePerKB.lt(minRequiredFeePerKb)) {
-                        feeRatePerKB = minRequiredFeePerKb.muln(1.4);
+                        feeRatePerKB = minRequiredFeePerKb;
                     }
                     const estimateFee = await this.transactionFeeService.getEstimateFee(utxos.length, 3, feeRatePerKB);
                     const newTxFee: BN = feeToCover.add(estimateFee);

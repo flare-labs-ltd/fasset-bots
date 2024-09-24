@@ -36,7 +36,7 @@ import { TransactionService } from "../../src/chain-clients/utxo/TransactionServ
 import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { BlockchainFeeService } from "../../src/fee-service/service";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/BlockchainAPIWrapper";
+import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 
@@ -107,7 +107,7 @@ describe("Bitcoin wallet tests", () => {
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             // feeServiceConfig: feeServiceConfig,
-            enoughConfirmations: 1
+            enoughConfirmations: 2
         };
         wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
 
@@ -294,7 +294,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it("If getCurrentFeeRate is down the fee should be the default one", async () => {//TODO
+    it("If getCurrentFeeRate is down the fee should be the default one", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         wClient.feeService = undefined;
@@ -479,16 +479,25 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should replace transaction by fee", async () => {
+        const fee = toBN(1236);
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, fee, "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca0");
         expect(id).to.be.gt(0);
+        await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, fee, "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca1");
+        await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, fee, "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca2");
+        await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, fee, "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca3");
+        await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, fee, "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca4");
+        await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, fee, "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca5");
+        // await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi.divn(22), "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca6");
+        // await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi.divn(22), "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca7");
+        // await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi.divn(22), "10000000000000000000000000000000000000000beefbeaddeafdeaddeedca8");
 
         await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
 
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it.skip("Monitoring into infinity", async () => {
+    it.only("Monitoring into infinity", async () => {
         while (true) {
             await sleepMs(2000);
         }

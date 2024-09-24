@@ -17,7 +17,7 @@ import { EntityManager } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/BlockchainAPIWrapper";
+import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { errorMessage } from "../../utils/axios-error-utils";
 
 /*

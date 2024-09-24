@@ -3,7 +3,7 @@ import { ServiceRepository } from "../../src/ServiceRepository";
 import { ChainType } from "../../src/utils/constants";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/BlockchainAPIWrapper";
+import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { createTransactionEntity, MockBlockchainAPI } from "./utils";
 import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";

@@ -22,7 +22,7 @@ import {
 } from "../../utils/constants";
 import BN from "bn.js";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/BlockchainAPIWrapper";
+import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
 import { getDefaultFeePerKB } from "../../utils/utils";
@@ -60,10 +60,10 @@ export class TransactionFeeService implements IService {
             const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
             const feeStats = await feeService.getLatestFeeStats();
             if (feeStats.decilesFeePerKB.length == 11) {// In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
-                const fee = feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+                const fee = feeStats.decilesFeePerKB[this.feeDecileIndex];
                 return this.enforceMinimalAndMaximalFee(this.chainType, fee);
             } else if (feeStats.averageFeePerKB.gtn(0)) {
-                const fee = feeStats.averageFeePerKB.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+                const fee = feeStats.averageFeePerKB;
                 return this.enforceMinimalAndMaximalFee(this.chainType, fee);
             }
             return await this.getCurrentFeeRate();

@@ -3,7 +3,7 @@ import { ChainType } from "../../src/utils/constants";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
 import { IService } from "../../src/interfaces/IService";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/BlockchainAPIWrapper";
+import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { BlockData, MempoolUTXO, MempoolUTXOMWithoutScript } from "../../src/interfaces/IBlockchainAPI";
 

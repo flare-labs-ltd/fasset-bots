@@ -68,5 +68,4 @@ export class BitcoreAPI implements IBlockchainAPI {
     async sendTransaction(tx: string): Promise<AxiosResponse> {
         return this.client.post(`/tx/send`, { rawTx: tx });
     }
-
 }
