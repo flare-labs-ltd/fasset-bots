@@ -56,7 +56,7 @@ export class XRPBlockchainAPI {
     private createAxiosInstance(chainType: ChainType, createConfig: BaseWalletConfig) {
         return axiosRateLimit(
             axios.create(
-                createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey, createConfig.username, createConfig.password)), {
+                createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey)), {
                 ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
                 ...createConfig.rateLimitOptions,
             });

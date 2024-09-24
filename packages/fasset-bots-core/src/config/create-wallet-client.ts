@@ -50,8 +50,6 @@ export async function createWalletClient(
         }
         return await WALLET.BTC.initialize({
             url: walletUrl,
-            username: "",
-            password: "",
             inTestnet: chainId === ChainId.testBTC,
             apiTokenKey: secrets.optional("apiKey.btc_rpc"),
             stuckTransactionOptions: options,
@@ -72,8 +70,6 @@ export async function createWalletClient(
         }
         return await WALLET.DOGE.initialize({
             url: walletUrl,
-            username: "",
-            password: "",
             inTestnet: chainId === ChainId.testDOGE,
             apiTokenKey: secrets.optional("apiKey.doge_rpc"),
             stuckTransactionOptions: options,
@@ -91,8 +87,6 @@ export async function createWalletClient(
     } else {
         return await WALLET.XRP.initialize({
             url: walletUrl,
-            username: "",
-            password: "",
             apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
             inTestnet: chainId === ChainId.testXRP,
             stuckTransactionOptions: options,

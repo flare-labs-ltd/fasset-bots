@@ -20,7 +20,7 @@ program
     .description("generate new secrets file")
     .option("-c, --config <configFile>", "Config file path. If omitted, env var FASSET_BOT_CONFIG or FASSET_USER_CONFIG is used. If this is undefined, use embedded config.")
     .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
-    .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
+    .option("--overwrite", "if enabled, the output file can be overwritten; otherwise it is an error if it already exists")
     .option("--user", "generate secrets for user")
     .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management (cold) address")
     .option("--other", "generate secrets for other bots (challenger, etc.)")

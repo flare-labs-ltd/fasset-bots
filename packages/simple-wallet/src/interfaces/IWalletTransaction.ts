@@ -94,12 +94,11 @@ export interface StuckTransaction {
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
 export type WalletApiType = "bitcore" | "blockbook";
+
 export interface WalletApi {
    type: WalletApiType;
    url: string;
    apiTokenKey?: string;
-   username?: string; // probably never used
-   password?: string; // probably never used
 }
 
 export interface BaseWalletConfig {
@@ -107,8 +106,6 @@ export interface BaseWalletConfig {
    api?: WalletApiType;
    inTestnet?: boolean;
    apiTokenKey?: string;
-   username?: string; // probably never used
-   password?: string; // probably never used
    rateLimitOptions?: RateLimitOptions;
    stuckTransactionOptions?: StuckTransaction;
    enoughConfirmations?: number,
