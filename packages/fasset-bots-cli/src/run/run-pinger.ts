@@ -35,7 +35,7 @@ program.action(async (pingSleep: number) => {
         const agents = await infoBot.getAllAgents();
         for (const agent of agents) {
             console.log(`Pinging agent vault ${agent}...`);
-            await fassetConfig.assetManager.endLiquidation(agent, { from: pingerAddress });
+            await fassetConfig.assetManager.agentPing(agent, 0, { from: pingerAddress });
             console.log(`Pinged agent vault ${agent}`);
         }
         await sleep(pingSleep);
