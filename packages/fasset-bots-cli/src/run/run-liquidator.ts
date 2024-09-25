@@ -30,7 +30,6 @@ program.action(async () => {
     const config = await createBotConfig("common", secrets, runConfig, liquidatorAddress);
     logger.info(`Asset manager controller is ${config.contractRetriever.assetManagerController.address}.`);
     const fassetList = extractFAssetListFromBotConfig(config, options.fasset);
-    console.log(fassetList.length, fassetList, options.fasset);
     const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, liquidatorAddress, ActorBaseKind.LIQUIDATOR, chainConfig)
     ));
