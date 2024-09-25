@@ -5,6 +5,7 @@ import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
 import { getConfirmedAfter, getDateTimestampInSeconds } from "../utils/utils";
+import { toBN, toNumber } from "../utils/bnutils";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -22,7 +23,14 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getAccountBalance(account: string): Promise<number | undefined> {
         const res = await this.client.get(`/address/${account}`);
-        return res.data?.balance;
+        const totalBalance = res.data?.balance;
+        const unconfirmedBalance = res.data?.unconfirmedBalance;
+        if (!!totalBalance && !!unconfirmedBalance) {
+            const totBalance = toBN(totalBalance);
+            const uncBalance = toBN(unconfirmedBalance);
+            return toNumber(totBalance.add(uncBalance));
+        }
+        return undefined;
     }
 
     async getCurrentBlockHeight(): Promise<BlockData> {
