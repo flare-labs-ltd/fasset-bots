@@ -9,8 +9,6 @@ describe("Bitcoin network helper tests", () => {
    it("Should switch to mainnet", async () => {
       const BTCMccConnectionMainInitial = {
          url: process.env.BTC_URL ?? "",
-         username: "",
-         password: "",
          rateLimitOptions: {
             timeoutMs: 15000,
          },
@@ -26,8 +24,6 @@ describe("Bitcoin network helper tests", () => {
    it("Should switch to testnet", async () => {
       const BTCMccConnectionTestInitial = {
          url: process.env.BTC_URL ?? "",
-         username: "",
-         password: "",
          inTestnet: true,
 
       };
@@ -39,18 +35,4 @@ describe("Bitcoin network helper tests", () => {
       expect(currentNetwork).to.eql(BTC_TESTNET);
    });
 
-   it("Should create config with username and password to testnet", async () => {
-      const BTCMccConnectionTestInitial = {
-         url: process.env.BTC_URL ?? "",
-         username: "username",
-         password: "password",
-         inTestnet: true,
-
-      };
-      const testOrm = await initializeTestMikroORM();
-      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-      const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = await WALLET.BTC.initialize({...BTCMccConnectionTest, api: "blockbook"});
-      expect(wClient.blockchainAPI.client.defaults.auth).to.not.be.undefined;
-   });
 });
