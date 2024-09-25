@@ -14,6 +14,7 @@ import Output = Transaction.Output;
 import { TransactionInputEntity } from "../entity/transactionInput";
 import { getCurrentTimestampInSeconds } from "../utils/utils";
 import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
+import { errorMessage } from "../utils/axios-error-utils";
 
 
 // transaction operations
@@ -162,13 +163,24 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, t
 export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Promise<UTXOEntity[]> {
     return await rootEm.transactional(async (em) => {
         const txEnt = await em.findOne(TransactionEntity, { id: txId });
-        const inputs: any[] = JSON.parse(txEnt?.raw!).inputs;
-        return await rootEm.find(UTXOEntity, {
+        if (!txEnt || !txEnt.raw) {
+            logger.error(`Transaction entity or raw data not found for transaction ${txId}`);
+            return [];
+        }
+        let inputs: any[] = [];
+        try {
+            inputs = JSON.parse(txEnt.raw).inputs;
+        } catch (error) {
+            logger.error(`Failed to parse transaction raw data for transaction ${txId}: ${errorMessage(error)}`);
+            return [];
+        }
+        const utxos = await rootEm.find(UTXOEntity, {
             $or: inputs.map(input => ({
                 mint_transaction_hash: input.prevTxId,
                 position: input.outputIndex,
             })),
         });
+        return utxos;
     });
 }
 
@@ -301,12 +313,28 @@ export async function fetchMonitoringState(rootEm: EntityManager, chainType: str
     return await rootEm.findOne(MonitoringStateEntity, { chainType } as FilterQuery<MonitoringStateEntity>, { refresh: true });
 }
 
-
 export async function updateMonitoringState(rootEm: EntityManager, chainType: string, modify: (stateEnt: MonitoringStateEntity) => Promise<void>): Promise<void> {
     await rootEm.transactional(async (em) => {
         const stateEnt = await fetchMonitoringState(rootEm, chainType);
         if (!stateEnt) return;
         await modify(stateEnt);
         await em.persistAndFlush(stateEnt);
+    });
+}
+
+export async function handleFeeToLow(rootEm: EntityManager, txEnt: TransactionEntity): Promise<void> {
+    let newFee: BN | undefined = undefined;
+    if (txEnt.replaced_by) {
+        newFee = txEnt.fee; //if tx was RBF, field fee holds needed fee to cover
+    }
+
+    await updateTransactionEntity(rootEm, txEnt.id, async (txEnt) => {
+        txEnt.status = TransactionStatus.TX_CREATED;
+        txEnt.utxos.removeAll();
+        txEnt.inputs.removeAll();
+        txEnt.outputs.removeAll();
+        txEnt.raw = "";
+        txEnt.transactionHash = "";
+        txEnt.fee = newFee;
     });
 }

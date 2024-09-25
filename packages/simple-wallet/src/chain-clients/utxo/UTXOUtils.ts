@@ -77,7 +77,6 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
 }
 
 export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
-    // TODO If this proves to be to slow MySQL has CTE for recursive queries ...
     const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
     const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
     let sub: any[] = descendants;
@@ -119,4 +118,9 @@ export function getOutputSize(chainType: ChainType) {
     } else {
         return UTXO_OUTPUT_SIZE_SEGWIT;
     }
+}
+
+export function isEnoughUTXOs(utxos: UTXOEntity[], amount: BN, fee?: BN): boolean {
+    const disposableAmount = utxos.reduce((acc: BN, utxo: UTXOEntity) => acc.add(utxo.value), new BN(0));
+    return disposableAmount.sub(fee ?? new BN(0)).sub(amount).gten(0);
 }

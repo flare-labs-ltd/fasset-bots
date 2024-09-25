@@ -13,6 +13,7 @@ import {
     failTransaction,
     fetchTransactionEntityById,
     getTransactionInfoById,
+    handleFeeToLow,
     handleMissingPrivateKey,
     updateTransactionEntity,
 } from "../../db/dbutils";
@@ -274,7 +275,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else if (error instanceof LessThanDustAmountError) {
                 await failTransaction(this.rootEm, txEnt.id, error.message);
             } else if (axios.isAxiosError(error)) {//TODO
-                logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with:`, error.response?.data);
+                logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);
                 if (error.response?.data?.error?.indexOf("not found") >= 0) {
                     console.log("NOT FOUND")
                     let utxosToBeChecked;
@@ -623,47 +624,19 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             return TransactionStatus.TX_PENDING;
         } else if (error.response?.data?.error?.indexOf("insufficient fee") >= 0) {
             logger.error(`Transaction ${txId} submission failed because of 'insufficient fee'`);
-            await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                txEnt.status = TransactionStatus.TX_CREATED;
-                txEnt.utxos.removeAll();
-                txEnt.inputs.removeAll();
-                txEnt.outputs.removeAll();
-                txEnt.raw = "";
-                txEnt.transactionHash = "";
-            });
+            await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
         } else if (error.response?.data?.error?.indexOf("mempool min fee not met") >= 0) {
             logger.error(`Transaction ${txId} submission failed because of 'mempool min fee not met'`);
-            await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                txEnt.status = TransactionStatus.TX_CREATED;
-                txEnt.utxos.removeAll();
-                txEnt.inputs.removeAll();
-                txEnt.outputs.removeAll();
-                txEnt.raw = "";
-                txEnt.transactionHash = "";
-            });
+            await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
         } else if (error.response?.data?.error?.indexOf("min relay fee not met") >= 0) {
             logger.error(`Transaction ${txId} submission failed because of 'min relay fee not met'`);
-            await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                txEnt.status = TransactionStatus.TX_CREATED;
-                txEnt.utxos.removeAll();
-                txEnt.inputs.removeAll();
-                txEnt.outputs.removeAll();
-                txEnt.raw = "";
-                txEnt.transactionHash = "";
-            });
+            await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
         } else if (error.response?.data?.error?.indexOf("Fee exceeds maximum configured by user") >= 0) {
             logger.error(`Transaction ${txId} submission failed because of 'Fee exceeds maximum configured by user'`);
-            await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                txEnt.status = TransactionStatus.TX_CREATED;
-                txEnt.utxos.removeAll();
-                txEnt.inputs.removeAll();
-                txEnt.outputs.removeAll();
-                txEnt.raw = "";
-                txEnt.transactionHash = "";
-            });
+            await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
         } else if (error.response?.data?.error?.indexOf("Transaction already in block chain") >= 0) {//TODO-should not happen!
             logger.error(`Transaction ${txId} submission failed because of 'Transaction already in block chain'`);
@@ -701,6 +674,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     checkIfTransactionWasFetchedFromAPI(txEnt: TransactionEntity) {
-        return txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION") || txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION");
+        return txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_SOURCE") || txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION");
     }
 }

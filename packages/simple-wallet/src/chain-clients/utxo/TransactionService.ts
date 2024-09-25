@@ -167,8 +167,6 @@ export class TransactionService implements IService {
 
         const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, isPayment, note);
 
-        // TODO If change is very small (slightly above dust amount) we just add it as fee (one output is 31vBytes + we need to use it as output next time that is 68vBytes)
-        // Determine how much above dust amount do we consider - It would make sense up to average 100vBytes * 5sat/vByte? - and we do it only when current fee status is MID/HIGH
         if (feeInSatoshi && !txForReplacement) {
             tr.fee(toNumber(feeInSatoshi));
         }

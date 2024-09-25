@@ -23,6 +23,7 @@ import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
 import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
 import { TransactionService } from "./TransactionService";
+import { isEnoughUTXOs } from "./UTXOUtils";
 
 export interface TransactionData {
     source: string,
@@ -120,20 +121,21 @@ export class TransactionUTXOService implements IService {
         return [];
     }
 
-    private async selectUTXOs(allUTXOS: UTXOEntity[], txForReplacement: TransactionEntity | undefined, txData: TransactionData, fetchedMempool: boolean = false, feeStatus: FeeStatus) {
+    // allUTXOs = currently available UTXOs (either from db or db + fetch from mempool)
+    private async selectUTXOs(allUTXOs: UTXOEntity[], txForReplacement: TransactionEntity | undefined, txData: TransactionData, fetchedMempool: boolean = false, feeStatus: FeeStatus) {
         const rbfUTXOs = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
 
-        if (!this.isEnoughUTXOs(rbfUTXOs.concat(allUTXOS), txData.amount, txData.fee)) {
-            return null;
+        if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
+            return null; //try to refetch new UTXOs from mempool
         }
 
-        const notMinimalUTXOs = allUTXOS.filter(utxo => utxo.value.gte(this.minimumUTXOValue));
+        const notMinimalUTXOs = allUTXOs.filter(utxo => utxo.value.gte(this.minimumUTXOValue));
         let utxos: UTXOEntity[] = notMinimalUTXOs;
 
         let usingMinimalUTXOs = false; // If we're using the UTXOs which are < this.minimumUTXOValue
-        if (!this.isEnoughUTXOs(rbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
+        if (!isEnoughUTXOs(rbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
             if (fetchedMempool) {
-                utxos = allUTXOS;
+                utxos = allUTXOs;
                 usingMinimalUTXOs = true;
             } else {
                 // refetch from mempool
@@ -147,21 +149,20 @@ export class TransactionUTXOService implements IService {
         if (feeStatus == FeeStatus.HIGH) {
             // order by value, confirmed
             utxos.sort((a, b) => a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed));
-            res = await this.collectUTXOs(utxos, rbfUTXOs, txData, this.minimumUTXOValue);
+            res = await this.collectUTXOs(utxos, rbfUTXOs, txData);
         } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
             // check if we can build tx with utxos with utxo.value < amountToSend
             const smallUTXOs = utxos.filter(utxo => utxo.value.lte(txData.amount));
-            if (this.isEnoughUTXOs(smallUTXOs, txData.amount, txData.fee)) {
-                res = await this.collectUTXOs(smallUTXOs, rbfUTXOs, txData, this.minimumUTXOValue);
+            if (isEnoughUTXOs(smallUTXOs, txData.amount, txData.fee)) {
+                res = await this.collectUTXOs(smallUTXOs, rbfUTXOs, txData);
             }
-
             if (!res) {
-                res = await this.collectUTXOs(utxos, rbfUTXOs, txData, this.minimumUTXOValue);
+                res = await this.collectUTXOs(utxos, rbfUTXOs, txData);
             }
         }
 
         if (res && !usingMinimalUTXOs && feeStatus == FeeStatus.LOW && res.length < this.maximumNumberOfUTXOs) {
-            const minimalUTXOs = allUTXOS.filter(utxo => utxo.value.lt(this.minimumUTXOValue));
+            const minimalUTXOs = allUTXOs.filter(utxo => utxo.value.lt(this.minimumUTXOValue));
             for (let i = 0; i < this.maximumNumberOfUTXOs - res.length && i < minimalUTXOs.length; i++) {
                 res.push(minimalUTXOs[i]);
             }
@@ -170,7 +171,8 @@ export class TransactionUTXOService implements IService {
         return res;
     }
 
-    private async collectUTXOs(utxos: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData, minimumUTXOValue: BN) {
+    private async collectUTXOs(utxos: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData) {
+        const minimumUTXOValue: BN = this.minimumUTXOValue;
         const baseUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
         const additionalUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= minimalUTXOSize output
 
@@ -180,7 +182,6 @@ export class TransactionUTXOService implements IService {
         }
 
         let positiveValueReached = rbfUTXOsValue.gten(0) && rbfUTXOs.length > 0;
-
         const utxoSet = new Set(utxos);
 
         while (utxoSet.size > 0) {
@@ -189,16 +190,14 @@ export class TransactionUTXOService implements IService {
                 if (numAncestors >= this.mempoolChainLengthLimit) {
                     logger.info(`Number of UTXO mempool ancestors ${numAncestors} is greater than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
                     utxoSet.delete(utxo);
+                    continue; //skip this utxo
                 }
 
                 if (Math.random() > 0.5) {
-                    if (positiveValueReached) {
-                        additionalUTXOs.push(utxo);
-                    } else {
+                    if (!positiveValueReached) {
                         baseUTXOs.push(utxo);
-                        additionalUTXOs.push(utxo);
                     }
-
+                    additionalUTXOs.push(utxo);
                     utxoSet.delete(utxo);
 
                     if (!positiveValueReached && this.calculateTransactionValue(txData, baseUTXOs).gten(0)) {
@@ -237,11 +236,6 @@ export class TransactionUTXOService implements IService {
             }
             return ancestors;
         }
-    }
-
-    private isEnoughUTXOs(utxos: UTXOEntity[], amount: BN, fee?: BN): boolean {
-        const disposableAmount = utxos.reduce((acc: BN, utxo: UTXOEntity) => acc.add(utxo.value), new BN(0));
-        return disposableAmount.sub(fee ?? new BN(0)).sub(amount).gten(0);
     }
 
     private calculateTransactionValue(txData: TransactionData, utxos: UTXOEntity[]) {

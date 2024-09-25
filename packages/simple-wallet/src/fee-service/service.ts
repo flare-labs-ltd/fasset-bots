@@ -62,7 +62,6 @@ export class BlockchainFeeService implements IService {
             const feeStats = await this.getFeeStatsFromIndexer(blockHeight);
             const blockTime = await this.getBlockTime(blockHeight);
             if (feeStats.decilesFeePerKB.length == 11 && feeStats.averageFeePerKB.gtn(0) && blockTime > 0) {
-                logger.info("Updating fee history");
                 this.history[this.currentHistoryIndex % this.numberOfBlocksInHistory] = {
                     blockHeight: blockHeight,
                     blockTime: blockTime,
