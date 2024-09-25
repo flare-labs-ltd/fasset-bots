@@ -49,10 +49,6 @@ export class XRPBlockchainAPI {
         }), "getServerInfo");
     }
 
-    getClient() {
-        return this.clients[Object.keys(this.clients)[0]];
-    }
-
     private createAxiosInstance(chainType: ChainType, createConfig: BaseWalletConfig) {
         return axiosRateLimit(
             axios.create(

@@ -4,8 +4,9 @@ import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
-import { getConfirmedAfter, getDateTimestampInSeconds } from "../utils/utils";
+import { getDateTimestampInSeconds } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
+import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -61,7 +62,7 @@ export class BlockbookAPI implements IBlockchainAPI {
                 mintIndex: utxo.vout,
                 value: utxo.value,
                 script: "",
-                confirmed: utxo.confirmations > getConfirmedAfter(chainType),
+                confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
             };
         }));
     }

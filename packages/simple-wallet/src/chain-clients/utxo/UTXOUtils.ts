@@ -1,12 +1,18 @@
 import { logger } from "../../utils/logger";
 import {
+    BTC_DEFAULT_FEE_PER_KB,
     BTC_DUST_AMOUNT,
     BTC_LEDGER_CLOSE_TIME_MS,
+    BTC_MAINNET,
     BTC_MIN_ALLOWED_AMOUNT_TO_SEND,
+    BTC_TESTNET,
     ChainType,
+    DOGE_DEFAULT_FEE_PER_KB,
     DOGE_DUST_AMOUNT,
     DOGE_LEDGER_CLOSE_TIME_MS,
+    DOGE_MAINNET,
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
+    DOGE_TESTNET,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
 } from "../../utils/constants";
@@ -41,7 +47,6 @@ export function getMinAmountToSend(chainType: ChainType): BN {
         return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
     }
 }
-
 
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
     try {
@@ -99,7 +104,7 @@ export async function getAccountBalance(chainType: ChainType, account: string, o
         if (!otherAddresses) {
             return mainAccountBalance;
         } else {
-            const balancePromises = otherAddresses.map(address => blockchainAPIWrapper.getAccountBalance(address));
+            const balancePromises = otherAddresses.map((address) => blockchainAPIWrapper.getAccountBalance(address));
             const balanceResponses = await Promise.all(balancePromises);
             const totalAddressesBalance = balanceResponses.reduce((sum, balance) => {
                 return balance !== undefined ? sum! + balance : balance;
@@ -122,5 +127,50 @@ export function getOutputSize(chainType: ChainType) {
 
 export function isEnoughUTXOs(utxos: UTXOEntity[], amount: BN, fee?: BN): boolean {
     const disposableAmount = utxos.reduce((acc: BN, utxo: UTXOEntity) => acc.add(utxo.value), new BN(0));
-    return disposableAmount.sub(fee ?? new BN(0)).sub(amount).gten(0);
+    return disposableAmount
+        .sub(fee ?? new BN(0))
+        .sub(amount)
+        .gten(0);
+}
+
+export function getCurrentNetwork(chainType: ChainType) {
+    switch (chainType) {
+        case ChainType.BTC:
+            return BTC_MAINNET;
+        case ChainType.testBTC:
+            return BTC_TESTNET;
+        case ChainType.DOGE:
+            return DOGE_MAINNET;
+        case ChainType.testDOGE:
+            return DOGE_TESTNET;
+        default:
+            throw new Error(`Unsupported chain type ${chainType}`);
+    }
+}
+
+// as in attestaion
+export function getConfirmedAfter(chainType: ChainType): number {
+    switch (chainType) {
+        case ChainType.BTC:
+        case ChainType.testBTC:
+            return 6;
+        case ChainType.DOGE:
+        case ChainType.testDOGE:
+            return 60;
+        default:
+            throw new Error(`Unsupported chain type ${chainType}`);
+    }
+}
+
+export function getDefaultFeePerKB(chainType: ChainType): BN {
+    switch (chainType) {
+        case ChainType.BTC:
+        case ChainType.testBTC:
+            return toBN(BTC_DEFAULT_FEE_PER_KB); // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+        case ChainType.DOGE:
+        case ChainType.testDOGE:
+            return toBN(DOGE_DEFAULT_FEE_PER_KB); // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+        default:
+            throw new Error(`Unsupported chain type ${chainType}`);
+    }
 }

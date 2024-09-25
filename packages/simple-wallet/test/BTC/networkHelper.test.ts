@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
 import { BTC_MAINNET, BTC_TESTNET } from "../../src/utils/constants";
-import { getCurrentNetwork } from "../../src/utils/utils";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
 
 describe("Bitcoin network helper tests", () => {
    it("Should switch to mainnet", async () => {

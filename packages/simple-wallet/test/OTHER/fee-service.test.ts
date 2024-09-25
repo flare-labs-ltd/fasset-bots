@@ -1,15 +1,12 @@
-import chaiAsPromised from "chai-as-promised";
 import {BlockchainFeeService} from "../../src/fee-service/service";
 import {before} from "node:test";
-import {ChainType} from "../../src/utils/constants";
 import {expect} from "chai";
 import BN from "bn.js";
 
 let feeService: BlockchainFeeService;
 describe("Fee service tests BTC", () => {
-    const chainType = ChainType.BTC;
     const feeServiceConfig = {
-        indexerUrl: "https://blockbook.htz.matheo.si:19130",
+        indexerUrl: process.env.BLOCKBOOK_BTC_URL ?? "",
         sleepTimeMs: 5000,
         numberOfBlocksInHistory: 5,
     };

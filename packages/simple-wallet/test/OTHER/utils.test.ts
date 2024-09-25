@@ -1,10 +1,11 @@
 import { expect } from "chai";
 import { WALLET } from "../../src";
-import { bytesToHex, getCurrentNetwork, isValidHexString, prefix0x, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
+import { bytesToHex, convertToTimestamp, getDateTimestampInSeconds, isValidHexString, prefix0x, stuckTransactionConstants, unPrefix0x } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
 import { ChainType } from "../../src/utils/constants";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
 
 const BTCMccConnectionTestInitial = {
    url: process.env.BTC_URL ?? "",
@@ -101,4 +102,17 @@ describe("Util tests", () => {
       };
       expect(fn2).to.throw(Error);
    });
+
+   it("Should return invalid date", async () => {
+      const fn = () => {
+          return getDateTimestampInSeconds(NaN.toString());
+      };
+      expect(fn).to.throw(`Invalid date format`);
+  });
+
+  it("Should return timestamp", async function () {
+   const input = "20240830203804";
+   const expectedOutput = "1725050284";
+   expect(convertToTimestamp(input)).to.eq(expectedOutput);
+});
 });

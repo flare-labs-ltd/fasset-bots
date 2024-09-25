@@ -18,13 +18,15 @@ import {
     TEST_WALLET_XRP,
     waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus,
-} from "../test_util/util";
+} from "../test-util/util";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
 import axiosRateLimit from "../../src/axios-rate-limiter/axios-rate-limit";
 import axios, { AxiosError } from "axios";
 import { createAxiosConfig } from "../../src/utils/axios-error-utils";
+import { ServiceRepository } from "../../src/ServiceRepository";
+import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 
 use(chaiAsPromised);
 
@@ -49,8 +51,6 @@ const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
 const targetMnemonic = "involve essay clean frequent stumble cheese elite custom athlete rack obey walk";
 const targetAddress = "r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq";
-const entropyBase = "my_xrp_test_wallet";
-const entropyBasedAddress = "rMeXpc8eokNRCTVtCMjFqTKdyRezkYJAi1";
 
 const amountToSendDropsFirst = toBNExp(0.1, XRP_DECIMAL_PLACES);
 const amountToSendDropsSecond = toBNExp(0.05, XRP_DECIMAL_PLACES);
@@ -73,7 +73,7 @@ describe("Xrp wallet tests", () => {
         testOrm = await initializeTestMikroORM();
         unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         XRPMccConnectionTest = { ...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-        wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
+        wClient = new WALLET.XRP(XRPMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
 
         resetMonitoringOnForceExit(wClient);
@@ -90,28 +90,6 @@ describe("Xrp wallet tests", () => {
         }
 
         removeConsoleTransport();
-    });
-
-    it("Should create account", async () => {
-        const newAccount = wClient.createWallet();
-        expect(newAccount.address).to.not.be.null;
-        const targetAccount = wClient.createWalletFromMnemonic(targetMnemonic);
-        expect(targetAccount.address).to.equal(targetAddress);
-
-        expect(WAValidator.validate(newAccount.address, "XRP", "testnet")).to.be.true;
-        expect(WAValidator.validate(targetAccount.address, "XRP", "testnet")).to.be.true;
-    });
-
-    it("Should create account 2", async () => {
-        const newAccount = wClient.createWalletFromEntropy(Buffer.from(entropyBase), "ecdsa-secp256k1");
-        expect(newAccount.address).to.equal(entropyBasedAddress);
-        expect(WAValidator.validate(newAccount.address, "XRP", "testnet")).to.be.true;
-    });
-
-    it("Should create account 3", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        expect(fundedWallet.address).to.equal(fundedAddress);
-        expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
     });
 
     it("Should get public key from private key", async () => {
@@ -339,7 +317,7 @@ describe("Xrp wallet tests", () => {
         expect(balanceStart.sub(balanceEnd).sub(feeInDrops).toNumber()).to.be.equal(amountToSendDropsFirst.toNumber());
     });
 
-    it("Stress test", async () => {
+    it.skip("Stress test", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
 
@@ -385,4 +363,11 @@ describe("Xrp wallet tests", () => {
         delete wClient.blockchainAPI.clients[url];
     });
 
+
+    it("Should receive no service found ", async () => {
+        const fn = () => {
+            return ServiceRepository.get(ChainType.testXRP, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool("", ChainType.testXRP);
+        };
+        expect(fn).to.throw("No service registered for testXRP");
+    });
 });

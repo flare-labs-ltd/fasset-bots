@@ -221,7 +221,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             });
         }
         logger.info(`Preparing transaction ${txEnt.id}`);
-        // TODO: determine how often this should be run - if there will be lots of UTXOs api fetches and updates can become too slow (but do we want to risk inconsistency?)
         await correctUTXOInconsistencies(
             this.rootEm,
             txEnt.source,
@@ -229,7 +228,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         );
 
         try {
-            // rbfReplacementFor is used since the RBF needs to use at least of the UTXOs spent by the original transaction
+            // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
             const [transaction, dbUTXOs] = await ServiceRepository.get(this.chainType, TransactionService).preparePaymentTransaction(
                 txEnt.id,
@@ -274,10 +273,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
             } else if (error instanceof LessThanDustAmountError) {
                 await failTransaction(this.rootEm, txEnt.id, error.message);
-            } else if (axios.isAxiosError(error)) {//TODO
+            } else if (axios.isAxiosError(error)) {
                 logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);
                 if (error.response?.data?.error?.indexOf("not found") >= 0) {
-                    console.log("NOT FOUND")
                     let utxosToBeChecked;
                     if (txEnt.rbfReplacementFor) {
                         utxosToBeChecked = txEnt.rbfReplacementFor.utxos;
@@ -293,8 +291,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                                 txEnt.outputs.removeAll();
                                 txEnt.raw = "";
                                 txEnt.transactionHash = "";
-                                // txEnt.replaced_by = null;
-                                // txEnt.rbfReplacementFor = null;
                             });
                             logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo ${utxo.mintTransactionHash}`);
                             if (txEnt.rbfReplacementFor) {
@@ -305,12 +301,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                                 });
                                 logger.info(`Original transaction ${txEnt.rbfReplacementFor.id} was cleared due to invalid utxo ${utxo.mintTransactionHash}`);
                             }
-
                             break;
                         }
                     }
                 }
-
             } else {
                 logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with:`, error);
             }
@@ -359,7 +353,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else {
                 logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${error}`);
             }
-
+//TODO
             if (txEnt.ancestor) {// tx fails and it has ancestor defined -> original ancestor was rbf-ed
                 // if ancestors rbf is accepted
                 if (!!txEnt.ancestor.replaced_by) {
@@ -598,7 +592,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
         }
 
-        // transaction was not accepted in mempool by one minute => replace by fee one time
+        // transaction was not accepted in mempool by one minute
         const currentBlock = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
         const shouldSubmit = await checkIfShouldStillSubmit(this, currentBlock.number, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
         if (!shouldSubmit) {
@@ -607,21 +601,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txId,
                 `waitForTransactionToAppearInMempool: Current ledger ${currentBlock.number} >= last transaction ledger ${txEnt.executeUntilBlock}`
             );
-        } // TODO - should we rbf?
-        // if (!this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
-        //     await this.tryToReplaceByFee(txId, currentBlock);
-        // }
+        }
     }
 
     async transactionAPISubmissionErrorHandler(txId: number, error: any) {
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-        //TODO should be statuses updated on entities?
         logger.error(`Transaction ${txId} submission failed with Axios error (${error.response?.data?.error}): ${errorMessage(error)}`);
         if (error.response?.data?.error?.indexOf("too-long-mempool-chain") >= 0) {
             logger.error(`Transaction ${txId} has too-long-mempool-chain`, error);
             return TransactionStatus.TX_PREPARED;
-        } else if (error.response?.data?.error?.indexOf("transaction already in block chain") >= 0) {
-            return TransactionStatus.TX_PENDING;
         } else if (error.response?.data?.error?.indexOf("insufficient fee") >= 0) {
             logger.error(`Transaction ${txId} submission failed because of 'insufficient fee'`);
             await handleFeeToLow(this.rootEm, txEnt);
@@ -638,7 +626,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             logger.error(`Transaction ${txId} submission failed because of 'Fee exceeds maximum configured by user'`);
             await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
-        } else if (error.response?.data?.error?.indexOf("Transaction already in block chain") >= 0) {//TODO-should not happen!
+        } else if (error.response?.data?.error?.indexOf("Transaction already in block chain") >= 0) {
             logger.error(`Transaction ${txId} submission failed because of 'Transaction already in block chain'`);
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                 txEnt.status = TransactionStatus.TX_SUCCESS;

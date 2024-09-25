@@ -5,7 +5,7 @@ import {
     UTXOEntity,
     WALLET,
 } from "../../src";
-import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test_util/util";
+import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/util";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import chaiAsPromised from "chai-as-promised";

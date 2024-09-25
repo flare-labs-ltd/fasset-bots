@@ -16,7 +16,6 @@ import { getCurrentTimestampInSeconds } from "../utils/utils";
 import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
 import { errorMessage } from "../utils/axios-error-utils";
 
-
 // transaction operations
 export async function createInitialTransactionEntity(
     rootEm: EntityManager,
@@ -31,24 +30,25 @@ export async function createInitialTransactionEntity(
     executeUntilTimestamp?: BN,
     replacementFor?: TransactionEntity
 ): Promise<TransactionEntity> {
-    logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops};${replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ''}`);
+    logger.info(
+        `Creating transaction ${source}, ${destination}, ${amountInDrops};${
+            replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ""
+        }`
+    );
     return await rootEm.transactional(async (em) => {
-        const ent = em.create(
-            TransactionEntity,
-            {
-                chainType,
-                source,
-                destination,
-                status: TransactionStatus.TX_CREATED,
-                maxFee: maxFee || null,
-                executeUntilBlock: executeUntilBlock || null,
-                executeUntilTimestamp: executeUntilTimestamp || null,
-                reference: note || null,
-                amount: amountInDrops,
-                fee: feeInDrops || null,
-                rbfReplacementFor: replacementFor || null,
-            } as RequiredEntityData<TransactionEntity>,
-        );
+        const ent = em.create(TransactionEntity, {
+            chainType,
+            source,
+            destination,
+            status: TransactionStatus.TX_CREATED,
+            maxFee: maxFee || null,
+            executeUntilBlock: executeUntilBlock || null,
+            executeUntilTimestamp: executeUntilTimestamp || null,
+            reference: note || null,
+            amount: amountInDrops,
+            fee: feeInDrops || null,
+            rbfReplacementFor: replacementFor || null,
+        } as RequiredEntityData<TransactionEntity>);
         await em.flush();
         logger.info(`Created transaction ${ent.id}.`);
         return ent;
@@ -70,34 +70,47 @@ export async function fetchTransactionEntityById(rootEm: EntityManager, id: numb
     });
 }
 
-export async function fetchTransactionEntityByHash(rootEm: EntityManager, txHash: string): Promise<TransactionEntity> {
-    return await rootEm.findOneOrFail(TransactionEntity, { transactionHash: txHash } as FilterQuery<TransactionEntity>, {
-        refresh: true,
-        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
-    });
-}
-
 export async function fetchTransactionEntities(rootEm: EntityManager, chainType: ChainType, status: TransactionStatus): Promise<TransactionEntity[]> {
-    return await rootEm.find(TransactionEntity, {
-        status,
-        chainType,
-    } as FilterQuery<TransactionEntity>, { refresh: true, populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"], orderBy: { id: "ASC" } });
+    return await rootEm.find(
+        TransactionEntity,
+        {
+            status,
+            chainType,
+        } as FilterQuery<TransactionEntity>,
+        {
+            refresh: true,
+            populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
+            orderBy: { id: "ASC" },
+        }
+    );
 }
 
 export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number) {
     const txEnt = await fetchTransactionEntityById(rootEm, txId);
-    return transaction.outputs.map(((output, index) => transformOutputToTxOutputEntity(index, output, txEnt)));
+    return transaction.outputs.map((output, index) => transformOutputToTxOutputEntity(index, output, txEnt));
 }
 
 function transformOutputToTxOutputEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
-    return createTransactionOutputEntity(transaction, transaction.transactionHash ?? "", toBN(output.satoshis), vout, JSON.parse(JSON.stringify(output)).script ?? "");
+    return createTransactionOutputEntity(
+        transaction,
+        transaction.transactionHash ?? "",
+        toBN(output.satoshis),
+        vout,
+        JSON.parse(JSON.stringify(output)).script ?? ""
+    );
 }
 
 export function transformUTXOEntToTxInputEntity(utxo: UTXOEntity, transaction: TransactionEntity): TransactionInputEntity {
     return createTransactionInputEntity(transaction, utxo.mintTransactionHash, utxo.value, utxo.position, utxo.script ?? "");
 }
 
-export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number, script: string): TransactionOutputEntity {
+export function createTransactionOutputEntity(
+    txEnt: TransactionEntity,
+    txHash: string,
+    amount: BN | string | number,
+    vout: number,
+    script: string
+): TransactionOutputEntity {
     const entity = new TransactionOutputEntity();
     entity.transactionHash = txHash;
     entity.vout = vout;
@@ -107,7 +120,13 @@ export function createTransactionOutputEntity(txEnt: TransactionEntity, txHash: 
     return entity;
 }
 
-export function createTransactionInputEntity(txEnt: TransactionEntity, txHash: string, amount: BN | string | number, vout: number, script: string): TransactionOutputEntity {
+export function createTransactionInputEntity(
+    txEnt: TransactionEntity,
+    txHash: string,
+    amount: BN | string | number,
+    vout: number,
+    script: string
+): TransactionOutputEntity {
     const entity = new TransactionInputEntity();
     entity.transactionHash = txHash;
     entity.vout = vout;
@@ -118,28 +137,38 @@ export function createTransactionInputEntity(txEnt: TransactionEntity, txHash: s
 }
 
 // utxo operations
-export async function createUTXOEntity(rootEm: EntityManager, source: string, txHash: string, position: number, value: BN, script: string, spentTxHash: string | null = null, confirmed: boolean): Promise<void> {
-    rootEm.create(
-        UTXOEntity,
-        {
-            source: source,
-            mintTransactionHash: txHash,
-            spentHeight: SpentHeightEnum.UNSPENT,
-            position: position,
-            value: value,
-            script: script,
-            spentTransactionHash: spentTxHash,
-            confirmed: confirmed,
-        } as RequiredEntityData<UTXOEntity>,
-    );
+export async function createUTXOEntity(
+    rootEm: EntityManager,
+    source: string,
+    txHash: string,
+    position: number,
+    value: BN,
+    script: string,
+    spentTxHash: string | null = null,
+    confirmed: boolean
+): Promise<void> {
+    rootEm.create(UTXOEntity, {
+        source: source,
+        mintTransactionHash: txHash,
+        spentHeight: SpentHeightEnum.UNSPENT,
+        position: position,
+        value: value,
+        script: script,
+        spentTransactionHash: spentTxHash,
+        confirmed: confirmed,
+    } as RequiredEntityData<UTXOEntity>);
     await rootEm.flush();
 }
 
 export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string, position: number): Promise<UTXOEntity> {
-    return await rootEm.findOneOrFail(UTXOEntity, {
-        mintTransactionHash: mintTxHash,
-        position: position,
-    } as FilterQuery<UTXOEntity>, { refresh: true });
+    return await rootEm.findOneOrFail(
+        UTXOEntity,
+        {
+            mintTransactionHash: mintTxHash,
+            position: position,
+        } as FilterQuery<UTXOEntity>,
+        { refresh: true }
+    );
 }
 
 export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, position: number, modify: (utxoEnt: UTXOEntity) => Promise<void>): Promise<void> {
@@ -151,11 +180,15 @@ export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, po
 }
 
 export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
-    const res = await rootEm.find(UTXOEntity, {
-        source: source,
-        spentHeight: SpentHeightEnum.UNSPENT,
-    } as FilterQuery<UTXOEntity>, { refresh: true, orderBy: { confirmed: "desc", value: "desc" } });
-    const utxos = !!txForReplacement ? res.filter(t => t.confirmed) : res;
+    const res = await rootEm.find(
+        UTXOEntity,
+        {
+            source: source,
+            spentHeight: SpentHeightEnum.UNSPENT,
+        } as FilterQuery<UTXOEntity>,
+        { refresh: true, orderBy: { confirmed: "desc", value: "desc" } }
+    );
+    const utxos = !!txForReplacement ? res.filter((t) => t.confirmed) : res;
     const alreadyUsed = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
     return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
 }
@@ -175,21 +208,12 @@ export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Pro
             return [];
         }
         const utxos = await rootEm.find(UTXOEntity, {
-            $or: inputs.map(input => ({
+            $or: inputs.map((input) => ({
                 mint_transaction_hash: input.prevTxId,
                 position: input.outputIndex,
             })),
         });
         return utxos;
-    });
-}
-
-export async function fetchUTXOs(rootEm: EntityManager, inputs: Transaction.Input[]): Promise<UTXOEntity[]> {
-    return await rootEm.find(UTXOEntity, {
-        $or: inputs.map(input => ({
-            mint_transaction_hash: input.prevTxId.toString("hex"),
-            position: input.outputIndex,
-        })),
     });
 }
 
@@ -213,13 +237,13 @@ export async function correctUTXOInconsistencies(rootEm: EntityManager, address:
                 position: utxo.mintIndex,
             },
         }));
-        const utxoEnts = await em.find(UTXOEntity, {
+        const utxoEnts = (await em.find(UTXOEntity, {
             source: address,
             spentHeight: { $in: [SpentHeightEnum.UNSPENT, SpentHeightEnum.SENT] },
             $and: condition,
-        }) as UTXOEntity[];
+        })) as UTXOEntity[];
 
-        utxoEnts.forEach(utxoEnt => {
+        utxoEnts.forEach((utxoEnt) => {
             utxoEnt.spentHeight = SpentHeightEnum.SPENT;
         });
 
@@ -254,16 +278,27 @@ export async function getTransactionInfoById(rootEm: EntityManager, dbId: number
     };
 }
 
-
 //others
 export async function handleMissingPrivateKey(rootEm: EntityManager, txId: number, failedInFunction: string): Promise<void> {
     await failTransaction(rootEm, txId, `${failedInFunction}: Cannot prepare transaction ${txId}. Missing private key.`);
 }
 
-export async function handleNoTimeToSubmitLeft(rootEm: EntityManager, txId: number, currentLedger: number, executionBlockOffset: number, failedInFunction: string, executeUntilBlock?: number, executeUntilTimestamp?: string): Promise<void> {
+export async function handleNoTimeToSubmitLeft(
+    rootEm: EntityManager,
+    txId: number,
+    currentLedger: number,
+    executionBlockOffset: number,
+    failedInFunction: string,
+    executeUntilBlock?: number,
+    executeUntilTimestamp?: string
+): Promise<void> {
     const currentTimestamp = toBN(getCurrentTimestampInSeconds());
-    await failTransaction(rootEm, txId,`${failedInFunction}: Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentLedger}, executeUntilBlock: ${executeUntilBlock}, offset ${executionBlockOffset}.
-              Current timestamp ${currentTimestamp} >= execute until timestamp ${executeUntilTimestamp}.`);
+    await failTransaction(
+        rootEm,
+        txId,
+        `${failedInFunction}: Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentLedger}, executeUntilBlock: ${executeUntilBlock}, offset ${executionBlockOffset}.
+              Current timestamp ${currentTimestamp} >= execute until timestamp ${executeUntilTimestamp}.`
+    );
 }
 
 export async function failTransaction(rootEm: EntityManager, txId: number, reason: string, error?: Error): Promise<void> {
@@ -278,7 +313,12 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
     }
 }
 
-export async function processTransactions(rootEm: EntityManager, chainType: ChainType, status: TransactionStatus, processFunction: (txEnt: TransactionEntity) => Promise<void>): Promise<void> {
+export async function processTransactions(
+    rootEm: EntityManager,
+    chainType: ChainType,
+    status: TransactionStatus,
+    processFunction: (txEnt: TransactionEntity) => Promise<void>
+): Promise<void> {
     const transactionEntities = await fetchTransactionEntities(rootEm, chainType, status);
     for (const txEnt of transactionEntities) {
         try {
@@ -313,7 +353,11 @@ export async function fetchMonitoringState(rootEm: EntityManager, chainType: str
     return await rootEm.findOne(MonitoringStateEntity, { chainType } as FilterQuery<MonitoringStateEntity>, { refresh: true });
 }
 
-export async function updateMonitoringState(rootEm: EntityManager, chainType: string, modify: (stateEnt: MonitoringStateEntity) => Promise<void>): Promise<void> {
+export async function updateMonitoringState(
+    rootEm: EntityManager,
+    chainType: string,
+    modify: (stateEnt: MonitoringStateEntity) => Promise<void>
+): Promise<void> {
     await rootEm.transactional(async (em) => {
         const stateEnt = await fetchMonitoringState(rootEm, chainType);
         if (!stateEnt) return;

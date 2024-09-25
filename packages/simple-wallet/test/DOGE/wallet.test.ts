@@ -18,16 +18,16 @@ import {
     setMonitoringStatus,
     waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus,
-} from "../test_util/util";
+} from "../test-util/util";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
-import { getCurrentTimestampInSeconds, getDefaultFeePerKB, sleepMs } from "../../src/utils/utils";
+import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
 import * as dbutils from "../../src/db/dbutils";
 import { getTransactionInfoById } from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
-import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
+import { getCore, getDefaultFeePerKB } from "../../src/chain-clients/utxo/UTXOUtils";
 import { toBN } from "web3-utils";
 import { BitcoreAPI } from "../../src/blockchain-apis/BitcoreAPI";
 import { AxiosError } from "axios";

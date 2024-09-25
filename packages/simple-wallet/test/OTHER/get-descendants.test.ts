@@ -7,7 +7,7 @@ import { getTransactionDescendants } from "../../src/chain-clients/utxo/UTXOUtil
 import { expect } from "chai";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
-import { createTransactionEntity, MockBlockchainAPI } from "./utils";
+import { createTransactionEntity, MockBlockchainAPI } from "../test-util/utils";
 
 describe("getTransactionDescendants", () => {
     let em: EntityManager;
@@ -102,4 +102,3 @@ describe("getTransactionDescendants", () => {
         return utxoEntity;
     }
 });
-

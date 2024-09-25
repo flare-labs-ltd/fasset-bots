@@ -1,10 +1,5 @@
 import {
-   BTC_DEFAULT_FEE_PER_KB,
-   BTC_MAINNET,
-   BTC_TESTNET,
-   ChainType, DOGE_DEFAULT_FEE_PER_KB,
-   DOGE_MAINNET,
-   DOGE_TESTNET,
+   ChainType,
    DROPS_PER_XRP,
 } from "./constants";
 import { StuckTransaction } from "../interfaces/IWalletTransaction";
@@ -80,20 +75,6 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
    }
 }
 
-export function getCurrentNetwork(chainType: ChainType) {
-   switch (chainType) {
-      case ChainType.BTC:
-         return BTC_MAINNET;
-      case ChainType.testBTC:
-         return BTC_TESTNET;
-      case ChainType.DOGE:
-         return DOGE_MAINNET;
-      case ChainType.testDOGE:
-         return DOGE_TESTNET;
-      default:
-         throw new Error(`Unsupported chain type ${chainType}`);
-   }
-}
 
 export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    if (maxFee && fee.gt(maxFee)) {
@@ -102,32 +83,6 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    return false;
 }
 
-// as in attestaion
-export function getConfirmedAfter(chainType: ChainType): number {
-   switch (chainType) {
-      case ChainType.BTC:
-      case ChainType.testBTC:
-         return 6;
-      case ChainType.DOGE:
-      case ChainType.testDOGE:
-         return 60;
-      default:
-         throw new Error(`Unsupported chain type ${chainType}`);
-   }
-}
-
-export function getDefaultFeePerKB(chainType: ChainType): BN {
-   switch (chainType) {
-      case ChainType.BTC:
-      case ChainType.testBTC:
-         return toBN(BTC_DEFAULT_FEE_PER_KB); // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
-      case ChainType.DOGE:
-      case ChainType.testDOGE:
-         return toBN(DOGE_DEFAULT_FEE_PER_KB); // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
-      default:
-         throw new Error(`Unsupported chain type ${chainType}`);
-   }
-}
 export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<boolean> {
    const blockRestrictionMet = !!executeUntilBlock && (currentBlockHeight + client.executionBlockOffset >= executeUntilBlock);
    // It probably should be following, but due to inconsistent block time on btc, we use currentTime

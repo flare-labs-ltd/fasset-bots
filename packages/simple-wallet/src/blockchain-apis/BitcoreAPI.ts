@@ -3,7 +3,8 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
-import { getConfirmedAfter, getDateTimestampInSeconds } from "../utils/utils";
+import { getDateTimestampInSeconds } from "../utils/utils";
+import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
 
 export class BitcoreAPI implements IBlockchainAPI {
     client: AxiosInstance;

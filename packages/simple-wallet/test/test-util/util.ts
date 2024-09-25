@@ -148,11 +148,6 @@ async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source
     return txEnt;
 }
 
-async function clearTransactions(rootEm: EntityManager) {
-    await rootEm.nativeDelete(TransactionEntity, {});
-    await rootEm.flush();
-}
-
 async function clearUTXOs(rootEm: EntityManager) {
     await rootEm.nativeDelete(UTXOEntity, {});
     await rootEm.flush();
@@ -292,7 +287,6 @@ export {
     createAndSignXRPTransactionWithStatus,
     calculateNewFeeForTx,
 
-    clearTransactions,
     clearUTXOs,
 
     setWalletStatusInDB,
