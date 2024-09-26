@@ -126,9 +126,11 @@ export interface SignedObject {
 
 export interface TransactionInfo {
    dbId: number;
-   replacedByDdId: number | null,
    transactionHash: string | null;
    status: TransactionStatus;
+   replacedByDdId: number | null,
+   replacedByHash: string | null,
+   replacedByStatus: TransactionStatus | null,
 }
 
 export interface IWalletKeys {

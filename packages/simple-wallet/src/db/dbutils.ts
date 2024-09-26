@@ -259,22 +259,26 @@ export async function correctUTXOInconsistencies(rootEm: EntityManager, address:
 export async function getReplacedTransactionById(rootEm: EntityManager, dbId: number): Promise<TransactionEntity> {
     let txEnt = await fetchTransactionEntityById(rootEm, dbId);
     let replaced = txEnt.replaced_by;
-    while (replaced && replaced.transactionHash) {
+    while (replaced) {
         txEnt = await fetchTransactionEntityById(rootEm, replaced.id);
         replaced = txEnt.replaced_by;
     }
     return txEnt;
 }
 
-// get transaction info - TODO
+// get transaction info
 export async function getTransactionInfoById(rootEm: EntityManager, dbId: number): Promise<TransactionInfo> {
-    const txEntReplaced = await getReplacedTransactionById(rootEm, dbId);
     const txEntOriginal = await fetchTransactionEntityById(rootEm, dbId);
+    const txEntReplaced = (txEntOriginal.replaced_by)
+        ? await getReplacedTransactionById(rootEm, txEntOriginal.replaced_by.id)
+        : null;
     return {
         dbId: dbId,
         transactionHash: txEntOriginal.transactionHash || null,
         status: txEntOriginal.status,
-        replacedByDdId: dbId == txEntReplaced.id ? null : txEntReplaced.id,
+        replacedByDdId: txEntReplaced?.id || null,
+        replacedByHash: txEntReplaced?.transactionHash || null,
+        replacedByStatus: txEntReplaced?.status || null,
     };
 }
 

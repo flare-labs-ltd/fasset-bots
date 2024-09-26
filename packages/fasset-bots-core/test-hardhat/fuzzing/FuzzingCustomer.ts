@@ -65,7 +65,7 @@ export class FuzzingCustomer {
         if (coinFlip(0.8)) {
             txHash = await this.minter.performMintingPayment(crt);
             // wait for finalization
-            await this.runner.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash); //TODO check if ok, there is scope in original
+            await this.runner.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
             // execute
             await this.minter.executeMinting(crt, txHash)
                 .catch((e) => scope.exitOnExpectedError(e, ["payment failed"], "USER", this.minter.address)); // 'payment failed' can happen if there are several simultaneous payments and this one makes balance negative
@@ -90,7 +90,7 @@ export class FuzzingCustomer {
         mintedLots -= lots - Number(remaining);
         this.runner.comment(`redeeming ${tickets.length} tickets, remaining ${remaining} lots`, `${this.name}`);
         // wait for all redemption payments or non-payments
-        /* // TODO
+        /*
         await foreachAsyncParallel(tickets, async ticket => {
             // detect if default happened during wait
             const redemptionDefaultPromise = this.assetManagerEvent('RedemptionDefault', { requestId: ticket.requestId }).immediate().wait(scope);
@@ -120,7 +120,7 @@ export class FuzzingCustomer {
             }
         });*/
     }
-    /* TODO
+    /*
         private async waitForPaymentTimeout(scope: EventScope, ticket: EventArgs<RedemptionRequested>): Promise<QualifiedEvent<"timeout", null>> {
             // both block number and timestamp must be large enough
             await Promise.all([

@@ -45,7 +45,7 @@ export class FuzzingAgentBot {
         // 'invalid self-mint reference' can happen if agent is destroyed and re-created
         // 'self-mint payment too old' can happen when agent self-mints quickly after being created (typically when agent is re-created) and there is time skew
         // const args = requiredEventArgs(res, 'MintingExecuted');
-        // TODO: accounting?
+        // accounting?
         this.runner.comment(`self minted successfully`, `${this.runner.eventFormatter.formatAddress(this.agentBot.agent.vaultAddress)}`);
     }
 
@@ -56,7 +56,7 @@ export class FuzzingAgentBot {
         if (mintedAssets.isZero()) return;
         const ownersAssets = await this.agentBot.context.fAsset.balanceOf(this.agentBot.agent.owner.workAddress);
         if (ownersAssets.isZero()) return;
-        // // TODO: buy fassets
+        // buy fassets?
         const amountUBA = randomBN(ownersAssets);
         if (this.runner.avoidErrors && amountUBA.isZero()) return;
         await this.agentBot.agent.selfClose(amountUBA)

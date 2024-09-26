@@ -381,20 +381,6 @@ describe("Bitcoin wallet tests", () => {
         // }));
     });
 
-    //TODO- infinite loop
-    it.skip("DB down after creating transaction", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
-        const txInfo = await getTransactionInfoById(wClient.rootEm, id);
-        expect(txInfo.status).to.be.equal(TransactionStatus.TX_CREATED);
-
-        await waitForTxToFinishWithStatus(0.001, 5 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
-        await testOrm.close();
-        await sleepMs(5000);
-        await testOrm.connect();
-        await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
-    });
-
     it.skip("'updateTransactionEntity' is down", async () => {//TODO - memory leak
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
@@ -418,7 +404,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUCCESS, id);
     });
-//TODO
+
     it.skip("Should replace transaction by fee", async () => {
         const fee = toBN(1236);
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
