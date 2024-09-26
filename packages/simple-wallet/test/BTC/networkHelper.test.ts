@@ -16,7 +16,7 @@ describe("Bitcoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionMain = { ...BTCMccConnectionMainInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionMain);
+      const wClient: WALLET.BTC = new WALLET.BTC(BTCMccConnectionMain);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_MAINNET);
    });

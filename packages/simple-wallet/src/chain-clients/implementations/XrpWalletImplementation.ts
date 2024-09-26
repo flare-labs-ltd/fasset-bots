@@ -317,7 +317,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    async checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void> {
       logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
-      const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
+      const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
       const currentTimestamp = toBN(getCurrentTimestampInSeconds());
       if (txResp.data.result.validated) {
          await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => {
@@ -366,9 +366,9 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
       const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
 
-      let txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
+      let txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
       while (!(txResp.data.result.validated) && (await this.getLatestValidatedLedgerIndex()) <= waitUntilBlock) {
-         txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
+         txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
       }
       if (txResp.data.result.validated) {
          await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {

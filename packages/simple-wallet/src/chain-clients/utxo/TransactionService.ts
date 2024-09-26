@@ -155,7 +155,7 @@ export class TransactionService implements IService {
 
         if (utxos.length === 0 || utxosAmount.lt(amountInSatoshi.add(feeInSatoshi ?? new BN(0)))) {
             logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`)
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`);//TODO - do not fetch indefinitely - maybe check if fee quite high?
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`);
         }
 
         if (amountInSatoshi.lte(getDustAmount(this.chainType))) {

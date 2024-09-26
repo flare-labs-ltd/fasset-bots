@@ -84,7 +84,7 @@ export class TransactionUTXOService implements IService {
                     vout: utxo.position,
                     transactionHash: utxo.mintTransactionHash,
                 });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(address, utxo.mintTransactionHash, utxo.position, this.chainType);
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(address, utxo.mintTransactionHash, utxo.position);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
                     utxoEnt.script = utxo.script
                 });
@@ -252,7 +252,7 @@ export class TransactionUTXOService implements IService {
     }
 
     async fillUTXOsFromMempool(address: string) {
-        const utxos: MempoolUTXO[] = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(address, this.chainType);
+        const utxos: MempoolUTXO[] = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(address);
         await storeUTXOS(this.rootEm, address, utxos);
     }
 
@@ -329,7 +329,7 @@ export class TransactionUTXOService implements IService {
                     vout: utxo.position,
                     transactionHash: utxo.mintTransactionHash,
                 });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(source, utxo.mintTransactionHash, utxo.position, this.chainType);
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(source, utxo.mintTransactionHash, utxo.position);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async utxoEnt => {utxoEnt.script = utxo.script});
             }
         }
@@ -350,8 +350,6 @@ export class TransactionUTXOService implements IService {
         return inputs;
     }
 
-
-    // TODO move to dbutils?
     async updateTransactionInputSpentStatus(txId: number, status: SpentHeightEnum) {
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         const transaction = JSON.parse(txEnt.raw!);

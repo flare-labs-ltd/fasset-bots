@@ -37,15 +37,15 @@ export class BitcoreAPI implements IBlockchainAPI {
         return res.data.feerate;
     }
 
-    async getTransaction(txHash: string | undefined): Promise<AxiosResponse> {
-        return this.client.get(`/tx/${txHash}`);
+    async getTransaction(txHash: string): Promise<any> {
+        return (await this.client.get(`/tx/${txHash}`)).data;
     }
 
     async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/address/${address}?unspent=true&limit=0&excludeconflicting=true`);
         // https://github.com/bitpay/bitcore/blob/405f8b17dbb537277bea89ca131214793e577151/packages/bitcore-node/src/types/Coin.ts#L26
         // utxo.mintHeight > -3 => excludeConflicting; utxo.spentHeight == -2 -> unspent
-        return (res.data as any[])
+        const utxos = (res.data as any[])
             .filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2)
             .sort((a, b) => a.value - b.value)
             .map(utxo => ({
@@ -55,10 +55,13 @@ export class BitcoreAPI implements IBlockchainAPI {
                 confirmed: utxo.mintHeight >= getConfirmedAfter(chainType),
                 script: utxo.script,
             }));
+            console.log((res.data as any[]).filter((utxo) => utxo.mintHeight > -3 && utxo.spentHeight == -2))
+        return utxos;
     }
 
     async getUTXOScript(address: string, txHash: string, vout: number, chainType: ChainType): Promise<string> {
         const mempoolUTXOS = await this.getUTXOsFromMempool(address, chainType);
+        console.log(mempoolUTXOS)
         return mempoolUTXOS.filter(utxo => utxo.mintIndex.valueOf() === vout && utxo.mintTxid === txHash)[0].script;
     }
 

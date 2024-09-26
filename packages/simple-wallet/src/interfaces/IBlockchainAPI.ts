@@ -18,7 +18,7 @@ export interface IBlockchainAPI {
 
     getCurrentBlockHeight(): Promise<BlockData>;
 
-    getTransaction(txHash: string | undefined): Promise<AxiosResponse>;
+    getTransaction(txHash: string): Promise<any>;
 }
 
 export interface MempoolUTXOMWithoutScript {

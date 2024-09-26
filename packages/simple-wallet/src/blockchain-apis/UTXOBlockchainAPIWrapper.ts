@@ -9,10 +9,12 @@ import { createAxiosConfig, tryWithClients } from "../utils/axios-error-utils";
 export class BlockchainAPIWrapper implements IBlockchainAPI {
     client: AxiosInstance;
     clients: any = {};
+    chainType: ChainType;
 
     constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
         const axiosConfig = createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey);
 
+        this.chainType = chainType;
         this.clients[createConfig.url] = createConfig.api === "bitcore" ? new BitcoreAPI(axiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
         this.client = this.clients[createConfig.url].client;
 
@@ -36,20 +38,20 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentFeeRate(nextBlocks), "getCurrentFeeRate");
     }
 
-    async getTransaction(txHash: string | undefined): Promise<AxiosResponse> {
+    async getTransaction(txHash: string): Promise<any> {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getTransaction(txHash), "getTransaction");
     }
 
-    async getUTXOScript(address: string, txHash: string, vout: number, chainType: ChainType): Promise<string> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOScript(address, txHash, vout, chainType), "getUTXOScript");
+    async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOScript(address, txHash, vout, this.chainType), "getUTXOScript");
     }
 
-    async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsFromMempool(address, chainType), "getUTXOsFromMempool");
+    async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsFromMempool(address, this.chainType), "getUTXOsFromMempool");
     }
 
-    async getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsWithoutScriptFromMempool(address, chainType), "getUTXOsWithoutScriptFromMempool");
+    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsWithoutScriptFromMempool(address, this.chainType), "getUTXOsWithoutScriptFromMempool");
     }
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {

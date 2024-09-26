@@ -21,7 +21,7 @@ export class XRPBlockchainAPI {
         }
     }
 
-    async getTransaction(transactionHash: string | undefined) {
+    async getTransaction(transactionHash: string) {
         return tryWithClients(this.clients,(client: AxiosInstance) => client.post("", {
             method: "tx",
             params: [{ transaction: transactionHash }],

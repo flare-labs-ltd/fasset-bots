@@ -104,7 +104,7 @@ export class TransactionFeeService implements IService {
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
         try {
-            const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(params.source, this.chainType);
+            const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(params.source);
             const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
             let est_fee = await this.getEstimateFee(utxos.length, numOfOut);
 

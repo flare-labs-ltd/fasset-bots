@@ -50,7 +50,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         return fee;
     }
 
-    async getTransaction(txHash: string | undefined): Promise<AxiosResponse<any>> {
+    async getTransaction(txHash: string): Promise<AxiosResponse<any>> {//TODO
         return await this.client.get(`/tx/${txHash}`);
     }
 

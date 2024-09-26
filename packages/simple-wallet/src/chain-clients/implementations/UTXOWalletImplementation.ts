@@ -224,7 +224,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         await correctUTXOInconsistencies(
             this.rootEm,
             txEnt.source,
-            await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType)
+            await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source)
         );
 
         try {
@@ -276,33 +276,22 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else if (axios.isAxiosError(error)) {
                 logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);
                 if (error.response?.data?.error?.indexOf("not found") >= 0) {
-                    let utxosToBeChecked;
+                    await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
+                        txEnt.status = TransactionStatus.TX_CREATED;
+                        txEnt.utxos.removeAll();
+                        txEnt.inputs.removeAll();
+                        txEnt.outputs.removeAll();
+                        txEnt.raw = "";
+                        txEnt.transactionHash = "";
+                    });
+                    logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);
                     if (txEnt.rbfReplacementFor) {
-                        utxosToBeChecked = txEnt.rbfReplacementFor.utxos;
-                    } else {
-                        utxosToBeChecked = txEnt.utxos;
-                    }
-                    for (const utxo of utxosToBeChecked) {
-                        if(utxo.spentHeight === SpentHeightEnum.SPENT) {
-                            await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                                txEnt.status = TransactionStatus.TX_CREATED;
-                                txEnt.utxos.removeAll();
-                                txEnt.inputs.removeAll();
-                                txEnt.outputs.removeAll();
-                                txEnt.raw = "";
-                                txEnt.transactionHash = "";
-                            });
-                            logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo ${utxo.mintTransactionHash}`);
-                            if (txEnt.rbfReplacementFor) {
-                                await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
-                                    txEnt.utxos.removeAll();
-                                    txEnt.inputs.removeAll();
-                                    txEnt.outputs.removeAll();
-                                });
-                                logger.info(`Original transaction ${txEnt.rbfReplacementFor.id} was cleared due to invalid utxo ${utxo.mintTransactionHash}`);
-                            }
-                            break;
-                        }
+                        await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
+                            txEnt.utxos.removeAll();
+                            txEnt.inputs.removeAll();
+                            txEnt.outputs.removeAll();
+                        });
+                        logger.info(`Original transaction ${txEnt.rbfReplacementFor.id} was cleared due to invalid utxo.`);
                     }
                 }
             } else {
@@ -313,10 +302,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void> {
-        if(txEnt)
-        logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
+        if (txEnt) logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
         try {
-            const txResp = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txEnt.transactionHash);
+            const txResp = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txEnt.transactionHash!);
             // success
             if (txResp.data.blockHash && txResp.data.confirmations) {
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.data.confirmations}. Needed ${this.enoughConfirmations}.`);
@@ -335,10 +323,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else {
                 const currentBlockHeight = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
                 // if only one block left to submit => replace by fee
-                const stillTimeToSubmit =  checkIfShouldStillSubmit(this, currentBlockHeight.number, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
-                if (
-                    !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.data.blockHash
-                ) {
+                const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight.number, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
+                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.data.blockHash) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }
             }
@@ -353,59 +339,34 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else {
                 logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${error}`);
             }
-//TODO
-            if (txEnt.ancestor) {// tx fails and it has ancestor defined -> original ancestor was rbf-ed
-                // if ancestors rbf is accepted
-                if (!!txEnt.ancestor.replaced_by) {
 
+            if (txEnt.ancestor) {
+                // tx fails and it has ancestor defined -> original ancestor was rbf-ed
+                // if ancestors rbf is accepted => recreate
+                if (!!txEnt.ancestor.replaced_by && txEnt.ancestor.replaced_by.status === TransactionStatus.TX_SUCCESS) {
+                    await correctUTXOInconsistencies(
+                        this.rootEm,
+                        txEnt.source,
+                        await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source)
+                    );
+                    // recreate transaction
+                    await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
+                        txEnt.status = TransactionStatus.TX_CREATED;
+                        txEnt.utxos.removeAll();
+                        txEnt.inputs.removeAll();
+                        txEnt.outputs.removeAll();
+                        txEnt.raw = "";
+                        txEnt.transactionHash = "";
+                        txEnt.fee = undefined;
+                        txEnt.size = undefined;
+                        txEnt.ancestor = null;
+                        txEnt.replaced_by = null;
+                        txEnt.rbfReplacementFor = null;
+                    });
+                    logger.info(`checkSubmittedTransaction (ancestor) transaction ${txEnt.id} changed status to ${TransactionStatus.TX_CREATED}.`);
                 }
-                // // if ancestors rbf is not accepted - wait
-                // if (!(txEnt.ancestor.replaced_by && txEnt.ancestor.replaced_by.status === TransactionStatus.TX_SUCCESS)) {
-                //     return;
-                // // ancestors rbf is accepted - new transactions are needed
-                // } else if (txEnt.ancestor.replaced_by && txEnt.ancestor.replaced_by.status === TransactionStatus.TX_SUCCESS) {
-                //     await correctUTXOInconsistencies(
-                //         this.rootEm,
-                //         txEnt.source,
-                //         await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType)
-                //     );
-                //     // recreate transaction
-                //     await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                //         txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;
-                //         txEnt.utxos.removeAll();
-                //         txEnt.inputs.removeAll();
-                //         txEnt.outputs.removeAll();
-                //         txEnt.raw = "";
-                //         txEnt.transactionHash = "";
-                //         // txEnt.replaced_by = null;
-                //         // txEnt.rbfReplacementFor = null;
-                //     });
-                //     logger.info(`checkSubmittedTransaction (ancestor) transaction ${txEnt.id} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`);
-                // }
             }
-            // if (txEnt.rbfReplacementFor) {
-            //     await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
-            //         txEnt.status = TransactionStatus.TX_SUCCESS;
-            //         // txEnt.replaced_by = null;
-            //     });
-            // }
-            // await correctUTXOInconsistencies(
-            //     this.rootEm,
-            //     txEnt.source,
-            //     await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType)
-            // );
-            // await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-            //     txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;
-            //     txEnt.utxos.removeAll();
-            //     txEnt.inputs.removeAll();
-            //     txEnt.outputs.removeAll();
-            //     txEnt.raw = "";
-            //     txEnt.transactionHash = "";
-            //     // txEnt.replaced_by = null;
-            //     // txEnt.rbfReplacementFor = null;
-            // });
-            logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`);
-            //TODO is it has replacement -> cancel replacement
+            logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed status to ${TransactionStatus.TX_CREATED}.`);
         }
     }
 
@@ -459,21 +420,37 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEntToUpdate.reachedStatusPendingInTimestamp = toBN(getCurrentTimestampInSeconds());
             });
             await this.waitForTransactionToAppearInMempool(txEnt.id);
-        } else if (txStatus == TransactionStatus.TX_FAILED) {
-            //TODO update tx status?
         }
     }
 
     async tryToReplaceByFee(txId: number, currentBlockHeight: BlockData): Promise<void> {
-        logger.info(`Transaction ${txId} is being replaced; currentBlockHeight: ${currentBlockHeight.number}, ${currentBlockHeight.timestamp}`);
+        logger.info(`Transaction ${txId} is starting replacement; currentBlockHeight: ${currentBlockHeight.number}, ${currentBlockHeight.timestamp}`);
         const rootEm = ServiceRepository.get(this.chainType, EntityManager);
         const oldTx = await fetchTransactionEntityById(rootEm, txId);
-        if (!!oldTx.ancestor) { //TODO
-            logger.info(`tryToReplaceByFee: Not yet allowed for transaction ${txId}, ancestor did not rbf yet ${oldTx.ancestor.id}.`);
-            return
+        if (!!oldTx.ancestor) {
+            if (oldTx.ancestor.status === TransactionStatus.TX_REPLACED && oldTx.ancestor.replaced_by?.status === TransactionStatus.TX_SUCCESS) {
+                await failTransaction(
+                    rootEm,
+                    txId,
+                    `tryToReplaceByFee: Transaction ${txId} has ancestor ${oldTx.ancestor.id} with status ${oldTx.ancestor.status}.`
+                );
+                return;
+            } else if (oldTx.ancestor.status === TransactionStatus.TX_FAILED) {
+                await failTransaction(
+                    rootEm,
+                    txId,
+                    `tryToReplaceByFee: Transaction ${txId} has ancestor ${oldTx.ancestor.id} with status ${oldTx.ancestor.status}.`
+                );
+                return;
+            } else if (oldTx.ancestor.status === TransactionStatus.TX_SUCCESS) {
+                logger.info(`tryToReplaceByFee: Transaction ${txId} has ancestor ${oldTx.ancestor.id} with status ${oldTx.ancestor.status}.`);
+                // should be accepted eventually, but rbf is allowed
+            } else {
+                return;
+            }
         }
         // send minimal amount (as time for payment passed) or "delete transaction" amount
-        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType)
+        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType);
         const descendantsFee: BN = toBN(await ServiceRepository.get(this.chainType, TransactionFeeService).calculateTotalFeeOfDescendants(rootEm, oldTx));
         const newFee: BN = descendantsFee; // covering conflicting txs
 
@@ -573,7 +550,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const start = txEnt.reachedStatusPendingInTimestamp!;
         while (toBN(getCurrentTimestampInSeconds()).sub(start).ltn(this.mempoolWaitingTimeInS)) {
             try {
-                const txResp = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txEnt.transactionHash);
+                const txResp = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txEnt.transactionHash!);
                 if (txResp) {
                     await updateTransactionEntity(rootEm, txId, async (txEnt) => {
                         txEnt.status = TransactionStatus.TX_SUBMITTED;
@@ -637,7 +614,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
             // presumably original was accepted
             if (error.response?.data?.error?.indexOf("bad-txns-inputs-missingorspent") >= 0 && txEnt.rbfReplacementFor) {
-                logger.info(`Transaction ${txId} is rejected. Transaction ${txEnt.rbfReplacementFor.id} was accepted.`)
+                logger.info(`Transaction ${txId} is rejected. Transaction ${txEnt.rbfReplacementFor.id} was accepted.`);
                 await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
                     txEnt.status = TransactionStatus.TX_SUCCESS;
                 });
@@ -645,7 +622,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             await correctUTXOInconsistencies(
                 this.rootEm,
                 txEnt.source,
-                await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source, this.chainType)
+                await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source)
             );
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                 txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;
@@ -655,7 +632,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.raw = "";
                 txEnt.transactionHash = "";
             });
-            logger.info(`Transaction ${txId} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`)
+            logger.info(`Transaction ${txId} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`);
             return TransactionStatus.TX_FAILED;
         }
         return TransactionStatus.TX_PREPARED;
