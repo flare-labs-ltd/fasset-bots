@@ -1,6 +1,5 @@
 import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
-import { BitcoreAPI } from "./BitcoreAPI";
 import { BlockbookAPI } from "./BlockbookAPI";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { ChainType } from "../utils/constants";
@@ -15,13 +14,13 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         const axiosConfig = createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey);
 
         this.chainType = chainType;
-        this.clients[createConfig.url] = createConfig.api === "bitcore" ? new BitcoreAPI(axiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
+        this.clients[createConfig.url] = new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
         this.client = this.clients[createConfig.url].client;
 
         if (createConfig.fallbackAPIs) {
             for (const fallbackAPI of createConfig.fallbackAPIs) {
                 const axiosConfig = createAxiosConfig(chainType, fallbackAPI.url, createConfig.rateLimitOptions, fallbackAPI.apiTokenKey);
-                this.clients[fallbackAPI.url] = (fallbackAPI.type === "bitcore" ? new BitcoreAPI(axiosConfig, createConfig.rateLimitOptions) : new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em));
+                this.clients[fallbackAPI.url] = new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
             }
         }
     }

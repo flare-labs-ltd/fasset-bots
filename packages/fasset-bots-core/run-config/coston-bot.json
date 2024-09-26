@@ -40,7 +40,6 @@
             "tokenDecimals": 8,
             "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
             "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2",
-            "walletApiType": "blockbook"
         }
     },
     "agentBotSettings": {

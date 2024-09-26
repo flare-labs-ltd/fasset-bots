@@ -22,7 +22,6 @@ const walletBTCUrl = "https://api.bitcore.io/api/BTC/mainnet/";
 const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/mainnet/";
 const walletTestXRPUrl = "https://s.altnet.rippletest.net:51234";
 const walletXRPUrl = "https://s1.ripple.com:51234/";
-const walletApiType = "bitcore";
 const feeServiceConfigDOGE: FeeServiceConfig = {
     indexerUrl: walletTestDOGEUrl,
     numberOfBlocksInHistory: 2,
@@ -62,20 +61,20 @@ describe("Bot config tests", () => {
     it("Should create wallet clients", async () => {
         const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
         const orm = botConfig.orm!;
-        const testBTC = await createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl,orm.em, walletApiType, undefined, feeServiceConfigBTC);
+        const testBTC = await createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl,orm.em, undefined, feeServiceConfigBTC);
         expect(testBTC.chainType).to.eq(ChainId.testBTC.sourceId);
-        const testDOGE = await createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl,orm.em, walletApiType, undefined, feeServiceConfigDOGE);
+        const testDOGE = await createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl,orm.em, undefined, feeServiceConfigDOGE);
         expect(testDOGE.chainType).to.eq(ChainId.testDOGE.sourceId);
-        const testXRP = await createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl,orm.em,  null);
+        const testXRP = await createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl,orm.em);
         expect(testXRP.chainType).to.eq(ChainId.testXRP.sourceId);
-        const btc = await createWalletClient(secrets, ChainId.BTC, walletBTCUrl, orm.em, walletApiType);
+        const btc = await createWalletClient(secrets, ChainId.BTC, walletBTCUrl, orm.em);
         expect(btc.chainType).to.eq(ChainId.BTC.sourceId);
-        const doge = await createWalletClient(secrets, ChainId.DOGE, walletDOGEUrl, orm.em, walletApiType);
+        const doge = await createWalletClient(secrets, ChainId.DOGE, walletDOGEUrl, orm.em);
         expect(doge.chainType).to.eq(ChainId.DOGE.sourceId);
-        const xrp = await createWalletClient(secrets, ChainId.XRP, walletXRPUrl, orm.em, null);
+        const xrp = await createWalletClient(secrets, ChainId.XRP, walletXRPUrl, orm.em);
         expect(xrp.chainType).to.eq(ChainId.XRP.sourceId);
         const invalidSourceId = ChainId.ALGO;
-        await expect(createWalletClient(secrets, invalidSourceId, "", orm.em, null))
+        await expect(createWalletClient(secrets, invalidSourceId, "", orm.em))
         .to.eventually.be.rejectedWith(`SourceId ${invalidSourceId} not supported.`)
         .and.be.an.instanceOf(Error);
     });
@@ -96,14 +95,14 @@ describe("Bot config tests", () => {
 
     it("Should create block chain wallet helper", async () => {
         const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
-        const btc = await createBlockchainWalletHelper(secrets, ChainId.testBTC, botConfig.orm.em, walletTestBTCUrl, walletApiType);
+        const btc = await createBlockchainWalletHelper(secrets, ChainId.testBTC, botConfig.orm.em, walletTestBTCUrl);
         expect(btc.walletClient.chainType).to.eq(ChainId.testBTC.sourceId);
-        const doge = await createBlockchainWalletHelper(secrets, ChainId.testDOGE, botConfig.orm.em, walletTestDOGEUrl, walletApiType);
+        const doge = await createBlockchainWalletHelper(secrets, ChainId.testDOGE, botConfig.orm.em, walletTestDOGEUrl);
         expect(doge.walletClient.chainType).to.eq(ChainId.testDOGE.sourceId);
-        const xrp = await createBlockchainWalletHelper(secrets, ChainId.testXRP, botConfig.orm.em, walletTestXRPUrl, null);
+        const xrp = await createBlockchainWalletHelper(secrets, ChainId.testXRP, botConfig.orm.em, walletTestXRPUrl);
         expect(xrp.walletClient.chainType).to.eq(ChainId.testXRP.sourceId);
         const invalidSourceId = ChainId.ALGO;
-        await expect(createBlockchainWalletHelper(secrets, invalidSourceId, botConfig.orm.em, "", null))
+        await expect(createBlockchainWalletHelper(secrets, invalidSourceId, botConfig.orm.em, ""))
         .to.eventually.be.rejectedWith(`SourceId ${invalidSourceId.chainName} not supported.`)
         .and.be.an.instanceOf(Error);
     });

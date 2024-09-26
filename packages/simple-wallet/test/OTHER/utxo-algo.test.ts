@@ -25,7 +25,6 @@ const sinon = require("sinon");
 use(chaiAsPromised);
 
 const walletSecret = "wallet_secret";
-const blockchainAPI = "blockbook";
 const BTCMccConnectionTestInitial = {
     url: process.env.BLOCKBOOK_BTC_URL ?? "",
     username: "",
@@ -51,7 +50,6 @@ describe("UTXO selection algorithm test", () => {
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
-            api: blockchainAPI,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             enoughConfirmations: 1,

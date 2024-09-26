@@ -34,10 +34,12 @@ export function createTransactionInputEntity(transactionHash: string, vout: numb
 export class MockBlockchainAPI implements IService, BlockchainAPIWrapper {
     client: AxiosInstance;
     clients: any;
+    chainType: ChainType;
 
     constructor() {
         this.clients = [];
         this.client = axios.create({});
+        this.chainType = ChainType.testBTC;
     }
 
     async getAccountBalance(account: string): Promise<number | undefined> {
@@ -56,15 +58,15 @@ export class MockBlockchainAPI implements IService, BlockchainAPIWrapper {
         return Promise.resolve({ data: {} } as AxiosResponse);
     }
 
-    async getUTXOScript(address: string, txHash: string, vout: number, chainType: ChainType): Promise<string> {
+    async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
         return Promise.resolve("");
     }
 
-    async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
+    async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
         return Promise.resolve([]);
     }
 
-    async getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]> {
+    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
         return Promise.resolve([]);
     }
 

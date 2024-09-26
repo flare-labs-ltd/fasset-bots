@@ -145,7 +145,7 @@ export class TransactionUTXOService implements IService {
             utxos = notMinimalUTXOs;
         }
 
-        let res = null;
+        let res: UTXOEntity[] | null = null;
         if (feeStatus == FeeStatus.HIGH) {
             // order by value, confirmed
             utxos.sort((a, b) => a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed));

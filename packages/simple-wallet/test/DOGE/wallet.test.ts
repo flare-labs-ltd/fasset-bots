@@ -29,11 +29,9 @@ import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { getCore, getDefaultFeePerKB } from "../../src/chain-clients/utxo/UTXOUtils";
 import { toBN } from "web3-utils";
-import { BitcoreAPI } from "../../src/blockchain-apis/BitcoreAPI";
 import { AxiosError } from "axios";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
@@ -43,7 +41,6 @@ use(chaiAsPromised);
 const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/implementations/DogeWalletImplementation");
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
 
-const blockchainAPI = "blockbook";
 const DOGEMccConnectionTestInitial = {
     url: process.env.BLOCKBOOK_DOGE_URL ?? "",
     inTestnet: true,
@@ -95,7 +92,6 @@ describe.skip("Dogecoin wallet tests", () => {
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         DOGEMccConnectionTest = {
             ...DOGEMccConnectionTestInitial,
-            api: blockchainAPI,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
             feeServiceConfig: feeServiceConfig,
@@ -402,25 +398,25 @@ describe.skip("Dogecoin wallet tests", () => {
         }
     });
 
-    it("Should go to the fallback API", async () => {
-        const bitcoreURL = "https://api.bitcore.io/api/DOGE/testnet/";
-        wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(ChainType.testDOGE, bitcoreURL), undefined);
+    // it("Should go to the fallback API", async () => {TODO
+    //     const bitcoreURL = "https://api.bitcore.io/api/DOGE/testnet/";
+    //     wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(ChainType.testDOGE, bitcoreURL), undefined);
 
-        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
-            config => {
-                // Simulate a connection down scenario
-                return Promise.reject(new AxiosError('Simulated connection down', 'ECONNABORTED'));
-            },
-            error => {
-                return Promise.reject(error);
-            }
-        );
+    //     const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
+    //         config => {
+    //             // Simulate a connection down scenario
+    //             return Promise.reject(new AxiosError('Simulated connection down', 'ECONNABORTED'));
+    //         },
+    //         error => {
+    //             return Promise.reject(error);
+    //         }
+    //     );
 
-        const balance = await wClient.blockchainAPI.getAccountBalance(fundedAddress);
-        expect(balance).to.be.gte(0);
-        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
-        delete wClient.blockchainAPI.clients[bitcoreURL];
-    });
+    //     const balance = await wClient.blockchainAPI.getAccountBalance(fundedAddress);
+    //     expect(balance).to.be.gte(0);
+    //     wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+    //     delete wClient.blockchainAPI.clients[bitcoreURL];
+    // });
 
     it.skip("Stress test", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
@@ -516,7 +512,6 @@ async function setupRewiredWallet() {
     const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
     DOGEMccConnectionTest = {
         ...DOGEMccConnectionTestInitial,
-        api: blockchainAPI,
         em: testOrm.em,
         walletKeys: unprotectedDBWalletKeys,
         feeServiceConfig: feeServiceConfig,

@@ -134,13 +134,6 @@
                 "tokenSymbol": {
                     "type": "string"
                 },
-                "walletApiType": {
-                    "enum": [
-                        "bitcore",
-                        "blockbook"
-                    ],
-                    "type": "string"
-                },
                 "walletUrl": {
                     "type": "string"
                 }
@@ -322,25 +315,14 @@
         "WalletApi": {
             "additionalProperties": false,
             "properties": {
-                "type": {
-                    "$ref": "#/definitions/WalletApiType"
-                },
                 "url": {
                     "type": "string"
                 }
             },
             "required": [
-                "type",
                 "url"
             ],
             "type": "object"
-        },
-        "WalletApiType": {
-            "enum": [
-                "bitcore",
-                "blockbook"
-            ],
-            "type": "string"
         }
     },
     "properties": {

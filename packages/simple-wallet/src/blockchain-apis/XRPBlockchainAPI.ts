@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../utils/constants";
 import type { AccountInfoRequest } from "xrpl";
-import { createAxiosConfig, tryWithClients } from "../utils/axios-error-utils";
+import { createAxiosConfig, createAxiosInstance, tryWithClients } from "../utils/axios-error-utils";
 
 export class XRPBlockchainAPI {
     client: AxiosInstance;
@@ -11,12 +11,12 @@ export class XRPBlockchainAPI {
 
     constructor(chainType: ChainType, createConfig: BaseWalletConfig) {
 
-        this.client = this.createAxiosInstance(chainType, createConfig);
+        this.client = createAxiosInstance(chainType, createConfig);
         this.clients[createConfig.url] = this.client;
 
         if (createConfig.fallbackAPIs) {
             for (const fallbackAPI of createConfig.fallbackAPIs) {
-                this.clients[fallbackAPI.url] = this.createAxiosInstance(chainType, createConfig);
+                this.clients[fallbackAPI.url] = createAxiosInstance(chainType, createConfig);
             }
         }
     }
@@ -47,14 +47,5 @@ export class XRPBlockchainAPI {
             method: "server_info",
             params: [],
         }), "getServerInfo");
-    }
-
-    private createAxiosInstance(chainType: ChainType, createConfig: BaseWalletConfig) {
-        return axiosRateLimit(
-            axios.create(
-                createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey)), {
-                ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
-                ...createConfig.rateLimitOptions,
-            });
     }
 }

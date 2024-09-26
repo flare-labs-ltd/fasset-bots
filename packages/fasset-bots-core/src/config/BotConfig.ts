@@ -18,7 +18,6 @@ import {
     FeeServiceOptions,
     IBlockChainWallet,
     WalletApi,
-    WalletApiType,
 } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
@@ -191,7 +190,7 @@ export async function createBotFAssetConfig(
     };
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, fassetInfo.walletApiType ?? null, walletOptions, feeServiceOptions, fallbackApis);
+        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, walletOptions, feeServiceOptions, fallbackApis);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
@@ -257,7 +256,6 @@ export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrl: stri
  * @param chainId chain source
  * @param em entity manager (optional)
  * @param walletUrl chain's url
- * @param walletApiType
  * @param options
  * @param feeServiceOptions
  * @param fallbackApis
@@ -268,13 +266,12 @@ export async function createBlockchainWalletHelper(
     chainId: ChainId,
     em: EntityManager,
     walletUrl: string,
-    walletApiType: WalletApiType | null,
     options?: StuckTransaction,
     feeServiceOptions?: FeeServiceOptions,
     fallbackApis?: WalletApi[],
 ): Promise<BlockchainWalletHelper> {
     requireSupportedChainId(chainId);
-    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, walletApiType, options, feeServiceOptions, fallbackApis);
+    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, options, feeServiceOptions, fallbackApis);
     const walletKeys = DBWalletKeys.from(requireNotNull(em), secrets);
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }

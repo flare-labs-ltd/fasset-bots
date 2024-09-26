@@ -1,9 +1,10 @@
 import { logger } from "../utils/logger";
 import { DriverException, UniqueConstraintViolationException, ValidationError } from "@mikro-orm/core";
-import { RateLimitOptions } from "../interfaces/IWalletTransaction";
-import { AxiosRequestConfig } from "axios";
+import { BaseWalletConfig, RateLimitOptions } from "../interfaces/IWalletTransaction";
+import axios, { AxiosRequestConfig } from "axios";
 import { excludeNullFields } from "../utils/utils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../utils/constants";
+import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 
 export async function tryWithClients<T>(clients: any, operation: (client: any) => Promise<T>, method: string) {
     for (const [index, url] of Object.keys(clients).entries()) {
@@ -56,7 +57,6 @@ function getDefaultRateLimitOptions(chainType: ChainType) {
     }
 }
 
-
 export class NotEnoughUTXOsError extends Error {
     constructor(message: string) {
         super(message);
@@ -67,4 +67,13 @@ export class LessThanDustAmountError extends Error {
     constructor(message: string) {
         super(message);
     }
+}
+
+export function createAxiosInstance(chainType: ChainType, createConfig: BaseWalletConfig) {
+    return axiosRateLimit(
+        axios.create(
+            createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey)), {
+            ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
+            ...createConfig.rateLimitOptions,
+        });
 }
