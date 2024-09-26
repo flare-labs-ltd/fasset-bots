@@ -223,7 +223,6 @@ export class AgentBotMinting {
         const natPriceConverter = await this.agent.getPoolCollateralPrice(settings);
         const burnNats = natPriceConverter.convertUBAToTokenWei(toBN(minting.valueUBA))
             .mul(toBN(settings.vaultCollateralBuyForFlareFactorBIPS)).divn(MAX_BIPS);
-        // TODO what to do if owner does not have enough nat
         await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
             await this.context.assetManager.unstickMinting(web3DeepNormalize(proof), toBN(minting.requestId), { from: this.agent.owner.workAddress, value: burnNats });
         });

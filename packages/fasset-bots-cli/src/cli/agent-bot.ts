@@ -163,7 +163,7 @@ program
 program
     .command("underlyingTopUp")
     .description("agent underlying top up")
-    .argument("<agentVaultAddress>")// TODO top up for certain amount?
+    .argument("<agentVaultAddress>")
     .action(async (agentVault: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);

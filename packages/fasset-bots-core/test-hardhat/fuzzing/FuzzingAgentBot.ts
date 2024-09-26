@@ -34,7 +34,7 @@ export class FuzzingAgentBot {
         checkedCast(chain, MockChain).mint(this.ownerUnderlyingAddress, mintingUBA);
         const txHash = await agent.wallet.addTransactionAndWaitForItsFinalization(this.ownerUnderlyingAddress, agent.underlyingAddress, mintingUBA, PaymentReference.selfMint(agent.vaultAddress));
         // wait for finalization
-        await this.agentBot.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash); //TODO - check if it is ok
+        await this.agentBot.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
         // execute
         const proof = await this.agentBot.context.attestationProvider.provePayment(txHash, null, agent.underlyingAddress);
         await this.agentBot.context.assetManager.selfMint(proof, agent.vaultAddress, lots, { from: this.agentBot.agent.owner.workAddress })

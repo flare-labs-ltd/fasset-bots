@@ -13,7 +13,6 @@ interface PreparedResponseRes<T> {
 }
 
 // Uses prepareResponse from private API.
-// TODO: for frontend we will need a public API (unless authenticated API keeps prepareResponse).
 export class VerificationPrivateApiClient implements IVerificationApiClient {
     verifier: AxiosInstance;
 

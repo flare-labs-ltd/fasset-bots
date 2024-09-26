@@ -173,7 +173,7 @@ export class AgentBotRedemption {
                 await this.checkBeforeRedemptionPayment(rootEm, redemption);
                 break;
             case AgentRedemptionState.PAYING:
-                // TODO: once simple wallet starts handling retries in background, find payment in indekser by address and payment reference
+                // TODO: once simple wallet starts handling retries in background, find payment in indexer by address and payment reference
                 break;
             case AgentRedemptionState.UNPAID:
                 // bot didn't manage to pay in time - do nothing and it will be expired after 24h
@@ -257,7 +257,6 @@ export class AgentBotRedemption {
             state: AgentRedemptionState.PAYING,
         });
         try {
-            // TODO: what if there are too little funds on underlying address to pay for fee?
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
                 return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp));
             });
