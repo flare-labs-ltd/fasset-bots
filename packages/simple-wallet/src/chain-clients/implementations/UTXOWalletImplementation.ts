@@ -30,7 +30,7 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { TransactionService } from "../utxo/TransactionService";
 import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../utxo/TransactionFeeService";
-import { errorMessage, isORMError, LessThanDustAmountError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import { errorMessage, isORMError, LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
 import { BlockData } from "../../interfaces/IBlockchainAPI";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
@@ -272,6 +272,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.warn(`Not enough UTXOs for transaction ${txEnt.id}, fetching them from mempool`);
                 await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
             } else if (error instanceof LessThanDustAmountError) {
+                await failTransaction(this.rootEm, txEnt.id, error.message);
+            }  else if (error instanceof NegativeFeeError) {
                 await failTransaction(this.rootEm, txEnt.id, error.message);
             } else if (axios.isAxiosError(error)) {
                 logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);

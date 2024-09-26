@@ -45,7 +45,7 @@ export function createAxiosConfig(chainType: ChainType, url: string, rateLimitOp
     return createAxiosConfig;
 }
 
-function getDefaultRateLimitOptions(chainType: ChainType) {
+export function getDefaultRateLimitOptions(chainType: ChainType) {
     if (chainType === ChainType.testDOGE || chainType === ChainType.DOGE) {
         return DEFAULT_RATE_LIMIT_OPTIONS;
     } else if (chainType === ChainType.BTC || chainType === ChainType.testBTC) {
@@ -68,6 +68,13 @@ export class LessThanDustAmountError extends Error {
         super(message);
     }
 }
+
+export class NegativeFeeError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
 
 export function createAxiosInstance(chainType: ChainType, createConfig: BaseWalletConfig) {
     return axiosRateLimit(

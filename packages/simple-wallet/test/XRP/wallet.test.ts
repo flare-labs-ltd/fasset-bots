@@ -27,6 +27,7 @@ import axios, { AxiosError } from "axios";
 import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { sleepMs } from "../../src/utils/utils";
 
 use(chaiAsPromised);
 
@@ -44,6 +45,9 @@ const XRPMccConnectionTestInitial = {
         timeoutMs: 60000,
     },
     inTestnet: true,
+    fallbackAPIs: [
+        { url: process.env.XRP_URL ?? "", }
+    ]
 };
 let XRPMccConnectionTest: RippleWalletConfig;
 
@@ -75,7 +79,7 @@ describe("Xrp wallet tests", () => {
         XRPMccConnectionTest = { ...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
         wClient = new WALLET.XRP(XRPMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
-
+        await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
     });
 
@@ -90,6 +94,23 @@ describe("Xrp wallet tests", () => {
         }
 
         removeConsoleTransport();
+    });
+
+    it("Monitoring should be running", async () => {
+        const monitoring = await wClient.isMonitoring();
+        expect(monitoring).to.be.true;
+    });
+
+    it("Should create delete account transaction", async () => {
+        const account = await wClient.createWallet();
+        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, account.address, toBNExp(10, XRP_DECIMAL_PLACES));
+        expect(id).to.be.gt(0);
+        await waitForTxToFinishWithStatus(2, 20, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        const txId = await wClient.createDeleteAccountTransaction(account.address, "", fundedAddress);
+        expect(txId).to.be.greaterThan(0);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
     });
 
     it("Should get public key from private key", async () => {

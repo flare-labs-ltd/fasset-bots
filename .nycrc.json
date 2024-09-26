@@ -17,7 +17,8 @@
         "src/utils/add-external-agent.ts",
         "src/entity/*.ts",
         "src/utils/logger.ts",
-        "src/utils/orm-types.ts"
+        "src/utils/orm-types.ts",
+        "src/utils/bnutils.ts"
     ],
     "reporter": [
         "html",

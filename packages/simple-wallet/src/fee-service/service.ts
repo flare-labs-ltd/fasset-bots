@@ -12,12 +12,11 @@ import {logger} from "../utils/logger";
 import { IService } from "../interfaces/IService";
 import { errorMessage } from "../utils/axios-error-utils";
 
+const FEE_DECILES_COUNT = 11;
 export class BlockchainFeeService implements IService {
     client: AxiosInstance;
-
     private monitoring: boolean = true;
-    private history: BlockStats[];
-
+    private history: BlockStats[] = [];
     private numberOfBlocksInHistory;
     private sleepTimeMs;
     private currentHistoryIndex = 0;
@@ -38,14 +37,13 @@ export class BlockchainFeeService implements IService {
         });
         this.numberOfBlocksInHistory = config.numberOfBlocksInHistory;
         this.sleepTimeMs = config.sleepTimeMs;
-
-        this.history = [];
     }
 
     async getLatestFeeStats() {
+        const currentHistory = this.history[this.currentHistoryIndex];
         return {
-            averageFeePerKB: this.history[this.currentHistoryIndex]?.averageFeePerKB ?? toBN(0),
-            decilesFeePerKB: this.history[this.currentHistoryIndex]?.decilesFeePerKB ?? [],
+            averageFeePerKB: currentHistory?.averageFeePerKB ?? toBN(0),
+            decilesFeePerKB: currentHistory?.decilesFeePerKB ?? [],
         }
     }
 
@@ -54,14 +52,14 @@ export class BlockchainFeeService implements IService {
 
         while (this.monitoring) {
             const blockHeight = await this.getCurrentBlockHeight();
-            if (!blockHeight || blockHeight == this.history[this.currentHistoryIndex].blockHeight) {
+            if (!blockHeight || blockHeight == this.history[this.currentHistoryIndex]?.blockHeight) {
                 await sleepMs(this.sleepTimeMs);
                 continue;
             }
 
             const feeStats = await this.getFeeStatsFromIndexer(blockHeight);
             const blockTime = await this.getBlockTime(blockHeight);
-            if (feeStats.decilesFeePerKB.length == 11 && feeStats.averageFeePerKB.gtn(0) && blockTime > 0) {
+            if (feeStats.decilesFeePerKB.length == FEE_DECILES_COUNT && feeStats.averageFeePerKB.gtn(0) && blockTime > 0) {
                 this.history[this.currentHistoryIndex % this.numberOfBlocksInHistory] = {
                     blockHeight: blockHeight,
                     blockTime: blockTime,
@@ -129,7 +127,8 @@ export class BlockchainFeeService implements IService {
                 averageFeePerKB: toBN(response.data.averageFeePerKb ?? 0),
                 decilesFeePerKB: fees.every((t: BN) => t.isZero()) ? [] : fees,
             };
-        } catch (e) {
+        } catch (error) {
+            logger.error(`Error fetching fee stats from indexer for block ${blockHeight}: ${errorMessage(error)}`);
             return {blockHeight: blockHeight, averageFeePerKB: toBN(0), decilesFeePerKB: []};
         }
     }
@@ -138,7 +137,8 @@ export class BlockchainFeeService implements IService {
         try {
             const response = await this.client.get(`/block/${blockHeight}`);
             return response.data?.time ?? 0;
-        } catch (e) {
+        } catch (error) {
+            logger.error(`Error fetching block time for block ${blockHeight}: ${errorMessage(error)}`);
             return 0;
         }
     }

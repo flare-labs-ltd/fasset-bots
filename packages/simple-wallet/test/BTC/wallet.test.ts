@@ -44,7 +44,10 @@ const walletSecret = "wallet_secret";
 const BTCMccConnectionTestInitial = {
     url: process.env.BTC_URL ?? "",
     inTestnet: true,
-    walletSecret: walletSecret
+    walletSecret: walletSecret,
+    fallbackAPIs: [
+        { url: process.env.BTC_URL ?? "", }
+    ]
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
 const feeServiceConfig: FeeServiceConfig = {
@@ -95,17 +98,11 @@ describe("Bitcoin wallet tests", () => {
             ...BTCMccConnectionTestInitial,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            // feeServiceConfig: feeServiceConfig,
             enoughConfirmations: 2
         };
         wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
-
-        await wClient.feeService?.setupHistory();
-        void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
-
-        await sleepMs(200);
-
+        await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
     });
 
@@ -119,6 +116,11 @@ describe("Bitcoin wallet tests", () => {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
         removeConsoleLogging();
+    });
+
+    it("Monitoring should be running", async () => {
+        const monitoring = await wClient.isMonitoring();
+        expect(monitoring).to.be.true;
     });
 
     it("Should create transaction with custom fee", async () => {
@@ -344,24 +346,6 @@ describe("Bitcoin wallet tests", () => {
             await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, initialTxIds[i]);
         }
     });
-
-    // it("Should go to the fallback API", async () => { //TODO
-    //     const bitcoreURL = "https://api.bitcore.io/api/BTC/testnet/";
-    //     wClient.blockchainAPI.clients[bitcoreURL] = new BitcoreAPI(createAxiosConfig(ChainType.testBTC, bitcoreURL), undefined);
-    //     const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
-    //         config => {
-    //             // Simulate a connection down scenario
-    //             return Promise.reject(new AxiosError('Simulated connection down', 'ECONNABORTED'));
-    //         },
-    //         error => {
-    //             return Promise.reject(error);
-    //         }
-    //     );
-    //     const balance = await wClient.blockchainAPI.getAccountBalance(fundedAddress);
-    //     expect(balance).to.be.gt(0);
-    //     wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
-    //     delete wClient.blockchainAPI.clients[bitcoreURL];
-    // });
 
     it.skip("Stress test", async () => {
         // fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);

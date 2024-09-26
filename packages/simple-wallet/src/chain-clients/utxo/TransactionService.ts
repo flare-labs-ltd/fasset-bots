@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
     checkIfIsDeleting,
-    createInitialTransactionEntity, setAccountIsDeleting,
+    createInitialTransactionEntity, failTransaction, setAccountIsDeleting,
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { EntityManager } from "@mikro-orm/core";
@@ -26,7 +26,7 @@ import UnspentOutput = Transaction.UnspentOutput;
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
-import { LessThanDustAmountError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
 
 export class TransactionService implements IService {
@@ -145,6 +145,12 @@ export class TransactionService implements IService {
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
             const bitcoreTx = this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
             feeInSatoshi = toBN(bitcoreTx.getFee()).sub(feePerKB.muln(getOutputSize(this.chainType)).divn(1000));
+            if (feeInSatoshi.ltn(0)) {
+                logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Negative fee ${feeInSatoshi.toString()}`);
+                throw new NegativeFeeError(
+                    `Will not prepare transaction ${txDbId}, for ${source}. Amount ${feeInSatoshi.toString()}`,
+                );
+            }
             const balance = await getAccountBalance(this.chainType, source);
             amountInSatoshi = balance.sub(feeInSatoshi);
         } else {
