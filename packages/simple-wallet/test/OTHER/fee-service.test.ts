@@ -6,7 +6,7 @@ import BN from "bn.js";
 let feeService: BlockchainFeeService;
 describe("Fee service tests BTC", () => {
     const feeServiceConfig = {
-        indexerUrl: process.env.BLOCKBOOK_BTC_URL ?? "",
+        indexerUrl: process.env.BTC_URL ?? "",
         sleepTimeMs: 5000,
         numberOfBlocksInHistory: 5,
     };

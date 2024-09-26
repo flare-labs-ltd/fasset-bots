@@ -42,11 +42,11 @@ const rewiredUTXOWalletImplementation = rewire("../../src/chain-clients/implemen
 const rewiredUTXOWalletImplementationClass = rewiredUTXOWalletImplementation.__get__("DogeWalletImplementation");
 
 const DOGEMccConnectionTestInitial = {
-    url: process.env.BLOCKBOOK_DOGE_URL ?? "",
+    url: process.env.DOGE_URL ?? "",
     inTestnet: true,
 };
 const feeServiceConfig: FeeServiceConfig = {
-    indexerUrl: process.env.BLOCKBOOK_DOGE_URL ?? "",
+    indexerUrl: process.env.DOGE_URL ?? "",
     sleepTimeMs: 10000,
     numberOfBlocksInHistory: 2,
 };

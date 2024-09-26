@@ -21,7 +21,6 @@ program
     .command("add")
     .description("add fallback address for given FAsset / underlying")
     .argument("<token>", "token symbol")
-    .argument("<type>", "blockchain API type (blockbook/bitcore)")
     .argument("<url>", "blockchain API url")
     .option("-k --key <key>", "blockchain API key")
     .action(async (tokenSymbol: string, url: string, opts: { key?: string }) => {
