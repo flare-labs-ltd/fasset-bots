@@ -59,3 +59,8 @@ packages/fasset-liquidator/.yarn
 packages/fasset-liquidator/types
 packages/fasset-liquidator/artifacts
 packages/fasset-liquidator/deploys.json
+
+
+# test
+packages/fasset-bots-core/test/special/fast-minting-xrp.ts
+packages/fasset-bots-core/test/special/xrp_test_accounts.ts
