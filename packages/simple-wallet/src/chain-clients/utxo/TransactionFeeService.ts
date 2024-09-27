@@ -26,7 +26,7 @@ import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { UTXOFeeParams } from "../../interfaces/IWalletTransaction";
-import { getDefaultFeePerKB, getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
+import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-error-utils";
@@ -39,14 +39,12 @@ export enum FeeStatus {
 export class TransactionFeeService implements IService {
     readonly feeDecileIndex: number;
     readonly feeIncrease: number;
-    readonly relayFeePerB: number;
     readonly chainType: ChainType;
 
-    constructor(chainType: ChainType, feeDecileIndex: number, feeIncrease: number, relayFeePerB: number) {
+    constructor(chainType: ChainType, feeDecileIndex: number, feeIncrease: number) {
         this.chainType = chainType;
         this.feeDecileIndex = feeDecileIndex;
         this.feeIncrease = feeIncrease;
-        this.relayFeePerB = relayFeePerB;
     }
 
     /**
@@ -58,10 +56,10 @@ export class TransactionFeeService implements IService {
             const feeStats = await feeService.getLatestFeeStats();
             if (feeStats.decilesFeePerKB.length == 11) {// In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
                 const fee = feeStats.decilesFeePerKB[this.feeDecileIndex];
-                return this.enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
+                return enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
             } else if (feeStats.averageFeePerKB.gtn(0)) {
                 const fee = feeStats.averageFeePerKB;
-                return this.enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
+                return enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
             }
             return await this.getCurrentFeeRate();
         } catch (error) {
@@ -91,7 +89,7 @@ export class TransactionFeeService implements IService {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
             const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
-            return this.enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
+            return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
         } catch (e) {
             logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
             return getDefaultFeePerKB(this.chainType);
@@ -140,23 +138,6 @@ export class TransactionFeeService implements IService {
             feeToCover = feeToCover.add(txEnt.fee ?? new BN(0))
         }
         return feeToCover;
-    }
-
-    enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
-        if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
-            return feePerKB;
-        } else {
-            const minFee = BTC_MIN_ALLOWED_FEE;
-            const maxFee = BTC_MAX_ALLOWED_FEE;
-            if (feePerKB.lt(minFee)) {
-                return minFee;
-            } else if (feePerKB.gt(maxFee)) {
-                return maxFee;
-            }
-            else {
-                return feePerKB;
-            }
-        }
     }
 
     async getCurrentFeeStatus(): Promise<FeeStatus> {

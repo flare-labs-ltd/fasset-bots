@@ -35,4 +35,18 @@ describe("Bitcoin network helper tests", () => {
       expect(currentNetwork).to.eql(BTC_TESTNET);
    });
 
+   it("Should check monitoring", async () => {
+      const BTCMccConnectionTestInitial = {
+         url: process.env.BTC_URL ?? "",
+         inTestnet: true,
+
+      };
+      const testOrm = await initializeTestMikroORM();
+      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+      const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
+      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
+      const isMonitoring =  await wClient.isMonitoring();
+      expect(isMonitoring).to.be.false;
+   });
+
 });

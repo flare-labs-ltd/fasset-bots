@@ -108,7 +108,6 @@ export interface BaseWalletConfig {
    enoughConfirmations?: number,
    feeServiceConfig?: FeeServiceConfig;
    feeDecileIndex?: number, // the decile from which to use the fee if there's a fee-service running (eg 8 is 8-th decile)
-   relayFeePerB?: number,
    em: EntityManager;
    walletKeys: IWalletKeys;
    fallbackAPIs?: WalletApi[]

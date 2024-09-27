@@ -74,7 +74,7 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 // first change address: tb1q38w40nmt5chk4a60mrh502h7m3l5w6pxpxvr0c
 // first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
 
-const amountToSendSatoshi = toBN(10020);
+const amountToSendSatoshi = toBN(100020);
 const feeInSatoshi = toBN(12000);
 const maxFeeInSatoshi = toBN(1100);
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
@@ -124,7 +124,7 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi);
         expect(txId).greaterThan(0);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 1 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const info = await wClient.getTransactionInfo(txId);
         expect(info.transactionHash).to.eq(txEnt.transactionHash);
         expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
@@ -388,6 +388,37 @@ describe("Bitcoin wallet tests", () => {
 
         await waitForTxToBeReplacedWithStatus(2, 15 * 60, wClient, TransactionStatus.TX_SUBMITTED, id);
     });
+
+    it("Should send transaction", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        expect(txId).greaterThan(0);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+        const info = await wClient.getTransactionInfo(txId);
+        expect(info.status).to.eq(TransactionStatus.TX_SUCCESS);
+    });
+
+    it("Should submit and replace transaction", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        expect(txId).greaterThan(0);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const blockData = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
+        await wClient.tryToReplaceByFee(txId, blockData);
+        const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_REPLACED);
+    });
+
+    it("Should check monitoring already running and restart it", async () => {
+        expect(await wClient.isMonitoring()).to.be.true;
+        await wClient.startMonitoringTransactionProgress();
+        expect(await wClient.isMonitoring()).to.be.true;
+        await wClient.stopMonitoring();
+        expect(await wClient.isMonitoring()).to.be.false;
+        void wClient.startMonitoringTransactionProgress();
+        await sleepMs(2000);
+        expect(await wClient.isMonitoring()).to.be.true;
+     });
 
     it.skip("Monitoring into infinity", async () => {
         while (true) {

@@ -2,8 +2,8 @@ import { TransactionStatus, WALLET } from "../../src";
 import { DogecoinWalletConfig, FeeServiceConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import { BTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
-import { toBNExp } from "../../src/utils/bnutils";
+import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
+import { toBN, toBNExp } from "../../src/utils/bnutils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import {
@@ -15,9 +15,11 @@ import {
 } from "../test-util/util";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
-import { sleepMs } from "../../src/utils/utils";
+import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
+import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
@@ -116,11 +118,37 @@ describe("Dogecoin wallet tests", () => {
     it("Should create delete account transaction", async () => {
         const account = await wClient.createWallet();
         const txId = await wClient.createDeleteAccountTransaction(account.address, "", fundedAddress);
-        console.log(txId);
-        console.log(account);
         expect(txId).to.be.greaterThan(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
     });
 
+    it("Should check pending transaction", async () => {
+        const toSend = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(targetAddress, "", fundedAddress, toSend);
+        expect(txId).to.be.greaterThan(0);
+        const txEnt = await fetchTransactionEntityById(wClient.rootEm, txId);
+        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(
+            txEnt.id,
+            txEnt.source,
+            txEnt.destination,
+            txEnt.amount || null,
+            txEnt.fee,
+            txEnt.reference        );
+
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, async (txEntToUpdate) => {
+            txEntToUpdate.raw = JSON.stringify(transaction);
+            txEntToUpdate.status = TransactionStatus.TX_PREPARED;
+            txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
+            txEntToUpdate.fee = toBN(transaction.getFee());
+            txEnt.reachedStatusPendingInTimestamp =  toBN(getCurrentTimestampInSeconds());
+        });
+        await wClient.checkPendingTransaction(txEnt);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
+    });
+
+    it("Should create estimate fee", async () => {
+        const fee = await ServiceRepository.get(ChainType.testDOGE , TransactionFeeService).getEstimateFee(1, 3, toBNExp(1, BTC_DOGE_DEC_PLACES));
+        expect(fee.gtn(0));
+    });
 });

@@ -36,6 +36,4 @@ describe("Fee service tests BTC", () => {
         expect(feeStats.averageFeePerKB.toNumber()).to.be.eq(0);
         expect(feeStats.decilesFeePerKB.length).to.be.eq(0);
     });
-
-
 })

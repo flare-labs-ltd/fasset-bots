@@ -39,7 +39,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     walletKeys!: IWalletKeys;
     blockOffset: number;
     feeIncrease: number;
-    relayFeePerB: number = 1;
     executionBlockOffset: number;
     feeDecileIndex: number = 8; // 8-th decile
     feeService?: BlockchainFeeService;
@@ -62,7 +61,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
-        this.relayFeePerB = createConfig.relayFeePerB ?? this.relayFeePerB;
         this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
         this.rootEm = createConfig.em;
         this.walletKeys = createConfig.walletKeys;
@@ -78,7 +76,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         ServiceRepository.register(
             this.chainType,
             TransactionFeeService,
-            new TransactionFeeService(this.chainType, this.feeDecileIndex, this.feeIncrease, this.relayFeePerB)
+            new TransactionFeeService(this.chainType, this.feeDecileIndex, this.feeIncrease)
         );
         ServiceRepository.register(
             this.chainType,
@@ -268,36 +266,39 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
             }
         } catch (error) {
-            if (error instanceof NotEnoughUTXOsError) {
-                logger.warn(`Not enough UTXOs for transaction ${txEnt.id}, fetching them from mempool`);
-                await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
-            } else if (error instanceof LessThanDustAmountError) {
-                await failTransaction(this.rootEm, txEnt.id, error.message);
-            }  else if (error instanceof NegativeFeeError) {
-                await failTransaction(this.rootEm, txEnt.id, error.message);
-            } else if (axios.isAxiosError(error)) {
-                logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);
-                if (error.response?.data?.error?.indexOf("not found") >= 0) {
-                    await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                        txEnt.status = TransactionStatus.TX_CREATED;
-                        txEnt.utxos.removeAll();
-                        txEnt.inputs.removeAll();
-                        txEnt.outputs.removeAll();
-                        txEnt.raw = "";
-                        txEnt.transactionHash = "";
-                    });
-                    logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);
-                    if (txEnt.rbfReplacementFor) {
-                        await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
+            /* istanbul ignore next */
+            {
+                if (error instanceof NotEnoughUTXOsError) {
+                    logger.warn(`Not enough UTXOs for transaction ${txEnt.id}, fetching them from mempool`);
+                    await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
+                } else if (error instanceof LessThanDustAmountError) {
+                    await failTransaction(this.rootEm, txEnt.id, error.message);
+                }  else if (error instanceof NegativeFeeError) {
+                    await failTransaction(this.rootEm, txEnt.id, error.message);
+                } else if (axios.isAxiosError(error)) {
+                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);
+                    if (error.response?.data?.error?.indexOf("not found") >= 0) {
+                        await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
+                            txEnt.status = TransactionStatus.TX_CREATED;
                             txEnt.utxos.removeAll();
                             txEnt.inputs.removeAll();
                             txEnt.outputs.removeAll();
+                            txEnt.raw = "";
+                            txEnt.transactionHash = "";
                         });
-                        logger.info(`Original transaction ${txEnt.rbfReplacementFor.id} was cleared due to invalid utxo.`);
+                        logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);
+                        if (txEnt.rbfReplacementFor) {
+                            await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, async (txEnt) => {
+                                txEnt.utxos.removeAll();
+                                txEnt.inputs.removeAll();
+                                txEnt.outputs.removeAll();
+                            });
+                            logger.info(`Original transaction ${txEnt.rbfReplacementFor.id} was cleared due to invalid utxo.`);
+                        }
                     }
+                } else {
+                    logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with:`, error);
                 }
-            } else {
-                logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with:`, error);
             }
             return;
         }
@@ -331,44 +332,47 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 }
             }
         } catch (error) {
-            if (isORMError(error)) {
-                // We don't want to fail tx if error is caused by DB
-                logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with db error ${errorMessage(error)}`);
-                return;
-            }
-            if (axios.isAxiosError(error)) {
-                logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with: ${JSON.stringify(error.response?.data, null, 2)}`);
-            } else {
-                logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${error}`);
-            }
-
-            if (txEnt.ancestor) {
-                // tx fails and it has ancestor defined -> original ancestor was rbf-ed
-                // if ancestors rbf is accepted => recreate
-                if (!!txEnt.ancestor.replaced_by && txEnt.ancestor.replaced_by.status === TransactionStatus.TX_SUCCESS) {
-                    await correctUTXOInconsistencies(
-                        this.rootEm,
-                        txEnt.source,
-                        await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source)
-                    );
-                    // recreate transaction
-                    await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
-                        txEnt.status = TransactionStatus.TX_CREATED;
-                        txEnt.utxos.removeAll();
-                        txEnt.inputs.removeAll();
-                        txEnt.outputs.removeAll();
-                        txEnt.raw = "";
-                        txEnt.transactionHash = "";
-                        txEnt.fee = undefined;
-                        txEnt.size = undefined;
-                        txEnt.ancestor = null;
-                        txEnt.replaced_by = null;
-                        txEnt.rbfReplacementFor = null;
-                    });
-                    logger.info(`checkSubmittedTransaction (ancestor) transaction ${txEnt.id} changed status to ${TransactionStatus.TX_CREATED}.`);
+            /* istanbul ignore next */
+            {
+                if (isORMError(error)) {
+                    // We don't want to fail tx if error is caused by DB
+                    logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with db error ${errorMessage(error)}`);
+                    return;
                 }
+                if (axios.isAxiosError(error)) {
+                    logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with: ${JSON.stringify(error.response?.data, null, 2)}`);
+                } else {
+                    logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${error}`);
+                }
+
+                if (txEnt.ancestor) {
+                    // tx fails and it has ancestor defined -> original ancestor was rbf-ed
+                    // if ancestors rbf is accepted => recreate
+                    if (!!txEnt.ancestor.replaced_by && txEnt.ancestor.replaced_by.status === TransactionStatus.TX_SUCCESS) {
+                        await correctUTXOInconsistencies(
+                            this.rootEm,
+                            txEnt.source,
+                            await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool(txEnt.source)
+                        );
+                        // recreate transaction
+                        await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
+                            txEnt.status = TransactionStatus.TX_CREATED;
+                            txEnt.utxos.removeAll();
+                            txEnt.inputs.removeAll();
+                            txEnt.outputs.removeAll();
+                            txEnt.raw = "";
+                            txEnt.transactionHash = "";
+                            txEnt.fee = undefined;
+                            txEnt.size = undefined;
+                            txEnt.ancestor = null;
+                            txEnt.replaced_by = null;
+                            txEnt.rbfReplacementFor = null;
+                        });
+                        logger.info(`checkSubmittedTransaction (ancestor) transaction ${txEnt.id} changed status to ${TransactionStatus.TX_CREATED}.`);
+                    }
+                }
+                logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed status to ${TransactionStatus.TX_CREATED}.`);
             }
-            logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed status to ${TransactionStatus.TX_CREATED}.`);
         }
     }
 
@@ -567,7 +571,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 } else {
                     logger.warn(`Transaction ${txId} not yet seen in mempool`, e);
                 }
-                await sleepMs(1000);
+                await sleepMs(10000);
             }
         }
 
