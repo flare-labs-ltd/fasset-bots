@@ -1,6 +1,7 @@
 import { TransactionStatus, WALLET } from "../../src";
 import { DogecoinWalletConfig, FeeServiceConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
-import { expect } from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { expect, use } from "chai";
 import { BTC_DOGE_DEC_PLACES, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -17,6 +18,7 @@ import { logger } from "../../src/utils/logger";
 import { sleepMs } from "../../src/utils/utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
+use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
     url: process.env.DOGE_URL ?? "",
@@ -120,4 +122,5 @@ describe("Dogecoin wallet tests", () => {
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
     });
+
 });

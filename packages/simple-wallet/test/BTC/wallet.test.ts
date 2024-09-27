@@ -28,9 +28,8 @@ import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
-import { BlockchainFeeService } from "../../src/fee-service/service";
+import { BlockchainFeeService } from "../../src/fee-service/fee-service";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
@@ -125,7 +124,7 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi);
         expect(txId).greaterThan(0);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
         const info = await wClient.getTransactionInfo(txId);
         expect(info.transactionHash).to.eq(txEnt.transactionHash);
         expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;

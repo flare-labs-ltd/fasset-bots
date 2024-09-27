@@ -18,7 +18,8 @@
         "src/entity/*.ts",
         "src/utils/logger.ts",
         "src/utils/orm-types.ts",
-        "src/utils/bnutils.ts"
+        "src/utils/bnutils.ts",
+        "src/index.ts"
     ],
     "reporter": [
         "html",

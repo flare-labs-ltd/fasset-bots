@@ -38,7 +38,7 @@ export async function createWalletClient(
     const walletKeys = DBWalletKeys.from(em, secrets);
 
     const fallbacks = fallbackApis?.map((api: WalletApi, i: number) => ({
-        apiTokenKey: secrets.optional(`apiKey.${getWalletSymbol(chainId)}_rpc_${i + 1}`),
+        apiTokenKey: secrets.optional(`apiKey.${chainId.chainName}_rpc_${i + 1}`),
         url: api.url,
     }));
 
@@ -84,22 +84,5 @@ export async function createWalletClient(
             walletKeys,
             fallbackAPIs: fallbacks,
         }); // XrpMccCreate
-    }
-}
-
-function getWalletSymbol(chainId: ChainId) {
-    switch (chainId) {
-        case ChainId.BTC:
-            return "BTC";
-        case ChainId.testBTC:
-            return "testBTC";
-        case ChainId.DOGE:
-            return "DOGE";
-        case ChainId.testDOGE:
-            return "testDOGE";
-        case ChainId.testXRP:
-            return "testXRP";
-        case ChainId.XRP:
-            return "XRP";
     }
 }

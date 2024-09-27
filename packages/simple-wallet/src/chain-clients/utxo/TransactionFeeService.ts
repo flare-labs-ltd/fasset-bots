@@ -24,7 +24,7 @@ import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWra
 import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
-import { BlockchainFeeService } from "../../fee-service/service";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { UTXOFeeParams } from "../../interfaces/IWalletTransaction";
 import { getDefaultFeePerKB, getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";

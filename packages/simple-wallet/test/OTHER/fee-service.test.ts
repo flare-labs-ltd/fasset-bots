@@ -1,4 +1,4 @@
-import {BlockchainFeeService} from "../../src/fee-service/service";
+import {BlockchainFeeService} from "../../src/fee-service/fee-service";
 import {before} from "node:test";
 import {expect} from "chai";
 import BN from "bn.js";

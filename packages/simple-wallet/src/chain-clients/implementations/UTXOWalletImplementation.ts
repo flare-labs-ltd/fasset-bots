@@ -21,7 +21,7 @@ import { logger } from "../../utils/logger";
 import { UTXOAccountGeneration } from "../account-generation/UTXOAccountGeneration";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum } from "../../entity/utxo";
-import { BlockchainFeeService } from "../../fee-service/service";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { EntityManager } from "@mikro-orm/core";
 import { checkUTXONetworkStatus, getAccountBalance, getCore, getMinAmountToSend } from "../utxo/UTXOUtils";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
@@ -582,7 +582,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             );
         }
     }
-
+    /* istanbul ignore next */
     async transactionAPISubmissionErrorHandler(txId: number, error: any) {
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         logger.error(`Transaction ${txId} submission failed with Axios error (${error.response?.data?.error}): ${errorMessage(error)}`);
