@@ -30,6 +30,7 @@
         "run-liquidator": "node packages/fasset-bots-cli/dist/src/run/run-liquidator",
         "run-systemKeeper": "node packages/fasset-bots-cli/dist/src/run/run-systemKeeper",
         "run-timekeeper": "node packages/fasset-bots-cli/dist/src/run/run-timekeeper",
+        "run-pinger": "node packages/fasset-bots-cli/dist/src/run/run-pinger",
         "---------API-RUN---SCRIPTS": "",
         "start_agent_api": "cd packages/fasset-bots-api && yarn nest start",
         "start_agent_api_debug": "cd packages/fasset-bots-api && yarn nest start --debug --watch"
