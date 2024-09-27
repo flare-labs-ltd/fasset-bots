@@ -237,7 +237,7 @@ describe("AgentBot cli commands unit tests", () => {
         const updateValue2 = "1200";
         await botCliCommands.updateAgentSetting(agent.vaultAddress, settingsName, updateValue1);
         await botCliCommands.updateAgentSetting(agent.vaultAddress, settingsName, updateValue2);
-        const settingsUpdates = await orm.em.find(AgentUpdateSetting, { agentAddress: agent.vaultAddress, name: settingsName }  as FilterQuery<AgentUpdateSetting>, {orderBy: {id: ('ASC')}});
+        const settingsUpdates = await orm.em.find(AgentUpdateSetting, { agentAddress: agent.vaultAddress, name: settingsName } as FilterQuery<AgentUpdateSetting>, { orderBy: { id: ('ASC') } });
         expect(settingsUpdates[0].state).to.eq(AgentUpdateSettingState.DONE);
         expect(settingsUpdates[1].state).to.eq(AgentUpdateSettingState.WAITING);
         // update invalid settings

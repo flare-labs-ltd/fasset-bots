@@ -120,4 +120,28 @@ describe("Agent bot runner tests", () => {
             spy.restore(AgentBotUnderlyingManagement.prototype);
         }
     });
+
+    it("Should fund service accounts", async () => {
+        const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const timeKeeperAddress = accounts[23]
+        const someAddress = accounts[22]
+        const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
+        const spyFund = spy.on(agentBotRunner, "fundAccount");
+        agentBotRunner.serviceAccounts.set("timeKeeper", timeKeeperAddress)
+        agentBotRunner.serviceAccounts.set("someAddress", someAddress)
+        agentBotRunner.requestStop();
+        const runPromise = agentBotRunner.run();    // run in background
+        agentBotRunner.requestStop();
+        await runPromise;
+        expect(spyFund).to.be.called.exactly(2);
+    });
+
+    it("Should request restart", async () => {
+        const secrets = createTestSecrets([context.chainInfo.chainId], ownerAddress, ownerAddress, ownerUnderlyingAddress);
+        const agentBotRunner = createTestAgentBotRunner(secrets, contexts, orm, loopDelay);
+        expect(agentBotRunner.readyToStop()).to.be.false;
+        agentBotRunner.requestRestart();
+        expect(agentBotRunner.readyToStop()).to.be.true;
+        expect(agentBotRunner.restartRequested).to.be.true;
+    });
 });
