@@ -92,15 +92,30 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
             let id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock, executeUntilTimestamp);
             logger.info(`Transactions txDbId ${id} was sent: ${sourceAddress}, ${targetAddress}, ${amount.toString()}, ${reference}, ${formatArgs(options)} and ${executeUntilBlock}`);
             let info = await this.checkTransactionStatus(id);
+
             while (!this.requestStopVal && (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
             {
                 await sleep(5000); //sleep for 5 seconds
-                info = await this.checkTransactionStatus(id);
                 logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
-                if (info.status == TransactionStatus.TX_REPLACED && info.replacedByDdId) {
-                    id = info.replacedByDdId;
-                    info = await this.checkTransactionStatus(id);
+                if (info.status === TransactionStatus.TX_REPLACED && info.replacedByDdId) {
+                    const replacedId = info.replacedByDdId;
+                    logger.info(`Replacement transaction txDbId ${replacedId}`);
+                    if (info.replacedByStatus === TransactionStatus.TX_SUCCESS) {
+                        logger.info(`Replacement transaction ${replacedId} succeeded.`);
+                        return info.replacedByHash!;
+                    } else if (info.replacedByStatus === TransactionStatus.TX_FAILED) {
+                        logger.warn(`Replacement transaction ${replacedId} failed.`);
+                        await sleep(10000);
+                        info = await this.checkTransactionStatus(id);
+                        if (info.status === TransactionStatus.TX_SUCCESS) {
+                            return info.transactionHash!;
+                        } else {
+                            logger.warn(`Original transaction ${id} is still not successful. Exiting the loop.`);
+                            break;
+                        }
+                    }
                 }
+                info = await this.checkTransactionStatus(id);
                 await this.ensureWalletMonitoringRunning();
             }
             if (this.requestStopVal) {

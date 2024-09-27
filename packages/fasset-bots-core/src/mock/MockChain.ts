@@ -252,7 +252,7 @@ export class MockChainWallet implements IBlockChainWallet {
     async checkTransactionStatus(txDbId: number): Promise<TransactionInfo> {
         const tx = this.transactionList[txDbId];
         const status = tx.status == TX_SUCCESS ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_FAILED;
-        return { dbId: txDbId, replacedByDdId: null,  transactionHash: tx.hash, status: status };
+        return { dbId: txDbId, replacedByDdId: null,  transactionHash: tx.hash, status: status, replacedByHash: null, replacedByStatus: null };
     }
     async getBalance(address: string): Promise<BN> {
         return this.chain.balances[address] ?? BN_ZERO;

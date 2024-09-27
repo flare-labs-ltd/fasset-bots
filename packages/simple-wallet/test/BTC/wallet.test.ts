@@ -9,7 +9,6 @@ import { assert, expect, use } from "chai";
 
 use(chaiAsPromised);
 import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { getTransactionInfoById } from "../../src/db/dbutils";
 import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
 import {TransactionStatus} from "../../src/entity/transaction";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -24,7 +23,6 @@ import {
 import {logger} from "../../src/utils/logger";
 import BN from "bn.js";
 import { BTC_DOGE_DEC_PLACES, ChainType, DEFAULT_FEE_INCREASE } from "../../src/utils/constants";
-import { AxiosError } from "axios";
 import * as dbutils from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
@@ -128,6 +126,8 @@ describe("Bitcoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi);
         expect(txId).greaterThan(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const info = await wClient.getTransactionInfo(txId);
+        expect(info.transactionHash).to.eq(txEnt.transactionHash);
         expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
     });
 
@@ -345,40 +345,6 @@ describe("Bitcoin wallet tests", () => {
         for (let i = 0; i < N; i++) {
             await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, initialTxIds[i]);
         }
-    });
-
-    it.skip("Stress test", async () => {
-        // fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        // targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
-        //
-        // const N = 60;
-        // const wallets = [];
-        //
-        // for (let i = 0; i < N; i++) {
-        //     wallets.push(wClient.createWalletFromMnemonic(TEST_DOGE_ACCOUNTS[i].mnemonic));
-        //     console.info(wallets[i].address, (await wClient.getAccountBalance(wallets[i].address)).toNumber());
-        // }
-        //
-        // const initialTxIds = await Promise.all(wallets.map(async (wallet, i) => {
-        //     return await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, wallet.address, amountToSendSatoshi);
-        // }));
-        //
-        // // Wait for accounts to receive transactions
-        // await Promise.all(initialTxIds.map(async txId => {
-        //     await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
-        // }));
-        //
-        // for (let i = 0; i < N; i++) {
-        //     console.info(wallets[i].address, (await wClient.getAccountBalance(wallets[i].address)).toNumber());
-        // }
-        //
-        // const transferTxIds = await Promise.all(wallets.map(async wallet => {
-        //     return await wClient.createPaymentTransaction(wallet.address, wallet.privateKey, fundedWallet.address, null);
-        // }));
-        //
-        // await Promise.all(transferTxIds.map(async txId => {
-        //     await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
-        // }));
     });
 
     it.skip("'updateTransactionEntity' is down", async () => {//TODO - memory leak

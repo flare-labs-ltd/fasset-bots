@@ -39,7 +39,7 @@
             "tokenSymbol": "testBTC",
             "tokenDecimals": 8,
             "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
-            "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2",
+            "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2"
         }
     },
     "agentBotSettings": {

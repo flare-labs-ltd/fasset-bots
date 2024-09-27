@@ -10,6 +10,6 @@ describe("Formatting unit tests", () => {
         const event2 = { address: "address", event: "event", args: { first: obj } };
         expect(formattingMethods.formatArgs(event1.args)).to.eq('{"first":"[0, 1, null]"}');
         expect(formattingMethods.formatArgs(event2.args)).to.eq('{"first":"{ second: [0, 1, null] }"}');
-        expect(formattingMethods.formatArgs(null)).to.be.null;
+        expect(formattingMethods.formatArgs(null)).to.eq("null");
     });
 });

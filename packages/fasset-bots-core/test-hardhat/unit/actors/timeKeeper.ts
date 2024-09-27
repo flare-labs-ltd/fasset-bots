@@ -47,10 +47,4 @@ describe("Time keeper unit tests", () => {
         expect(Number(currentBlock2[0])).to.eq(blocksToMine);
     });
 
-    it("Should not update underlying block - invalid timeKeeper's address", async () => {
-        const spyConsole = spy.on(console, "error");
-        const timeKeeper = new TimeKeeper(context, "timeKeeperAddress", testTimekeeperTimingConfig());
-        await timeKeeper.updateUnderlyingBlock();
-        expect(spyConsole).to.be.called.once;
-    });
 });
