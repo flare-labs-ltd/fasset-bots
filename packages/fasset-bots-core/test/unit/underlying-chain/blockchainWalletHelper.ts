@@ -9,8 +9,9 @@ import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { createTestOrm } from "../../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
-import { FeeServiceConfig } from "@flarelabs/simple-wallet";
+import { FeeServiceConfig, TransactionStatus } from "@flarelabs/simple-wallet";
 import { FeeServiceOptions } from "../../../src/underlying-chain/interfaces/IBlockChainWallet";
+import { sleep } from "../../../src/utils";
 use(chaiAsPromised);
 
 let orm: ORM;
@@ -52,6 +53,15 @@ describe("testXRP wallet tests", () => {
         await removeWalletAddressFromDB(walletHelper, targetAddressXRP);
     });
 
+    it("Should delete account", async () => {
+        const newAccount = await walletHelper.createAccount();
+        const del = await walletHelper.deleteAccount(newAccount, fundedAddressXRP, null);
+        expect(del).to.be.greaterThan(0);
+        const info = await walletHelper.checkTransactionStatus(del);
+        expect(info.status).to.eq(TransactionStatus.TX_CREATED);
+        await removeWalletAddressFromDB(walletHelper, newAccount);
+    });
+
     it("Should not add multi transaction - method not implemented", async () => {
         await expect(walletHelper.addMultiTransaction()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
@@ -65,6 +75,35 @@ describe("testXRP wallet tests", () => {
     it("Should get transaction fee", async () => {
         const fee = await walletHelper.getTransactionFee({isPayment: true});
         expect(fee.gtn(0));
+    });
+
+    it("Should send transaction", async () => {
+        const account0 = await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
+        const privateKey0 = await dbWallet.getKey(account0);
+        expect(privateKey0).to.eq(fundedPrivateKeyXRP);
+        const newAccount = await walletHelper.createAccount();
+
+        const transaction = await walletHelper.addTransactionAndWaitForItsFinalization(account0, newAccount, 10_000000, null);
+        expect(transaction).to.be.a('string');
+        await removeWalletAddressFromDB(walletHelper, newAccount);
+        await removeWalletAddressFromDB(walletHelper, account0);
+    });
+
+    it("Should not be monitoring", async () => {
+        const monitoring = await walletHelper.isMonitoring();
+        expect(monitoring).to.be.false;
+    });
+
+    it("Should monitoring", async () => {
+        void walletHelper.startMonitoringTransactionProgress();
+        await sleep(2000);
+        await walletHelper.stopMonitoring();
+        const monitoring = await walletHelper.isMonitoring();
+        expect(monitoring).to.be.false;
+
+        expect(walletHelper.requestStopVal).to.be.false;
+        await walletHelper.requestStop();
+        expect(walletHelper.requestStopVal).to.be.true;
     });
 });
 

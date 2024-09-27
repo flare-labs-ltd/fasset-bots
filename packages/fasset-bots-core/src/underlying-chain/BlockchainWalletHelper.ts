@@ -117,10 +117,11 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                 }
                 info = await this.checkTransactionStatus(id);
                 await this.ensureWalletMonitoringRunning();
-            }
-            if (this.requestStopVal) {
-                logger.warn(`Transaction monitoring was stopped due to termination signal.`);
-                console.warn(`Transaction monitoring was stopped due to termination signal.`);
+                if (this.requestStopVal) {
+                    logger.warn(`Transaction monitoring was stopped due to termination signal.`);
+                    console.warn(`Transaction monitoring was stopped due to termination signal.`);
+                    break;
+                }
             }
             if (!info.transactionHash) {
                 logger.error(`Cannot obtain transaction hash for ${sourceAddress}, ${targetAddress}, ${amount}, ${reference}`);
@@ -136,8 +137,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         await this.walletClient.startMonitoringTransactionProgress();
     }
 
-    async requestStop(value: boolean): Promise<void> {
-        this.requestStopVal = value;
+    async requestStop(): Promise<void> {
+        this.requestStopVal = true;
     }
 
     async stopMonitoring(): Promise<void> {
