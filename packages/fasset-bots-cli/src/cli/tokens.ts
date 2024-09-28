@@ -71,7 +71,7 @@ program
             try {
                 const stopBot = async () => {
                     console.log("Stopping wallet monitoring...");
-                    return wallet.requestStop(true);
+                    return wallet.requestStop();
                 }
                 process.on("SIGINT", () => {
                     stopBot().then().catch(logger.error);
