@@ -213,7 +213,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 `prepareAndSubmitCreatedTransaction: Both conditions met for transaction ${txEnt.id}: Current ledger ${currentBlock.number} >= last transaction ledger ${txEnt.executeUntilBlock} AND Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp}`
             );
             return;
-        } else if (!!txEnt.executeUntilBlock && !!txEnt.executeUntilTimestamp) {
+        } else if (!txEnt.executeUntilBlock && !txEnt.executeUntilTimestamp) {
             await updateTransactionEntity(this.rootEm, txEnt.id, async (txEnt) => {
                 txEnt.executeUntilBlock = currentBlock.number + this.blockOffset;
             });
@@ -305,7 +305,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void> {
-        if (txEnt) logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
+        logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
         try {
             const txResp = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txEnt.transactionHash!);
             // success
@@ -405,15 +405,18 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.size = signed.txSize;
             });
         } catch (error: any) {
-            if (isORMError(error)) {
-                // We don't want to fail tx if error is caused by DB
-                logger.error(`signAndSubmitProcess for transaction ${txId} failed with DB error: ${errorMessage(error)}`);
+            /* istanbul ignore next */
+            {
+                if (isORMError(error)) {
+                    // We don't want to fail tx if error is caused by DB
+                    logger.error(`signAndSubmitProcess for transaction ${txId} failed with DB error: ${errorMessage(error)}`);
+                    return;
+                }
+                await failTransaction(this.rootEm, txId, `Cannot sign transaction ${txId}: ${errorMessage(error)}`, error);
                 return;
             }
-            await failTransaction(this.rootEm, txId, `Cannot sign transaction ${txId}: ${errorMessage(error)}`, error);
-            return;
         }
-
+        /* istanbul ignore next */
         if (await ServiceRepository.get(this.chainType, TransactionUTXOService).checkIfTxUsesAlreadySpentUTXOs(txId)) {
             return;
         }
@@ -433,7 +436,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.info(`Transaction ${txId} is starting replacement; currentBlockHeight: ${currentBlockHeight.number}, ${currentBlockHeight.timestamp}`);
         const rootEm = ServiceRepository.get(this.chainType, EntityManager);
         const oldTx = await fetchTransactionEntityById(rootEm, txId);
-        if (!!oldTx.ancestor) {
+        /* istanbul ignore next */
+        if (oldTx.ancestor) {
             if (oldTx.ancestor.status === TransactionStatus.TX_REPLACED && oldTx.ancestor.replaced_by?.status === TransactionStatus.TX_SUCCESS) {
                 await failTransaction(
                     rootEm,

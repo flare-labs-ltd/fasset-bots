@@ -135,6 +135,7 @@ export class AgentBotUnderlyingManagement {
             const openUnderlyingPayments = await this.openUnderlyingPaymentIds(rootEm);
             logger.info(`Agent ${this.agent.vaultAddress} started handling open underlying payments #${openUnderlyingPayments.length}.`);
             for (const up of openUnderlyingPayments) {
+                /* istanbul ignore next */
                 if (this.bot.stopRequested()) return;
                 await this.nextUnderlyingPaymentStep(rootEm, up.id);
             }

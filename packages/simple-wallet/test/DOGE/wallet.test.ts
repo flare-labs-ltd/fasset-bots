@@ -141,7 +141,9 @@ describe("Dogecoin wallet tests", () => {
             txEntToUpdate.status = TransactionStatus.TX_PREPARED;
             txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
             txEntToUpdate.fee = toBN(transaction.getFee());
-            txEnt.reachedStatusPendingInTimestamp =  toBN(getCurrentTimestampInSeconds());
+            txEntToUpdate.reachedStatusPendingInTimestamp =  toBN(getCurrentTimestampInSeconds());
+            txEntToUpdate.executeUntilTimestamp = toBN(getCurrentTimestampInSeconds());
+            txEntToUpdate.executeUntilBlock = undefined;
         });
         await wClient.checkPendingTransaction(txEnt);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);

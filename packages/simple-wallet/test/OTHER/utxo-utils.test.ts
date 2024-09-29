@@ -73,5 +73,6 @@ describe("UTXO utils tests", () => {
     it("Should enforce fee", async () => {
         expect(utxoUtils.enforceMinimalAndMaximalFee(ChainType.BTC, BTC_MIN_ALLOWED_FEE.subn(1)).eq(BTC_MIN_ALLOWED_FEE)).to.be.true;
         expect(utxoUtils.enforceMinimalAndMaximalFee(ChainType.BTC, BTC_MAX_ALLOWED_FEE.addn(1)).eq(BTC_MAX_ALLOWED_FEE)).to.be.true;
+        expect(utxoUtils.enforceMinimalAndMaximalFee(ChainType.DOGE, DOGE_DEFAULT_FEE_PER_KB).eq(DOGE_DEFAULT_FEE_PER_KB)).to.be.true;
     });
 });

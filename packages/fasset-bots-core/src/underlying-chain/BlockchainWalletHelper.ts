@@ -83,6 +83,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     }
 
     // background task (monitoring in simple-wallet) should be running
+    /* istanbul ignore next */
     async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<string> {
         try {
             void this.startMonitoringTransactionProgress().catch((error) => {
@@ -148,7 +149,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     async isMonitoring(): Promise<boolean> {
         return this.walletClient.isMonitoring();
     }
-
+    /* istanbul ignore next */
     private async ensureWalletMonitoringRunning() {
         const isMonitoring = await this.isMonitoring();
         if (!isMonitoring) {

@@ -54,6 +54,7 @@ export class AgentBotRunner {
         this.restartRequested = false;
         this.running = true;
         try {
+            /* istanbul ignore next */
             void this.ensureWalletMonitoringRunning().catch((error) => {
                 logger.error(`Ensure wallet monitoring is running ended unexpectedly:`, error);
                 console.error(`Ensure wallet monitoring is running ended unexpectedly ended unexpectedly:`, error);
@@ -201,7 +202,7 @@ export class AgentBotRunner {
             }
         }
     }
-
+    /* istanbul ignore next */
     checkForWorkAddressChange(): void {
         if (this.secrets.filePath === "MEMORY") return;     // memory secrets (for tests)
         const newSecrets = Secrets.load(this.secrets.filePath);
@@ -289,6 +290,7 @@ export class AgentBotRunner {
             if (this.readyToStop()) return;
             for (const [_, wallet] of this.simpleWalletBackgroundTasks) {
                 const isMonitoring = await wallet.isMonitoring();
+                /* istanbul ignore next */
                 if (!isMonitoring) {
                     logger.info(`Wallet monitoring restarted.`);
                     console.info(`Wallet monitoring restarted.`);

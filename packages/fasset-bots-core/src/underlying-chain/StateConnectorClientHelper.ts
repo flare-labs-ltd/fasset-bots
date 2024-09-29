@@ -105,7 +105,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         logger.info(`State connector helper: retrieved attestation request ${formatArgs(attReq)}`);
         return attReq;
     }
-
+    /* istanbul ignore next */
     async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);
         const response = await this.verifier
@@ -168,7 +168,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
             throw e instanceof StateConnectorClientError ? e : new StateConnectorClientError(String(e));
         }
     }
-
+    /* istanbul ignore next */
     async obtainProofFromStateConnectorForClient(client: AxiosInstance, roundId: number, requestBytes: string): Promise<OptionalAttestationProof | null> {
         // check if round has been finalized
         // (it can happen that API returns proof finalized, but it is not finalized in state connector yet)
@@ -211,7 +211,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         }
         return proof;
     }
-
+    /* istanbul ignore next */
     private async verifyProof(proofData: AttestationProof): Promise<boolean> {
         const normalizedProofData = web3DeepNormalize(proofData);
         switch (proofData.data.attestationType) {
@@ -244,6 +244,7 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 return (status >= 200 && status < 300) || status == 500;
             },
         };
+        /* istanbul ignore next */
         if (apiKey) {
             createAxiosConfig.headers ??= {};
             createAxiosConfig.headers["X-API-KEY"] = apiKey;

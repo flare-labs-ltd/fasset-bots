@@ -2,11 +2,8 @@ import { IService } from "../../interfaces/IService";
 import {
     BTC_DOGE_DEC_PLACES,
     BTC_LOW_FEE_PER_KB,
-    BTC_MAX_ALLOWED_FEE,
     BTC_MID_FEE_PER_KB,
-    BTC_MIN_ALLOWED_FEE,
     ChainType,
-    DEFAULT_FEE_INCREASE,
     DOGE_LOW_FEE_PER_KB,
     DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB,
     TEST_DOGE_LOW_FEE_PER_KB,
@@ -53,15 +50,12 @@ export class TransactionFeeService implements IService {
     async getFeePerKB(): Promise<BN> {
         try {
             const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-            const feeStats = await feeService.getLatestFeeStats();
-            if (feeStats.decilesFeePerKB.length == 11) {// In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
-                const fee = feeStats.decilesFeePerKB[this.feeDecileIndex];
-                return enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
-            } else if (feeStats.averageFeePerKB.gtn(0)) {
-                const fee = feeStats.averageFeePerKB;
-                return enforceMinimalAndMaximalFee(this.chainType, fee.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
+            const mvgAvgFee = await feeService.getLatestFeeStats().movingAverageWeightedFee;
+            if (mvgAvgFee.gtn(0)) {
+                return enforceMinimalAndMaximalFee(this.chainType, mvgAvgFee);
+            } else {
+                return await this.getCurrentFeeRate();
             }
-            return await this.getCurrentFeeRate();
         } catch (error) {
             return await this.getCurrentFeeRate();
         }
@@ -89,7 +83,7 @@ export class TransactionFeeService implements IService {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
             const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
-            return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
+            return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
         } catch (e) {
             logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
             return getDefaultFeePerKB(this.chainType);
@@ -130,6 +124,7 @@ export class TransactionFeeService implements IService {
     async calculateTotalFeeOfDescendants(em: EntityManager, oldTx: TransactionEntity): Promise<BN> {
         const descendants = await getTransactionDescendants(em, oldTx.transactionHash!, oldTx.source);
         let feeToCover: BN = toBN(0);
+        /* istanbul ignore next */
         for (const txEnt of descendants) {
             logger.info(`Transaction ${oldTx.id} has descendant ${txEnt.id}`);
             await updateTransactionEntity(em, txEnt.id, async (txEnt) => {

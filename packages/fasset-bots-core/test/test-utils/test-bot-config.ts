@@ -1,4 +1,5 @@
 export const TEST_FASSET_BOT_CONFIG = process.env.TEST_FASSET_BOT_CONFIG ?? "./run-config/coston-bot.json";
+export const FASSET_BOT_CONFIG = process.env.FASSET_BOT_CONFIG ?? "./run-config/coston-bot.json";
 export const TEST_SECRETS = process.env.FASSET_BOT_SECRETS ?? "./secrets.json";
 
 export const OWNER_ADDRESS: string = "0xbaDC368bdCf8BB41FFF844bCF34a41968BdCe073";
@@ -16,7 +17,7 @@ export const COSTON_CONFIG_EXTENDS_2 = "./test/test-utils/run-config-test/run-co
 export const COSTON_CONFIG_LOOP_1 = "./test/test-utils/run-config-test/run-config-extend-loop-1.json";
 export const COSTON_CONFIG_INVALID = "./test/test-utils/run-config-test/run-config-coston-invalid.json";
 
-export const INDEXER_URL_XRP: string = "https://attestation-coston.aflabs.net/verifier/xrp";
+export const INDEXER_URL_XRP: string = "https://testnet-verifier.aflabs.org/verifier/xrp";
 export const ATTESTATION_PROVIDER_URLS: string[] = [
     "https://attestation-coston.aflabs.net/attestation-client",
     "https://attestation-coston.aflabs.net/attestation-client",

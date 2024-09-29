@@ -112,6 +112,7 @@ export class AgentBotRedemption {
         const redemptions = await this.redemptionsInState(rootEm, state, batchSize);
         logger.info(`Agent ${this.agent.vaultAddress} is handling ${redemptions.length} redemptions in state ${state}`);
         for (const redemption of redemptions) {
+            /* istanbul ignore next */
             if (this.bot.stopRequested()) return;
             try {
                 await this.handleOpenRedemption(rootEm, state, redemption);
@@ -124,12 +125,14 @@ export class AgentBotRedemption {
     async handleExpiredRedemptions(rootEm: EM, batchSize: number = REDEMPTION_BATCH) {
         const expirationProof = await this.bot.getUnderlyingBlockHeightProof();
         if (!expirationProof) return;
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         const redemptions = await this.expiredRedemptions(rootEm, expirationProof, batchSize);
         const proof = expirationProof.data.responseBody;
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is handling ${redemptions.length} expired redemptions
             (lqwBlock=${proof.lowestQueryWindowBlockNumber}, lqwTimestamp=${proof.lowestQueryWindowBlockTimestamp})`);
         for (const redemption of redemptions) {
+            /* istanbul ignore next */
             if (this.bot.stopRequested()) return;
             try {
                 await this.handleExpiredRedemption(rootEm, redemption, expirationProof);

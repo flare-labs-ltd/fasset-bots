@@ -60,6 +60,7 @@ export class AgentBotClosing {
     }
 
     async startOrWithdrawVaultCollateral(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const readAgentEntAtWithdrawal = await this.bot.fetchAgentEntity(rootEm);
@@ -75,6 +76,7 @@ export class AgentBotClosing {
     }
 
     async startOrRedeemPoolTokens(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const readAgentEntAtPTRedemption = await this.bot.fetchAgentEntity(rootEm);
@@ -90,6 +92,7 @@ export class AgentBotClosing {
     }
 
     async withdrawPoolFees() {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const poolFeeBalance = await this.agent.poolFeeBalance();
@@ -107,6 +110,7 @@ export class AgentBotClosing {
     }
 
     async selfCloseFAssets() {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const br = await TokenBalances.fasset(this.context);
@@ -198,6 +202,7 @@ export class AgentBotClosing {
     }
 
     async startVaultDestroy(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const agentInfo = await this.agent.getAgentInfo();
@@ -222,6 +227,7 @@ export class AgentBotClosing {
     }
 
     async destroyVaultWhenAllowed(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);

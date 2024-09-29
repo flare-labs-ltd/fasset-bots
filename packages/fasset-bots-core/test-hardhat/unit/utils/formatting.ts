@@ -12,4 +12,12 @@ describe("Formatting unit tests", () => {
         expect(formattingMethods.formatArgs(event2.args)).to.eq('{"first":"{ second: [0, 1, null] }"}');
         expect(formattingMethods.formatArgs(null)).to.eq("null");
     });
+
+    it("Should format timestamp", async () => {
+        expect(formattingMethods.formatTimestamp(toBN(100))).to.be.a('string');
+    });
+
+    it("Should fixed format", async () => {
+        expect(formattingMethods.formatFixed(toBN(100), 0)).to.be.a('string');
+    });
 });

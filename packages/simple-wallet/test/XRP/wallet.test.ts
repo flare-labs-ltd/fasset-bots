@@ -6,7 +6,7 @@ import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import { createInitialTransactionEntity, fetchTransactionEntityById, getTransactionInfoById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionStatus } from "../../src/entity/transaction";
 import {
     addConsoleTransportForTests,
@@ -109,6 +109,10 @@ describe("Xrp wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 20, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         const txId = await wClient.createDeleteAccountTransaction(account.address, "", fundedAddress);
         expect(txId).to.be.greaterThan(0);
+        // cannot receive requests already deleting
+        await expect(
+            wClient.createDeleteAccountTransaction(account.address, account.privateKey, fundedAddress)
+        ).to.eventually.be.rejectedWith(`Cannot receive requests. ${account.address} is deleting`);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
     });
@@ -314,15 +318,12 @@ describe("Xrp wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
-
     it("Account that is deleting should not enable creating transaction", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, true);
-
         await expect(
             wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops),
         ).to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedWallet.address} is deleting`);
-
         await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, false);
     });
 
@@ -384,11 +385,47 @@ describe("Xrp wallet tests", () => {
         delete wClient.blockchainAPI.clients[url];
     });
 
-
     it("Should receive no service found ", async () => {
         const fn = () => {
             return ServiceRepository.get(ChainType.testXRP, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool("");
         };
         expect(fn).to.throw("No service registered for testXRP");
+    });
+
+    it("Should fail - no privateKey ", async () => {
+        const account = wClient.createWallet();
+        await wClient.stopMonitoring();
+        await sleepMs(20000);
+        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+
+        const txEnt0 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
+        const id0 = txEnt0.id;
+        updateTransactionEntity(wClient.rootEm, id0, async (txEntToUpdate) => {
+            txEntToUpdate.raw = JSON.stringify({raw: 0});
+        })
+        const txEntBefore0 = await fetchTransactionEntityById(wClient.rootEm, id0);
+        await wClient.resubmitSubmissionFailedTransactions(txEntBefore0);
+        const txEntAfter0 = await fetchTransactionEntityById(wClient.rootEm, id0);
+        expect(txEntAfter0.status).to.eq(TransactionStatus.TX_FAILED);
+
+        const txEnt2 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
+        const id1 = txEnt2.id;
+        updateTransactionEntity(wClient.rootEm, id1, async (txEntToUpdate) => {
+            txEntToUpdate.raw = JSON.stringify({raw: 0});
+        })
+        const txEntBefore1 = await fetchTransactionEntityById(wClient.rootEm, id1);
+        await wClient.resubmitPendingTransaction(txEntBefore1);
+        const txEntAfter1 = await fetchTransactionEntityById(wClient.rootEm, id1);
+        expect(txEntAfter1.status).to.eq(TransactionStatus.TX_FAILED);
+
+        const txEnt3 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
+        const id2 = txEnt3.id;
+        updateTransactionEntity(wClient.rootEm, id2, async (txEntToUpdate) => {
+            txEntToUpdate.raw = JSON.stringify({raw: 0});
+        })
+        const txEntBefore2 = await fetchTransactionEntityById(wClient.rootEm, id2);
+        await wClient.submitPreparedTransactions(txEntBefore2);
+        const txEntAfter2 = await fetchTransactionEntityById(wClient.rootEm, id2);
+        expect(txEntAfter2.status).to.eq(TransactionStatus.TX_FAILED);
     });
 });

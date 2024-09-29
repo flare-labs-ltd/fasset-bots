@@ -3,13 +3,12 @@ import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
     checkIfIsDeleting,
-    createInitialTransactionEntity, failTransaction, setAccountIsDeleting,
+    createInitialTransactionEntity, setAccountIsDeleting,
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { EntityManager } from "@mikro-orm/core";
 import {
     ChainType,
-    DEFAULT_FEE_INCREASE,
 } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
@@ -183,7 +182,7 @@ export class TransactionService implements IService {
             if (txForReplacement && feeInSatoshi) {
                 const feeToCover: BN = feeInSatoshi;
                 if (txForReplacement.size && txForReplacement.fee) {
-                    const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease ?? DEFAULT_FEE_INCREASE);
+                    const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease);
                     if (feeRatePerKB.lt(minRequiredFeePerKb)) {
                         feeRatePerKB = minRequiredFeePerKb;
                     }

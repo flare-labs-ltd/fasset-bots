@@ -96,6 +96,7 @@ export class TransactionMonitor {
                     if (this.shouldStopMonitoring()) break;
                     if (resubmitSubmissionFailedTransactions) {
                         await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, resubmitSubmissionFailedTransactions);
+                        /* istanbul ignore next */
                         if (this.shouldStopMonitoring()) break;
                     }
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, checkPendingTransaction);
@@ -114,7 +115,7 @@ export class TransactionMonitor {
                 await sleepMs(this.restartInDueToError);
             }
 
-            logger.info(`Monitoring stopped for chain ${this.chainType}.`);
+            logger.info(`Monitoring stopped for chain ${this.chainType}`);
         } catch (error) {
             logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
         }

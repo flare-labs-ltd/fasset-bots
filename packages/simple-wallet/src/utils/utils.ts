@@ -1,5 +1,6 @@
 import {
    ChainType,
+   DEFAULT_FEE_INCREASE,
    DROPS_PER_XRP,
 } from "./constants";
 import { StuckTransaction } from "../interfaces/IWalletTransaction";
@@ -51,7 +52,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testBTC:
          return {
             blockOffset: 6,//accepted in next x blocks
-            feeIncrease: 2,
+            feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 1,//do not submit if "one block" time left
             enoughConfirmations: 2
          };
@@ -59,7 +60,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testDOGE:
          return {
             blockOffset: 8,//accepted in next x blocks
-            feeIncrease: 2,
+            feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 3,//do not submit if "three blocks" time left
             enoughConfirmations: 10
          };
@@ -67,7 +68,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testXRP:
          return {
             blockOffset: 6,
-            feeIncrease: 2,
+            feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 2
          };
       default:

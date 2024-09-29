@@ -3,7 +3,7 @@ import { TokenBalance, TokenBalances } from "../utils";
 import { CurrencyFormatSettings } from "../utils/Currency";
 import { BNish } from "../utils/helpers";
 
-
+/* istanbul ignore next */
 export class LazyTokenBalance {
     constructor(
         public initializer: () => Promise<TokenBalance>

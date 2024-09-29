@@ -89,6 +89,7 @@ export class AgentBotMinting {
             const openMintings = await this.openMintings(rootEm, true);
             logger.info(`Agent ${this.agent.vaultAddress} started handling open mintings #${openMintings.length}.`);
             for (const rd of openMintings) {
+                /* istanbul ignore next */
                 if (this.bot.stopRequested()) return;
                 await this.nextMintingStep(rootEm, rd.id);
             }

@@ -280,7 +280,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       if (!shouldSubmit) {
          await handleNoTimeToSubmitLeft(this.rootEm, txEnt.id, currentLedger, this.executionBlockOffset, "prepareAndSubmitCreatedTransaction", txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.toString());
          return;
-      } else if (!!txEnt.executeUntilBlock && !!txEnt.executeUntilTimestamp) {
+      } else if (!txEnt.executeUntilBlock && !txEnt.executeUntilTimestamp) {
          await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => {
             txEntToUpdate.executeUntilBlock = currentLedger + this.blockOffset;
          });

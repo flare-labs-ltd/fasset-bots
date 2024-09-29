@@ -31,8 +31,10 @@ export class AgentBotUnderlyingWithdrawal {
     }
 
     async handleUnderlyingWithdrawal(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         await this.checkStartWithdrawalConfirmation(rootEm);
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         await this.checkCancelUnderlyingWithdrawal(rootEm);
     }

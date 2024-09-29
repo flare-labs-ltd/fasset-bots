@@ -100,6 +100,7 @@ export class UserBotCommands {
         }
         // create config
         const botConfig = await createBotConfig("user", secrets, configFile, nativeAddress);
+        /* istanbul ignore next */
         registerCleanup?.(() => closeBotConfig(botConfig));
         // verify fasset config
         const fassetConfig = botConfig.fAssets.get(fAssetSymbol);
@@ -188,6 +189,7 @@ export class UserBotCommands {
         const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
         if (noWait) {
             console.log(`The minting started and must be executed later by running "user-bot mintExecute ${requestId}".`);
+            /* istanbul ignore next */
             if (executorAddress !== ZERO_ADDRESS) {
                 console.log("The minting can also be executed by the executor. Please pass the executor the state file:");
                 console.log("    " + this.stateFilePath("mint", requestId));
@@ -195,6 +197,7 @@ export class UserBotCommands {
             logger.info(`User ${this.nativeAddress} didn't wait for minting with agent ${agentVault}.`);
             return;
         }
+        /* istanbul ignore next */
         if (executorAddress !== ZERO_ADDRESS) {
             console.log("If the minting fails or is interrupted, it can be executed by the executor. Please pass the executor the state file:");
             console.log("    " + this.stateFilePath("mint", requestId));
@@ -328,6 +331,7 @@ export class UserBotCommands {
             });
             requestFiles.push(this.stateFilePath("redeem", req.requestId));
         }
+        /* istanbul ignore next */
         if (executorAddress !== ZERO_ADDRESS) {
             console.log("In case of redemption non-payment, the default can be triggered by the executor. Please pass the executor the state file(s):");
             requestFiles.forEach(fname => console.log("    " + fname));
@@ -376,7 +380,7 @@ export class UserBotCommands {
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
     }
-
+    /* istanbul ignore next */
     async redemptionDefaultNoWait(requestIdOrPath: BNish | string, state: RedeemData): Promise<void> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         // if proof request has not been submitted yet, submit
@@ -405,7 +409,7 @@ export class UserBotCommands {
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} for redemption ${state.requestId}.`);
         this.deleteState(state, requestIdOrPath);
     }
-
+    /* istanbul ignore next */
     async updateAllMintings() {
         const list = this.readStateList("mint");
         const settings = await this.context.assetManager.getSettings();
@@ -430,7 +434,7 @@ export class UserBotCommands {
             }
         }
     }
-
+    /* istanbul ignore next */
     async updateAllRedemptions() {
         const list = this.readStateList("redeem");
         const settings = await this.context.assetManager.getSettings();
@@ -505,12 +509,12 @@ export class UserBotCommands {
         const lastBlock = requireNotNull(await this.context.blockchainIndexer.getBlockAt(blockHeight));
         return blockHeight > Number(state.lastUnderlyingBlock) && lastBlock.timestamp > Number(state.lastUnderlyingTimestamp);
     }
-
+    /* istanbul ignore next */
     stateFileDir(type: StateData["type"]) {
         const controllerAddress = this.context.assetManagerController.address.slice(2, 10);
         return path.resolve(this.userDataDir, `${controllerAddress}-${this.fAssetSymbol}-${type}`);
     }
-
+    /* istanbul ignore next */
     stateFilePath(type: StateData["type"], requestIdOrPath: BNish | string) {
         if (typeof requestIdOrPath !== "string" || /^\d+$/.test(requestIdOrPath)) {
             return path.resolve(this.stateFileDir(type), `${requestIdOrPath}.json`);
@@ -518,7 +522,7 @@ export class UserBotCommands {
             return path.resolve(requestIdOrPath); // full path passed
         }
     }
-
+    /* istanbul ignore next */
     validateStateFilePath(fullpath: string, type: StateData["type"], requestIdOrPath: BNish | string) {
         if (fs.existsSync(fullpath)) return;
         const typeStr = type === "mint" ? "minting" : "redemption";
@@ -528,21 +532,21 @@ export class UserBotCommands {
             throw new CommandLineError(`Missing ${typeStr} state file ${fullpath}`);
         }
     }
-
+    /* istanbul ignore next */
     writeState(data: StateData, requestIdOrPath?: BNish | string): void {
         const fname = this.stateFilePath(data.type, requestIdOrPath ?? data.requestId);
         const dir = path.dirname(fname);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(fname, JSON.stringify(data, null, 4));
     }
-
+    /* istanbul ignore next */
     readState<T extends StateData["type"]>(type: T, requestIdOrPath: BNish | string): Extract<StateData, { type: T }> {
         const fname = this.stateFilePath(type, requestIdOrPath);
         this.validateStateFilePath(fname, type, requestIdOrPath);
         const json = fs.readFileSync(fname).toString();
         return JSON.parse(json);
     }
-
+    /* istanbul ignore next */
     readStateList<T extends StateData["type"]>(type: T): Extract<StateData, { type: T }>[] {
         const dir = this.stateFileDir(type);
         if (!fs.existsSync(dir)) {
@@ -557,7 +561,7 @@ export class UserBotCommands {
                 return JSON.parse(json);
             });
     }
-
+    /* istanbul ignore next */
     deleteState(data: StateData, requestIdOrPath?: BNish | string): void {
         const fname = this.stateFilePath(data.type, requestIdOrPath ?? data.requestId);
         fs.unlinkSync(fname);

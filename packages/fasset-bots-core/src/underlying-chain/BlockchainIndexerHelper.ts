@@ -167,7 +167,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getBlockHeight(): Promise<number> {
         let blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
-        //urska: temporary "hack" as testBTC indexer returns last seen block on chain and not last confirm as other indexers - will be fixed with fdc
+        //temporary "hack" as testBTC indexer returns last seen block on chain and not last confirm as other indexers - will be fixed with fdc
         if (this.chainId.toString() === ChainId.testBTC.toString() || this.chainId.toString() === ChainId.BTC.toString()) {
             blockHeight = blockHeight - this.finalizationBlocks;
         }

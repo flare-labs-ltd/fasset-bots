@@ -247,6 +247,12 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
+    it("Should send redemption payment failed", async () => {
+        const spySend = spy.on(notifier, "sendRedemptionPaymentFailed");
+        await notifier.sendRedemptionPaymentFailed("requestId");
+        expect(spySend).to.have.been.called.once;
+    });
+
     it("Should send redemption was paid", async () => {
         const spySend = spy.on(notifier, "sendRedemptionPaid");
         await notifier.sendRedemptionPaid("requestId");
@@ -354,6 +360,12 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
+    it("Should send AgentUnderlyingPayment initiated", async () => {
+        const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentInitiated");
+        await notifier.sendAgentUnderlyingPaymentInitiated(0, "type");
+        expect(spySend).to.have.been.called.once;
+    });
+
     it("Should send AgentUnderlyingPayment request payment proof", async () => {
         const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentRequestPaymentProof");
         await notifier.sendAgentUnderlyingPaymentRequestPaymentProof("hash", "type");
@@ -369,6 +381,24 @@ describe("Notifier tests", () => {
     it("Should send setting update started", async () => {
         const spySend = spy.on(notifier, "sendSettingsUpdateStarted");
         await notifier.sendSettingsUpdateStarted("name", "validAt");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent caught up with events", async () => {
+        const spySend = spy.on(notifier, "sendAgentEventHandlingCaughtUp");
+        await notifier.sendAgentEventHandlingCaughtUp();
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent funded service account", async () => {
+        const spySend = spy.on(notifier, "sendFundedServiceAccount");
+        await notifier.sendFundedServiceAccount("name", "account");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send agent failed funding service account", async () => {
+        const spySend = spy.on(notifier, "sendFailedFundingServiceAccount");
+        await notifier.sendFailedFundingServiceAccount("name", "account");
         expect(spySend).to.have.been.called.once;
     });
 

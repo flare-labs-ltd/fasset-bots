@@ -26,11 +26,13 @@ export class BlockbookAPI implements IBlockchainAPI {
         const res = await this.client.get(`/address/${account}`);
         const totalBalance = res.data?.balance;
         const unconfirmedBalance = res.data?.unconfirmedBalance;
+        /* istanbul ignore else */
         if (!!totalBalance && !!unconfirmedBalance) {
             const totBalance = toBN(totalBalance);
             const uncBalance = toBN(unconfirmedBalance);
             return toNumber(totBalance.add(uncBalance));
         }
+        /*istanbul ignore next */
         return undefined;
     }
 

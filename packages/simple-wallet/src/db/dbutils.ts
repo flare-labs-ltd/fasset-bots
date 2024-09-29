@@ -309,6 +309,7 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
     await updateTransactionEntity(rootEm, txId, async (txEnt) => {
         txEnt.status = TransactionStatus.TX_FAILED;
         txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
+        txEnt.serverSubmitResponse = JSON.stringify(reason);
     });
     if (error) {
         logger.error(`Transaction ${txId} failed: ${reason}`, error);

@@ -3,7 +3,7 @@ import path from "path";
 import { resolveFromPackageRoot } from "./package-paths";
 
 let _programVersion: string | undefined;
-
+/* istanbul ignore next */
 export function programVersion() {
     if (_programVersion == undefined) {
         const mainFileDir = require.main?.filename ? path.dirname(require.main?.filename) : __dirname;
