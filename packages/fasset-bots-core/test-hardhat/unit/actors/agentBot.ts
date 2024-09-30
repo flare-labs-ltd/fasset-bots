@@ -97,6 +97,15 @@ describe("Agent bot unit tests", () => {
         const [events, lastBlock] = await agentBot.eventReader.readNewEvents(orm.em, 10);
         expect(events.length).to.eq(0);
     });
+    
+    it("Should report outdated agents", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const latest = await time.latestBlock();
+        const lastReport = agentBot.transientStorage.lastOutdatedEventReported;
+        await agentBot.eventReader.reportOutdatedAgent(parseInt(latest.toString()) - 10, parseInt(latest.toString()), 3, 3)
+        const newReport = agentBot.transientStorage.lastOutdatedEventReported;
+        expect(newReport).to.be.gt(lastReport);
+    });
 
     it("Should top up collateral", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
@@ -133,13 +142,24 @@ describe("Agent bot unit tests", () => {
         expect(spyBalance2).to.have.been.called.once;
     });
 
-    it("Should prove EOA address", async () => {
+    it("Should prove EOA address - no funds", async () => {
         const spyEOA = spy.on(AgentBot, "proveEOAaddress");
         const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
         await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress)).to.eventually.be.rejectedWith(/^Not enough funds on underlying address/).and.be.an.instanceOf(Error);
         expect(spyEOA).to.have.been.called.once;
     });
+
+    // it.only("Should prove EOA address - funded", async () => {
+    //     const spyEOA = spy.on(AgentBot, "proveEOAaddress");
+    //     // await fundUnderlying(context, ownerUnderlyingAddress, toBN(100000000))
+    //     const contextEOAProof = await createTestAssetContext(accounts[0], testChainInfo.xrp, { requireEOAAddressProof: true });
+    //     await contextEOAProof.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
+    //     contextEOAProof.chainInfo.minimumAccountBalance = toBN(0);
+    //     await createTestAgentBot(contextEOAProof, orm, ownerAddress, ownerUnderlyingAddress)
+    //     // await expect(createTestAgentBot(contextEOAProof, orm, ownerAddress, ownerUnderlyingAddress)).to.eventually.be.rejectedWith(/^Not enough funds on underlying address/).and.be.an.instanceOf(Error);
+    //     expect(spyEOA).to.have.been.called.once;
+    // });
 
     it("Should not do next redemption step due to invalid redemption state", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
@@ -704,11 +724,19 @@ describe("Agent bot unit tests", () => {
         expect(Number(agentEnt2.dailyTasksTimestamp)).to.be.equal(lastHandledTimestamp);
     });
 
-    it("Should not handle claims - no contracts", async () => {
+    it("Should not handle claims (FTSO rewards) - no contracts", async () => {
         const spyError = spy.on(console, "error");
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(2);
+    });
+
+    it("Should not handle claims - stop requested", async () => {
+        const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
+        const spyError = spy.on(agentBot, "stopRequested");
+        agentBot.requestStop();
+        await agentBot.claims.checkForClaims();
+        expect(spyError).to.be.called.exactly(4);
     });
 
     it("Should handle claims", async () => {

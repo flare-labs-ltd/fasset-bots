@@ -62,7 +62,7 @@ program
             }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.walletApiType ?? null, chainInfo.stuckTransactionOptions, chainInfo.feeServiceOptions, chainInfo.fallbackApis);
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.stuckTransactionOptions, chainInfo.feeServiceOptions, chainInfo.fallbackApis);
             await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
@@ -71,7 +71,7 @@ program
             try {
                 const stopBot = async () => {
                     console.log("Stopping wallet monitoring...");
-                    return wallet.requestStop(true);
+                    return wallet.requestStop();
                 }
                 process.on("SIGINT", () => {
                     stopBot().then().catch(logger.error);
@@ -129,7 +129,7 @@ program
             }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.walletApiType ?? null, chainInfo.stuckTransactionOptions, chainInfo.feeServiceOptions, chainInfo.fallbackApis);
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.stuckTransactionOptions, chainInfo.feeServiceOptions, chainInfo.fallbackApis);
             const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));

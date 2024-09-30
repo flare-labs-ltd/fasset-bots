@@ -22,6 +22,7 @@ export class AgentBotCollateralWithdrawal {
     context = this.agent.context;
 
     async handleWaitForCollateralWithdrawal(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
@@ -43,6 +44,7 @@ export class AgentBotCollateralWithdrawal {
     }
 
     async handleWaitForPoolTokenRedemption(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);

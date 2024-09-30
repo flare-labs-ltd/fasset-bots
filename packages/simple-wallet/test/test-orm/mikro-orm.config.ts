@@ -29,7 +29,16 @@ const config: CreateOrmOptions = {
 export async function initializeTestMikroORM(): Promise<MikroORM> {
     const orm = await MikroORM.init(config);
     await orm.getSchemaGenerator().ensureDatabase();
-    await orm.getSchemaGenerator().updateSchema();
+    await orm.getSchemaGenerator().dropSchema();
+    await orm.getSchemaGenerator().createSchema(); // recreate every time when testing
+    return orm;
+}
+
+export async function initializeTestMikroORMWithConfig(config: CreateOrmOptions): Promise<MikroORM> {
+    const orm = await MikroORM.init(config);
+    await orm.getSchemaGenerator().ensureDatabase();
+    await orm.getSchemaGenerator().dropSchema();
+    await orm.getSchemaGenerator().createSchema(); // recreate every time when testing
     return orm;
 }
 

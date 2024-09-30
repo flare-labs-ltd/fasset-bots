@@ -1,12 +1,13 @@
 import { IService } from "../../interfaces/IService";
 import {
     BTC_DOGE_DEC_PLACES,
-    BTC_FEE_SECURITY_MARGIN,
-    BTC_MAX_ALLOWED_FEE,
-    BTC_MIN_ALLOWED_FEE,
+    BTC_LOW_FEE_PER_KB,
+    BTC_MID_FEE_PER_KB,
     ChainType,
-    DEFAULT_FEE_INCREASE,
-    DOGE_FEE_SECURITY_MARGIN,
+    DOGE_LOW_FEE_PER_KB,
+    DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB,
+    TEST_DOGE_LOW_FEE_PER_KB,
+    TEST_DOGE_MID_FEE_PER_KB,
     UTXO_INPUT_SIZE,
     UTXO_INPUT_SIZE_SEGWIT,
     UTXO_OUTPUT_SIZE,
@@ -16,47 +17,45 @@ import {
 } from "../../utils/constants";
 import BN from "bn.js";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/BlockchainAPIWrapper";
+import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
-import { getDefaultFeePerKB } from "../../utils/utils";
 import { toBN } from "web3-utils";
-import { BlockchainFeeService } from "../../fee-service/service";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { UTXOFeeParams } from "../../interfaces/IWalletTransaction";
-import { getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
+import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-error-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
 
+export enum FeeStatus {
+    LOW, MEDIUM, HIGH
+}
+
 export class TransactionFeeService implements IService {
     readonly feeDecileIndex: number;
     readonly feeIncrease: number;
-    readonly relayFeePerB: number;
     readonly chainType: ChainType;
 
-    constructor(chainType: ChainType, feeDecileIndex: number, feeIncrease: number, relayFeePerB: number) {
+    constructor(chainType: ChainType, feeDecileIndex: number, feeIncrease: number) {
         this.chainType = chainType;
         this.feeDecileIndex = feeDecileIndex;
         this.feeIncrease = feeIncrease;
-        this.relayFeePerB = relayFeePerB;
     }
 
     /**
-     * @returns default fee per byte
+     * @returns default fee per kilobyte
      */
     async getFeePerKB(): Promise<BN> {
         try {
             const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-            const feeStats = await feeService.getLatestFeeStats();
-            if (feeStats.decilesFeePerKB.length == 11) {// In testDOGE there's a lot of blocks with empty deciles and 0 avg fee
-                const fee = feeStats.decilesFeePerKB[this.feeDecileIndex].muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
-                return this.enforceMinimalAndMaximalFee(this.chainType, fee);
-            } else if (feeStats.averageFeePerKB.gtn(0)) {
-                const fee = feeStats.averageFeePerKB.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
-                return this.enforceMinimalAndMaximalFee(this.chainType, fee);
+            const mvgAvgFee = await feeService.getLatestFeeStats().movingAverageWeightedFee;
+            if (mvgAvgFee.gtn(0)) {
+                return enforceMinimalAndMaximalFee(this.chainType, mvgAvgFee);
+            } else {
+                return await this.getCurrentFeeRate();
             }
-            return await this.getCurrentFeeRate();
         } catch (error) {
             return await this.getCurrentFeeRate();
         }
@@ -79,15 +78,15 @@ export class TransactionFeeService implements IService {
 
     private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
         try {
-            const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks); //TODO - fix for doge
-            if (fee.toString() === "-1") {
+            const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks);
+            if (fee.toString() === "-1" || fee === 0) {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
             const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
-            return this.enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE));
+            return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
         } catch (e) {
             logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
-            return getDefaultFeePerKB(this.chainType).muln(this.feeIncrease ?? DEFAULT_FEE_INCREASE);
+            return getDefaultFeePerKB(this.chainType);
         }
     }
 
@@ -97,7 +96,7 @@ export class TransactionFeeService implements IService {
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
         try {
-            const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(params.source, this.chainType);
+            const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(params.source);
             const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
             let est_fee = await this.getEstimateFee(utxos.length, numOfOut);
 
@@ -110,8 +109,7 @@ export class TransactionFeeService implements IService {
                     neededUTXOs.push(utxo);
                     sum = sum.add(toBN(utxo.value));
                     est_fee = await this.getEstimateFee(neededUTXOs.length, numOfOut);
-                    // multiply estimated fee by 1.4 to ensure enough funds TODO: is it enough?
-                    if (sum.gt(params.amount.add(est_fee).muln(DEFAULT_FEE_INCREASE))) {
+                    if (sum.gt(params.amount.add(est_fee))) {
                         break;
                     }
                 }
@@ -126,6 +124,7 @@ export class TransactionFeeService implements IService {
     async calculateTotalFeeOfDescendants(em: EntityManager, oldTx: TransactionEntity): Promise<BN> {
         const descendants = await getTransactionDescendants(em, oldTx.transactionHash!, oldTx.source);
         let feeToCover: BN = toBN(0);
+        /* istanbul ignore next */
         for (const txEnt of descendants) {
             logger.info(`Transaction ${oldTx.id} has descendant ${txEnt.id}`);
             await updateTransactionEntity(em, txEnt.id, async (txEnt) => {
@@ -136,30 +135,29 @@ export class TransactionFeeService implements IService {
         return feeToCover;
     }
 
-    // Util for bitcore-lib serialization checks
-    hasTooHighOrLowFee(fee: BN, estFee: BN): boolean {
-        // https://github.com/bitpay/bitcore/blob/35b6f07bf33f79c0cd198a25c94ba63905b03a5f/packages/bitcore-lib/lib/transaction/transaction.js#L267
-        if (this.chainType == ChainType.BTC || this.chainType == ChainType.testBTC) {
-            return fee.lt(estFee.divn(BTC_FEE_SECURITY_MARGIN)) || fee.gt(estFee.muln(BTC_FEE_SECURITY_MARGIN));
-        } else {
-            return fee.lt(estFee.divn(DOGE_FEE_SECURITY_MARGIN)) || fee.gt(estFee.muln(DOGE_FEE_SECURITY_MARGIN));
+    async getCurrentFeeStatus(): Promise<FeeStatus> {
+        const fee = await this.getFeePerKB();
+        switch (this.chainType) {
+            case ChainType.DOGE:
+                return this.getFeeStatusForChain(fee, DOGE_LOW_FEE_PER_KB, DOGE_MID_FEE_PER_KB);
+            case ChainType.testDOGE:
+                return this.getFeeStatusForChain(fee, TEST_DOGE_LOW_FEE_PER_KB, TEST_DOGE_MID_FEE_PER_KB);
+            case ChainType.BTC:
+                return this.getFeeStatusForChain(fee, BTC_LOW_FEE_PER_KB, BTC_MID_FEE_PER_KB);
+            case ChainType.testBTC:
+                return this.getFeeStatusForChain(fee, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB);
+            default:
+                return FeeStatus.MEDIUM;
         }
     }
 
-    enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
-        if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
-            return feePerKB;
+    private getFeeStatusForChain(fee: BN, lowFee: BN, medium: BN): FeeStatus {
+        if (fee.lt(lowFee)) { // 0,05 DOGE/kB
+            return FeeStatus.LOW;
+        } else if (fee.lt(medium)) { // 0,4 DOGE/kB
+            return FeeStatus.MEDIUM;
         } else {
-            const minFee = BTC_MIN_ALLOWED_FEE;
-            const maxFee = BTC_MAX_ALLOWED_FEE;
-            if (feePerKB.lt(minFee)) {
-                return minFee;
-            } else if (feePerKB.gt(maxFee)) {
-                return maxFee;
-            }
-            else {
-                return feePerKB;
-            }
+            return FeeStatus.HIGH;
         }
     }
 }

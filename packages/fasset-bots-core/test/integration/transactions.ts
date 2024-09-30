@@ -31,7 +31,7 @@ describe("XRP transaction integration tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, null);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
         void walletHelper.walletClient.startMonitoringTransactionProgress();
     });
 
@@ -62,10 +62,14 @@ describe("XRP transaction integration tests", () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
         const dbId = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, undefined);
+        const startTime = Date.now();
+        const maxDuration = 1.5 * 60 * 1000;
         while(1) {
+            const elapsedTime = Date.now() - startTime;
             const info = await walletHelper.walletClient.getTransactionInfo(dbId);
             if (info.status == TransactionStatus.TX_SUCCESS) break;
             if (info.status == TransactionStatus.TX_FAILED) throw new Error("Test failed");
+            if (elapsedTime > maxDuration) throw new Error("Test failed");
         }
         const txInfo = await walletHelper.walletClient.getTransactionInfo(dbId);
         // wait for transaction

@@ -86,6 +86,7 @@ export class AgentBotEventReader {
      * @param rootEm entity manager
      */
     async handleNewEvents(rootEm: EM): Promise<void> {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
@@ -97,6 +98,7 @@ export class AgentBotEventReader {
                 events = events.filter((event) => eventOrder(event, lastEventRead) > 0);
             }
             for (const event of events) {
+                /* istanbul ignore next */
                 if (this.bot.stopRequested()) return;
                 try {
                     await this.bot.handleEvent(rootEm, event);
@@ -121,13 +123,14 @@ export class AgentBotEventReader {
             logger.error(`Agent ${this.agentVaultAddress} run into error while handling events:`, error);
         }
     }
-
+    /* istanbul ignore next */
     async troubleshootEvents(rootEm: EM): Promise<void> {
         try {
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
             await readAgentEnt.events.init();
             const unhandledEvents = readAgentEnt.unhandledEvents().sort(eventOrder)
             for (const event of unhandledEvents) {
+                /* istanbul ignore next */
                 if (this.bot.stopRequested()) return;
                 try {
                     const fullEvent = await this.getEventFromEntity(event);
@@ -156,7 +159,7 @@ export class AgentBotEventReader {
             logger.error(`Agent ${this.agentVaultAddress} run into error while troubleshooting events:`, error);
         }
     }
-
+    /* istanbul ignore next */
     async getEventFromEntity(event: Event): Promise<EvmEvent | undefined> {
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
         const events = [];

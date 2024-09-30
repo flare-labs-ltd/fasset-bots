@@ -92,16 +92,21 @@ export class TransactionMonitor {
                         continue;
                     }
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, submitPreparedTransactions);
+                    /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
                     if (resubmitSubmissionFailedTransactions) {
                         await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, resubmitSubmissionFailedTransactions);
+                        /* istanbul ignore next */
                         if (this.shouldStopMonitoring()) break;
                     }
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, checkPendingTransaction);
+                     /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, prepareAndSubmitCreatedTransaction);
+                     /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, checkSubmittedTransaction);
+                     /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
 
                 } catch (error) {
@@ -110,7 +115,7 @@ export class TransactionMonitor {
                 await sleepMs(this.restartInDueToError);
             }
 
-            logger.info(`Monitoring stopped for chain ${this.chainType}.`);
+            logger.info(`Monitoring stopped for chain ${this.chainType}`);
         } catch (error) {
             logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
         }

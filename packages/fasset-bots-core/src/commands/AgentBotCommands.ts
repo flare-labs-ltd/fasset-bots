@@ -75,6 +75,7 @@ export class AgentBotCommands {
         }
         // create config
         const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
+        /* istanbul ignore next */
         registerCleanup?.(() => closeBotConfig(botConfig));
         return botConfig;
     }

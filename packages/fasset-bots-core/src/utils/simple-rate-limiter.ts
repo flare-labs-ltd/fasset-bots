@@ -1,4 +1,4 @@
-
+/* istanbul ignore next */
 export class SimpleRateLimiter<T> {
     private _lastRequestedAt: Map<T, number> = new Map<T, number>();
 

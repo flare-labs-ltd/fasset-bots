@@ -1,4 +1,4 @@
-import { WalletApiType, FeeServiceOptions, WalletApi } from "../../underlying-chain/interfaces/IBlockChainWallet";
+import { FeeServiceOptions, WalletApi } from "../../underlying-chain/interfaces/IBlockChainWallet";
 import { StuckTransaction } from "../../../../simple-wallet/src/index";
 
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
@@ -30,7 +30,6 @@ export interface BotFAssetInfo {
     tokenSymbol: string;     // underlying token symbol
     tokenDecimals: number;   // decimals for both underlying token and fasset
     walletUrl?: string; // for agent bot and user
-    walletApiType?: WalletApiType; // for agent bot and user
     indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
     minimumAccountBalance?: string; // only needed for XRP

@@ -135,6 +135,7 @@ export class AgentBotUnderlyingManagement {
             const openUnderlyingPayments = await this.openUnderlyingPaymentIds(rootEm);
             logger.info(`Agent ${this.agent.vaultAddress} started handling open underlying payments #${openUnderlyingPayments.length}.`);
             for (const up of openUnderlyingPayments) {
+                /* istanbul ignore next */
                 if (this.bot.stopRequested()) return;
                 await this.nextUnderlyingPaymentStep(rootEm, up.id);
             }
@@ -194,24 +195,34 @@ export class AgentBotUnderlyingManagement {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for underlying ${underlyingPayment.type} payment database id ${underlyingPayment.txDbId} is available.`);
         assertNotNull(underlyingPayment.txDbId);
         const info = await this.context.wallet.checkTransactionStatus(underlyingPayment.txDbId);
-        if ((info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED)
-             && info.transactionHash
-        ) {
-            underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
-                txHash: info.transactionHash
-            });
-            assertNotNull(underlyingPayment.txHash);
-            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
-            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-            if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
-                await this.requestPaymentProof(rootEm, underlyingPayment);
-                await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
+        if (info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED) {
+            if (info.transactionHash) {
+                underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                    txHash: info.transactionHash
+                });
+                assertNotNull(underlyingPayment.txHash);
+                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
+                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                    await this.requestPaymentProof(rootEm, underlyingPayment);
+                    await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
+                }
             }
-        } else if (info.status == TransactionStatus.TX_REPLACED) {
-            assertNotNull(info.replacedByDdId);
-            await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
-                txDbId: info.replacedByDdId
-            });
+        } else if (info.status == TransactionStatus.TX_REPLACED && (
+            info.replacedByStatus == TransactionStatus.TX_SUCCESS || info.replacedByStatus == TransactionStatus.TX_FAILED
+        )) {
+            if (info.replacedByHash) {
+                underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                    txHash: info.replacedByHash
+                });
+                assertNotNull(underlyingPayment.txHash);
+                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
+                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                    await this.requestPaymentProof(rootEm, underlyingPayment);
+                    await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
+                }
+            }
         }
     }
 

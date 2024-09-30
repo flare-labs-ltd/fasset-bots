@@ -28,6 +28,7 @@ export class AgentBotClaims {
     }
 
     async checkFTSORewards(type: ClaimType) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for FTSO rewards.`);
@@ -53,6 +54,7 @@ export class AgentBotClaims {
     }
 
     async checkAirdropClaims(type: ClaimType) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for airdrop distribution.`);

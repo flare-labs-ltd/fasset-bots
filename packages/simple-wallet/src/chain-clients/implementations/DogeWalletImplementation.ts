@@ -1,4 +1,4 @@
-import { UTXOWalletImplementation } from "../utxo/UTXOWalletImplementation";
+import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { ChainType } from "../../utils/constants";
 import type { DogecoinWalletConfig } from "../../interfaces/IWalletTransaction";
 

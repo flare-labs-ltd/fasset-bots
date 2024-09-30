@@ -4,8 +4,9 @@ import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
-import { getConfirmedAfter, getDateTimestampInSeconds } from "../utils/utils";
-import { logger } from "../utils/logger";
+import { getDateTimestampInSeconds } from "../utils/utils";
+import { toBN, toNumber } from "../utils/bnutils";
+import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -23,7 +24,16 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getAccountBalance(account: string): Promise<number | undefined> {
         const res = await this.client.get(`/address/${account}`);
-        return res.data?.balance;
+        const totalBalance = res.data?.balance;
+        const unconfirmedBalance = res.data?.unconfirmedBalance;
+        /* istanbul ignore else */
+        if (!!totalBalance && !!unconfirmedBalance) {
+            const totBalance = toBN(totalBalance);
+            const uncBalance = toBN(unconfirmedBalance);
+            return toNumber(totBalance.add(uncBalance));
+        }
+        /*istanbul ignore next */
+        return undefined;
     }
 
     async getCurrentBlockHeight(): Promise<BlockData> {
@@ -34,7 +44,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         };
     }
 
-    async getCurrentFeeRate(nextBlocks: number): Promise<number> {
+    async getCurrentFeeRate(): Promise<number> {
         const block = await this.getCurrentBlockHeight();
         const res = await this.client.get(`/feestats/${block.number}`);
         const BTC_PER_SATOSHI = 1 / 100000000;
@@ -42,7 +52,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         return fee;
     }
 
-    async getTransaction(txHash: string | undefined): Promise<AxiosResponse<any>> {
+    async getTransaction(txHash: string): Promise<AxiosResponse<any>> {
         return await this.client.get(`/tx/${txHash}`);
     }
 
@@ -54,7 +64,7 @@ export class BlockbookAPI implements IBlockchainAPI {
                 mintIndex: utxo.vout,
                 value: utxo.value,
                 script: "",
-                confirmed: utxo.confirmations > getConfirmedAfter(chainType),
+                confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
             };
         }));
     }
@@ -77,5 +87,4 @@ export class BlockbookAPI implements IBlockchainAPI {
     async sendTransaction(tx: string): Promise<AxiosResponse> {
         return await this.client.get(`/sendtx/${tx}`);
     }
-
 }

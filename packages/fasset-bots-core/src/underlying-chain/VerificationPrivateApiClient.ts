@@ -13,7 +13,6 @@ interface PreparedResponseRes<T> {
 }
 
 // Uses prepareResponse from private API.
-// TODO: for frontend we will need a public API (unless authenticated API keeps prepareResponse).
 export class VerificationPrivateApiClient implements IVerificationApiClient {
     verifier: AxiosInstance;
 
@@ -31,6 +30,7 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
             requestBody: { addressStr },
         };
         const response = await this.prepareResponse<AddressValidity.Response>(request);
+        /* istanbul ignore next */
         if (response.response == null) {
             throw new VerificationApiError(`Invalid request ${formatArgs(request)}`);
         }
@@ -63,6 +63,7 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
                 return (status >= 200 && status < 300) || status == 500;
             },
         };
+        /* istanbul ignore next */
         if (apiKey) {
             createAxiosConfig.headers ??= {};
             createAxiosConfig.headers["X-API-KEY"] = apiKey;

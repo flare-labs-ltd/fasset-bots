@@ -1,10 +1,10 @@
 import { logger } from "../utils/logger";
 import { DriverException, UniqueConstraintViolationException, ValidationError } from "@mikro-orm/core";
-import { RateLimitOptions } from "../interfaces/IWalletTransaction";
-import { AxiosRequestConfig } from "axios";
+import { BaseWalletConfig, RateLimitOptions } from "../interfaces/IWalletTransaction";
+import axios, { AxiosRequestConfig } from "axios";
 import { excludeNullFields } from "../utils/utils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../utils/constants";
-import BN from "bn.js";
+import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 
 export async function tryWithClients<T>(clients: any, operation: (client: any) => Promise<T>, method: string) {
     for (const [index, url] of Object.keys(clients).entries()) {
@@ -29,20 +29,13 @@ export function errorMessage(e: any) {
     return e instanceof Error ? `${e.name} - ${e.message}: \n ${e.stack}` : e;
 }
 
-export function createAxiosConfig(chainType: ChainType, url: string, rateLimitOptions?: RateLimitOptions, apiTokenKey?: string, username?: string, password?: string) {
+export function createAxiosConfig(chainType: ChainType, url: string, rateLimitOptions?: RateLimitOptions, apiTokenKey?: string) {
     const createAxiosConfig: AxiosRequestConfig = {
         baseURL: url,
         headers: excludeNullFields({
             "Content-Type": "application/json",
             "x-apikey": apiTokenKey,
         }),
-        auth:
-            username && password
-                ? {
-                    username: username,
-                    password: password,
-                }
-                : undefined,
         timeout: rateLimitOptions?.timeoutMs ?? getDefaultRateLimitOptions(chainType).timeoutMs,
         validateStatus: function(status: number) {
             /* istanbul ignore next */
@@ -52,7 +45,7 @@ export function createAxiosConfig(chainType: ChainType, url: string, rateLimitOp
     return createAxiosConfig;
 }
 
-function getDefaultRateLimitOptions(chainType: ChainType) {
+export function getDefaultRateLimitOptions(chainType: ChainType) {
     if (chainType === ChainType.testDOGE || chainType === ChainType.DOGE) {
         return DEFAULT_RATE_LIMIT_OPTIONS;
     } else if (chainType === ChainType.BTC || chainType === ChainType.testBTC) {
@@ -61,17 +54,6 @@ function getDefaultRateLimitOptions(chainType: ChainType) {
         return DEFAULT_RATE_LIMIT_OPTIONS_XRP;
     } else {
         return DEFAULT_RATE_LIMIT_OPTIONS;
-    }
-}
-
-export class InvalidFeeError extends Error {
-    public readonly correctFee: BN;
-    public readonly prototype: InvalidFeeError;
-
-    constructor(message: string, correctFee: BN) {
-        super(message);
-        this.correctFee = correctFee;
-        this.prototype = InvalidFeeError.prototype;
     }
 }
 
@@ -85,4 +67,20 @@ export class LessThanDustAmountError extends Error {
     constructor(message: string) {
         super(message);
     }
+}
+
+export class NegativeFeeError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
+
+export function createAxiosInstance(chainType: ChainType, createConfig: BaseWalletConfig) {
+    return axiosRateLimit(
+        axios.create(
+            createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey)), {
+            ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
+            ...createConfig.rateLimitOptions,
+        });
 }

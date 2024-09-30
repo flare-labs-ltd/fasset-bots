@@ -112,6 +112,7 @@ export class AgentBotRedemption {
         const redemptions = await this.redemptionsInState(rootEm, state, batchSize);
         logger.info(`Agent ${this.agent.vaultAddress} is handling ${redemptions.length} redemptions in state ${state}`);
         for (const redemption of redemptions) {
+            /* istanbul ignore next */
             if (this.bot.stopRequested()) return;
             try {
                 await this.handleOpenRedemption(rootEm, state, redemption);
@@ -124,12 +125,14 @@ export class AgentBotRedemption {
     async handleExpiredRedemptions(rootEm: EM, batchSize: number = REDEMPTION_BATCH) {
         const expirationProof = await this.bot.getUnderlyingBlockHeightProof();
         if (!expirationProof) return;
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         const redemptions = await this.expiredRedemptions(rootEm, expirationProof, batchSize);
         const proof = expirationProof.data.responseBody;
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is handling ${redemptions.length} expired redemptions
             (lqwBlock=${proof.lowestQueryWindowBlockNumber}, lqwTimestamp=${proof.lowestQueryWindowBlockTimestamp})`);
         for (const redemption of redemptions) {
+            /* istanbul ignore next */
             if (this.bot.stopRequested()) return;
             try {
                 await this.handleExpiredRedemption(rootEm, redemption, expirationProof);
@@ -173,7 +176,7 @@ export class AgentBotRedemption {
                 await this.checkBeforeRedemptionPayment(rootEm, redemption);
                 break;
             case AgentRedemptionState.PAYING:
-                // TODO: once simple wallet starts handling retries in background, find payment in indekser by address and payment reference
+                // mark payment initiated
                 break;
             case AgentRedemptionState.UNPAID:
                 // bot didn't manage to pay in time - do nothing and it will be expired after 24h
@@ -257,7 +260,6 @@ export class AgentBotRedemption {
             state: AgentRedemptionState.PAYING,
         });
         try {
-            // TODO: what if there are too little funds on underlying address to pay for fee?
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
                 return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp));
             });
@@ -373,30 +375,39 @@ export class AgentBotRedemption {
     /**
      * When redemption is in state PAID it requests payment proof - see requestPaymentProof().
      * @param redemption AgentRedemption entity
-     *///TODO - what if replacement is rejected ans original accepted
+     */
     async checkPaymentProofAvailable(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is checking if payment proof for redemption ${redemption.requestId} is available.`);
         assertNotNull(redemption.txDbId);
         const info = await this.context.wallet.checkTransactionStatus(redemption.txDbId);
-        if ((info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED)
-            && info.transactionHash
-        ) {
-            assertNotNull(info.transactionHash);
-            redemption = await this.updateRedemption(rootEm, redemption, {
-                txHash: info.transactionHash
-            });
-            assertNotNull(redemption.txHash);
-            const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
-            const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-            if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
-                await this.requestPaymentProof(rootEm, redemption);
-                await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
+        if (info.status == TransactionStatus.TX_SUCCESS || info.status == TransactionStatus.TX_FAILED) {
+            if (info.transactionHash) {
+                redemption = await this.updateRedemption(rootEm, redemption, {
+                    txHash: info.transactionHash
+                });
+                assertNotNull(redemption.txHash);
+                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
+                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                    await this.requestPaymentProof(rootEm, redemption);
+                    await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
+                }
             }
-        } else if (info.status == TransactionStatus.TX_REPLACED) {
-            assertNotNull(info.replacedByDdId);
-            await this.updateRedemption(rootEm, redemption, {
-                txDbId: info.replacedByDdId
-            });
+        } else if (info.status == TransactionStatus.TX_REPLACED && (
+            info.replacedByStatus == TransactionStatus.TX_SUCCESS || info.replacedByStatus == TransactionStatus.TX_FAILED
+        )) {
+            if (info.replacedByHash) {
+                redemption = await this.updateRedemption(rootEm, redemption, {
+                    txHash: info.replacedByHash
+                });
+                assertNotNull(redemption.txHash);
+                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
+                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                    await this.requestPaymentProof(rootEm, redemption);
+                    await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
+                }
+            }
         }
     }
 

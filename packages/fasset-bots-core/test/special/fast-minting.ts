@@ -152,7 +152,7 @@ async function setupWallet(config: BotConfigFile, secrets: Secrets) {
         throw new Error(`Undefined orm`);
     }
     const chainId = ChainId.testBTC;
-    return await createBlockchainWalletHelper(secrets, chainId, orm.em, "https://testbtc.indexers.flare.space/api/v2", "blockbook", config.walletOptions);
+    return await createBlockchainWalletHelper(secrets, chainId, orm.em, "https://testbtc.indexers.flare.space/api/v2", config.walletOptions);
 }
 
 async function fundAccounts(N: number, amountToSend: BN) {

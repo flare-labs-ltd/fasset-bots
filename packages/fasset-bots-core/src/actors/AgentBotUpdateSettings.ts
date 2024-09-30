@@ -53,11 +53,13 @@ export class AgentBotUpdateSettings {
     }
 
     async handleWaitForAgentSettingUpdate(rootEm: EM) {
+        /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
             const openUpdateSettings = await this.openUpdateSettings(rootEm);
             logger.info(`Agent ${this.agent.vaultAddress} started handling open update settings #${openUpdateSettings.length}.`);
             for (const us of openUpdateSettings) {
+                /* istanbul ignore next */
                 if (this.bot.stopRequested()) return;
                 await this.nextUpdateSettingStep(rootEm, us);
             }

@@ -3,8 +3,6 @@ import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
 
-export type WalletApiType = "blockbook" | "bitcore";
-
 export interface FeeServiceOptions {
     rateLimitOptions?: RateLimitOptions;
     sleepTimeMs: number;
@@ -12,7 +10,6 @@ export interface FeeServiceOptions {
 }
 
 export interface WalletApi {
-    type: WalletApiType;
     url: string;
 }
 

@@ -6,21 +6,6 @@ import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 
 describe("XRP network helper tests", () => {
-   it("Should create config with username and password to testnet", async () => {
-      const XRPMccConnectionTestInitial = {
-         url: process.env.XRP_URL ?? "",
-         username: "username",
-         password: "password",
-         inTestnet: true,
-
-      };
-      const testOrm = await initializeTestMikroORM();
-      const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-      const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.XRP = await WALLET.XRP.initialize(XRPMccConnectionTest);
-      expect(wClient.blockchainAPI.client.defaults.auth).to.not.be.undefined;
-   });
-
    it("Should create config with custom timeouts", async () => {
       const XRPMccConnectionTestInitial = {
          url: process.env.XRP_URL ?? "",

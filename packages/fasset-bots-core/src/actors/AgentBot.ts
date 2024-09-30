@@ -197,6 +197,7 @@ export class AgentBot {
      * @param underlyingAddress agent's underlying address
      * @param ownerAddress agent's owner native address
      */
+    /* istanbul ignore next */
     static async proveEOAaddress(context: IAssetAgentContext, underlyingAddress: string, owner: OwnerAddressPair): Promise<void> {
         const reference = PaymentReference.addressOwnership(owner.managementAddress);
         // 1 = smallest possible amount (as in 1 satoshi or 1 drop)

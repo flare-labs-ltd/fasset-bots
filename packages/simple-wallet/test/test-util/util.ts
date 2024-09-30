@@ -148,11 +148,6 @@ async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source
     return txEnt;
 }
 
-async function clearTransactions(rootEm: EntityManager) {
-    await rootEm.nativeDelete(TransactionEntity, {});
-    await rootEm.flush();
-}
-
 async function clearUTXOs(rootEm: EntityManager) {
     await rootEm.nativeDelete(UTXOEntity, {});
     await rootEm.flush();
@@ -274,7 +269,7 @@ function addRequestTimers(wClient: WALLET.DOGE | WALLET.BTC) {
 async function calculateNewFeeForTx(txId: number, feePerKb: BN, core: any, rootEm: EntityManager) {
     const txEnt = await fetchTransactionEntityById(rootEm, txId);
     const tr = new core.Transaction(JSON.parse(txEnt.raw!));
-    return [txEnt.fee, tr.feePerKb(feePerKb).getFee()];
+    return [txEnt.fee, tr.feePerKb(feePerKb.toNumber()).getFee()];
 }
 
 const END_STATUSES = [TransactionStatus.TX_REPLACED, TransactionStatus.TX_FAILED, TransactionStatus.TX_SUBMISSION_FAILED, TransactionStatus.TX_SUCCESS];
@@ -292,7 +287,6 @@ export {
     createAndSignXRPTransactionWithStatus,
     calculateNewFeeForTx,
 
-    clearTransactions,
     clearUTXOs,
 
     setWalletStatusInDB,

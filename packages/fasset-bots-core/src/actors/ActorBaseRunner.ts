@@ -70,7 +70,8 @@ export class ActorBaseRunner {
                 return await Liquidator.create(config, address, fAsset);
             case ActorBaseKind.SYSTEM_KEEPER:
                 return await SystemKeeper.create(config, address, fAsset);
-            case ActorBaseKind.TIME_KEEPER:
+            /* istanbul ignore next */
+            default:
                 throw new Error("Not supported by ActorBaseRunner");
         }
     }

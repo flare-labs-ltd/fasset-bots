@@ -13,7 +13,6 @@ import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import fs from "fs";
 
-export type WalletApiType = "bitcore" | "blockbook";
 const program = programWithCommonOptions("agent", "all_fassets");
 
 program.name("api").description("Command line tool for adding fallback apis for FAssets");
@@ -22,18 +21,12 @@ program
     .command("add")
     .description("add fallback address for given FAsset / underlying")
     .argument("<token>", "token symbol")
-    .argument("<type>", "blockchain API type (blockbook/bitcore)")
     .argument("<url>", "blockchain API url")
     .option("-k --key <key>", "blockchain API key")
-    .action(async (tokenSymbol: string, type: WalletApiType, url: string, opts: { key?: string }) => {
+    .action(async (tokenSymbol: string, url: string, opts: { key?: string }) => {
 
         const { key } = opts;
         const options: { config: string; secrets: string, key: string } = program.opts();
-
-        if (type !== "blockbook" && type !== "bitcore") {
-            console.error(`Type should be bitcore or blockbook`);
-            return;
-        }
 
         const secrets = Secrets.load(options.secrets);
         const configFilePath = findConfigFileWithFAsset(tokenSymbol, options.config, new Set<string>());
@@ -48,7 +41,6 @@ program
         if (token.type !== "fasset" || !token.chainInfo) return;
 
         const api = {
-            type: type,
             url: url,
         };
         if (!botConfigFile.fAssets[token.fassetSymbol].fallbackApis) {

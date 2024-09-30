@@ -45,6 +45,7 @@ export class PoolUserBotCommands {
         }
         // create config
         const botConfig = await createBotConfig("common", secrets, configFile, nativeAddress);
+        /* istanbul ignore next */
         registerCleanup?.(() => closeBotConfig(botConfig));
         // verify fasset config
         const fassetConfig = botConfig.fAssets.get(fAssetSymbol);

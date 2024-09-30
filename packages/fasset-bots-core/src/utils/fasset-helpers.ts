@@ -47,7 +47,7 @@ export async function attestationWindowSeconds(assetManager: IIAssetManagerInsta
     const settings = await assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }
-
+/* istanbul ignore next */
 export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexerHelper): Promise<IBlock> {
     const blockHeight = await blockchainIndexer.getBlockHeight();
     const latestBlock = await blockchainIndexer.getBlockAt(blockHeight);

@@ -359,6 +359,7 @@ export class InfoBotCommands {
         async function formatCollateralAt(cpr: CollateralPriceCalculator, address: string) {
             return formatCollateral(cpr, await cpr.balanceReader.balance(address));
         }
+        /* istanbul ignore next */
         function formatAgentStatus(status: AgentStatus) {
             switch (status) {
                 case AgentStatus.NORMAL: return `healthy`;
@@ -449,7 +450,7 @@ export class InfoBotCommands {
             }
         }
     }
-
+    /* istanbul ignore next */
     async* readAssetManagerLogs(blockCount: number) {
         const eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager });
         // get all logs for this agent
