@@ -138,6 +138,7 @@ export class TransactionMonitor {
                 await sleepMs(PING_INTERVAL);
             } catch (error) {
                 logger.error(`Error updating ping status for chain ${this.chainType}`, error);
+                this.monitoring = false;
             }
         }
     }
