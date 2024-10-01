@@ -1,6 +1,6 @@
 import { EM } from "../config/orm";
-import { AgentEntity } from "../entities/agent";
-import { AgentUnderlyingPaymentType } from "../entities/common";
+import { AgentEntity, AgentUnderlyingPayment } from "../entities/agent";
+import { AgentUnderlyingPaymentState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { latestBlockTimestampBN } from "../utils";
 import { squashSpace } from "../utils/formatting";
@@ -44,17 +44,20 @@ export class AgentBotUnderlyingWithdrawal {
             const readAgentEnt = await this.bot.fetchAgentEntity(rootEm);
             // confirm underlying withdrawal
             const confirmationAllowedAt = await this.confirmationAllowedAt(readAgentEnt);
-            if (confirmationAllowedAt != null && readAgentEnt.underlyingWithdrawalConfirmTransaction != "") {
+            if (confirmationAllowedAt != null && readAgentEnt.underlyingWithdrawalConfirmTransactionId != 0) {
                 logger.info(`Agent ${this.agent.vaultAddress} is waiting for confirming underlying withdrawal.`);
                 // agent waiting for underlying withdrawal
                 const latestTimestamp = await latestBlockTimestampBN();
                 if (confirmationAllowedAt.lt(latestTimestamp)) {
                     // agent can confirm underlying withdrawal
-                    await this.bot.underlyingManagement.createAgentUnderlyingPayment(
-                        rootEm, readAgentEnt.underlyingWithdrawalConfirmTransaction, AgentUnderlyingPaymentType.WITHDRAWAL);
+                    const underlyingPayment = await rootEm.findOneOrFail(AgentUnderlyingPayment, { txDbId: readAgentEnt.underlyingWithdrawalConfirmTransactionId }, { refresh: true });
+                    await this.bot.underlyingManagement.updateUnderlyingPayment(rootEm, underlyingPayment, {
+                        state: AgentUnderlyingPaymentState.PAID
+                    });
                     await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                         agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                        agentEnt.underlyingWithdrawalConfirmTransactionId = 0;
                     });
                 } else {
                     logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot yet confirm underlying withdrawal.
@@ -81,10 +84,11 @@ export class AgentBotUnderlyingWithdrawal {
                         await this.agent.cancelUnderlyingWithdrawal();
                     });
                     await this.notifier.sendCancelWithdrawUnderlying();
-                    logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
+                    logger.info(`Agent ${this.agent.vaultAddress} canceled underlying withdrawal transaction with database id ${readAgentEnt.underlyingWithdrawalConfirmTransactionId}.`);
                     await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
                         agentEnt.underlyingWithdrawalConfirmTransaction = "";
+                        agentEnt.underlyingWithdrawalConfirmTransactionId = 0;
                         agentEnt.underlyingWithdrawalWaitingForCancelation = false;
                     });
                 } else {

@@ -109,7 +109,10 @@ export class AgentEntity {
     underlyingWithdrawalAnnouncedAtTimestamp: BN = BN_ZERO;
 
     @Property()
-    underlyingWithdrawalConfirmTransaction: string = "";
+    underlyingWithdrawalConfirmTransaction: string = "";//deprecated
+
+    @Property()
+    underlyingWithdrawalConfirmTransactionId: number = 0;
 
     // agent cancel underlying announcement
 

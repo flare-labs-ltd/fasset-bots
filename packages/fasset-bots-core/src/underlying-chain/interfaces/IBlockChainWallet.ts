@@ -1,4 +1,4 @@
-import { FeeParams, RateLimitOptions, TransactionInfo } from "../../../../simple-wallet/src/index";
+import { FeeParams, RateLimitOptions, TransactionInfo, TransactionStatus } from "../../../../simple-wallet/src/index";
 import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
@@ -8,7 +8,6 @@ export interface FeeServiceOptions {
     sleepTimeMs: number;
     numberOfBlocksInHistory: number;
 }
-
 export interface WalletApi {
     url: string;
 }
@@ -74,8 +73,7 @@ export interface IBlockChainWallet {
         options?: TransactionOptionsWithFee
     ): Promise<number>;
 
-    // Waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)
-    // Returns transaction hash
+    // Adds transaction and waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)
     addTransactionAndWaitForItsFinalization(
         sourceAddress: string,
         targetAddress: string,
@@ -85,6 +83,9 @@ export interface IBlockChainWallet {
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
     ): Promise<string>;
+
+    // Waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)
+    waitForTransactionFinalization(id: number): Promise<string>;
 
     // Returns info about transaction (txHash, status, replacedById)
     checkTransactionStatus(txDbId: number): Promise<TransactionInfo>;

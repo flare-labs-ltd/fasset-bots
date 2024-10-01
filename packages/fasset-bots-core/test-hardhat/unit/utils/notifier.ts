@@ -356,7 +356,13 @@ describe("Notifier tests", () => {
 
     it("Should send AgentUnderlyingPayment created", async () => {
         const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentCreated");
-        await notifier.sendAgentUnderlyingPaymentCreated("hash", "type");
+        await notifier.sendAgentUnderlyingPaymentCreated(0, "type", "hash");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send AgentUnderlyingPayment created 2", async () => {
+        const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentCreated");
+        await notifier.sendAgentUnderlyingPaymentCreated(0, "type");
         expect(spySend).to.have.been.called.once;
     });
 

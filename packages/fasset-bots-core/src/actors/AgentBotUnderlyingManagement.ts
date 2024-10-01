@@ -77,7 +77,7 @@ export class AgentBotUnderlyingManagement {
         const txDbId = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
             return await this.agent.initiateTopupPayment(amount, this.ownerUnderlyingAddress);
         });
-        await this.createAgentUnderlyingPayment(em, txDbId, AgentUnderlyingPaymentType.TOP_UP);
+        await this.createAgentUnderlyingPayment(em, txDbId, AgentUnderlyingPaymentType.TOP_UP, AgentUnderlyingPaymentState.PAID);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner initiated underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
             to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with transactions database id  ${txDbId}.`);
         await this.checkForLowOwnerUnderlyingBalance();
@@ -105,25 +105,25 @@ export class AgentBotUnderlyingManagement {
      * @param txHash transaction hash
      * @param type enum for underlying payment type from entity AgentUnderlyingPayment
      */
-    async createAgentUnderlyingPayment(rootEm: EM, txHashOrTxDbId: string | number, type: AgentUnderlyingPaymentType): Promise<void> {
+    async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             rootEm.create(
                 AgentUnderlyingPayment,
                 {
                     agentAddress: this.agent.vaultAddress,
-                    state: AgentUnderlyingPaymentState.PAID,
-                    txHash: typeof txHashOrTxDbId === 'string' ? txHashOrTxDbId : null,
-                    txDbId: typeof txHashOrTxDbId === 'number' ? txHashOrTxDbId : null,
+                    state: paymentState,
+                    txHash: txHash ?? null,
+                    txDbId: txDbId,
                     type: type,
                 } as RequiredEntityData<AgentUnderlyingPayment>,
                 { persist: true }
             );
         });
-        await this.notifier.sendAgentUnderlyingPaymentCreated(txHashOrTxDbId, type);
-        if (typeof txHashOrTxDbId == 'string') {
-            logger.info(`Agent ${this.agent.vaultAddress} send underlying ${type} payment ${txHashOrTxDbId}.`);
+        await this.notifier.sendAgentUnderlyingPaymentCreated(txDbId, type, txHash);
+        if (txHash) {
+            logger.info(`Agent ${this.agent.vaultAddress} send underlying ${type} payment ${txDbId} (${txHash}).`);
         } else {
-            logger.info(`Agent ${this.agent.vaultAddress} initiated underlying ${type} payment with transaction database id ${txHashOrTxDbId}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} initiated underlying ${type} payment with transaction database id ${txDbId}.`);
         }
     }
 

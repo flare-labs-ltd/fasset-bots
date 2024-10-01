@@ -143,9 +143,9 @@ export class AgentService {
 
     async withdrawUnderlying(fAssetSymbol: string, agentVaultAddress: string, amount: string, destinationAddress: string,): Promise<AgentUnderlying> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const transactionHash = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
+        const transactionDatabaseId = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
         return {
-            transactionHash,
+            transactionDatabaseId: transactionDatabaseId || null,
         };
     }
 

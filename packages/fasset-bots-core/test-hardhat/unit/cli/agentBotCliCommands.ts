@@ -310,7 +310,7 @@ describe("AgentBot cli commands unit tests", () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
-        expect(spyConsole).to.be.called.once;
+        expect(spyConsole).to.be.called.twice;
     });
 
     it("Should run command 'withdrawUnderlying'", async () => {
