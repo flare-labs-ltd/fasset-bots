@@ -86,19 +86,12 @@ export class Liquidator extends ActorBase {
         const liquidatingAgents = Array.from(this.state.agents.values())
             .filter(agent => this.checkAgentForLiquidation(agent, timestamp));
         if (liquidatingAgents.length > 0) {
-            const fassetSymbol = this.context.fAssetSymbol;
-            logger.info(`Liquidator ${this.address} performing ${fassetSymbol} liquidation on ${liquidatingAgents.length} agents.`);
+            logger.info(`Liquidator ${this.address} performing ${this.context.fAssetSymbol} liquidation on ${liquidatingAgents.length} agents.`);
             // sort by decreasing minted amount
             liquidatingAgents.sort((a, b) => -a.mintedUBA.cmp(b.mintedUBA));
             for (const agent of liquidatingAgents) {
                 if (agent.mintedUBA.eq(BN_ZERO)) {
                     continue;
-                }
-                const fbalance = await this.context.fAsset.balanceOf(this.address);
-                if (fbalance.eq(BN_ZERO)) {
-                    logger.info(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
-                    console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
-                    break;
                 }
                 await this.liquidateAgent(agent);
             }
@@ -129,8 +122,7 @@ export class Liquidator extends ActorBase {
         }
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus === AgentStatus.LIQUIDATION) {
-            const fassetSymbol = this.context.fAssetSymbol;
-            logger.info(`Liquidator ${this.address} found that ${fassetSymbol} agent ${agent.vaultAddress} has liquidation status.`);
+            logger.info(`Liquidator ${this.address} found that ${this.context.fAssetSymbol} agent ${agent.vaultAddress} has liquidation status.`);
             return true;
         }
         // not in liquidation

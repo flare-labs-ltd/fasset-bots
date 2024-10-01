@@ -19,6 +19,7 @@ export const SLEEP_MS_BEFORE_RETRY = 1000;
 export const MAX_AGENT_FETCH_RETRY = 10;
 export const SLEEP_MS_BEFORE_AGENT_FETCH_RETRY = 1000;
 export const MAX_AGENT_FETCH_BATCH_SIZE = 20;
+export const DANGER_BLOCK_DIFF = 50;
 
 export class TrackedState {
     static deepCopyWithObjectCreate = true;
@@ -272,15 +273,21 @@ export class TrackedState {
         // get all needed logs for state
         const nci = this.context.nativeChainInfo;
         const lastBlock = (await web3.eth.getBlockNumber()) - nci.finalizationBlocks;
+        const blockDiff = lastBlock - this.currentEventBlock;
+        if (blockDiff >= DANGER_BLOCK_DIFF) {
+            logger.warn(`Tracked State is ${blockDiff} blocks behind.`);
+            console.warn(`Tracked State is ${blockDiff} blocks behind.`);
+        }
         const events: EvmEvent[] = [];
         for (let lastHandled = this.currentEventBlock; lastHandled <= lastBlock; lastHandled += nci.readLogsChunkSize) {
+            const toBlock = Math.min(lastHandled + nci.readLogsChunkSize - 1, lastBlock);
             // handle collaterals
             for (const collateral of this.collaterals.list) {
                 const contract = await tokenContract(collateral.token);
                 const logsCollateral = await web3.eth.getPastLogs({
                     address: contract.address,
                     fromBlock: lastHandled,
-                    toBlock: Math.min(lastHandled + nci.readLogsChunkSize - 1, lastBlock),
+                    toBlock,
                     topics: [null],
                 });
                 const eventDecoderCollaterals = new Web3ContractEventDecoder({ collateralDecode: contract });
@@ -290,7 +297,7 @@ export class TrackedState {
             const logsAssetManager = await web3.eth.getPastLogs({
                 address: this.context.assetManager.address,
                 fromBlock: lastHandled,
-                toBlock: Math.min(lastHandled + nci.readLogsChunkSize - 1, lastBlock),
+                toBlock,
                 topics: [null],
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
@@ -298,7 +305,7 @@ export class TrackedState {
             const logsFtsoManager = await web3.eth.getPastLogs({
                 address: this.context.priceChangeEmitter.address,
                 fromBlock: lastHandled,
-                toBlock: Math.min(lastHandled + nci.readLogsChunkSize - 1, lastBlock),
+                toBlock,
                 topics: [null],
             });
             events.push(...this.eventDecoder.decodeEvents(logsFtsoManager));

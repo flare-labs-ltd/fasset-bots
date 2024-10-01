@@ -3,7 +3,7 @@ import { LiquidatorInstance } from "../../../typechain-truffle";
 import { ILiquidatorContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
-import { BN_ZERO, ZERO_ADDRESS, logger } from "../../utils";
+import { ZERO_ADDRESS, logger, toBN } from "../../utils";
 import { artifacts } from "../../utils/web3";
 
 const Liquidator = artifacts.require("Liquidator");
@@ -20,10 +20,12 @@ export abstract class LiquidationStrategy {
 export class DefaultLiquidationStrategy extends LiquidationStrategy {
     public async liquidate(agent: TrackedAgentState): Promise<void> {
         const fBalance = await this.context.fAsset.balanceOf(this.address);
-        if (fBalance.gt(BN_ZERO)) {
+        if (fBalance.gte(toBN(this.state.settings.assetMintingGranularityUBA))) {
             await this.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
         } else {
-            logger.info(`Liquidator ${this.address} has no FAssets available for liqudating agent ${agent.vaultAddress}`);
+            const fassetSymbol = this.context.fAssetSymbol;
+            logger.info(`Liquidator ${this.address} has no ${fassetSymbol} available for liqudating agent ${agent.vaultAddress}`);
+            console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
         }
     }
 }
