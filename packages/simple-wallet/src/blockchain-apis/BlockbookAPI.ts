@@ -1,10 +1,9 @@
-import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
-import { getDateTimestampInSeconds } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
 
@@ -36,17 +35,14 @@ export class BlockbookAPI implements IBlockchainAPI {
         return undefined;
     }
 
-    async getCurrentBlockHeight(): Promise<BlockData> {
+    async getCurrentBlockHeight(): Promise<number> {
         const res = await this.client.get(``);
-        return {
-            number: res.data.blockbook.bestHeight,
-            timestamp: getDateTimestampInSeconds(res.data.blockbook.lastBlockTime)
-        };
+        return res.data.blockbook.bestHeight;
     }
 
     async getCurrentFeeRate(): Promise<number> {
-        const block = await this.getCurrentBlockHeight();
-        const res = await this.client.get(`/feestats/${block.number}`);
+        const blockNumber: number = await this.getCurrentBlockHeight();
+        const res = await this.client.get(`/feestats/${blockNumber}`);
         const BTC_PER_SATOSHI = 1 / 100000000;
         const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI
         return fee;
@@ -79,7 +75,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         }));
     }
 
-    async getUTXOScript(address: string, txHash: string, vout: number) {
+    async getUTXOScript(txHash: string, vout: number) {
         const res = await this.client.get(`/tx-specific/${txHash}`);
         return res.data.vout[vout]?.scriptPubKey?.hex ?? "";
     }

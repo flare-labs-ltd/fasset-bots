@@ -78,9 +78,9 @@ export class TransactionFeeService implements IService {
         }
     }
 
-    private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
+    private async getCurrentFeeRate(): Promise<BN> {
         try {
-            const fee = await this.blockchainAPI.getCurrentFeeRate(nextBlocks);
+            const fee = await this.blockchainAPI.getCurrentFeeRate();
             if (fee.toString() === "-1" || fee === 0) {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }

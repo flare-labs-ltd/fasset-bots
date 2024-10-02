@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
     checkIfIsDeleting,
-    createInitialTransactionEntity, setAccountIsDeleting,
+    createInitialTransactionEntity, fetchUnspentUTXOs, setAccountIsDeleting,
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { EntityManager } from "@mikro-orm/core";
@@ -32,10 +32,12 @@ export class TransactionService implements IService {
 
     private readonly chainType: ChainType;
     private readonly transactionFeeService: TransactionFeeService;
+    private readonly rootEm: EntityManager;
 
     constructor(chainType: ChainType) {
         this.chainType = chainType;
         this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
+        this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
     }
 
     async createPaymentTransaction(
@@ -140,7 +142,7 @@ export class TransactionService implements IService {
             txData.feePerKB = feePerKB;
         }
         if (amountInSatoshi == null) {
-            utxos = await utxoService.getAllUTXOs(source);
+            utxos = await fetchUnspentUTXOs(this.rootEm, source);
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
             const bitcoreTx = this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
             feeInSatoshi = toBN(bitcoreTx.getFee()).sub(feePerKB.muln(getOutputSize(this.chainType)).divn(1000));

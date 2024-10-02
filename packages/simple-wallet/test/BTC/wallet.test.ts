@@ -164,7 +164,7 @@ describe("Bitcoin wallet tests", () => {
     it("Transaction with executeUntilBlock before current block height should fail", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, feeInSatoshi, currentBlock.number - wClient.executionBlockOffset);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, feeInSatoshi, currentBlock - wClient.executionBlockOffset);
         expect(id).to.be.gt(0);
 
         const [txEnt] = await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -173,7 +173,8 @@ describe("Bitcoin wallet tests", () => {
 
     it("Should submit TX_PREPARED that are in DB", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const executeUntilBlock = (await wClient.blockchainAPI.getCurrentBlockHeight()).number + wClient.blockOffset;
+        const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
+        const executeUntilBlock = currentBlock + wClient.blockOffset;
         const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
         txEnt.raw = JSON.stringify(transaction);
@@ -216,7 +217,7 @@ describe("Bitcoin wallet tests", () => {
     it("Transaction with execute until timestamp too low should fail 2", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, currentBlock.number, toBN(20240830203804));
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, currentBlock, toBN(20240830203804));
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
@@ -336,7 +337,7 @@ describe("Bitcoin wallet tests", () => {
 
         const initialTxIds = [];
         for (let i = 0; i < N; i++) {
-            initialTxIds.push(await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi));
+            initialTxIds.push(await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi.addn(i)));
         }
         await sleepMs(2000);
         void wClient.startMonitoringTransactionProgress();
@@ -382,8 +383,8 @@ describe("Bitcoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
-        const blockData = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
-        await wClient.tryToReplaceByFee(txId, blockData);
+        const blockHeight = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
+        await wClient.tryToReplaceByFee(txId, blockHeight);
         const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_REPLACED);
     });

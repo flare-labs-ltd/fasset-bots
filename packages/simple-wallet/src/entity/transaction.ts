@@ -39,9 +39,6 @@ export class TransactionEntity {
     submittedInBlock: number = 0; // 0 when tx is created
 
     @Property({ type: BNType, nullable: true })
-    submittedInTimestamp?: BN; // server time - needed to track when tx appears in mempool
-
-    @Property({ type: BNType, nullable: true })
     acceptedToMempoolInTimestamp?: BN;
 
     @Property({ type: BNType, nullable: true })
@@ -51,7 +48,7 @@ export class TransactionEntity {
     reachedStatusPreparedInTimestamp?: BN;
 
     @Property({ type: BNType, nullable: true })
-    reachedStatusPendingInTimestamp?: BN;
+    reachedStatusPendingInTimestamp?: BN; // server time - needed to track when tx appears in mempool
 
     @Property({ nullable: true  })
     executeUntilBlock?: number;

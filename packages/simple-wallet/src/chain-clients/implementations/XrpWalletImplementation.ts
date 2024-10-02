@@ -541,7 +541,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             await updateTransactionEntity(this.rootEm, txDbId, async (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUBMITTED;
                txEnt.submittedInBlock = res.data.result.validated_ledger_index;
-               txEnt.submittedInTimestamp = currentTimestamp;
                txEnt.serverSubmitResponse = JSON.stringify(res.data.result);
             });
             logger.info(`Transaction ${txDbId} was submitted`);

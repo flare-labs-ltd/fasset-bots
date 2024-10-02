@@ -1,4 +1,4 @@
-import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import { BlockbookAPI } from "./BlockbookAPI";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
@@ -29,20 +29,20 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getAccountBalance(account), "getAccountBalance");
     }
 
-    async getCurrentBlockHeight(): Promise<BlockData> {
+    async getCurrentBlockHeight(): Promise<number> {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentBlockHeight(), "getCurrentBlockHeight");
     }
 
-    async getCurrentFeeRate(nextBlocks: number): Promise<number> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentFeeRate(nextBlocks), "getCurrentFeeRate");
+    async getCurrentFeeRate(): Promise<number> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentFeeRate(), "getCurrentFeeRate");
     }
 
     async getTransaction(txHash: string): Promise<any> {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getTransaction(txHash), "getTransaction");
     }
 
-    async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOScript(address, txHash, vout, this.chainType), "getUTXOScript");
+    async getUTXOScript(txHash: string, vout: number): Promise<string> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOScript(txHash, vout, this.chainType), "getUTXOScript");
     }
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {

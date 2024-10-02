@@ -4,7 +4,6 @@ import {
     fetchTransactionEntityById,
     fetchUnspentUTXOs,
     fetchUTXOsByTxId,
-    storeUTXOS,
     transformUTXOEntToTxInputEntity,
     updateTransactionEntity,
     updateUTXOEntity,
@@ -73,26 +72,7 @@ export class TransactionUTXOService implements IService {
      */
     async fetchUTXOs(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
         const dbUTXOs = await this.listUnspent(txData, txForReplacement);
-        return this.handleMissingUTXOScripts(dbUTXOs, txData.source);
-    }
-
-    public async getAllUTXOs(address: string) {
-        await this.fillUTXOsFromMempool(address);
-        const dbUTXOs = await fetchUnspentUTXOs(this.rootEm, address);
-
-        for (const utxo of dbUTXOs) {
-            if (!utxo.script) {
-                const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
-                    vout: utxo.position,
-                    transactionHash: utxo.mintTransactionHash,
-                });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(address, utxo.mintTransactionHash, utxo.position);
-                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
-                    utxoEnt.script = utxo.script
-                });
-            }
-        }
-        return dbUTXOs;
+        return this.handleMissingUTXOScripts(dbUTXOs);
     }
 
     /**
@@ -104,21 +84,11 @@ export class TransactionUTXOService implements IService {
     private async listUnspent(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
         logger.info(`Listing UTXOs for address ${txData.source}`);
         const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
-
         let fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);
-        let dbUTXOS = await this.handleMissingUTXOScripts(fetchUnspent, txData.source);
+        let dbUTXOS = await this.handleMissingUTXOScripts(fetchUnspent);
         const needed = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, false, currentFeeStatus);
         if (needed) {
             return needed;
-        }
-
-        // not enough funds in db
-        await this.fillUTXOsFromMempool(txData.source);
-        fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);
-        dbUTXOS = await this.handleMissingUTXOScripts(fetchUnspent, txData.source);
-        const neededAfter = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, true, currentFeeStatus);
-        if (neededAfter) {
-            return neededAfter;
         }
         return [];
     }
@@ -254,11 +224,6 @@ export class TransactionUTXOService implements IService {
         }
     }
 
-    async fillUTXOsFromMempool(address: string) {
-        const utxos: MempoolUTXO[] = await this.blockchainAPI.getUTXOsFromMempool(address);
-        await storeUTXOS(this.rootEm, address, utxos);
-    }
-
     async checkIfTxUsesAlreadySpentUTXOs(txId: number) {
         const utxoEnts = await fetchUTXOsByTxId(this.rootEm, txId);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
@@ -325,14 +290,14 @@ export class TransactionUTXOService implements IService {
         return txEnt;
     }
 
-    private async handleMissingUTXOScripts(utxos: UTXOEntity[], source: string) {
+    private async handleMissingUTXOScripts(utxos: UTXOEntity[]) {
         for (const utxo of utxos) {
             if (!utxo.script) {
                 const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
                     vout: utxo.position,
                     transactionHash: utxo.mintTransactionHash,
                 });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(source, utxo.mintTransactionHash, utxo.position);
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(utxo.mintTransactionHash, utxo.position);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async utxoEnt => {utxoEnt.script = utxo.script});
             }
         }

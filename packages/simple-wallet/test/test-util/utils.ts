@@ -5,7 +5,7 @@ import { toBN } from "web3-utils";
 import { IService } from "../../src/interfaces/IService";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { BlockData, MempoolUTXO, MempoolUTXOMWithoutScript } from "../../src/interfaces/IBlockchainAPI";
+import { MempoolUTXO, MempoolUTXOMWithoutScript } from "../../src/interfaces/IBlockchainAPI";
 
 export function createTransactionEntity(source: string, destination: string, txHash: string, utxos?: UTXOEntity[], inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
     const txEnt = new TransactionEntity();
@@ -46,11 +46,11 @@ export class MockBlockchainAPI implements IService, BlockchainAPIWrapper {
         return Promise.resolve(undefined);
     }
 
-    async getCurrentBlockHeight(): Promise<BlockData> {
-        return Promise.resolve({} as BlockData);
+    async getCurrentBlockHeight(): Promise<number> {
+        return Promise.resolve(0);
     }
 
-    async getCurrentFeeRate(nextBlocks: number): Promise<number> {
+    async getCurrentFeeRate(): Promise<number> {
         return Promise.resolve(0);
     }
 
@@ -58,7 +58,7 @@ export class MockBlockchainAPI implements IService, BlockchainAPIWrapper {
         return Promise.resolve({ data: {} } as AxiosResponse);
     }
 
-    async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
+    async getUTXOScript(txHash: string, vout: number): Promise<string> {
         return Promise.resolve("");
     }
 

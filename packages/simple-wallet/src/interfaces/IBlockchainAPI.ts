@@ -12,11 +12,11 @@ export interface IBlockchainAPI {
 
     getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]>;
 
-    getUTXOScript(address: string, txHash: string, vout: number, chainType: ChainType): Promise<string>;
+    getUTXOScript(txHash: string, vout: number, chainType: ChainType): Promise<string>;
 
-    getCurrentFeeRate(nextBlocks: number): Promise<number>;
+    getCurrentFeeRate(): Promise<number>;
 
-    getCurrentBlockHeight(): Promise<BlockData>;
+    getCurrentBlockHeight(): Promise<number>;
 
     getTransaction(txHash: string): Promise<any>;
 }
@@ -30,9 +30,4 @@ export interface MempoolUTXOMWithoutScript {
 
 export interface MempoolUTXO extends MempoolUTXOMWithoutScript {
     script: string,
-}
-
-export interface BlockData{
-    number: number,
-    timestamp: number
 }

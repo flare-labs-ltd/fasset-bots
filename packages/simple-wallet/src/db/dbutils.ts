@@ -188,8 +188,9 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, t
         } as FilterQuery<UTXOEntity>,
         { refresh: true, orderBy: { confirmed: "desc", value: "desc" } }
     );
-    const utxos = !!txForReplacement ? res.filter((t) => t.confirmed) : res;
+
     const alreadyUsed = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
+    const utxos = alreadyUsed.length > 0 ? res.filter((t) => t.confirmed) : res;
     return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
 }
 
@@ -217,7 +218,7 @@ export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Pro
     });
 }
 
-export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
+export async function storeUTXOs(rootEm: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
     for (const utxo of mempoolUTXOs) {
         try {
             await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, async (utxoEnt) => {
@@ -229,29 +230,47 @@ export async function storeUTXOS(rootEm: EntityManager, source: string, mempoolU
     }
 }
 
+// it fetches unspent and sent utxos from db that do not match utxos from mempool and marks them as spent
 export async function correctUTXOInconsistencies(rootEm: EntityManager, address: string, mempoolUTXOs: any[]): Promise<void> {
     await rootEm.transactional(async (em) => {
-        const condition = mempoolUTXOs.map((utxo) => ({
+        // find UTXOs in the db that are NOT in the mempool and mark them as spent
+        const spentCondition = mempoolUTXOs.map((utxo) => ({
             $not: {
                 mintTransactionHash: { $like: utxo.mintTxid },
                 position: utxo.mintIndex,
             },
         }));
-        const utxoEnts = (await em.find(UTXOEntity, {
+        const spentUtxos = (await em.find(UTXOEntity, {
             source: address,
             spentHeight: { $in: [SpentHeightEnum.UNSPENT, SpentHeightEnum.SENT] },
-            $and: condition,
+            $and: spentCondition,
         })) as UTXOEntity[];
 
-        utxoEnts.forEach((utxoEnt) => {
+        spentUtxos.forEach((utxoEnt) => {
             utxoEnt.spentHeight = SpentHeightEnum.SPENT;
         });
-
-        if (utxoEnts.length > 0) {
-            logger.info(`Fixed ${utxoEnts.length} UTXO inconsistencies`);
+        if (spentUtxos.length > 0) {
+            logger.info(`Marked ${spentUtxos.length} UTXOs as spent`);
         }
-
-        await em.persistAndFlush(utxoEnts);
+        // find UTXOs that ARE in the mempool and mark them as unspent
+        const unspentCondition = mempoolUTXOs.map((utxo) => ({
+            mintTransactionHash: { $like: utxo.mintTxid },
+            position: utxo.mintIndex,
+        }));
+        const unspentUtxos = (await em.find(UTXOEntity, {
+            source: address,
+            spentHeight: { $ne: SpentHeightEnum.UNSPENT },
+            $and: unspentCondition,
+        })) as UTXOEntity[];
+        unspentUtxos.forEach((utxo) => {
+            utxo.spentHeight = SpentHeightEnum.UNSPENT;
+        });
+        if (unspentUtxos.length > 0) {
+            logger.info(`Marked ${unspentUtxos.length} UTXOs as unspent`);
+        }
+        await em.persistAndFlush([...spentUtxos, ...unspentUtxos]);
+        // find new UTXOs in the mempool that are not yet in the db
+        await storeUTXOs(rootEm, address, mempoolUTXOs);
     });
 }
 
