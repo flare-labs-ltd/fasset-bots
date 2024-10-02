@@ -37,11 +37,13 @@ export class TransactionFeeService implements IService {
     readonly feeDecileIndex: number;
     readonly feeIncrease: number;
     readonly chainType: ChainType;
+    blockchainAPI: BlockchainAPIWrapper;
 
     constructor(chainType: ChainType, feeDecileIndex: number, feeIncrease: number) {
         this.chainType = chainType;
         this.feeDecileIndex = feeDecileIndex;
         this.feeIncrease = feeIncrease;
+        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
     }
 
     /**
@@ -78,7 +80,7 @@ export class TransactionFeeService implements IService {
 
     private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
         try {
-            const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks);
+            const fee = await this.blockchainAPI.getCurrentFeeRate(nextBlocks);
             if (fee.toString() === "-1" || fee === 0) {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
@@ -96,7 +98,7 @@ export class TransactionFeeService implements IService {
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
         try {
-            const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(params.source);
+            const utxos = await this.blockchainAPI.getUTXOsFromMempool(params.source);
             const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
             let est_fee = await this.getEstimateFee(utxos.length, numOfOut);
 

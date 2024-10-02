@@ -44,6 +44,7 @@ export class TransactionUTXOService implements IService {
     readonly minimumUTXOValue: BN;
 
     private readonly rootEm: EntityManager;
+    private readonly blockchainAPI: BlockchainAPIWrapper;
 
     constructor(chainType: ChainType, mempoolChainLengthLimit: number, enoughConfirmations: number) {
         this.chainType = chainType;
@@ -61,6 +62,7 @@ export class TransactionUTXOService implements IService {
         }
 
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
+        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
     }
 
     /**
@@ -84,7 +86,7 @@ export class TransactionUTXOService implements IService {
                     vout: utxo.position,
                     transactionHash: utxo.mintTransactionHash,
                 });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(address, utxo.mintTransactionHash, utxo.position);
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(address, utxo.mintTransactionHash, utxo.position);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async (utxoEnt) => {
                     utxoEnt.script = utxo.script
                 });
@@ -239,7 +241,8 @@ export class TransactionUTXOService implements IService {
     }
 
     private calculateTransactionValue(txData: TransactionData, utxos: UTXOEntity[]) {
-        const tr = ServiceRepository.get(this.chainType, TransactionService).createBitcoreTransaction(txData.source, txData.destination, txData.amount, txData.fee, txData.feePerKB, utxos, txData.useChange, txData.note);
+        const transactionService = ServiceRepository.get(this.chainType, TransactionService);
+        const tr = transactionService.createBitcoreTransaction(txData.source, txData.destination, txData.amount, txData.fee, txData.feePerKB, utxos, txData.useChange, txData.note);
         const val = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
 
         if (txData.fee) {
@@ -252,7 +255,7 @@ export class TransactionUTXOService implements IService {
     }
 
     async fillUTXOsFromMempool(address: string) {
-        const utxos: MempoolUTXO[] = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(address);
+        const utxos: MempoolUTXO[] = await this.blockchainAPI.getUTXOsFromMempool(address);
         await storeUTXOS(this.rootEm, address, utxos);
     }
 
@@ -287,14 +290,14 @@ export class TransactionUTXOService implements IService {
 
         let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
         if (txEnt && (txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED || txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED)) {
-            const tr = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txHash);
+            const tr = await this.blockchainAPI.getTransaction(txHash);
             if (tr && tr.data.blockHash && tr.data.confirmations >= this.enoughConfirmations) {
                 txEnt.status = TransactionStatus.TX_SUCCESS;
                 await this.rootEm.persistAndFlush(txEnt);
             }
         }
         if (!txEnt) {
-            const tr = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getTransaction(txHash);
+            const tr = await this.blockchainAPI.getTransaction(txHash);
             logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
             if (tr) {
                 await this.rootEm.transactional(async em => {
@@ -329,7 +332,7 @@ export class TransactionUTXOService implements IService {
                     vout: utxo.position,
                     transactionHash: utxo.mintTransactionHash,
                 });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOScript(source, utxo.mintTransactionHash, utxo.position);
+                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(source, utxo.mintTransactionHash, utxo.position);
                 await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, async utxoEnt => {utxoEnt.script = utxo.script});
             }
         }

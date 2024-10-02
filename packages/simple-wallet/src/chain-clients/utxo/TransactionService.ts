@@ -130,17 +130,17 @@ export class TransactionService implements IService {
             useChange: isPayment,
             note: note,
         } as TransactionData;
-
+        const utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
         let utxos;
-        const feePerKBOriginal = await ServiceRepository.get(this.chainType, TransactionFeeService).getFeePerKB();
+        const feePerKBOriginal = await this.transactionFeeService.getFeePerKB();
         const feePerKB = feePerKBOriginal;
+
 
         if (isPayment && !feeInSatoshi) {
             txData.feePerKB = feePerKB;
         }
-
         if (amountInSatoshi == null) {
-            utxos = await ServiceRepository.get(this.chainType, TransactionUTXOService).getAllUTXOs(source);
+            utxos = await utxoService.getAllUTXOs(source);
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
             const bitcoreTx = this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
             feeInSatoshi = toBN(bitcoreTx.getFee()).sub(feePerKB.muln(getOutputSize(this.chainType)).divn(1000));
@@ -153,7 +153,7 @@ export class TransactionService implements IService {
             const balance = await getAccountBalance(this.chainType, source);
             amountInSatoshi = balance.sub(feeInSatoshi);
         } else {
-            utxos = await ServiceRepository.get(this.chainType, TransactionUTXOService).fetchUTXOs(txData, txForReplacement);
+            utxos = await utxoService.fetchUTXOs(txData, txForReplacement);
         }
 
         const utxosAmount = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
