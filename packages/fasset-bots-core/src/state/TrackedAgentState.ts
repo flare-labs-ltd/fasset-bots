@@ -356,6 +356,21 @@ export class TrackedAgentState {
         return vaultTransition >= poolTransition ? vaultTransition : poolTransition;
     }
 
+    // should start the CCB liquidation countdown
+    candidateForCcbRegister(timestamp: BN): boolean {
+        if (this.status >= AgentStatus.CCB) {
+            // already registered or in liquidation
+            return false
+        }
+        const calculatedStatus = this.possibleLiquidationTransition(timestamp);
+        return calculatedStatus === AgentStatus.CCB;
+    }
+
+    // should liquidate the agent already registered for CCB
+    candidateForCcbLiquidation(timestamp: BN): boolean {
+        return this.status === AgentStatus.CCB && timestamp.gte(this.ccbStartTimestamp.add(toBN(this.parent.settings.ccbTimeSeconds)));
+    }
+
     calculatePoolFee(mintingFeeUBA: BN): BN {
         return roundUBAToAmg(this.parent.settings, toBN(mintingFeeUBA).mul(toBN(this.agentSettings.poolFeeShareBIPS)).divn(MAX_BIPS));
     }
