@@ -17,7 +17,6 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    createPaymentTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       amount: BN | null,
       fee?: BN,
@@ -29,7 +28,6 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    createDeleteAccountTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       fee?: BN,
       note?: string,

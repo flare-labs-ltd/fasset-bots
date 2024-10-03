@@ -80,7 +80,6 @@ export class BlockchainFeeService implements IService {
             }
             await sleepMs(this.sleepTimeMs);
         }
-        logger.info("Stopped monitoring fees");
     }
 
     async setupHistory() {

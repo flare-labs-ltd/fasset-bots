@@ -7,6 +7,7 @@ import { BaseWalletConfig, IWalletKeys, SignedObject, TransactionInfo, UTXOFeePa
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import BN from "bn.js";
 import {
+    checkIfIsDeleting,
     correctUTXOInconsistenciesAndFillFromMempool,
     createInitialTransactionEntity,
     createTransactionOutputEntities,
@@ -113,7 +114,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     /**
      * @param {string} source
-     * @param {string} privateKey
      * @param {string} destination
      * @param {BN|null} amountInSatoshi - if null => empty all funds
      * @param {BN|undefined} feeInSatoshi - automatically set if undefined
@@ -125,7 +125,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      */
     async createPaymentTransaction(
         source: string,
-        privateKey: string,
         destination: string,
         amountInSatoshi: BN | null,
         feeInSatoshi?: BN,
@@ -134,7 +133,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN
     ): Promise<number> {
-        await this.walletKeys.addKey(source, privateKey);
+        if (await checkIfIsDeleting(this.rootEm, source)) {
+            logger.error(`Cannot receive requests. ${source} is deleting`);
+            throw new Error(`Cannot receive requests. ${source} is deleting`);
+        }
+        const privateKey = await this.walletKeys.getKey(source);
+        if (!privateKey) {
+            logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
+            return 0;
+        }
         return this.transactionService.createPaymentTransaction(
             this.chainType,
             source,
@@ -150,7 +157,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     /**
      * @param {string} source
-     * @param {string} privateKey
      * @param {string} destination
      * @param {BN|undefined} feeInSatoshi - automatically set if undefined
      * @param {string|undefined} note
@@ -161,7 +167,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      */
     async createDeleteAccountTransaction(
         source: string,
-        privateKey: string,
         destination: string,
         feeInSatoshi?: BN,
         note?: string,
@@ -169,7 +174,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN
     ): Promise<number> {
-        await this.walletKeys.addKey(source, privateKey);
+        if (await checkIfIsDeleting(this.rootEm, source)) {
+            logger.error(`Cannot receive requests. ${source} is deleting`);
+            throw new Error(`Cannot receive requests. ${source} is deleting`);
+         }
+        const privateKey = await this.walletKeys.getKey(source);
+        if (!privateKey) {
+            logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
+            return 0;
+        }
         return this.transactionService.createDeleteAccountTransaction(
             this.chainType,
             source,
@@ -325,7 +338,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else {
                 const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 // if only one block left to submit => replace by fee
-                const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
+                const stillTimeToSubmit = await checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
                 if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.data.blockHash) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }

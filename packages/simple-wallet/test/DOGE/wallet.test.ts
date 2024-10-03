@@ -75,6 +75,9 @@ describe("Dogecoin wallet tests", () => {
         void wClient.startMonitoringTransactionProgress();
         resetMonitoringOnForceExit(wClient);
         await sleepMs(500);
+
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
     after(async () => {
@@ -112,7 +115,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should create delete account transaction", async () => {
         const account = await wClient.createWallet();
-        const txId = await wClient.createDeleteAccountTransaction(account.address, "", fundedAddress);
+        const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress);
         expect(txId).to.be.greaterThan(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
@@ -120,7 +123,7 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should check pending transaction", async () => {
         const toSend = toBNExp(10, BTC_DOGE_DEC_PLACES);
-        const txId = await wClient.createPaymentTransaction(targetAddress, "", fundedAddress, toSend);
+        const txId = await wClient.createPaymentTransaction(targetAddress, fundedAddress, toSend);
         expect(txId).to.be.greaterThan(0);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, txId);
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(

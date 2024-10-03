@@ -6,7 +6,7 @@ import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { createInitialTransactionEntity, fetchTransactionEntityById, getTransactionInfoById, updateTransactionEntity } from "../../src/db/dbutils";
+import { createInitialTransactionEntity, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionStatus } from "../../src/entity/transaction";
 import {
     addConsoleTransportForTests,
@@ -81,6 +81,9 @@ describe("Xrp wallet tests", () => {
         void wClient.startMonitoringTransactionProgress();
         await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
+
+        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+        await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
     after(async () => {
@@ -103,15 +106,14 @@ describe("Xrp wallet tests", () => {
 
     it("Should create delete account transaction", async () => {
         const account = await wClient.createWallet();
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, account.address, toBNExp(10, XRP_DECIMAL_PLACES));
+        const id = await wClient.createPaymentTransaction(fundedAddress, account.address, toBNExp(10, XRP_DECIMAL_PLACES));
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 20, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
-        const txId = await wClient.createDeleteAccountTransaction(account.address, "", fundedAddress);
+        const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress);
         expect(txId).to.be.greaterThan(0);
         // cannot receive requests already deleting
         await expect(
-            wClient.createDeleteAccountTransaction(account.address, account.privateKey, fundedAddress)
+            wClient.createDeleteAccountTransaction(account.address, fundedAddress)
         ).to.eventually.be.rejectedWith(`Cannot receive requests. ${account.address} is deleting`);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
@@ -131,16 +133,14 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should submit transaction", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 20, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
     it("Should not validate submit and resubmit transaction - fee to low", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const lowFee = toBN(0);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, lowFee, note);
         expect(id).to.be.gt(0);
 
         const [tx] = await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_FAILED, id);
@@ -148,11 +148,9 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should create transaction with fee", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const note = "Submit";
         const trId = await wClient.createPaymentTransaction(
-            fundedWallet.address,
-            fundedWallet.privateKey,
+            fundedAddress,
             targetAddress,
             amountToSendDropsSecond,
             feeInDrops,
@@ -170,7 +168,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should not submit transaction: fee > maxFee", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops);
         expect(id).to.be.gt(0);
 
         const [tx] = await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -194,7 +192,7 @@ describe("Xrp wallet tests", () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const lowFee = toBN(2);
         const maxFee = toBN(3);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note, maxFee);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, lowFee, note, maxFee);
         expect(id).to.be.gt(0);
 
         const [txEnt, txInfo] = await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -206,18 +204,19 @@ describe("Xrp wallet tests", () => {
     // if account sequence + DELETE_ACCOUNT_OFFSET < ledger number
     it.skip("Should create and delete account", async () => {
         const toDelete = wClient.createWallet();
+        await wClient.walletKeys.addKey(toDelete.address, toDelete.privateKey);
         expect(toDelete.address).to.not.be.null;
         expect(WAValidator.validate(toDelete.address, "XRP", "testnet")).to.be.true;
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
         const toSendInDrops = toBNExp(20, 6); // 20 XPR
         // fund toDelete account
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, toDelete.address, toSendInDrops);
+        const id = await wClient.createPaymentTransaction(fundedAddress, toDelete.address, toSendInDrops);
 
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         const balance = await wClient.getAccountBalance(toDelete.address);
         // delete toDelete account
-        const id2 = await wClient.createDeleteAccountTransaction(toDelete.address, toDelete.privateKey, fundedWallet.address);
+        const id2 = await wClient.createDeleteAccountTransaction(toDelete.address, fundedWallet.address);
 
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_SUCCESS, id2);
         const balance2 = await wClient.getAccountBalance(toDelete.address);
@@ -238,7 +237,7 @@ describe("Xrp wallet tests", () => {
     it("Should successfully resubmit transaction with fee < minFee", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const lowFee = toBN("5"); // toBN("10") is minFee for XRP
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, lowFee, note);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, lowFee, note);
         expect(id).to.be.gt(0);
 
         const [txEnt] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
@@ -260,7 +259,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should not resubmit TX_PENDING - already on chain", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note);
         await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         expect((await wClient.getTransactionInfo(id)).status).to.equal(TransactionStatus.TX_SUCCESS);
@@ -302,7 +301,7 @@ describe("Xrp wallet tests", () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const currentBlock = await wClient.getLatestValidatedLedgerIndex();
         const id = await wClient.createPaymentTransaction(
-            fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops,
+            fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops,
             note, maxFeeInDrops, currentBlock - 5);
 
         await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -312,7 +311,7 @@ describe("Xrp wallet tests", () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const currentBlock = await wClient.getLatestValidatedLedgerIndex();
         const id = await wClient.createPaymentTransaction(
-            fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, maxFeeInDrops,
+            fundedAddress, targetAddress, amountToSendDropsFirst, maxFeeInDrops,
             note, maxFeeInDrops, currentBlock + 1);
 
         await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -322,26 +321,26 @@ describe("Xrp wallet tests", () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, true);
         await expect(
-            wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops),
-        ).to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedWallet.address} is deleting`);
+            wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops),
+        ).to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
         await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, false);
     });
 
     it("Account balance should change after transaction", async () => {
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note);
 
-        const balanceStart = await wClient.getAccountBalance(fundedWallet.address);
+        const balanceStart = await wClient.getAccountBalance(fundedAddress);
         expect(balanceStart.toNumber()).to.be.gt(0);
 
         await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
-        const balanceEnd = await wClient.getAccountBalance(fundedWallet.address);
+        const balanceEnd = await wClient.getAccountBalance(fundedAddress);
         expect(balanceStart.sub(balanceEnd).sub(feeInDrops).toNumber()).to.be.equal(amountToSendDropsFirst.toNumber());
     });
 
     it.skip("Stress test", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+        await wClient.walletKeys.addKey(targetWallet.address, targetWallet.privateKey);
 
         const N_TRANSACTIONS = 10;
 
@@ -349,9 +348,9 @@ describe("Xrp wallet tests", () => {
         for (let i = 0; i < N_TRANSACTIONS; i++) {
             let id;
             if (Math.random() > 0.5) {
-                id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendDropsFirst, feeInDrops, note);
+                id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note);
             } else {
-                id = await wClient.createPaymentTransaction(targetWallet.address, targetWallet.privateKey, fundedWallet.address, amountToSendDropsFirst, feeInDrops, note);
+                id = await wClient.createPaymentTransaction(targetWallet.address, fundedWallet.address, amountToSendDropsFirst, feeInDrops, note);
             }
             ids.push(id);
         }

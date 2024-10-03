@@ -106,7 +106,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    /**
     * @param {string} source
-    * @param {string} privateKey
     * @param {string} destination
     * @param {BN|null} amountInDrops - if null => AccountDelete transaction will be created
     * @param {BN|undefined} feeInDrops - automatically set if undefined
@@ -116,7 +115,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     */
    async createPaymentTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       amountInDrops: BN | null,
       feeInDrops?: BN,
@@ -130,7 +128,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          logger.error(`Cannot receive requests. ${source} is deleting`);
          throw new Error(`Cannot receive requests. ${source} is deleting`);
       }
-      await this.walletKeys.addKey(source, privateKey);
+      const privateKey = await this.walletKeys.getKey(source);
+      if (!privateKey) {
+          logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
+          return 0;
+      }
       const ent = await createInitialTransactionEntity(
          this.rootEm,
          this.chainType,
@@ -159,7 +161,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     */
    async createDeleteAccountTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       feeInDrops?: BN,
       note?: string,
@@ -172,7 +173,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          logger.error(`Cannot receive requests. ${source} is deleting`);
          throw new Error(`Cannot receive requests. ${source} is deleting`);
       }
-      await this.walletKeys.addKey(source, privateKey);
+      const privateKey = await this.walletKeys.getKey(source);
+      if (!privateKey) {
+          logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
+          return 0;
+      }
       await setAccountIsDeleting(this.rootEm, source);
       const ent = await createInitialTransactionEntity(
          this.rootEm,

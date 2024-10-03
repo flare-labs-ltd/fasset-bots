@@ -92,6 +92,9 @@ describe("Bitcoin wallet tests", () => {
         void wClient.startMonitoringTransactionProgress();
         await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
+
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
     after(async () => {
@@ -112,8 +115,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should create transaction with custom fee", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi);
         expect(txId).greaterThan(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 1 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const info = await wClient.getTransactionInfo(txId);
@@ -122,8 +124,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should not create transaction: fee > maxFee", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
         expect(txId).greaterThan(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
@@ -153,9 +154,8 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Transaction with executeUntilBlock before current block height should fail", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, feeInSatoshi, currentBlock - wClient.executionBlockOffset);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, feeInSatoshi, currentBlock - wClient.executionBlockOffset);
         expect(id).to.be.gt(0);
 
         const [txEnt] = await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
@@ -176,19 +176,17 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should handle empty UTXO list in DB", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         await clearUTXOs(wClient.rootEm);
         const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
     it("Balance should change after transaction", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const sourceBalanceStart = await wClient.getAccountBalance(fundedWallet.address);
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
         const sourceBalanceEnd = await wClient.getAccountBalance(fundedWallet.address);
@@ -198,33 +196,29 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Transaction with execute until timestamp too low should fail", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const offset = wClient.executionBlockOffset * utxoUtils.getDefaultBlockTimeInSeconds(wClient.chainType)
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, toBN(getCurrentTimestampInSeconds() - offset));
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, toBN(getCurrentTimestampInSeconds() - offset));
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with execute until timestamp too low should fail 2", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, currentBlock, toBN(20240830203804));
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, currentBlock, toBN(20240830203804));
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with a too low fee should be updated with a higher fee", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const startFee = toBNExp(0.0000000000001, 0);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, startFee, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, startFee, note, undefined);
         expect(id).to.be.gt(0);
         const [txEnt] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
         expect(txEnt.fee?.toNumber()).to.be.gt(startFee.toNumber());
     });
 
     it.skip("Already spent UTXOs with wrong status should get a new status - consistency checker", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         let utxoEnt;
@@ -235,7 +229,7 @@ describe("Bitcoin wallet tests", () => {
         utxoEnt.spentHeight = SpentHeightEnum.UNSPENT;
         await wClient.rootEm.persistAndFlush(utxoEnt);
 
-        const id2 = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
+        const id2 = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id2).to.be.gt(0);
         utxoEnt = await wClient.rootEm.findOne(UTXOEntity, { spentHeight: SpentHeightEnum.SPENT });
         assert(utxoEnt !== null);
@@ -243,9 +237,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Test blockchain API connection down", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
         const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
@@ -262,7 +254,7 @@ describe("Bitcoin wallet tests", () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
         sinon.stub(wClient.blockchainAPI, "getCurrentFeeRate").rejects(new Error("No fee"));
 
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(0.1, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
@@ -273,14 +265,13 @@ describe("Bitcoin wallet tests", () => {
 
     it("If fee service is down the getCurrentFeeRate should be used", async () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const fee = "0.005";
         const feeRateInSatoshi = toBNExp(fee, BTC_DOGE_DEC_PLACES).muln(wClient.feeIncrease);
 
         sinon.stub(ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper), "getCurrentFeeRate").resolves(fee);
 
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
@@ -291,7 +282,6 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("If monitoring restarts wallet should run normally", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const N = 2;
         await sleepMs(2000);
         await wClient.stopMonitoring();
@@ -300,7 +290,7 @@ describe("Bitcoin wallet tests", () => {
 
         const initialTxIds = [];
         for (let i = 0; i < N; i++) {
-            initialTxIds.push(await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi.addn(i)));
+            initialTxIds.push(await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.addn(i)));
         }
         await sleepMs(2000);
         void wClient.startMonitoringTransactionProgress();
@@ -310,9 +300,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("'updateTransactionEntity' is down", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
 
         await waitForTxToFinishWithStatus(0.01, 5 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
         sinon.stub(dbutils, "updateTransactionEntity").throws(new DriverException(new Error("DB down")));
@@ -324,8 +312,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should replace transaction by fee", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         const currentBlock = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight()
         await wClient.tryToReplaceByFee(id, currentBlock)
         expect(id).to.be.gt(0);
@@ -333,8 +320,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should send transaction", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
         const info = await wClient.getTransactionInfo(txId);
@@ -342,8 +328,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should submit and replace transaction", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const txId = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const blockHeight = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
@@ -371,11 +356,10 @@ describe("Bitcoin wallet tests", () => {
 
     it.skip("Should prepare and execute transaction", async () => {// Needed only to transfer funds
         const source = "";
-        const source_pk = "";
         const target = "";
         const amountToSendInSats = toBNExp(1, BTC_DOGE_DEC_PLACES);
         const noteToSend = "Transfer";
-        const id = await wClient.createPaymentTransaction(source, source_pk, target, amountToSendInSats, undefined, noteToSend);
+        const id = await wClient.createPaymentTransaction(source, target, amountToSendInSats, undefined, noteToSend);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
