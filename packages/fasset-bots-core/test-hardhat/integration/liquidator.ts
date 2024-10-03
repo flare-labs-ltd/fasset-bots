@@ -384,7 +384,7 @@ describe("Liquidator tests", () => {
         await context.ftsos.usdc.setCurrentPrice(vaultTokenPrice, 0);
         await context.ftsos.usdc.setCurrentPriceFromTrustedProviders(vaultTokenPrice, 0);
         await context.ftsoManager.mockFinalizePriceEpoch();
-        // check that collateral ratios and agent status are set up correctly upcomming liquidtions
+        // check that collateral ratios and agent status are set up correctly for the upcomming liquidations
         const agentInfo2 = await agentBot.agent.getAgentInfo();
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.gte(Number(collateralType.ccbMinCollateralRatioBIPS));
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.lte(Number(collateralType.ccbMinCollateralRatioBIPS) + 10);
