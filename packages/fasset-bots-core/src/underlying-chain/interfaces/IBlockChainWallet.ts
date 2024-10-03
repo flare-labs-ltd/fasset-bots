@@ -3,11 +3,6 @@ import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
 
-export interface FeeServiceOptions {
-    rateLimitOptions?: RateLimitOptions;
-    sleepTimeMs: number;
-    numberOfBlocksInHistory: number;
-}
 export interface WalletApi {
     url: string;
 }

@@ -162,25 +162,6 @@
             ],
             "type": "string"
         },
-        "FeeServiceOptions": {
-            "additionalProperties": false,
-            "properties": {
-                "numberOfBlocksInHistory": {
-                    "type": "number"
-                },
-                "rateLimitOptions": {
-                    "$ref": "#/definitions/RateLimitOptions"
-                },
-                "sleepTimeMs": {
-                    "type": "number"
-                }
-            },
-            "required": [
-                "numberOfBlocksInHistory",
-                "sleepTimeMs"
-            ],
-            "type": "object"
-        },
         "OrmConfigOptions": {
             "additionalProperties": {},
             "properties": {
@@ -266,9 +247,6 @@
                 "faucet": {
                     "type": "string"
                 },
-                "feeServiceOptions": {
-                    "$ref": "#/definitions/FeeServiceOptions"
-                },
                 "indexerUrl": {
                     "type": "string"
                 },
@@ -316,27 +294,6 @@
                 },
                 "tokenSymbol": {
                     "type": "string"
-                }
-            },
-            "type": "object"
-        },
-        "RateLimitOptions": {
-            "additionalProperties": false,
-            "properties": {
-                "maxRPS": {
-                    "type": "number"
-                },
-                "maxRequests": {
-                    "type": "number"
-                },
-                "perMilliseconds": {
-                    "type": "number"
-                },
-                "retries": {
-                    "type": "number"
-                },
-                "timeoutMs": {
-                    "type": "number"
                 }
             },
             "type": "object"

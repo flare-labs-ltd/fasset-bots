@@ -15,7 +15,6 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import {
-    FeeServiceOptions,
     IBlockChainWallet,
     WalletApi,
 } from "../underlying-chain/interfaces/IBlockChainWallet";
@@ -98,7 +97,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         const fAssets: Map<string, BotFAssetConfig> = new Map();
         for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
             const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, configFile.agentBotSettings,
-                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions, fassetInfo.feeServiceOptions, fassetInfo.fallbackApis);
+                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions, fassetInfo.fallbackApis);
             fAssets.set(symbol, fassetConfig);
         }
         const result: BotConfig = {
@@ -161,7 +160,6 @@ export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs:
  * @param attestationProviderUrls list of attestation provider's urls
  * @param submitter address from which the transactions get submitted
  * @param walletOptions
- * @param feeServiceOptions
  * @param fallbackApis
  * @returns instance of BotFAssetConfig
  */
@@ -176,7 +174,6 @@ export async function createBotFAssetConfig(
     attestationProviderUrls: string[] | undefined,
     submitter: string | undefined,
     walletOptions?: StuckTransaction,
-    feeServiceOptions?: FeeServiceOptions,
     fallbackApis?: WalletApi[],
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
@@ -190,7 +187,7 @@ export async function createBotFAssetConfig(
     };
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, walletOptions, feeServiceOptions, fallbackApis);
+        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, walletOptions, fallbackApis);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
@@ -257,7 +254,6 @@ export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrl: stri
  * @param em entity manager (optional)
  * @param walletUrl chain's url
  * @param options
- * @param feeServiceOptions
  * @param fallbackApis
  * @returns instance of BlockchainWalletHelper
  */
@@ -267,11 +263,10 @@ export async function createBlockchainWalletHelper(
     em: EntityManager,
     walletUrl: string,
     options?: StuckTransaction,
-    feeServiceOptions?: FeeServiceOptions,
     fallbackApis?: WalletApi[],
 ): Promise<BlockchainWalletHelper> {
     requireSupportedChainId(chainId);
-    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, options, feeServiceOptions, fallbackApis);
+    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, options, fallbackApis);
     const walletKeys = DBWalletKeys.from(requireNotNull(em), secrets);
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }

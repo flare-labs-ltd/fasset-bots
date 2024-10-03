@@ -10,7 +10,6 @@ import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { initWeb3 } from "../../../src/utils/web3";
 import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { getNativeAccounts } from "../../test-utils/test-helpers";
-import { FeeServiceConfig } from "@flarelabs/simple-wallet";
 use(chaiAsPromised);
 
 const indexerTestBTCUrl = "https://attestation-coston.aflabs.net/verifier/btc/";
@@ -22,16 +21,6 @@ const walletBTCUrl = "https://api.bitcore.io/api/BTC/mainnet/";
 const walletDOGEUrl = "https://api.bitcore.io/api/DOGE/mainnet/";
 const walletTestXRPUrl = "https://s.altnet.rippletest.net:51234";
 const walletXRPUrl = "https://s1.ripple.com:51234/";
-const feeServiceConfigDOGE: FeeServiceConfig = {
-    indexerUrl: walletTestDOGEUrl,
-    numberOfBlocksInHistory: 2,
-    sleepTimeMs: 2000,
-};
-const feeServiceConfigBTC: FeeServiceConfig = {
-    indexerUrl: walletTestBTCUrl,
-    numberOfBlocksInHistory: 2,
-    sleepTimeMs: 2000,
-};
 
 describe("Bot config tests", () => {
     let secrets: Secrets;
@@ -61,9 +50,9 @@ describe("Bot config tests", () => {
     it("Should create wallet clients", async () => {
         const botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
         const orm = botConfig.orm!;
-        const testBTC = await createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl,orm.em, undefined, feeServiceConfigBTC);
+        const testBTC = await createWalletClient(secrets, ChainId.testBTC, walletTestBTCUrl,orm.em);
         expect(testBTC.chainType).to.eq(ChainId.testBTC.chainName);
-        const testDOGE = await createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl,orm.em, undefined, feeServiceConfigDOGE);
+        const testDOGE = await createWalletClient(secrets, ChainId.testDOGE, walletTestDOGEUrl,orm.em);
         expect(testDOGE.chainType).to.eq(ChainId.testDOGE.chainName);
         const testXRP = await createWalletClient(secrets, ChainId.testXRP, walletTestXRPUrl,orm.em);
         expect(testXRP.chainType).to.eq(ChainId.testXRP.chainName);
