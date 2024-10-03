@@ -106,6 +106,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should create delete account transaction", async () => {
         const account = await wClient.createWallet();
+        await wClient.walletKeys.addKey(account.address, account.privateKey);
         const id = await wClient.createPaymentTransaction(fundedAddress, account.address, toBNExp(10, XRP_DECIMAL_PLACES));
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 20, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
@@ -115,8 +116,11 @@ describe("Xrp wallet tests", () => {
         await expect(
             wClient.createDeleteAccountTransaction(account.address, fundedAddress)
         ).to.eventually.be.rejectedWith(`Cannot receive requests. ${account.address} is deleting`);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
-        expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, txId);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_PREPARED);
+        await updateTransactionEntity(wClient.rootEm, txId, async (txEnt) => {
+            txEnt.status = TransactionStatus.TX_FAILED;
+        });
     });
 
     it("Should get public key from private key", async () => {

@@ -1,7 +1,7 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
 import { fetchMonitoringState, updateMonitoringState, processTransactions } from "../../db/dbutils";
-import { MonitoringStateEntity } from "../../entity/monitoring_state";
+import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, BUFFER_PING_INTERVAL, PING_INTERVAL } from "../../utils/constants";
 import { logger } from "../../utils/logger";

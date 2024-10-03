@@ -9,7 +9,7 @@ import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { Transaction } from "bitcore-lib";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
-import { MonitoringStateEntity } from "../entity/monitoring_state";
+import { MonitoringStateEntity } from "../entity/monitoringState";
 import Output = Transaction.Output;
 import { TransactionInputEntity } from "../entity/transactionInput";
 import { getCurrentTimestampInSeconds } from "../utils/utils";
