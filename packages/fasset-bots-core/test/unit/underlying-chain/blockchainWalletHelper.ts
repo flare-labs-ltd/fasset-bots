@@ -9,8 +9,7 @@ import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { createTestOrm } from "../../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
-import { FeeServiceConfig, TransactionStatus } from "@flarelabs/simple-wallet";
-import { FeeServiceOptions } from "../../../src/underlying-chain/interfaces/IBlockChainWallet";
+import { TransactionStatus } from "@flarelabs/simple-wallet";
 import { sleep } from "../../../src/utils";
 use(chaiAsPromised);
 
@@ -115,17 +114,12 @@ describe("testBTC wallet tests", () => {
     const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
     const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
     const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
-    const feeServiceConfig: FeeServiceConfig = {
-        indexerUrl: walletUrl,
-        numberOfBlocksInHistory: 2,
-        sleepTimeMs: 2000,
-    };
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, undefined, feeServiceConfig);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, undefined);
     });
 
     it("Should create account", async () => {
@@ -155,16 +149,12 @@ describe("testDOGE wallet tests", () => {
     const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
     const targetPrivateKey = "ckmubApfH515MCZNC9ufLR4kHrmnb1PCtX2vhoN4iYx9Wqzh2AQ9";
     const amountToSendSatoshies = 100000000;
-    const feeServiceOptions: FeeServiceOptions = {
-        numberOfBlocksInHistory: 2,
-        sleepTimeMs: 2000,
-    };
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, undefined, feeServiceOptions);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {

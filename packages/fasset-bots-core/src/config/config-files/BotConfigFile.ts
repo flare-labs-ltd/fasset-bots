@@ -1,4 +1,4 @@
-import { FeeServiceOptions, WalletApi } from "../../underlying-chain/interfaces/IBlockChainWallet";
+import { WalletApi } from "../../underlying-chain/interfaces/IBlockChainWallet";
 import { StuckTransaction } from "../../../../simple-wallet/src/index";
 
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
@@ -34,7 +34,6 @@ export interface BotFAssetInfo {
     priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
     minimumAccountBalance?: string; // only needed for XRP
     faucet?: string;
-    feeServiceOptions?: FeeServiceOptions;
     fallbackApis?: WalletApi[];
     stuckTransactionOptions?: StuckTransaction;
 }

@@ -1,10 +1,10 @@
-import { FeeServiceConfig, StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet";
+import { StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet";
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { EntityManager } from "@mikro-orm/core";
-import { WalletApi, FeeServiceOptions } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { WalletApi } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 const supportedSourceIds = [ChainId.XRP, ChainId.BTC, ChainId.DOGE, ChainId.testXRP, ChainId.testBTC, ChainId.testDOGE];
 
@@ -31,7 +31,6 @@ export async function createWalletClient(
     walletUrl: string,
     em: EntityManager,
     options: StuckTransaction = {},
-    feeServiceOptions?: FeeServiceOptions,
     fallbackApis?: WalletApi[],
 ): Promise<WalletClient> {
     requireSupportedChainId(chainId);
@@ -50,12 +49,6 @@ export async function createWalletClient(
             stuckTransactionOptions: options,
             em,
             walletKeys,
-            feeServiceConfig: {
-                indexerUrl: walletUrl,
-                rateLimitOptions: feeServiceOptions?.rateLimitOptions,
-                numberOfBlocksInHistory: feeServiceOptions?.numberOfBlocksInHistory,
-                sleepTimeMs: feeServiceOptions?.sleepTimeMs,
-            } as FeeServiceConfig,
             fallbackAPIs: fallbacks,
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
@@ -66,12 +59,6 @@ export async function createWalletClient(
             stuckTransactionOptions: options,
             em,
             walletKeys,
-            feeServiceConfig: {
-                indexerUrl: walletUrl,
-                rateLimitOptions: feeServiceOptions?.rateLimitOptions,
-                numberOfBlocksInHistory: feeServiceOptions?.numberOfBlocksInHistory,
-                sleepTimeMs: feeServiceOptions?.sleepTimeMs,
-            } as FeeServiceConfig,
             fallbackAPIs: fallbacks,
         }); // UtxoMccCreate
     } else {
