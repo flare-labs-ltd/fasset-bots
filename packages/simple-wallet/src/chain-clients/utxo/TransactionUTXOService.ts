@@ -86,7 +86,7 @@ export class TransactionUTXOService implements IService {
         const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
         let fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);
         let dbUTXOS = await this.handleMissingUTXOScripts(fetchUnspent);
-        const needed = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, false, currentFeeStatus);
+        const needed = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, currentFeeStatus);
         if (needed) {
             return needed;
         }
@@ -94,7 +94,7 @@ export class TransactionUTXOService implements IService {
     }
 
     // allUTXOs = currently available UTXOs (either from db or db + fetch from mempool)
-    private async selectUTXOs(allUTXOs: UTXOEntity[], txForReplacement: TransactionEntity | undefined, txData: TransactionData, fetchedMempool: boolean = false, feeStatus: FeeStatus) {
+    private async selectUTXOs(allUTXOs: UTXOEntity[], txForReplacement: TransactionEntity | undefined, txData: TransactionData, feeStatus: FeeStatus) {
         const rbfUTXOs = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
 
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
@@ -106,13 +106,8 @@ export class TransactionUTXOService implements IService {
 
         let usingMinimalUTXOs = false; // If we're using the UTXOs which are < this.minimumUTXOValue
         if (!isEnoughUTXOs(rbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
-            if (fetchedMempool) {
-                utxos = allUTXOs;
-                usingMinimalUTXOs = true;
-            } else {
-                // refetch from mempool
-                return null;
-            }
+            utxos = allUTXOs;
+            usingMinimalUTXOs = true;
         } else {
             utxos = notMinimalUTXOs;
         }
