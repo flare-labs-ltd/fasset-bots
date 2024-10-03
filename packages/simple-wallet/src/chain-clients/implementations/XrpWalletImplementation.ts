@@ -74,7 +74,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    async getAccountBalance(account: string): Promise<BN> {
       try {
          const data = await this.getAccountInfo(account);
-         logger.info(`Get account balance for ${account}`, data.result);
+         logger.info(`Get account balance for ${account}`, data.result.account_data?.Balance || 0);
          return toBN(data.result.account_data?.Balance || 0);
       } catch (error) {
          logger.error(`Cannot get account balance for ${account}`, error);
