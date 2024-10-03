@@ -7,6 +7,8 @@ import { ChainType, BUFFER_PING_INTERVAL, PING_INTERVAL } from "../../utils/cons
 import { logger } from "../../utils/logger";
 import { getRandomInt, sleepMs } from "../../utils/utils";
 import { errorMessage } from "../../utils/axios-error-utils";
+import { ServiceRepository } from "../../ServiceRepository";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
 
 export class TransactionMonitor {
     private monitoring: boolean = false;
@@ -36,6 +38,10 @@ export class TransactionMonitor {
             monitoringEnt.lastPingInTimestamp = toBN(0);
         });
         this.monitoring = false;
+        if (this.chainType != ChainType.testXRP && this.chainType != ChainType.XRP) {
+            const feeService: BlockchainFeeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+            feeService.stopMonitoringFees();
+        }
     }
 
     async startMonitoringTransactionProgress(
@@ -79,6 +85,10 @@ export class TransactionMonitor {
             });
 
             this.monitoring = true;
+            if (this.chainType != ChainType.testXRP && this.chainType != ChainType.XRP) {
+                const feeService: BlockchainFeeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+                feeService.startMonitoringFees();
+            }
             logger.info(`Monitoring started for chain ${this.chainType}`);
 
             void this.updatePing();

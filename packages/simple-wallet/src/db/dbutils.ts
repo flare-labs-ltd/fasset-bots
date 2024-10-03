@@ -231,7 +231,7 @@ export async function storeUTXOs(rootEm: EntityManager, source: string, mempoolU
 }
 
 // it fetches unspent and sent utxos from db that do not match utxos from mempool and marks them as spent
-export async function correctUTXOInconsistencies(rootEm: EntityManager, address: string, mempoolUTXOs: any[]): Promise<void> {
+export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: EntityManager, address: string, mempoolUTXOs: any[]): Promise<void> {
     await rootEm.transactional(async (em) => {
         // find UTXOs in the db that are NOT in the mempool and mark them as spent
         const spentCondition = mempoolUTXOs.map((utxo) => ({

@@ -1,25 +1,32 @@
 import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
-import { ServiceRepository } from "../../src/ServiceRepository";
 import { ChainType } from "../../src/utils/constants";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { createTransactionEntity, MockBlockchainAPI } from "../test-util/utils";
 import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { expect } from "chai";
+import { ServiceRepository } from "../../src/ServiceRepository";
+import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 
 
 describe("getNumberOfMempoolAncestors", () => {
     let em: EntityManager;
+    const chainType = ChainType.testBTC;
+
+
+async function checkNumberOfAncestors(txHash: string, expectedNumberOfMempoolAncestors: number) {
+    const txService = ServiceRepository.get(chainType, TransactionUTXOService);
+    expect(await txService.getNumberOfMempoolAncestors(txHash)).to.be.eq(expectedNumberOfMempoolAncestors);
+}
+
     before(async () => {
         const conf = { ...config };
         conf.dbName = "getTransactionDescendants-test-db";
         em = (await initializeTestMikroORMWithConfig(conf)).em;
-
         ServiceRepository.register(ChainType.testBTC, EntityManager, em);
-        ServiceRepository.register(ChainType.testBTC, TransactionUTXOService, new TransactionUTXOService(ChainType.testBTC, 25, 2));
         ServiceRepository.register(ChainType.testBTC, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register(ChainType.testBTC, TransactionUTXOService, new TransactionUTXOService(chainType, 25, 2));
     });
 
     beforeEach(async () => {
@@ -148,7 +155,3 @@ describe("getNumberOfMempoolAncestors", () => {
 
     });
 });
-
-async function checkNumberOfAncestors(txHash: string, expectedNumberOfMempoolAncestors: number) {
-    expect(await ServiceRepository.get(ChainType.testBTC, TransactionUTXOService).getNumberOfMempoolAncestors(txHash)).to.be.eq(expectedNumberOfMempoolAncestors);
-}

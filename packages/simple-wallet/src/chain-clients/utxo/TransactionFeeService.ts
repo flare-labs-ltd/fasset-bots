@@ -34,14 +34,12 @@ export enum FeeStatus {
 }
 
 export class TransactionFeeService implements IService {
-    readonly feeDecileIndex: number;
     readonly feeIncrease: number;
     readonly chainType: ChainType;
-    blockchainAPI: BlockchainAPIWrapper;
+    readonly blockchainAPI: BlockchainAPIWrapper;
 
-    constructor(chainType: ChainType, feeDecileIndex: number, feeIncrease: number) {
+    constructor(chainType: ChainType, feeIncrease: number) {
         this.chainType = chainType;
-        this.feeDecileIndex = feeDecileIndex;
         this.feeIncrease = feeIncrease;
         this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
     }

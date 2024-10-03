@@ -1,7 +1,6 @@
 import { SpentHeightEnum, UTXOEntity, WALLET } from "../../src";
 import {
     BitcoinWalletConfig,
-    FeeServiceConfig,
     ICreateWalletResponse
 } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
@@ -17,7 +16,7 @@ import {
     addConsoleTransportForTests, calculateNewFeeForTx, clearUTXOs, createTransactionEntity,
     loop,
     resetMonitoringOnForceExit,
-    setMonitoringStatus, waitForTxToBeReplacedWithStatus,
+    setMonitoringStatus,
     waitForTxToFinishWithStatus,
 } from "../test-util/util";
 import {logger} from "../../src/utils/logger";
@@ -29,29 +28,21 @@ import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
-import { BlockchainFeeService } from "../../src/fee-service/fee-service";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 
-const walletSecret = "wallet_secret";
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
 const BTCMccConnectionTestInitial = {
     url: process.env.BTC_URL ?? "",
     inTestnet: true,
-    walletSecret: walletSecret,
     fallbackAPIs: [
         { url: process.env.BTC_URL ?? "", }
     ]
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
-const feeServiceConfig: FeeServiceConfig = {
-    indexerUrl: process.env.BTC_URL ?? "",
-    sleepTimeMs: 1000,
-    numberOfBlocksInHistory: 3,
-};
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -266,54 +257,27 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it.skip("If getCurrentFeeRate is down the fee should be the default one", async () => {
+    it("If getCurrentFeeRate is down the fee should be the default one", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
+        sinon.stub(wClient.blockchainAPI, "getCurrentFeeRate").rejects(new Error("No fee"));
 
-        wClient.feeService = undefined;
-        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
-            config => {
-                if (config.url?.includes("fee")) {
-                    return Promise.reject("Down");
-                }
-                return config;
-            },
-        );
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(0.1, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
         const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, utxoUtils.getDefaultFeePerKB(ChainType.testBTC), getCore(wClient.chainType), wClient.rootEm);
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
-
-        if (interceptorId) {
-            wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
-        }
-
-        wClient.feeService = new BlockchainFeeService(feeServiceConfig);
+        sinon.restore();
     });
 
     it("If fee service is down the getCurrentFeeRate should be used", async () => {
+        sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const fee = "0.005";
         const feeRateInSatoshi = toBNExp(fee, BTC_DOGE_DEC_PLACES).muln(wClient.feeIncrease);
 
-        const interceptorId = wClient.blockchainAPI.client.interceptors.response.use(
-            response => {
-                if (response.config.url?.includes("fee")) {
-                    const value = {
-                        ...response,
-                        data: {
-                            result: fee,
-                            feeRate: fee,
-                        },
-                        status: 200, statusText: "OK", headers: {}, config: response.config,
-                    };
-                    return Promise.resolve(value);
-                }
-                return response;
-            },
-        );
         sinon.stub(ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper), "getCurrentFeeRate").resolves(fee);
 
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
@@ -323,7 +287,6 @@ describe("Bitcoin wallet tests", () => {
         const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, feeRateInSatoshi, getCore(wClient.chainType), wClient.rootEm);
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
 
-        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
         sinon.restore();
     });
 
@@ -346,7 +309,7 @@ describe("Bitcoin wallet tests", () => {
         }
     });
 
-    it.skip("'updateTransactionEntity' is down", async () => {
+    it("'updateTransactionEntity' is down", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi);
@@ -410,7 +373,7 @@ describe("Bitcoin wallet tests", () => {
         const source = "";
         const source_pk = "";
         const target = "";
-        const amountToSendInSats = toBN("");
+        const amountToSendInSats = toBNExp(1, BTC_DOGE_DEC_PLACES);
         const noteToSend = "Transfer";
         const id = await wClient.createPaymentTransaction(source, source_pk, target, amountToSendInSats, undefined, noteToSend);
         expect(id).to.be.gt(0);

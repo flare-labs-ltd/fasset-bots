@@ -1,5 +1,5 @@
 import { TransactionStatus, WALLET } from "../../src";
-import { DogecoinWalletConfig, FeeServiceConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
+import { DogecoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
@@ -18,18 +18,13 @@ import { logger } from "../../src/utils/logger";
 import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import { correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
     url: process.env.DOGE_URL ?? "",
     inTestnet: true,
-};
-const feeServiceConfig: FeeServiceConfig = {
-    indexerUrl: process.env.DOGE_URL ?? "",
-    sleepTimeMs: 10000,
-    numberOfBlocksInHistory: 2,
 };
 let DOGEMccConnectionTest: DogecoinWalletConfig;
 
@@ -55,7 +50,6 @@ const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 
 let wClient: WALLET.DOGE;
 let fundedWallet: ICreateWalletResponse;
-let targetWallet: ICreateWalletResponse;
 let testOrm: ORM;
 
 describe("Dogecoin wallet tests", () => {
@@ -69,7 +63,6 @@ describe("Dogecoin wallet tests", () => {
             ...DOGEMccConnectionTestInitial,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            feeServiceConfig: feeServiceConfig,
             enoughConfirmations: 2,
             rateLimitOptions: {
                 maxRPS: 100,
@@ -98,6 +91,8 @@ describe("Dogecoin wallet tests", () => {
 
     it("Should not create transaction: amount = dust amount", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsWithoutScriptFromMempool(fundedWallet.address);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
         await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });

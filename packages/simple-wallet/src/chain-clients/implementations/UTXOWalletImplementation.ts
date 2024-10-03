@@ -7,7 +7,7 @@ import { BaseWalletConfig, IWalletKeys, SignedObject, TransactionInfo, UTXOFeePa
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import BN from "bn.js";
 import {
-    correctUTXOInconsistencies,
+    correctUTXOInconsistenciesAndFillFromMempool,
     createInitialTransactionEntity,
     createTransactionOutputEntities,
     failTransaction,
@@ -43,8 +43,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     blockOffset: number;
     feeIncrease: number;
     executionBlockOffset: number;
-    feeDecileIndex: number = 8; // 8-th decile
-    feeService?: BlockchainFeeService;
+    feeService: BlockchainFeeService;
 
     mempoolChainLengthLimit: number = 25;
 
@@ -67,32 +66,33 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.rootEm = createConfig.em;
         this.walletKeys = createConfig.walletKeys;
         this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
-        this.feeDecileIndex = createConfig.feeDecileIndex ?? this.feeDecileIndex;
         this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
 
         ServiceRepository.register(this.chainType, EntityManager, this.rootEm);
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
+
         ServiceRepository.register(this.chainType, BlockchainAPIWrapper, new BlockchainAPIWrapper(createConfig, this.chainType));
         this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+
         ServiceRepository.register(
             this.chainType,
             TransactionFeeService,
-            new TransactionFeeService(this.chainType, this.feeDecileIndex, this.feeIncrease)
+            new TransactionFeeService(this.chainType, this.feeIncrease)
         );
         this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
+
         ServiceRepository.register(
             this.chainType,
             TransactionUTXOService,
             new TransactionUTXOService(this.chainType, this.mempoolChainLengthLimit, this.enoughConfirmations)
         );
         this.transactionUTXOService = ServiceRepository.get(this.chainType, TransactionUTXOService);
+
         ServiceRepository.register(this.chainType, TransactionService, new TransactionService(this.chainType));
         this.transactionService = ServiceRepository.get(this.chainType, TransactionService);
 
-        if (createConfig.feeServiceConfig) {
-            this.feeService = new BlockchainFeeService(createConfig.feeServiceConfig);
-            ServiceRepository.register(this.chainType, BlockchainFeeService, this.feeService);
-        }
+        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType, createConfig));
+        this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
     }
 
     async getAccountBalance(account: string, otherAddresses?: string[]): Promise<BN> {
@@ -191,7 +191,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             this.checkPendingTransaction.bind(this),
             this.prepareAndSubmitCreatedTransaction.bind(this),
             this.checkSubmittedTransaction.bind(this),
-            async () => checkUTXONetworkStatus(this)
+            async () => checkUTXONetworkStatus(this),
         );
     }
 
@@ -200,6 +200,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async stopMonitoring(): Promise<void> {
+        await this.feeService.stopMonitoringFees();
         await this.monitor.stopMonitoring();
     }
 
@@ -223,9 +224,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             });
         }
         logger.info(`Preparing transaction ${txEnt.id}`);
-        const utxosFromMempool = await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source);
-        await correctUTXOInconsistencies(this.rootEm, txEnt.source, utxosFromMempool);
-
         try {
             // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
@@ -350,7 +348,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     // tx fails and it has ancestor defined -> original ancestor was rbf-ed
                     // if ancestors rbf is accepted => recreate
                     if (!!txEnt.ancestor.replaced_by && txEnt.ancestor.replaced_by.status === TransactionStatus.TX_SUCCESS) {
-                        await correctUTXOInconsistencies(
+                        await correctUTXOInconsistenciesAndFillFromMempool(
                             this.rootEm,
                             txEnt.source,
                             await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source)
@@ -628,7 +626,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 });
             }
             const mempoolUTXO = await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source);
-            await correctUTXOInconsistencies(this.rootEm, txEnt.source, mempoolUTXO);
+            await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, mempoolUTXO);
             await updateTransactionEntity(this.rootEm, txId, async (txEnt) => {
                 txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;
                 txEnt.utxos.removeAll();

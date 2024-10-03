@@ -99,18 +99,19 @@ export interface WalletApi {
    apiTokenKey?: string;
 }
 
-export interface BaseWalletConfig {
+export interface BaseWalletConfig extends WalletServiceConfigBase {
+   stuckTransactionOptions?: StuckTransaction;
+   enoughConfirmations?: number,
+   em: EntityManager;
+   walletKeys: IWalletKeys;
+   fallbackAPIs?: WalletApi[]
+}
+
+export interface WalletServiceConfigBase {
    url: string;
    inTestnet?: boolean;
    apiTokenKey?: string;
    rateLimitOptions?: RateLimitOptions;
-   stuckTransactionOptions?: StuckTransaction;
-   enoughConfirmations?: number,
-   feeServiceConfig?: FeeServiceConfig;
-   feeDecileIndex?: number, // the decile from which to use the fee if there's a fee-service running (eg 8 is 8-th decile)
-   em: EntityManager;
-   walletKeys: IWalletKeys;
-   fallbackAPIs?: WalletApi[]
 }
 
 export type RippleWalletConfig = BaseWalletConfig;
@@ -137,17 +138,14 @@ export interface IWalletKeys {
    addKey(address: string, privateKey: string): Promise<void>;
 }
 
-export interface FeeServiceConfig {
-   indexerUrl: string;
-   rateLimitOptions?: RateLimitOptions;
-   sleepTimeMs: number;
-   numberOfBlocksInHistory: number;
-}
-
 export interface BlockStats {
    blockHeight: number;
-   blockTime: number;
-   timeSincePreviousBlock: number;
    averageFeePerKB: BN;
    decilesFeePerKB: BN[];
+}
+
+export interface FeeStats {
+   averageFeePerKB: BN,
+   decilesFeePerKB: BN[],
+   movingAverageWeightedFee: BN
 }

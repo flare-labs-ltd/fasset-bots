@@ -3,6 +3,7 @@ import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
     checkIfIsDeleting,
+    correctUTXOInconsistenciesAndFillFromMempool,
     createInitialTransactionEntity, fetchUnspentUTXOs, setAccountIsDeleting,
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
@@ -27,6 +28,7 @@ import { TransactionData, TransactionUTXOService } from "./TransactionUTXOServic
 import { TransactionFeeService } from "./TransactionFeeService";
 import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
+import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 
 export class TransactionService implements IService {
 
@@ -123,6 +125,10 @@ export class TransactionService implements IService {
         note?: string,
         txForReplacement?: TransactionEntity,
     ): Promise<[bitcore.Transaction, UTXOEntity[]]> {
+        const blockchainApi = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        const utxosFromMempool = await blockchainApi.getUTXOsWithoutScriptFromMempool(source);
+        await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, source, utxosFromMempool);
+
         const isPayment = amountInSatoshi != null;
         const txData = {
             source: source,
@@ -136,7 +142,6 @@ export class TransactionService implements IService {
         let utxos;
         const feePerKBOriginal = await this.transactionFeeService.getFeePerKB();
         const feePerKB = feePerKBOriginal;
-
 
         if (isPayment && !feeInSatoshi) {
             txData.feePerKB = feePerKB;

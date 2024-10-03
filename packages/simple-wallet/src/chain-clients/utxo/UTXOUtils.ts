@@ -168,10 +168,10 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
     switch (chainType) {
         case ChainType.BTC:
         case ChainType.testBTC:
-            return toBN(BTC_DEFAULT_FEE_PER_KB); // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+            return toBN(BTC_DEFAULT_FEE_PER_KB);
         case ChainType.DOGE:
         case ChainType.testDOGE:
-            return toBN(DOGE_DEFAULT_FEE_PER_KB); // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+            return toBN(DOGE_DEFAULT_FEE_PER_KB);
         default:
             throw new Error(`Unsupported chain type ${chainType}`);
     }
