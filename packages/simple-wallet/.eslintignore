@@ -1,0 +1,10 @@
+# Ignore node_modules
+node_modules/
+
+# Ignore build directory
+dist/
+
+# Ignore all JS files in the tests folder
+src/utils/logger.ts
+
+test/

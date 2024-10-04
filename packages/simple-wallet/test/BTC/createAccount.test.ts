@@ -1,4 +1,4 @@
-import { BtcAccountGeneration, WALLET } from "../../src";
+import { BtcAccount, BtcAccountGeneration } from "../../src";
 import { expect } from "chai";
 import WAValidator from "wallet-address-validator";
 import { UTXOAccountGeneration } from "../../src/chain-clients/account-generation/UTXOAccountGeneration";
@@ -13,7 +13,7 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 describe("Bitcoin create account tests", () => {
 
     it("Should create testnet accounts", async () => {
-        const testClient = new WALLET.BtcAccount(true);
+        const testClient = new BtcAccount(true);
         const newAccount = testClient.createWallet();
         expect(newAccount.address).to.not.be.null;
         expect(WAValidator.validate(newAccount.address, "BTC", "testnet")).to.be.true;

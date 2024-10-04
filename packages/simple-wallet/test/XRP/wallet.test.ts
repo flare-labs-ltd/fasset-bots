@@ -1,4 +1,3 @@
-import { WALLET } from "../../src";
 import { ICreateWalletResponse, RippleWalletConfig } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
@@ -28,6 +27,7 @@ import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { sleepMs } from "../../src/utils/utils";
+import { XRP } from "../../src";
 
 use(chaiAsPromised);
 
@@ -62,7 +62,7 @@ const feeInDrops = toBNExp(0.000015, 6);
 const maxFeeInDrops = toBNExp(0.000012, 6);
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
 
-let wClient: WALLET.XRP;
+let wClient: XRP;
 let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE1TDj4Fr, account: rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8
 let targetWallet: ICreateWalletResponse; //testnet, account: r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq
 let testOrm: ORM;
@@ -77,7 +77,7 @@ describe("Xrp wallet tests", () => {
         testOrm = await initializeTestMikroORM();
         unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         XRPMccConnectionTest = { ...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-        wClient = new WALLET.XRP(XRPMccConnectionTest);
+        wClient = new XRP(XRPMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
         await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
@@ -118,7 +118,7 @@ describe("Xrp wallet tests", () => {
         ).to.eventually.be.rejectedWith(`Cannot receive requests. ${account.address} is deleting`);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_PREPARED);
-        await updateTransactionEntity(wClient.rootEm, txId, async (txEnt) => {
+        await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_FAILED;
         });
     });
@@ -267,7 +267,7 @@ describe("Xrp wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         expect((await wClient.getTransactionInfo(id)).status).to.equal(TransactionStatus.TX_SUCCESS);
-        await updateTransactionEntity(wClient.rootEm, id, async (txEnt) => {
+        await updateTransactionEntity(wClient.rootEm, id, (txEnt) => {
             txEnt.status = TransactionStatus.TX_PENDING;
         });
         expect((await wClient.getTransactionInfo(id)).status).to.equal(TransactionStatus.TX_PENDING);
@@ -403,7 +403,7 @@ describe("Xrp wallet tests", () => {
 
         const txEnt0 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
         const id0 = txEnt0.id;
-        updateTransactionEntity(wClient.rootEm, id0, async (txEntToUpdate) => {
+        updateTransactionEntity(wClient.rootEm, id0, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify({raw: 0});
         })
         const txEntBefore0 = await fetchTransactionEntityById(wClient.rootEm, id0);
@@ -413,7 +413,7 @@ describe("Xrp wallet tests", () => {
 
         const txEnt2 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
         const id1 = txEnt2.id;
-        updateTransactionEntity(wClient.rootEm, id1, async (txEntToUpdate) => {
+        updateTransactionEntity(wClient.rootEm, id1, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify({raw: 0});
         })
         const txEntBefore1 = await fetchTransactionEntityById(wClient.rootEm, id1);
@@ -423,7 +423,7 @@ describe("Xrp wallet tests", () => {
 
         const txEnt3 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
         const id2 = txEnt3.id;
-        updateTransactionEntity(wClient.rootEm, id2, async (txEntToUpdate) => {
+        updateTransactionEntity(wClient.rootEm, id2, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify({raw: 0});
         })
         const txEntBefore2 = await fetchTransactionEntityById(wClient.rootEm, id2);

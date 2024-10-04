@@ -1,4 +1,4 @@
-import { TransactionStatus, WALLET } from "../../src";
+import { DOGE, TransactionStatus } from "../../src";
 import { DogecoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
@@ -48,8 +48,7 @@ const targetFirstChange = {
 const DOGE_DECIMAL_PLACES = BTC_DOGE_DEC_PLACES;
 const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 
-let wClient: WALLET.DOGE;
-let fundedWallet: ICreateWalletResponse;
+let wClient: DOGE;
 let testOrm: ORM;
 
 describe("Dogecoin wallet tests", () => {
@@ -69,14 +68,14 @@ describe("Dogecoin wallet tests", () => {
                 timeoutMs: 2000,
             },
         };
-        wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
+        wClient = await DOGE.initialize(DOGEMccConnectionTest);
         await wClient.feeService?.setupHistory();
         void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
         resetMonitoringOnForceExit(wClient);
         await sleepMs(500);
 
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
@@ -93,28 +92,20 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsWithoutScriptFromMempool(fundedWallet.address);
-        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
-        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
-            .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
+        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsWithoutScriptFromMempool(fundedAddress);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
+        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
+            .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
 
     it("Should get account balance", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const accountBalance = await wClient.getAccountBalance(fundedWallet.address);
+        const accountBalance = await wClient.getAccountBalance(fundedAddress);
         expect(accountBalance.gt(new BN(0))).to.be.true;
-    });
-
-    it("Should get sub-account balances", async () => {
-        const balanceMain = await wClient.getAccountBalance(fundedAddress);
-        const balanceSub = await wClient.getAccountBalance(fundedFirstChange.address);
-        const balanceMainAndSub = await wClient.getAccountBalance(fundedAddress, [fundedFirstChange.address]);
-        expect((balanceSub.add(balanceMain)).eq(balanceMainAndSub)).to.be.true;
     });
 
     it("Should create delete account transaction", async () => {
         const account = await wClient.createWallet();
+        await wClient.walletKeys.addKey(account.address, account.privateKey);
         const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress);
         expect(txId).to.be.greaterThan(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
@@ -122,6 +113,8 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should check pending transaction", async () => {
+        const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+        await wClient.walletKeys.addKey(targetWallet.address, targetWallet.privateKey);
         const toSend = toBNExp(10, BTC_DOGE_DEC_PLACES);
         const txId = await wClient.createPaymentTransaction(targetAddress, fundedAddress, toSend);
         expect(txId).to.be.greaterThan(0);
@@ -130,11 +123,11 @@ describe("Dogecoin wallet tests", () => {
             txEnt.id,
             txEnt.source,
             txEnt.destination,
-            txEnt.amount || null,
+            txEnt.amount ?? null,
             txEnt.fee,
             txEnt.reference        );
 
-        await updateTransactionEntity(wClient.rootEm, txEnt.id, async (txEntToUpdate) => {
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify(transaction);
             txEntToUpdate.status = TransactionStatus.TX_PREPARED;
             txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());

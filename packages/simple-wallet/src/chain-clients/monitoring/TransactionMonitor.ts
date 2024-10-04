@@ -11,7 +11,7 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 
 export class TransactionMonitor {
-    private monitoring: boolean = false;
+    private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
 
@@ -20,8 +20,8 @@ export class TransactionMonitor {
         this.rootEm = rootEm;
     }
 
-    restartInDueToError: number = 2000; //2s
-    restartInDueNoResponse: number = 20000; //20s
+    restartInDueToError = 2000; //2s
+    restartInDueNoResponse = 20000; //20s
 
     async isMonitoring(): Promise<boolean> {
         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
@@ -34,7 +34,7 @@ export class TransactionMonitor {
     }
 
     async stopMonitoring(): Promise<void> {
-        await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+        await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
             monitoringEnt.lastPingInTimestamp = toBN(0);
         });
         this.monitoring = false;
@@ -80,14 +80,14 @@ export class TransactionMonitor {
                 }
             }
 
-            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+            await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                 monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
             });
 
             this.monitoring = true;
             if (this.chainType != ChainType.testXRP && this.chainType != ChainType.XRP) {
                 const feeService: BlockchainFeeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-                feeService.startMonitoringFees();
+                void feeService.startMonitoringFees();
             }
             logger.info(`Monitoring started for chain ${this.chainType}`);
 
@@ -142,7 +142,7 @@ export class TransactionMonitor {
     private async updatePing(): Promise<void> {
         while (this.monitoring) {
             try {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                     monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
                 });
                 await sleepMs(PING_INTERVAL);

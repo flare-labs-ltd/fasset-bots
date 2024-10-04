@@ -3,7 +3,7 @@ import { TransactionEntity, TransactionStatus } from "../../src/entity/transacti
 import { sleepMs } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
-import { WALLET } from "../../src";
+import { BTC, DOGE, XRP } from "../../src";
 import BN from "bn.js";
 import { fetchTransactionEntityById, getTransactionInfoById, updateMonitoringState } from "../../src/db/dbutils";
 import { UTXOEntity } from "../../src/entity/utxo";
@@ -79,7 +79,7 @@ async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: num
     }
 }
 
-async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit: number, wClient: WALLET.XRP | WALLET.BTC | WALLET.DOGE, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
+async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit: number, wClient: XRP | BTC | DOGE, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
     let txInfo = await wClient.getTransactionInfo(txId);
     let replacedTx: TransactionEntity | TransactionInfo | null = null;
 
@@ -115,12 +115,12 @@ async function createTransactionEntity(
                 source,
                 destination,
                 status: TransactionStatus.TX_CREATED,
-                maxFee: maxFee || null,
-                executeUntilBlock: executeUntilBlock || null,
-                executeUntilTimestamp: executeUntilTimestamp || null,
-                reference: note || null,
+                maxFee: maxFee ?? null,
+                executeUntilBlock: executeUntilBlock ?? null,
+                executeUntilTimestamp: executeUntilTimestamp ?? null,
+                reference: note ?? null,
                 amount: amountInDrops,
-                fee: feeInDrops || null
+                fee: feeInDrops ?? null
             } as RequiredEntityData<TransactionEntity>,
         );
         await em.flush();
@@ -129,7 +129,7 @@ async function createTransactionEntity(
     });
 }
 
-async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source: string, target: string, amount: BN, note: string, fee: BN, status: TransactionStatus) {
+async function createAndSignXRPTransactionWithStatus(wClient: XRP, source: string, target: string, amount: BN, note: string, fee: BN, status: TransactionStatus) {
     const transaction = await wClient.preparePaymentTransaction(
         source,
         target,
@@ -141,7 +141,7 @@ async function createAndSignXRPTransactionWithStatus(wClient: WALLET.XRP, source
     const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
     const privateKey = await wClient.walletKeys.getKey(txEnt.source);
     txEnt.raw = JSON.stringify(transaction);
-    txEnt.transactionHash = (await wClient.signTransaction(JSON.parse(txEnt.raw!), privateKey!)).txHash;
+    txEnt.transactionHash = wClient.signTransaction(JSON.parse(txEnt.raw!), privateKey!).txHash;
     txEnt.status = status;
 
     await wClient.rootEm.flush();
@@ -227,7 +227,7 @@ function resetMonitoringOnForceExit<T extends WriteWalletInterface>(wClient: T) 
     });
 }
 
-function addRequestTimers(wClient: WALLET.DOGE | WALLET.BTC) {
+function addRequestTimers(wClient: DOGE | BTC) {
     interface AxiosRequestConfigWithMetadata extends AxiosRequestConfig {
         metadata?: {
             startTime: Date;

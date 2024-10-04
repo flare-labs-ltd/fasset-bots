@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { WALLET } from "../../src";
+import { XRP } from "../../src";
 import { DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../../src/utils/constants";
 import { RippleWalletConfig } from "../../src/interfaces/IWalletTransaction";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
@@ -16,7 +16,7 @@ describe("XRP network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.XRP = await WALLET.XRP.initialize(XRPMccConnectionTest);
+      const wClient: XRP = await XRP.initialize(XRPMccConnectionTest);
       expect(wClient.blockchainAPI.client.defaults.timeout).to.eq(XRPMccConnectionTest.rateLimitOptions!.timeoutMs);
    });
 
@@ -27,7 +27,7 @@ describe("XRP network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
+      const wClient = await XRP.initialize(XRPMccConnectionTest);
       expect(wClient.blockchainAPI.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs);
    });
 
@@ -36,7 +36,7 @@ describe("XRP network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const XRPMccConnectionTest: RippleWalletConfig = { ... XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient = await WALLET.XRP.initialize(XRPMccConnectionTest);
+      const wClient = await XRP.initialize(XRPMccConnectionTest);
       expect(wClient.blockchainAPI.client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS_XRP.timeoutMs);
       expect(wClient.blockOffset).to.eq(XRPMccConnectionTest.stuckTransactionOptions!.blockOffset);
       expect(wClient.feeIncrease).to.eq(XRPMccConnectionTest.stuckTransactionOptions!.feeIncrease);

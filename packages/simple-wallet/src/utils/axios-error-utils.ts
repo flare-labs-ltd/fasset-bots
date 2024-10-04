@@ -6,7 +6,7 @@ import { excludeNullFields } from "../utils/utils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 
-export async function tryWithClients<T>(clients: any, operation: (client: any) => Promise<T>, method: string) {
+export async function tryWithClients<T, TResult>(clients: Record<string, T>, operation: (client: T) => Promise<TResult>, method: string) {
     for (const [index, url] of Object.keys(clients).entries()) {
         try {
             const result = await operation(clients[url]);
@@ -21,12 +21,12 @@ export async function tryWithClients<T>(clients: any, operation: (client: any) =
     throw new Error(`All blockchain clients failed.`);
 }
 
-export function isORMError(e: any) {
+export function isORMError(e: unknown) {
     return e instanceof ValidationError || e instanceof DriverException || e instanceof UniqueConstraintViolationException;
 }
 
-export function errorMessage(e: any) {
-    return e instanceof Error ? `${e.name} - ${e.message}: \n ${e.stack}` : e;
+export function errorMessage(e: unknown) {
+    return e instanceof Error ? `${e.name} - ${e.message}: \n ${e.stack}` : String(e);
 }
 
 export function createAxiosConfig(chainType: ChainType, url: string, rateLimitOptions?: RateLimitOptions, apiTokenKey?: string) {

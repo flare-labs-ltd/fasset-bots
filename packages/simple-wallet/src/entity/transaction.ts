@@ -1,4 +1,4 @@
-import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -36,7 +36,7 @@ export class TransactionEntity {
     maxFee?: BN;
 
     @Property()
-    submittedInBlock: number = 0; // 0 when tx is created
+    submittedInBlock = 0; // 0 when tx is created
 
     @Property({ type: BNType, nullable: true })
     acceptedToMempoolInTimestamp?: BN;

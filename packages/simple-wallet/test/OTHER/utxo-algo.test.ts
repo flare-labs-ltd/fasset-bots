@@ -1,9 +1,9 @@
 import {
     BitcoinWalletConfig,
+    BTC,
     logger,
     SpentHeightEnum, TransactionEntity,
     UTXOEntity,
-    WALLET,
 } from "../../src";
 import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/util";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -36,7 +36,7 @@ let BTCMccConnectionTest: BitcoinWalletConfig;
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
 const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
-let wClient: WALLET.BTC;
+let wClient: BTC;
 let testOrm: ORM;
 
 describe("UTXO selection algorithm test", () => {
@@ -52,7 +52,7 @@ describe("UTXO selection algorithm test", () => {
             walletKeys: unprotectedDBWalletKeys,
             enoughConfirmations: 1,
         };
-        wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
+        wClient = await BTC.initialize(BTCMccConnectionTest);
 
         await wClient.feeService?.setupHistory();
         void wClient.feeService?.startMonitoringFees();

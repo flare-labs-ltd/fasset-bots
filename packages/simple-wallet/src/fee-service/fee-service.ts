@@ -1,7 +1,5 @@
 import {
-    BTC_DEFAULT_FEE_PER_KB,
     ChainType,
-    DOGE_DEFAULT_FEE_PER_KB,
 } from "../utils/constants";
 import axios, { AxiosInstance } from "axios";
 import { sleepMs } from "../utils/utils";
@@ -10,15 +8,14 @@ import { toBN } from "../utils/bnutils";
 import BN from "bn.js";
 import { logger } from "../utils/logger";
 
-import { IService } from "../interfaces/IService";
 import { errorMessage, createAxiosConfig } from "../utils/axios-error-utils";
 import { getDefaultFeePerKB } from "../chain-clients/utxo/UTXOUtils";
 
 const FEE_DECILES_COUNT = 11;
 
-export class BlockchainFeeService implements IService {
+export class BlockchainFeeService {
     client: AxiosInstance;
-    monitoring: boolean = false;
+    monitoring = false;
     history: BlockStats[] = [];
     numberOfBlocksInHistory = 5;
     sleepTimeMs = 5000;

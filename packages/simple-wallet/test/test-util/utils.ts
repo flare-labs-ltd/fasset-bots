@@ -2,7 +2,6 @@ import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
 import { ChainType } from "../../src/utils/constants";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
-import { IService } from "../../src/interfaces/IService";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { MempoolUTXO, MempoolUTXOMWithoutScript } from "../../src/interfaces/IBlockchainAPI";
@@ -31,7 +30,7 @@ export function createTransactionInputEntity(transactionHash: string, vout: numb
     return inputEnt;
 }
 
-export class MockBlockchainAPI implements IService, BlockchainAPIWrapper {
+export class MockBlockchainAPI implements BlockchainAPIWrapper {
     client: AxiosInstance;
     clients: any;
     chainType: ChainType;

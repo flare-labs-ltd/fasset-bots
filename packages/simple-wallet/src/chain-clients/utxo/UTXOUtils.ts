@@ -95,7 +95,7 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
     return sub;
 }
 
-export async function getAccountBalance(chainType: ChainType, account: string, otherAddresses?: string[]): Promise<BN> {
+export async function getAccountBalance(chainType: ChainType, account: string): Promise<BN> {
     try {
         const blockchainAPIWrapper = ServiceRepository.get(chainType, BlockchainAPIWrapper);
         const accountBalance = await blockchainAPIWrapper.getAccountBalance(account);
@@ -103,18 +103,9 @@ export async function getAccountBalance(chainType: ChainType, account: string, o
             throw new Error("Account balance not found");
         }
         const mainAccountBalance = toBN(accountBalance);
-        if (!otherAddresses) {
-            return mainAccountBalance;
-        } else {
-            const balancePromises = otherAddresses.map((address) => blockchainAPIWrapper.getAccountBalance(address));
-            const balanceResponses = await Promise.all(balancePromises);
-            const totalAddressesBalance = balanceResponses.reduce((sum, balance) => {
-                return balance !== undefined ? sum! + balance : balance;
-            }, 0);
-            return toBN(totalAddressesBalance!).add(mainAccountBalance);
-        }
+        return mainAccountBalance;
     } catch (error) {
-        logger.error(`Cannot get account balance for ${account} and other addresses ${otherAddresses}: ${errorMessage(error)}`);
+        logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
         throw error;
     }
 }

@@ -1,19 +1,18 @@
-import { IService } from "./interfaces/IService";
 import { ChainType } from "./utils/constants";
 
 type Constructor<T> = new (...args: any[]) => T;
 
 export class Repository {
-    private services: Map<ChainType, Map<Constructor<any>, any>> = new Map();
+    private services = new Map<ChainType, Map<Constructor<any>, any>>();
 
-    register<T extends IService>(chainType: ChainType, ServiceClass: Constructor<T>, instance: T): void {
+    register<T>(chainType: ChainType, ServiceClass: Constructor<T>, instance: T): void {
         if (!this.services.has(chainType)) {
             this.services.set(chainType, new Map());
         }
         this.services.get(chainType)!.set(ServiceClass, instance);
     }
 
-    get<T extends IService>(chainType: ChainType, ServiceClass: Constructor<T>): T {
+    get<T>(chainType: ChainType, ServiceClass: Constructor<T>): T {
         const chainServiceMap = this.services.get(chainType);
         if (!chainServiceMap) {
             throw new Error(`No service registered for ${chainType}`);

@@ -1,4 +1,3 @@
-import { IService } from "../../interfaces/IService";
 import {
     BTC_DOGE_DEC_PLACES,
     BTC_LOW_FEE_PER_KB,
@@ -28,12 +27,13 @@ import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-error-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
+import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
 
 export enum FeeStatus {
     LOW, MEDIUM, HIGH
 }
 
-export class TransactionFeeService implements IService {
+export class TransactionFeeService {
     readonly feeIncrease: number;
     readonly chainType: ChainType;
     readonly blockchainAPI: BlockchainAPIWrapper;
@@ -50,18 +50,19 @@ export class TransactionFeeService implements IService {
     async getFeePerKB(): Promise<BN> {
         try {
             const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-            const mvgAvgFee = await feeService.getLatestFeeStats().movingAverageWeightedFee;
-            if (mvgAvgFee.gtn(0)) {
-                return enforceMinimalAndMaximalFee(this.chainType, mvgAvgFee);
+            const feeStats = await feeService.getLatestFeeStats();
+            if (feeStats && feeStats.movingAverageWeightedFee && feeStats.movingAverageWeightedFee.gtn(0)) {
+                return enforceMinimalAndMaximalFee(this.chainType, feeStats.movingAverageWeightedFee);
             } else {
                 return await this.getCurrentFeeRate();
             }
         } catch (error) {
+            logger.error(`Cannot obtain fee per kb ${errorMessage(error)}`);
             return await this.getCurrentFeeRate();
         }
     }
 
-    async getEstimateFee(inputLength: number, outputLength: number = 2, feePerKb?: BN ): Promise<BN> {
+    async getEstimateFee(inputLength: number, outputLength = 2, feePerKb?: BN ): Promise<BN> {
         let feePerKbToUse: BN;
         if (feePerKb) {
             feePerKbToUse = feePerKb;
@@ -103,7 +104,7 @@ export class TransactionFeeService implements IService {
             if (params.amount == null) {
                 return est_fee;
             } else {
-                const neededUTXOs: any[] = [];
+                const neededUTXOs: MempoolUTXO[] = [];
                 let sum = toBN(0);
                 for (const utxo of utxos) {
                     neededUTXOs.push(utxo);
@@ -116,7 +117,7 @@ export class TransactionFeeService implements IService {
                 return est_fee;
             }
         } catch (error) {
-            logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount}: ${errorMessage(error)}`);
+            logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount?.toString()}: ${errorMessage(error)}`);
             throw error;
         }
     }
@@ -127,7 +128,7 @@ export class TransactionFeeService implements IService {
         /* istanbul ignore next */
         for (const txEnt of descendants) {
             logger.info(`Transaction ${oldTx.id} has descendant ${txEnt.id}`);
-            await updateTransactionEntity(em, txEnt.id, async (txEnt) => {
+            await updateTransactionEntity(em, txEnt.id, (txEnt) => {
                 txEnt.ancestor = oldTx;
             });
             feeToCover = feeToCover.add(txEnt.fee ?? new BN(0))

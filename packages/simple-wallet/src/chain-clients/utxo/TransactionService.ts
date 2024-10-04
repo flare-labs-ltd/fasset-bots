@@ -1,4 +1,3 @@
-import { IService } from "../../interfaces/IService";
 import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
@@ -30,7 +29,7 @@ import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "
 import { UTXO } from "../../interfaces/IWalletTransaction";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 
-export class TransactionService implements IService {
+export class TransactionService {
 
     private readonly chainType: ChainType;
     private readonly transactionFeeService: TransactionFeeService;
@@ -53,7 +52,7 @@ export class TransactionService implements IService {
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
     ): Promise<number> {
-        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp}`);
+        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}`);
         const em = ServiceRepository.get(this.chainType, EntityManager);
         if (await checkIfIsDeleting(em, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);

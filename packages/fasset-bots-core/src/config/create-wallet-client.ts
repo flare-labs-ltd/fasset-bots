@@ -1,4 +1,4 @@
-import { StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet";
+import { BTC, DOGE, StuckTransaction, WalletClient, XRP } from "@flarelabs/simple-wallet";
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
@@ -42,7 +42,7 @@ export async function createWalletClient(
     }));
 
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        return await WALLET.BTC.initialize({
+        return await BTC.initialize({
             url: walletUrl,
             inTestnet: chainId === ChainId.testBTC,
             apiTokenKey: secrets.optional("apiKey.btc_rpc"),
@@ -52,7 +52,7 @@ export async function createWalletClient(
             fallbackAPIs: fallbacks,
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        return await WALLET.DOGE.initialize({
+        return await DOGE.initialize({
             url: walletUrl,
             inTestnet: chainId === ChainId.testDOGE,
             apiTokenKey: secrets.optional("apiKey.doge_rpc"),
@@ -62,7 +62,7 @@ export async function createWalletClient(
             fallbackAPIs: fallbacks,
         }); // UtxoMccCreate
     } else {
-        return await WALLET.XRP.initialize({
+        return await XRP.initialize({
             url: walletUrl,
             apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
             inTestnet: chainId === ChainId.testXRP,

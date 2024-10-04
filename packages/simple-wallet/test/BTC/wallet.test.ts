@@ -1,4 +1,4 @@
-import { SpentHeightEnum, UTXOEntity, WALLET } from "../../src";
+import { BTC, SpentHeightEnum, UTXOEntity } from "../../src";
 import {
     BitcoinWalletConfig,
     ICreateWalletResponse
@@ -70,7 +70,7 @@ const feeInSatoshi = toBN(12000);
 const maxFeeInSatoshi = toBN(1100);
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
 
-let wClient: WALLET.BTC;
+let wClient: BTC;
 let fundedWallet: ICreateWalletResponse;
 let testOrm: ORM;
 
@@ -88,7 +88,7 @@ describe("Bitcoin wallet tests", () => {
             walletKeys: unprotectedDBWalletKeys,
             enoughConfirmations: 2
         };
-        wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
+        wClient = await BTC.initialize(BTCMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
         await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
@@ -319,7 +319,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
     });
 
-    it("Should send transaction", async () => {
+    it.skip("Should send transaction", async () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);

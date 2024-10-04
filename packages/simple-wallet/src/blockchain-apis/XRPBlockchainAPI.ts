@@ -1,9 +1,8 @@
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
-import axios, { AxiosInstance } from "axios";
-import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../utils/constants";
+import { AxiosInstance } from "axios";
+import { ChainType } from "../utils/constants";
 import type { AccountInfoRequest } from "xrpl";
-import { createAxiosConfig, createAxiosInstance, tryWithClients } from "../utils/axios-error-utils";
+import { createAxiosInstance, tryWithClients } from "../utils/axios-error-utils";
 
 export class XRPBlockchainAPI {
     client: AxiosInstance;
