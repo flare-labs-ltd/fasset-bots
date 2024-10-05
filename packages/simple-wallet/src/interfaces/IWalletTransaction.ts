@@ -139,11 +139,5 @@ export interface IWalletKeys {
 export interface BlockStats {
    blockHeight: number;
    averageFeePerKB: BN;
-   decilesFeePerKB: BN[];
-}
-
-export interface FeeStats {
-   averageFeePerKB: BN,
-   decilesFeePerKB: BN[],
-   movingAverageWeightedFee: BN
+   blockTime: BN;
 }

@@ -4,6 +4,7 @@ import { BlockbookAPI } from "./BlockbookAPI";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { ChainType } from "../utils/constants";
 import { createAxiosConfig, tryWithClients } from "../utils/axios-error-utils";
+import BN from "bn.js";
 
 export class BlockchainAPIWrapper implements IBlockchainAPI {
     client: AxiosInstance;
@@ -33,8 +34,12 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentBlockHeight(), "getCurrentBlockHeight");
     }
 
-    async getCurrentFeeRate(): Promise<number> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentFeeRate(), "getCurrentFeeRate");
+    async getCurrentFeeRate(blockNumber?: number): Promise<number> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentFeeRate(blockNumber), "getCurrentFeeRate");
+    }
+
+    async getBlockTimeAt(blockNumber: number): Promise<BN> {
+        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getBlockTimeAt(blockNumber), "getBlockTimeAt");
     }
 
     async getTransaction(txHash: string): Promise<any> {

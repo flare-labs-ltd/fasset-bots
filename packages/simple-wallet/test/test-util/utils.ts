@@ -41,6 +41,10 @@ export class MockBlockchainAPI implements BlockchainAPIWrapper {
         this.chainType = ChainType.testBTC;
     }
 
+    getBlockTimeAt(blockNumber: number): Promise<import("bn.js")> {
+        return Promise.resolve(toBN(0));
+    }
+
     async getAccountBalance(account: string): Promise<number | undefined> {
         return Promise.resolve(undefined);
     }

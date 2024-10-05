@@ -92,7 +92,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         ServiceRepository.register(this.chainType, TransactionService, new TransactionService(this.chainType));
         this.transactionService = ServiceRepository.get(this.chainType, TransactionService);
 
-        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType, createConfig));
+        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType));
         this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
     }
 

@@ -50,9 +50,9 @@ export class TransactionFeeService {
     async getFeePerKB(): Promise<BN> {
         try {
             const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-            const feeStats = await feeService.getLatestFeeStats();
-            if (feeStats && feeStats.movingAverageWeightedFee && feeStats.movingAverageWeightedFee.gtn(0)) {
-                return enforceMinimalAndMaximalFee(this.chainType, feeStats.movingAverageWeightedFee);
+            const movingAverageWeightedFee = await feeService.getLatestFeeStats();
+            if (movingAverageWeightedFee && movingAverageWeightedFee.gtn(0)) {
+                return enforceMinimalAndMaximalFee(this.chainType, movingAverageWeightedFee);
             } else {
                 return await this.getCurrentFeeRate();
             }

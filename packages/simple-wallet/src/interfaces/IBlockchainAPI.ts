@@ -1,5 +1,6 @@
 import { AxiosInstance, AxiosResponse } from "axios";
 import { ChainType } from "../utils/constants";
+import BN from "bn.js";
 
 export interface IBlockchainAPI {
     client: AxiosInstance;
@@ -14,7 +15,9 @@ export interface IBlockchainAPI {
 
     getUTXOScript(txHash: string, vout: number, chainType: ChainType): Promise<string>;
 
-    getCurrentFeeRate(): Promise<number>;
+    getCurrentFeeRate(blockNumber?: number): Promise<number>;
+
+    getBlockTimeAt(blockNumber: number): Promise<BN>;
 
     getCurrentBlockHeight(): Promise<number>;
 

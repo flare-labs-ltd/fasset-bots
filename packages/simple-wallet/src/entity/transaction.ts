@@ -1,4 +1,4 @@
-import { Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -89,7 +89,7 @@ export class TransactionEntity {
     @OneToMany(() => TransactionOutputEntity, output => output.transaction, {orphanRemoval: true})
     outputs = new Collection<TransactionOutputEntity>(this);
 
-    @OneToMany(() => UTXOEntity, utxo => utxo.transaction)
+    @OneToMany(() => UTXOEntity, utxo => utxo.transaction, { orphanRemoval: true })
     utxos = new Collection<UTXOEntity>(this);
 
     @ManyToOne(() => TransactionEntity, { nullable: true })

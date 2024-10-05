@@ -348,7 +348,7 @@ describe("Bitcoin wallet tests", () => {
         expect(await wClient.isMonitoring()).to.be.true;
      });
 
-    it.skip("Monitoring into infinity", async () => {
+    it("Monitoring into infinity", async () => {
         while (true) {
             await sleepMs(2000);
         }

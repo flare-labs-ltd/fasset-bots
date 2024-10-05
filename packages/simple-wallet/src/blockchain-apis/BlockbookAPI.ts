@@ -6,6 +6,7 @@ import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
 import { toBN, toNumber } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
+import BN from "bn.js";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -40,12 +41,20 @@ export class BlockbookAPI implements IBlockchainAPI {
         return res.data.blockbook.bestHeight;
     }
 
-    async getCurrentFeeRate(): Promise<number> {
-        const blockNumber: number = await this.getCurrentBlockHeight();
-        const res = await this.client.get(`/feestats/${blockNumber}`);
+    async getCurrentFeeRate(blockNumber?: number): Promise<number> {
+        let blockToCheck = blockNumber;
+        if (!blockToCheck) {
+            blockToCheck = await this.getCurrentBlockHeight();
+        }
+        const res = await this.client.get(`/feestats/${blockToCheck}`);
         const BTC_PER_SATOSHI = 1 / 100000000;
         const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI
         return fee;
+    }
+
+    async getBlockTimeAt(blockNumber: number): Promise<BN> {
+        const res = await this.client.get(`/block/${blockNumber}`);
+        return toBN(res.data.time);
     }
 
     async getTransaction(txHash: string): Promise<AxiosResponse<any>> {

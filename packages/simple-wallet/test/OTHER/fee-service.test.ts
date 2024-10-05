@@ -1,28 +1,48 @@
 import {BlockchainFeeService} from "../../src/fee-service/fee-service";
-import {before} from "node:test";
 import {expect} from "chai";
-import BN from "bn.js";
-import { sleepMs } from "../../src/utils/utils";
+import { checkIfShouldStillSubmit, sleepMs } from "../../src/utils/utils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { ChainType } from "../../src/utils/constants";
-import { BaseWalletConfig, WalletServiceConfigBase } from "../../src";
-import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
-import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { MockBlockchainAPI } from "../test-util/utils";
+import { BitcoinWalletConfig, BTC, logger } from "../../src";
+import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import { addConsoleTransportForTests } from "../test-util/util";
+import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 
 let feeService: BlockchainFeeService;
+const chainType = ChainType.testBTC;
+
+
+const BTCMccConnectionTestInitial = {
+    url: process.env.BTC_URL ?? "",
+    inTestnet: true,
+    fallbackAPIs: [
+        { url: process.env.BTC_URL ?? "", }
+    ]
+};
+let BTCMccConnectionTest: BitcoinWalletConfig;
+let testOrm: ORM;
+let client: UTXOWalletImplementation;
+
 describe("Fee service tests BTC", () => {
-    const feeServiceConfig: WalletServiceConfigBase = {
-        url: process.env.BTC_URL ?? "",
-        inTestnet: true,
-        rateLimitOptions: {
-            timeoutMs: 2000
-        },
-    }
+    let removeConsoleLogging: () => void;
+
     before(async () => {
-        feeService = new BlockchainFeeService(ChainType.testBTC, feeServiceConfig)
+        removeConsoleLogging = addConsoleTransportForTests(logger);
+
+        testOrm = await initializeTestMikroORM();
+        const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
+        BTCMccConnectionTest = {
+            ...BTCMccConnectionTestInitial,
+            em: testOrm.em,
+            walletKeys: unprotectedDBWalletKeys,
+            enoughConfirmations: 2
+        };
+        client = await BTC.initialize(BTCMccConnectionTest);
+        feeService = ServiceRepository.get(chainType, BlockchainFeeService);
     });
 
     it("Should get current block height", async () => {
@@ -32,23 +52,19 @@ describe("Fee service tests BTC", () => {
 
     it("Should get latest fee stats", async () => {
         const feeStats = await feeService.getLatestFeeStats();
-        expect(feeStats.averageFeePerKB.eqn(0)).to.be.true;
-        expect(feeStats.decilesFeePerKB.length).to.be.eq(0);
+        expect(feeStats.eqn(0)).to.be.true;
     });
 
     it("Should get fee stats", async () => {
         const blockHeight = 2870843;
         const feeStats = await feeService.getFeeStatsFromIndexer(blockHeight);
-        expect(feeStats.averageFeePerKB.toNumber()).to.be.gte(0);
-        expect(feeStats.decilesFeePerKB.length).to.be.eq(11);
-        expect(feeStats.decilesFeePerKB.map((t: BN) => t.toNumber()).filter((t: number) => t >= 0).length).to.be.eq(11);
+        expect(feeStats!.averageFeePerKB.gtn(0)).to.be.true;
     });
 
-    it("Fee stats for block without information/non existent block should be {0, []}", async () => {
+    it("Fee stats for block without information/non existent block should be null", async () => {
         const blockHeight = await feeService.getCurrentBlockHeight() + 10;
         const feeStats = await feeService.getFeeStatsFromIndexer(blockHeight);
-        expect(feeStats.averageFeePerKB.toNumber()).to.be.eq(0);
-        expect(feeStats.decilesFeePerKB.length).to.be.eq(0);
+        expect(feeStats).to.be.null;
     });
 
     it("Should start monitoring", async () => {
@@ -60,20 +76,15 @@ describe("Fee service tests BTC", () => {
         expect(feeService.monitoring).to.be.false;
     });
 
-    it("Should get fee", async () => {
+    it("Should get fee and median time", async () => {
         ServiceRepository.register(ChainType.testBTC, BlockchainAPIWrapper, new MockBlockchainAPI());
         void feeService.startMonitoringFees();
         await sleepMs(10000);
         const chainType = ChainType.testBTC;
-        const testOrm = await initializeTestMikroORM();
-        const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-        const createConfig: BaseWalletConfig = {
-            ...feeServiceConfig,
-            em: testOrm.em,
-            walletKeys: unprotectedDBWalletKeys
-        }
         const transactionFeeService = new TransactionFeeService(chainType, 1)
         await transactionFeeService.getFeePerKB();
+        const medianTime = feeService.getLatestMedianTime();
+        expect(medianTime?.gtn(0)).to.be.true;
         await feeService.stopMonitoringFees();
         await sleepMs(2000);
         expect(feeService.monitoring).to.be.false;
