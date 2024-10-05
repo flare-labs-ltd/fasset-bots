@@ -71,7 +71,7 @@ describe("Fee service tests BTC", () => {
         expect(feeService.monitoring).to.be.false;
         void feeService.startMonitoringFees();
         expect(feeService.monitoring).to.be.true;
-        await feeService.stopMonitoringFees();
+        feeService.stopMonitoringFees();
         await sleepMs(2000);
         expect(feeService.monitoring).to.be.false;
     });
@@ -85,7 +85,7 @@ describe("Fee service tests BTC", () => {
         await transactionFeeService.getFeePerKB();
         const medianTime = feeService.getLatestMedianTime();
         expect(medianTime?.gtn(0)).to.be.true;
-        await feeService.stopMonitoringFees();
+        feeService.stopMonitoringFees();
         await sleepMs(2000);
         expect(feeService.monitoring).to.be.false;
     });
