@@ -352,7 +352,6 @@ export class TrackedAgentState {
             timestamp
         );
         // return the higher status (more severe)
-        logger.info(`Tracked State Agent handled possible liquidation transition; vaultTransition: ${vaultTransition}, poolTransition: ${poolTransition}.`);
         return vaultTransition >= poolTransition ? vaultTransition : poolTransition;
     }
 
