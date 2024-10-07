@@ -95,7 +95,7 @@ export class Liquidator extends ActorBase {
         for (const agent of agents) {
             try {
                 logger.info(`Liquidator ${this.address} registering ${this.context.fAssetSymbol} CCB liquidation of agent ${agent.vaultAddress}.`);
-                await this.context.assetManager.startLiquidation(agent.vaultAddress);
+                await this.context.assetManager.startLiquidation(agent.vaultAddress, { from: this.address });
             } catch (e) {
                 logger.error(`Liquidator ${this.address} failed to register CCB liquidation of agent ${agent.vaultAddress}: ${e}`);
                 console.error(`Liquidator ${this.address} failed to register CCB liquidation of agent ${agent.vaultAddress}`);
