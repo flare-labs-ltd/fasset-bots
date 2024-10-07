@@ -389,7 +389,7 @@ describe("Liquidator tests", () => {
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.gte(Number(collateralType.ccbMinCollateralRatioBIPS));
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.lte(Number(collateralType.ccbMinCollateralRatioBIPS) + 10);
         expect(Number(agentInfo2.status)).equals(AgentStatus.NORMAL);
-        // expect to trigger liquidation
+        // expect to trigger CCB
         await liquidator.runStep();
         const agentInfo3 = await agentBot.agent.getAgentInfo();
         expect(Number(agentInfo3.status)).equals(AgentStatus.CCB);

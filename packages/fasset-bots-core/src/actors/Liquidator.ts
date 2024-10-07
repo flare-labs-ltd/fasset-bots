@@ -93,8 +93,13 @@ export class Liquidator extends ActorBase {
 
     async registerCCBs(agents: TrackedAgentState[]) {
         for (const agent of agents) {
-            logger.info(`Liquidator ${this.address} registering ${this.context.fAssetSymbol} CCB liquidation of agent ${agent.vaultAddress}.`);
-            await this.context.assetManager.startLiquidation(agent.vaultAddress);
+            try {
+                logger.info(`Liquidator ${this.address} registering ${this.context.fAssetSymbol} CCB liquidation of agent ${agent.vaultAddress}.`);
+                await this.context.assetManager.startLiquidation(agent.vaultAddress);
+            } catch (e) {
+                logger.error(`Liquidator ${this.address} failed to register CCB liquidation of agent ${agent.vaultAddress}: ${e}`);
+                console.error(`Liquidator ${this.address} failed to register CCB liquidation of agent ${agent.vaultAddress}`);
+            }
         }
     }
 
