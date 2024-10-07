@@ -67,7 +67,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.rootEm = createConfig.em;
         this.walletKeys = createConfig.walletKeys;
         this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
-        this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
 
         ServiceRepository.register(this.chainType, EntityManager, this.rootEm);
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
@@ -94,6 +93,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
         ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType));
         this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+
+        this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
     }
 
     async getAccountBalance(account: string): Promise<BN> {
@@ -213,7 +214,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async stopMonitoring(): Promise<void> {
-        this.feeService.stopMonitoringFees();
         await this.monitor.stopMonitoring();
     }
 

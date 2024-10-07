@@ -69,17 +69,6 @@ export class TransactionUTXOService {
      * @returns {UTXOEntity[]}
      */
     async fetchUTXOs(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
-        const dbUTXOs = await this.listUnspent(txData, txForReplacement);
-        return this.handleMissingUTXOScripts(dbUTXOs);
-    }
-
-    /**
-     * Retrieves unspent transactions
-     * @param txData
-     * @param txForReplacement
-     * @returns {Object[]}
-     */
-    private async listUnspent(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
         logger.info(`Listing UTXOs for address ${txData.source}`);
         const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
         const fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);

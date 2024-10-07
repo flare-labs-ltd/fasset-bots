@@ -43,6 +43,7 @@ describe("Fee service tests BTC", () => {
         };
         client = await BTC.initialize(BTCMccConnectionTest);
         feeService = ServiceRepository.get(chainType, BlockchainFeeService);
+        await feeService.setupHistory();
     });
 
     it("Should get current block height", async () => {
@@ -52,7 +53,7 @@ describe("Fee service tests BTC", () => {
 
     it("Should get latest fee stats", async () => {
         const feeStats = await feeService.getLatestFeeStats();
-        expect(feeStats.eqn(0)).to.be.true;
+        expect(feeStats.gtn(0)).to.be.true;
     });
 
     it("Should get fee stats", async () => {
@@ -67,26 +68,15 @@ describe("Fee service tests BTC", () => {
         expect(feeStats).to.be.null;
     });
 
-    it("Should start monitoring", async () => {
-        expect(feeService.monitoring).to.be.false;
-        void feeService.startMonitoringFees();
-        expect(feeService.monitoring).to.be.true;
-        feeService.stopMonitoringFees();
-        await sleepMs(2000);
-        expect(feeService.monitoring).to.be.false;
-    });
-
     it("Should get fee and median time", async () => {
         ServiceRepository.register(ChainType.testBTC, BlockchainAPIWrapper, new MockBlockchainAPI());
-        void feeService.startMonitoringFees();
-        await sleepMs(10000);
+        void feeService.monitorFees(true);
+        await sleepMs(5000);
         const chainType = ChainType.testBTC;
         const transactionFeeService = new TransactionFeeService(chainType, 1)
         await transactionFeeService.getFeePerKB();
         const medianTime = feeService.getLatestMedianTime();
         expect(medianTime?.gtn(0)).to.be.true;
-        feeService.stopMonitoringFees();
-        await sleepMs(2000);
-        expect(feeService.monitoring).to.be.false;
+        await feeService.monitorFees(false);
     });
 });

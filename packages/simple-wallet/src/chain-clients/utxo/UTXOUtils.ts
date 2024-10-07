@@ -184,3 +184,14 @@ export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN):
         }
     }
 }
+
+export function utxoOnly(chainType: ChainType) {
+    if (chainType === ChainType.BTC || chainType === ChainType.testBTC ||
+        chainType === ChainType.DOGE || chainType === ChainType.testDOGE
+    ) {
+        return true;
+    } else {
+        return false;
+    }
+
+}

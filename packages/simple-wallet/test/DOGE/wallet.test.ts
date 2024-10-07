@@ -69,8 +69,6 @@ describe("Dogecoin wallet tests", () => {
             },
         };
         wClient = await DOGE.initialize(DOGEMccConnectionTest);
-        await wClient.feeService?.setupHistory();
-        void wClient.feeService?.startMonitoringFees();
         void wClient.startMonitoringTransactionProgress();
         resetMonitoringOnForceExit(wClient);
         await sleepMs(500);

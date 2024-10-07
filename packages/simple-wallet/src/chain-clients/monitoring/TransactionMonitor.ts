@@ -9,6 +9,7 @@ import { getRandomInt, sleepMs } from "../../utils/utils";
 import { errorMessage } from "../../utils/axios-error-utils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
+import { utxoOnly } from "../utxo/UTXOUtils";
 
 export class TransactionMonitor {
     private monitoring = false;
@@ -38,9 +39,9 @@ export class TransactionMonitor {
             monitoringEnt.lastPingInTimestamp = toBN(0);
         });
         this.monitoring = false;
-        if (this.chainType != ChainType.testXRP && this.chainType != ChainType.XRP) {
-            const feeService: BlockchainFeeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-            feeService.stopMonitoringFees();
+        if (utxoOnly(this.chainType)) {
+            const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+            await feeService.monitorFees(false);
         }
     }
 
@@ -85,11 +86,13 @@ export class TransactionMonitor {
             });
 
             this.monitoring = true;
-            if (this.chainType != ChainType.testXRP && this.chainType != ChainType.XRP) {
-                const feeService: BlockchainFeeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-                void feeService.startMonitoringFees();
-            }
             logger.info(`Monitoring started for chain ${this.chainType}`);
+
+            if (utxoOnly(this.chainType)) {
+                const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+                await feeService.setupHistory();
+                void feeService.monitorFees(this.monitoring);
+            }
 
             void this.updatePing();
 

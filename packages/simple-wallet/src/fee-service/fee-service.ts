@@ -9,19 +9,16 @@ import BN from "bn.js";
 import { logger } from "../utils/logger";
 
 import { errorMessage } from "../utils/axios-error-utils";
-import { getDefaultFeePerKB } from "../chain-clients/utxo/UTXOUtils";
 import { BlockchainAPIWrapper } from "../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { ServiceRepository } from "../ServiceRepository";
 
 export class BlockchainFeeService {
     blockchainAPI: BlockchainAPIWrapper;
-    monitoring = false;
     history: BlockStats[] = [];
     numberOfBlocksInHistory = 11;
     sleepTimeMs = 5000;
     chainType: ChainType;
     useNBlocksToCalculateFee: number = 5;
-
 
     constructor(chainType: ChainType) {
         this.chainType = chainType;
@@ -47,21 +44,22 @@ export class BlockchainFeeService {
 
     getLatestMedianTime(): BN | null {
         if (this.history.length < this.numberOfBlocksInHistory) {
-            logger.warn("Insufficient block data for MTP calculation");
             return null;
         }
         const blockTimes = this.history.map(block => block.blockTime);
         blockTimes.sort((a, b) => a.sub(b).toNumber());
-        const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
-        return blockTimes[Math.floor(blockTimes.length / 2)];
+        const latestMedianTime = blockTimes[Math.floor(blockTimes.length / 2)];
+        return latestMedianTime;
     }
 
-    async startMonitoringFees(): Promise<void> {
-        logger.info("Started monitoring fees");
-        this.monitoring = true;
-        await this.setupHistory();
+    async monitorFees(monitoring: boolean): Promise<void> {
+        if (monitoring === false) {
+            logger.info(`${this.chainType}: Stopped monitoring fees.`)
+            return;
+        }
+        logger.info(`${this.chainType}: Started monitoring fees.`);
 
-        while (this.monitoring) {
+        while (monitoring) {
             const currentBlockHeight = await this.getCurrentBlockHeight();
             const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
             if (!currentBlockHeight || currentBlockHeight <= lastStoredBlockHeight) {
@@ -91,6 +89,10 @@ export class BlockchainFeeService {
     }
 
     async setupHistory(): Promise<void> {
+        if (this.history.length === this.numberOfBlocksInHistory) {
+            return;
+        }
+        logger.info(`${this.chainType}: Setup history started.`)
         const currentBlockHeight = await this.getCurrentBlockHeight();
         if (currentBlockHeight === 0) {
             return;
@@ -110,11 +112,7 @@ export class BlockchainFeeService {
                 continue;
             }
         }
-    }
-
-    stopMonitoringFees() {
-        logger.info("Stopped monitoring fees");
-        this.monitoring = false;
+        logger.info(`${this.chainType}: Setup history completed.`)
     }
 
     async getCurrentBlockHeight() {
@@ -154,7 +152,7 @@ export class BlockchainFeeService {
                 logger.warn(`Failed to fetch fee stats for block ${blockHeight} on attempt ${attempts + 1}: ${errorMessage(error)}`);
             }
             attempts++;
-            await sleepMs(this.sleepTimeMs); // Wait before retrying
+            await sleepMs(this.sleepTimeMs);
         }
         logger.error(`Failed to fetch fee stats for block ${blockHeight} after ${retryLimit} attempts.`);
         return null;

@@ -43,7 +43,6 @@ describe("UTXO selection algorithm test", () => {
 
     before(async () => {
         addConsoleTransportForTests(logger);
-
         testOrm = await initializeTestMikroORM();
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
@@ -53,10 +52,7 @@ describe("UTXO selection algorithm test", () => {
             enoughConfirmations: 1,
         };
         wClient = await BTC.initialize(BTCMccConnectionTest);
-
         await wClient.feeService?.setupHistory();
-        void wClient.feeService?.startMonitoringFees();
-
         resetMonitoringOnForceExit(wClient);
     });
 
