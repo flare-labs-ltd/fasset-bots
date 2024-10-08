@@ -77,7 +77,7 @@ describe("Xrp wallet tests", () => {
         testOrm = await initializeTestMikroORM();
         unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         XRPMccConnectionTest = { ...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-        wClient = new XRP(XRPMccConnectionTest);
+        wClient = XRP.initialize(XRPMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
         await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);

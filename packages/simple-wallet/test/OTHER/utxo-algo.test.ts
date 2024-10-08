@@ -52,7 +52,6 @@ describe("UTXO selection algorithm test", () => {
             enoughConfirmations: 1,
         };
         wClient = await BTC.initialize(BTCMccConnectionTest);
-        await wClient.feeService?.setupHistory();
         resetMonitoringOnForceExit(wClient);
     });
 
