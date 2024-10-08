@@ -20,6 +20,7 @@ import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/T
 import { BTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
+import { createTransactionEntity, createUTXOEntity } from "./utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 use(chaiAsPromised);
@@ -51,12 +52,13 @@ describe("UTXO selection algorithm test", () => {
             walletKeys: unprotectedDBWalletKeys,
             enoughConfirmations: 1,
         };
-        wClient = await BTC.initialize(BTCMccConnectionTest);
+        wClient = BTC.initialize(BTCMccConnectionTest);
         resetMonitoringOnForceExit(wClient);
     });
 
     beforeEach(async () => {
         sinon.restore();
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionUTXOService), "getNumberOfMempoolAncestors").resolves(0);
         sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "getFeePerKB").resolves(new BN(1000));
     });
 
@@ -209,28 +211,6 @@ describe("UTXO selection algorithm test", () => {
 
 });
 
-
-function createUTXOEntity(id: number, source: string, mintTransactionHash: string, position: 0, spentHeight: SpentHeightEnum, value: BN, script: string) {
-    const utxoEnt = new UTXOEntity();
-    utxoEnt.id = id;
-    utxoEnt.source = source;
-    utxoEnt.mintTransactionHash = mintTransactionHash;
-    utxoEnt.position = position;
-    utxoEnt.spentHeight = spentHeight;
-    utxoEnt.script = script;
-    utxoEnt.value = value;
-    return utxoEnt;
-}
-
-function createTransactionEntity(id: number, source: string, destination: string, fee: BN, utxos: UTXOEntity[]) {
-    const txEnt = new TransactionEntity();
-    txEnt.id = id;
-    txEnt.source = source;
-    txEnt.destination = destination;
-    txEnt.fee = fee;
-    txEnt.utxos.set(utxos);
-    return txEnt;
-}
 
 const utxoList = [
     createUTXOEntity(0, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, SpentHeightEnum.UNSPENT, toBN(10020), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),

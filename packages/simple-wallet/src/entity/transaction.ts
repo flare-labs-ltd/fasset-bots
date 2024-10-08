@@ -94,6 +94,9 @@ export class TransactionEntity {
 
     @ManyToOne(() => TransactionEntity, { nullable: true })
     ancestor?: TransactionEntity | null;
+
+    @Property({ nullable: true })
+    feeSource?: string;
 }
 
 export enum TransactionStatus {

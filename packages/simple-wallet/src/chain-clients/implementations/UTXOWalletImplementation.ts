@@ -1,9 +1,22 @@
 import axios from "axios";
 import * as bitcore from "bitcore-lib";
-import { checkIfFeeTooHigh, checkIfShouldStillSubmit, getCurrentTimestampInSeconds, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import {
+    checkIfFeeTooHigh,
+    checkIfShouldStillSubmit,
+    getCurrentTimestampInSeconds,
+    sleepMs,
+    stuckTransactionConstants,
+} from "../../utils/utils";
 import { toBN, toNumber } from "../../utils/bnutils";
 import { ChainType } from "../../utils/constants";
-import { BaseWalletConfig, IWalletKeys, SignedObject, TransactionInfo, UTXOFeeParams, WriteWalletInterface } from "../../interfaces/IWalletTransaction";
+import {
+    BaseWalletConfig,
+    IWalletKeys,
+    SignedObject,
+    TransactionInfo,
+    UTXOFeeParams,
+    WriteWalletInterface,
+} from "../../interfaces/IWalletTransaction";
 
 import BN from "bn.js";
 import {
@@ -31,7 +44,13 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { TransactionService } from "../utxo/TransactionService";
 import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../utxo/TransactionFeeService";
-import { errorMessage, isORMError, LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import {
+    errorMessage,
+    isORMError,
+    LessThanDustAmountError,
+    NegativeFeeError,
+    NotEnoughUTXOsError,
+} from "../../utils/axios-error-utils";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;
@@ -122,6 +141,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @param {BN|undefined} maxFeeInSatoshi
      * @param executeUntilBlock
      * @param executeUntilTimestamp
+     * @param feeSource - address of the wallet which is used for paying transaction fees
      * @returns {Object} - containing transaction id tx_id and optional result
      */
     async createPaymentTransaction(
@@ -132,7 +152,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         note?: string,
         maxFeeInSatoshi?: BN,
         executeUntilBlock?: number,
-        executeUntilTimestamp?: BN
+        executeUntilTimestamp?: BN,
+        feeSource?: string
     ): Promise<number> {
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
@@ -152,7 +173,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             note,
             maxFeeInSatoshi,
             executeUntilBlock,
-            executeUntilTimestamp
+            executeUntilTimestamp,
+            feeSource
         );
     }
 
@@ -239,6 +261,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.info(`Preparing transaction ${txEnt.id}`);
         try {
             // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
+            const blockchainApi = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+            const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
+            await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
+
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
             const [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
                 txEnt.id,
@@ -250,11 +276,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 rbfReplacementFor
             );
             const privateKey = await this.walletKeys.getKey(txEnt.source);
+            const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
 
-            if (!privateKey) {
+            if (!privateKey || txEnt.feeSource && !privateKeyForFee) {
                 await handleMissingPrivateKey(this.rootEm, txEnt.id, "prepareAndSubmitCreatedTransaction");
                 return;
             }
+
             if (checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null)) {
                 if (rbfReplacementFor) {
                     transaction.fee(toNumber(txEnt.maxFee!));
@@ -275,7 +303,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.outputs.add(outputs);
                 });
                 logger.info(`Transaction ${txEnt.id} prepared.`);
-                await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
+                await this.signAndSubmitProcess(txEnt.id, transaction, privateKey, privateKeyForFee);
             }
         } catch (error) {
             /* istanbul ignore next */
@@ -394,11 +422,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const transaction = new core.Transaction(JSON.parse(txEnt.raw!));
 
         const privateKey = await this.walletKeys.getKey(txEnt.source);
-        if (!privateKey) {
+        const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
+
+        if (!privateKey || txEnt.feeSource && !privateKeyForFee) {
             await handleMissingPrivateKey(this.rootEm, txEnt.id, "submitPreparedTransactions");
             return;
         }
-        await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
+        await this.signAndSubmitProcess(txEnt.id, transaction, privateKey, privateKeyForFee);
     }
 
     async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
@@ -406,11 +436,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         await this.waitForTransactionToAppearInMempool(txEnt.id);
     }
 
-    async signAndSubmitProcess(txId: number, privateKey: string, transaction: bitcore.Transaction): Promise<void> {
+    async signAndSubmitProcess(txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string): Promise<void> {
         logger.info(`Submitting transaction ${txId}.`);
         let signed: SignedObject = { txBlob: "", txHash: "", txSize: undefined };
         try {
-            signed = this.signTransaction(transaction, privateKey);
+            signed = this.signTransaction(transaction, privateKey, privateKeyForFee);
             logger.info(`Transaction ${txId} is signed.`);
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.transactionHash = signed.txHash;
@@ -472,16 +502,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
         // send minimal amount (as time for payment passed) or "delete transaction" amount
         const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType);
-        const descendantsFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx));
-        const newFee: BN = descendantsFee; // covering conflicting txs
-
+        const descendantsFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)); // covering conflicting txs
         const replacementTx = await createInitialTransactionEntity(
             this.rootEm,
             this.chainType,
             oldTx.source,
             oldTx.destination,
             newValue,
-            newFee,
+            descendantsFee,
             oldTx.reference,
             oldTx.maxFee,
             oldTx.executeUntilBlock,
@@ -501,10 +529,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     /**
      * @param {Object} transaction
      * @param {string} privateKey
+     * @param {string} privateKeyForFee
      * @returns {string} - hex string
      */
-    private signTransaction(transaction: bitcore.Transaction, privateKey: string): SignedObject {
-        const signedAndSerialized = transaction.sign(privateKey).toString(); // serialize({disableLargeFees: true, disableSmallFees: true});
+    private signTransaction(transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string): SignedObject {
+        const signedTx = privateKeyForFee ? transaction.sign(privateKey).sign(privateKeyForFee) : transaction.sign(privateKey);
+        const signedAndSerialized = signedTx.toString();
         const txSize = Buffer.byteLength(signedAndSerialized, "hex");
         const txId = transaction.id;
         return { txBlob: signedAndSerialized, txHash: txId, txSize: txSize };

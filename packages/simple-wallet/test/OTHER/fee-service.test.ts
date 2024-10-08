@@ -41,7 +41,7 @@ describe("Fee service tests BTC", () => {
             walletKeys: unprotectedDBWalletKeys,
             enoughConfirmations: 2
         };
-        client = await BTC.initialize(BTCMccConnectionTest);
+        client = BTC.initialize(BTCMccConnectionTest);
         feeService = ServiceRepository.get(chainType, BlockchainFeeService);
         await feeService.setupHistory();
     });

@@ -65,14 +65,14 @@ export class TransactionUTXOService {
     /**
      * Retrieves unspent transactions in format accepted by transaction
      * @param txData
-     * @param txForReplacement
+     * @param rbfUTXOs
      * @returns {UTXOEntity[]}
      */
-    async fetchUTXOs(txData: TransactionData, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
+    async fetchUTXOs(txData: TransactionData, rbfUTXOs?: UTXOEntity[]): Promise<UTXOEntity[]> {
         logger.info(`Listing UTXOs for address ${txData.source}`);
         const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
-        const fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);
-        const needed = await this.selectUTXOs(fetchUnspent, txForReplacement, txData, currentFeeStatus);
+        const fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, rbfUTXOs ?? []);
+        const needed = await this.selectUTXOs(fetchUnspent, rbfUTXOs ?? [], txData, currentFeeStatus);
         if (needed) {
             return needed;
         }
@@ -80,9 +80,7 @@ export class TransactionUTXOService {
     }
 
     // allUTXOs = currently available UTXOs (either from db or db + fetch from mempool)
-    private async selectUTXOs(allUTXOs: UTXOEntity[], txForReplacement: TransactionEntity | undefined, txData: TransactionData, feeStatus: FeeStatus) {
-        const rbfUTXOs = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
-
+    private async selectUTXOs(allUTXOs: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData, feeStatus: FeeStatus) {
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
             return null; //try to refetch new UTXOs from mempool
         }

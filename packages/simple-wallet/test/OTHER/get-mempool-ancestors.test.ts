@@ -14,11 +14,10 @@ describe("getNumberOfMempoolAncestors", () => {
     let em: EntityManager;
     const chainType = ChainType.testBTC;
 
-
-async function checkNumberOfAncestors(txHash: string, expectedNumberOfMempoolAncestors: number) {
-    const txService = ServiceRepository.get(chainType, TransactionUTXOService);
-    expect(await txService.getNumberOfMempoolAncestors(txHash)).to.be.eq(expectedNumberOfMempoolAncestors);
-}
+    async function checkNumberOfAncestors(txHash: string, expectedNumberOfMempoolAncestors: number) {
+        const txService = ServiceRepository.get(chainType, TransactionUTXOService);
+        expect(await txService.getNumberOfMempoolAncestors(txHash)).to.be.eq(expectedNumberOfMempoolAncestors);
+    }
 
     before(async () => {
         const conf = { ...config };

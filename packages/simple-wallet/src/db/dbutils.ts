@@ -28,7 +28,8 @@ export async function createInitialTransactionEntity(
     maxFee?: BN,
     executeUntilBlock?: number,
     executeUntilTimestamp?: BN,
-    replacementFor?: TransactionEntity
+    replacementFor?: TransactionEntity,
+    feeSource?: string,
 ): Promise<TransactionEntity> {
     logger.info(
         `Creating transaction ${source}, ${destination}, ${amountInDrops?.toString()};${
@@ -48,6 +49,7 @@ export async function createInitialTransactionEntity(
             amount: amountInDrops,
             fee: feeInDrops ?? null,
             rbfReplacementFor: replacementFor ?? null,
+            feeSource: feeSource,
         } as RequiredEntityData<TransactionEntity>);
         await em.flush();
         logger.info(`Created transaction ${ent.id}.`);
@@ -179,7 +181,7 @@ export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, po
     });
 }
 
-export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, txForReplacement?: TransactionEntity): Promise<UTXOEntity[]> {
+export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, rbfUTXOs?: UTXOEntity[]): Promise<UTXOEntity[]> {
     const res = await rootEm.find(
         UTXOEntity,
         {
@@ -189,7 +191,7 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, t
         { refresh: true, orderBy: { confirmed: "desc", value: "desc" } }
     );
 
-    const alreadyUsed = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
+    const alreadyUsed = rbfUTXOs ?? [];
     const utxos = alreadyUsed.length > 0 ? res.filter((t) => t.confirmed) : res;
     return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
 }

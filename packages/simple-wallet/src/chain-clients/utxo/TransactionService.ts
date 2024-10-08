@@ -3,42 +3,38 @@ import { logger } from "../../utils/logger";
 import {
     checkIfIsDeleting,
     correctUTXOInconsistenciesAndFillFromMempool,
-    createInitialTransactionEntity, fetchUnspentUTXOs, setAccountIsDeleting,
+    createInitialTransactionEntity,
+    fetchUnspentUTXOs,
+    setAccountIsDeleting,
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { EntityManager } from "@mikro-orm/core";
-import {
-    ChainType,
-} from "../../utils/constants";
+import { ChainType } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
 import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
-import {
-    getAccountBalance,
-    getCore,
-    getDustAmount,
-    getOutputSize,
-} from "./UTXOUtils";
+import { getAccountBalance, getCore, getDustAmount, getOutputSize } from "./UTXOUtils";
 import { unPrefix0x } from "../../utils/utils";
-import UnspentOutput = Transaction.UnspentOutput;
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
 import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
+import UnspentOutput = Transaction.UnspentOutput;
 
 export class TransactionService {
 
     private readonly chainType: ChainType;
     private readonly transactionFeeService: TransactionFeeService;
     private readonly rootEm: EntityManager;
+    private readonly utxoService: TransactionUTXOService;
 
     constructor(chainType: ChainType) {
         this.chainType = chainType;
         this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
+        this.utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
     }
 
     async createPaymentTransaction(
@@ -51,6 +47,7 @@ export class TransactionService {
         maxFeeInSatoshi?: BN,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
+        feeSource?: string,
     ): Promise<number> {
         logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}`);
         const em = ServiceRepository.get(this.chainType, EntityManager);
@@ -69,6 +66,8 @@ export class TransactionService {
             maxFeeInSatoshi,
             executeUntilBlock,
             executeUntilTimestamp,
+            undefined,
+            feeSource
         );
         return ent.id;
     }
@@ -123,11 +122,7 @@ export class TransactionService {
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
-    ): Promise<[bitcore.Transaction, UTXOEntity[]]> {
-        const blockchainApi = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
-        const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(source);
-        await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, source, utxosFromMempool);
-
+    ): Promise<[Transaction, UTXOEntity[]]> {
         const isPayment = amountInSatoshi != null;
         const txData = {
             source: source,
@@ -139,8 +134,7 @@ export class TransactionService {
         } as TransactionData;
         const utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
         let utxos;
-        const feePerKBOriginal = await this.transactionFeeService.getFeePerKB();
-        const feePerKB = feePerKBOriginal;
+        const feePerKB = await this.transactionFeeService.getFeePerKB();
 
         if (isPayment && !feeInSatoshi) {
             txData.feePerKB = feePerKB;
@@ -159,7 +153,7 @@ export class TransactionService {
             const balance = await getAccountBalance(this.chainType, source);
             amountInSatoshi = balance.sub(feeInSatoshi);
         } else {
-            utxos = await utxoService.fetchUTXOs(txData, txForReplacement);
+            utxos = await utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
 
         const utxosAmount = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
@@ -183,26 +177,116 @@ export class TransactionService {
         }
 
         if (isPayment && !feeInSatoshi || txForReplacement) {
-            let feeRatePerKB: BN = await this.transactionFeeService.getFeePerKB();
-            logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`);
-            if (txForReplacement && feeInSatoshi) {
-                const feeToCover: BN = feeInSatoshi;
-                if (txForReplacement.size && txForReplacement.fee) {
-                    const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease);
-                    if (feeRatePerKB.lt(minRequiredFeePerKb)) {
-                        feeRatePerKB = minRequiredFeePerKb;
-                    }
-                    const estimateFee = await this.transactionFeeService.getEstimateFee(utxos.length, 3, feeRatePerKB);
-                    const newTxFee: BN = feeToCover.add(estimateFee);
-                    tr.fee(toNumber(newTxFee));
-                    logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
-                }
-            } else {
-                tr.feePerKb(Number(feeRatePerKB));
-            }
+            await this.correctFee(txDbId, tr, txForReplacement, feeInSatoshi, utxos);
         }
 
         return [tr, utxos];
+    }
+
+    async preparePaymentTransactionWithAdditionalFeeAccount(
+        txDbId: number,
+        source: string,
+        feeSource: string,
+        destination: string,
+        amountInSatoshi: BN,
+        feeInSatoshi?: BN,
+        note?: string,
+        txForReplacement?: TransactionEntity): Promise<[Transaction, UTXOEntity[]]> {
+
+        const feePerKB = feeInSatoshi === undefined ? await this.transactionFeeService.getFeePerKB() : undefined;
+        const txDataForAmount = {
+            source: source,
+            destination: destination,
+            amount: amountInSatoshi,
+            fee: toBN(0),
+            useChange: true,
+            note: note,
+        } as TransactionData;
+
+        const utxosForAmount = await this.utxoService.fetchUTXOs(txDataForAmount, txForReplacement?.utxos.getItems());
+        this.transactionChecks(txDbId, txDataForAmount, utxosForAmount);
+
+        const baseTransaction = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxosForAmount, true, note);
+        const txDataForFee = {
+            source: feeSource,
+            destination: destination,
+            amount: toBN(baseTransaction.getFee()),
+            fee: toBN(0),
+            feePerKB: feePerKB,
+            useChange: false,
+            note: note,
+        } as TransactionData;
+
+        let utxosForFee = await this.utxoService.fetchUTXOs(txDataForFee);
+        let utxos = []
+        // Not enough funds on wallet for handling fees - we use additional UTXOs from main wallet
+        if (utxosForFee.length === 0) {
+            utxosForFee = await fetchUnspentUTXOs(this.rootEm, feeSource);
+            const txData = {
+                source: source,
+                destination: destination,
+                amount: amountInSatoshi,
+                fee: feeInSatoshi,
+                feePerKB: feePerKB,
+                useChange: true,
+                note: note,
+            } as TransactionData;
+
+            utxos = await this.utxoService.fetchUTXOs(txData, utxosForFee);
+        } else {
+            utxos = utxosForAmount.concat(utxosForFee);
+        }
+
+        const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
+        if (!feeInSatoshi || txForReplacement) {
+            await this.correctFee(txDbId, tr, txForReplacement, feeInSatoshi, utxos);
+        }
+
+
+        const utxosForFeeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
+        const correctedFee = tr.getFee() + (feePerKB !== undefined ? feePerKB.muln(31).divn(1000).toNumber() : 0); // Fee should be higher since we have additional output (+31vB)!
+        if (utxosForFeeAmount.subn(correctedFee).gt(getDustAmount(this.chainType))) {
+            const remainder = utxosForFeeAmount.subn(correctedFee).toNumber();
+            tr.to(feeSource, remainder);
+            tr.change(source);
+        }
+
+        return [tr, utxos];
+    }
+
+    private async correctFee(txDbId: number, tr: Transaction, txForReplacement: TransactionEntity | undefined, feeInSatoshi: BN | undefined, allUTXOs: any[]) {
+        let feeRatePerKB: BN = await this.transactionFeeService.getFeePerKB();
+        logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`);
+        if (txForReplacement && feeInSatoshi) {
+            const feeToCover: BN = feeInSatoshi;
+            if (txForReplacement.size && txForReplacement.fee) {
+                const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease);
+                if (feeRatePerKB.lt(minRequiredFeePerKb)) {
+                    feeRatePerKB = minRequiredFeePerKb;
+                }
+                const estimateFee = await this.transactionFeeService.getEstimateFee(allUTXOs.length, 4, feeRatePerKB);
+                const newTxFee: BN = feeToCover.add(estimateFee);
+                tr.fee(toNumber(newTxFee));
+                logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
+            }
+        } else {
+            tr.feePerKb(Number(feeRatePerKB));
+        }
+    }
+
+    private transactionChecks( txDbId: number, txData: TransactionData, utxos: UTXOEntity[]) {
+        const utxosForAmountValue = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
+        if (utxos.length === 0) {
+            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosForAmountValue.toString()}, needed amount ${txData.amount.toString()}`);
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosForAmountValue.toString()}, needed amount ${txData.amount.toString()}`);
+        }
+
+        if (txData.amount.lte(getDustAmount(this.chainType))) {
+            logger.warn(`Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
+            throw new LessThanDustAmountError(
+                `Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
+            );
+        }
     }
 
     createBitcoreTransaction(
