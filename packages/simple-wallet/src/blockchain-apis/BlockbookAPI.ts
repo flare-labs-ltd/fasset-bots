@@ -7,6 +7,7 @@ import { EntityManager } from "@mikro-orm/core";
 import { toBN, toNumber } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
 import BN from "bn.js";
+import { stuckTransactionConstants } from "../utils/utils";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -69,7 +70,7 @@ export class BlockbookAPI implements IBlockchainAPI {
                 mintIndex: utxo.vout,
                 value: utxo.value,
                 script: "",
-                confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
+                confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
             };
         }));
     }
@@ -80,7 +81,7 @@ export class BlockbookAPI implements IBlockchainAPI {
             mintTxid: utxo.txid,
             mintIndex: utxo.vout,
             value: utxo.value,
-            confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
+            confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
         }));
     }
 
