@@ -18,7 +18,7 @@ export class BlockchainFeeService {
     numberOfBlocksInHistory = 11;
     sleepTimeMs = 5000;
     chainType: ChainType;
-    useNBlocksToCalculateFee: number = 5;
+    useNBlocksToCalculateFee = 5;
 
     constructor(chainType: ChainType) {
         this.chainType = chainType;

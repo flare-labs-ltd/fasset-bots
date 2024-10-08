@@ -7,7 +7,7 @@ export class Repository {
 
     register<T>(chainType: ChainType, ServiceClass: Constructor<T>, instance: T): void {
         if (!this.services.has(chainType)) {
-            this.services.set(chainType, new Map());
+            this.services.set(chainType, new Map<Constructor<T>, T>());
         }
         this.services.get(chainType)!.set(ServiceClass, instance);
     }

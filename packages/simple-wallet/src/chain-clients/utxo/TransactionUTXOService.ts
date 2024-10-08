@@ -10,7 +10,6 @@ import {
 import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
-import { TransactionOutputEntity } from "../../entity/transactionOutput";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { ChainType } from "../../utils/constants";
@@ -21,6 +20,7 @@ import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
 import { TransactionService } from "./TransactionService";
 import { isEnoughUTXOs } from "./UTXOUtils";
+import { UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
 
 export interface TransactionData {
     source: string,
@@ -237,7 +237,7 @@ export class TransactionUTXOService {
         let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
         if (txEnt && (txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED || txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED)) {
             const tr = await this.blockchainAPI.getTransaction(txHash);
-            if (tr?.data.blockHash && tr.data.confirmations >= this.enoughConfirmations) {
+            if (tr.blockHash && tr.confirmations >= this.enoughConfirmations) {
                 txEnt.status = TransactionStatus.TX_SUCCESS;
                 await this.rootEm.persistAndFlush(txEnt);
             }
@@ -249,15 +249,15 @@ export class TransactionUTXOService {
                 await this.rootEm.transactional(async em => {
                     const txEnt = em.create(TransactionEntity, {
                         chainType: this.chainType,
-                        source: tr.data.vin[0].addresses[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
+                        source: tr.vin[0].addresses[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
                         destination: "FETCHED_VIA_API_UNKNOWN_DESTINATION",
                         transactionHash: txHash,
-                        fee: toBN(tr.data.fees ?? tr.data.fee),
-                        status: tr.data.blockHash && tr.data.confirmations >= this.enoughConfirmations ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_SUBMITTED,
+                        fee: toBN(tr.fees),
+                        status: tr.blockHash && tr.confirmations >= this.enoughConfirmations ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_SUBMITTED,
                     } as RequiredEntityData<TransactionEntity>);
 
                     const inputs =
-                        tr.data.vin.map((t: any) => createTransactionInputEntity(txEnt, t.txid, t.value, t.vout ?? 0, t.hex ?? ""));
+                        tr.vin.map((t: UTXOVinResponse) => createTransactionInputEntity(txEnt, t.txid, t.value, t.vout ?? 0, ""));
                     txEnt.inputs.add(inputs);
 
                     await em.persistAndFlush(txEnt);
@@ -287,9 +287,9 @@ export class TransactionUTXOService {
 
     async updateTransactionInputSpentStatus(txId: number, status: SpentHeightEnum) {
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-        const transaction = JSON.parse(txEnt.raw!);
+        const transaction: UTXORawTransaction = JSON.parse(txEnt.raw!);
         for (const input of transaction.inputs) {
-            await updateUTXOEntity(this.rootEm, input.prevTxId.toString("hex"), input.outputIndex, (utxoEnt) => {
+            await updateUTXOEntity(this.rootEm, input.prevTxId, input.outputIndex, (utxoEnt) => {
                 utxoEnt.spentHeight = status;
             });
         }

@@ -1,4 +1,4 @@
-import { Cascade, Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";

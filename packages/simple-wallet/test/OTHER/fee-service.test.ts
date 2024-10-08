@@ -46,6 +46,10 @@ describe("Fee service tests BTC", () => {
         await feeService.setupHistory();
     });
 
+    after(async () => {
+        removeConsoleLogging();
+    });
+
     it("Should get current block height", async () => {
         const blockHeight = await feeService.getCurrentBlockHeight();
         expect(blockHeight).to.be.gt(0);

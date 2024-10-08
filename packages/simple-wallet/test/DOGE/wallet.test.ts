@@ -1,5 +1,5 @@
 import { DOGE, TransactionStatus } from "../../src";
-import { DogecoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
+import { DogecoinWalletConfig } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";

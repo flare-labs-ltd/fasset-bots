@@ -224,14 +224,14 @@ export async function storeUTXOs(rootEm: EntityManager, source: string, mempoolU
             await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, (utxoEnt) => {
                 utxoEnt.confirmed = utxo.confirmed;
             });
-        } catch (e) {
+        } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
             await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }
 }
 
 // it fetches unspent and sent utxos from db that do not match utxos from mempool and marks them as spent
-export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: EntityManager, address: string, mempoolUTXOs: any[]): Promise<void> {
+export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: EntityManager, address: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
     await rootEm.transactional(async (em) => {
         // find UTXOs in the db that are NOT in the mempool and mark them as spent
         const spentCondition = mempoolUTXOs.map((utxo) => ({

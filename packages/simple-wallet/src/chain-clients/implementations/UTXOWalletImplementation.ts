@@ -321,12 +321,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         try {
             const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
             // success
-            if (txResp.data.blockHash && txResp.data.confirmations) {
-                logger.info(`Submitted transaction ${txEnt.id} has ${txResp.data.confirmations}. Needed ${this.enoughConfirmations}.`);
+            if (txResp.blockHash && txResp.confirmations) {
+                logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
             }
-            if (txResp.data.blockHash && txResp.data.confirmations >= this.enoughConfirmations) {
+            if (txResp.blockHash && txResp.confirmations >= this.enoughConfirmations) {
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
-                    txEntToUpdate.confirmations = txResp.data.confirmations;
+                    txEntToUpdate.confirmations = txResp.confirmations;
                     txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
                     txEntToUpdate.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
                 });
@@ -339,7 +339,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 // if only one block left to submit => replace by fee
                 const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
-                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.data.blockHash) {
+                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.blockHash) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }
             }

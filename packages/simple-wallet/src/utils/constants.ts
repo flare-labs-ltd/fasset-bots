@@ -8,6 +8,8 @@ export const DEFAULT_FEE_INCREASE = 2;
 export const PING_INTERVAL = 10_000; // 10seconds
 export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
 
+export const BTC_PER_SATOSHI = 1 / 100000000;
+
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 

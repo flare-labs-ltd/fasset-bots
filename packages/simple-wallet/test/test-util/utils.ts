@@ -4,7 +4,7 @@ import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { MempoolUTXO } from "../../src/interfaces/IBlockchainAPI";
+import { MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
 
 export function createTransactionEntity(source: string, destination: string, txHash: string, utxos?: UTXOEntity[], inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
     const txEnt = new TransactionEntity();
@@ -57,8 +57,54 @@ export class MockBlockchainAPI implements BlockchainAPIWrapper {
         return Promise.resolve(0);
     }
 
-    async getTransaction(txHash: string | undefined): Promise<AxiosResponse> {
-        return Promise.resolve({ data: {} } as AxiosResponse);
+    async getTransaction(txHash: string | undefined): Promise<UTXOTransactionResponse> {
+        return Promise.resolve(
+            {
+                "txid": "",
+                "version": 0,
+                "vin": [
+                  {
+                    "txid": "",
+                    "vout": 0,
+                    "sequence": 0,
+                    "addresses": [
+                      ""
+                    ],
+                    "value": "39256335"
+                  }
+                ],
+                "vout": [
+                  {
+                    "value": "",
+                    "n": 0,
+                    "hex": "",
+                    "spent": true,
+                    "addresses": [
+                      ""
+                    ],
+                  },
+                  {
+                    "value": "",
+                    "n": 1,
+                    "spent": true,
+                    "hex": "",
+                    "addresses": [
+                      ""
+                    ],
+                  }
+                ],
+                "blockHash": "",
+                "blockHeight": 0,
+                "confirmations": 0,
+                "blockTime": 0,
+                "size": 0,
+                "vsize": 0,
+                "value": "",
+                "valueIn": "",
+                "fees": "",
+                "hex": ""
+              }
+        );
     }
 
     async getUTXOScript(txHash: string, vout: number): Promise<string> {

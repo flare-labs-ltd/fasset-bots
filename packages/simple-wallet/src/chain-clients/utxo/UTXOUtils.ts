@@ -86,7 +86,7 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
 export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
     const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
     const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
-    let sub: any[] = descendants;
+    let sub: TransactionEntity[] = descendants;
     for (const descendant of descendants) {
         if (descendant.transactionHash) {
             sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));

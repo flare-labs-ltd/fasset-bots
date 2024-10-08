@@ -1,4 +1,4 @@
-import { IBlockchainAPI, MempoolUTXO } from "../interfaces/IBlockchainAPI";
+import { IBlockchainAPI, MempoolUTXO, UTXOTransactionResponse } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import { BlockbookAPI } from "./BlockbookAPI";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
@@ -8,7 +8,7 @@ import BN from "bn.js";
 
 export class BlockchainAPIWrapper implements IBlockchainAPI {
     client: AxiosInstance;
-    clients: any = {};
+    clients: Record<string, IBlockchainAPI> = {};
     chainType: ChainType;
 
     constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
@@ -42,7 +42,7 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getBlockTimeAt(blockNumber), "getBlockTimeAt");
     }
 
-    async getTransaction(txHash: string): Promise<any> {
+    async getTransaction(txHash: string): Promise<UTXOTransactionResponse> {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getTransaction(txHash), "getTransaction");
     }
 

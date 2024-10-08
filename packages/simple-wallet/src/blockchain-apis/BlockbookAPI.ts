@@ -1,6 +1,6 @@
-import { IBlockchainAPI, MempoolUTXO } from "../interfaces/IBlockchainAPI";
+import { UTXOBlockHeightResponse, FeeStatsResponse, IBlockchainAPI, MempoolUTXO, UTXOAddressResponse, UTXOResponse, UTXOBlockResponse, UTXOTransactionResponse } from "../interfaces/IBlockchainAPI";
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
+import { BTC_PER_SATOSHI, ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
@@ -24,8 +24,9 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getAccountBalance(account: string): Promise<number | undefined> {
         const res = await this.client.get(`/address/${account}`);
-        const totalBalance = res.data?.balance;
-        const unconfirmedBalance = res.data?.unconfirmedBalance;
+        const data: UTXOAddressResponse = res.data as UTXOAddressResponse;
+        const totalBalance = data.balance;
+        const unconfirmedBalance = data.unconfirmedBalance;
         /* istanbul ignore else */
         if (!!totalBalance && !!unconfirmedBalance) {
             const totBalance = toBN(totalBalance);
@@ -38,45 +39,47 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getCurrentBlockHeight(): Promise<number> {
         const res = await this.client.get(``);
-        return res.data.blockbook.bestHeight;
+        const data: UTXOBlockHeightResponse = res.data as UTXOBlockHeightResponse;
+        return data.blockbook.bestHeight;
     }
 
     async getCurrentFeeRate(blockNumber?: number): Promise<number> {
-        let blockToCheck = blockNumber;
-        if (!blockToCheck) {
-            blockToCheck = await this.getCurrentBlockHeight();
-        }
+        const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
         const res = await this.client.get(`/feestats/${blockToCheck}`);
-        const BTC_PER_SATOSHI = 1 / 100000000;
-        const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI;
+        const data = res.data as FeeStatsResponse;
+        const fee = data.averageFeePerKb * BTC_PER_SATOSHI;
         return fee;
     }
 
     async getBlockTimeAt(blockNumber: number): Promise<BN> {
         const res = await this.client.get(`/block/${blockNumber}`);
-        return toBN(res.data.time);
+        const data = res.data as UTXOBlockResponse;
+        return toBN(data.time);
     }
 
-    async getTransaction(txHash: string): Promise<AxiosResponse<any>> {
-        return await this.client.get(`/tx/${txHash}`);
+    async getTransaction(txHash: string): Promise<UTXOTransactionResponse> {
+        const res = await this.client.get(`/tx/${txHash}`);
+        const data = res.data as UTXOTransactionResponse;
+        return data;
     }
 
     async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
+        const data = res.data as UTXOResponse[];
         return Promise.all(
-            res.data.map(async (utxo: any) => ({
+            data.map(async (utxo: UTXOResponse): Promise<MempoolUTXO> => ({
                 mintTxid: utxo.txid,
                 mintIndex: utxo.vout,
-                value: utxo.value,
+                value: toBN(utxo.value),
                 script: await this.getUTXOScript(utxo.txid, utxo.vout),
                 confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
             }))
         );
     }
 
-    async getUTXOScript(txHash: string, vout: number) {
-        const res = await this.client.get(`/tx-specific/${txHash}`);
-        return res.data.vout[vout]?.scriptPubKey?.hex ?? "";
+    async getUTXOScript(txHash: string, voutParam: number) {
+        const res = await this.getTransaction(txHash)
+        return res.vout[voutParam]?.hex ?? "";
     }
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {

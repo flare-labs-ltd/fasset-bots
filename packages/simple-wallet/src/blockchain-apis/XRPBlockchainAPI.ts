@@ -6,7 +6,7 @@ import { createAxiosInstance, tryWithClients } from "../utils/axios-error-utils"
 
 export class XRPBlockchainAPI {
     client: AxiosInstance;
-    clients: any = {};
+    clients: Record<string, AxiosInstance> = {};
 
     constructor(chainType: ChainType, createConfig: BaseWalletConfig) {
 
@@ -27,7 +27,7 @@ export class XRPBlockchainAPI {
         }), "getTransaction");
     }
 
-    async submitTransaction(params: any) {
+    async submitTransaction(params: SubmitTransactionRequest) {
         return tryWithClients(this.clients,(client: AxiosInstance) => client.post("", {
             method: "submit",
             params: [params],
@@ -47,4 +47,8 @@ export class XRPBlockchainAPI {
             params: [],
         }), "getServerInfo");
     }
+}
+
+export interface SubmitTransactionRequest {
+    tx_blob: string;
 }
