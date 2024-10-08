@@ -1,13 +1,13 @@
 {
     "$schema": "./schema/bot-config.schema.json",
-    "loopDelay": 5000,
+    "loopDelay": 2500,
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
         "chainName": "Coston",
         "tokenSymbol": "CFLR",
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10,
+        "finalizationBlocks": 5,
+        "readLogsChunkSize": 30,
         "recommendedOwnerBalance": "10",
         "faucet": "https://faucet.flare.network"
     },
