@@ -390,7 +390,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should receive no service found ", async () => {
         const fn = () => {
-            return ServiceRepository.get(ChainType.testXRP, BlockchainAPIWrapper).getUTXOsWithoutScriptFromMempool("");
+            return ServiceRepository.get(ChainType.testXRP, BlockchainAPIWrapper).getUTXOsFromMempool("");
         };
         expect(fn).to.throw("No service registered for testXRP");
     });

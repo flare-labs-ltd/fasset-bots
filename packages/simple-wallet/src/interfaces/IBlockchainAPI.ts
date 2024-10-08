@@ -11,8 +11,6 @@ export interface IBlockchainAPI {
 
     getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]>;
 
-    getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]>;
-
     getUTXOScript(txHash: string, vout: number, chainType: ChainType): Promise<string>;
 
     getCurrentFeeRate(blockNumber?: number): Promise<number>;
@@ -24,13 +22,10 @@ export interface IBlockchainAPI {
     getTransaction(txHash: string): Promise<any>;
 }
 
-export interface MempoolUTXOMWithoutScript {
+export interface MempoolUTXO {
     mintTxid: string,
     mintIndex: number,
     value: number,
     confirmed: boolean,
-}
-
-export interface MempoolUTXO extends MempoolUTXOMWithoutScript {
     script: string,
 }

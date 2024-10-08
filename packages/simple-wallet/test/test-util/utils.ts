@@ -4,7 +4,7 @@ import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { MempoolUTXO, MempoolUTXOMWithoutScript } from "../../src/interfaces/IBlockchainAPI";
+import { MempoolUTXO } from "../../src/interfaces/IBlockchainAPI";
 
 export function createTransactionEntity(source: string, destination: string, txHash: string, utxos?: UTXOEntity[], inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
     const txEnt = new TransactionEntity();
@@ -66,10 +66,6 @@ export class MockBlockchainAPI implements BlockchainAPIWrapper {
     }
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
-        return Promise.resolve([]);
-    }
-
-    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
         return Promise.resolve([]);
     }
 

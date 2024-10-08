@@ -274,6 +274,7 @@ export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: Entit
     });
 }
 
+
 // replaced transaction
 export async function getReplacedTransactionById(rootEm: EntityManager, dbId: number): Promise<TransactionEntity> {
     let txEnt = await fetchTransactionEntityById(rootEm, dbId);

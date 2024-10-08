@@ -1,4 +1,4 @@
-import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import { IBlockchainAPI, MempoolUTXO } from "../interfaces/IBlockchainAPI";
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
@@ -18,7 +18,6 @@ export class BlockbookAPI implements IBlockchainAPI {
         this.client = axiosRateLimit(client, {
             ...DEFAULT_RATE_LIMIT_OPTIONS,
             ...rateLimitOptions,
-
         });
         this.rootEm = rootEm;
     }
@@ -49,7 +48,7 @@ export class BlockbookAPI implements IBlockchainAPI {
         }
         const res = await this.client.get(`/feestats/${blockToCheck}`);
         const BTC_PER_SATOSHI = 1 / 100000000;
-        const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI
+        const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI;
         return fee;
     }
 
@@ -64,25 +63,15 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
-        return Promise.all(res.data.map((utxo: any) => {
-            return {
+        return Promise.all(
+            res.data.map(async (utxo: any) => ({
                 mintTxid: utxo.txid,
                 mintIndex: utxo.vout,
                 value: utxo.value,
-                script: "",
+                script: await this.getUTXOScript(utxo.txid, utxo.vout),
                 confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
-            };
-        }));
-    }
-
-    async getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]> {
-        const res = await this.client.get(`/utxo/${address}`);
-        return res.data.map((utxo: any) => ({
-            mintTxid: utxo.txid,
-            mintIndex: utxo.vout,
-            value: utxo.value,
-            confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
-        }));
+            }))
+        );
     }
 
     async getUTXOScript(txHash: string, vout: number) {

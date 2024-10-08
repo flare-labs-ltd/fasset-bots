@@ -364,7 +364,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         await correctUTXOInconsistenciesAndFillFromMempool(
                             this.rootEm,
                             txEnt.source,
-                            await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source)
+                            await this.blockchainAPI.getUTXOsFromMempool(txEnt.source)
                         );
                         // recreate transaction
                         await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
@@ -638,7 +638,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEnt.status = TransactionStatus.TX_SUCCESS;
                 });
             }
-            const mempoolUTXO = await this.blockchainAPI.getUTXOsWithoutScriptFromMempool(txEnt.source);
+            const mempoolUTXO = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, mempoolUTXO);
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;

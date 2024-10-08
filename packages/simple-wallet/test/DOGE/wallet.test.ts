@@ -90,7 +90,7 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
-        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsWithoutScriptFromMempool(fundedAddress);
+        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
         await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);

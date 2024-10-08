@@ -1,4 +1,4 @@
-import { IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
+import { IBlockchainAPI, MempoolUTXO } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import { BlockbookAPI } from "./BlockbookAPI";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
@@ -52,10 +52,6 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
         return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsFromMempool(address, this.chainType), "getUTXOsFromMempool");
-    }
-
-    async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsWithoutScriptFromMempool(address, this.chainType), "getUTXOsWithoutScriptFromMempool");
     }
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {

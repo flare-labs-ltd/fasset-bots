@@ -125,7 +125,7 @@ export class TransactionService {
         txForReplacement?: TransactionEntity,
     ): Promise<[bitcore.Transaction, UTXOEntity[]]> {
         const blockchainApi = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
-        const utxosFromMempool = await blockchainApi.getUTXOsWithoutScriptFromMempool(source);
+        const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(source);
         await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, source, utxosFromMempool);
 
         const isPayment = amountInSatoshi != null;

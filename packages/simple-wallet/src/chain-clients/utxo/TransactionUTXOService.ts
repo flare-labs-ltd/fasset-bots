@@ -72,8 +72,7 @@ export class TransactionUTXOService {
         logger.info(`Listing UTXOs for address ${txData.source}`);
         const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
         const fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, txForReplacement);
-        const dbUTXOS = await this.handleMissingUTXOScripts(fetchUnspent);
-        const needed = await this.selectUTXOs(dbUTXOS, txForReplacement, txData, currentFeeStatus);
+        const needed = await this.selectUTXOs(fetchUnspent, txForReplacement, txData, currentFeeStatus);
         if (needed) {
             return needed;
         }
@@ -270,20 +269,6 @@ export class TransactionUTXOService {
         }
 
         return txEnt;
-    }
-
-    private async handleMissingUTXOScripts(utxos: UTXOEntity[]) {
-        for (const utxo of utxos) {
-            if (!utxo.script) {
-                const txOutputEnt = await this.rootEm.findOne(TransactionOutputEntity, {
-                    vout: utxo.position,
-                    transactionHash: utxo.mintTransactionHash,
-                });
-                utxo.script = txOutputEnt?.script ? txOutputEnt.script : await this.blockchainAPI.getUTXOScript(utxo.mintTransactionHash, utxo.position);
-                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, utxoEnt => {utxoEnt.script = utxo.script});
-            }
-        }
-        return utxos;
     }
 
     async createInputsFromUTXOs(dbUTXOs: UTXOEntity[], txId: number) {
