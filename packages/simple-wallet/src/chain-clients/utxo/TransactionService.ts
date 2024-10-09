@@ -108,9 +108,27 @@ export class TransactionService {
      * @param {BN|undefined} feeInSatoshi - automatically set if undefined
      * @param {string|undefined} note
      * @param txForReplacement
+     * @param feeSource - source of the wallet for paying fees
      * @returns {Object} - BTC/DOGE transaction object
      */
     async preparePaymentTransaction(
+        txDbId: number,
+        source: string,
+        destination: string,
+        amountInSatoshi: BN | null,
+        feeInSatoshi?: BN,
+        note?: string,
+        txForReplacement?: TransactionEntity,
+        feeSource?: string
+    ): Promise<[Transaction, UTXOEntity[]]> {
+        if (feeSource && amountInSatoshi) {
+            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement);
+        } else {
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement)
+        }
+    }
+
+    async preparePaymentTransactionWithSingleWallet(
         txDbId: number,
         source: string,
         destination: string,
@@ -152,20 +170,7 @@ export class TransactionService {
             utxos = await utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
 
-        const utxosAmount = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
-
-        if (utxos.length === 0 || utxosAmount.lt(amountInSatoshi.add(feeInSatoshi ?? new BN(0)))) {
-            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`)
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`);
-        }
-
-        if (amountInSatoshi.lte(getDustAmount(this.chainType))) {
-            logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
-            throw new LessThanDustAmountError(
-                `Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
-            );
-        }
-
+        this.transactionChecks(txDbId, txData, utxos);
         const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, isPayment, note);
 
         if (feeInSatoshi && !txForReplacement) {
@@ -179,7 +184,7 @@ export class TransactionService {
         return [tr, utxos];
     }
 
-    async preparePaymentTransactionWithAdditionalFeeAccount(
+    async preparePaymentTransactionWithAdditionalFeeWallet(
         txDbId: number,
         source: string,
         feeSource: string,
@@ -187,8 +192,8 @@ export class TransactionService {
         amountInSatoshi: BN,
         feeInSatoshi?: BN,
         note?: string,
-        txForReplacement?: TransactionEntity): Promise<[Transaction, UTXOEntity[]]> {
-
+        txForReplacement?: TransactionEntity
+    ): Promise<[Transaction, UTXOEntity[]]> {
         const feePerKB = feeInSatoshi === undefined ? await this.transactionFeeService.getFeePerKB() : undefined;
         const txDataForAmount = {
             source: source,
@@ -238,7 +243,6 @@ export class TransactionService {
             await this.correctFee(txDbId, tr, txForReplacement, feeInSatoshi, utxos);
         }
 
-
         const utxosForFeeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
         const correctedFee = tr.getFee() + (feePerKB !== undefined ? feePerKB.muln(31).divn(1000).toNumber() : 0); // Fee should be higher since we have additional output (+31vB)!
         if (utxosForFeeAmount.subn(correctedFee).gt(getDustAmount(this.chainType))) {
@@ -271,10 +275,10 @@ export class TransactionService {
     }
 
     private transactionChecks( txDbId: number, txData: TransactionData, utxos: UTXOEntity[]) {
-        const utxosForAmountValue = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
-        if (utxos.length === 0) {
-            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosForAmountValue.toString()}, needed amount ${txData.amount.toString()}`);
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosForAmountValue.toString()}, needed amount ${txData.amount.toString()}`);
+        const utxosValue = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
+        if (utxos.length === 0 || utxosValue.lt(txData.amount.add(txData.fee ?? new BN(0)))) {
+            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
         }
 
         if (txData.amount.lte(getDustAmount(this.chainType))) {

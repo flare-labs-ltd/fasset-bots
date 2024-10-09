@@ -53,6 +53,24 @@ export function createUTXOEntity(id: number, source: string, mintTransactionHash
     return utxoEnt;
 }
 
+export async function createAndPersistUTXOEntity(
+    em: EntityManager,
+    source: string,
+    mintTransactionHash: string,
+    position: number,
+) {
+    const utxoEntity = em.create(UTXOEntity, {
+        source: source,
+        mintTransactionHash: mintTransactionHash,
+        position: position,
+        value: toBN(0),
+        spentHeight: SpentHeightEnum.SPENT,
+        script: "",
+    } as RequiredEntityData<UTXOEntity>);
+    await em.persistAndFlush(utxoEntity);
+    return utxoEntity;
+}
+
 
 export function createTransactionInputEntity(transactionHash: string, vout: number) {
     const inputEnt = new TransactionInputEntity();

@@ -208,6 +208,26 @@ describe("UTXO selection algorithm test", () => {
         expect(tr.outputs[0].satoshis).to.be.eq(7755); // 3 inputs + 1 output = 245 vBytes
     });
 
+    it("If UTXO has more than 24 ancestors, it should be skipped", async () => {
+        sinon.restore();
+        sinon.stub(dbutils, "fetchUnspentUTXOs").resolves([
+            createUTXOEntity(0, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, SpentHeightEnum.UNSPENT, toBN(100200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, SpentHeightEnum.UNSPENT, toBN(900000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, SpentHeightEnum.UNSPENT, toBN(900000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(110200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+        ]);
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "getCurrentFeeStatus").resolves(FeeStatus.LOW);
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionUTXOService), "getNumberOfMempoolAncestors").callsFake((txHash: string) => {
+            if (txHash !== "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c") {
+                return 25;
+            } else {
+                return 0;
+            }
+        })
+
+        const [tr, utxos] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(1000000), undefined);
+        expect(utxos.length).to.be.eq(1);
+    });
 });
 
 

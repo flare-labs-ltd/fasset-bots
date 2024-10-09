@@ -274,6 +274,7 @@ export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: Entit
         unspentUtxos.forEach((utxo) => {
             utxo.spentHeight = SpentHeightEnum.UNSPENT;
         });
+        /* istanbul ignore next */
         if (unspentUtxos.length > 0) {
             logger.info(`Marked ${unspentUtxos.length} UTXOs as unspent`);
         }

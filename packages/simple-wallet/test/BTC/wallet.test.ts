@@ -1,34 +1,40 @@
-import { BTC, SpentHeightEnum, UTXOEntity } from "../../src";
-import {
-    BitcoinWalletConfig,
-    ICreateWalletResponse
-} from "../../src/interfaces/IWalletTransaction";
+import { BTC, SpentHeightEnum, TransactionStatus, UTXOEntity, WalletAddressEntity } from "../../src";
+import { BitcoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { assert, expect, use } from "chai";
-
-use(chaiAsPromised);
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
-import {TransactionStatus} from "../../src/entity/transaction";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
-import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import {
-    addConsoleTransportForTests, calculateNewFeeForTx,
+    addConsoleTransportForTests,
+    calculateNewFeeForTx,
     loop,
     resetMonitoringOnForceExit,
     waitForTxToFinishWithStatus,
-} from "../test-util/common_utils"
-import {logger} from "../../src/utils/logger";
+} from "../test-util/common_utils";
+import { logger } from "../../src/utils/logger";
 import BN from "bn.js";
 import { BTC_DOGE_DEC_PLACES, ChainType } from "../../src/utils/constants";
 import * as dbutils from "../../src/db/dbutils";
+import { fetchTransactionEntityById } from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
+import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
-import { clearUTXOs, createAndFlushTransactionEntity, setMonitoringStatus } from "../test-util/entity_utils";
+import {
+    clearUTXOs,
+    createAndFlushTransactionEntity,
+    createAndPersistUTXOEntity,
+    createTransactionEntity, createUTXOEntity,
+    setMonitoringStatus,
+    setWalletStatusInDB,
+} from "../test-util/entity_utils";
+import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
+
+use(chaiAsPromised);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 
@@ -88,7 +94,7 @@ describe("Bitcoin wallet tests", () => {
             walletKeys: unprotectedDBWalletKeys,
             enoughConfirmations: 2
         };
-        wClient = await BTC.initialize(BTCMccConnectionTest);
+        wClient = BTC.initialize(BTCMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
         await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
@@ -369,7 +375,37 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Account that is being deleted should not accept new transactions", async () => {
+        await setWalletStatusInDB(wClient.rootEm, fundedAddress, true);
 
+        expect(wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
+        expect(ServiceRepository.get(wClient.chainType, TransactionService).createPaymentTransaction(wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
+
+        expect(wClient.createDeleteAccountTransaction(fundedAddress, targetAddress))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
+        expect(ServiceRepository.get(wClient.chainType, TransactionService).createDeleteAccountTransaction(wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
+
+        await setWalletStatusInDB(wClient.rootEm, fundedAddress, false);
+    });
+
+    it("Account without private key shouldn't be able to create transaction", async () => {
+        await wClient.rootEm.nativeDelete(WalletAddressEntity, { address: fundedAddress });
+        await wClient.rootEm.flush();
+        wClient.rootEm.clear(); // clear the cache so that the keys are deleted for sure ...
+        expect(wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi)).to.eventually.be.rejectedWith(`Cannot prepare transaction ${fundedAddress}. Missing private key.`);
+        expect(wClient.createDeleteAccountTransaction(fundedAddress, targetAddress)).to.eventually.be.rejectedWith(`Cannot prepare transaction ${fundedAddress}. Missing private key.`);
+        await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
+    });
+
+    it("Paying fees from another wallet", async () => {
+        //old funded - still have some funds
+        //mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S
+        //cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF
+        await wClient.walletKeys.addKey("mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S", "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF")
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, undefined, "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S");
+        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
 });

@@ -82,4 +82,5 @@ describe("Fee service tests BTC", () => {
         expect(medianTime?.gtn(0)).to.be.true;
         await feeService.monitorFees(false);
     });
+
 });

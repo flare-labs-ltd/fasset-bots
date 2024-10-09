@@ -273,6 +273,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
 
+            if (txEnt.feeSource) {
+                const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.feeSource);
+                await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.feeSource, utxosFromMempool);
+            }
+
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
             const [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
                 txEnt.id,
@@ -281,7 +286,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.amount ?? null,
                 txEnt.fee,
                 txEnt.reference,
-                rbfReplacementFor
+                rbfReplacementFor,
+                txEnt.feeSource,
             );
             const privateKey = await this.walletKeys.getKey(txEnt.source);
             const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
@@ -569,6 +575,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp?.toString()}.`
             );
             return TransactionStatus.TX_FAILED;
+        /* istanbul ignore next */
         } else if (!transaction.executeUntilBlock) {
             logger.warn(`Transaction ${txId} does not have 'executeUntilBlock' defined`);
         }

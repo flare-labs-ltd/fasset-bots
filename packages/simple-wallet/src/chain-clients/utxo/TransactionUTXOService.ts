@@ -138,8 +138,8 @@ export class TransactionUTXOService {
         while (utxoSet.size > 0) {
             for (const utxo of utxoSet) {
                 const numAncestors = await this.getNumberOfMempoolAncestors(utxo.mintTransactionHash);
-                if (numAncestors >= this.mempoolChainLengthLimit) {
-                    logger.info(`Number of UTXO mempool ancestors ${numAncestors} is greater than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
+                if (numAncestors + 1 >= this.mempoolChainLengthLimit) {
+                    logger.info(`Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`);
                     utxoSet.delete(utxo);
                     continue; //skip this utxo
                 }
@@ -181,7 +181,7 @@ export class TransactionUTXOService {
             for (const input of txEnt.inputs.getItems().filter(t => t.transactionHash !== txHash)) { // this filter is here because of a weird orm bug
                 const res = await this.getMempoolAncestors(input.transactionHash);
                 ancestors = [...ancestors, ...res];
-                if (ancestors.length >= 25) {
+                if (ancestors.length >= this.mempoolChainLengthLimit) {
                     return ancestors;
                 }
             }
@@ -233,7 +233,7 @@ export class TransactionUTXOService {
     private async getTransactionEntityByHash(txHash: string) {
 
         let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
-        if (txEnt && (txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED || txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED)) {
+        if (txEnt && (txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED )) {
             const tr = await this.blockchainAPI.getTransaction(txHash);
             if (tr.blockHash && tr.confirmations >= this.enoughConfirmations) {
                 txEnt.status = TransactionStatus.TX_SUCCESS;
@@ -275,6 +275,7 @@ export class TransactionUTXOService {
             const tx = await this.getTransactionEntityByHash(utxo.mintTransactionHash);
             if (tx) {
                 inputs.push(transformUTXOEntToTxInputEntity(utxo, tx));
+            /* istanbul ignore next */
             } else {
                 logger.warn(`Transaction ${txId}: Transaction (utxo) with hash ${utxo.mintTransactionHash} could not be found on api`);
             }
