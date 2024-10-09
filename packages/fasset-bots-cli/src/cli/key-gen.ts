@@ -2,7 +2,7 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { SecretsUser, generateSecrets, generateUnderlyingAccount } from "@flarelabs/fasset-bots-core";
-import { createSha256Hash, generateRandomHexString, logger, squashSpace } from "@flarelabs/fasset-bots-core/utils";
+import { createSha256Hash, generateRandomHexString, logger, squashSpace, web3 } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
@@ -99,6 +99,15 @@ program
     .argument("<chainName>", "chain name, e.g. XRP or testXRP")
     .action(async (chainName: string) => {
         const account = generateUnderlyingAccount(chainName);
+        console.log("Address:", account.address);
+        console.log("Private key:", account.privateKey);
+    });
+
+program
+    .command("createNativeAccount")
+    .description("create new address/private key pair on the native chain")
+    .action(async () => {
+        const account = web3.eth.accounts.create();
         console.log("Address:", account.address);
         console.log("Private key:", account.privateKey);
     });

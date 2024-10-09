@@ -80,7 +80,7 @@ program.action(async () => {
             const contractsMap = await createContractsMap(runConfig.contractsJsonFile as any, runConfig.pricePublisherContracts as any);
             const pricePublisherPrivateKey = secrets.required("pricePublisher.private_key");
             const pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisherPrivateKey, runConfig.pricePublisherMaxDelayMs as any, priceFeedApiPath[1]);
-            await pricePublisherService.run(3, 30);
+            void pricePublisherService.run(3, 30);
         }
 
         // create runner and agents
