@@ -71,6 +71,8 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 2
          };
+      default:
+         throw new Error(`Constants not defined for chain type ${chainType}`);
    }
 }
 

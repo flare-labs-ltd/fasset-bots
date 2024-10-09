@@ -368,4 +368,8 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
+    it("Account that is being deleted should not accept new transactions", async () => {
+
+    });
+
 });
