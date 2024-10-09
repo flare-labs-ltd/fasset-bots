@@ -2,7 +2,6 @@ import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
     checkIfIsDeleting,
-    correctUTXOInconsistenciesAndFillFromMempool,
     createInitialTransactionEntity,
     fetchUnspentUTXOs,
     setAccountIsDeleting,
@@ -12,7 +11,6 @@ import { EntityManager } from "@mikro-orm/core";
 import { ChainType } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
-import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
 import { getAccountBalance, getCore, getDustAmount, getOutputSize } from "./UTXOUtils";
 import { unPrefix0x } from "../../utils/utils";

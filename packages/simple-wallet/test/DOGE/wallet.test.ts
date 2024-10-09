@@ -20,6 +20,7 @@ import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 import { correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
+import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
@@ -50,6 +51,7 @@ const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 
 let wClient: DOGE;
 let testOrm: ORM;
+const chainType = ChainType.testDOGE;
 
 describe("Dogecoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -117,6 +119,9 @@ describe("Dogecoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(targetAddress, fundedAddress, toSend);
         expect(txId).to.be.greaterThan(0);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, txId);
+        const blockchainApi = ServiceRepository.get(chainType, BlockchainAPIWrapper);
+        const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, txEnt.source, utxosFromMempool);
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(
             txEnt.id,
             txEnt.source,
