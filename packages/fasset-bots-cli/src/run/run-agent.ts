@@ -54,6 +54,8 @@ program.action(async () => {
         const owner = getAccountRequired(secrets, "owner.native");
         const timekeeper = getAccount(secrets, "timeKeeper") ?? owner;
         const requestSubmitter = getAccount(secrets, "requestSubmitter") ?? owner;
+        const pricePublisher = getAccount(secrets, "pricePublisher") ?? null;
+        const priceFeedApiPath = runConfig.priceFeedApiPath ?? null;
         const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey]));
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), walletPrivateKeys, owner.address);
         // check balances and fund addresses so there is enough for gas
@@ -74,15 +76,16 @@ program.action(async () => {
         // create timekeepers
         const timekeeperService = await TimeKeeperService.create(botConfig, timekeeper.address, timekeeperConfig);
         timekeeperService.startAll();
-        const priceFeedApiPath = secrets.stringExistsAndIsNonZero("pricePublisher.price_feed_api_path");
         // run price publisher only if price feed api path is set
-        if (priceFeedApiPath[0]) {
-            const contractsMap = await createContractsMap(runConfig.contractsJsonFile as any, runConfig.pricePublisherContracts as any);
-            const pricePublisherPrivateKey = secrets.required("pricePublisher.private_key");
-            const pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisherPrivateKey, runConfig.pricePublisherMaxDelayMs as any, priceFeedApiPath[1]);
+        if (priceFeedApiPath && pricePublisher && runConfig.contractsJsonFile && runConfig.pricePublisherContracts) {
+            if (pricePublisher.address !== owner.address) {
+                await fundAccount(owner.address, pricePublisher.address, minNativeBalance, "price publisher");
+                serviceAccounts.set("price publisher", pricePublisher.address);
+            }
+            const contractsMap = await createContractsMap(runConfig.contractsJsonFile, runConfig.pricePublisherContracts);
+            const pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisher.privateKey, runConfig.pricePublisherMaxDelayMs ?? 10000, priceFeedApiPath);
             void pricePublisherService.run(3, 30);
         }
-
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         runner.serviceAccounts = serviceAccounts;

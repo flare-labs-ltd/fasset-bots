@@ -85,6 +85,7 @@ export interface BotConfigFile {
     challengeStrategy?: BotStrategyDefinition; // only for challenge
     pricePublisherContracts?: string[]; // only for price publisher
     pricePublisherMaxDelayMs?: number; // only for price publisher
+    priceFeedApiPath?: string; // only for price publisher
 }
 
 export interface AgentBotFassetSettingsJson {

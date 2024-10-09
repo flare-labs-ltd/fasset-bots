@@ -43,7 +43,6 @@ export class AgentBotRunner {
     private transientStorage: Map<string, AgentBotTransientStorage> = new Map();
 
     public serviceAccounts = new Map<string, string>();
-    private lastFundedAt = new Map<string, number>();
 
     private simpleWalletBackgroundTasks: Map<string, IBlockChainWallet> = new Map();
     private fundServiceRateLimit = new SimpleRateLimiter<string>(FUND_MIN_INTERVAL_MS);

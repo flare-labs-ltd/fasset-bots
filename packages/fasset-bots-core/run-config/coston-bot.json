@@ -85,5 +85,6 @@
         "className": "DefaultChallengeStrategy"
     },
     "pricePublisherContracts": ["Relay", "FtsoV2PriceStore"],
-    "pricePublisherMaxDelayMs": 10000
+    "pricePublisherMaxDelayMs": 10000,
+    "priceFeedApiPath": "http://127.0.0.1:31004/data"
 }

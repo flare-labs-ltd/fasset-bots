@@ -62,11 +62,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
         secrets.liquidator = generateNativeAccount();
         secrets.systemKeeper = generateNativeAccount();
         secrets.timeKeeper = generateNativeAccount();
-        secrets.pricePublisher = {
-            address: "",
-            private_key: "",
-            price_feed_api_path: "",
-        };
+        secrets.pricePublisher = generateNativeAccount();
     }
     return secrets;
 }

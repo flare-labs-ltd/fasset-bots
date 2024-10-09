@@ -424,6 +424,18 @@
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
         },
+        "priceFeedApiPath": {
+            "type": "string"
+        },
+        "pricePublisherContracts": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "pricePublisherMaxDelayMs": {
+            "type": "number"
+        },
         "prioritizeAddressUpdater": {
             "type": "boolean"
         },
