@@ -2,10 +2,9 @@ import {
     BitcoinWalletConfig,
     BTC,
     logger,
-    SpentHeightEnum, TransactionEntity,
-    UTXOEntity,
+    SpentHeightEnum,
 } from "../../src";
-import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/util";
+import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/common_utils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import chaiAsPromised from "chai-as-promised";
@@ -20,7 +19,7 @@ import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/T
 import { BTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { createTransactionEntity, createUTXOEntity } from "./utils";
+import { createTransactionEntityBase, createUTXOEntity } from "../test-util/entity_utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 use(chaiAsPromised);
@@ -159,7 +158,7 @@ describe("UTXO selection algorithm test", () => {
             createUTXOEntity(0, fundedAddress, "b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, SpentHeightEnum.UNSPENT, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
         ];
 
-        const originalTxEnt = createTransactionEntity(0, fundedAddress, targetAddress, toBNExp(1, BTC_DOGE_DEC_PLACES), originalUTXOs);
+        const originalTxEnt = createTransactionEntityBase(0, fundedAddress, targetAddress, toBNExp(1, BTC_DOGE_DEC_PLACES), originalUTXOs);
 
         const [tr, newUTXOs] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(2002000), undefined, undefined, originalTxEnt);
 

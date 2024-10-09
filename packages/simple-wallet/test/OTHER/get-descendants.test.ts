@@ -1,4 +1,4 @@
-import { SpentHeightEnum, TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
+import { SpentHeightEnum, TransactionEntity, UTXOEntity } from "../../src";
 
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
@@ -7,7 +7,7 @@ import { getTransactionDescendants } from "../../src/chain-clients/utxo/UTXOUtil
 import { expect } from "chai";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
-import { createTransactionEntity, MockBlockchainAPI } from "../test-util/utils";
+import { createTransactionEntity } from "../test-util/entity_utils";
 
 describe("getTransactionDescendants", () => {
     let em: EntityManager;

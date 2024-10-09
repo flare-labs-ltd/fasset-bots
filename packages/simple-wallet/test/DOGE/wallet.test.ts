@@ -10,9 +10,8 @@ import {
     addConsoleTransportForTests,
     loop,
     resetMonitoringOnForceExit,
-    setMonitoringStatus,
     waitForTxToFinishWithStatus,
-} from "../test-util/util";
+} from "../test-util/common_utils";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
 import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
@@ -20,6 +19,7 @@ import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 import { correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
+import { setMonitoringStatus } from "../test-util/entity_utils";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 use(chaiAsPromised);
 

@@ -503,6 +503,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    /**
     * @param {string} txBlob
     * @param {number} txDbId
+    * @param retry
     * @returns {boolean} - should replace fn or not; replace in case insufficient fee
     */
    async submitTransaction(txBlob: string, txDbId: number, retry = 0): Promise<TransactionStatus> {

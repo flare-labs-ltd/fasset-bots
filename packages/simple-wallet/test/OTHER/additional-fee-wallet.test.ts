@@ -2,7 +2,7 @@ import sinon from "sinon";
 import * as dbutils from "../../src/db/dbutils";
 import { BitcoinWalletConfig, BTC, logger, SpentHeightEnum } from "../../src";
 import { toBN } from "web3-utils";
-import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/util";
+import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/common_utils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { ServiceRepository } from "../../src/ServiceRepository";
@@ -11,7 +11,7 @@ import BN from "bn.js";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
 import { expect } from "chai";
-import { createUTXOEntity } from "./utils";
+import { createUTXOEntity } from "../test-util/entity_utils";
 
 const walletSecret = "wallet_secret";
 const BTCMccConnectionTestInitial = {

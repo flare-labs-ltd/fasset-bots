@@ -7,7 +7,7 @@ import {
     setAccountIsDeleting,
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
-import { EntityManager } from "@mikro-orm/core";
+import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
 import { ChainType } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
@@ -31,7 +31,7 @@ export class TransactionService {
     constructor(chainType: ChainType) {
         this.chainType = chainType;
         this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
-        this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
+        this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
         this.utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
     }
 
@@ -48,13 +48,12 @@ export class TransactionService {
         feeSource?: string,
     ): Promise<number> {
         logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}`);
-        const em = ServiceRepository.get(this.chainType, EntityManager);
-        if (await checkIfIsDeleting(em, source)) {
+        if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
         }
         const ent = await createInitialTransactionEntity(
-            em,
+            this.rootEm,
             chainType,
             source,
             destination,
@@ -81,14 +80,13 @@ export class TransactionService {
         executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
-        const em = ServiceRepository.get(this.chainType, EntityManager);
-        if (await checkIfIsDeleting(em, source)) {
+        if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
         }
-        await setAccountIsDeleting(em, source);
+        await setAccountIsDeleting(this.rootEm, source);
         const ent = await createInitialTransactionEntity(
-            em,
+            this.rootEm,
             chainType,
             source,
             destination,
@@ -252,7 +250,7 @@ export class TransactionService {
         return [tr, utxos];
     }
 
-    private async correctFee(txDbId: number, tr: Transaction, txForReplacement: TransactionEntity | undefined, feeInSatoshi: BN | undefined, allUTXOs: any[]) {
+    private async correctFee(txDbId: number, tr: Transaction, txForReplacement: TransactionEntity | undefined, feeInSatoshi: BN | undefined, allUTXOs: UTXOEntity[]) {
         let feeRatePerKB: BN = await this.transactionFeeService.getFeePerKB();
         logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`);
         if (txForReplacement && feeInSatoshi) {

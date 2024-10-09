@@ -9,15 +9,12 @@ import { createInitialTransactionEntity, fetchTransactionEntityById, updateTrans
 import { TransactionStatus } from "../../src/entity/transaction";
 import {
     addConsoleTransportForTests,
-    createAndSignXRPTransactionWithStatus,
     loop,
     resetMonitoringOnForceExit,
-    setMonitoringStatus,
-    setWalletStatusInDB,
     TEST_WALLET_XRP,
     waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus,
-} from "../test-util/util";
+} from "../test-util/common_utils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
@@ -28,6 +25,11 @@ import { ServiceRepository } from "../../src/ServiceRepository";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { sleepMs } from "../../src/utils/utils";
 import { XRP } from "../../src";
+import {
+    createAndSignXRPTransactionWithStatus,
+    setMonitoringStatus,
+    setWalletStatusInDB,
+} from "../test-util/entity_utils";
 
 use(chaiAsPromised);
 

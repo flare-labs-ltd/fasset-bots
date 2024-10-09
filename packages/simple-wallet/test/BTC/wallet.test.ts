@@ -13,12 +13,11 @@ import {TransactionStatus} from "../../src/entity/transaction";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {
-    addConsoleTransportForTests, calculateNewFeeForTx, clearUTXOs, createTransactionEntity,
+    addConsoleTransportForTests, calculateNewFeeForTx,
     loop,
     resetMonitoringOnForceExit,
-    setMonitoringStatus,
     waitForTxToFinishWithStatus,
-} from "../test-util/util";
+} from "../test-util/common_utils"
 import {logger} from "../../src/utils/logger";
 import BN from "bn.js";
 import { BTC_DOGE_DEC_PLACES, ChainType } from "../../src/utils/constants";
@@ -29,6 +28,7 @@ import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { clearUTXOs, createAndFlushTransactionEntity, setMonitoringStatus } from "../test-util/entity_utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 
@@ -109,6 +109,10 @@ describe("Bitcoin wallet tests", () => {
         removeConsoleLogging();
     });
 
+    afterEach(async () => {
+        sinon.restore();
+    });
+
     it("Monitoring should be running", async () => {
         const monitoring = await wClient.isMonitoring();
         expect(monitoring).to.be.true;
@@ -166,7 +170,7 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
         const executeUntilBlock = currentBlock + wClient.blockOffset;
-        const txEnt = await createTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
+        const txEnt = await createAndFlushTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
@@ -363,4 +367,5 @@ describe("Bitcoin wallet tests", () => {
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
+
 });

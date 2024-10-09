@@ -2,12 +2,13 @@ import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.
 import { ChainType } from "../../src/utils/constants";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { createTransactionEntity, MockBlockchainAPI } from "../test-util/utils";
+import { createTransactionEntity } from "../test-util/entity_utils";
 import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { expect } from "chai";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { MockBlockchainAPI } from "../test-util/common_utils";
 
 
 describe("getNumberOfMempoolAncestors", () => {

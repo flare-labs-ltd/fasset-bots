@@ -116,3 +116,7 @@ export interface UTXORawTransactionOutput {
     script: string;
     satoshis: number;
 }
+
+export interface AxiosTransactionSubmissionError {
+    error: string;
+}

@@ -13,7 +13,12 @@ import { MonitoringStateEntity } from "../entity/monitoringState";
 import Output = Transaction.Output;
 import { TransactionInputEntity } from "../entity/transactionInput";
 import { getCurrentTimestampInSeconds } from "../utils/utils";
-import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
+import {
+    MempoolUTXO,
+    UTXORawTransaction,
+    UTXORawTransactionInput,
+    UTXORawTransactionOutput,
+} from "../interfaces/IBlockchainAPI";
 import { errorMessage } from "../utils/axios-error-utils";
 
 // transaction operations
@@ -93,12 +98,13 @@ export async function createTransactionOutputEntities(rootEm: EntityManager, tra
 }
 
 function transformOutputToTxOutputEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
+    const parsedOutput = JSON.parse(JSON.stringify(output)) as UTXORawTransactionOutput;
     return createTransactionOutputEntity(
         transaction,
         transaction.transactionHash ?? "",
         toBN(output.satoshis),
         vout,
-        JSON.parse(JSON.stringify(output)).script ?? ""
+        parsedOutput.script ?? ""
     );
 }
 
@@ -203,9 +209,10 @@ export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Pro
             logger.error(`Transaction entity or raw data not found for transaction ${txId}`);
             return [];
         }
-        let inputs: any[] = [];
+        let inputs: UTXORawTransactionInput[] = [];
         try {
-            inputs = JSON.parse(txEnt.raw).inputs;
+            const tr = JSON.parse(txEnt.raw) as UTXORawTransaction;
+            inputs = tr.inputs;
         } catch (error) {
             logger.error(`Failed to parse transaction raw data for transaction ${txId}: ${errorMessage(error)}`);
             return [];

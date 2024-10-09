@@ -1,15 +1,14 @@
 import {BlockchainFeeService} from "../../src/fee-service/fee-service";
 import {expect} from "chai";
-import { checkIfShouldStillSubmit, sleepMs } from "../../src/utils/utils";
+import { sleepMs } from "../../src/utils/utils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { ChainType } from "../../src/utils/constants";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { MockBlockchainAPI } from "../test-util/utils";
 import { BitcoinWalletConfig, BTC, logger } from "../../src";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
-import { addConsoleTransportForTests } from "../test-util/util";
+import { addConsoleTransportForTests, MockBlockchainAPI } from "../test-util/common_utils";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 
 let feeService: BlockchainFeeService;

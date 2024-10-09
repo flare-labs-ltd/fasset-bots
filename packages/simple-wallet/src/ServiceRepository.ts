@@ -3,7 +3,7 @@ import { ChainType } from "./utils/constants";
 type Constructor<T> = new (...args: any[]) => T;
 
 export class Repository {
-    private services = new Map<ChainType, Map<Constructor<any>, any>>();
+    private services = new Map<ChainType, Map<Constructor<unknown>, unknown>>();
 
     register<T>(chainType: ChainType, ServiceClass: Constructor<T>, instance: T): void {
         if (!this.services.has(chainType)) {
@@ -18,12 +18,12 @@ export class Repository {
             throw new Error(`No service registered for ${chainType}`);
         }
 
-        const service = chainServiceMap.get(ServiceClass);
+        const service = chainServiceMap.get(ServiceClass) as T;
         if (!service) {
             throw new Error(`Service ${ServiceClass.name} not found`);
         }
 
-        return service as T;
+        return service;
     }
 }
 

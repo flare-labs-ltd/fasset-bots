@@ -14,7 +14,7 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
+import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
 import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
@@ -58,7 +58,7 @@ export class TransactionUTXOService {
             this.minimumUTXOValue = toBNExp(1, 5);
         }
 
-        this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
+        this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
         this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
     }
 
@@ -285,7 +285,7 @@ export class TransactionUTXOService {
 
     async updateTransactionInputSpentStatus(txId: number, status: SpentHeightEnum) {
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-        const transaction: UTXORawTransaction = JSON.parse(txEnt.raw!);
+        const transaction= JSON.parse(txEnt.raw!) as UTXORawTransaction;
         for (const input of transaction.inputs) {
             await updateUTXOEntity(this.rootEm, input.prevTxId, input.outputIndex, (utxoEnt) => {
                 utxoEnt.spentHeight = status;

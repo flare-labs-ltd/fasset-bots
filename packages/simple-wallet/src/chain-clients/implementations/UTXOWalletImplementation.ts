@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import * as bitcore from "bitcore-lib";
 import {
     checkIfFeeTooHigh,
@@ -36,7 +36,7 @@ import { UTXOAccountGeneration } from "../account-generation/UTXOAccountGenerati
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum } from "../../entity/utxo";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
-import { EntityManager } from "@mikro-orm/core";
+import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
 import { checkUTXONetworkStatus, getAccountBalance, getCore, getMinAmountToSend } from "../utxo/UTXOUtils";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { TransactionMonitor } from "../monitoring/TransactionMonitor";
@@ -51,6 +51,7 @@ import {
     NegativeFeeError,
     NotEnoughUTXOsError,
 } from "../../utils/axios-error-utils";
+import { AxiosTransactionSubmissionError } from "../../interfaces/IBlockchainAPI";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;
@@ -87,8 +88,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.walletKeys = createConfig.walletKeys;
         this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
 
-        ServiceRepository.register(this.chainType, EntityManager, this.rootEm);
-        this.rootEm = ServiceRepository.get(this.chainType, EntityManager);
+        ServiceRepository.register(this.chainType, EntityManager<IDatabaseDriver>, this.rootEm);
+        this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
 
         ServiceRepository.register(this.chainType, BlockchainAPIWrapper, new BlockchainAPIWrapper(createConfig, this.chainType));
         this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
@@ -160,10 +161,17 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             throw new Error(`Cannot receive requests. ${source} is deleting`);
         }
         const privateKey = await this.walletKeys.getKey(source);
+        const privateKeyForFee = feeSource ? await this.walletKeys.getKey(feeSource) : undefined;
+
         if (!privateKey) {
             logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
             throw new Error(`Cannot prepare transaction ${source}. Missing private key.`);
         }
+        if (feeSource && !privateKeyForFee) {
+            logger.error(`Cannot prepare transaction ${source}. Missing private key for fee wallet.`);
+            throw new Error(`Cannot prepare transaction ${source}. Missing private key for fee wallet.`);
+        }
+
         return this.transactionService.createPaymentTransaction(
             this.chainType,
             source,
@@ -316,8 +324,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 }  else if (error instanceof NegativeFeeError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
                 } else if (axios.isAxiosError(error)) {
-                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);
-                    if (error.response?.data?.error?.indexOf("not found") >= 0) {
+                    const axiosError = error as AxiosError<AxiosTransactionSubmissionError>
+
+                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, axiosError.response?.data);
+                    if (axiosError.response?.data.error.includes("not found")) {
                         await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
                             txEnt.status = TransactionStatus.TX_CREATED;
                             txEnt.utxos.removeAll();
@@ -446,7 +456,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.transactionHash = signed.txHash;
                 txEnt.size = signed.txSize;
             });
-        } catch (error: any) {
+        } catch (error) {
             /* istanbul ignore next */
             {
                 if (isORMError(error)) {
@@ -454,7 +464,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     logger.error(`signAndSubmitProcess for transaction ${txId} failed with DB error: ${errorMessage(error)}`);
                     return;
                 }
-                await failTransaction(this.rootEm, txId, `Cannot sign transaction ${txId}: ${errorMessage(error)}`, error);
+                await failTransaction(this.rootEm, txId, `Cannot sign transaction ${txId}: ${errorMessage(error)}`, error as Error);
                 return;
             }
         }
@@ -578,15 +588,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await this.transactionUTXOService.updateTransactionInputSpentStatus(txId, SpentHeightEnum.UNSPENT);
                 return TransactionStatus.TX_FAILED;
             }
-        } catch (error: any) {
+        } catch (error) {
             if (isORMError(error)) {
                 // We don't want to fail tx if error is caused by DB
                 logger.error(`Transaction ${txId} submission failed with DB error ${errorMessage(error)}`);
                 return TransactionStatus.TX_PREPARED;
             } else if (axios.isAxiosError(error)) {
-                return this.transactionAPISubmissionErrorHandler(txId, error);
+                return this.transactionAPISubmissionErrorHandler(txId, error as AxiosError<AxiosTransactionSubmissionError>);
             } else {
-                await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed ${errorMessage(error)}`, error);
+                await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed ${errorMessage(error)}`, error as Error);
                 await this.transactionUTXOService.updateTransactionInputSpentStatus(txId, SpentHeightEnum.UNSPENT);
                 return TransactionStatus.TX_FAILED;
             }
@@ -630,39 +640,45 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
     }
     /* istanbul ignore next */
-    async transactionAPISubmissionErrorHandler(txId: number, error: any) {
+    async transactionAPISubmissionErrorHandler(txId: number, error: AxiosError<AxiosTransactionSubmissionError>) {
+        if (error.response === undefined) {
+            return TransactionStatus.TX_FAILED;
+        }
+
+        const errorDescription = error.response.data.error;
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-        logger.error(`Transaction ${txId} submission failed with Axios error (${error.response?.data?.error}): ${errorMessage(error)}`);
-        if (error.response?.data?.error?.indexOf("too-long-mempool-chain") >= 0) {
+        logger.error(`Transaction ${txId} submission failed with Axios error (${errorDescription}): ${errorMessage(error)}`);
+
+        if (errorDescription.includes("too-long-mempool-chain")) {
             logger.error(`Transaction ${txId} has too-long-mempool-chain`, error);
             return TransactionStatus.TX_PREPARED;
-        } else if (error.response?.data?.error?.indexOf("insufficient fee") >= 0) {
+        } else if (errorDescription.includes("insufficient fee")) {
             logger.error(`Transaction ${txId} submission failed because of 'insufficient fee'`);
             await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
-        } else if (error.response?.data?.error?.indexOf("mempool min fee not met") >= 0) {
+        } else if (errorDescription.includes("mempool min fee not met")) {
             logger.error(`Transaction ${txId} submission failed because of 'mempool min fee not met'`);
             await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
-        } else if (error.response?.data?.error?.indexOf("min relay fee not met") >= 0) {
+        } else if (errorDescription.includes("min relay fee not met")) {
             logger.error(`Transaction ${txId} submission failed because of 'min relay fee not met'`);
             await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
-        } else if (error.response?.data?.error?.indexOf("Fee exceeds maximum configured by user") >= 0) {
+        } else if (errorDescription.includes("Fee exceeds maximum configured by user")) {
             logger.error(`Transaction ${txId} submission failed because of 'Fee exceeds maximum configured by user'`);
             await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
-        } else if (error.response?.data?.error?.indexOf("Transaction already in block chain") >= 0) {
+        } else if (errorDescription.includes("Transaction already in block chain")) {
             logger.error(`Transaction ${txId} submission failed because of 'Transaction already in block chain'`);
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.status = TransactionStatus.TX_SUCCESS;
                 txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
             });
             return TransactionStatus.TX_SUCCESS;
-        } else if (error.response?.data?.error?.indexOf("bad-txns-inputs-") >= 0) {
+        } else if (errorDescription.includes("bad-txns-inputs-")) {
             const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
             // presumably original was accepted
-            if (error.response?.data?.error?.indexOf("bad-txns-inputs-missingorspent") >= 0 && txEnt.rbfReplacementFor) {
+            if (errorDescription.includes("bad-txns-inputs-missingorspent") && txEnt.rbfReplacementFor) {
                 logger.info(`Transaction ${txId} is rejected. Transaction ${txEnt.rbfReplacementFor.id} was accepted.`);
                 await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => {
                     txEnt.status = TransactionStatus.TX_SUCCESS;
