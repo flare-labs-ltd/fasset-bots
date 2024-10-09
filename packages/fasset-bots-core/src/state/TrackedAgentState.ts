@@ -21,23 +21,25 @@ export class TrackedAgentState {
         data: InitialAgentData
     ) {
         this.vaultAddress = data.agentVault;
-        this.underlyingAddress = data.underlyingAddress;
-        this.collateralPoolAddress = data.collateralPool;
-        this.agentSettings.vaultCollateralToken = data.vaultCollateralToken;
-        this.agentSettings.feeBIPS = toBN(data.feeBIPS);
-        this.agentSettings.poolFeeShareBIPS = toBN(data.poolFeeShareBIPS);
-        this.agentSettings.mintingVaultCollateralRatioBIPS = toBN(data.mintingVaultCollateralRatioBIPS);
-        this.agentSettings.mintingPoolCollateralRatioBIPS = toBN(data.mintingPoolCollateralRatioBIPS);
-        this.agentSettings.poolExitCollateralRatioBIPS = toBN(data.poolExitCollateralRatioBIPS);
-        this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(data.buyFAssetByAgentFactorBIPS);
-        this.agentSettings.poolTopupCollateralRatioBIPS = toBN(data.poolTopupCollateralRatioBIPS);
-        this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(data.poolTopupTokenPriceFactorBIPS);
+        this.underlyingAddress = data.creationData.underlyingAddress;
+        this.collateralPoolAddress = data.creationData.collateralPool;
+        this.collateralPoolTokenAddress = data.creationData.collateralPoolToken;
+        this.agentSettings.vaultCollateralToken = data.creationData.vaultCollateralToken;
+        this.agentSettings.feeBIPS = toBN(data.creationData.feeBIPS);
+        this.agentSettings.poolFeeShareBIPS = toBN(data.creationData.poolFeeShareBIPS);
+        this.agentSettings.mintingVaultCollateralRatioBIPS = toBN(data.creationData.mintingVaultCollateralRatioBIPS);
+        this.agentSettings.mintingPoolCollateralRatioBIPS = toBN(data.creationData.mintingPoolCollateralRatioBIPS);
+        this.agentSettings.poolExitCollateralRatioBIPS = toBN(data.creationData.poolExitCollateralRatioBIPS);
+        this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(data.creationData.buyFAssetByAgentFactorBIPS);
+        this.agentSettings.poolTopupCollateralRatioBIPS = toBN(data.creationData.poolTopupCollateralRatioBIPS);
+        this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(data.creationData.poolTopupTokenPriceFactorBIPS);
     }
 
     // identifying addresses
     vaultAddress: string;
     underlyingAddress: string;
     collateralPoolAddress: string;
+    collateralPoolTokenAddress: string;
 
     //status
     status = AgentStatus.NORMAL;
@@ -303,14 +305,22 @@ export class TrackedAgentState {
         return totalCollateralWei.muln(MAX_BIPS).div(backingCollateralWei);
     }
 
-    collateralRatioBIPS(collateral: CollateralType): BN {
+    isCollateralValid(collateral: CollateralType, timestamp: BN) {
+        const validUntil = toBN(collateral.validUntil);
+        return validUntil.eq(BN_ZERO) || validUntil.gte(timestamp);
+    }
+
+    collateralRatioBIPS(collateral: CollateralType, timestamp: BN): BN {
+        if (!this.isCollateralValid(collateral, timestamp)) {
+            return BN_ZERO;
+        }
         const ratio = this.collateralRatioForPriceBIPS(this.parent.prices, collateral);
         const ratioFromTrusted = this.collateralRatioForPriceBIPS(this.parent.trustedPrices, collateral);
         return maxBN(ratio, ratioFromTrusted);
     }
 
     private possibleLiquidationTransitionForCollateral(collateral: CollateralType, timestamp: BN): AgentStatus {
-        const cr = this.collateralRatioBIPS(collateral);
+        const cr = this.collateralRatioBIPS(collateral, timestamp);
         const settings = this.parent.settings;
         if (this.status === AgentStatus.NORMAL) {
             if (cr.lt(toBN(collateral.ccbMinCollateralRatioBIPS))) {
@@ -342,8 +352,22 @@ export class TrackedAgentState {
             timestamp
         );
         // return the higher status (more severe)
-        logger.info(`Tracked State Agent handled possible liquidation transition; vaultTransition: ${vaultTransition}, poolTransition: ${poolTransition}.`);
         return vaultTransition >= poolTransition ? vaultTransition : poolTransition;
+    }
+
+    // should start the CCB liquidation countdown
+    candidateForCcbRegister(timestamp: BN): boolean {
+        if (this.status >= AgentStatus.CCB) {
+            // already registered or in liquidation
+            return false
+        }
+        const calculatedStatus = this.possibleLiquidationTransition(timestamp);
+        return calculatedStatus === AgentStatus.CCB;
+    }
+
+    // should liquidate the agent already registered for CCB
+    candidateForCcbLiquidation(timestamp: BN): boolean {
+        return this.status === AgentStatus.CCB && timestamp.gte(this.ccbStartTimestamp.add(toBN(this.parent.settings.ccbTimeSeconds)));
     }
 
     calculatePoolFee(mintingFeeUBA: BN): BN {

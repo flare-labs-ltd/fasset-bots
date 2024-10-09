@@ -9,6 +9,9 @@ import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
 import { createTestOrm } from "../../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../../test-utils/test-helpers";
+import { FeeServiceConfig, TransactionStatus } from "@flarelabs/simple-wallet";
+import { FeeServiceOptions } from "../../../src/underlying-chain/interfaces/IBlockChainWallet";
+import { sleep } from "../../../src/utils";
 use(chaiAsPromised);
 
 let orm: ORM;
@@ -30,7 +33,7 @@ describe("testXRP wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl, { retries: 2 });
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
     });
 
     it("Should create account", async () => {
@@ -50,31 +53,57 @@ describe("testXRP wallet tests", () => {
         await removeWalletAddressFromDB(walletHelper, targetAddressXRP);
     });
 
-    it("Should not send funds: fee > maxFee", async () => {
-        await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
-        const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-        const maxFee = 8;
-        const fee = 10;
-        const options = { maxFee: maxFee }; // maxFee in Drops
-        await expect(walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, amountToSendDrops, note, options))
-            .to.eventually.be.rejectedWith(`Transaction is not prepared: fee ${fee} is higher than maxFee ${maxFee}`)
-            .and.be.an.instanceOf(Error);
-        await removeWalletAddressFromDB(walletHelper, fundedAddressXRP);
+    it("Should delete account", async () => {
+        const newAccount = await walletHelper.createAccount();
+        const del = await walletHelper.deleteAccount(newAccount, fundedAddressXRP, null);
+        expect(del).to.be.greaterThan(0);
+        const info = await walletHelper.checkTransactionStatus(del);
+        expect(info.status).to.eq(TransactionStatus.TX_CREATED);
+        await removeWalletAddressFromDB(walletHelper, newAccount);
     });
 
     it("Should not add multi transaction - method not implemented", async () => {
         await expect(walletHelper.addMultiTransaction()).to.eventually.be.rejectedWith("Method not implemented.").and.be.an.instanceOf(Error);
     });
 
-    it("Should add transaction - source address not found in db", async () => {
+    it("Should not add transaction - source address not found in db", async () => {
         await expect(walletHelper.addTransaction(targetAddressXRP, fundedAddressXRP, amountToSendDrops, null, undefined))
             .to.eventually.be.rejectedWith(`Cannot find address ${targetAddressXRP}`)
             .and.be.an.instanceOf(Error);
     });
 
     it("Should get transaction fee", async () => {
-        const fee = await walletHelper.getTransactionFee();
+        const fee = await walletHelper.getTransactionFee({isPayment: true});
         expect(fee.gtn(0));
+    });
+
+    it("Should send transaction", async () => {
+        const account0 = await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
+        const privateKey0 = await dbWallet.getKey(account0);
+        expect(privateKey0).to.eq(fundedPrivateKeyXRP);
+        const newAccount = await walletHelper.createAccount();
+
+        const transaction = await walletHelper.addTransactionAndWaitForItsFinalization(account0, newAccount, 10_000000, null);
+        expect(transaction).to.be.a('string');
+        await removeWalletAddressFromDB(walletHelper, newAccount);
+        await removeWalletAddressFromDB(walletHelper, account0);
+    });
+
+    it("Should not be monitoring", async () => {
+        const monitoring = await walletHelper.isMonitoring();
+        expect(monitoring).to.be.false;
+    });
+
+    it("Should monitoring", async () => {
+        void walletHelper.startMonitoringTransactionProgress();
+        await sleep(2000);
+        await walletHelper.stopMonitoring();
+        const monitoring = await walletHelper.isMonitoring();
+        expect(monitoring).to.be.false;
+
+        expect(walletHelper.requestStopVal).to.be.false;
+        await walletHelper.requestStop();
+        expect(walletHelper.requestStopVal).to.be.true;
     });
 });
 
@@ -86,12 +115,17 @@ describe("testBTC wallet tests", () => {
     const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
     const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
     const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
+    const feeServiceConfig: FeeServiceConfig = {
+        indexerUrl: walletUrl,
+        numberOfBlocksInHistory: 2,
+        sleepTimeMs: 2000,
+    };
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, undefined, feeServiceConfig);
     });
 
     it("Should create account", async () => {
@@ -121,12 +155,16 @@ describe("testDOGE wallet tests", () => {
     const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
     const targetPrivateKey = "ckmubApfH515MCZNC9ufLR4kHrmnb1PCtX2vhoN4iYx9Wqzh2AQ9";
     const amountToSendSatoshies = 100000000;
+    const feeServiceOptions: FeeServiceOptions = {
+        numberOfBlocksInHistory: 2,
+        sleepTimeMs: 2000,
+    };
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, undefined, feeServiceOptions);
     });
 
     it("Should create account", async () => {
@@ -146,10 +184,11 @@ describe("testDOGE wallet tests", () => {
         await removeWalletAddressFromDB(walletHelper, targetAddress);
     });
 
-    it.skip("Should send funds", async () => {
+    it("Should send funds", async () => {
         await walletHelper.addExistingAccount(fundedAddress, fundedPrivateKey);
-        const transaction = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined);
-        expect(transaction).to.not.be.null;
+        const txDbId = await walletHelper.addTransaction(fundedAddress, targetAddress, amountToSendSatoshies, "TestNote", undefined);
+        expect(txDbId).to.not.be.null;
+        expect(txDbId).to.be.gt(0);
         await removeWalletAddressFromDB(walletHelper, fundedAddress);
     });
 });

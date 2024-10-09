@@ -32,13 +32,24 @@ export const MAX_UINT256 = toBN(1).shln(256).subn(1);
 export const DEFAULT_TIMEOUT = 15000;
 export const DEFAULT_RETRIES = 3;
 
-export const TRANSACTION_FEE_FACTOR = 2;
+export const TRANSACTION_FEE_FACTOR = 1.4;
 
 /**
  * Asynchronously wait `ms` milliseconds.
  */
 export function sleep(ms: number) {
     return new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
+}
+
+/**
+ * Asynchronously wait `delayMS` milliseconds, but stop immediately if `stopCondition()` becomes true.
+ */
+export async function sleepUntil(delayMS: number, stopCondition: () => boolean, pollMS: number = 100) {
+    const start = systemTimestampMS();
+    while (systemTimestampMS() - start < delayMS) {
+        if (stopCondition()) break;
+        await sleep(pollMS);
+    }
 }
 
 /**
@@ -258,6 +269,10 @@ export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefin
     throw error; // unexpected error
 }
 
+export function messageForExpectedError(error: any, expectedErrors: ErrorFilter[]): unknown {
+    return errorIncluded(error, expectedErrors) ? error.message : error;
+}
+
 export function toBIPS(x: number | string) {
     if (typeof x === "string" && x.endsWith("%")) {
         return toBNExp(x.slice(0, x.length - 1), 2); // x is in percent, only multiply by 100
@@ -374,10 +389,12 @@ export function randomChoice<K>(array: K[]): K | undefined {
     return array[Math.floor(Math.random() * array.length)];
 }
 
-export function iteratorToArray<K>(iter: Iterable<K>): Array<K> {
-    const ret = [];
-    for (let elt of iter) {
-        ret.push(elt);
+export function* enumerate<T>(array: T[]): Iterable<[T, number]> {
+    for (let i = 0; i < array.length; i++) {
+        yield [array[i], i];
     }
-    return ret;
+}
+
+export function isEnumValue<T extends string>(enumCls: { [key: string]: T }, value: string): value is T {
+    return Object.values(enumCls).includes(value as any);
 }

@@ -4,15 +4,19 @@ import { Secrets, createBotConfig } from "../config";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext, isAssetAgentContext } from "../config/create-asset-context";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
-import { AgentStatus, AssetManagerSettings, AvailableAgentInfo } from "../fasset/AssetManagerTypes";
+import { OwnerAddressPair } from "../fasset/Agent";
+import { AgentStatus, AssetManagerSettings, AvailableAgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
+import { ERC20TokenBalance, latestBlockTimestampBN } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
+import { eventOrder } from "../utils/events/common";
+import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { formatFixed } from "../utils/formatting";
-import { BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, randomChoice, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, MAX_BIPS, ZERO_ADDRESS, firstValue, getOrCreateAsync, randomChoice, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { TokenBalances } from "../utils/token-balances";
-import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 import { AgentInfoReader, CollateralPriceCalculator } from "./AgentInfoReader";
-import { OwnerAddressPair } from "../fasset/Agent";
+import { ColumnPrinter } from "./ColumnPrinter";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
@@ -49,6 +53,11 @@ export class InfoBotCommands {
         const context = await createAgentBotContext(botConfig, chainConfig);
         // done
         logger.info(`InfoBot successfully finished initializing cli environment.`);
+        if (fAssetSymbol) {
+            logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
+        } else {
+            logger.info(`Asset manager controller is ${context.assetManagerController.address}.`);
+        }
         console.error(chalk.cyan("Environment successfully initialized."));
         return new InfoBotCommands(context);
     }
@@ -72,12 +81,24 @@ export class InfoBotCommands {
 
     async findBestAgent(minAvailableLots: BN): Promise<string | undefined> {
         const agents = await this.getAvailableAgents();
-        const eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
+        let eligible = agents.filter((a) => toBN(a.freeCollateralLots).gte(minAvailableLots));
         if (eligible.length === 0) return undefined;
-        eligible.sort((a, b) => -toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
-        const lowestFee = toBN(eligible[0].feeBIPS);
-        eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
-        return randomChoice(eligible)?.agentVault;
+        eligible.sort((a, b) => toBN(a.feeBIPS).cmp(toBN(b.feeBIPS)));
+        while (eligible.length > 0) {
+            const lowestFee = toBN(eligible[0].feeBIPS);
+            let optimal = eligible.filter((a) => toBN(a.feeBIPS).eq(lowestFee));
+            while (optimal.length > 0) {
+                const agentVault = requireNotNull(randomChoice(optimal)).agentVault;  // list must be nonempty
+                const info = await this.context.assetManager.getAgentInfo(agentVault);
+                // console.log(`agent ${agentVault} status ${info.status}`);
+                if (Number(info.status) === AgentStatus.NORMAL) {
+                    return agentVault;
+                }
+                // agent is in liquidation or something, remove it and try another
+                optimal = optimal.filter(a => a.agentVault !== agentVault);
+                eligible = eligible.filter(a => a.agentVault !== agentVault);
+            }
+        }
     }
 
     /**
@@ -171,21 +192,52 @@ export class InfoBotCommands {
     async printAllAgents() {
         const printer = new ColumnPrinter([
             ["Vault address", 42, "l"],
+            ["Owner", 20, "l"],
             ["Owner address", 42, "l"],
+            ["Collateral", 12, "l"],
             ["Minted lots", 12, "r"],
             ["Free lots", 12, "r"],
-            ["Public", 6, "r"],
+            ["Minting fee", 12, "r"],
+            ["Public", 6, "l"],
+            ["Status", 16, "l"],
         ]);
         printer.printHeader();
         const allAgents = await this.getAllAgents();
         const lotSizeUBA = await this.getLotSize();
+        const collateralTokens = new Map<string, string>();
+        let countAll = 0;
+        let countPublic = 0;
+        let totalMinted = 0;
+        let totalfreeLots = 0;
         for (const vaultAddr of allAgents) {
             const info = await this.context.assetManager.getAgentInfo(vaultAddr);
+            const ownerName = await this.context.agentOwnerRegistry.getAgentName(info.ownerManagementAddress);
+            const collateral = await getOrCreateAsync(collateralTokens, info.vaultCollateralToken, async (tokenAddr) => {
+                const collateralType = await this.context.assetManager.getCollateralType(CollateralClass.VAULT, tokenAddr);
+                const tokenBR = await TokenBalances.collateralType(collateralType);
+                let name = tokenBR.symbol;
+                if (toBN(collateralType.validUntil).gt(BN_ZERO)) {
+                    const ts = toBN(collateralType.validUntil).lt(await latestBlockTimestampBN()) ? "i" : "d";
+                    name = `[${ts}] ${name}`;
+                }
+                return name;
+            });
             const mintedLots = Number(info.mintedUBA) / lotSizeUBA;
             const freeLots = Number(info.freeCollateralLots);
             const available = info.publiclyAvailable ? "YES" : "no";
-            printer.printLine(vaultAddr, info.ownerManagementAddress, mintedLots.toFixed(2), freeLots.toFixed(0), available);
+            const status = AgentStatus[Number(info.status)];
+            const mintedFee = Number(info.feeBIPS) / 100;
+            printer.printLine(vaultAddr, ownerName.slice(0, 20), info.ownerManagementAddress,
+                collateral.slice(0, 12), mintedLots.toFixed(2), freeLots.toFixed(0), mintedFee.toFixed(2), available, status);
+            ++countAll;
+            totalMinted += mintedLots;
+            if (info.publiclyAvailable && status === "NORMAL") {
+                ++countPublic;
+                totalfreeLots += freeLots;
+            }
         }
+        console.log(`Total agents: ${countAll},  available for minting: ${countPublic}`);
+        console.log(`Total minted lots: ${totalMinted.toFixed(2)},  total free lots: ${totalfreeLots.toFixed(0)}`);
     }
 
     async findPoolBySymbol(symbol: string) {
@@ -307,6 +359,7 @@ export class InfoBotCommands {
         async function formatCollateralAt(cpr: CollateralPriceCalculator, address: string) {
             return formatCollateral(cpr, await cpr.balanceReader.balance(address));
         }
+        /* istanbul ignore next */
         function formatAgentStatus(status: AgentStatus) {
             switch (status) {
                 case AgentStatus.NORMAL: return `healthy`;
@@ -321,6 +374,7 @@ export class InfoBotCommands {
         const assetManager = this.context.assetManager;
         const air = await AgentInfoReader.create(assetManager, vaultAddress);
         const agentInfo = air.info;
+        const collateralPool = await CollateralPool.at(agentInfo.collateralPool);
         // baalnce reader
         const nativeBR = await TokenBalances.evmNative(this.context);
         const fassetBR = await TokenBalances.fasset(this.context);
@@ -365,11 +419,13 @@ export class InfoBotCommands {
         console.log(`    Lot pool collateral: ${nativeBR.format(air.poolCollateral.mintingCollateralRequired(lotSizeUBA))}`);
         //
         console.log(`Agent address (vault): ${vaultAddress}`);
-        console.log(`    Balance: ${await vaultBR.formatBalance(vaultAddress)}`);
-        console.log(`    Balance: ${await poolTokenBR.formatBalance(vaultAddress)}`);
+        console.log(`    Vault collateral balance: ${await vaultBR.formatBalance(vaultAddress)}`);
+        console.log(`    Pool tokens balance: ${await poolTokenBR.formatBalance(vaultAddress)}`);
+        console.log(`    Pool fee share: ${fassetBR.format(await collateralPool.fAssetFeesOf(vaultAddress))}`);
         console.log(`Agent collateral pool: ${agentInfo.collateralPool}`);
-        console.log(`    Balance: ${await poolBR.formatBalance(agentInfo.collateralPool)}`);
-        console.log(`    Collected fees: ${await fassetBR.formatBalance(agentInfo.collateralPool)}`);
+        console.log(`    Collateral balance: ${await poolBR.formatBalance(agentInfo.collateralPool)}`);
+        console.log(`    Total pool token supply: ${poolTokenBR.format(await (poolTokenBR as ERC20TokenBalance).totalSupply())}`);
+        console.log(`    Total collected fees: ${await fassetBR.formatBalance(agentInfo.collateralPool)}`);
         // vault underlying
         console.log(`Agent vault underlying (${underlyingBR.symbol}) address: ${agentInfo.underlyingAddressString}`);
         console.log(`    Actual balance: ${await underlyingBR.formatBalance(agentInfo.underlyingAddressString)}`);
@@ -394,31 +450,27 @@ export class InfoBotCommands {
             }
         }
     }
-
-}
-
-type ColumnType = [title: string, width: number, align: "l" | "r"];
-
-export class ColumnPrinter {
-    constructor(
-        public columns: ColumnType[],
-        public separator: string = "  "
-    ) {
-        for (const ct of this.columns) {
-            ct[1] = Math.max(ct[1], ct[0].length);
+    /* istanbul ignore next */
+    async* readAssetManagerLogs(blockCount: number) {
+        const eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager });
+        // get all logs for this agent
+        const nci = this.context.nativeChainInfo;
+        const blockHeight = await web3.eth.getBlockNumber();
+        const lastFinalizedBlock = blockHeight - nci.finalizationBlocks;
+        const startBlock = Math.max(lastFinalizedBlock - blockCount, 0);
+        for (let lastBlockRead = startBlock; lastBlockRead <= lastFinalizedBlock; lastBlockRead += nci.readLogsChunkSize) {
+            // asset manager events
+            const logsAssetManager = await web3.eth.getPastLogs({
+                address: this.context.assetManager.address,
+                fromBlock: lastBlockRead,
+                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastFinalizedBlock),
+            });
+            const events = eventDecoder.decodeEvents(logsAssetManager);
+            // sort events first by their block numbers, then internally by their event index
+            events.sort(eventOrder);
+            for (const event of events) {
+                yield event;
+            }
         }
-    }
-
-    line(...items: string[]) {
-        const chunks = this.columns.map(([_, width, align], ind) => (align === "l" ? items[ind].padEnd(width) : items[ind].padStart(width)));
-        return chunks.join(this.separator);
-    }
-
-    printHeader() {
-        this.printLine(...this.columns.map((it) => it[0]));
-    }
-
-    printLine(...items: string[]) {
-        console.log(this.line(...items));
     }
 }

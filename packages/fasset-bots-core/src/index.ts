@@ -1,6 +1,7 @@
 export * from "./fasset/AssetManagerTypes";
 export { ActorBaseRunner } from "./actors/ActorBaseRunner";
 export { AgentBotCommands } from "./commands/AgentBotCommands";
+export { AgentBotDbUpgrades } from "./actors/AgentBotDbUpgrades";
 export { AgentBotOwnerValidation, throwingReporter, printingReporter } from "./commands/AgentBotOwnerValidation";
 export { AgentBotRunner } from "./actors/AgentBotRunner";
 export { TimeKeeper, TimeKeeperQueryWindow, TimekeeperTimingConfig } from "./actors/TimeKeeper";
@@ -15,3 +16,8 @@ export { AgentEntity } from "./entities/agent";
 export { AgentSettingName, AgentUpdateSettingState } from "./entities/common";
 export { ApiNotifierTransport } from "./utils/notifier/NotifierTransports";
 export { PricePublisherService } from "./actors/PricePublisherService";
+export { BlockchainWalletHelper } from "./underlying-chain/BlockchainWalletHelper";
+export * from "./underlying-chain/WalletKeys";
+export { VerificationPrivateApiClient } from "./underlying-chain/VerificationPrivateApiClient";
+export { TokenPriceReader } from "./state/TokenPrice"
+export * from "./config/config-file-loader"

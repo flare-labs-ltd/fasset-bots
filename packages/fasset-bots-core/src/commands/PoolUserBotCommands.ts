@@ -45,6 +45,7 @@ export class PoolUserBotCommands {
         }
         // create config
         const botConfig = await createBotConfig("common", secrets, configFile, nativeAddress);
+        /* istanbul ignore next */
         registerCleanup?.(() => closeBotConfig(botConfig));
         // verify fasset config
         const fassetConfig = botConfig.fAssets.get(fAssetSymbol);
@@ -52,6 +53,7 @@ export class PoolUserBotCommands {
         const context = await createNativeContext(botConfig, fassetConfig);
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
+        logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new PoolUserBotCommands(context, fAssetSymbol, nativeAddress);
     }
 

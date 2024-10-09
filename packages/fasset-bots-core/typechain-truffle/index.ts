@@ -8,24 +8,19 @@ import { IMerkleRootStorageContract } from "./IMerkleRootStorage";
 import { IStateConnectorContract } from "./IStateConnector";
 import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
+import { IERC1822ProxiableContract } from "./IERC1822Proxiable";
+import { IERC1967Contract } from "./IERC1967";
+import { IBeaconContract } from "./IBeacon";
+import { ERC1967UpgradeContract } from "./ERC1967Upgrade";
+import { ProxyContract } from "./Proxy";
 import { ERC20Contract } from "./ERC20";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
 import { IERC20Contract } from "./IERC20";
 import { IERC165Contract } from "./IERC165";
-import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
-import { GovernedFacetContract } from "./GovernedFacet";
-import { DiamondContract } from "./Diamond";
-import { IDiamondContract } from "./IDiamond";
-import { IDiamondCutContract } from "./IDiamondCut";
-import { IDiamondLoupeContract } from "./IDiamondLoupe";
-import { DiamondCutFacetContract } from "./DiamondCutFacet";
-import { DiamondInitContract } from "./DiamondInit";
-import { MockDiamondContract } from "./MockDiamond";
-import { Test1FacetContract } from "./Test1Facet";
-import { Test2FacetContract } from "./Test2Facet";
 import { AgentCollateralFacetContract } from "./AgentCollateralFacet";
 import { AgentInfoFacetContract } from "./AgentInfoFacet";
+import { AgentPingFacetContract } from "./AgentPingFacet";
 import { AgentSettingsFacetContract } from "./AgentSettingsFacet";
 import { AgentVaultAndPoolSupportFacetContract } from "./AgentVaultAndPoolSupportFacet";
 import { AgentVaultManagementFacetContract } from "./AgentVaultManagementFacet";
@@ -34,11 +29,13 @@ import { AssetManagerInitContract } from "./AssetManagerInit";
 import { AvailableAgentsFacetContract } from "./AvailableAgentsFacet";
 import { ChallengesFacetContract } from "./ChallengesFacet";
 import { CollateralTypesFacetContract } from "./CollateralTypesFacet";
+import { EmergencyPauseFacetContract } from "./EmergencyPauseFacet";
 import { LiquidationFacetContract } from "./LiquidationFacet";
 import { MintingFacetContract } from "./MintingFacet";
 import { RedemptionConfirmationsFacetContract } from "./RedemptionConfirmationsFacet";
 import { RedemptionDefaultsFacetContract } from "./RedemptionDefaultsFacet";
 import { RedemptionRequestsFacetContract } from "./RedemptionRequestsFacet";
+import { RedemptionTimeExtensionFacetContract } from "./RedemptionTimeExtensionFacet";
 import { SettingsManagementFacetContract } from "./SettingsManagementFacet";
 import { SettingsReaderFacetContract } from "./SettingsReaderFacet";
 import { SystemStateManagementFacetContract } from "./SystemStateManagementFacet";
@@ -53,13 +50,11 @@ import { CollateralPoolContract } from "./CollateralPool";
 import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
 import { CollateralPoolTokenContract } from "./CollateralPoolToken";
 import { CollateralPoolTokenFactoryContract } from "./CollateralPoolTokenFactory";
-import { FAssetContract } from "./FAsset";
 import { FtsoV1PriceReaderContract } from "./FtsoV1PriceReader";
 import { WhitelistContract } from "./Whitelist";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
 import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
 import { ICollateralPoolTokenFactoryContract } from "./ICollateralPoolTokenFactory";
-import { IFAssetContract } from "./IFAsset";
 import { IIAgentVaultContract } from "./IIAgentVault";
 import { IIAssetManagerContract } from "./IIAssetManager";
 import { IIAssetManagerControllerContract } from "./IIAssetManagerController";
@@ -77,11 +72,30 @@ import { DistributionToDelegatorsContract } from "./DistributionToDelegators";
 import { ERC20MockContract } from "./ERC20Mock";
 import { FakeERC20Contract } from "./FakeERC20";
 import { FakePriceReaderContract } from "./FakePriceReader";
-import { FAssetMockContract } from "./FAssetMock";
 import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
 import { WhitelistMockContract } from "./WhitelistMock";
+import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
+import { GovernedFacetContract } from "./GovernedFacet";
+import { DiamondContract } from "./Diamond";
+import { IDiamondContract } from "./IDiamond";
+import { IDiamondCutContract } from "./IDiamondCut";
+import { IDiamondLoupeContract } from "./IDiamondLoupe";
+import { DiamondCutFacetContract } from "./DiamondCutFacet";
+import { DiamondInitContract } from "./DiamondInit";
+import { MockDiamondContract } from "./MockDiamond";
+import { Test1FacetContract } from "./Test1Facet";
+import { Test2FacetContract } from "./Test2Facet";
+import { CheckPointableContract } from "./CheckPointable";
+import { FAssetContract } from "./FAsset";
+import { FAssetProxyContract } from "./FAssetProxy";
+import { ICheckPointableContract } from "./ICheckPointable";
+import { IIFAssetContract } from "./IIFAsset";
+import { IITransparentProxyContract } from "./IITransparentProxy";
+import { CheckPointableMockContract } from "./CheckPointableMock";
+import { CheckPointHistoryMockContract } from "./CheckPointHistoryMock";
+import { CheckPointsByAddressMockContract } from "./CheckPointsByAddressMock";
 import { AddressUpdatableContract } from "./AddressUpdatable";
 import { GovernedContract } from "./Governed";
 import { GovernedBaseContract } from "./GovernedBase";
@@ -95,11 +109,14 @@ import { SCProofVerifierContract } from "./SCProofVerifier";
 import { ISCProofVerifierContract } from "./ISCProofVerifier";
 import { StateConnectorMockContract } from "./StateConnectorMock";
 import { IAgentOwnerRegistryContract } from "./IAgentOwnerRegistry";
+import { IAgentPingContract } from "./IAgentPing";
 import { IAgentVaultContract } from "./IAgentVault";
 import { IAssetManagerContract } from "./IAssetManager";
 import { IAssetManagerEventsContract } from "./IAssetManagerEvents";
 import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
+import { IFAssetContract } from "./IFAsset";
+import { IRedemptionTimeExtensionContract } from "./IRedemptionTimeExtension";
 import { IWhitelistContract } from "./IWhitelist";
 import { MathUtilsMockContract } from "./MathUtilsMock";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
@@ -127,7 +144,6 @@ import { IGovernanceVotePowerContract } from "./IGovernanceVotePower";
 import { IVPContractEventsContract } from "./IVPContractEvents";
 import { IVPTokenContract } from "./IVPToken";
 import { AddressUpdaterContract } from "./AddressUpdater";
-import { CheckPointableContract } from "./CheckPointable";
 import { DelegatableContract } from "./Delegatable";
 import { DelegationHistoryContract } from "./DelegationHistory";
 import { GovernanceSettingsContract } from "./GovernanceSettings";
@@ -156,24 +172,19 @@ export type * from "./types";
       require(name: "IStateConnector"): IStateConnectorContract;
       require(name: "MockContract"): MockContractContract;
       require(name: "MockInterface"): MockInterfaceContract;
+      require(name: "IERC1822Proxiable"): IERC1822ProxiableContract;
+      require(name: "IERC1967"): IERC1967Contract;
+      require(name: "IBeacon"): IBeaconContract;
+      require(name: "ERC1967Upgrade"): ERC1967UpgradeContract;
+      require(name: "Proxy"): ProxyContract;
       require(name: "ERC20"): ERC20Contract;
       require(name: "IERC20Metadata"): IERC20MetadataContract;
       require(name: "IERC20Permit"): IERC20PermitContract;
       require(name: "IERC20"): IERC20Contract;
       require(name: "IERC165"): IERC165Contract;
-      require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
-      require(name: "GovernedFacet"): GovernedFacetContract;
-      require(name: "Diamond"): DiamondContract;
-      require(name: "IDiamond"): IDiamondContract;
-      require(name: "IDiamondCut"): IDiamondCutContract;
-      require(name: "IDiamondLoupe"): IDiamondLoupeContract;
-      require(name: "DiamondCutFacet"): DiamondCutFacetContract;
-      require(name: "DiamondInit"): DiamondInitContract;
-      require(name: "MockDiamond"): MockDiamondContract;
-      require(name: "Test1Facet"): Test1FacetContract;
-      require(name: "Test2Facet"): Test2FacetContract;
       require(name: "AgentCollateralFacet"): AgentCollateralFacetContract;
       require(name: "AgentInfoFacet"): AgentInfoFacetContract;
+      require(name: "AgentPingFacet"): AgentPingFacetContract;
       require(name: "AgentSettingsFacet"): AgentSettingsFacetContract;
       require(
         name: "AgentVaultAndPoolSupportFacet"
@@ -188,6 +199,7 @@ export type * from "./types";
       require(name: "AvailableAgentsFacet"): AvailableAgentsFacetContract;
       require(name: "ChallengesFacet"): ChallengesFacetContract;
       require(name: "CollateralTypesFacet"): CollateralTypesFacetContract;
+      require(name: "EmergencyPauseFacet"): EmergencyPauseFacetContract;
       require(name: "LiquidationFacet"): LiquidationFacetContract;
       require(name: "MintingFacet"): MintingFacetContract;
       require(
@@ -195,6 +207,9 @@ export type * from "./types";
       ): RedemptionConfirmationsFacetContract;
       require(name: "RedemptionDefaultsFacet"): RedemptionDefaultsFacetContract;
       require(name: "RedemptionRequestsFacet"): RedemptionRequestsFacetContract;
+      require(
+        name: "RedemptionTimeExtensionFacet"
+      ): RedemptionTimeExtensionFacetContract;
       require(name: "SettingsManagementFacet"): SettingsManagementFacetContract;
       require(name: "SettingsReaderFacet"): SettingsReaderFacetContract;
       require(
@@ -215,7 +230,6 @@ export type * from "./types";
       require(
         name: "CollateralPoolTokenFactory"
       ): CollateralPoolTokenFactoryContract;
-      require(name: "FAsset"): FAssetContract;
       require(name: "FtsoV1PriceReader"): FtsoV1PriceReaderContract;
       require(name: "Whitelist"): WhitelistContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
@@ -223,7 +237,6 @@ export type * from "./types";
       require(
         name: "ICollateralPoolTokenFactory"
       ): ICollateralPoolTokenFactoryContract;
-      require(name: "IFAsset"): IFAssetContract;
       require(name: "IIAgentVault"): IIAgentVaultContract;
       require(name: "IIAssetManager"): IIAssetManagerContract;
       require(
@@ -245,11 +258,32 @@ export type * from "./types";
       require(name: "ERC20Mock"): ERC20MockContract;
       require(name: "FakeERC20"): FakeERC20Contract;
       require(name: "FakePriceReader"): FakePriceReaderContract;
-      require(name: "FAssetMock"): FAssetMockContract;
       require(name: "FtsoManagerMock"): FtsoManagerMockContract;
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
       require(name: "WhitelistMock"): WhitelistMockContract;
+      require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
+      require(name: "GovernedFacet"): GovernedFacetContract;
+      require(name: "Diamond"): DiamondContract;
+      require(name: "IDiamond"): IDiamondContract;
+      require(name: "IDiamondCut"): IDiamondCutContract;
+      require(name: "IDiamondLoupe"): IDiamondLoupeContract;
+      require(name: "DiamondCutFacet"): DiamondCutFacetContract;
+      require(name: "DiamondInit"): DiamondInitContract;
+      require(name: "MockDiamond"): MockDiamondContract;
+      require(name: "Test1Facet"): Test1FacetContract;
+      require(name: "Test2Facet"): Test2FacetContract;
+      require(name: "CheckPointable"): CheckPointableContract;
+      require(name: "FAsset"): FAssetContract;
+      require(name: "FAssetProxy"): FAssetProxyContract;
+      require(name: "ICheckPointable"): ICheckPointableContract;
+      require(name: "IIFAsset"): IIFAssetContract;
+      require(name: "IITransparentProxy"): IITransparentProxyContract;
+      require(name: "CheckPointableMock"): CheckPointableMockContract;
+      require(name: "CheckPointHistoryMock"): CheckPointHistoryMockContract;
+      require(
+        name: "CheckPointsByAddressMock"
+      ): CheckPointsByAddressMockContract;
       require(name: "AddressUpdatable"): AddressUpdatableContract;
       require(name: "Governed"): GovernedContract;
       require(name: "GovernedBase"): GovernedBaseContract;
@@ -265,11 +299,16 @@ export type * from "./types";
       require(name: "ISCProofVerifier"): ISCProofVerifierContract;
       require(name: "StateConnectorMock"): StateConnectorMockContract;
       require(name: "IAgentOwnerRegistry"): IAgentOwnerRegistryContract;
+      require(name: "IAgentPing"): IAgentPingContract;
       require(name: "IAgentVault"): IAgentVaultContract;
       require(name: "IAssetManager"): IAssetManagerContract;
       require(name: "IAssetManagerEvents"): IAssetManagerEventsContract;
       require(name: "ICollateralPool"): ICollateralPoolContract;
       require(name: "ICollateralPoolToken"): ICollateralPoolTokenContract;
+      require(name: "IFAsset"): IFAssetContract;
+      require(
+        name: "IRedemptionTimeExtension"
+      ): IRedemptionTimeExtensionContract;
       require(name: "IWhitelist"): IWhitelistContract;
       require(name: "MathUtilsMock"): MathUtilsMockContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
@@ -299,7 +338,6 @@ export type * from "./types";
       require(name: "IVPContractEvents"): IVPContractEventsContract;
       require(name: "IVPToken"): IVPTokenContract;
       require(name: "AddressUpdater"): AddressUpdaterContract;
-      require(name: "CheckPointable"): CheckPointableContract;
       require(name: "Delegatable"): DelegatableContract;
       require(name: "DelegationHistory"): DelegationHistoryContract;
       require(name: "GovernanceSettings"): GovernanceSettingsContract;
@@ -334,6 +372,17 @@ export {
 } from "./IStateConnector";
 export { MockContractContract, MockContractInstance } from "./MockContract";
 export { MockInterfaceContract, MockInterfaceInstance } from "./MockInterface";
+export {
+  IERC1822ProxiableContract,
+  IERC1822ProxiableInstance,
+} from "./IERC1822Proxiable";
+export { IERC1967Contract, IERC1967Instance } from "./IERC1967";
+export { IBeaconContract, IBeaconInstance } from "./IBeacon";
+export {
+  ERC1967UpgradeContract,
+  ERC1967UpgradeInstance,
+} from "./ERC1967Upgrade";
+export { ProxyContract, ProxyInstance } from "./Proxy";
 export { ERC20Contract, ERC20Instance } from "./ERC20";
 export {
   IERC20MetadataContract,
@@ -343,23 +392,6 @@ export { IERC20PermitContract, IERC20PermitInstance } from "./IERC20Permit";
 export { IERC20Contract, IERC20Instance } from "./IERC20";
 export { IERC165Contract, IERC165Instance } from "./IERC165";
 export {
-  DiamondLoupeFacetContract,
-  DiamondLoupeFacetInstance,
-} from "./DiamondLoupeFacet";
-export { GovernedFacetContract, GovernedFacetInstance } from "./GovernedFacet";
-export { DiamondContract, DiamondInstance } from "./Diamond";
-export { IDiamondContract, IDiamondInstance } from "./IDiamond";
-export { IDiamondCutContract, IDiamondCutInstance } from "./IDiamondCut";
-export { IDiamondLoupeContract, IDiamondLoupeInstance } from "./IDiamondLoupe";
-export {
-  DiamondCutFacetContract,
-  DiamondCutFacetInstance,
-} from "./DiamondCutFacet";
-export { DiamondInitContract, DiamondInitInstance } from "./DiamondInit";
-export { MockDiamondContract, MockDiamondInstance } from "./MockDiamond";
-export { Test1FacetContract, Test1FacetInstance } from "./Test1Facet";
-export { Test2FacetContract, Test2FacetInstance } from "./Test2Facet";
-export {
   AgentCollateralFacetContract,
   AgentCollateralFacetInstance,
 } from "./AgentCollateralFacet";
@@ -367,6 +399,10 @@ export {
   AgentInfoFacetContract,
   AgentInfoFacetInstance,
 } from "./AgentInfoFacet";
+export {
+  AgentPingFacetContract,
+  AgentPingFacetInstance,
+} from "./AgentPingFacet";
 export {
   AgentSettingsFacetContract,
   AgentSettingsFacetInstance,
@@ -400,6 +436,10 @@ export {
   CollateralTypesFacetInstance,
 } from "./CollateralTypesFacet";
 export {
+  EmergencyPauseFacetContract,
+  EmergencyPauseFacetInstance,
+} from "./EmergencyPauseFacet";
+export {
   LiquidationFacetContract,
   LiquidationFacetInstance,
 } from "./LiquidationFacet";
@@ -416,6 +456,10 @@ export {
   RedemptionRequestsFacetContract,
   RedemptionRequestsFacetInstance,
 } from "./RedemptionRequestsFacet";
+export {
+  RedemptionTimeExtensionFacetContract,
+  RedemptionTimeExtensionFacetInstance,
+} from "./RedemptionTimeExtensionFacet";
 export {
   SettingsManagementFacetContract,
   SettingsManagementFacetInstance,
@@ -466,7 +510,6 @@ export {
   CollateralPoolTokenFactoryContract,
   CollateralPoolTokenFactoryInstance,
 } from "./CollateralPoolTokenFactory";
-export { FAssetContract, FAssetInstance } from "./FAsset";
 export {
   FtsoV1PriceReaderContract,
   FtsoV1PriceReaderInstance,
@@ -484,7 +527,6 @@ export {
   ICollateralPoolTokenFactoryContract,
   ICollateralPoolTokenFactoryInstance,
 } from "./ICollateralPoolTokenFactory";
-export { IFAssetContract, IFAssetInstance } from "./IFAsset";
 export { IIAgentVaultContract, IIAgentVaultInstance } from "./IIAgentVault";
 export {
   IIAssetManagerContract,
@@ -535,7 +577,6 @@ export {
   FakePriceReaderContract,
   FakePriceReaderInstance,
 } from "./FakePriceReader";
-export { FAssetMockContract, FAssetMockInstance } from "./FAssetMock";
 export {
   FtsoManagerMockContract,
   FtsoManagerMockInstance,
@@ -546,6 +587,50 @@ export {
   FtsoRegistryMockInstance,
 } from "./FtsoRegistryMock";
 export { WhitelistMockContract, WhitelistMockInstance } from "./WhitelistMock";
+export {
+  DiamondLoupeFacetContract,
+  DiamondLoupeFacetInstance,
+} from "./DiamondLoupeFacet";
+export { GovernedFacetContract, GovernedFacetInstance } from "./GovernedFacet";
+export { DiamondContract, DiamondInstance } from "./Diamond";
+export { IDiamondContract, IDiamondInstance } from "./IDiamond";
+export { IDiamondCutContract, IDiamondCutInstance } from "./IDiamondCut";
+export { IDiamondLoupeContract, IDiamondLoupeInstance } from "./IDiamondLoupe";
+export {
+  DiamondCutFacetContract,
+  DiamondCutFacetInstance,
+} from "./DiamondCutFacet";
+export { DiamondInitContract, DiamondInitInstance } from "./DiamondInit";
+export { MockDiamondContract, MockDiamondInstance } from "./MockDiamond";
+export { Test1FacetContract, Test1FacetInstance } from "./Test1Facet";
+export { Test2FacetContract, Test2FacetInstance } from "./Test2Facet";
+export {
+  CheckPointableContract,
+  CheckPointableInstance,
+} from "./CheckPointable";
+export { FAssetContract, FAssetInstance } from "./FAsset";
+export { FAssetProxyContract, FAssetProxyInstance } from "./FAssetProxy";
+export {
+  ICheckPointableContract,
+  ICheckPointableInstance,
+} from "./ICheckPointable";
+export { IIFAssetContract, IIFAssetInstance } from "./IIFAsset";
+export {
+  IITransparentProxyContract,
+  IITransparentProxyInstance,
+} from "./IITransparentProxy";
+export {
+  CheckPointableMockContract,
+  CheckPointableMockInstance,
+} from "./CheckPointableMock";
+export {
+  CheckPointHistoryMockContract,
+  CheckPointHistoryMockInstance,
+} from "./CheckPointHistoryMock";
+export {
+  CheckPointsByAddressMockContract,
+  CheckPointsByAddressMockInstance,
+} from "./CheckPointsByAddressMock";
 export {
   AddressUpdatableContract,
   AddressUpdatableInstance,
@@ -586,6 +671,7 @@ export {
   IAgentOwnerRegistryContract,
   IAgentOwnerRegistryInstance,
 } from "./IAgentOwnerRegistry";
+export { IAgentPingContract, IAgentPingInstance } from "./IAgentPing";
 export { IAgentVaultContract, IAgentVaultInstance } from "./IAgentVault";
 export { IAssetManagerContract, IAssetManagerInstance } from "./IAssetManager";
 export {
@@ -600,6 +686,11 @@ export {
   ICollateralPoolTokenContract,
   ICollateralPoolTokenInstance,
 } from "./ICollateralPoolToken";
+export { IFAssetContract, IFAssetInstance } from "./IFAsset";
+export {
+  IRedemptionTimeExtensionContract,
+  IRedemptionTimeExtensionInstance,
+} from "./IRedemptionTimeExtension";
 export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
 export { MathUtilsMockContract, MathUtilsMockInstance } from "./MathUtilsMock";
 export {
@@ -669,10 +760,6 @@ export {
   AddressUpdaterContract,
   AddressUpdaterInstance,
 } from "./AddressUpdater";
-export {
-  CheckPointableContract,
-  CheckPointableInstance,
-} from "./CheckPointable";
 export { DelegatableContract, DelegatableInstance } from "./Delegatable";
 export {
   DelegationHistoryContract,

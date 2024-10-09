@@ -48,6 +48,7 @@ interface RedeemData {
     lastUnderlyingTimestamp: string;
     executorAddress: string;
     createdAt: string;
+    proofRequest?: { round: number, data: string };
 }
 
 type StateData = MintData | RedeemData;
@@ -99,6 +100,7 @@ export class UserBotCommands {
         }
         // create config
         const botConfig = await createBotConfig("user", secrets, configFile, nativeAddress);
+        /* istanbul ignore next */
         registerCleanup?.(() => closeBotConfig(botConfig));
         // verify fasset config
         const fassetConfig = botConfig.fAssets.get(fAssetSymbol);
@@ -108,6 +110,7 @@ export class UserBotCommands {
         const underlyingAddress = await this.loadUnderlyingAddress(secrets, context, fassetConfig.verificationClient);
         console.error(chalk.cyan("Environment successfully initialized."));
         logger.info(`User ${nativeAddress} successfully finished initializing cli environment.`);
+        logger.info(`Asset manager controller is ${context.assetManagerController.address}, asset manager for ${fAssetSymbol} is ${context.assetManager.address}.`);
         return new UserBotCommands(context, fAssetSymbol, nativeAddress, underlyingAddress, userDataDir);
     }
 
@@ -186,6 +189,7 @@ export class UserBotCommands {
         const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
         if (noWait) {
             console.log(`The minting started and must be executed later by running "user-bot mintExecute ${requestId}".`);
+            /* istanbul ignore next */
             if (executorAddress !== ZERO_ADDRESS) {
                 console.log("The minting can also be executed by the executor. Please pass the executor the state file:");
                 console.log("    " + this.stateFilePath("mint", requestId));
@@ -193,6 +197,7 @@ export class UserBotCommands {
             logger.info(`User ${this.nativeAddress} didn't wait for minting with agent ${agentVault}.`);
             return;
         }
+        /* istanbul ignore next */
         if (executorAddress !== ZERO_ADDRESS) {
             console.log("If the minting fails or is interrupted, it can be executed by the executor. Please pass the executor the state file:");
             console.log("    " + this.stateFilePath("mint", requestId));
@@ -211,8 +216,8 @@ export class UserBotCommands {
             await this.proveAndExecuteSavedMintingNoWait(requestIdOrPath, state);
         } else {
             await this.proveAndExecuteMinting(state.requestId, state.transactionHash, state.paymentAddress);
+            this.deleteState(state, requestIdOrPath);
         }
-        this.deleteState(state, requestIdOrPath);
     }
 
     /**
@@ -236,33 +241,38 @@ export class UserBotCommands {
         logger.info(`User ${this.nativeAddress} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash} for reservation ${collateralReservationId}.`);
     }
 
-    async proveAndExecuteSavedMintingNoWait(requestIdOrPath: BNish | string, state: MintData) {
+    async proveAndExecuteSavedMintingNoWait(requestIdOrPath: BNish | string, state: MintData): Promise<void> {
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         // if proof request has not been submitted yet, submit (when transction is finalized)
         if (state.proofRequest == null) {
             logger.info(`User ${this.nativeAddress} is checking for transaction ${state.transactionHash} finalization for reservation ${state.requestId}.`);
+            // check if finalized
             const transactionFinalized = await minter.isTransactionFinalized(state.transactionHash);
             if (!transactionFinalized) {
                 throw new CommandLineError(`Transaction ${state.transactionHash} not finalized yet.`, ERR_CANNOT_EXECUTE_YET)
             }
             // submit proof request
-            const request = await minter.requestPaymentProof(state.paymentAddress, state.transactionHash)
-                .catch(e => { throw CommandLineError.replace(e, `Payment proof not available yet.`, ERR_CANNOT_EXECUTE_YET); });
-            logger.info(`User ${this.nativeAddress} has submitted payment proof request in round ${request.round} with data ${request.data} for reservation ${state.requestId}.`);
-            state.proofRequest = request;
-            this.writeState(state, requestIdOrPath);
+            try {
+                const request = await minter.requestPaymentProof(state.paymentAddress, state.transactionHash);
+                logger.info(`User ${this.nativeAddress} has submitted payment proof request in round ${request.round} with data ${request.data} for reservation ${state.requestId}.`);
+                state.proofRequest = request;
+                this.writeState(state, requestIdOrPath);
+            } catch (error) {
+                throw CommandLineError.replace(error, `Payment proof not available yet.`, ERR_CANNOT_EXECUTE_YET);
+            }
         }
         // check if proof is available
         console.log(`User ${this.nativeAddress} is checking for existence of the proof of underlying payment transaction ${state.transactionHash}...`);
         const proof = await minter.obtainPaymentProof(state.proofRequest.round, state.proofRequest.data);
         if (!attestationProved(proof)) {
-            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET)
+            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
         }
         console.log(`Executing payment...`);
         logger.info(`User ${this.nativeAddress} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);
         await minter.executeProvedMinting(state.requestId, proof, ZERO_ADDRESS);
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);
+        this.deleteState(state, requestIdOrPath);
     }
 
     async listMintings(): Promise<void> {
@@ -271,10 +281,15 @@ export class UserBotCommands {
         const settings = await this.context.assetManager.getSettings();
         console.log('Minting requests (id and status):')
         for (const state of stateList) {
-            const stateTs = this.dateStringToTimestamp(state.createdAt);
-            const expired = timestamp - stateTs >= Number(settings.attestationWindowSeconds);
-            console.log(`- ${state.requestId}  ${expired ? MintingStatus.EXPIRED : MintingStatus.PENDING}`);
+            const status = this.mintingStatus(state, timestamp, settings);
+            console.log(`- ${state.requestId}  ${status}`);
         }
+    }
+
+    mintingStatus(state: MintData, timestamp: number, settings: AssetManagerSettings) {
+        const stateTs = this.dateStringToTimestamp(state.createdAt);
+        const expired = timestamp - stateTs >= Number(settings.attestationWindowSeconds);
+        return expired ? MintingStatus.EXPIRED : MintingStatus.PENDING;
     }
 
     /**
@@ -283,7 +298,7 @@ export class UserBotCommands {
      * @param executorAddress
      * @param executorFeeNatWei
      */
-    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
+    async redeem(lots: BNish, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<BN[]> {
         const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
         console.log(`Asking for redemption of ${lots} lots`);
         logger.info(`User ${this.nativeAddress} is asking for redemption of ${lots} lots.`);
@@ -316,21 +331,27 @@ export class UserBotCommands {
             });
             requestFiles.push(this.stateFilePath("redeem", req.requestId));
         }
+        /* istanbul ignore next */
         if (executorAddress !== ZERO_ADDRESS) {
             console.log("In case of redemption non-payment, the default can be triggered by the executor. Please pass the executor the state file(s):");
             requestFiles.forEach(fname => console.log("    " + fname));
         }
         logger.info(loggedRequests);
+        return requests.map(req => toBN(req.requestId));
     }
 
     /**
      * Call redemption default with saved redemption state.
      * @param requestIdOrPath redemption request id or minting state file path
      */
-    async savedRedemptionDefault(requestIdOrPath: BNish | string): Promise<void> {
+    async savedRedemptionDefault(requestIdOrPath: BNish | string, noWait: boolean): Promise<void> {
         const state = this.readState("redeem", requestIdOrPath);
-        await this.redemptionDefault(state.amountUBA, state.paymentReference, state.firstUnderlyingBlock, state.lastUnderlyingBlock, state.lastUnderlyingTimestamp);
-        this.deleteState(state, requestIdOrPath);
+        if (noWait) {
+            await this.redemptionDefaultNoWait(requestIdOrPath, state);
+        } else {
+            await this.redemptionDefault(state.amountUBA, state.paymentReference, state.firstUnderlyingBlock, state.lastUnderlyingBlock, state.lastUnderlyingTimestamp);
+            this.deleteState(state, requestIdOrPath);
+        }
     }
 
     /**
@@ -351,13 +372,103 @@ export class UserBotCommands {
         }
         console.log("Waiting for payment default proof...");
         logger.info(`User ${this.nativeAddress} is waiting for proof of underlying non payment for redemption ${requestId}.`);
-        const proof = await redeemer.obtainNonPaymentProof(this.underlyingAddress, paymentReference, amountUBA,
+        const proof = await redeemer.proveNonPayment(this.underlyingAddress, paymentReference, amountUBA,
             firstUnderlyingBlock, lastUnderlyingBlock, lastUnderlyingTimestamp);
         console.log("Executing payment default...");
         logger.info(`User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
         await redeemer.executePaymentDefault(requestId, proof, ZERO_ADDRESS); // executor must call from own user address
         console.log("Done");
         logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} redemption ${requestId}.`);
+    }
+    /* istanbul ignore next */
+    async redemptionDefaultNoWait(requestIdOrPath: BNish | string, state: RedeemData): Promise<void> {
+        const redeemer = new Redeemer(this.context, this.nativeAddress, this.underlyingAddress);
+        // if proof request has not been submitted yet, submit
+        if (state.proofRequest == null) {
+            logger.info(`User ${this.nativeAddress} is submitting non-payment proof request for redemption ${state.requestId}.`);
+            try {
+                const request = await redeemer.requestNonPaymentProof(this.underlyingAddress, state.paymentReference, state.amountUBA,
+                    state.firstUnderlyingBlock, state.lastUnderlyingBlock, state.lastUnderlyingTimestamp);
+                logger.info(`User ${this.nativeAddress} has submitted non-payment proof request in round ${request.round} with data ${request.data} for redemption ${state.requestId}.`);
+                state.proofRequest = request;
+                this.writeState(state, requestIdOrPath);
+            } catch (error) {
+                throw CommandLineError.replace(error, `Cannot submit non-payment proof for redemption ${state.requestId} - agent probably still has time to pay.`, ERR_CANNOT_EXECUTE_YET);
+            }
+        }
+        // check if proof is available
+        console.log(`User ${this.nativeAddress} is checking for existence of the proof of non-payment for redemption ${state.requestId}...`);
+        const proof = await redeemer.obtainNonPaymentProof(state.proofRequest.round, state.proofRequest.data);
+        if (!attestationProved(proof)) {
+            throw new CommandLineError(`Non-payment proof for redemption ${state.requestId} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
+        }
+        console.log("Executing payment default...");
+        logger.info(`User ${this.nativeAddress} is executing payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} for redemption ${state.requestId}.`);
+        await redeemer.executePaymentDefault(state.requestId, proof, ZERO_ADDRESS); // executor must call from own user address
+        console.log("Done");
+        logger.info(`User ${this.nativeAddress} executed payment default with proof ${JSON.stringify(web3DeepNormalize(proof))} for redemption ${state.requestId}.`);
+        this.deleteState(state, requestIdOrPath);
+    }
+    /* istanbul ignore next */
+    async updateAllMintings() {
+        const list = this.readStateList("mint");
+        const settings = await this.context.assetManager.getSettings();
+        const timestamp = await latestBlockTimestamp();
+        for (const state of list) {
+            console.log(`Checking status of minting ${state.requestId}`);
+            const status = this.mintingStatus(state, timestamp, settings);
+            if (status === MintingStatus.PENDING) {
+                try {
+                    await this.proveAndExecuteSavedMintingNoWait(state.requestId, state);
+                } catch (error) {
+                    if (error instanceof CommandLineError && error.exitCode === ERR_CANNOT_EXECUTE_YET) {
+                        console.log(error.message);
+                    } else {
+                        logger.error(`Execute minting for ${state.requestId} failed:`, error);
+                        console.error(`Execute minting for ${state.requestId} failed: ${error}`);
+                    }
+                }
+            } else if (status === MintingStatus.EXPIRED) {
+                console.log(`Minting ${state.requestId} expired in indexer and will be eventually defaulted by the agent.`);
+                this.deleteState(state);
+            }
+        }
+    }
+    /* istanbul ignore next */
+    async updateAllRedemptions() {
+        const list = this.readStateList("redeem");
+        const settings = await this.context.assetManager.getSettings();
+        const timestamp = await latestBlockTimestamp();
+        let successful = 0;
+        let defaulted = 0;
+        let expired = 0;
+        for (const state of list) {
+            const status = await this.redemptionStatus(state, timestamp, settings);
+            if (status === RedemptionStatus.SUCCESS) {
+                console.log(`Redemption ${state.requestId} finished successfully.`);
+                this.deleteState(state);
+                ++successful;
+            } else if (status === RedemptionStatus.DEFAULT) {
+                console.log(`Redemption ${state.requestId} wasn't paid in time, executing default...`);
+                try {
+                    await this.redemptionDefaultNoWait(state.requestId, state);
+                    ++defaulted;
+                } catch (error) {
+                    if (error instanceof CommandLineError && error.exitCode === ERR_CANNOT_EXECUTE_YET) {
+                        console.log(error.message);
+                    } else {
+                        logger.error(`Redemption default for ${state.requestId} failed:`, error);
+                        console.error(`Redemption default for ${state.requestId} failed: ${error}`);
+                    }
+                }
+            } else if (status === RedemptionStatus.EXPIRED) {
+                console.log(`Redemption ${state.requestId} expired in indexer and will be eventually defaulted by the agent.`);
+                this.deleteState(state);
+                ++expired;
+            }
+        }
+        const remaining = list.length - successful - defaulted - expired;
+        return { total: list.length, successful, defaulted, expired, remaining };
     }
 
     async listRedemptions(): Promise<void> {
@@ -398,12 +509,12 @@ export class UserBotCommands {
         const lastBlock = requireNotNull(await this.context.blockchainIndexer.getBlockAt(blockHeight));
         return blockHeight > Number(state.lastUnderlyingBlock) && lastBlock.timestamp > Number(state.lastUnderlyingTimestamp);
     }
-
+    /* istanbul ignore next */
     stateFileDir(type: StateData["type"]) {
         const controllerAddress = this.context.assetManagerController.address.slice(2, 10);
         return path.resolve(this.userDataDir, `${controllerAddress}-${this.fAssetSymbol}-${type}`);
     }
-
+    /* istanbul ignore next */
     stateFilePath(type: StateData["type"], requestIdOrPath: BNish | string) {
         if (typeof requestIdOrPath !== "string" || /^\d+$/.test(requestIdOrPath)) {
             return path.resolve(this.stateFileDir(type), `${requestIdOrPath}.json`);
@@ -411,7 +522,7 @@ export class UserBotCommands {
             return path.resolve(requestIdOrPath); // full path passed
         }
     }
-
+    /* istanbul ignore next */
     validateStateFilePath(fullpath: string, type: StateData["type"], requestIdOrPath: BNish | string) {
         if (fs.existsSync(fullpath)) return;
         const typeStr = type === "mint" ? "minting" : "redemption";
@@ -421,21 +532,21 @@ export class UserBotCommands {
             throw new CommandLineError(`Missing ${typeStr} state file ${fullpath}`);
         }
     }
-
+    /* istanbul ignore next */
     writeState(data: StateData, requestIdOrPath?: BNish | string): void {
         const fname = this.stateFilePath(data.type, requestIdOrPath ?? data.requestId);
         const dir = path.dirname(fname);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(fname, JSON.stringify(data, null, 4));
     }
-
+    /* istanbul ignore next */
     readState<T extends StateData["type"]>(type: T, requestIdOrPath: BNish | string): Extract<StateData, { type: T }> {
         const fname = this.stateFilePath(type, requestIdOrPath);
         this.validateStateFilePath(fname, type, requestIdOrPath);
         const json = fs.readFileSync(fname).toString();
         return JSON.parse(json);
     }
-
+    /* istanbul ignore next */
     readStateList<T extends StateData["type"]>(type: T): Extract<StateData, { type: T }>[] {
         const dir = this.stateFileDir(type);
         if (!fs.existsSync(dir)) {
@@ -450,7 +561,7 @@ export class UserBotCommands {
                 return JSON.parse(json);
             });
     }
-
+    /* istanbul ignore next */
     deleteState(data: StateData, requestIdOrPath?: BNish | string): void {
         const fname = this.stateFilePath(data.type, requestIdOrPath ?? data.requestId);
         fs.unlinkSync(fname);

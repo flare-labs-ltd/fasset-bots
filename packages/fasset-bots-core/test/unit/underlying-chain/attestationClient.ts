@@ -1,7 +1,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { Secrets, indexerApiKey } from "../../../src/config";
-import { createAttestationHelper, createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
+import { Secrets, createStateConnectorClient, indexerApiKey, supportedChainId } from "../../../src/config";
+import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../../../src/underlying-chain/BlockchainIndexerHelper";
@@ -22,6 +22,24 @@ const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";
 const finalizationBlocks: number = 6;
+
+async function createAttestationHelper(
+    chainId: ChainId,
+    attestationProviderUrls: string[],
+    scProofVerifierAddress: string,
+    stateConnectorAddress: string,
+    owner: string,
+    indexerUrl: string,
+    indexerApiKey: string,
+): Promise<AttestationHelper> {
+    if (!supportedChainId(chainId)) {
+        throw new Error(`SourceId ${chainId} not supported.`);
+    }
+    const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
+    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
+    return new AttestationHelper(stateConnector, indexer, chainId);
+}
+
 
 // Working tests but skipped from coverage because they take quite some time.
 // Feel free to run them any time separately.
@@ -48,7 +66,7 @@ describe("Attestation client unit tests", () => {
             indexerApiKey(secrets)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = createBlockchainWalletHelper("agent", secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
     });
 
@@ -76,7 +94,7 @@ describe("Attestation client unit tests", () => {
         expect(res1).to.be.equal(AttestationNotProved.NOT_FINALIZED);
         // request payment
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
-        const transaction = await walletHelper.addTransaction(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined);
+        const transaction = await walletHelper.addTransactionAndWaitForItsFinalization(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined);
         await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(transaction);
         let currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
         const finalBlock = currentBlockHeight + finalizationBlocks;

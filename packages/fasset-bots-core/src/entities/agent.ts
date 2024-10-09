@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
-import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
+import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -14,13 +14,16 @@ export class AgentEntity {
     @Property({ length: ADDRESS_LENGTH })
     collateralPoolAddress!: string;
 
+    @Property({ length: ADDRESS_LENGTH, nullable: true, index: true })
+    assetManager?: string;
+
     @Property()
     chainId!: string;
 
     @Property()
     fassetSymbol!: string;
 
-    // This is management address, which is immutable. The actuasl address used in all trabsactions will be the work address,
+    // This is management address, which is immutable. The actual address used in all transactions will be the work address,
     // which is mutable and not recorded in the database. It can be obtained from chain by calling `agentOwnerRegistry.getWorkAddress(ownerAddress)`.
     @Property()
     ownerAddress!: string;
@@ -76,6 +79,9 @@ export class AgentEntity {
     @Property()
     destroyVaultCollateralWithdrawalAllowedAtAmount: string = "";
 
+    @Property({ nullable: true })
+    waitingToEmptyUnderlyingAddressTxId?: number;// number of transaction id in db
+
     // agent exit available list
 
     @Property({ type: BNType })
@@ -115,12 +121,18 @@ export class AgentEntity {
     @Property({ type: BNType, defaultRaw: BN_ZERO.toString() })
     dailyTasksTimestamp: BN = BN_ZERO;
 
-    // not used - here just to keep the non-null contraint from breaking; delete column when we support migrations
+    // not used - here just to keep the former non-null contraint from breaking; delete column when we support migrations
     @Property({ columnType: "varchar(20)", default: "obtainedProof" })
-    dailyProofState!: string;
+    dailyProofState?: string;
 
     @OneToMany(() => AgentUpdateSetting, updateSetting => updateSetting.agent)
     updateSettings = new Collection<AgentUpdateSetting>(this);
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
@@ -169,6 +181,12 @@ export class AgentMinting {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 // For agent, redemption needs to be tracked, so that agent pays it, obtains proof of payment and confirms it.
@@ -211,6 +229,9 @@ export class AgentRedemption {
     // 'PAID' state data
 
     @Property({ nullable: true })
+    txDbId?: number;
+
+    @Property({ nullable: true })
     txHash?: string;
 
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
@@ -220,6 +241,18 @@ export class AgentRedemption {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    @Property({ nullable: true })
+    defaulted?: boolean;
+
+    @Property({ nullable: true })
+    finalState?: AgentRedemptionFinalState;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 @Entity()
@@ -252,6 +285,12 @@ export class Event {
         this.handled = handled;
         this.agent = agent;
     }
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 
@@ -274,7 +313,10 @@ export class AgentUnderlyingPayment {
     // 'PAID' state data
 
     @Property({ nullable: true })
-    txHash!: string;
+    txDbId?: number;
+
+    @Property({ nullable: true })
+    txHash?: string;
 
     // 'REQUESTED_PROOF' or 'REQUESTED_REJECTION_PROOF' state data
 
@@ -283,10 +325,15 @@ export class AgentUnderlyingPayment {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 @Entity()
-@Unique({ properties: ["name", "validAt"] })
 export class AgentUpdateSetting {
     @PrimaryKey({ autoincrement: true })
     id!: number;
@@ -302,6 +349,12 @@ export class AgentUpdateSetting {
 
     @Property({ type: BNType })
     validAt!: BN;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }
 
 @Entity({ tableName: 'price-publisher-state' })

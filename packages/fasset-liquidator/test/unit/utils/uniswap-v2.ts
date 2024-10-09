@@ -197,18 +197,3 @@ export async function swapAndChangeLiquidityToGetReserves(
     await multiswap(router, tokenA, tokenB, swapA, swapB, signer)
     await changeLiquidity(router, pair, tokenA, tokenB, addLiquidityA, addLiquidityB, signer)
 }
-
-export async function changeLiquidityToProduceSlippage(
-    router: IUniswapV2Router,
-    pair: IUniswapV2Pair,
-    tokenA: ERC20Mock,
-    tokenB: ERC20Mock,
-    slippageBips: number,
-    slippageVolume: bigint,
-    signer: Signer
-): Promise<void> {
-    const [oldReserveA, oldReserveB] = await router.getReserves(tokenA, tokenB)
-    const [addedLiquidityA, addedLiquidityB] = calc.addedLiquidityFromSlippage(
-        slippageVolume, slippageBips, oldReserveA, oldReserveB)
-    await changeLiquidity(router, pair, tokenA, tokenB, addedLiquidityA, addedLiquidityB, signer)
-}

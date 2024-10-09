@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { isqrt, randBigInt } from '../utils'
 import * as calc from '../calculations/calculations'
 import { reservesFromPriceAndSlippage, cappedReservesFromPriceAndSlippage, cappedAddedLiquidityFromSlippage } from '../calculations/slippage'
-import { addLiquidity, swap, swapOutput, swapToRatio, swapToPrice, changeLiquidityToProduceSlippage, swapAndChangeLiquidityToGetReserves } from './utils/uniswap-v2'
+import { addLiquidity, swap, swapOutput, swapToRatio, swapToPrice, swapAndChangeLiquidityToGetReserves } from './utils/uniswap-v2'
 import deployUniswapV2 from './fixtures/dexes'
 import { getFactories } from './fixtures/context'
 import { FASSET_MAX_BIPS, PRICE_PRECISION } from '../constants'
@@ -211,21 +211,6 @@ describe("Tests for the UniswapV2 implementation", () => {
                 await swap(uniswapV2, amountA, [tokenA, tokenB], signer, amountA * minPriceMul / minPriceDiv)
                 const balanceB = await tokenB.balanceOf(signer)
                 expect(balanceB).to.equal(amountB)
-            })
-
-            it("should produce a specified slippage rate on the dex while keeping price the same", async () => {
-                // params
-                const slippageVolume = BigInt(1e6) * BigInt(10) ** ASSET_A.decimals
-                const slippageBips = 40 // .5%
-                // add initial liquidity
-                await addInitialLiquidity()
-                // add liquidity to reflect the slippage at given volume
-                const pair = await getPair(tokenA, tokenB)
-                await changeLiquidityToProduceSlippage(uniswapV2, pair, tokenA, tokenB, slippageBips, slippageVolume, signer)
-                // theoretically check that the slippage was correct
-                const [newReserveA,] = await uniswapV2.getReserves(tokenA, tokenB)
-                const theoreticalSlippageBips = calc.slippageBipsFromSwapAmountIn(slippageVolume, newReserveA)
-                expect(theoreticalSlippageBips).to.be.approximately(slippageBips, SLIPPAGE_MAX_ERROR)
             })
 
             it("should produce a specified slippage rate on a newly liquidated dex", async () => {

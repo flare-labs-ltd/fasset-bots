@@ -47,36 +47,39 @@ export async function attestationWindowSeconds(assetManager: IIAssetManagerInsta
     const settings = await assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }
-
+/* istanbul ignore next */
 export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexerHelper): Promise<IBlock> {
     const blockHeight = await blockchainIndexer.getBlockHeight();
     const latestBlock = await blockchainIndexer.getBlockAt(blockHeight);
     return requireNotNull(latestBlock, "Block at block height does not exist");
 }
 
-export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<boolean> {
-    const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
-    const senderBalance = await balanceReader.balance(sourceUnderlyingAddress);
-    const transactionFee = await context.wallet.getTransactionFee();
-    const requiredBalance = requiredAddressBalance(amount, context.chainInfo.minimumAccountBalance, transactionFee);
-    if (senderBalance.gte(requiredBalance)) {
-        return true;
-    }  else {
-        logger.error(`Cannot performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.
-        Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}`);
-        return false;
-    }
-}
-
 export function requiredAddressBalance(amount: BNish, minimumBalance: BN, transactionFee: BN) {
     return toBN(amount).add(minimumBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
 }
 
-export async function emptyUnderlyingFunds(context: IAssetAgentContext, sourceUnderlyingAddress: string): Promise<BN> {
+export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress: string): Promise<void> {
     const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
-    const senderBalance = await balanceReader.balance(sourceUnderlyingAddress);
-    const transactionFee = await context.wallet.getTransactionFee();
-    const minimumBalance = context.chainInfo.minimumAccountBalance
-    const emptyBalance = toBN(senderBalance).sub(minimumBalance).sub(transactionFee.muln(TRANSACTION_FEE_FACTOR));
-    return emptyBalance;
+    const senderBalance = await balanceReader.balance(sourceAddress);
+    const transactionFee = await context.wallet.getTransactionFee({source: sourceAddress, destination: destinationAddress, amount: toBN(amount), isPayment: true});
+    const minAccountBalance = context.chainInfo.minimumAccountBalance;
+    const requiredBalance = requiredAddressBalance(amount, minAccountBalance, transactionFee);
+    if (!senderBalance.gte(requiredBalance)) {
+        const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
+        logger.error(`Cannot perform underlying payment from ${sourceAddress}${destinationInfo}.
+        Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
+        throw new Error(`Not enough funds on underlying address ${sourceAddress}. Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
+    }
+}
+
+export async function checkEvmNativeFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress?: string): Promise<void> {
+    const balanceReader = await TokenBalances.evmNative(context);
+    const senderBalance = await balanceReader.balance(sourceAddress);
+    const requiredBalance = toBN(amount);
+    if (!senderBalance.gte(requiredBalance)) {
+        const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
+        logger.error(`Cannot perform evm native payment from ${sourceAddress}${destinationInfo}
+        Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
+        throw new Error(`Not enough funds on evm native address ${sourceAddress}`);
+    }
 }

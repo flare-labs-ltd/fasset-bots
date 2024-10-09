@@ -13,7 +13,8 @@
     "./typechain-truffle/**/*",
     "./test/**/*",
     "./test-hardhat/**/*",
-    "./hardhat.config.ts"
+    "./hardhat.config.ts",
+    "../simple-wallet/src/@types",
   ],
   "references": [
     {

@@ -1,7 +1,10 @@
-import { StuckTransaction, WALLET } from "@flarelabs/simple-wallet";
+import { FeeServiceConfig, StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet";
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
+import { DBWalletKeys } from "../underlying-chain/WalletKeys";
+import { EntityManager } from "@mikro-orm/core";
+import { WalletApi, FeeServiceOptions } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 const supportedSourceIds = [ChainId.XRP, ChainId.BTC, ChainId.DOGE, ChainId.testXRP, ChainId.testBTC, ChainId.testDOGE];
 
@@ -22,39 +25,64 @@ export function supportedChainId(chainId: ChainId) {
  * @param inTestnet if testnet should be used, optional parameter
  * @returns instance of Wallet implementation according to sourceId
  */
-export function createWalletClient(
+export async function createWalletClient(
     secrets: Secrets,
     chainId: ChainId,
     walletUrl: string,
-    options: StuckTransaction = {}
-): WALLET.ALGO | WALLET.BTC | WALLET.DOGE | WALLET.LTC | WALLET.XRP {
+    em: EntityManager,
+    options: StuckTransaction = {},
+    feeServiceOptions?: FeeServiceOptions,
+    fallbackApis?: WalletApi[],
+): Promise<WalletClient> {
     requireSupportedChainId(chainId);
+    const walletKeys = DBWalletKeys.from(em, secrets);
+
+    const fallbacks = fallbackApis?.map((api: WalletApi, i: number) => ({
+        apiTokenKey: secrets.optional(`apiKey.${chainId.chainName}_rpc_${i + 1}`),
+        url: api.url,
+    }));
+
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        return new WALLET.BTC({
+        return await WALLET.BTC.initialize({
             url: walletUrl,
-            username: "",
-            password: "",
-            inTestnet: chainId === ChainId.testBTC ? true : false,
+            inTestnet: chainId === ChainId.testBTC,
             apiTokenKey: secrets.optional("apiKey.btc_rpc"),
             stuckTransactionOptions: options,
+            em,
+            walletKeys,
+            feeServiceConfig: {
+                indexerUrl: walletUrl,
+                rateLimitOptions: feeServiceOptions?.rateLimitOptions,
+                numberOfBlocksInHistory: feeServiceOptions?.numberOfBlocksInHistory,
+                sleepTimeMs: feeServiceOptions?.sleepTimeMs,
+            } as FeeServiceConfig,
+            fallbackAPIs: fallbacks,
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        return new WALLET.DOGE({
+        return await WALLET.DOGE.initialize({
             url: walletUrl,
-            username: "",
-            password: "",
-            inTestnet: chainId === ChainId.testDOGE ? true : false,
+            inTestnet: chainId === ChainId.testDOGE,
             apiTokenKey: secrets.optional("apiKey.doge_rpc"),
             stuckTransactionOptions: options,
+            em,
+            walletKeys,
+            feeServiceConfig: {
+                indexerUrl: walletUrl,
+                rateLimitOptions: feeServiceOptions?.rateLimitOptions,
+                numberOfBlocksInHistory: feeServiceOptions?.numberOfBlocksInHistory,
+                sleepTimeMs: feeServiceOptions?.sleepTimeMs,
+            } as FeeServiceConfig,
+            fallbackAPIs: fallbacks,
         }); // UtxoMccCreate
     } else {
-        return new WALLET.XRP({
+        return await WALLET.XRP.initialize({
             url: walletUrl,
-            username: "",
-            password: "",
             apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
-            inTestnet: chainId === ChainId.testXRP ? true : false,
+            inTestnet: chainId === ChainId.testXRP,
             stuckTransactionOptions: options,
+            em,
+            walletKeys,
+            fallbackAPIs: fallbacks,
         }); // XrpMccCreate
     }
 }

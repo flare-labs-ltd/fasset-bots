@@ -10,6 +10,14 @@ describe("Formatting unit tests", () => {
         const event2 = { address: "address", event: "event", args: { first: obj } };
         expect(formattingMethods.formatArgs(event1.args)).to.eq('{"first":"[0, 1, null]"}');
         expect(formattingMethods.formatArgs(event2.args)).to.eq('{"first":"{ second: [0, 1, null] }"}');
-        expect(formattingMethods.formatArgs(null)).to.be.null;
+        expect(formattingMethods.formatArgs(null)).to.eq("null");
+    });
+
+    it("Should format timestamp", async () => {
+        expect(formattingMethods.formatTimestamp(toBN(100))).to.be.a('string');
+    });
+
+    it("Should fixed format", async () => {
+        expect(formattingMethods.formatFixed(toBN(100), 0)).to.be.a('string');
     });
 });

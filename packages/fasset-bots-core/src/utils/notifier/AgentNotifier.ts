@@ -1,4 +1,4 @@
-import { FormattedString } from "../formatting";
+import { FormattedString, squashSpace } from "../formatting";
 import { BNish, HOURS } from "../helpers";
 import { BaseNotifier, BotType, NotifierTransport } from "./BaseNotifier";
 import { NotifierThrottlingConfigs } from "./NotifierTransports";
@@ -38,6 +38,7 @@ export enum AgentNotificationKey {
     REDEMPTION_CONFLICTING_ADDRESS_VALIDITY_PROOF_OBTAINED = "CONFLICTING ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION",
     REDEMPTION_STARTED = "REDEMPTION STARTED",
     REDEMPTION_PAID = "REDEMPTION PAID",
+    REDEMPTION_PAYMENT_FAILED = "REDEMPTION PAYMENT FAILED",
     REDEMPTION_PAYMENT_PROOF = "REDEMPTION PAYMENT PROOF REQUESTED",
     // collateral
     AGENT_COLLATERAL_TOP_UP = "AGENT'S COLLATERAL TOP UP",
@@ -51,14 +52,15 @@ export enum AgentNotificationKey {
     // underlying
     LOW_AGENT_FREE_UNDERLYING_BALANCE = "LOW FREE UNDERLYING BALANCE",
     LOW_OWNERS_NATIVE_BALANCE = "LOW BALANCE IN OWNER'S ADDRESS",
+    CRITICALLY_LOW_OWNERS_NATIVE_BALANCE = "CRITICALLY LOW BALANCE IN OWNER'S ADDRESS",
     LOW_OWNERS_UNDERLYING_BALANCE = "LOW BALANCE IN OWNER'S UNDERLYING ADDRESS",
-    CONFIRM_WITHDRAW_UNDERLYING = "CONFIRM UNDERLYING WITHDRAWAL",
+    CONFIRM_UNDERLYING = "CONFIRM UNDERLYING PAYMENT",
     CANCEL_WITHDRAW_UNDERLYING = "CANCEL UNDERLYING WITHDRAWAL ANNOUNCEMENT",
     ACTIVE_WITHDRAWAL = "ACTIVE WITHDRAWAL",
     NO_ACTIVE_WITHDRAWAL = "NO ACTIVE WITHDRAWAL",
     WITHDRAW_UNDERLYING = "UNDERLYING WITHDRAWAL",
     UNDERLYING_PAYMENT_PAID = "UNDERLYING PAYMENT",
-    UNDERLYING_PAYMENT_PROOF = " UNDERLYING PAYMENT PROOF REQUESTED",
+    UNDERLYING_PAYMENT_PROOF = "UNDERLYING PAYMENT PROOF REQUESTED",
     UNDERLYING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR UNDERLYING PAYMENT",
     // pool
     BUY_POOL_TOKENS = "BUY POOL TOKENS",
@@ -73,6 +75,10 @@ export enum AgentNotificationKey {
     // other
     DAILY_TASK_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR DAILY TASK",
     UNRESOLVED_EVENT = "EVENT IN DATABASE NOT FOUND ON CHAIN - SKIPPED",
+    AGENT_BEHIND_ON_EVENT_HANDLING = "AGENT BEHIND ON EVENT HANDLING",
+    AGENT_EVENT_HANDLING_CAUGHT_UP = "AGENT EVENT HANDLING CAUGHT UP",
+    AGENT_FUNDED_SERVICE_ACCOUNT = "AGENT FUNDED SERVICE ACCOUNT",
+    AGENT_FAILED_FUNDING_SERVICE_ACCOUNT = "AGENT FAILED FUNDING SERVICE ACCOUNT",
 }
 
 export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
@@ -81,6 +87,8 @@ export const agentNotifierThrottlingTimes: NotifierThrottlingConfigs = {
 };
 
 export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
+    static deepCopyWithObjectCreate = true;
+
     constructor(address: string, transports: NotifierTransport[]) {
         super(BotType.AGENT, address, transports);
     }
@@ -190,6 +198,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has low balance ${balance}.`);
     }
 
+    async sendCriticalLowBalanceOnOwnersAddress(ownerAddress: string, balance: FormattedString) {
+        await this.critical(AgentNotificationKey.CRITICALLY_LOW_OWNERS_NATIVE_BALANCE, `Owner ${ownerAddress} has criticaly low native balance ${balance}.`);
+    }
+
     async sendRedemptionAddressValidationNoProof(requestId: BNish | null, roundId: number, requestData: string, address: string) {
         await this.danger(
             AgentNotificationKey.REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED,
@@ -287,7 +299,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendConfirmWithdrawUnderlying(type: string) {
-        await this.info(AgentNotificationKey.CONFIRM_WITHDRAW_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
+        await this.info(AgentNotificationKey.CONFIRM_UNDERLYING, `Agent's ${this.address} underlying ${type} payment was successfully confirmed.`);
     }
 
     async sendCancelWithdrawUnderlying() {
@@ -365,7 +377,7 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     async sendMintingDefaultFailure(requestId: BNish, roundId: number, requestData: string) {
         await this.danger(
             AgentNotificationKey.MINTING_DEFAULT_FAILED,
-            `Agent ${this.address} could obtain non-payment proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
+            `Agent ${this.address} could not obtain non-payment proof for minting ${requestId} in round ${roundId} with requested data ${requestData}.`
         );
     }
 
@@ -379,7 +391,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendRedemptionPaid(requestId: BNish) {
-        await this.info(AgentNotificationKey.REDEMPTION_PAID, `Redemption ${requestId} was paid for ${this.address}.`);
+        await this.info(AgentNotificationKey.REDEMPTION_PAID, `Redemption payment ${requestId} was initiated for ${this.address}.`);
+    }
+
+    async sendRedemptionPaymentFailed(requestId: BNish) {
+        await this.danger(AgentNotificationKey.REDEMPTION_PAYMENT_FAILED, `Redemption ${requestId} payment failed for ${this.address}. It will not be retried.`);
     }
 
     async sendRedemptionRequestPaymentProof(requestId: BNish) {
@@ -408,8 +424,16 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         );
     }
 
-    async sendAgentUnderlyingPaymentCreated(txHash: string, type: string) {
-        await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txHash}.`);
+    async sendAgentUnderlyingPaymentInitiated(txDbId: number, type: string) {
+        await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} transaction with database id ${txDbId}.`);
+    }
+
+    async sendAgentUnderlyingPaymentCreated(txHashOrTxDbId: string | number, type: string) {
+        if (typeof txHashOrTxDbId == 'string') {
+            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txHashOrTxDbId}.`);
+        } else {
+            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} payment with transaction database id ${txHashOrTxDbId}.`);
+        }
     }
 
     async sendAgentUnderlyingPaymentRequestPaymentProof(txHash: string, type: string) {
@@ -425,5 +449,26 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendSettingsUpdateStarted(settingName: string, validAt: string) {
         await this.info(AgentNotificationKey.AGENT_SETTING_UPDATE, `Agent ${this.address} started setting ${settingName} that is valid at ${validAt}.`);
+    }
+
+    async sendAgentBehindOnEventHandling(blocks: number, days: number) {
+        await this.danger(AgentNotificationKey.AGENT_BEHIND_ON_EVENT_HANDLING,
+            squashSpace`Agent ${this.address} is ${blocks} blocks or ${days.toFixed(2)} days behind in reading events.
+                        Normal operation will continue when all events are processed, which may take some time.`
+        );
+    }
+
+    async sendAgentEventHandlingCaughtUp() {
+        await this.info(AgentNotificationKey.AGENT_EVENT_HANDLING_CAUGHT_UP,
+            `Agent ${this.address} has caught up with latest events. Normal processing will proceed.`
+        );
+    }
+
+    async sendFundedServiceAccount(name: string, account: string) {
+        await this.info(AgentNotificationKey.AGENT_FUNDED_SERVICE_ACCOUNT, `Agent owner has funded service account ${name} (${account})`);
+    }
+
+    async sendFailedFundingServiceAccount(name: string, account: string) {
+        await this.danger(AgentNotificationKey.AGENT_FAILED_FUNDING_SERVICE_ACCOUNT, `Agent owner has failed funding service account ${name} (${account})`);
     }
 }

@@ -1,12 +1,13 @@
 import os from "os";
 import path from "path";
 import Web3 from "web3";
-import { provider } from "web3-core";
+import { provider, TransactionConfig } from "web3-core";
 import { Artifacts } from "../../typechain-truffle";
 import { FilesystemAddressLocks, MemoryAddressLocks } from "./mini-truffle-contracts/address-locks";
 import { createArtifacts } from "./mini-truffle-contracts/artifacts";
 import { ContractSettings } from "./mini-truffle-contracts/types";
 import { resolveInFassetBotsCore } from "./package-paths";
+import { executeMethodSend } from "./mini-truffle-contracts/methods";
 
 const predefinedProviders: Record<string, () => any> = {
     local: () => new Web3.providers.HttpProvider("http://127.0.0.1:8545"),
@@ -59,7 +60,7 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     // for real network, wait 2 extra blocks after nonce increase and use filesystem locks
     contractSettings.waitFor = { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } };
     contractSettings.addressLocks = new FilesystemAddressLocks({
-        lockDir: path.resolve(os.tmpdir(), "fasset/locks"),
+        lockDir: process.env.FASSET_ADDRESS_LOCKS_DIR ?? path.resolve(os.tmpdir(), "fasset/locks"),
         waitTimeoutMS: 180_000,
         lockExpirationMS: 180_000,
     });
@@ -72,6 +73,13 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
 }
 
 let currentProvider: provider;
+
+/**
+ * Send generic transaction (equivalent to `web3.eth.sendTransaction`, but with proper finalization). Useful for transfering native tokens.
+ */
+export async function sendWeb3Transaction(transactionConfig: TransactionConfig, settings?: ContractSettings) {
+    return await executeMethodSend(settings ?? contractSettings, transactionConfig);
+}
 
 export function authenticatedHttpProvider(url: string, apiToken?: string): provider {
     /* istanbul ignore else */

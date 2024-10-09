@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import { IAssetManager, IIAssetManager, AssetManagerSettings } from "fasset/contracts/fasset/interfaces/IIAssetManager.sol";
-import { IIAgentVault } from "fasset/contracts/fasset/interfaces/IIAgentVault.sol";
-import { IPriceReader } from "fasset/contracts/fasset/interfaces/IPriceReader.sol";
+import { IAssetManager, IIAssetManager, AssetManagerSettings } from "fasset/contracts/assetManager/interfaces/IIAssetManager.sol";
+import { IIAgentVault } from "fasset/contracts/assetManager/interfaces/IIAgentVault.sol";
+import { IPriceReader } from "fasset/contracts/assetManager/interfaces/IPriceReader.sol";
 import { AgentInfo } from "fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import { CollateralType } from "fasset/contracts/userInterfaces/data/CollateralType.sol";
 import { UniswapV2 } from './UniswapV2.sol';
@@ -30,26 +30,21 @@ library Ecosystem {
     ) internal view returns (EcosystemData memory _data) {
         // extrapolate data
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
-        AgentInfo.Info memory agentInfo = assetManager.getAgentInfo(address(_agentVault));
-        AssetManagerSettings.Data memory settings = assetManager.getSettings();
         // addresses
         _data.assetManager = address(assetManager);
         _data.agentVault = _agentVault;
         // tokens
-        _data.fAssetToken = settings.fAsset;
-        _data.vaultCT = address(agentInfo.vaultCollateralToken);
+        _data.fAssetToken = address(assetManager.fAsset());
+        _data.vaultCT = address(assetManager.getAgentVaultCollateralToken(address(_agentVault)));
         _data.poolCT = address(assetManager.getWNat());
         // agent
-        _data.agentVaultCollateralWei = agentInfo.totalVaultCollateralWei;
-        _data.agentPoolCollateralWei = agentInfo.totalPoolCollateralNATWei;
-        _data.maxLiquidatedFAssetUBA = agentInfo.maxLiquidationAmountUBA;
-        _data.liquidationFactorVaultBips = agentInfo.liquidationPaymentFactorVaultBIPS;
-        _data.liquidationFactorPoolBips = agentInfo.liquidationPaymentFactorPoolBIPS;
-        _data.assetMintingGranularityUBA = settings.assetMintingGranularityUBA;
-        _data.assetMintingDecimals = settings.assetMintingDecimals;
+        ( _data.liquidationFactorVaultBips, _data.liquidationFactorPoolBips, _data.maxLiquidatedFAssetUBA)
+            = assetManager.getAgentLiquidationFactorsAndMaxAmount(address(_agentVault));
+        _data.assetMintingGranularityUBA = assetManager.assetMintingGranularityUBA();
+        _data.assetMintingDecimals = assetManager.assetMintingDecimals();
         // ftso prices
         (_data.priceFAssetAmgVaultCT, _data.priceFAssetAmgPoolCT)
-            = _getPrices(_data, IPriceReader(settings.priceReader));
+            = _getPrices(_data, IPriceReader(assetManager.priceReader()));
     }
 
     function getDexReserves(

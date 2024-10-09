@@ -1,60 +1,11 @@
-import { priceBasedAddedDexReserves, swapToDexPrice } from "../../../calculations/calculations"
-import { cappedAddedLiquidityFromSlippage, cappedReservesFromPriceAndSlippage } from '../../../calculations/slippage'
-import { addLiquidity, swap, safelyGetReserves, removeLiquidity } from "./wrappers"
-import { logAddedLiquidityForSlippage, logSlippageUnnecessary, logRemovingLiquidityBeforeRetrying, logUnableToProduceSlippage, logCappingDesiredSwapAmount, logSwapping } from "./log-format"
+import { priceBasedAddedDexReserves, relativePriceErrorBips, relativeTokenDexPrice, relativeTokenPrice, swapToDexPrice } from "../../../calculations/calculations"
+import { addLiquidity, swap, safelyGetReserves } from "./wrappers"
+import { logCappingDesiredSwapAmount, logPoolAlreadySynced, logPoolOutOfSync, logSwapping } from "./log-format"
 import type { JsonRpcProvider, Signer } from "ethers"
 import type { IERC20Metadata, IPriceReader, IUniswapV2Router } from "../../../../types"
 
 
-export async function adjustLiquidityForSlippage(
-    uniswapV2: IUniswapV2Router,
-    priceReader: IPriceReader,
-    tokenA: IERC20Metadata,
-    tokenB: IERC20Metadata,
-    symbolA: string,
-    symbolB: string,
-    maxA: bigint,
-    maxB: bigint,
-    amountA: bigint,
-    slippageBips: number,
-    signer: Signer,
-    provider: JsonRpcProvider,
-    recursiveCall = false
-): Promise<void> {
-    const decimalsA = await tokenA.decimals()
-    const decimalsB = await tokenB.decimals()
-    const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
-    let [addedA, addedB]: [bigint, bigint] = [BigInt(0), BigInt(0)]
-    if (reserveA == BigInt(0) || reserveB == BigInt(0)) {
-        const { 0: priceA, 2: ftsoDecimalsA } = await priceReader.getPrice(symbolA)
-        const { 0: priceB, 2: ftsoDecimalsB } = await priceReader.getPrice(symbolB)
-        if (ftsoDecimalsA != BigInt(5) || ftsoDecimalsB != BigInt(5))
-            throw Error("Token price has non-5 ftso decimals")
-            ;[addedA, addedB] = cappedReservesFromPriceAndSlippage(amountA, slippageBips, maxA, maxB, priceA, priceB, decimalsA, decimalsB)
-    } else {
-        [addedA, addedB] = cappedAddedLiquidityFromSlippage(amountA, slippageBips, maxA, maxB, reserveA, reserveB)
-    }
-    if (addedA > 0 && addedA <= maxA && addedB > 0 && addedB <= maxB) {
-        logAddedLiquidityForSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
-        await addLiquidity(uniswapV2, tokenA, tokenB, addedA, addedB, signer, provider)
-    } else if (addedA == BigInt(0) && addedB == BigInt(0)) {
-        logSlippageUnnecessary(slippageBips, amountA, maxA, maxB, symbolA, symbolB, decimalsA, decimalsB)
-    } else if (reserveA > BigInt(0) && reserveB > BigInt(0) && !recursiveCall) {
-        // if anything goes wrong remove all liquidity and try again
-        logRemovingLiquidityBeforeRetrying(symbolA, symbolB)
-        const [removedA, removedB] = await removeLiquidity(uniswapV2, tokenA, tokenB, signer, provider)
-        if (removedA == BigInt(0) && removedB == BigInt(0)) {
-            return logUnableToProduceSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
-        }
-        // try again with reserves changed
-        await adjustLiquidityForSlippage(
-            uniswapV2, priceReader, tokenA, tokenB, symbolA, symbolB,
-            maxA + removedA, maxB + removedB, amountA, slippageBips,
-            signer, provider, true)
-    } else {
-        logUnableToProduceSlippage(addedA, addedB, slippageBips, amountA, symbolA, symbolB, decimalsA, decimalsB)
-    }
-}
+const MAX_RELATIVE_PRICE_ERROR_BIPS = BigInt(300) // 3%
 
 export async function syncDexReservesWithFtsoPrices(
     uniswapV2: IUniswapV2Router,
@@ -70,8 +21,8 @@ export async function syncDexReservesWithFtsoPrices(
     addInitialLiquidity = true
 ): Promise<void> {
     // get ftso prices of all relevant symbols
-    const { 0: priceA, 2: decimalsA } = await priceReader.getPrice(symbolA)
-    const { 0: priceB, 2: decimalsB } = await priceReader.getPrice(symbolB)
+    const { _price: priceA, _priceDecimals: decimalsA } = await priceReader.getPrice(symbolA)
+    const { _price: priceB, _priceDecimals: decimalsB } = await priceReader.getPrice(symbolB)
     if (decimalsA != BigInt(5) || decimalsB != BigInt(5)) throw Error("Token price has non-5 ftso decimals")
     // align f-asset/usdc and wNat/usdc dex prices with the ftso with available balances by swapping
     const [reserveA, reserveB] = await safelyGetReserves(uniswapV2, tokenA, tokenB)
@@ -82,8 +33,16 @@ export async function syncDexReservesWithFtsoPrices(
             maxA, maxB, signer, provider
         )
     } else if (reserveA > BigInt(0) && reserveB > BigInt(0)) {
-        // if there are reserves swap first, then add liquidity
-        await swapDexPairToPrice(uniswapV2, tokenA, tokenB, symbolA, symbolB, priceA, priceB, maxA, maxB, signer, provider)
+        // if there are already reserves, sync prices if necessary
+        const priceOnDex = relativeTokenDexPrice(reserveA, reserveB, decimalsA, decimalsB)
+        const priceOnFtso = relativeTokenPrice(priceA, priceB)
+        const priceError = relativePriceErrorBips(priceOnDex, priceOnFtso)
+        if (priceError > MAX_RELATIVE_PRICE_ERROR_BIPS) {
+            logPoolOutOfSync(symbolA, symbolB, priceError)
+            await swapDexPairToPrice(uniswapV2, tokenA, tokenB, symbolA, symbolB, priceA, priceB, maxA, maxB, signer, provider)
+        } else {
+            logPoolAlreadySynced(symbolA, symbolB, priceError)
+        }
     } else {
         console.error('sync dex reserves: no reserves to sync')
     }
@@ -155,6 +114,6 @@ export async function swapDexPairToPrice(
         logSwapping(swapB, symbolB, symbolA, decimalsB)
         await swap(uniswapV2, tokenB, tokenA, swapB, signer, provider)
     } else {
-        console.error(`pool (${symbolA}, ${symbolB}) is already in sync with ftso prices`)
+        logPoolAlreadySynced(symbolA, symbolB)
     }
 }

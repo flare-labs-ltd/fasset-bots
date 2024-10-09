@@ -1,13 +1,13 @@
 {
     "$schema": "./schema/bot-config.schema.json",
-    "loopDelay": 5000,
+    "loopDelay": 2500,
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
         "chainName": "Coston",
         "tokenSymbol": "CFLR",
-        "finalizationBlocks": 6,
-        "readLogsChunkSize": 10,
+        "finalizationBlocks": 5,
+        "readLogsChunkSize": 30,
         "recommendedOwnerBalance": "10",
         "faucet": "https://faucet.flare.network"
     },
@@ -17,7 +17,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/"
@@ -27,17 +27,29 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FakePriceReader"
+        },
+        "FTestBTC": {
+            "chainId": "testBTC",
+            "tokenName": "Test BTC",
+            "tokenSymbol": "testBTC",
+            "tokenDecimals": 8,
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
+            "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2"
         }
     },
     "agentBotSettings": {
+        "parallel": false,
         "liquidationPreventionFactor": "1.2",
         "vaultCollateralReserveFactor": "0.1",
         "poolCollateralReserveFactor": "0.1",
+        "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901"],
+        "minBalanceOnServiceAccount": "2",
+        "minBalanceOnWorkAccount": "200",
         "fAssets": {
             "FTestXRP": {
                 "recommendedOwnerBalance": "50",
@@ -46,6 +58,10 @@
             "FSimCoinX": {
                 "recommendedOwnerBalance": "50",
                 "minimumFreeUnderlyingBalance": "0.01"
+            },
+            "FTestBTC": {
+                "recommendedOwnerBalance": "2",
+                "minimumFreeUnderlyingBalance": "0.5"
             }
         }
     },
@@ -56,7 +72,11 @@
     "ormOptions": {
         "type": "sqlite",
         "dbName": "fasset-bots-coston.CONTROLLER.db",
-        "allowGlobalContext": true
+        "allowGlobalContext": true,
+        "pool": {
+            "min": 0,
+            "max": 2
+        }
     },
     "liquidationStrategy": {
         "className": "DefaultLiquidationStrategy"

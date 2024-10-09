@@ -3,7 +3,7 @@ import { TokenBalance, TokenBalances } from "../utils";
 import { CurrencyFormatSettings } from "../utils/Currency";
 import { BNish } from "../utils/helpers";
 
-
+/* istanbul ignore next */
 export class LazyTokenBalance {
     constructor(
         public initializer: () => Promise<TokenBalance>
@@ -14,6 +14,11 @@ export class LazyTokenBalance {
     async balance(address: string) {
         this.tokenBalance ??= await this.initializer();
         return await this.tokenBalance.balance(address);
+    }
+
+    async formatBalance(address: string) {
+        this.tokenBalance ??= await this.initializer();
+        return await this.tokenBalance.formatBalance(address);
     }
 
     async parse(amount: string) {
@@ -29,6 +34,16 @@ export class LazyTokenBalance {
     async format(amount: BNish, format?: CurrencyFormatSettings) {
         this.tokenBalance ??= await this.initializer();
         return this.tokenBalance.format(amount, format);
+    }
+
+    async symbol() {
+        this.tokenBalance ??= await this.initializer();
+        return this.tokenBalance.symbol;
+    }
+
+    async decimals() {
+        this.tokenBalance ??= await this.initializer();
+        return this.tokenBalance.decimals;
     }
 }
 

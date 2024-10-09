@@ -1,6 +1,6 @@
-import { AgentBotCommands, AgentEntity, AgentSettingName, AgentUpdateSettingState, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -21,7 +21,6 @@ const IERC20Metadata = artifacts.require("IERC20Metadata");
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
-
 
 @Injectable()
 export class AgentService {
@@ -198,6 +197,9 @@ export class AgentService {
         const collateralTypes = await cli.context.assetManager.getCollateralTypes();
         const collaterals = [];
         for (const collateralType of collateralTypes) {
+            if (Number(collateralType.validUntil) != 0){
+                continue;
+              }
             const symbol = collateralType.tokenFtsoSymbol;
             const token = await IERC20.at(collateralType.token);
             const balance = await token.balanceOf(cli.owner.workAddress);
@@ -218,8 +220,7 @@ export class AgentService {
     async getAgentVaultsInfo(fAssetSymbol: string): Promise<AgentVaultStatus[]> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         // get agent infos
-        const query = cli.orm.em.createQueryBuilder(AgentEntity);
-        const agentVaults = await query.where({ active: true }).getResultList();
+        const agentVaults = await cli.getAllActiveAgents();
 
         const agentInfos: AgentVaultStatus[] = [];
         for (const agent of agentVaults) {
@@ -285,7 +286,7 @@ export class AgentService {
             return;
         }
         */
-        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000))
+        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000), Date.now());
         await this.deleteExpiredAlerts();
         await this.em.persistAndFlush(alert);
     }
@@ -298,16 +299,26 @@ export class AgentService {
         await this.em.flush();
       }
 
-    async getAlerts(): Promise<PostAlert[]> {
+    async getAlerts(): Promise<any[]> {
         const alertRepository = this.em.getRepository(Alert);
         const alerts = (await alertRepository.findAll()) as Alert[];
-        const postAlerts: any[] = alerts.map((alert: any) => JSON.parse(alert.alert));
+        const postAlerts: any[] = alerts.map((alert: Alert) => {
+            return {
+              alert: JSON.parse(alert.alert as any),
+              date: alert.date
+            };
+        });
         return postAlerts;
     }
 
     async getAgentWorkAddress(): Promise<string> {
         const secrets = Secrets.load(FASSET_BOT_SECRETS);
         return secrets.required("owner.native.address");
+    }
+
+    async getAgentManagementAddress(): Promise<string> {
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        return secrets.required("owner.management.address");
     }
 
     async getFassetSymbols(): Promise<string[]> {
@@ -378,6 +389,7 @@ export class AgentService {
             const agentInfo = await this.getAgentInfo(fasset);
             const collateral: AllCollaterals = { fassetSymbol: fasset, collaterals: agentInfo.collaterals };
             collaterals.push(collateral);
+            break;
         }
         return collaterals;
     }
@@ -403,13 +415,13 @@ export class AgentService {
 
     async checkBotStatus(): Promise<boolean> {
         return new Promise((resolve, reject) => {
-            exec("ps -aux", (err, stdout, stderr) => {
+            exec("ps -ef", (err, stdout, stderr) => {
                 if (err) {
                     console.error(`Error executing command: ${err}`);
                     reject('Internal server error');
                 }
                 else{
-                    resolve(stdout.toLowerCase().indexOf("yarn run-agent") > -1);
+                    resolve(stdout.toLowerCase().indexOf("run-agent") > -1);
                 }
             });
         });
@@ -424,12 +436,16 @@ export class AgentService {
     async getVaultCollateralTokens(): Promise<VaultCollaterals[]> {
         const fassets = await this.getFassetSymbols();
         const collaterals: VaultCollaterals[] = [];
+        const botConfig = await AgentBotCommands.createBotConfig(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG);
         for (const fasset of fassets) {
-            const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
+            const cli = await AgentBotCommands.createBotCommands(botConfig, fasset);
             // get collateral data
             const collateralTypes = await cli.context.assetManager.getCollateralTypes();
             const collateralTokens: CollateralTemplate[] = [];
             for (const collateralType of collateralTypes) {
+                if (Number(collateralType.validUntil) != 0){
+                    continue;
+                  }
                 const symbol = collateralType.tokenFtsoSymbol;
                 const collateralClass = collateralType.collateralClass;
                 if (collateralClass == toBN(2)) {
@@ -443,22 +459,50 @@ export class AgentService {
         return collaterals;
     }
 
+
+    async getAgentVaultInfoFull(agentVaultAddress: string, cli: AgentBotCommands): Promise<ExtendedAgentVaultInfo> {
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const collateralToken = await cli.context.assetManager.getCollateralType(2,info.vaultCollateralToken);
+        const agentVaultInfo: any = {};
+        const pool = await CollateralPool.at(info.collateralPool);
+        const poolToken = await IERC20Metadata.at(await pool.poolToken());
+        const tokenSymbol = await poolToken.symbol();
+        for (const key of Object.keys(info)) {
+            if (!isNaN(parseInt(key))) continue;
+            const value = info[key as keyof typeof info];
+            const modified = (typeof value === "boolean") ? value : value.toString();
+            agentVaultInfo[key as keyof typeof info] = modified;
+        }
+        agentVaultInfo.vaultCollateralToken = collateralToken.tokenFtsoSymbol;
+        agentVaultInfo.poolSuffix = tokenSymbol;
+        return agentVaultInfo;
+    }
+
     /*
     *  Get info for all vaults for all fassets.
     */
     async getAgentVaults(): Promise<any> {
         const config = loadConfigFile(FASSET_BOT_CONFIG)
         const allVaults: AllVaults[] = [];
+        function formatCR(bips: BNish) {
+            if (String(bips) === "10000000000") return "<inf>";
+            return formatFixed(toBN(bips), 4);
+        }
         // eslint-disable-next-line guard-for-in
         for (const fasset in config.fAssets) {
             const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
-            const query = cli.orm.em.createQueryBuilder(AgentEntity);
+            const collateralTypes = await cli.context.assetManager.getCollateralTypes();
             // Get agent vaults for fasset from database
-            const agentVaults = await query.where({ fassetSymbol: fasset }).getResultList();
+            const agentVaults = await cli.getActiveAgentsForFAsset();
             if (agentVaults.length == 0){
-                break;
+                continue;
             }
             const settings = await cli.context.assetManager.getSettings();
+            const priceReader = await TokenPriceReader.create(settings);
+            const cflrPrice = await priceReader.getPrice("CFLR", false, settings.maxTrustedPriceAgeSeconds);
+            const priceUSD = cflrPrice.price.mul(toBNExp(1, 18));
+            const prices = [{ symbol: "CFLR", price: priceUSD, decimals: Number(cflrPrice.decimals) }];
+
             const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
             const vaultsForFasset: VaultInfo[] = [];
             // For each vault calculate needed info
@@ -471,16 +515,67 @@ export class AgentService {
                 toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)).gt(BN_ZERO)) {
                     updating = true;
                 }
-                const info = await this.getAgentVaultInfo(fasset, vault.vaultAddress);
+                const info = await this.getAgentVaultInfoFull(vault.vaultAddress, cli);
+                const infoVault = await cli.context.assetManager.getAgentInfo(vault.vaultAddress);
                 const mintedLots = Number(info.mintedUBA) / lotSize;
-                const vaultCR = Number(info.mintingVaultCollateralRatioBIPS) / MAX_BIPS;
-                const poolCR = Number(info.mintingPoolCollateralRatioBIPS) / MAX_BIPS;
+                const vaultCR = formatCR(info.vaultCollateralRatioBIPS);
+                const poolCR = formatCR(info.poolCollateralRatioBIPS);
                 const mintedAmount = Number(info.mintedUBA) / Number(settings.assetUnitUBA);
+                let status = `Healthy`;
+                switch (Number(info.status)) {
+                    case AgentStatus.NORMAL: {
+                        status = `Healthy`;
+                        break;
+                    }
+                    case AgentStatus.CCB: {
+                        status = `CCB`;
+                        break;
+                    }
+                    case AgentStatus.LIQUIDATION: {
+                        status = `Liquidating`;
+                        break;
+                    }
+                    case AgentStatus.FULL_LIQUIDATION: {
+                        status = `Liquidating`;
+                        break;
+                    }
+                    case AgentStatus.DESTROYING: {
+                        status = `Closing`;
+                        break;
+                    }
+                }
+                const collateral : any = collateralTypes.find(item => item.tokenFtsoSymbol === info.vaultCollateralToken);
+                const collateralToken = await IERC20.at(collateral.token);
+
+                //Calculate usd values
+                const vaultCollateralType = await cli.context.assetManager.getCollateralType(CollateralClass.VAULT, infoVault.vaultCollateralToken)
+                const priceVault = await priceReader.getPrice(vaultCollateralType.tokenFtsoSymbol, false, settings.maxTrustedPriceAgeSeconds);
+                const priceVaultUSD = priceVault.price.mul(toBNExp(1, 18));
+                const existingPrice = prices.find(p => p.symbol === vaultCollateralType.tokenFtsoSymbol);
+                let totalVaultCollateralUSD = toBN(0);
+                let totalPoolCollateralUSD = toBN(0);
+                if (existingPrice) {
+                    totalVaultCollateralUSD = toBN(info.totalVaultCollateralWei).mul(existingPrice.price).div(toBNExp(1, Number(vaultCollateralType.decimals) + existingPrice.decimals));
+                    totalPoolCollateralUSD = toBN(info.totalPoolCollateralNATWei).mul(priceUSD).div(toBNExp(1, 18 + Number(cflrPrice.decimals)));
+                } else {
+                    const priceVault = await priceReader.getPrice(vaultCollateralType.tokenFtsoSymbol, false, settings.maxTrustedPriceAgeSeconds);
+                    const priceVaultUSD = priceVault.price.mul(toBNExp(1, 18));
+                    totalVaultCollateralUSD = toBN(info.totalVaultCollateralWei).mul(priceVaultUSD).div(toBNExp(1, Number(vaultCollateralType.decimals) + Number(priceVault.decimals)));
+                    totalPoolCollateralUSD = toBN(info.totalPoolCollateralNATWei).mul(priceUSD).div(toBNExp(1, 18 + Number(cflrPrice.decimals)));
+                    prices.push({ symbol: vaultCollateralType.tokenFtsoSymbol, price: priceVaultUSD, decimals: Number(priceVault.decimals) });
+                }
+                const totalCollateralUSD = formatFixed(totalVaultCollateralUSD.add(totalPoolCollateralUSD), 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+                const feeShare = Number(info.poolFeeShareBIPS) / MAX_BIPS;
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
-                    vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), 6, { decimals: 3, groupDigits: true, groupSeparator: "," }),
+                    vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), Number(await collateralToken.decimals()), { decimals: 3, groupDigits: true, groupSeparator: "," }),
                     poolAmount: formatFixed(toBN(info.totalPoolCollateralNATWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
-                    agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," })};
+                    agentCPTs: formatFixed(toBN(info.totalAgentPoolTokensWei), 18, { decimals: 3, groupDigits: true, groupSeparator: "," }),
+                    collateralToken: info.vaultCollateralToken, health: status,
+                    poolCollateralUSD: totalCollateralUSD,
+                    mintCount: "0",
+                    poolFee: (feeShare * 100).toString()
+                };
                 vaultsForFasset.push(vaultInfo);
             }
             if (vaultsForFasset.length != 0)

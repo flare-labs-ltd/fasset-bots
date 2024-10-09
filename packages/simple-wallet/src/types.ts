@@ -1,4 +1,5 @@
-import { BaseRpcConfig, RippleRpcConfig, AlgoRpcConfig } from "./interfaces/WriteWalletRpcInterface";
-export { WriteWalletRpcInterface as WalletClient } from "./interfaces/WriteWalletRpcInterface";
+import { RippleWalletConfig, BitcoinWalletConfig, DogecoinWalletConfig } from "./interfaces/IWalletTransaction";
+export { WriteWalletInterface as WalletClient } from "./interfaces/IWalletTransaction";
+export { WalletAccountGenerationInterface as WalletAccount } from "./interfaces/IWalletTransaction";
 
-export type WalletCreate = BaseRpcConfig | AlgoRpcConfig | RippleRpcConfig;
+export type WalletCreate = BitcoinWalletConfig | DogecoinWalletConfig | RippleWalletConfig;

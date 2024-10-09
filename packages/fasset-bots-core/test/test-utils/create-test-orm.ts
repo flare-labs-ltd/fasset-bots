@@ -1,16 +1,20 @@
 import { copyFile } from "fs/promises";
 import { CreateOrmOptions, ORM } from "../../src/config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event } from "../../src/entities/agent";
-import { WalletAddress } from "../../src/entities/wallet";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
+import { WalletAddressEntity, UTXOEntity, TransactionEntity, MonitoringStateEntity } from "@flarelabs/simple-wallet";
 
 const testOptions: CreateOrmOptions = {
-    entities: [WalletAddress, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting],
+    entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity, MonitoringStateEntity],
     type: "sqlite",
     dbName: "fasset-bots-test.db",
     debug: false,
     allowGlobalContext: true,
     schemaUpdate: "recreate",
+    pool: {
+        min: 0,
+        max: 2,
+    }
 };
 
 const ormInitOptions: WeakMap<ORM, CreateOrmOptions> = new WeakMap();
@@ -44,5 +48,6 @@ export async function copyORM(orm: ORM) {
     // copy sqlite db file
     const dbName = options.dbName.replace(/\.db$/, `.copy.db`);
     await copyFile(options.dbName, dbName);
+    // if ()
     return await overrideAndCreateOrm({ ...options, dbName, schemaUpdate: "none" }, undefined);
 }

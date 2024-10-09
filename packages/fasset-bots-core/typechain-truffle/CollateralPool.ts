@@ -288,6 +288,45 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  initialize: {
+    (
+      _agentVault: string,
+      _assetManager: string,
+      _fAsset: string,
+      _exitCollateralRatioBIPS: number | BN | string,
+      _topupCollateralRatioBIPS: number | BN | string,
+      _topupTokenPriceFactorBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _assetManager: string,
+      _fAsset: string,
+      _exitCollateralRatioBIPS: number | BN | string,
+      _topupCollateralRatioBIPS: number | BN | string,
+      _topupTokenPriceFactorBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _assetManager: string,
+      _fAsset: string,
+      _exitCollateralRatioBIPS: number | BN | string,
+      _topupCollateralRatioBIPS: number | BN | string,
+      _topupTokenPriceFactorBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _assetManager: string,
+      _fAsset: string,
+      _exitCollateralRatioBIPS: number | BN | string,
+      _topupCollateralRatioBIPS: number | BN | string,
+      _topupTokenPriceFactorBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   optOutOfAirdrop: {
     (_distribution: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -794,6 +833,45 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       _tokenAmountWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    initialize: {
+      (
+        _agentVault: string,
+        _assetManager: string,
+        _fAsset: string,
+        _exitCollateralRatioBIPS: number | BN | string,
+        _topupCollateralRatioBIPS: number | BN | string,
+        _topupTokenPriceFactorBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _assetManager: string,
+        _fAsset: string,
+        _exitCollateralRatioBIPS: number | BN | string,
+        _topupCollateralRatioBIPS: number | BN | string,
+        _topupTokenPriceFactorBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _assetManager: string,
+        _fAsset: string,
+        _exitCollateralRatioBIPS: number | BN | string,
+        _topupCollateralRatioBIPS: number | BN | string,
+        _topupTokenPriceFactorBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _assetManager: string,
+        _fAsset: string,
+        _exitCollateralRatioBIPS: number | BN | string,
+        _topupCollateralRatioBIPS: number | BN | string,
+        _topupTokenPriceFactorBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     optOutOfAirdrop: {
       (_distribution: string, txDetails?: Truffle.TransactionDetails): Promise<

@@ -12,8 +12,13 @@ export class Alert {
     @Property()
     expiration!: number;
 
-    constructor(notification: PostAlert, expiration: number) {
+    @Property({ nullable: true })
+    date: number | null;
+
+    constructor(notification: PostAlert, expiration: number, date: number) {
         this.alert = notification;
         this.expiration = expiration;
+        this.date = date;
     }
+
 }

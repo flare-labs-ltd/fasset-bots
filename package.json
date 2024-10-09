@@ -1,20 +1,17 @@
 {
     "name": "fasset-bots-monorepo",
-    "version": "1.0.0-beta.8",
+    "version": "1.0.0-beta.14",
     "private": true,
     "workspaces": {
         "packages": [
             "packages/*"
         ]
     },
-    "engines": {
-        "node": ">=16.10.0"
-    },
     "scripts": {
         "---------BUILD---SCRIPTS": "",
         "clean": "rimraf -g dist \"packages/*/{dist,coverage,.nyc_output}\" \"packages/fasset-liquidator/{artifacts,cache,types}\"",
         "clean-nm": "rimraf -g node_modules \"packages/*/node_modules\"",
-        "build": "tsc --build",
+        "build": "echo \"Building...\" && tsc --build && echo \"Build successful\"",
         "watch": "tsc --build --watch --incremental",
         "update-references": "utils-typescript-references",
         "---------LINT---SCRIPTS": "",
@@ -23,6 +20,7 @@
         "agent-bot": "node packages/fasset-bots-cli/dist/src/cli/agent-bot.js",
         "user-bot": "node packages/fasset-bots-cli/dist/src/cli/user-bot.js",
         "key-gen": "node packages/fasset-bots-cli/dist/src/cli/key-gen.js",
+        "tokens": "node packages/fasset-bots-cli/dist/src/cli/tokens.js",
         "utils": "node packages/fasset-bots-cli/dist/src/cli/utils.js",
         "test-governance": "node packages/fasset-bots-cli/dist/src/cli/test-governance.js",
         "fake-price-reader": "node packages/fasset-bots-cli/dist/src/cli/fake-price-reader.js",
@@ -32,6 +30,7 @@
         "run-liquidator": "node packages/fasset-bots-cli/dist/src/run/run-liquidator",
         "run-systemKeeper": "node packages/fasset-bots-cli/dist/src/run/run-systemKeeper",
         "run-timekeeper": "node packages/fasset-bots-cli/dist/src/run/run-timekeeper",
+        "run-pinger": "node packages/fasset-bots-cli/dist/src/run/run-pinger",
         "---------API-RUN---SCRIPTS": "",
         "start_agent_api": "cd packages/fasset-bots-api && yarn nest start",
         "start_agent_api_debug": "cd packages/fasset-bots-api && yarn nest start --debug --watch"

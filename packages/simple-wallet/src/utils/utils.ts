@@ -1,58 +1,17 @@
-import safeStringify from "fast-safe-stringify";
-import BN from "bn.js";
-import Web3Utils from "web3-utils";
 import {
-   BTC_LEDGER_CLOSE_TIME_MS,
-   BTC_MAINNET,
-   BTC_TESTNET,
    ChainType,
-   DOGE_LEDGER_CLOSE_TIME_MS,
-   DOGE_MAINNET,
-   DOGE_TESTNET,
-   LOCK_ADDRESS_FACTOR,
-   LTC_LEDGER_CLOSE_TIME_MS,
-   LTC_MAINNET,
-   LTC_TESTNET,
-   XRP_LEDGER_CLOSE_TIME_MS,
+   DEFAULT_FEE_INCREASE,
+   DROPS_PER_XRP,
 } from "./constants";
-import { StuckTransaction } from "../interfaces/WriteWalletRpcInterface";
-
-function MccError(error: any) {
-   try {
-      return new Error(safeStringify(error, undefined, 2, { depthLimit: 2, edgesLimit: 3 }));
-   } catch (thisError) {
-      /* istanbul ignore next */
-      return new Error(`MCC stringify error ${thisError}`);
-   }
-}
+import { StuckTransaction } from "../interfaces/IWalletTransaction";
+import BN from "bn.js";
+import { toBN } from "./bnutils";
+import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
+import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
+import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
-}
-
-export function wallet_utxo_ensure_data(data: any) {
-   if (data.statusText !== "OK") {
-      throw MccError(data);
-   }
-}
-
-export function algo_ensure_data(data: any) {
-   const error_codes = [400, 401, 404, 500, 503];
-   if (error_codes.includes(data.status)) {
-      throw MccError(data);
-   }
-}
-
-export function xrp_ensure_data(data: any) {
-   if (data.result.status === "error") {
-      if (data.result.error === "txnNotFound") {
-         throw MccError(data.status);
-      }
-      if (data.result.error === "lgrNotFound") {
-         throw MccError(data.status);
-      }
-      throw MccError(data);
-   }
 }
 
 export function bytesToHex(a: Iterable<number> | ArrayLike<number>): string {
@@ -62,12 +21,8 @@ export function bytesToHex(a: Iterable<number> | ArrayLike<number>): string {
    }).join("");
 }
 
-export function uint8ArrToString(a: Uint8Array): string {
-   return Buffer.from(a).toString("base64");
-}
-
-export function stringToUint8Arr(data: string): Uint8Array {
-   return new Uint8Array(Buffer.from(data, "base64"));
+export function getRandomInt(min: number, max: number): number {
+   return Math.floor(Math.random() * (max - min)) + min;
 }
 
 export function unPrefix0x(tx: string) {
@@ -78,38 +33,8 @@ export function prefix0x(tx: string) {
    return tx.startsWith("0x") ? tx : "0x" + tx;
 }
 
-export function isValidBytes32Hex(address: string) {
-   return /^0x[0-9a-fA-F]{64}$/i.test(address);
-}
-
-export function isValidHex(address: string) {
-   return /^0x[0-9a-fA-F]+$/i.test(address);
-}
-
-export function requireEnv(name: string) {
-   const value = process.env[name];
-   if (value != null) return value;
-   throw new Error(`Environment value ${name} not defined`);
-}
-
-/**
- * Helper wrapper to convert number to BN
- * @param x number expressed in any reasonable type
- * @returns same number as BN
- */
-export function toBN(x: BN | number | string): BN {
-   if (BN.isBN(x)) return x;
-   return Web3Utils.toBN(x);
-}
-
-/**
- * Helper wrapper to convert BN, BigNumber or plain string to number. May lose precision, so use it for tests only.
- * @param x number expressed in any reasonable type
- * @returns same number as Number
- */
-export function toNumber(x: BN | number | string) {
-   if (typeof x === "number") return x;
-   return Number(x);
+export function isValidHexString(maybeHexString: string) {
+   return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
 }
 
 export function excludeNullFields<T>(dict: Record<string, T>): Record<string, NonNullable<T>> {
@@ -121,80 +46,89 @@ export function excludeNullFields<T>(dict: Record<string, T>): Record<string, No
    return result;
 }
 
-export function getTimeLockForAddress(chainType: ChainType, blockOffset: number, maxRetries: number) {
-   return getAvgBlockTime(chainType) * blockOffset * LOCK_ADDRESS_FACTOR * (maxRetries + 1);
-}
-
-export function getAvgBlockTime(chainType: ChainType): number {
-   switch (chainType) {
-      case ChainType.BTC:
-      case ChainType.testBTC:
-         return BTC_LEDGER_CLOSE_TIME_MS;
-      case ChainType.DOGE:
-      case ChainType.testDOGE:
-         return DOGE_LEDGER_CLOSE_TIME_MS;
-      case ChainType.LTC:
-      case ChainType.testLTC:
-         return LTC_LEDGER_CLOSE_TIME_MS;
-      case ChainType.XRP:
-      case ChainType.testXRP:
-         return XRP_LEDGER_CLOSE_TIME_MS;
-      default:
-         throw new Error(`Constants not defined for chain type ${chainType}`);
-   }
-}
-
 export function stuckTransactionConstants(chainType: ChainType): StuckTransaction {
    switch (chainType) {
       case ChainType.BTC:
       case ChainType.testBTC:
          return {
-            blockOffset: 1,
-            retries: 2,
-            feeIncrease: 3,
-         };
-      case ChainType.LTC:
-      case ChainType.testLTC:
-         return {
-            blockOffset: 3,
-            retries: 1,
-            feeIncrease: 2,
+            blockOffset: 6,//accepted in next x blocks
+            feeIncrease: DEFAULT_FEE_INCREASE,
+            executionBlockOffset: 1,//do not submit if "one block" time left
+            enoughConfirmations: 2
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 3,
-            retries: 1,
-            feeIncrease: 2,
+            blockOffset: 8,//accepted in next x blocks
+            feeIncrease: DEFAULT_FEE_INCREASE,
+            executionBlockOffset: 3,//do not submit if "three blocks" time left
+            enoughConfirmations: 10
          };
       case ChainType.XRP:
       case ChainType.testXRP:
          return {
-            blockOffset: 10,
-            retries: 1,
-            feeIncrease: 2,
-            lastResortFee: 1e6,
+            blockOffset: 6,
+            feeIncrease: DEFAULT_FEE_INCREASE,
+            executionBlockOffset: 2
          };
       default:
          throw new Error(`Constants not defined for chain type ${chainType}`);
    }
 }
 
-export function getCurrentNetwork(chainType: ChainType) {
-   switch (chainType) {
-      case ChainType.BTC:
-         return BTC_MAINNET;
-      case ChainType.testBTC:
-         return BTC_TESTNET;
-      case ChainType.DOGE:
-         return DOGE_MAINNET;
-      case ChainType.testDOGE:
-         return DOGE_TESTNET;
-      case ChainType.LTC:
-         return LTC_MAINNET;
-      case ChainType.testLTC:
-         return LTC_TESTNET;
-      default:
-         throw new Error(`Unsupported chain type ${chainType}`);
+
+export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
+   if (maxFee && fee.gt(maxFee)) {
+      return true;
    }
+   return false;
+}
+
+export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<boolean> {
+   const blockRestrictionMet = !!executeUntilBlock && (currentBlockHeight + client.executionBlockOffset >= executeUntilBlock);
+   // It probably should be following, but due to inconsistent block time on btc, we use currentTime
+   //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)
+   const now = toBN(getCurrentTimestampInSeconds());
+   if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
+       executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
+   }
+   const timeRestrictionMet = !!executeUntilTimestamp && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
+
+   if (executeUntilBlock && !executeUntilTimestamp && blockRestrictionMet) {
+      return false;
+   } else if (!executeUntilBlock && executeUntilTimestamp && timeRestrictionMet) {
+      return false;
+   } else if (blockRestrictionMet && timeRestrictionMet) {
+      return false;
+   }
+   return true;
+}
+
+export function getCurrentTimestampInSeconds() {
+   return Math.floor(Date.now() / 1000);
+}
+
+export function getDateTimestampInSeconds(dateTime: string): number {
+   const date = new Date(dateTime);
+   if (isNaN(date.getTime())) {
+     throw new Error("Invalid date format");
+   }
+   return Math.floor(date.getTime() / 1000);
+ }
+
+ // needed for legacy - at some point we change datetime to timestamp
+ export function convertToTimestamp(dateTimeStr: string): string {
+   const year = parseInt(dateTimeStr.slice(0, 4), 10);
+   const month = parseInt(dateTimeStr.slice(4, 6), 10) - 1;
+   const day = parseInt(dateTimeStr.slice(6, 8), 10);
+   const hours = parseInt(dateTimeStr.slice(8, 10), 10);
+   const minutes = parseInt(dateTimeStr.slice(10, 12), 10);
+   const seconds = parseInt(dateTimeStr.slice(12, 14), 10);
+   const date = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+
+   return Math.floor(date.getTime() / 1000).toString();
+ }
+
+export function roundUpXrpToDrops(amount: number): number {
+   return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
 }

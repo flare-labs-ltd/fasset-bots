@@ -10,6 +10,7 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 export interface CollateralPoolTokenFactoryContract
   extends Truffle.Contract<CollateralPoolTokenFactoryInstance> {
   "new"(
+    _implementation: string,
     meta?: Truffle.TransactionDetails
   ): Promise<CollateralPoolTokenFactoryInstance>;
 }
@@ -45,6 +46,8 @@ export interface CollateralPoolTokenFactoryInstance
     ): Promise<number>;
   };
 
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   supportsInterface(
     _interfaceId: string,
     txDetails?: Truffle.TransactionDetails
@@ -77,6 +80,8 @@ export interface CollateralPoolTokenFactoryInstance
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     supportsInterface(
       _interfaceId: string,

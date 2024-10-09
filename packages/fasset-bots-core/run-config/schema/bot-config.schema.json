@@ -37,10 +37,29 @@
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
                     "type": "string"
                 },
+                "minBalanceOnServiceAccount": {
+                    "description": "Minimum balance needed for gas on request submitter and timekeeper account.",
+                    "type": "string"
+                },
+                "minBalanceOnWorkAccount": {
+                    "description": "Minimum balance needed for gas and other things on agent work account.\nPool collateral topups always leav this amount.",
+                    "type": "string"
+                },
+                "parallel": {
+                    "description": "If true, mintings and various redemption steps will run in parallel.\nWARNING: should not be used with sqlite database.",
+                    "type": "boolean"
+                },
                 "poolCollateralReserveFactor": {
                     "description": "The threshold for NAT on owner's work address, below which alert is triggered.\nRelative to required pool collateral for current minted amount.",
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
                     "type": "string"
+                },
+                "trustedPingSenders": {
+                    "description": "The list of address to whose pings the agent will respond.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
                 },
                 "vaultCollateralReserveFactor": {
                     "description": "The threshold for USDC/WETH/... on owner's work address, below which alert is triggered.\nRelative to required vault collateral for current minted amount.",
@@ -51,7 +70,11 @@
             "required": [
                 "fAssets",
                 "liquidationPreventionFactor",
+                "minBalanceOnServiceAccount",
+                "minBalanceOnWorkAccount",
+                "parallel",
                 "poolCollateralReserveFactor",
+                "trustedPingSenders",
                 "vaultCollateralReserveFactor"
             ],
             "type": "object"
@@ -78,8 +101,17 @@
                 "chainId": {
                     "type": "string"
                 },
+                "fallbackApis": {
+                    "items": {
+                        "$ref": "#/definitions/WalletApi"
+                    },
+                    "type": "array"
+                },
                 "faucet": {
                     "type": "string"
+                },
+                "feeServiceOptions": {
+                    "$ref": "#/definitions/FeeServiceOptions"
                 },
                 "indexerUrl": {
                     "type": "string"
@@ -89,6 +121,9 @@
                 },
                 "priceChangeEmitter": {
                     "type": "string"
+                },
+                "stuckTransactionOptions": {
+                    "$ref": "#/definitions/StuckTransaction"
                 },
                 "tokenDecimals": {
                     "type": "number"
@@ -162,6 +197,25 @@
             ],
             "type": "string"
         },
+        "FeeServiceOptions": {
+            "additionalProperties": false,
+            "properties": {
+                "numberOfBlocksInHistory": {
+                    "type": "number"
+                },
+                "rateLimitOptions": {
+                    "$ref": "#/definitions/RateLimitOptions"
+                },
+                "sleepTimeMs": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "numberOfBlocksInHistory",
+                "sleepTimeMs"
+            ],
+            "type": "object"
+        },
         "OrmConfigOptions": {
             "additionalProperties": {},
             "properties": {
@@ -179,6 +233,21 @@
                 },
                 "host": {
                     "type": "string"
+                },
+                "pool": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "acquireTimeoutMillis": {
+                            "type": "number"
+                        },
+                        "max": {
+                            "type": "number"
+                        },
+                        "min": {
+                            "type": "number"
+                        }
+                    },
+                    "type": "object"
                 },
                 "port": {
                     "type": "number"
@@ -198,6 +267,60 @@
             },
             "required": [
                 "type"
+            ],
+            "type": "object"
+        },
+        "RateLimitOptions": {
+            "additionalProperties": false,
+            "properties": {
+                "maxRPS": {
+                    "type": "number"
+                },
+                "maxRequests": {
+                    "type": "number"
+                },
+                "perMilliseconds": {
+                    "type": "number"
+                },
+                "retries": {
+                    "type": "number"
+                },
+                "timeoutMs": {
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "StuckTransaction": {
+            "additionalProperties": false,
+            "properties": {
+                "blockOffset": {
+                    "type": "number"
+                },
+                "enoughConfirmations": {
+                    "type": "number"
+                },
+                "executionBlockOffset": {
+                    "type": "number"
+                },
+                "feeIncrease": {
+                    "type": "number"
+                },
+                "retries": {
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "WalletApi": {
+            "additionalProperties": false,
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "url"
             ],
             "type": "object"
         }

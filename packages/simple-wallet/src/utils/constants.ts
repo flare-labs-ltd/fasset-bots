@@ -1,6 +1,12 @@
-import { RateLimitOptions } from "../interfaces/WriteWalletRpcInterface";
+import { RateLimitOptions } from "../interfaces/IWalletTransaction";
+import { toBN, toBNExp } from "./bnutils";
 
-export const LOCK_ADDRESS_FACTOR = 1.2;
+export const MNEMONIC_STRENGTH = 256;
+
+export const DEFAULT_FEE_INCREASE = 2;
+
+export const PING_INTERVAL = 10_000; // 10seconds
+export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
 
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
@@ -8,16 +14,12 @@ export const LOCK_ADDRESS_FACTOR = 1.2;
 export enum ChainType {
    // This values are hardcoded versions of `encodeAttestationName("BTC")`, etc.
    // This is to avoid adding dependency to state-connector-protocol just to calculate these values.
-   BTC = "0x4254430000000000000000000000000000000000000000000000000000000000",
-   LTC = "0x4c54430000000000000000000000000000000000000000000000000000000000",
-   DOGE = "0x444f474500000000000000000000000000000000000000000000000000000000",
-   XRP = "0x5852500000000000000000000000000000000000000000000000000000000000",
-   ALGO = "0x414c474f00000000000000000000000000000000000000000000000000000000",
-   testBTC = "0x7465737442544300000000000000000000000000000000000000000000000000",
-   testDOGE = "0x74657374444f4745000000000000000000000000000000000000000000000000",
-   testXRP = "0x7465737458525000000000000000000000000000000000000000000000000000",
-   testALGO = "0x74657374414c474f000000000000000000000000000000000000000000000000",
-   testLTC = "0x746573744c544300000000000000000000000000000000000000000000000000",
+   BTC = "BTC",//"0x4254430000000000000000000000000000000000000000000000000000000000",
+   DOGE = "DOGE",//"0x444f474500000000000000000000000000000000000000000000000000000000",
+   XRP = "XRP",//"0x5852500000000000000000000000000000000000000000000000000000000000",
+   testBTC = "testBTC",//"0x7465737442544300000000000000000000000000000000000000000000000000",
+   testDOGE = "testDOGE",//"0x74657374444f4745000000000000000000000000000000000000000000000000",
+   testXRP = "testXRP"//"0x7465737458525000000000000000000000000000000000000000000000000000",
    // ... make sure IDs are the same as in Flare attestation providers
 }
 
@@ -42,26 +44,6 @@ export const BTC_TESTNET = {
    pubKeyHash: 0x6f,
    scriptHash: 0xc4,
    wif: 0xef,
-   bip32Path: "m/44'/1'/0'",
-};
-
-export const LTC_MAINNET = {
-   messagePrefix: undefined,
-   bech32: "ltc",
-   bip32: { private: 0x0488ade4, public: 0x0488b21e },
-   pubKeyHash: 0x30,
-   scriptHash: 0x05,
-   wif: 0x30 + 128,
-   bip32Path: "m/44'/2'/0'",
-};
-
-export const LTC_TESTNET = {
-   messagePrefix: undefined,
-   bech32: "tltc",
-   bip32: { private: 0x04358394, public: 0x043587cf },
-   pubKeyHash: 0x6f,
-   scriptHash: 0xc4,
-   wif: 0x6f + 128,
    bip32Path: "m/44'/1'/0'",
 };
 
@@ -91,7 +73,7 @@ export const DOGE_TESTNET = {
 export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
    maxRPS: 5,
    maxRequests: 10,
-   timeoutMs: 60000,
+   timeoutMs: 30000,
    retries: 10,
 };
 
@@ -100,9 +82,60 @@ export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
    timeoutMs: 20000,
 };
 
+export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
+   timeoutMs: 1000,
+}
+
 // Approximate times between blocks, in milliseconds
-export const BTC_LEDGER_CLOSE_TIME_MS = 600000;
-export const LTC_LEDGER_CLOSE_TIME_MS = 150000;
-export const DOGE_LEDGER_CLOSE_TIME_MS = 60000;
-export const ALGO_LEDGER_CLOSE_TIME_MS = 5000;
-export const XRP_LEDGER_CLOSE_TIME_MS = 4000;
+export const BTC_LEDGER_CLOSE_TIME_MS = 600_000; // 10min
+export const DOGE_LEDGER_CLOSE_TIME_MS = 60_000; // 60s
+export const XRP_LEDGER_CLOSE_TIME_MS = 4_000; // 4s
+
+// Number of decimal places
+export const BTC_DOGE_DEC_PLACES = 8;
+export const XRP_DECIMAL_PLACES = 6;
+
+// Minimum amount for an output for it not to be considered a dust output
+// https://github.com/dogecoin/dogecoin/blob/a758fa798217ea7c12e08224596dc0ae9c03b2a8/doc/fee-recommendation.md
+export const DOGE_DUST_AMOUNT = toBNExp(0.01, BTC_DOGE_DEC_PLACES); // 0.01 DOGE
+// https://github.com/bitpay/bitcore/blob/fbc6b5b4a42d84a49a403c2fb5f47116074d089a/packages/bitcore-lib/lib/transaction/transaction.js#L66
+export const BTC_DUST_AMOUNT = toBNExp(0.00000546, BTC_DOGE_DEC_PLACES);
+
+// https://xrpl.org/docs/concepts/accounts/deleting-accounts/#requirements
+export const DELETE_ACCOUNT_OFFSET = 256;
+
+// https://bitcoinops.org/en/tools/calc-size/
+export const UTXO_INPUT_SIZE = 134; //148?
+export const UTXO_OUTPUT_SIZE = 34;
+export const UTXO_OVERHEAD_SIZE = 10;
+
+export const UTXO_INPUT_SIZE_SEGWIT = 68.5;
+export const UTXO_OUTPUT_SIZE_SEGWIT = 31;
+export const UTXO_OVERHEAD_SIZE_SEGWIT = 10.5;
+
+// 0.001 BTC aka 100 sats/b https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);
+// 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+export const DOGE_DEFAULT_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
+
+export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.00001000, BTC_DOGE_DEC_PLACES);
+export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES);
+
+export const BTC_MIN_ALLOWED_FEE = toBN(10000); //10000 sats/kb
+export const BTC_MAX_ALLOWED_FEE = toBN(2000000); //2000000 sats/kb
+
+// Derived from https://test.jochen-hoenicke.de/queue/ and https://mempool.space
+export const BTC_LOW_FEE_PER_KB = toBN(10 * 1000); // 10 sat/vB
+export const BTC_MID_FEE_PER_KB = toBN(60 * 1000); // 60 sat/vB
+
+export const TEST_BTC_LOW_FEE_PER_KB = toBN(10 * 1000);
+export const TEST_BTC_MID_FEE_PER_KB = toBN(60 * 1000);
+
+export const DOGE_LOW_FEE_PER_KB = toBN(5000 * 1000);    // 0,05 DOGE/kB
+export const DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);  // 0,5 DOGE/kB
+
+export const TEST_DOGE_LOW_FEE_PER_KB = toBN(5000 * 1000);
+export const TEST_DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);
+
+//////////////////////
+export const DROPS_PER_XRP = 1000000.0;

@@ -10,8 +10,8 @@ import { IBlockChainWallet, TransactionOptionsWithFee } from "../underlying-chai
 import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
-import { checkUnderlyingFunds, emptyUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
-import { BN_ZERO, BNish, expectErrors, toBN } from "../utils/helpers";
+import { checkUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
+import { BNish, expectErrors, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
@@ -27,7 +27,7 @@ export class OwnerAddressPair {
     constructor(
         public managementAddress: string,
         public workAddress: string,
-    ) {}
+    ) { }
 
     toString() {
         return `${this.managementAddress} with work address ${this.workAddress}`;
@@ -44,7 +44,7 @@ export class Agent {
         public collateralPool: CollateralPoolInstance,
         public collateralPoolToken: CollateralPoolTokenInstance,
         public underlyingAddress: string
-    ) {}
+    ) { }
 
     get assetManager(): ContractWithEvents<IIAssetManagerInstance, AllEvents> {
         return this.context.assetManager;
@@ -119,7 +119,7 @@ export class Agent {
         // get vault contract at agent's vault address address
         const agentVault = await AgentVault.at(event.args.agentVault);
         // get collateral pool
-        const collateralPool = await CollateralPool.at(event.args.collateralPool);
+        const collateralPool = await CollateralPool.at(event.args.creationData.collateralPool);
         // get pool token
         const poolTokenAddress = await collateralPool.poolToken();
         const collateralPoolToken = await CollateralPoolToken.at(poolTokenAddress);
@@ -141,10 +141,17 @@ export class Agent {
      * @param amountTokenWei amount to be deposited in wei
      */
     async depositVaultCollateral(amountTokenWei: BNish) {
-        const vaultCollateralTokenAddress = (await this.getVaultCollateral()).token;
-        const vaultCollateralToken = await IERC20.at(vaultCollateralTokenAddress);
-        await vaultCollateralToken.approve(this.vaultAddress, amountTokenWei, { from: this.owner.workAddress });
-        return await this.agentVault.depositCollateral(vaultCollateralTokenAddress, amountTokenWei, { from: this.owner.workAddress });
+        const vaultCollateral = await this.getVaultCollateral();
+        return await this.depositTokensToVault(vaultCollateral.token, amountTokenWei);
+    }
+
+    /**
+     * Deposits any ERC20 tokens to agents vault.
+     */
+    async depositTokensToVault(tokenAddress: string, amountTokenWei: BNish) {
+        const token = await IERC20.at(tokenAddress);
+        await token.approve(this.vaultAddress, amountTokenWei, { from: this.owner.workAddress });
+        return await this.agentVault.depositCollateral(tokenAddress, amountTokenWei, { from: this.owner.workAddress });
     }
 
     /**
@@ -253,6 +260,16 @@ export class Agent {
     }
 
     /**
+     * Initiates underlying top up
+     * @param amount amount to be topped up
+     * @param underlyingAddress source underlying address
+     * @returns transaction id from local database
+     */
+    async initiateTopupPayment(amount: BNish, underlyingAddress: string): Promise<number> {
+        return await this.initiatePayment(this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address), underlyingAddress);
+    }
+
+    /**
      * Confirms underlying top up
      * @param transactionHash transaction hash of top up payment
      */
@@ -308,9 +325,22 @@ export class Agent {
      * @param options instance of TransactionOptionsWithFee
      * @returns transaction hash
      */
-    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
-        await this.enoughUnderlyingFunds(paymentSourceAddress, paymentDestinationAddress, paymentAmount);
-        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
+    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
+        await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
+        return await this.wallet.addTransactionAndWaitForItsFinalization(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp);
+    }
+
+    /**
+     * Initiates underlying payment
+     * @param paymentAddress underlying destination address
+     * @param paymentAmount amount to be transferred
+     * @param paymentReference payment reference
+     * @param options instance of TransactionOptionsWithFee
+     * @returns transaction id from local database
+     */
+    async initiatePayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<number> {
+        await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
+        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp);
     }
 
     /**
@@ -363,33 +393,42 @@ export class Agent {
     }
 
     /**
+     * Calculate the amount of new tokens needed to replace the old tokens in vault.
+     */
+    async calculateVaultCollateralReplacementAmount(token: string) {
+        const oldCollateral = await this.getVaultCollateral();
+        const newCollateral = await this.context.assetManager.getCollateralType(CollateralClass.VAULT, token);
+        const settings = await this.context.assetManager.getSettings();
+        const priceReader = await TokenPriceReader.create(settings);
+        const oldPrice = await priceReader.getPrice(oldCollateral.tokenFtsoSymbol);
+        const newPrice = await priceReader.getPrice(newCollateral.tokenFtsoSymbol);
+        const oldToken = await IERC20.at(oldCollateral.token);
+        const oldBalance = await oldToken.balanceOf(this.vaultAddress);
+        return oldBalance.mul(oldPrice.price).div(newPrice.price);
+    }
+
+    /**
      * Upgrades WNat contract. It swaps old WNat tokens for new ones and sets it for use by the pool.
      */
     async upgradeWNatContract(): Promise<void> {
         await this.assetManager.upgradeWNatContract(this.vaultAddress, { from: this.owner.workAddress });
     }
 
-    async emptyAgentUnderlying(destinationAddress: string): Promise<void> {
-        const amountBN = await emptyUnderlyingFunds(this.context, this.underlyingAddress);
-        if (amountBN.lte(BN_ZERO)) {
-            const logMessage = amountBN.lt(BN_ZERO)
-                ? `Agent ${this.vaultAddress} cannot withdraw all funds from underlying ${this.underlyingAddress}.`
-                : `Agent ${this.vaultAddress} has no underlying funds on underlying ${this.underlyingAddress}.`;
-            logger[amountBN.lt(BN_ZERO) ? 'error' : 'info'](logMessage);
-            return;
+    /**
+     * Initiates underlying payment from agent to owner
+     */
+    async emptyAgentUnderlying(destinationAddress: string): Promise<number> {
+        try {
+            const txDbId = await this.wallet.deleteAccount(this.underlyingAddress, destinationAddress, null);
+            logger.info(`Agent ${this.vaultAddress} initiated withdrawing of all funds on underlying ${this.underlyingAddress} with database id ${txDbId}.`);
+            return txDbId;
+        } catch (error) {
+            logger.error(`Agent ${this.vaultAddress} could not initiated emptying underlying account:`, error);
+            return 0;
         }
-        const txHAsh = await this.wallet.addTransaction(this.underlyingAddress, destinationAddress, amountBN, null);
-        logger.info(`Agent ${this.vaultAddress} withdrew all all funds on underlying ${this.underlyingAddress} with transaction ${txHAsh}.`)
-        return;
     }
 
-    async enoughUnderlyingFunds(sourceUnderlyingAddress: string, destinationUnderlyingAddress: string, amount: BNish): Promise<void> {
-        const enoughFunds = await checkUnderlyingFunds(this.context, sourceUnderlyingAddress, destinationUnderlyingAddress, amount);
-        if (enoughFunds) {
-            return;
-        }  else {
-            logger.error(`Agent ${this.vaultAddress} run into error while performing underlying payment from ${sourceUnderlyingAddress} to ${destinationUnderlyingAddress}.`)
-            throw new Error(`Not enough funds on underlying address ${sourceUnderlyingAddress}`);
-        }
+    async agentPingResponse(query: BNish, response: string) {
+        await this.assetManager.agentPingResponse(this.vaultAddress, query, response, { from: this.owner.workAddress });
     }
 }

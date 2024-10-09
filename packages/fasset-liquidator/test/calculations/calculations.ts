@@ -41,6 +41,12 @@ export function relativeTokenPrice(tokenPriceA: bigint, tokenPriceB: bigint, pre
     return precision * tokenPriceA / tokenPriceB
 }
 
+export function relativePriceErrorBips(price1: bigint, price2: bigint): bigint {
+    const error1 = FASSET_MAX_BIPS - FASSET_MAX_BIPS * price1 / price2
+    const error2 = FASSET_MAX_BIPS - FASSET_MAX_BIPS * price2 / price1
+    return (error1 > error2) ? error1 : error2
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // uniswap v2 formulas
 

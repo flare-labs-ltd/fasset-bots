@@ -1,12 +1,11 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { WalletAddress } from "../entities/wallet";
+import { CommandLineError } from "../utils/command-line-errors";
+import { EncryptionMethod } from "../utils/encryption";
+import { logger } from "../utils/logger";
 import { decryptText, encryptText } from "../utils/encryption";
 import { Secrets } from "../config";
+import { IWalletKeys, WalletAddressEntity } from "@flarelabs/simple-wallet";
 
-export interface IWalletKeys {
-    getKey(address: string): Promise<string | undefined>;
-    addKey(address: string, privateKey: string): Promise<void>;
-}
 
 export class MemoryWalletKeys implements IWalletKeys {
     private keys = new Map<string, string>();
@@ -38,9 +37,9 @@ export class DBWalletKeys implements IWalletKeys {
 
     async getKey(address: string): Promise<string | undefined> {
         if (!this.privateKeyCache.has(address)) {
-            const wa = await this.em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
+            const wa = await this.em.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
             if (wa != null) {
-                const privateKey = decryptText(this.password, wa.encryptedPrivateKey);
+                const privateKey = this.decryptPrivateKey(wa.encryptedPrivateKey);
                 this.privateKeyCache.set(address, privateKey);
             }
         }
@@ -52,9 +51,22 @@ export class DBWalletKeys implements IWalletKeys {
         // set cache
         this.privateKeyCache.set(address, privateKey);
         // persist
-        const wa = new WalletAddress();
+        const wa = new WalletAddressEntity();
         wa.address = address;
-        wa.encryptedPrivateKey = encryptText(this.password, privateKey, true);
+        wa.encryptedPrivateKey = this.encryptPrivateKey(privateKey);
         await this.em.persist(wa).flush();
+    }
+
+    encryptPrivateKey(privateKey: string): string {
+        return encryptText(this.password, privateKey, EncryptionMethod.AES_GCM_SCRYPT_AUTH);
+    }
+
+    decryptPrivateKey(encryptedKey: string) {
+        try {
+            return decryptText(this.password, encryptedKey);
+        } catch (error) {
+            logger.error("Error decrypting database private key - wallet encryption password is most likely incorrect", error);
+            throw new CommandLineError("Error decrypting database private key - wallet encryption password is most likely incorrect");
+        }
     }
 }

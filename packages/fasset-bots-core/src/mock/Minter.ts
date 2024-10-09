@@ -5,10 +5,11 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
 import { requiredEventArgs } from "../utils/events/truffle";
-import { BNish, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
+import { BNish, MAX_BIPS, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
+import { checkEvmNativeFunds, checkUnderlyingFunds } from "../utils/fasset-helpers";
 
 export class Minter {
     static deepCopyWithObjectCreate = true;
@@ -42,16 +43,23 @@ export class Minter {
 
     async reserveCollateral(agent: string, lots: BNish, executorAddress?: string, executorFeeNatWei?: BNish) {
         const agentInfo = await this.assetManager.getAgentInfo(agent);
+        const settings = await this.assetManager.getSettings();
         const crFee = await this.getCollateralReservationFee(lots);
         const executor = executorAddress ? executorAddress : ZERO_ADDRESS;
         const totalNatFee = executor != ZERO_ADDRESS ? crFee.add(toBN(requireNotNull(executorFeeNatWei, "executor fee required if executor used"))) : crFee;
+        // check funds before reserveCollateral
+        await checkEvmNativeFunds(this.context, this.address, totalNatFee);
+        const lotSizeUBA = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const lotAmount =  toBN(lots).mul(lotSizeUBA);
+        const mintPayment = lotAmount.add(lotAmount.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS));
+        await checkUnderlyingFunds(this.context, this.underlyingAddress, mintPayment, agentInfo.underlyingAddressString);
         const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, { from: this.address, value: totalNatFee });
         return requiredEventArgs(res, 'CollateralReserved');
     }
 
     async performMintingPayment(crt: EventArgs<CollateralReserved>): Promise<string> {
         const paymentAmount = crt.valueUBA.add(crt.feeUBA);
-        return this.performPayment(crt.paymentAddress, paymentAmount, crt.paymentReference);
+        return this.performPayment(crt.paymentAddress, paymentAmount, crt.paymentReference, toBN(crt.lastUnderlyingBlock).toNumber(), toBN(crt.lastUnderlyingTimestamp));
     }
 
     async executeMinting(crt: EventArgs<CollateralReserved>, transactionHash: string) {
@@ -91,7 +99,8 @@ export class Minter {
         return await this.assetManager.collateralReservationFee(lots);
     }
 
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null): Promise<string> {
-        return this.wallet.addTransaction(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference);
+    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
+        await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAmount, paymentAddress);
+        return this.wallet.addTransactionAndWaitForItsFinalization(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, undefined, untilBlockNumber, untilBlockTimestamp);
     }
 }

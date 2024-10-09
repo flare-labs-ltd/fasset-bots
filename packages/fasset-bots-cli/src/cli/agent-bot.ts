@@ -2,13 +2,14 @@ import "dotenv/config";
 import "source-map-support/register";
 
 import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
-import { Secrets, loadAgentSettings } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, errorIncluded, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import { Secrets, loadAgentSettings, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
+import { CommandLineError, Currencies, errorIncluded, logger, requireNotNullCmd, squashSpace, toBIPS, toBN } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
 import { validateDecimal, validateInteger } from "../utils/validation";
+import BN from "bn.js";
 
 const program = programWithCommonOptions("agent", "single_fasset");
 
@@ -160,6 +161,21 @@ program
     });
 
 program
+    .command("underlyingTopUp")
+    .description("agent underlying top up")
+    .argument("<agentVaultAddress>")
+    .action(async (agentVault: string) => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        console.warn("Ensure run-agent is running to successfully top up.");
+        const minFreeUnderlyingBalance = cli.agentBotSettings.minimumFreeUnderlyingBalance;
+        if (minFreeUnderlyingBalance) {
+            const { agentBot } = await cli.getAgentBot(agentVault);
+            await agentBot.underlyingManagement.checkUnderlyingBalanceAndTopup(cli.orm.em);
+        }
+    });
+
+program
     .command("withdrawVaultCollateral")
     .description("begin vault collateral withdrawal process from agent's to owner’s address; withdrawal will later be executed automatically by running agent bot")
     .argument("<agentVaultAddress>")
@@ -209,13 +225,20 @@ program
     .command("withdrawPoolFees")
     .description("withdraw pool fees from pool to owner's address")
     .argument("<agentVaultAddress>")
-    .argument("<amount>")
-    .action(async (agentVault: string, amount: string) => {
+    .argument("[amount]", "amount of fassets, default is withdraw all fees")
+    .action(async (agentVault: string, amount?: string) => {
         validateDecimal(amount, "amount", { strictMin: 0 });
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const currency = await Currencies.fasset(cli.context);
-        await cli.withdrawPoolFees(agentVault, currency.parse(amount));
+        let amountUBA: BN;
+        if (amount) {
+            const currency = await Currencies.fasset(cli.context);
+            amountUBA = currency.parse(amount);
+        } else {
+            const { agentBot } = await cli.getAgentBot(agentVault);
+            amountUBA = await agentBot.agent.poolFeeBalance();
+        }
+        await cli.withdrawPoolFees(agentVault, amountUBA);
     });
 
 program
@@ -230,7 +253,7 @@ program
 
 program
     .command("selfClose")
-    .description("self close agent vault with amountUBA of FAssets")
+    .description("self close agent vault with amount of FAssets")
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .action(async (agentVault: string, amount: string) => {
@@ -280,7 +303,7 @@ program
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.listActiveAgents();
+        await cli.listActiveAgents(options.fasset);
     });
 
 program
@@ -356,12 +379,28 @@ program
     .command("switchVaultCollateral")
     .description("switch vault collateral")
     .argument("<agentVaultAddress>")
-    .argument("<token>")
-    .action(async (agentVault: string, token: string) => {
+    .argument("<token>", "token name or address")
+    .option("--deposit", "automatically deposit the amount of new tokens, equivalent to the amount of old tokens in the vault")
+    .action(async (agentVault: string, token: string, cmdOptions: { deposit?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.switchVaultCollateral(agentVault, token);
+        token = getContractByName(options.config, token);
+        if (cmdOptions.deposit) {
+            await cli.depositAndSwitchVaultCollateral(agentVault, token);
+        } else {
+            await cli.switchVaultCollateral(agentVault, token);
+        }
     });
+
+function getContractByName(config: string, nameOrAddress: string) {
+    if (nameOrAddress.startsWith("0x")) {
+        return nameOrAddress;
+    }
+    const configFile = loadConfigFile(config);
+    const contracts = loadContracts(requireNotNullCmd(configFile.contractsJsonFile, "Contracts are required to get contract by name"));
+    const contract = requireNotNullCmd(contracts[nameOrAddress], `Missing contract ${nameOrAddress}`);
+    return contract.address;
+}
 
 program
     .command("upgradeWNat")

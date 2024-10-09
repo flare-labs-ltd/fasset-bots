@@ -1,41 +1,69 @@
-import { AlgoWalletImplementation } from "./chain-clients/AlgoWalletImplementation";
-import { BtcWalletImplementation } from "./chain-clients/BtcWalletImplementation";
-import { DogeWalletImplementation } from "./chain-clients/DogeWalletImplementation";
-import { LtcWalletImplementation } from "./chain-clients/LtcWalletImplementation";
-import { XrpWalletImplementation } from "./chain-clients/XrpWalletImplementation";
-import type { AlgoRpcConfig, BaseRpcConfig } from "./interfaces/WriteWalletRpcInterface";
+import { BtcWalletImplementation } from "./chain-clients/implementations/BtcWalletImplementation";
+import { DogeWalletImplementation } from "./chain-clients/implementations/DogeWalletImplementation";
+import { XrpWalletImplementation } from "./chain-clients/implementations/XrpWalletImplementation";
+import { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
+import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
+import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
+import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/IWalletTransaction";
 
-export type { WalletClient, WalletCreate } from "./types";
-export type { StuckTransaction } from "./interfaces/WriteWalletRpcInterface";
+
+export * from "./entity/transaction";
+export * from "./entity/wallet";
+export * from "./entity/utxo";
+export * from "./entity/monitoring_state";
+export type * from "./types";
+export type { StuckTransaction } from "./interfaces/IWalletTransaction";
+export { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
+export { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
+export { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
+export * from "./interfaces/IWalletTransaction";
+export { logger } from "./utils/logger";
 
 export module WALLET {
+
+   export class XrpAccount extends XrpAccountGeneration {
+      constructor(inTestnet: boolean){
+         super(inTestnet);
+      }
+   }
+   export class BtcAccount extends BtcAccountGeneration {
+      constructor(inTestnet: boolean){
+         super(inTestnet);
+      }
+   }
+
+   export class DogeAccount extends DogeAccountGeneration {
+      constructor(inTestnet: boolean){
+         super(inTestnet);
+      }
+   }
    export class XRP extends XrpWalletImplementation {
-      constructor(options: BaseRpcConfig) {
+      constructor(options: RippleWalletConfig) {
          super(options);
       }
-   }
-
-   export class ALGO extends AlgoWalletImplementation {
-      constructor(options: AlgoRpcConfig) {
-         super(options);
-      }
-   }
-
-   export class LTC extends LtcWalletImplementation {
-      constructor(options: BaseRpcConfig) {
-         super(options);
+      static async initialize(createConfig: RippleWalletConfig) {
+         const wallet = new XrpWalletImplementation(createConfig);
+         return wallet;
       }
    }
 
    export class BTC extends BtcWalletImplementation {
-      constructor(options: BaseRpcConfig) {
+      constructor(options: BitcoinWalletConfig) {
          super(options);
+      }
+      static async initialize(createConfig: BitcoinWalletConfig) {
+         const wallet = new BtcWalletImplementation(createConfig);
+         return wallet;
       }
    }
 
    export class DOGE extends DogeWalletImplementation {
-      constructor(options: BaseRpcConfig) {
+      constructor(options: DogecoinWalletConfig) {
          super(options);
+      }
+      static async initialize(createConfig: DogecoinWalletConfig) {
+         const wallet = new DogeWalletImplementation(createConfig);
+         return wallet;
       }
    }
 }

@@ -8,14 +8,17 @@ import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { ChainInfo, NativeChainInfo } from "../fasset/ChainInfo";
 import { overrideAndCreateOrm } from "../mikro-orm.config";
-import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
-import { DBWalletKeys, MemoryWalletKeys } from "../underlying-chain/WalletKeys";
-import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { DBWalletKeys } from "../underlying-chain/WalletKeys";
+import {
+    FeeServiceOptions,
+    IBlockChainWallet,
+    WalletApi,
+} from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { Currency, RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull, toBNExp } from "../utils";
@@ -25,10 +28,12 @@ import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport
 import { AssetContractRetriever } from "./AssetContractRetriever";
 import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { DatabaseAccount } from "./config-files/SecretsFile";
-import { createWalletClient, requireSupportedChainId, supportedChainId } from "./create-wallet-client";
+import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
+import { AgentBotDbUpgrades } from "../actors/AgentBotDbUpgrades";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
+    secrets: Secrets;
     orm?: ORM; // only for agent bot
     notifiers: NotifierTransport[];
     loopDelay: number;
@@ -53,11 +58,15 @@ export interface BotFAssetConfig {
 }
 
 export interface AgentBotSettings {
+    parallel: boolean;
+    trustedPingSenders: Set<string>;
     liquidationPreventionFactor: number;
     vaultCollateralReserveFactor: number;
     poolCollateralReserveFactor: number;
     recommendedOwnerUnderlyingBalance: BN;
     minimumFreeUnderlyingBalance: BN;
+    minBalanceOnServiceAccount: BN;
+    minBalanceOnWorkAccount: BN;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
@@ -89,10 +98,11 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         const fAssets: Map<string, BotFAssetConfig> = new Map();
         for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
             const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, configFile.agentBotSettings,
-                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
+                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions, fassetInfo.feeServiceOptions, fassetInfo.fallbackApis);
             fAssets.set(symbol, fassetConfig);
         }
-        return {
+        const result: BotConfig = {
+            secrets: secrets,
             loopDelay: configFile.loopDelay,
             fAssets: fAssets,
             nativeChainInfo: createNativeChainInfo(configFile.nativeChainInfo),
@@ -101,7 +111,8 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
-        } as AgentBotConfig;
+        };
+        return result;
     } catch (error) {
         await orm?.close();
         throw error;
@@ -115,7 +126,13 @@ export function createNativeChainInfo(nativeChainInfo: BotNativeChainInfo): Nati
 export async function createBotOrm(type: BotConfigType, ormOptions?: OrmConfigOptions, databaseAccount?: DatabaseAccount) {
     if (type === "agent") {
         assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
-        return await overrideAndCreateOrm(ormOptions, databaseAccount);
+        const orm = await overrideAndCreateOrm(ormOptions, databaseAccount);
+        await AgentBotDbUpgrades.performUpgrades(orm);
+        return orm;
+    } else if (type === "user") {
+        assertNotNullCmd(ormOptions, "Setting 'ormOptions' is required in config");
+        const orm = await overrideAndCreateOrm(ormOptions, databaseAccount);
+        return orm;
     }
 }
 
@@ -134,12 +151,18 @@ export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs:
 
 /**
  * Creates BotFAssetConfig configuration from chain info.
+ * @param type
+ * @param secrets
+ * @param retriever
+ * @param fAssetSymbol
  * @param fassetInfo instance of BotFAssetInfo
+ * @param agentSettings
  * @param em entity manager
  * @param attestationProviderUrls list of attestation provider's urls
- * @param scProofVerifierAddress SCProofVerifier's contract address
- * @param stateConnectorAddress  StateConnector's contract address
  * @param submitter address from which the transactions get submitted
+ * @param walletOptions
+ * @param feeServiceOptions
+ * @param fallbackApis
  * @returns instance of BotFAssetConfig
  */
 export async function createBotFAssetConfig(
@@ -152,7 +175,9 @@ export async function createBotFAssetConfig(
     em: EM | undefined,
     attestationProviderUrls: string[] | undefined,
     submitter: string | undefined,
-    walletOptions?: StuckTransaction
+    walletOptions?: StuckTransaction,
+    feeServiceOptions?: FeeServiceOptions,
+    fallbackApis?: WalletApi[],
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
@@ -165,7 +190,7 @@ export async function createBotFAssetConfig(
     };
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = createBlockchainWalletHelper(type, secrets, chainId, em, fassetInfo.walletUrl, walletOptions);
+        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, walletOptions, feeServiceOptions, fallbackApis);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
@@ -200,12 +225,17 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
 
 function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSettings: AgentBotFassetSettingsJson, chainInfo: ChainInfo): AgentBotSettings {
     const underlying = new Currency(chainInfo.symbol, chainInfo.decimals);
+    const native = new Currency("NAT", 18);
     return {
+        parallel: agentBotSettings.parallel,
+        trustedPingSenders: new Set(agentBotSettings.trustedPingSenders.map(a => a.toLowerCase())),
         liquidationPreventionFactor: Number(agentBotSettings.liquidationPreventionFactor),
         vaultCollateralReserveFactor: Number(agentBotSettings.vaultCollateralReserveFactor),
         poolCollateralReserveFactor: Number(agentBotSettings.poolCollateralReserveFactor),
         minimumFreeUnderlyingBalance: underlying.parse(fassetSettings.minimumFreeUnderlyingBalance),
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
+        minBalanceOnServiceAccount: native.parse(agentBotSettings.minBalanceOnServiceAccount),
+        minBalanceOnWorkAccount: native.parse(agentBotSettings.minBalanceOnWorkAccount),
     }
 }
 
@@ -222,56 +252,34 @@ export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrl: stri
 
 /**
  * Creates blockchain wallet helper using wallet client.
+ * @param secrets
  * @param chainId chain source
  * @param em entity manager (optional)
  * @param walletUrl chain's url
- * @param inTestnet if testnet should be used, optional parameter
+ * @param options
+ * @param feeServiceOptions
+ * @param fallbackApis
  * @returns instance of BlockchainWalletHelper
  */
-export function createBlockchainWalletHelper(
-    type: "agent" | "user",
+export async function createBlockchainWalletHelper(
     secrets: Secrets,
     chainId: ChainId,
-    em: EntityManager | undefined,
+    em: EntityManager,
     walletUrl: string,
-    options?: StuckTransaction
-): BlockchainWalletHelper {
+    options?: StuckTransaction,
+    feeServiceOptions?: FeeServiceOptions,
+    fallbackApis?: WalletApi[],
+): Promise<BlockchainWalletHelper> {
     requireSupportedChainId(chainId);
-    const walletClient = createWalletClient(secrets, chainId, walletUrl, options);
-    const walletKeys = type === "agent" ? DBWalletKeys.from(requireNotNull(em), secrets) : new MemoryWalletKeys();
+    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, options, feeServiceOptions, fallbackApis);
+    const walletKeys = DBWalletKeys.from(requireNotNull(em), secrets);
     return new BlockchainWalletHelper(walletClient, walletKeys);
-}
-
-/**
- * Creates attestation helper.
- * @param chainId chain source
- * @param attestationProviderUrls list of attestation provider's urls
- * @param scProofVerifierAddress SCProofVerifier's contract address
- * @param stateConnectorAddress StateConnector's contract address
- * @param owner native owner address
- * @param indexerUrl indexer's url
- * @returns instance of AttestationHelper
- */
-export async function createAttestationHelper(
-    chainId: ChainId,
-    attestationProviderUrls: string[],
-    scProofVerifierAddress: string,
-    stateConnectorAddress: string,
-    owner: string,
-    indexerUrl: string,
-    indexerApiKey: string,
-): Promise<AttestationHelper> {
-    if (!supportedChainId(chainId)) {
-        throw new Error(`SourceId ${chainId} not supported.`);
-    }
-    const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
-    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
-    return new AttestationHelper(stateConnector, indexer, chainId);
 }
 
 /**
  * Creates state connector client
  * @param indexerWebServerUrl indexer's url
+ * @param indexerApiKey
  * @param attestationProviderUrls list of attestation provider's urls
  * @param scProofVerifierAddress SCProofVerifier's contract address
  * @param stateConnectorAddress StateConnector's contract address

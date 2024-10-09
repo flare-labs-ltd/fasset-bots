@@ -78,7 +78,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionBlock(txHash: string): Promise<IBlockId | null> {
         const block = await retry(this.getTransactionBlockFromIndexer.bind(this), [txHash], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
+        // logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
         return block;
     }
 
@@ -138,7 +138,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getBlockAt(blockNumber: number): Promise<IBlock | null> {
         const block = await retry(this.getBlockAtFromIndexer.bind(this), [blockNumber], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
+        // logger.info(`Block chain indexer helper: retrieved block: ${formatArgs(block)}`);
         return block;
     }
 
@@ -166,8 +166,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlockHeight(): Promise<number> {
-        const blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved block height: ${blockHeight}`);
+        let blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
+        //temporary "hack" as testBTC indexer returns last seen block on chain and not last confirm as other indexers - will be fixed with fdc
+        if (this.chainId.toString() === ChainId.testBTC.toString() || this.chainId.toString() === ChainId.BTC.toString()) {
+            blockHeight = blockHeight - this.finalizationBlocks;
+        }
         return blockHeight;
     }
 
@@ -223,7 +226,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[]> {
         const txs = await retry(this.getTransactionsWithinBlockRangeFromIndexer.bind(this), [from, to], DEFAULT_RETRIES);
-        logger.info(`Block chain indexer helper: retrieved transactions from ${from} to ${to}: ${formatArgs(txs)}`);
+        logger.info(`Block chain indexer helper: retrieved transactions from ${from} to ${to}: ${txs.length}`);
         return txs;
     }
 

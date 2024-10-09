@@ -36,7 +36,8 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         public stateConnector: StateConnectorMockInstance,
         public supportedChains: { [chainId: string]: MockChain },
         public finalizationType: AutoFinalizationType,
-        public useAlwaysFailsProver: boolean = false
+        public account: string | undefined,
+        public useAlwaysFailsProver: boolean = false,
     ) {
     }
 

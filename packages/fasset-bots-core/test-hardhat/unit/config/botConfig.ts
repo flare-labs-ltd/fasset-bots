@@ -1,5 +1,6 @@
-import { expect, use } from "chai";
+import { expect, use, spy } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import spies from "chai-spies";
 import { readFileSync } from "fs";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
@@ -8,10 +9,14 @@ import { AgentSettingsConfig } from "../../../src/config/config-files/AgentSetti
 import { toBIPS } from "../../../src/utils";
 import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
-import { createTestAssetContext, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
+import { createTestAssetContext, createTestSecrets, TestAssetBotContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT } from "../../test-utils/helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgent, createTestAgentBot } from "../../test-utils/helpers";
+import { createBotOrm } from "../../../src/config";
+import { TEST_FASSET_BOT_CONFIG } from "../../../test/test-utils/test-bot-config";
+import { AgentBotDbUpgrades, AgentEntity } from "../../../src";
 use(chaiAsPromised);
+use(spies);
 
 describe("Config unit tests", () => {
     let accounts: string[];
@@ -51,5 +56,14 @@ describe("Config unit tests", () => {
             return loadConfigFile(runConfigFile1);
         };
         expect(fn).to.throw("At least one of contractsJsonFile or assetManagerController must be defined");
+    });
+
+    it("Should perform DB upgrades", async () => {
+        const spyUpgrades = spy.on(AgentBotDbUpgrades, "performUpgrades")
+        const botConfig = loadConfigFile(TEST_FASSET_BOT_CONFIG)
+        const secrets = createTestSecrets([context.chainInfo.chainId], accounts[1], accounts[1], "owner_underlying");
+        const orm = await createBotOrm("agent", botConfig.ormOptions, secrets.data.database);
+        expect(spyUpgrades).to.have.been.called.once;
+        expect(orm).to.not.be.null;
     });
 });

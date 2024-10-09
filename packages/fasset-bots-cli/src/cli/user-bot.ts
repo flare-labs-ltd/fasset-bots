@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { InfoBotCommands, PoolUserBotCommands, UserBotCommands } from "@flarelabs/fasset-bots-core";
 import { Secrets } from "@flarelabs/fasset-bots-core/config";
-import { TRANSACTION_FEE_FACTOR, TokenBalances, formatFixed, squashSpace, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
+import { TokenBalances, formatFixed, toBN, toBNExp } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import os from "os";
 import path from "path";
@@ -17,8 +17,7 @@ const program = programWithCommonOptions("user", "single_fasset");
 program.name("user-bot").description("Command line commands for FAsset user (minter, redeemer, or collateral pool provider)");
 
 program.addOption(
-    program.createOption("-d, --dir <userDataDir>", squashSpace`Directory where minting and redemption state files will be stored. If not provided,
-        the environment variable FASSET_USER_DATA_DIR is used, if set. Default is <USER_HOME>/fasset.`)
+    program.createOption("-d, --dir <userDataDir>", `directory where minting and redemption state files will be stored`)
         .env("FASSET_USER_DATA_DIR")
         .default(path.resolve(os.homedir(), "fasset"))
 );
@@ -78,7 +77,6 @@ program
         validate(!cmdOptions.executor || !!cmdOptions.executorFee, "Option executorFee must be set when executor is set.");
         validate(!cmdOptions.executorFee || !!cmdOptions.executor, "Option executor must be set when executorFee is set.");
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
-        await validateUnderlyingBalance(minterBot, numberOfLots);
         const agentVault = cmdOptions.agent ?? (await minterBot.infoBot().findBestAgent(toBN(numberOfLots)));
         validate(agentVault != null, "No agent with enough free lots available.");
         try {
@@ -105,7 +103,7 @@ program
     .command("mintExecute")
     .description("Tries to execute the minting that was paid but the execution failed")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
-    .option("--noWait", "don't wait for minting proof, but immediatelly exit with exitcode 1 if the proof isn't available")
+    .option("--noWait", "don't wait for minting proof, but immediatelly exit with exitcode 10 if the proof isn't available")
     .action(async (requestId: string, cmdOptions: { noWait?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
@@ -119,6 +117,15 @@ program
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         await minterBot.listMintings();
+    });
+
+program
+    .command("updateMintings")
+    .description("Update all open mintings")
+    .action(async () => {
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
+        await redeemerBot.updateAllMintings();
     });
 
 program
@@ -151,11 +158,12 @@ program
     .command("redemptionDefault")
     .description("Get paid in collateral if the agent failed to pay redemption underlying")
     .argument("<requestId>", "request id (number) or path to json file with minting data (for executors)")
-    .action(async (requestId: string) => {
+    .option("--noWait", "don't wait for non-payment proof, but immediatelly exit with exitcode 10 if the proof isn't available")
+    .action(async (requestId: string, cmdOptions: { noWait?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         try {
-            await redeemerBot.savedRedemptionDefault(requestId);
+            await redeemerBot.savedRedemptionDefault(requestId, cmdOptions.noWait ?? false);
         } catch (error) {
             translateError(error, {
                 "redemption default too early": "Agent still has time to pay; please try redemptionDefault later if the redemption isn't paid."
@@ -170,6 +178,15 @@ program
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
         await redeemerBot.listRedemptions();
+    });
+
+program
+    .command("updateRedemptions")
+    .description("Update all open redemptions")
+    .action(async () => {
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
+        const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
+        await redeemerBot.updateAllRedemptions();
     });
 
 program
@@ -265,17 +282,6 @@ program
             });
         }
     });
-
-async function validateUnderlyingBalance(minterBot: UserBotCommands, numberOfLots: string) {
-    const balanceReader = await TokenBalances.fassetUnderlyingToken(minterBot.context);
-    const userBalance = await balanceReader.balance(minterBot.underlyingAddress);
-    const mintBalance = toBN(numberOfLots).mul(await minterBot.infoBot().getLotSizeBN());
-    const transactionFee = await minterBot.context.wallet.getTransactionFee();
-    const requiredBalance = mintBalance.add(minterBot.context.chainInfo.minimumAccountBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
-    validate(userBalance.gte(requiredBalance),
-        squashSpace`User does not have enough ${balanceReader.symbol} available.
-                    Available ${balanceReader.format(userBalance)}, required ${balanceReader.format(requiredBalance)}.`);
-}
 
 async function getPoolAddress(bot: PoolUserBotCommands, poolAddressOrTokenSymbol: string) {
     return Web3.utils.isAddress(poolAddressOrTokenSymbol)

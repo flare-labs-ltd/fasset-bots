@@ -1,5 +1,5 @@
 import { loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { resolveFromPackageRoot, resolveInFassetBotsCore, squashSpace, stripIndent } from "@flarelabs/fasset-bots-core/utils";
+import { programVersion, resolveInFassetBotsCore, stripIndent } from "@flarelabs/fasset-bots-core/utils";
 import { Command } from "commander";
 import fs from "fs";
 import os from "os";
@@ -7,30 +7,33 @@ import path from "path";
 
 type UserTypeForOptions = "agent" | "user" | "bot" | "util";
 
-export function programWithCommonOptions(user: UserTypeForOptions, fassets: "single_fasset" | "all_fassets") {
-    const configEnvVar = user === "user" ? "FASSET_USER_CONFIG" : "FASSET_BOT_CONFIG";
-    const secretsEnvVar = user === "user" ? "FASSET_USER_SECRETS" : "FASSET_BOT_SECRETS";
+export function programWithCommonOptions(userType: UserTypeForOptions, fassets: "single_fasset" | "all_fassets") {
+    const configEnvVar = chooseEnvVarByUserType("FASSET_USER_CONFIG", "FASSET_BOT_CONFIG");
+    const secretsEnvVar = chooseEnvVarByUserType("FASSET_USER_SECRETS", "FASSET_BOT_SECRETS");
+
+    // Return user env var if type is "user" and the user env var is defined. Otherwise fall back to bot env var.
+    function chooseEnvVarByUserType(userEnvVar: string, botEnvVar: string) {
+        if (userType === "user" && process.env[userEnvVar]) {
+            return userEnvVar;
+        } else {
+            return botEnvVar;
+        }
+    }
 
     function createConfigOption() {
+        const defaultPath = expandConfigPath("coston", userType);
         return program
-            .createOption(
-                "-c, --config <configFile>",
-                squashSpace`Config file path. If not provided, environment variable ${configEnvVar} is used as path, if set.
-                        Default file is embedded in the program and usually works.`
-            )
+            .createOption("-c, --config <configFile>",
+                "config file path; you can also provide network name (e.g. 'coston'), in which case the appropriate config embedded in the program is used")
             .env(configEnvVar)
-            .argParser((v) => expandConfigPath(v, user))
-            .default(expandConfigPath("coston", user));
+            .argParser((v) => expandConfigPath(v, userType))
+            .default(defaultPath, `"${path.basename(defaultPath)}" (embedded in the program)`);
     }
 
     function createSecretsOption() {
-        const allowDefaultSecrets = user === "user";
+        const allowDefaultSecrets = userType === "user";
         const secretsOption = program
-            .createOption(
-                "-s, --secrets <secretsFile>",
-                squashSpace`File containing the secrets (private keys / adresses, api keys, etc.). If not provided, environment variable ${secretsEnvVar}
-                            is used as path, if set. ${allowDefaultSecrets ? "Default file is <USER_HOME>/fasset/secrets.json." : ""}`
-            )
+            .createOption("-s, --secrets <secretsFile>", "file containing the secrets - private keys / adresses, api keys, etc.")
             .env(secretsEnvVar);
         if (allowDefaultSecrets) {
             return secretsOption.default(defaultSecretsPath());
@@ -39,10 +42,11 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
         }
     }
 
-    function createFAssetOption() {
-        return program
-            .createOption("-f, --fasset <fAssetSymbol>", "The symbol of the FAsset to mint, redeem or query")
-            .makeOptionMandatory();
+    function createFAssetOption(mandatory: boolean = true) {
+        const _program = program
+            .createOption("-f, --fasset <fAssetSymbol>", `the symbol of the FAsset to mint, redeem or query`)
+            .env("FASSET_DEFAULT")
+        return mandatory ? _program.makeOptionMandatory() : _program;
     }
 
     function normalizeFAssetNameCase(configFName: string, fasset: string) {
@@ -69,7 +73,7 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
         if (!fs.existsSync(options.secrets)) {
             const userOpts = { "agent": "--agent <management address>", "user": "--user", "bot": "--other", "util": "" };
             program.error(stripIndent`Secrets file ${options.secrets} does not exist. To create new secrets file, please execute
-                                          yarn key-gen generateSecrets ${userOpts[user] ?? ""} -o "${options.secrets}"
+                                          yarn key-gen generateSecrets ${userOpts[userType] ?? ""} -o "${options.secrets}"
                                       and edit the file as instructed by generateSecrets.`);
         }
         // make -f option effectively case-insensitive
@@ -82,9 +86,7 @@ export function programWithCommonOptions(user: UserTypeForOptions, fassets: "sin
     program.version(programVersion());
     program.addOption(createConfigOption());
     program.addOption(createSecretsOption());
-    if (fassets === "single_fasset") {
-        program.addOption(createFAssetOption());
-    }
+    program.addOption(createFAssetOption(fassets === "single_fasset"));
     program.hook("preAction", () => verifyFilesExist());
     return program;
 }
@@ -98,18 +100,6 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
         return resolveInFassetBotsCore(`run-config/${config}.json`);
     }
     return config;
-}
-
-let _programVersion: string | undefined;
-
-export function programVersion() {
-    if (_programVersion == undefined) {
-        const mainFileDir = require.main?.filename ? path.dirname(require.main?.filename) : __dirname;
-        const packageFile = resolveFromPackageRoot(mainFileDir, "package.json");
-        const packageJson = JSON.parse(fs.readFileSync(packageFile).toString()) as { version?: string };
-        _programVersion = packageJson.version ?? "---";
-    }
-    return _programVersion;
 }
 
 function defaultSecretsPath() {

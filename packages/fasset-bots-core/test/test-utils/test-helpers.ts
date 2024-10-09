@@ -5,14 +5,13 @@ import { AgentBotSettings, createBlockchainIndexerHelper } from "../../src/confi
 import { ORM } from "../../src/config/orm";
 import { Secrets } from "../../src/config/secrets";
 import { AgentEntity } from "../../src/entities/agent";
-import { WalletAddress } from "../../src/entities/wallet";
 import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { Agent } from "../../src/fasset/Agent";
 import { MockChain } from "../../src/mock/MockChain";
 import { BlockchainIndexerHelper } from "../../src/underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../../src/underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../../src/underlying-chain/ChainId";
-import { DBWalletKeys, IWalletKeys } from "../../src/underlying-chain/WalletKeys";
+import { DBWalletKeys } from "../../src/underlying-chain/WalletKeys";
 import { TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 import { TokenBalances } from "../../src/utils";
 import { EventArgs } from "../../src/utils/events/common";
@@ -22,6 +21,7 @@ import { artifacts } from "../../src/utils/web3";
 import { TestAssetBotContext } from "../../test-hardhat/test-utils/create-test-asset-context";
 import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
 import { testNotifierTransports } from "./testNotifierTransports";
+import { IWalletKeys, WalletAddressEntity } from "@flarelabs/simple-wallet";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 
@@ -46,7 +46,7 @@ export async function removeWalletAddressFromDB(walletKeys: IWalletKeys | Blockc
         throw new Error("Expected DBWalletKeys");
     }
     const em = (walletKeys as any).em as EntityManager;
-    const wa0 = await em.findOne(WalletAddress, { address } as FilterQuery<WalletAddress>);
+    const wa0 = await em.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
     if (wa0) await em.removeAndFlush(wa0);
     const cache = (walletKeys as any).privateKeyCache as Map<string, string>;
     cache.delete(address);

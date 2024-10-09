@@ -1,7 +1,7 @@
 // Adopted from: https://github.com/aishek/axios-rate-limit
 
 import { AxiosInstance } from "axios";
-import { RateLimitOptions } from "../interfaces/WriteWalletRpcInterface";
+import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 
 export interface RateLimitedAxiosInstance extends AxiosInstance {
     getMaxRPS(): number;

@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { expandConfigPath } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
+import { validateAddress } from "../utils/validation";
 
 const program = new Command();
 
@@ -19,14 +20,17 @@ program
     .description("generate new secrets file")
     .option("-c, --config <configFile>", "Config file path. If omitted, env var FASSET_BOT_CONFIG or FASSET_USER_CONFIG is used. If this is undefined, use embedded config.")
     .option("-o, --output <outputFile>", "the output file; if omitted, the secrets are printed to stdout")
-    .option("--overwrite", "if enabled, the output file can be overwriten; otherwise it is an error if it already exists")
+    .option("--overwrite", "if enabled, the output file can be overwritten; otherwise it is an error if it already exists")
     .option("--user", "generate secrets for user")
     .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management (cold) address")
     .option("--other", "generate secrets for other bots (challenger, etc.)")
     .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean }) => {
         const users: SecretsUser[] = [];
         if (opts.user) users.push("user");
-        if (opts.agent) users.push("agent");
+        if (opts.agent) {
+            validateAddress(opts.agent, "agent management address");
+            users.push("agent");
+        }
         if (opts.other) users.push("other");
         if (!opts.config) {
             opts.config = process.env.FASSET_BOT_CONFIG ?? process.env.FASSET_USER_CONFIG ?? "coston";
@@ -68,7 +72,7 @@ program
                 To use it, first make sure your management address has been whitelisted, and then
                 execute ${chalk.green(`AgentOwnerRegistry.setWorkAddress(${workAddress})`)} on block explorer.`);
             console.error(squashSpace`${chalk.yellow("WARNING:")} Be careful - there can be only one work address per management address,
-                so make sure you don't owerwrite it.`);
+                so make sure you don't overwrite it.`);
         }
     });
 

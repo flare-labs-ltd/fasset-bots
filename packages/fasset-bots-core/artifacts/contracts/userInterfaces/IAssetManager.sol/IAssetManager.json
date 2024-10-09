@@ -126,6 +126,62 @@
           "type": "address"
         },
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "query",
+          "type": "uint256"
+        }
+      ],
+      "name": "AgentPing",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "query",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "response",
+          "type": "string"
+        }
+      ],
+      "name": "AgentPingResponse",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
           "indexed": false,
           "internalType": "string",
           "name": "name",
@@ -188,70 +244,77 @@
           "type": "address"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "collateralPool",
-          "type": "address"
-        },
-        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "collateralPool",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "collateralPoolToken",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "underlyingAddress",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "vaultCollateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "poolWNatToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "feeBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolFeeShareBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingVaultCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "mintingPoolCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "buyFAssetByAgentFactorBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolExitCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupCollateralRatioBIPS",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "poolTopupTokenPriceFactorBIPS",
+              "type": "uint256"
+            }
+          ],
           "indexed": false,
-          "internalType": "string",
-          "name": "underlyingAddress",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "vaultCollateralToken",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "feeBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolFeeShareBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "mintingVaultCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "mintingPoolCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "buyFAssetByAgentFactorBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolExitCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolTopupCollateralRatioBIPS",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "poolTopupTokenPriceFactorBIPS",
-          "type": "uint256"
+          "internalType": "struct IAssetManagerEvents.AgentVaultCreationData",
+          "name": "creationData",
+          "type": "tuple"
         }
       ],
       "name": "AgentVaultCreated",
@@ -612,6 +675,25 @@
     },
     {
       "anonymous": false,
+      "inputs": [],
+      "name": "EmergencyPauseCanceled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "pausedUntil",
+          "type": "uint256"
+        }
+      ],
+      "name": "EmergencyPauseTriggered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
       "inputs": [
         {
           "indexed": true,
@@ -913,6 +995,19 @@
         }
       ],
       "name": "RedemptionPaymentBlocked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "RedemptionPaymentExtensionSecondsChanged",
       "type": "event"
     },
     {
@@ -1424,6 +1519,47 @@
       ],
       "name": "VaultCollateralWithdrawalAnnounced",
       "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_query",
+          "type": "uint256"
+        }
+      ],
+      "name": "agentPing",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_query",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_response",
+          "type": "string"
+        }
+      ],
+      "name": "agentPingResponse",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
       "inputs": [
@@ -2461,6 +2597,32 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "emergencyPaused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "emergencyPausedUntil",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -3002,6 +3164,11 @@
               "type": "address"
             },
             {
+              "internalType": "address",
+              "name": "collateralPoolToken",
+              "type": "address"
+            },
+            {
               "internalType": "string",
               "name": "underlyingAddressString",
               "type": "string"
@@ -3055,6 +3222,11 @@
               "internalType": "uint256",
               "name": "vaultCollateralRatioBIPS",
               "type": "uint256"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "poolWNatToken",
+              "type": "address"
             },
             {
               "internalType": "uint256",
@@ -3796,6 +3968,16 @@
               "internalType": "uint64",
               "name": "diamondCutMinTimelockSeconds",
               "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "maxEmergencyPauseDurationSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "emergencyPauseDurationResetAfterSeconds",
+              "type": "uint64"
             }
           ],
           "internalType": "struct AssetManagerSettings.Data",
@@ -3987,6 +4169,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "mintingPaused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "components": [
@@ -4095,19 +4290,6 @@
       "name": "mintingPaymentDefault",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "paused",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -4400,6 +4582,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "redemptionPaymentExtensionSeconds",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "components": [
@@ -4679,6 +4874,19 @@
         }
       ],
       "name": "selfMint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "setRedemptionPaymentExtensionSeconds",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { AgentOwnerRegistryInstance, FAssetInstance } from "../../typechain-truffle";
-import { BotConfigFile, createWalletClient } from "../config";
+import { BotConfigFile, createBotConfig, createWalletClient } from "../config";
 import { AssetContractRetriever } from "../config/AssetContractRetriever";
 import { loadConfigFile } from "../config/config-file-loader";
 import { Secrets } from "../config/secrets";
@@ -15,15 +15,18 @@ import { stripIndent } from "../utils/formatting";
 import { ZERO_ADDRESS, requireNotNull } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
+import { ORM } from "../config/orm";
 
 const AgentOwnerRegistry = artifacts.require("AgentOwnerRegistry");
 
+/* istanbul ignore next */
 export interface Reporter {
     log: (text: string) => void;
     error: (text: string) => void;
 }
 
 // useful for validation from other methods
+/* istanbul ignore next */
 export const throwingReporter: Reporter = {
     log(text) {},
     error(text) { throw new CommandLineError(text); },
@@ -45,10 +48,12 @@ export class AgentBotOwnerValidation {
         public agentOwnerRegistry: AgentOwnerRegistryInstance,
         public fassets: Map<string, FAssetInstance>,    // fasset symbol => fasset
         public reporter: Reporter = throwingReporter,
+        public orm: ORM
     ) {}
 
     static async create(secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const apiKey = secrets.optional("apiKey.native_rpc");
         await initWeb3(authenticatedHttpProvider(configFile.rpcUrl, apiKey), [], null);
@@ -57,14 +62,17 @@ export class AgentBotOwnerValidation {
         const agentOwnerRegistry = await contractRetriever.getContract(AgentOwnerRegistry);
         const fassets = new Map<string, FAssetInstance>();
         for (const [symbol, { fasset }] of contractRetriever.assetManagers) fassets.set(symbol, fasset);
-        return new AgentBotOwnerValidation(secrets, configFile, agentOwnerRegistry, fassets, reporter);
+        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
+        return new AgentBotOwnerValidation(secrets, configFile, agentOwnerRegistry, fassets, reporter, botConfig.orm);
     }
 
     static async fromContext(context: IAssetAgentContext, secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
         const secrets = Secrets.load(secretsFile);
+        const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const fassets = new Map<string, FAssetInstance>([[context.fAssetSymbol, context.fAsset]]);
-        return new AgentBotOwnerValidation(secrets, configFile, context.agentOwnerRegistry, fassets, reporter);
+        const botConfig = await createBotConfig("agent", secrets, configFile, owner.workAddress);
+        return new AgentBotOwnerValidation(secrets, configFile, context.agentOwnerRegistry, fassets, reporter, botConfig.orm);
     }
 
     async validate(fassetSymbols: string[]) {
@@ -102,6 +110,7 @@ export class AgentBotOwnerValidation {
         const managementAddressBalance = await natToken.balance(owner.managementAddress);
         const managementAddressRecBal = natToken.parse(nativeChainInfo.recommendedOwnerBalance ?? "0");
         const balanceFmt = natToken.format(managementAddressBalance);
+        /* istanbul ignore next */
         if (managementAddressBalance.lt(managementAddressRecBal)) {
             const recBalFmt = natToken.format(managementAddressRecBal);
             const faucetInfo = nativeChainInfo.faucet ? `\nGo to [${nativeChainInfo.faucet}] and fund [${owner.workAddress}].` : "";
@@ -119,6 +128,7 @@ export class AgentBotOwnerValidation {
         const workAddressBalance = await natToken.balance(owner.workAddress);
         const workAddressRecBal = natToken.parse(nativeChainInfo.recommendedOwnerBalance ?? "0");
         const balanceFmt = natToken.format(workAddressBalance);
+        /* istanbul ignore next */
         if (workAddressBalance.lt(workAddressRecBal)) {
             const recBalFmt = natToken.format(workAddressRecBal);
             const faucetInfo = nativeChainInfo.faucet
@@ -144,6 +154,7 @@ export class AgentBotOwnerValidation {
         const underlyingBalance = await walletToken.balance(underlyingAddress);
         const underlyingRecBal = walletToken.parse(this.configFile.agentBotSettings.fAssets[fassetSymbol].recommendedOwnerBalance ?? "0");
         const balanceFmt = walletToken.format(underlyingBalance);
+        /* istanbul ignore next */
         if (underlyingBalance.lt(underlyingRecBal)) {
             const recBalFmt = walletToken.format(underlyingRecBal);
             const faucetInfo = fassetInfo.faucet ? `\nGo to [${fassetInfo.faucet}] and fund [${underlyingAddress}].` : "";
@@ -155,7 +166,7 @@ export class AgentBotOwnerValidation {
 
     async createWalletTokenBalance(fassetSymbol: string) {
         const fassetInfo = this.configFile.fAssets[fassetSymbol];
-        const walletClient = createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl));
+        const walletClient = await createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl), this.orm.em, fassetInfo.stuckTransactionOptions, fassetInfo.feeServiceOptions, fassetInfo.fallbackApis);
         const wallet = new BlockchainWalletHelper(walletClient, new MemoryWalletKeys());
         const fasset = requireNotNull(this.fassets.get(fassetSymbol));
         return new WalletTokenBalance(wallet, await fasset.assetSymbol(), Number(await fasset.decimals()));
@@ -172,6 +183,7 @@ export class AgentBotOwnerValidation {
 
     static async verifyAgentWhitelisted(agentOwnerRegistry: AgentOwnerRegistryInstance, owner: OwnerAddressPair, reporter = throwingReporter) {
         const whitelisted = await agentOwnerRegistry.isWhitelisted(owner.managementAddress);
+        /* istanbul ignore next */
         if (!whitelisted) {
             reporter.error(stripIndent`Agent registry management address is not whitelisted.
                                        Contact Flare agent support to whitelist your address [${owner.managementAddress}].`);
@@ -185,6 +197,7 @@ export class AgentBotOwnerValidation {
         const chainWorkAddress = await agentOwnerRegistry.getWorkAddress(owner.managementAddress);
         // ensure that work address is defined and matches the one from secrets.json
         const explorerUrl = `https://coston-explorer.flare.network/address/${agentOwnerRegistry.address}/write-contract#address-tabs`;
+        /* istanbul ignore next */
         if (chainWorkAddress === ZERO_ADDRESS) {
             reporter.error(stripIndent`Owner management address ${owner.managementAddress} has no registered work address.
                                        Go to [${explorerUrl}], enable MetaMask and set '8. setWorkAddress' to [${owner.workAddress}].`);

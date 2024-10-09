@@ -21,7 +21,7 @@ import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentRedemptionState } from "../../../src/entities/common";
-import { TokenBalances } from "../../../src/utils";
+import { proveAndUpdateUnderlyingBlock, TokenBalances } from "../../../src/utils";
 use(chaiAsPromised);
 use(spies);
 
@@ -78,6 +78,8 @@ describe("UserBot cli commands unit tests", () => {
         // chain tunning
         chain.finalizationBlocks = 0;
         chain.secondsPerBlock = 1;
+        chain.mine(2);
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // user bot
         const fAssetSymbol = "TESTHHSYM";
         userBot = new UserBotCommands(context, fAssetSymbol, minterAddress, userUnderlyingAddress, userDataDir);
@@ -184,9 +186,10 @@ describe("UserBot cli commands unit tests", () => {
             await agentBot.runStep(orm.em);
             // check if redemption is done
             orm.em.clear();
-            const redemption = await agentBot.redemption.findRedemption(orm.em, rdReq.requestId);
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
             console.log(`Agent step ${i}, state = ${redemption.state}`);
             if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
         }
         await userBot.listRedemptions();
         const agentInfoAfterRedeem = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
@@ -239,7 +242,7 @@ describe("UserBot cli commands unit tests", () => {
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
         // redemption default
-        await userBot.savedRedemptionDefault(rdReq.requestId);
+        await userBot.savedRedemptionDefault(rdReq.requestId, false);
         const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
         const endBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
@@ -441,10 +444,27 @@ describe("UserBot cli commands unit tests", () => {
             .to.eventually.be.rejectedWith("Invalid payment reference")
             .and.be.an.instanceOf(Error);
         // redemption default
-        await userBot.savedRedemptionDefault(rdReq.requestId);
+        await userBot.savedRedemptionDefault(rdReq.requestId, false);
         const endBalanceRedeemer = await vaultCollateralToken.balanceOf(redeemer.address);
         const endBalanceAgent = await vaultCollateralToken.balanceOf(agentBot.agent.vaultAddress);
         expect(endBalanceRedeemer.gt(startBalanceRedeemer)).to.be.true;
         expect(endBalanceAgent.lt(startBalanceAgent)).to.be.true;
+    });
+
+    it("Should not reserve collateral - not enough native funds", async () => {
+        const fAssetSymbol = "TESTHHSYM_1";
+        const underlying = "userUnderlyingAddress-10";
+        const userBot2 = new UserBotCommands(context, fAssetSymbol, accounts[10], underlying, userDataDir);
+        await expect(userBot2.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined))
+        .to.eventually.be.rejectedWith(`Not enough funds on underlying address ${underlying}`)
+        .and.be.an.instanceOf(Error);
+    });
+
+    it("Should not reserve collateral - not enough native funds", async () => {
+        const fAssetSymbol = "TESTHHSYM_1";
+        const userBot2 = new UserBotCommands(context, fAssetSymbol, ZERO_ADDRESS, "userUnderlyingAddress", userDataDir);
+        await expect(userBot2.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined))
+        .to.eventually.be.rejectedWith(`Not enough funds on evm native address ${ZERO_ADDRESS}`)
+        .and.be.an.instanceOf(Error);
     });
 });

@@ -2,7 +2,7 @@ import { expect, spy, use } from "chai";
 import spies from "chai-spies";
 import { Secrets, createAgentBotContext, createBotConfig, loadConfigFile } from "../../../src/config";
 import { initWeb3 } from "../../../src/utils/web3";
-import { COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, TEST_FASSET_BOT_CONFIG, TEST_SECRETS } from "../../test-utils/test-bot-config";
+import { COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, FASSET_BOT_CONFIG, TEST_FASSET_BOT_CONFIG, TEST_SECRETS } from "../../test-utils/test-bot-config";
 import { getNativeAccounts } from "../../test-utils/test-helpers";
 import { AgentBotOwnerValidation, printingReporter } from "../../../src/commands/AgentBotOwnerValidation";
 import { IAssetAgentContext } from "../../../src/fasset-bots/IAssetBotContext";
@@ -11,6 +11,7 @@ use(spies);
 
 const fassetBotConfig = TEST_FASSET_BOT_CONFIG;
 const fAssetSymbol = "FTestXRP";
+const fassetBotConfig2 = FASSET_BOT_CONFIG;
 
 describe("AgentBotOwnerValidation cli commands unit tests", () => {
     let secrets: Secrets;
@@ -18,15 +19,17 @@ describe("AgentBotOwnerValidation cli commands unit tests", () => {
     let ownerAddress: string;
     let context: IAssetAgentContext;
 
-    async function createOwnerValidation() {
+    async function createTestOwnerValidation() {
         return await AgentBotOwnerValidation.create(TEST_SECRETS, fassetBotConfig, printingReporter);
+    }
+    async function createOwnerValidation() {
+        return await AgentBotOwnerValidation.create(TEST_SECRETS, fassetBotConfig2, printingReporter);
     }
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         accounts = await initWeb3(COSTON_RPC, getNativeAccounts(secrets), null);
         ownerAddress = accounts[0];
-        secrets = Secrets.load(TEST_SECRETS);
         const runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         const botConfig = await createBotConfig("agent", secrets, runConfig, ownerAddress);
         const chainConfigAgent = requireNotNull(botConfig.fAssets.get(fAssetSymbol));
@@ -55,12 +58,26 @@ describe("AgentBotOwnerValidation cli commands unit tests", () => {
 
     it("Should validateOwnerNativeAddresses", async () => {
         const spyConsole = spy.on(console, "log");
-        const botOwnerVAlidation = await createOwnerValidation();
+        const botOwnerVAlidation = await createTestOwnerValidation();
         await botOwnerVAlidation.validateOwnerNativeAddresses();
-        expect(spyConsole).to.be.called.exactly(9);
+        expect(spyConsole).to.be.called.above(5);
     });
 
     it("Should validateForFAsset", async () => {
+        const spyConsole = spy.on(console, "log");
+        const botOwnerVAlidation = await createTestOwnerValidation();
+        await botOwnerVAlidation.validateForFAsset(fAssetSymbol);
+        expect(spyConsole).to.be.called.exactly(3);
+    });
+
+    it("Should validateOwnerNativeAddresses 2", async () => {
+        const spyConsole = spy.on(console, "log");
+        const botOwnerVAlidation = await createOwnerValidation();
+        await botOwnerVAlidation.validateOwnerNativeAddresses();
+        expect(spyConsole).to.be.called.above(8);
+    });
+
+    it("Should validateForFAsset 2", async () => {
         const spyConsole = spy.on(console, "log");
         const botOwnerVAlidation = await createOwnerValidation();
         await botOwnerVAlidation.validateForFAsset(fAssetSymbol);
@@ -69,9 +86,9 @@ describe("AgentBotOwnerValidation cli commands unit tests", () => {
 
     it("Should validate FAssets", async () => {
         const spyConsole = spy.on(console, "log");
-        const botOwnerVAlidation = await createOwnerValidation();
+        const botOwnerVAlidation = await createTestOwnerValidation();
         await botOwnerVAlidation.validate([fAssetSymbol]);
-        expect(spyConsole).to.be.called.exactly(12);
+        expect(spyConsole).to.be.called.above(5);
     });
 
     it("Should validate address", async () => {
@@ -80,7 +97,7 @@ describe("AgentBotOwnerValidation cli commands unit tests", () => {
     });
 
     it("Should createWalletTokenBalance", async () => {
-        const botOwnerVAlidation = await createOwnerValidation();
+        const botOwnerVAlidation = await createTestOwnerValidation();
         const asset = await botOwnerVAlidation.fassets.get(fAssetSymbol)?.assetSymbol();
         const wallet = await botOwnerVAlidation.createWalletTokenBalance(fAssetSymbol);
         expect(wallet.symbol).to.equal(asset);

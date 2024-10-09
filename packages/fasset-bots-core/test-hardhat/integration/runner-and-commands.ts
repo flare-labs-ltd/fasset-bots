@@ -1,6 +1,7 @@
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { AgentBotCommands, AgentBotRunner, ChainId, TimeKeeperService, UserBotCommands } from "../../src";
 import { AgentBotSettings, AgentSettingsConfig, Secrets } from "../../src/config";
+import { AgentEntity } from "../../src/entities/agent";
 import { ORM } from "../../src/config/orm";
 import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
@@ -15,9 +16,10 @@ import { artifacts, web3 } from "../../src/utils/web3";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
-import { FakeERC20Instance, Truffle } from "../../typechain-truffle";
+import { FakeERC20Instance, IERC20MetadataInstance, Truffle } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext, createTestChain, createTestChainContracts, createTestSecrets, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
+import { assert } from "chai";
 
 const StateConnector = artifacts.require("StateConnectorMock");
 
@@ -29,6 +31,7 @@ describe("Toplevel runner and commands integration test", () => {
     const ownerUnderlyingAddress = "owner_underlying_1";
     let ownerWorkAddress: string;
     let userAddress: string;
+    let submitterAddress: string;
     const userUnderlyingAddress = "user_underlying_1";
     let contexts: Map<string, TestAssetBotContext> = new Map();
     let agentBotSettingsMap: Map<string, AgentBotSettings> = new Map();
@@ -76,11 +79,15 @@ describe("Toplevel runner and commands integration test", () => {
     };
 
     const agentBotSettings: AgentBotSettings = {
+        parallel: false,
+        trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
         vaultCollateralReserveFactor: 0.1,
         poolCollateralReserveFactor: 0.1,
-        minimumFreeUnderlyingBalance: toBNExp(12, 6),
+        minimumFreeUnderlyingBalance: toBNExp(0.01, 6),
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
+        minBalanceOnServiceAccount: toBNExp(2, 18),
+        minBalanceOnWorkAccount: toBNExp(200, 18),
     };
 
     const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];
@@ -117,6 +124,7 @@ describe("Toplevel runner and commands integration test", () => {
         ownerManagementAddress = accounts[2];
         ownerWorkAddress = accounts[3];
         userAddress = accounts[4];
+        submitterAddress = accounts[5];
     });
 
     async function initialize() {
@@ -124,7 +132,7 @@ describe("Toplevel runner and commands integration test", () => {
         orm = await createTestOrm();
         const contracts = await createTestChainContracts(accounts[0]);
         const stateConnector = await StateConnector.at(contracts.StateConnector.address);
-        const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto");
+        const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto", submitterAddress);
         // secrets
         secrets = createTestSecrets(testChainInfos.map(ci => ci.chainId), ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
         // create contexts
@@ -143,7 +151,7 @@ describe("Toplevel runner and commands integration test", () => {
         botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService);
         // currencies
         const usdc = context0.stablecoins.usdc as FakeERC20Instance;
-        usdcCurrency = await Currencies.erc20(usdc);
+        usdcCurrency = await Currencies.erc20(usdc as IERC20MetadataInstance);
         natCurrency = await Currencies.evmNative(context0);
         xrpCurrency = Currencies.chain(testXrpChainInfo);
         // mint some collaterals to owner
@@ -167,7 +175,9 @@ describe("Toplevel runner and commands integration test", () => {
         console.log("Starting the bots...");
         timekeeperService.startAll();
         void botRunner.run();
-        while (!botRunner.running) await sleep(100);
+        while (!botRunner.running) {
+            await sleep(100);
+        }
         for (const chain of chains.values()) {
             chain.enableTimedMining(500);
         }
@@ -179,20 +189,21 @@ describe("Toplevel runner and commands integration test", () => {
             chain.disableTimedMining();
         }
         botRunner.requestStop();
-        while (botRunner.running) await sleep(100);
+        while (botRunner.running) {
+            await sleep(100);
+        }
         await timekeeperService.stopAll();
     });
 
-    it("create agent vault, mint, redeem, and close", async () => {
+    it("Should create agent vault, mint, redeem, and close", async () => {
         await Promise.allSettled(Array.from(contexts.values()).map(async context => {
             console.log(`***** Testing for asset ${context.chainInfo.symbol} *****`);
             const agentCommands = createAgentCommands(context);
             const userCommands = await createUserCommands(context);
-            //
+            // create vault
             const agent = await agentCommands.createAgentVault(newAgentSettings);
             const agentVault = agent.vaultAddress;
-            await agentCommands.depositToVault(agentVault, usdcCurrency.parse("100"));
-            await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("100000"));
+            await agentCommands.depositCollateralForLots(agentVault, "10", "2");
             await agentCommands.enterAvailableList(agentVault);
             await userCommands.infoBot().printAvailableAgents();
             // mint
@@ -214,21 +225,57 @@ describe("Toplevel runner and commands integration test", () => {
         }));
     });
 
-    it("create agent vault, mint, and agent executes mint", async () => {
+    it("Should create agent vault, mint, and agent executes mint", async () => {
         const context = firstValue(contexts)!;
         const agentCommands = createAgentCommands(context);
         const userCommands = await createUserCommands(context);
         const chain = context.blockchainIndexer.chain;
-        //
+        // create vault
         const agent = await agentCommands.createAgentVault(newAgentSettings);
         const agentVault = agent.vaultAddress;
-        await agentCommands.depositToVault(agentVault, usdcCurrency.parse("100"));
-        await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("100000"));
+        await agentCommands.depositCollateralForLots(agentVault, "10", "1");
         await agentCommands.enterAvailableList(agentVault);
         // mint
         const lastEvmBlock = await web3.eth.getBlockNumber();
         await userCommands.mint(agentVault, 10, true);
         chain.mine(300);    // agent will only execute minting once the time for payment expires on underlying chain
         await waitForEvent(context.assetManager, lastEvmBlock, 5000, (ev) => eventIs(ev, context.assetManager, "MintingExecuted") && ev.args.agentVault === agentVault);
+    });
+  
+    it("Runner should create new bots and remove stopped ones", async () => {
+        const context = firstValue(contexts)!;
+        const agentCommands = createAgentCommands(context);
+        // create vault
+        const agent = await agentCommands.createAgentVault(newAgentSettings);
+        const agentVault = agent.vaultAddress;
+        await agentCommands.depositCollateralForLots(agentVault, "10", "1");
+        await agentCommands.enterAvailableList(agentVault);
+        // create agent bot
+        let agentEntities = await orm.em.find(AgentEntity, { active: true });
+        assert.equal(agentEntities.length, 1);
+        await botRunner.runStep();
+    });
+
+    it("Should update agent setting via command", async () => {
+        const context = firstValue(contexts)!;
+        const agentCommand = createAgentCommands(context);
+        // create agent and bot
+        const agent = await agentCommand.createAgentVault(newAgentSettings);
+        let agentEntities = await orm.em.find(AgentEntity, { active: true });
+        const agentBot = await botRunner.newAgentBot(agentEntities[0]);
+        const agentVault = agent.vaultAddress;
+        const oldSettings = await agent.getAgentSettings();
+        // update agent settings
+        const settingName = "feeBIPS";
+        const settingValue = 50;
+        await agentCommand.updateAgentSetting(agentVault, settingName, settingValue.toString()); 
+        // increase time and run step
+        const validAt = await agentBot!.agent.announceAgentSettingUpdate(settingName, settingValue);
+        await time.increaseTo(validAt);
+        await botRunner.runStep();
+        const settings = await agent.getAgentSettings();
+        // check that setting really updated and is not the same as before
+        assert.equal(settings.feeBIPS.toString(), settingValue.toString());
+        assert.notEqual(settings.feeBIPS.toString(), oldSettings.feeBIPS.toString());
     });
 });

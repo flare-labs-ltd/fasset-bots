@@ -90,11 +90,13 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
     liquidationCollateralFactorBIPS: BN[];
     liquidationFactorVaultCollateralBIPS: BN[];
     diamondCutMinTimelockSeconds: BN;
+    maxEmergencyPauseDurationSeconds: BN;
+    emergencyPauseDurationResetAfterSeconds: BN;
   }>;
 
   lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+  mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -176,11 +178,13 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
       liquidationCollateralFactorBIPS: BN[];
       liquidationFactorVaultCollateralBIPS: BN[];
       diamondCutMinTimelockSeconds: BN;
+      maxEmergencyPauseDurationSeconds: BN;
+      emergencyPauseDurationResetAfterSeconds: BN;
     }>;
 
     lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-    paused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+    mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
