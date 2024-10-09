@@ -46,6 +46,9 @@ test/e2e/actors/tmp.ts
 tsconfig.tsbuildinfo
 tmp.*
 
+# run-config
+packages/fasset-bots-core/run-config/coston-bot-demo.json
+
 # config file with various keys and addresses
 secrets.json
 
@@ -56,3 +59,10 @@ packages/fasset-liquidator/.yarn
 packages/fasset-liquidator/types
 packages/fasset-liquidator/artifacts
 packages/fasset-liquidator/deploys.json
+
+
+# test
+packages/fasset-bots-core/test/special/fast-minting-xrp.ts
+packages/fasset-bots-core/test/special/xrp_test_accounts.ts
+packages/fasset-bots-core/test/special/fast-minting.ts
+packages/fasset-bots-core/test/special/btc_test_accounts.ts
