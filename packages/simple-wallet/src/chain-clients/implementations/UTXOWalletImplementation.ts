@@ -332,7 +332,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 } else if (axios.isAxiosError(error)) {
                     const axiosError = error as AxiosError<AxiosTransactionSubmissionError>
 
-                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, axiosError.response?.data);
+                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with: ${axiosError.response?.data}`);
                     if (axiosError.response?.data.error.includes("not found")) {
                         await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
                             txEnt.status = TransactionStatus.TX_CREATED;
@@ -353,7 +353,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         }
                     }
                 } else {
-                    logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with:`, error);
+                    logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with: ${error}`);
                 }
             }
             return;
