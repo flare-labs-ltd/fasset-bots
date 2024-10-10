@@ -1,5 +1,5 @@
-import { web3 } from "../utils";
-import { sleepms, getUnixEpochTimestamp, waitFinalize } from "../utils/utils";
+import { sleep, web3 } from "../utils";
+import { getUnixEpochTimestamp, waitFinalize } from "../utils/utils";
 import { logger } from "../utils/logger";
 import { FeedResult } from "../config/PricePublisherConfig";
 import axios from 'axios';
@@ -28,11 +28,23 @@ export class PricePublisherService {
     }
 
     private pending: number = 0;
+    private running = false;
+    rps = 3;
+    batchSize = 30;
 
     waitFinalize3: (sender: string, func: () => any, delay?: number) => Promise<any>;
 
     public async getContract(name: string): Promise<any> {
         return this.contractsMap.get(name);
+    }
+
+    start() {
+        this.running = true;
+        void this.run(this.rps, this.batchSize);
+    }
+
+    stop() {
+        this.running = false;
     }
 
     public async run(rps: number, batchSize: number) {
@@ -41,7 +53,7 @@ export class PricePublisherService {
         let firstRun = true;
 
         // eslint-disable-next-line no-constant-condition
-        while (true) {
+        while (this.running) {
             try {
                 const currentBlockNumber = Number(await web3.eth.getBlockNumber());
                 nextBlockToProcess = (await this.getLastProcessedBlock(currentBlockNumber)) + 1;
@@ -54,13 +66,13 @@ export class PricePublisherService {
                 // wait for a new block
                 if (nextBlockToProcess > currentBlockNumber) {
                     logger.info(`waiting for a new block | next block to process: ${nextBlockToProcess} | last block: ${currentBlockNumber}`);
-                    await sleepms(4000);
+                    await sleep(4000);
                     continue;
                 }
 
                 const endBlock = Math.min(nextBlockToProcess + batchSize - 1, currentBlockNumber);
                 // https://flare-api.flare.network has rate limit 200 rpm
-                await sleepms(2000 / rps);
+                await sleep(2000 / rps);
                 const contractsEventBatches = await this.getEventsFromBlocks(
                     ["Relay"],
                     nextBlockToProcess,
@@ -170,7 +182,7 @@ export class PricePublisherService {
         // sort nodes by order of feedIds array
         feedsDataRenamed.sort((a: any, b: any) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
         // random delay between 0 and maxDelayMs
-        await sleepms(Math.random() * this.maxDelayMs);
+        await sleep(Math.random() * this.maxDelayMs);
         // check if prices are already published
         const lastPublishedVotingRoundId = await ftsoV2PriceStore.methods.lastPublishedVotingRoundId().call();
         if (lastPublishedVotingRoundId >= votingRoundId) {

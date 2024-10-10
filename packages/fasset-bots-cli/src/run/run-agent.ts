@@ -77,6 +77,7 @@ program.action(async () => {
         const timekeeperService = await TimeKeeperService.create(botConfig, timekeeper.address, timekeeperConfig);
         timekeeperService.startAll();
         // run price publisher only if price feed api path is set
+        let pricePublisherService;
         if (priceFeedApiPath && pricePublisher && runConfig.contractsJsonFile && runConfig.pricePublisherContracts) {
             if (pricePublisher.address !== owner.address) {
                 await fundAccount(owner.address, pricePublisher.address, minNativeBalance, "price publisher");
@@ -84,8 +85,8 @@ program.action(async () => {
             }
             const contractsMap = await createContractsMap(runConfig.contractsJsonFile, runConfig.pricePublisherContracts);
             const publisherApiKey = secrets.optional("apiKey.price_publisher_api");
-            const pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisher.privateKey, runConfig.pricePublisherMaxDelayMs ?? 5000, priceFeedApiPath, publisherApiKey ?? "");
-            void pricePublisherService.run(3, 30);
+            pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisher.privateKey, runConfig.pricePublisherMaxDelayMs ?? 5000, priceFeedApiPath, publisherApiKey ?? "");
+            pricePublisherService.start();
         }
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
@@ -108,6 +109,9 @@ program.action(async () => {
             process.on("SIGTERM", stopBot);
             await runner.run();
         } finally {
+            if (pricePublisherService) {
+                pricePublisherService.stop();
+            }
             await timekeeperService.stopAll();
             await closeBotConfig(botConfig);
         }

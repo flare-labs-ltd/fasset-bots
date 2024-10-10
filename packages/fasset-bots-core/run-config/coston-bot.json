@@ -83,8 +83,5 @@
     },
     "challengeStrategy": {
         "className": "DefaultChallengeStrategy"
-    },
-    "pricePublisherContracts": ["Relay", "FtsoV2PriceStore"],
-    "pricePublisherMaxDelayMs": 5000,
-    "priceFeedApiPath": "https://cflr-dac.aflabs.org/api/v0/scaling/anchor-feeds-with-proof"
+    }
 }

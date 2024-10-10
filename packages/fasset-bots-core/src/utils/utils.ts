@@ -2,11 +2,7 @@ import Web3 from 'web3';
 import * as fs from 'fs';
 import { glob} from 'glob';
 import { logger } from "../utils/logger";
-
-export async function sleepms(ms: number) {
-    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
-}
-
+import { sleep } from './helpers';
 
 export function waitFinalize3Factory(web3: Web3) {
     return async (address: string, func: () => any, delay: number = 1000) => {
@@ -73,12 +69,12 @@ export function waitFinalize(web3: Web3, options: WaitFinalizeOptions = waitFina
         const nonce = await web3.eth.getTransactionCount(address);
         const res = await func();
         while (await web3.eth.getTransactionCount(address) == nonce) {
-            await sleepms(options.sleepMS);
+            await sleep(options.sleepMS);
         }
         for (let i = 0; i < options.retries; i++) {
             const block = await web3.eth.getBlockNumber();
             while (await web3.eth.getBlockNumber() - block < options.extraBlocks) {
-                await sleepms(options.sleepMS);
+                await sleep(options.sleepMS);
             }
             // only end if the nonce didn't revert (and repeat up to 3 times)
             if (await web3.eth.getTransactionCount(address) > nonce) break;
