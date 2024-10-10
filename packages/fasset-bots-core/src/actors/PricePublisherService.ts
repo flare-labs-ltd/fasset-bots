@@ -1,9 +1,8 @@
 import { web3 } from "../utils";
 import { sleepms, getUnixEpochTimestamp, waitFinalize } from "../utils/utils";
 import { logger } from "../utils/logger";
-import { FeedResult, hashPriceFeedResult, hashRandomResult, IPriceFeedData, RandomResult } from "../utils/MerkleTreeStructs";
+import { FeedResult } from "../config/PricePublisherConfig";
 import axios from 'axios';
-import { MerkleTree } from "../utils/MerkleTree";
 import { PricePublisherState } from "../entities/agent";
 import { EM } from "../config/orm";
 import { waitFinalizeOptions } from "../config";
@@ -23,6 +22,7 @@ export class PricePublisherService {
         private privateKey: string,
         private maxDelayMs: number,
         private feedApiPath: string,
+        private apiKey: string
     ) {
         this.waitFinalize3 = waitFinalize(web3, waitFinalizeOptions);
     }
@@ -70,6 +70,7 @@ export class PricePublisherService {
                     await this.processEvents(contractEventBatch);
                 }
                 await this.saveLastProcessedBlock(endBlock);
+                await this.removePreviousProcessedBlock();
             } catch (error) {
                 logger.error(`Error in EventProcessorService::processEvents: ${error}`);
             }
@@ -85,6 +86,17 @@ export class PricePublisherService {
             return currentBlockNumber - 1;
         }
         return res.valueNumber;
+    }
+
+    async removePreviousProcessedBlock() {
+        const res = await this.entityManager.getRepository(PricePublisherState).find(
+            { name: 'lastProcessedBlock' },
+            { orderBy: { id: 'ASC' } }
+        );
+        // if there is more than one record (should be at most two), remove the oldest one
+        if (res.length > 1) {
+            await this.entityManager.removeAndFlush(res[0]);
+        }
     }
 
     private async saveLastProcessedBlock(newLastProcessedBlock: number) {
@@ -142,34 +154,21 @@ export class PricePublisherService {
     }
 
     private async getFeedData(votingRoundId: number) {
-        let feedValues: { body: FeedResult; merkleProof: string[] }[] = [];
+        const ftsoV2PriceStore = await this.getContract("FtsoV2PriceStore");
+        const feedIds = await ftsoV2PriceStore.methods.getFeedIds().call();
 
-        const response = await axios.get(`${this.feedApiPath}/${votingRoundId}`, {
+        const response = await axios.post(`${this.feedApiPath}?$voting_round_id=${votingRoundId}`, {
+            feed_ids: feedIds
+        }, {
             headers: {
-                'x-api-key': "abcdef"
+                'x-api-key': this.apiKey
             }
         });
         // get data
-        const data: IPriceFeedData = response.data;
-        const tree: (FeedResult | RandomResult)[] = data.tree;
-
-		const randomResult = tree.find(x => !(x as any).id) as RandomResult;
-		const feedResults = tree.filter(x => (x as any).id) as FeedResult[];
-        const merkleTree = new MerkleTree([
-			hashRandomResult(randomResult),
-			...feedResults.map(result => hashPriceFeedResult(result)),
-		]);
-        feedValues = feedResults.map(result => ({
-			body: result,
-			merkleProof: merkleTree.getProof(hashPriceFeedResult(result)) as string[],
-		}));
-
-        const ftsoV2PriceStore = await this.getContract("FtsoV2PriceStore");
-        // filter out leaves with feedIds for fAssets
-        const feedIds = await ftsoV2PriceStore.methods.getFeedIds().call();
-        const nodesFasset = feedValues.filter((feed: any) => feedIds.includes(feed.body.id));
+        const feedsData: { data: FeedResult; proof: string[] }[] = response.data;
+        const feedsDataRenamed: { body: FeedResult; merkleProof: string[] }[] = feedsData.map(({data, proof}) => ({body: data, merkleProof: proof}));
         // sort nodes by order of feedIds array
-        nodesFasset.sort((a: any, b: any) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
+        feedsDataRenamed.sort((a: any, b: any) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
         // random delay between 0 and maxDelayMs
         await sleepms(Math.random() * this.maxDelayMs);
         // check if prices are already published
@@ -178,7 +177,7 @@ export class PricePublisherService {
             logger.info(`Prices for voting round ${votingRoundId} already published`);
             return;
         }
-        await this.publishFeeds(nodesFasset);
+        await this.publishFeeds(feedsDataRenamed);
     }
 
     private async publishFeeds(nodes: any[]): Promise<boolean> {
@@ -195,28 +194,28 @@ export class PricePublisherService {
         // get fee history for the last 50 blocks
         let gasPrice: bigint;
         try {
-          const feeHistory = await web3.eth.getFeeHistory(50, lastBlock, [0]);
-          const baseFee = feeHistory.baseFeePerGas;
-          // get max fee of the last 50 blocks
-          let maxFee = BigInt(0);
-          for (const fee of baseFee) {
-            if (BigInt(fee) > maxFee) {
-              maxFee = BigInt(fee);
+            const feeHistory = await web3.eth.getFeeHistory(50, lastBlock, [0]);
+            const baseFee = feeHistory.baseFeePerGas;
+            // get max fee of the last 50 blocks
+            let maxFee = BigInt(0);
+            for (const fee of baseFee) {
+                if (BigInt(fee) > maxFee) {
+                    maxFee = BigInt(fee);
+                }
             }
-          }
-          gasPrice = maxFee * BigInt(2);
+            gasPrice = maxFee * BigInt(3);
         } catch (e) {
-          logger.info("using getFeeHistory failed; will use getGasPrice instead");
-          gasPrice = BigInt(await web3.eth.getGasPrice()) * BigInt(2);
+            logger.info("using getFeeHistory failed; will use getGasPrice instead");
+            gasPrice = BigInt(await web3.eth.getGasPrice()) * BigInt(5);
         }
 
         const rawTX = {
-          nonce: nonce,
-          from: fromWallet.address,
-          to: toAddress,
-          gas: "8000000",
-          gasPrice: gasPrice.toString(),
-          data: fnToEncode.encodeABI()
+            nonce: nonce,
+            from: fromWallet.address,
+            to: toAddress,
+            gas: "8000000",
+            gasPrice: gasPrice.toString(),
+            data: fnToEncode.encodeABI()
         };
         const signedTx = await fromWallet.signTransaction(rawTX);
 

@@ -16,3 +16,11 @@ export async function createContractsMap(contractsJsonPath: string, contracts: s
 }
 
 export const waitFinalizeOptions: WaitFinalizeOptions = { extraBlocks: 2, retries: 3, sleepMS: 1000 };
+
+export interface FeedResult {
+    readonly votingRoundId: number;
+    readonly id: string; // Needs to be 0x-prefixed for abi encoding
+    readonly value: number;
+    readonly turnoutBIPS: number;
+    readonly decimals: number;
+}

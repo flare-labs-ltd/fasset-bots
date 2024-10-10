@@ -83,7 +83,8 @@ program.action(async () => {
                 serviceAccounts.set("price publisher", pricePublisher.address);
             }
             const contractsMap = await createContractsMap(runConfig.contractsJsonFile, runConfig.pricePublisherContracts);
-            const pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisher.privateKey, runConfig.pricePublisherMaxDelayMs ?? 10000, priceFeedApiPath);
+            const publisherApiKey = secrets.optional("apiKey.price_publisher_api");
+            const pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisher.privateKey, runConfig.pricePublisherMaxDelayMs ?? 5000, priceFeedApiPath, publisherApiKey ?? "");
             void pricePublisherService.run(3, 30);
         }
         // create runner and agents
