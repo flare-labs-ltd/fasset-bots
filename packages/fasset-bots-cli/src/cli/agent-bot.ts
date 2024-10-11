@@ -8,7 +8,7 @@ import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
-import { validateDecimal, validateInteger } from "../utils/validation";
+import { translateError, validateDecimal, validateInteger } from "../utils/validation";
 import BN from "bn.js";
 
 const program = programWithCommonOptions("agent", "single_fasset");
@@ -315,7 +315,11 @@ program
     .action(async (agentVault: string, recipient: string, share: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
+        try {
+            await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
+        } catch (error: any) {y
+            translateError(error, { "unknown account": `Account ${recipient} not viable for delegation` });
+        }
     });
 
 program
