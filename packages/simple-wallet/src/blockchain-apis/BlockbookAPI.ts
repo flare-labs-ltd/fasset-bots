@@ -71,7 +71,7 @@ export class BlockbookAPI implements IBlockchainAPI {
                 mintTxid: utxo.txid,
                 mintIndex: utxo.vout,
                 value: toBN(utxo.value),
-                script: await this.getUTXOScript(utxo.txid, utxo.vout),
+                script: "",
                 confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
             }))
         );
