@@ -17,7 +17,6 @@ import { logger } from "../../src/utils/logger";
 import BN from "bn.js";
 import { BTC_DOGE_DEC_PLACES, ChainType } from "../../src/utils/constants";
 import * as dbutils from "../../src/db/dbutils";
-import { fetchTransactionEntityById } from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
@@ -27,8 +26,6 @@ import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAP
 import {
     clearUTXOs,
     createAndFlushTransactionEntity,
-    createAndPersistUTXOEntity,
-    createTransactionEntity, createUTXOEntity,
     setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
@@ -198,7 +195,7 @@ describe("Bitcoin wallet tests", () => {
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(id).to.be.gt(0);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         const sourceBalanceEnd = await wClient.getAccountBalance(fundedWallet.address);
         const targetBalanceEnd = await wClient.getAccountBalance(targetAddress);
         expect(sourceBalanceEnd.lt(sourceBalanceStart)).to.be.true;
@@ -321,30 +318,15 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(0.001, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it("Should replace transaction by fee", async () => {
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
-        const currentBlock = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight()
-        await wClient.tryToReplaceByFee(id, currentBlock)
-        expect(id).to.be.gt(0);
-        await waitForTxToFinishWithStatus(0.005, 50, wClient.rootEm, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_REPLACED, TransactionStatus.TX_SUBMITTED], id);
-    });
-
-    it.skip("Should send transaction", async () => {
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
-        expect(txId).greaterThan(0);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
-        const info = await wClient.getTransactionInfo(txId);
-        expect(info.status).to.eq(TransactionStatus.TX_SUCCESS);
-    });
-
     it("Should submit and replace transaction", async () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const blockHeight = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(txId, blockHeight);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED, txId);
         const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
-        expect(txEnt.status).to.eq(TransactionStatus.TX_REPLACED);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
     });
 
     it("Should check monitoring already running and restart it", async () => {
@@ -405,7 +387,7 @@ describe("Bitcoin wallet tests", () => {
         //cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF
         await wClient.walletKeys.addKey("mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S", "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF")
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, undefined, "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S");
-        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
 });

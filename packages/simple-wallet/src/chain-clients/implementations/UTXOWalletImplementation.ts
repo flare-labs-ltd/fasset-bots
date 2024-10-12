@@ -344,7 +344,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                             txEnt.raw = "";
                             txEnt.transactionHash = "";
                         });
-                        logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);
+                        logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);//TODO can this even happen?
                         if (txEnt.rbfReplacementFor) {
                             await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => {
                                 txEnt.utxos.removeAll();
@@ -392,6 +392,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         } catch (error) {
             /* istanbul ignore next */
             {
+                let notFound = false;
                 if (isORMError(error)) {
                     // We don't want to fail tx if error is caused by DB
                     logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with db error ${errorMessage(error)}`);
@@ -399,11 +400,24 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 }
                 if (axios.isAxiosError(error)) {
                     logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with: ${JSON.stringify(error.response?.data, null, 2)}`);
+                    if (error.response?.data.error.includes("not found")) {
+                        notFound = true;
+                    }
                 } else {
                     logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${error}`);
                 }
 
-                if (txEnt.ancestor) {
+                if(notFound && txEnt.rbfReplacementFor) { //rbf not found -> original is still valid
+                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
+                        txEnt.status = TransactionStatus.TX_FAILED;
+                    });
+                    logger.info(`Transaction ${txEnt.id} changed status to failed due to invalid utxo.`);
+                    await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => {
+                        txEnt.status = TransactionStatus.TX_SUBMITTED;
+                    });
+                    logger.info(`Original transaction ${txEnt.rbfReplacementFor.id} changed status to submitted.`);
+                }
+                if (notFound && txEnt.ancestor) {
                     // tx fails and it has ancestor defined -> original ancestor was rbf-ed
                     // if ancestors rbf is accepted => recreate
                     if (!!txEnt.ancestor.replaced_by && txEnt.ancestor.replaced_by.status === TransactionStatus.TX_SUCCESS) {
