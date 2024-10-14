@@ -48,6 +48,7 @@ tmp.*
 
 # run-config
 packages/fasset-bots-core/run-config/coston-bot-demo.json
+packages/fasset-bots-core/run-config/coston-bot-demo-publisher.json
 
 # config file with various keys and addresses
 secrets.json
