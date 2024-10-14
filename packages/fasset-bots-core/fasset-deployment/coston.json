@@ -221,8 +221,8 @@
   },
   {
     "name": "PriceReader",
-    "contractName": "PriceReader.sol",
-    "address": "0xeBF92a31DAEF96Fe68E3d747d7233aE63B2Cf98C"
+    "contractName": "FtsoV2PriceStore.sol",
+    "address": "0x14150aEeced5c1b318b0a78b0bBd8ca73ac891e4"
   },
   {
     "name": "FakePriceReader",

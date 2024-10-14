@@ -7,33 +7,26 @@ import type { Truffle } from "./types";
 import BN from "bn.js";
 import { EventData, PastEventOptions } from "web3-eth-contract";
 
-export interface IPriceChangeEmitterContract
-  extends Truffle.Contract<IPriceChangeEmitterInstance> {
-  "new"(
-    meta?: Truffle.TransactionDetails
-  ): Promise<IPriceChangeEmitterInstance>;
+export interface IRelayContract extends Truffle.Contract<IRelayInstance> {
+  "new"(meta?: Truffle.TransactionDetails): Promise<IRelayInstance>;
 }
 
-export interface PriceEpochFinalized {
-  name: "PriceEpochFinalized";
-  args: {
-    0: string;
-    1: BN;
+export type AllEvents = never;
+
+export interface IRelayInstance extends Truffle.ContractInstance {
+  merkleRoots(
+    _protocolId: number | BN | string,
+    _votingRoundId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  methods: {
+    merkleRoots(
+      _protocolId: number | BN | string,
+      _votingRoundId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
   };
-}
-
-export interface PricesPublished {
-  name: "PricesPublished";
-  args: {
-    votingRoundId: BN;
-    0: BN;
-  };
-}
-
-export type AllEvents = PriceEpochFinalized | PricesPublished;
-
-export interface IPriceChangeEmitterInstance extends Truffle.ContractInstance {
-  methods: {};
 
   getPastEvents(event: string): Promise<EventData[]>;
   getPastEvents(
