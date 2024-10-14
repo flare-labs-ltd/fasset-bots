@@ -6,7 +6,7 @@
     "nativeChainInfo": {
         "chainName": "Coston",
         "tokenSymbol": "CFLR",
-        "finalizationBlocks": 5,
+        "finalizationBlocks": 6,
         "readLogsChunkSize": 30,
         "recommendedOwnerBalance": "10",
         "faucet": "https://faucet.flare.network"

@@ -35,6 +35,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     secrets.apiKey.native_rpc = "";
     if (users.includes("agent") || users.includes("user")) {
         secrets.apiKey.xrp_rpc = "";
+        secrets.apiKey.btc_rpc = "";
         secrets.apiKey.indexer = "";
     }
     if (users.includes("agent")) {

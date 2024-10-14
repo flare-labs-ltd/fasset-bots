@@ -34,7 +34,7 @@ export class AgentVaultController {
         return handleApiResponse(this.agentService.depositToVault(fAssetSymbol, agentVaultAddress, amount));
     }
 
-    @Post("collateral/withdraw/:fAssetSymbol/:agentVaultAddress/:amount")
+    @Post("collateral/withdrawVault/:fAssetSymbol/:agentVaultAddress/:amount")
     @HttpCode(200)
     public async withdrawVaultCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -44,7 +44,7 @@ export class AgentVaultController {
         return handleApiResponse(this.agentService.withdrawVaultCollateral(fAssetSymbol, agentVaultAddress, amount));
     }
 
-    @Get("collateral/freeBalance/:fAssetSymbol/:agentVaultAddress")
+    @Get("collateral/freeVaultBalance/:fAssetSymbol/:agentVaultAddress")
     public async getFreeVaultCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
