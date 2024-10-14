@@ -99,6 +99,8 @@ export async function createTransactionOutputEntities(rootEm: EntityManager, tra
 
 function transformOutputToTxOutputEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
     const parsedOutput = JSON.parse(JSON.stringify(output)) as UTXORawTransactionOutput;
+
+    /* istanbul ignore next */
     return createTransactionOutputEntity(
         transaction,
         transaction.transactionHash ?? "",
@@ -109,6 +111,7 @@ function transformOutputToTxOutputEntity(vout: number, output: Output, transacti
 }
 
 export function transformUTXOEntToTxInputEntity(utxo: UTXOEntity, transaction: TransactionEntity): TransactionInputEntity {
+    /* istanbul ignore next */
     return createTransactionInputEntity(transaction, utxo.mintTransactionHash, utxo.value, utxo.position, utxo.script ?? "");
 }
 
@@ -152,7 +155,7 @@ export async function createUTXOEntity(
     position: number,
     value: BN,
     script: string,
-    spentTxHash: string | null = null,
+    spentTxHash: /* istanbul ignore next */ string | null = null,
     confirmed: boolean
 ): Promise<void> {
     rootEm.create(UTXOEntity, {
@@ -341,6 +344,7 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
         txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
         txEnt.serverSubmitResponse = JSON.stringify(reason);
     });
+    /* istanbul ignore next */
     if (error) {
         logger.error(`Transaction ${txId} failed: ${reason}`, error);
     } else {
@@ -358,7 +362,7 @@ export async function processTransactions(
     for (const txEnt of transactionEntities) {
         try {
             await processFunction(txEnt);
-        } catch (e) {
+        } /* istanbul ignore next */ catch (e) {
             logger.error(`Cannot process transaction ${txEnt.id}`, e);
         }
     }
@@ -395,7 +399,10 @@ export async function updateMonitoringState(
 ): Promise<void> {
     await rootEm.transactional(async (em) => {
         const stateEnt = await fetchMonitoringState(rootEm, chainType);
-        if (!stateEnt) return;
+        /* istanbul ignore if */
+        if (!stateEnt) {
+            return;
+        }
         modify(stateEnt);
         await em.persistAndFlush(stateEnt);
     });

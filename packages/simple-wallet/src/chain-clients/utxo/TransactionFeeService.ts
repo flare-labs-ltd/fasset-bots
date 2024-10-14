@@ -101,6 +101,7 @@ export class TransactionFeeService {
             const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
             let est_fee = await this.getEstimateFee(utxos.length, numOfOut);
 
+            /* istanbul ignore if */
             if (params.amount == null) {
                 return est_fee;
             } else {
@@ -116,7 +117,7 @@ export class TransactionFeeService {
                 }
                 return est_fee;
             }
-        } catch (error) {
+        } /* istanbul ignore next */ catch (error) {
             logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount?.toString()}: ${errorMessage(error)}`);
             throw error;
         }

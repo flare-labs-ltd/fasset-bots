@@ -6,13 +6,15 @@ import { EntityManager } from "@mikro-orm/core";
 import { BTC, DOGE, XRP } from "../../src";
 import BN from "bn.js";
 import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
-import winston from "winston";
+import winston, { Logger } from "winston";
 import { logger } from "../../src/utils/logger";
 import { toBN } from "../../src/utils/bnutils";
 import { isORMError } from "../../src/utils/axios-error-utils";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
+import { IBlockchainAPI, MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
+import { Transaction } from "bitcore-lib";
+import * as bitcore from "bitcore-lib";
 
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -31,7 +33,7 @@ export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndS
     }
 }
 
-export async function loop(sleepIntervalMs: number, timeLimit: number, tx: TransactionEntity | TransactionInfo | null, conditionFn: any) {
+export async function loop(sleepIntervalMs: number, timeLimit: number, tx: TransactionEntity | TransactionInfo | null, conditionFn: () => Promise<boolean | undefined>) {
     const startTime = Date.now();
     while (true) {
         const shouldStop = await conditionFn();
@@ -95,7 +97,7 @@ export async function waitForTxToBeReplacedWithStatus(sleepInterval: number, tim
     return [await fetchTransactionEntityById(wClient.rootEm, txId), await wClient.getTransactionInfo(txId)];
 }
 
-export function addConsoleTransportForTests (logger: any) {
+export function addConsoleTransportForTests (logger: Logger) {
     const consoleTransport = new winston.transports.Console({
         format: winston.format.combine(
             winston.format.colorize(),
@@ -149,9 +151,9 @@ export function resetMonitoringOnForceExit<T extends WriteWalletInterface>(wClie
     });
 }
 
-export async function calculateNewFeeForTx(txId: number, feePerKb: BN, core: any, rootEm: EntityManager) {
+export async function calculateNewFeeForTx(txId: number, feePerKb: BN, core: typeof bitcore, rootEm: EntityManager): Promise<[BN | undefined, number | undefined]> {
     const txEnt = await fetchTransactionEntityById(rootEm, txId);
-    const tr = new core.Transaction(JSON.parse(txEnt.raw!));
+    const tr: Transaction = new core.Transaction(JSON.parse(txEnt.raw!));
     return [txEnt.fee, tr.feePerKb(feePerKb.toNumber()).getFee()];
 }
 
@@ -163,20 +165,20 @@ export const TEST_WALLET_XRP = {
 
 export class MockBlockchainAPI implements BlockchainAPIWrapper {
     client: AxiosInstance;
-    clients: any;
+    clients: Record<string, IBlockchainAPI>;
     chainType: ChainType;
 
     constructor() {
-        this.clients = [];
+        this.clients = {};
         this.client = axios.create({});
         this.chainType = ChainType.testBTC;
     }
 
-    getBlockTimeAt(blockNumber: number): Promise<import("bn.js")> {
+    getBlockTimeAt(): Promise<import("bn.js")> {
         return Promise.resolve(toBN(0));
     }
 
-    async getAccountBalance(account: string): Promise<number | undefined> {
+    async getAccountBalance(): Promise<number | undefined> {
         return Promise.resolve(undefined);
     }
 
@@ -188,7 +190,7 @@ export class MockBlockchainAPI implements BlockchainAPIWrapper {
         return Promise.resolve(0);
     }
 
-    async getTransaction(txHash: string | undefined): Promise<UTXOTransactionResponse> {
+    async getTransaction(): Promise<UTXOTransactionResponse> {
         return Promise.resolve(
             {
                 "txid": "",
@@ -238,15 +240,15 @@ export class MockBlockchainAPI implements BlockchainAPIWrapper {
         );
     }
 
-    async getUTXOScript(txHash: string, vout: number): Promise<string> {
+    async getUTXOScript(): Promise<string> {
         return Promise.resolve("");
     }
 
-    async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
+    async getUTXOsFromMempool(): Promise<MempoolUTXO[]> {
         return Promise.resolve([]);
     }
 
-    async sendTransaction(tx: string): Promise<AxiosResponse> {
+    async sendTransaction(): Promise<AxiosResponse> {
         return Promise.resolve({} as AxiosResponse);
     }
 }

@@ -111,6 +111,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
+    * @param executeUntilBlock
+    * @param executeUntilTimestamp
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    async createPaymentTransaction(

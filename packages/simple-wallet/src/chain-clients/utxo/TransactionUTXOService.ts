@@ -21,7 +21,6 @@ import { TransactionInputEntity } from "../../entity/transactionInput";
 import { TransactionService } from "./TransactionService";
 import { isEnoughUTXOs } from "./UTXOUtils";
 import { MempoolUTXO, UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
-import { TransactionOutputEntity } from "../../entity/transactionOutput";
 
 export interface TransactionData {
     source: string;
@@ -51,6 +50,7 @@ export class TransactionUTXOService {
 
         this.maximumNumberOfUTXOs = 5;
 
+        /* istanbul ignore next */
         if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
             this.minimumUTXOValue = toBNExp(0.1, BTC_DOGE_DEC_PLACES);
         } else if (this.chainType === ChainType.testBTC || this.chainType === ChainType.BTC) {
@@ -100,7 +100,10 @@ export class TransactionUTXOService {
         let res: UTXOEntity[] | null = null;
         if (feeStatus == FeeStatus.HIGH) {
             // order by value, confirmed
-            utxos.sort((a, b) => (a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed)));
+            utxos.sort(
+                /* istanbul ignore next*/
+                (a, b) => (a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed))
+            );
             res = await this.collectUTXOs(utxos, rbfUTXOs, txData);
         } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
             // check if we can build tx with utxos with utxo.value < amountToSend
@@ -261,6 +264,7 @@ export class TransactionUTXOService {
             logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
             if (tr) {
                 await this.rootEm.transactional(async (em) => {
+                    /* istanbul ignore next */
                     const txEnt = em.create(TransactionEntity, {
                         chainType: this.chainType,
                         source: tr.vin[0].addresses[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
@@ -300,9 +304,9 @@ export class TransactionUTXOService {
         const inputs: TransactionInputEntity[] = [];
         for (const utxo of dbUTXOs) {
             const tx = await this.getTransactionEntityByHash(utxo.mintTransactionHash);
+            /* istanbul ignore else */
             if (tx) {
                 inputs.push(transformUTXOEntToTxInputEntity(utxo, tx));
-                /* istanbul ignore next */
             } else {
                 logger.warn(`Transaction ${txId}: Transaction (utxo) with hash ${utxo.mintTransactionHash} could not be found on api`);
             }

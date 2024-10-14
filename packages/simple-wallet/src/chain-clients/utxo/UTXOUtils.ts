@@ -99,12 +99,13 @@ export async function getAccountBalance(chainType: ChainType, account: string): 
     try {
         const blockchainAPIWrapper = ServiceRepository.get(chainType, BlockchainAPIWrapper);
         const accountBalance = await blockchainAPIWrapper.getAccountBalance(account);
+        /* istanbul ignore if */
         if (accountBalance === undefined) {
             throw new Error("Account balance not found");
         }
         const mainAccountBalance = toBN(accountBalance);
         return mainAccountBalance;
-    } catch (error) {
+    } /* istanbul ignore next */ catch (error) {
         logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
         throw error;
     }

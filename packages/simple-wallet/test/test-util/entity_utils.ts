@@ -11,11 +11,9 @@ import { ChainType } from "../../src/utils/constants";
 import BN from "bn.js";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { updateMonitoringState } from "../../src/db/dbutils";
+import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
 
 export function createTransactionEntity(source: string, destination: string, txHash: string, utxos?: UTXOEntity[], inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
     const txEnt = new TransactionEntity();
@@ -58,13 +56,14 @@ export async function createAndPersistUTXOEntity(
     source: string,
     mintTransactionHash: string,
     position: number,
+    spentHeight?: SpentHeightEnum,
 ) {
     const utxoEntity = em.create(UTXOEntity, {
         source: source,
         mintTransactionHash: mintTransactionHash,
         position: position,
         value: toBN(0),
-        spentHeight: SpentHeightEnum.SPENT,
+        spentHeight: spentHeight ?? SpentHeightEnum.SPENT,
         script: "",
     } as RequiredEntityData<UTXOEntity>);
     await em.persistAndFlush(utxoEntity);
@@ -81,7 +80,16 @@ export function createTransactionInputEntity(transactionHash: string, vout: numb
     return inputEnt;
 }
 
-export async function createAndFlushTransactionEntity(
+export function createTransactionOutputEntity(transactionHash: string, vout: number) {
+    const inputEnt = new TransactionOutputEntity();
+    inputEnt.transactionHash = transactionHash;
+    inputEnt.vout = vout;
+    inputEnt.amount = toBN(0);
+    inputEnt.script = "";
+    return inputEnt;
+}
+
+export async function createAndPersistTransactionEntity(
     rootEm: EntityManager,
     chainType: ChainType,
     source: string,
@@ -124,10 +132,10 @@ export async function createAndSignXRPTransactionWithStatus(wClient: XRP, source
         note,
     );
 
-    const txEnt = await createAndFlushTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
+    const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);
     const privateKey = await wClient.walletKeys.getKey(txEnt.source);
     txEnt.raw = JSON.stringify(transaction);
-    txEnt.transactionHash = wClient.signTransaction(JSON.parse(txEnt.raw!), privateKey!).txHash;
+    txEnt.transactionHash = wClient.signTransaction(JSON.parse(txEnt.raw), privateKey!).txHash;
     txEnt.status = status;
 
     await wClient.rootEm.flush();
@@ -154,7 +162,7 @@ export async function setWalletStatusInDB(rootEm: EntityManager, address: string
 }
 
 export async function setMonitoringStatus(rootEm: EntityManager, chainType: ChainType, monitoring: number) {
-    await updateMonitoringState(rootEm, chainType, async (monitoringEnt) => {
+    await updateMonitoringState(rootEm, chainType, (monitoringEnt) => {
         monitoringEnt.lastPingInTimestamp = toBN(monitoring);
     });
 }

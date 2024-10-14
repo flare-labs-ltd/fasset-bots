@@ -10,6 +10,8 @@ import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { addConsoleTransportForTests, MockBlockchainAPI } from "../test-util/common_utils";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
+import sinon from "sinon";
+import BN from "bn.js";
 
 let feeService: BlockchainFeeService;
 const chainType = ChainType.testBTC;
@@ -42,6 +44,8 @@ describe("Fee service tests BTC", () => {
         };
         client = BTC.initialize(BTCMccConnectionTest);
         feeService = ServiceRepository.get(chainType, BlockchainFeeService);
+        feeService.sleepTimeMs = 200;
+
         await feeService.setupHistory();
     });
 
@@ -68,7 +72,9 @@ describe("Fee service tests BTC", () => {
     it("Fee stats for block without information/non existent block should be null", async () => {
         const blockHeight = await feeService.getCurrentBlockHeight() + 10;
         const feeStats = await feeService.getFeeStatsFromIndexer(blockHeight);
+        const feeStatsWithRetires = await feeService.getFeeStatsWithRetry(blockHeight);
         expect(feeStats).to.be.null;
+        expect(feeStatsWithRetires).to.be.null;
     });
 
     it("Should get fee and median time", async () => {
@@ -83,4 +89,21 @@ describe("Fee service tests BTC", () => {
         await feeService.monitorFees(false);
     });
 
+    it("If fetching fee stats fails it should be retried until number of tries passes the limit", async () => {
+        const stub = sinon.stub(feeService, "getFeeStatsFromIndexer");
+        stub.onCall(0).throws(new Error("API not available"));
+        stub.onCall(1).throws(new Error("API not available"));
+        stub.onCall(2).returns(Promise.resolve({
+            blockHeight: 123,
+            averageFeePerKB: new BN(1000),
+            blockTime: new BN(600),
+        }));
+
+        const feeStats = await feeService.getFeeStatsWithRetry(123, 3);
+        expect(feeStats).to.not.be.null;
+        expect(feeStats!.averageFeePerKB.eq(new BN(1000))).to.be.true;
+        expect(feeStats!.blockTime.eq(new BN(600))).to.be.true;
+
+        sinon.restore();
+    });
 });

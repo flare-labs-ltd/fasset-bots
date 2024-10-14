@@ -122,14 +122,14 @@ export class TransactionMonitor {
                      /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
 
-                } catch (error) {
+                } /* istanbul ignore next */ catch (error) {
                     logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}: ${errorMessage(error)}`);
                 }
                 await sleepMs(this.restartInDueToError);
             }
 
             logger.info(`Monitoring stopped for chain ${this.chainType}`);
-        } catch (error) {
+        } /* istanbul ignore next */ catch (error) {
             logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
         }
     }

@@ -15,8 +15,13 @@ import {
 } from "../test-util/common_utils";
 import { logger } from "../../src/utils/logger";
 import BN from "bn.js";
-import { BTC_DOGE_DEC_PLACES, ChainType } from "../../src/utils/constants";
+import { BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
 import * as dbutils from "../../src/db/dbutils";
+import {
+    correctUTXOInconsistenciesAndFillFromMempool,
+    fetchTransactionEntityById,
+    fetchUTXOsByTxId,
+} from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
@@ -25,11 +30,14 @@ import { TransactionService } from "../../src/chain-clients/utxo/TransactionServ
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import {
     clearUTXOs,
-    createAndFlushTransactionEntity,
+    createAndPersistTransactionEntity,
+    createAndPersistUTXOEntity,
+    createTransactionEntity, createTransactionOutputEntity,
     setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
+import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
 
 use(chaiAsPromised);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -173,7 +181,7 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
         const executeUntilBlock = currentBlock + wClient.blockOffset;
-        const txEnt = await createAndFlushTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
+        const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
@@ -381,13 +389,107 @@ describe("Bitcoin wallet tests", () => {
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
+    it("If private key for fee wallet is missing transaction shouldn't be created", async () => {
+        const feeSourceAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
+        await wClient.rootEm.nativeDelete(WalletAddressEntity, { address: feeSourceAddress });
+        await wClient.rootEm.flush();
+        wClient.rootEm.clear(); // clear the cache so that the keys are deleted for sure ...
+
+        expect(
+            wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, feeSourceAddress)
+        ).to.eventually.be.rejectedWith(`Cannot prepare transaction ${fundedAddress}. Missing private key for fee wallet.`);
+    });
+
     it("Paying fees from another wallet", async () => {
-        //old funded - still have some funds
-        //mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S
-        //cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF
-        await wClient.walletKeys.addKey("mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S", "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF")
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, undefined, "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S");
+        //old target - still have some funds
+        //a: mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2
+        //pk: cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY
+
+        const feeSourceAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
+        const feeSourcePk = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
+
+        // Refill the fee wallet, so that it doesn't get empty
+        const fundTxId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSendSatoshi, feeInSatoshi);
+        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, fundTxId);
+
+        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk)
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, undefined, feeSourceAddress);
+        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
+
+        const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
+        expect(txEnt.utxos.getItems().map(t => t.source)).to.include.members([fundedAddress, feeSourceAddress]);
+    });
+
+    it("If transaction doesn't exist / has a wrong hash, it's list of UTXOs should be empty", async () => {
+        expect((await fetchUTXOsByTxId(wClient.rootEm, -1)).length).to.be.eq(0);
+        const txEnt = createTransactionEntity(fundedAddress, targetAddress, "hash");
+        txEnt.raw = "asdf";
+        await wClient.rootEm.persistAndFlush(txEnt);
+
+        expect((await fetchUTXOsByTxId(wClient.rootEm, txEnt.id)).length).to.be.eq(0);
+    });
+
+    it("Should not create transaction: amount = dust amount", async () => {
+        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
+        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
+
+        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, BTC_DUST_AMOUNT, feeInSatoshi)).to
+            .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${BTC_DUST_AMOUNT.toString()} is less than dust ${BTC_DUST_AMOUNT.toString()}`);
+    });
+
+    it("If network is down, the monitoring should continue to operate", async () => {
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
+        await wClient.stopMonitoring();
+
+        const stub = sinon.stub(utxoUtils, "checkUTXONetworkStatus");
+        stub.onCall(0).throws(new Error("API not available"));
+        stub.onCall(1).throws(new Error("API not available"));
+        stub.onCall(2).returns(await wClient.blockchainAPI.getCurrentBlockHeight());
+
+        void wClient.startMonitoringTransactionProgress();
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
+    it("If DB is down (therefore ping too) the monitoring should eventually stop", async () => {
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
+        sinon.stub(dbutils, "updateMonitoringState").throws(new Error("Ping down"));
+
+        await loop(500, 60 * 1000, null, async () => {
+            return !(await wClient.isMonitoring());
+        });
+    });
+
+    it("If transaction uses already spent UTXOs they should be removed and it's status should be set to TX_CREATED", async () => {
+        await wClient.stopMonitoring();
+
+        const tx1 = createTransactionEntity(targetAddress, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c");
+        const tx2 = createTransactionEntity(targetAddress, fundedAddress, "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e");
+        const utxos = await Promise.all([
+            await createAndPersistUTXOEntity(wClient.rootEm, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, SpentHeightEnum.SPENT),
+            await createAndPersistUTXOEntity(wClient.rootEm, fundedAddress, "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, SpentHeightEnum.SPENT)
+        ]);
+
+        // So that we don't need to create an actual raw transaction ...
+        sinon.stub(dbutils, "fetchUTXOsByTxId").resolves(utxos);
+
+        const initialTxEnt = createTransactionEntity(fundedAddress, targetAddress, "hash", utxos, [tx1, tx2], TransactionStatus.TX_PREPARED);
+        initialTxEnt.outputs.set([createTransactionOutputEntity("asdf", 0)]);
+
+        await wClient.rootEm.persistAndFlush([initialTxEnt, tx1, tx2]);
+
+        const txEnt = await fetchTransactionEntityById(wClient.rootEm, initialTxEnt.id);
+        expect(txEnt.status).to.be.eq(TransactionStatus.TX_PREPARED)
+        expect(txEnt.utxos.getItems()).to.include.members(utxos);
+        expect(txEnt.inputs.getItems().length).to.eq(utxos.length);
+        expect(txEnt.outputs.getItems().length).to.eq(1);
+
+        const usesAlreadySpent = await ServiceRepository.get(wClient.chainType, TransactionUTXOService).checkIfTxUsesAlreadySpentUTXOs(initialTxEnt.id);
+        expect(usesAlreadySpent).to.be.eq(true);
+        expect(txEnt.utxos.getItems()).to.be.empty;
+        expect(txEnt.inputs.getItems().length).to.eq(0);
+        expect(txEnt.outputs.getItems().length).to.eq(0);
+        expect(txEnt.transactionHash).to.be.eq("");
+
+    });
 });

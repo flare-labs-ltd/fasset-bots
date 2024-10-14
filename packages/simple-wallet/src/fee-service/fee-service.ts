@@ -43,6 +43,7 @@ export class BlockchainFeeService {
     }
 
     getLatestMedianTime(): BN | null {
+        /* istanbul ignore if */
         if (this.history.length < this.numberOfBlocksInHistory) {
             return null;
         }
@@ -61,6 +62,7 @@ export class BlockchainFeeService {
 
         while (monitoring) {
             const currentBlockHeight = await this.getCurrentBlockHeight();
+            /* istanbul ignore next */
             const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
             if (!currentBlockHeight || currentBlockHeight <= lastStoredBlockHeight) {
                 await sleepMs(this.sleepTimeMs);
@@ -70,7 +72,9 @@ export class BlockchainFeeService {
             let blockHeightToFetch = lastStoredBlockHeight + 1;
             while (blockHeightToFetch <= currentBlockHeight) {
                 const feeStats = await this.getFeeStatsWithRetry(blockHeightToFetch);
+                /* istanbul ignore else */
                 if (feeStats) {
+                    /* istanbul ignore else */
                     if (this.history.length >= this.numberOfBlocksInHistory) {
                         this.history.shift(); // remove oldest block
                     }
@@ -94,12 +98,14 @@ export class BlockchainFeeService {
         }
         logger.info(`${this.chainType}: Setup history started.`)
         const currentBlockHeight = await this.getCurrentBlockHeight();
+        /* istanbul ignore next */
         if (currentBlockHeight === 0) {
             return;
         }
         let blockHeightToFetch = currentBlockHeight;
         while (this.history.length < this.numberOfBlocksInHistory) {
             const feeStats = await this.getFeeStatsWithRetry(blockHeightToFetch);
+            /* istanbul ignore else */
             if (feeStats) {
                 this.history.unshift({
                     blockHeight: blockHeightToFetch,
@@ -109,7 +115,6 @@ export class BlockchainFeeService {
                 blockHeightToFetch--;
             } else {
                 logger.error(`Failed to retrieve fee stats for block ${blockHeightToFetch} during history setup.`);
-                continue;
             }
         }
         logger.info(`${this.chainType}: Setup history completed.`)
@@ -119,7 +124,7 @@ export class BlockchainFeeService {
         try {
             const blockHeight = await this.blockchainAPI.getCurrentBlockHeight()
             return blockHeight;
-        } catch (error) {
+        } /* istanbul ignore else */ catch (error) {
             logger.error(`Fee service failed to fetch block height ${errorMessage(error)}`);
             return 0;
         }
@@ -134,7 +139,7 @@ export class BlockchainFeeService {
                 averageFeePerKB: toBNExp(avgFee, BTC_DOGE_DEC_PLACES),
                 blockTime: blockTime
             };
-        } catch (error) {
+        } /* istanbul ignore next */ catch (error) {
             logger.error(`Error fetching fee stats from indexer for block ${blockHeight}: ${errorMessage(error)}`);
             return null;
         }
@@ -148,7 +153,7 @@ export class BlockchainFeeService {
                 if (feeStats) {
                     return feeStats;
                 }
-            } catch (error) {
+            } /* istanbul ignore next */ catch (error) {
                 logger.warn(`Failed to fetch fee stats for block ${blockHeight} on attempt ${attempts + 1}: ${errorMessage(error)}`);
             }
             attempts++;

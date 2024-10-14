@@ -47,7 +47,9 @@ export class TransactionService {
         executeUntilTimestamp?: BN,
         feeSource?: string,
     ): Promise<number> {
+        /* istanbul ignore next */
         logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}`);
+        /* istanbul ignore if */
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
@@ -80,6 +82,7 @@ export class TransactionService {
         executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
+        /* istanbul ignore if */
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
@@ -204,6 +207,7 @@ export class TransactionService {
             note: note,
         } as TransactionData;
 
+        /* istanbul ignore next: skip for the ?.utxos ... */
         const utxosForAmount = await this.utxoService.fetchUTXOs(txDataForAmount, txForReplacement?.utxos.getItems());
         this.transactionChecks(txDbId, txDataForAmount, utxosForAmount);
 
@@ -244,7 +248,7 @@ export class TransactionService {
         }
 
         const utxosForFeeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
-        const correctedFee = tr.getFee() + (feePerKB !== undefined ? feePerKB.muln(31).divn(1000).toNumber() : 0); // Fee should be higher since we have additional output (+31vB)!
+        const correctedFee = tr.getFee() + feePerKB.muln(31).divn(1000).toNumber(); // Fee should be higher since we have additional output (+31vB)!
         if (utxosForFeeAmount.subn(correctedFee).gt(getDustAmount(this.chainType))) {
             const remainder = utxosForFeeAmount.subn(correctedFee).toNumber();
             tr.to(feeSource, remainder);

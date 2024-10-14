@@ -405,7 +405,7 @@ describe("Xrp wallet tests", () => {
 
         const txEnt0 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
         const id0 = txEnt0.id;
-        updateTransactionEntity(wClient.rootEm, id0, (txEntToUpdate) => {
+        await updateTransactionEntity(wClient.rootEm, id0, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify({raw: 0});
         })
         const txEntBefore0 = await fetchTransactionEntityById(wClient.rootEm, id0);
@@ -415,7 +415,7 @@ describe("Xrp wallet tests", () => {
 
         const txEnt2 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
         const id1 = txEnt2.id;
-        updateTransactionEntity(wClient.rootEm, id1, (txEntToUpdate) => {
+        await updateTransactionEntity(wClient.rootEm, id1, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify({raw: 0});
         })
         const txEntBefore1 = await fetchTransactionEntityById(wClient.rootEm, id1);
@@ -425,7 +425,7 @@ describe("Xrp wallet tests", () => {
 
         const txEnt3 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
         const id2 = txEnt3.id;
-        updateTransactionEntity(wClient.rootEm, id2, (txEntToUpdate) => {
+        await updateTransactionEntity(wClient.rootEm, id2, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify({raw: 0});
         })
         const txEntBefore2 = await fetchTransactionEntityById(wClient.rootEm, id2);

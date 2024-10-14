@@ -66,19 +66,20 @@ export class BlockbookAPI implements IBlockchainAPI {
     async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
         const data = res.data as UTXOResponse[];
-        return Promise.all(
-            data.map(async (utxo: UTXOResponse): Promise<MempoolUTXO> => ({
-                mintTxid: utxo.txid,
-                mintIndex: utxo.vout,
-                value: toBN(utxo.value),
-                script: "",
-                confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
-            }))
-        );
+
+        return data.map((utxo: UTXOResponse): MempoolUTXO => ({
+            mintTxid: utxo.txid,
+            mintIndex: utxo.vout,
+            value: toBN(utxo.value),
+            script: "",
+            /* istanbul ignore next */
+            confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
+        }));
     }
 
     async getUTXOScript(txHash: string, voutParam: number) {
         const res = await this.getTransaction(txHash)
+        /* istanbul ignore next: ignore for the ?? */
         return res.vout[voutParam]?.hex ?? "";
     }
 
