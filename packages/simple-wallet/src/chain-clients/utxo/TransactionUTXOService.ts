@@ -12,7 +12,7 @@ import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
-import { ChainType } from "../../utils/constants";
+import { BTC_DOGE_DEC_PLACES, ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
@@ -52,11 +52,11 @@ export class TransactionUTXOService {
         this.maximumNumberOfUTXOs = 5;
 
         if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
-            this.minimumUTXOValue = toBNExp(1, 7);
+            this.minimumUTXOValue = toBNExp(0.1, BTC_DOGE_DEC_PLACES);
         } else if (this.chainType === ChainType.testBTC || this.chainType === ChainType.BTC) {
-            this.minimumUTXOValue = toBNExp(1, 5);
+            this.minimumUTXOValue = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
         } else {
-            this.minimumUTXOValue = toBNExp(1, 5);
+            this.minimumUTXOValue = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
         }
 
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
@@ -83,7 +83,7 @@ export class TransactionUTXOService {
     // allUTXOs = currently available UTXOs (either from db or db + fetch from mempool)
     private async selectUTXOs(allUTXOs: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData, feeStatus: FeeStatus) {
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
-            return null; //try to refetch new UTXOs from mempool
+            return null;
         }
 
         const notMinimalUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(this.minimumUTXOValue));
