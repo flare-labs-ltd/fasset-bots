@@ -34,12 +34,30 @@ export class PoolController {
         return handleApiResponse(this.agentService.buyPoolCollateral(fAssetSymbol, agentVaultAddress, amount));
     }
 
-    @Get("collateral/freeBalance:fAssetSymbol/:agentVaultAddress")
+    @Get("collateral/freePoolBalance/:fAssetSymbol/:agentVaultAddress")
     public async freePoolCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
     ): Promise<ApiResponseWrapper<AgentBalance>> {
         return handleApiResponse(this.agentService.freePoolCollateral(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Get("collateral/poolBalance/:fAssetSymbol/:agentVaultAddress")
+    public async poolTokenBalance(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<AgentBalance>> {
+        return handleApiResponse(this.agentService.poolTokenBalance(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Post("collateral/withdrawPool/:fAssetSymbol/:agentVaultAddress/:amount")
+    @HttpCode(200)
+    public async withdrawPoolCollateral(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.withdrawPoolCollateral(fAssetSymbol, agentVaultAddress, amount));
     }
 
     @Post("fee/withdraw/:fAssetSymbol/:agentVaultAddress/:amount")
