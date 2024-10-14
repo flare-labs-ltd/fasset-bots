@@ -51,13 +51,26 @@ export interface BotNativeChainInfo {
 
 
 export interface ApiNotifierConfig {
-    apiUrl: string
-    apiKey: string
+    apiUrl: string;
+    apiKey: string;
 }
 
-export interface BotStrategyDefinition {
+export interface DexLiquidationStrategyConfig {
+    address: string;
+    maxAllowedSlippage: number;
+}
+export interface DexChallengeStrategyConfig {
+    address: string;
+    maxAllowedSlippage: number;
+};
+
+export interface LiquidatorBotStrategyDefinition {
     className: string;
-    config?: any;
+    config?: DexLiquidationStrategyConfig;
+}
+export interface ChallengerBotStrategyDefinition {
+    className: string;
+    config?: DexChallengeStrategyConfig;
 }
 
 export interface BotConfigFile {
@@ -81,8 +94,8 @@ export interface BotConfigFile {
     // notifier apis
     apiNotifierConfigs?: ApiNotifierConfig[]
     // liquidation strategies for liquidator and challenger
-    liquidationStrategy?: BotStrategyDefinition; // only for liquidator
-    challengeStrategy?: BotStrategyDefinition; // only for challenge
+    liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator
+    challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenge
 }
 
 export interface AgentBotFassetSettingsJson {
