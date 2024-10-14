@@ -194,7 +194,7 @@ export class TransactionService {
         note?: string,
         txForReplacement?: TransactionEntity
     ): Promise<[Transaction, UTXOEntity[]]> {
-        const feePerKB = feeInSatoshi === undefined ? await this.transactionFeeService.getFeePerKB() : undefined;
+        const feePerKB = feeInSatoshi ?? await this.transactionFeeService.getFeePerKB();
         const txDataForAmount = {
             source: source,
             destination: destination,
