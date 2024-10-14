@@ -268,8 +268,8 @@ export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: Entit
         }));
         const unspentUtxos = (await em.find(UTXOEntity, {
             source: address,
-            spentHeight: { $ne: SpentHeightEnum.UNSPENT },
-            $and: unspentCondition,
+            spentHeight: { $eq: SpentHeightEnum.SPENT },
+            $or: unspentCondition,
         })) as UTXOEntity[];
         unspentUtxos.forEach((utxo) => {
             utxo.spentHeight = SpentHeightEnum.UNSPENT;
