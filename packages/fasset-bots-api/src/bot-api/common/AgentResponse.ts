@@ -18,6 +18,7 @@ export interface AgentUnderlying {
     transactionHash?: string | null;
     address?: string;
     privateKey?: string;
+    transactionDatabaseId?: number | null;
 }
 
 export interface AgentSettings {
