@@ -416,6 +416,18 @@ program
         await cli.upgradeWNatContract(agentVault);
     });
 
+program
+    .command("exportPrivateKeys")
+    .description("export underlying agent vault private keys")
+    .argument("<exportFile>")
+    .action(async (exportFile: string) => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const data = await cli.getOwnedUnderlyingAccounts(secrets);
+        fs.writeFileSync(exportFile, JSON.stringify(data, null, 4));
+    })
+
 toplevelRun(async () => {
     try {
         await program.parseAsync();

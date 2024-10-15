@@ -1,5 +1,6 @@
 import { loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { programVersion, resolveInFassetBotsCore, stripIndent } from "@flarelabs/fasset-bots-core/utils";
+import type { BotConfig, BotFAssetConfig } from "@flarelabs/fasset-bots-core/config";
 import { Command } from "commander";
 import fs from "fs";
 import os from "os";
@@ -104,4 +105,15 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
 
 function defaultSecretsPath() {
     return path.resolve(os.homedir(), "fasset/secrets.json");
+}
+
+export function getOneDefaultToAll<T>(map: Map<string,T>, val?: string): T[] {
+    if (val === undefined) {
+        return Array.from(map.values());
+    }
+    const values = map.get(val);
+    if (values === undefined) {
+        throw new Error(`FAsset ${val} not found in config`);
+    }
+    return [values];
 }

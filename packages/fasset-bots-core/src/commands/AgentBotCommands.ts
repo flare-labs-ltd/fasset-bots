@@ -549,6 +549,31 @@ export class AgentBotCommands {
     }
 
     /**
+     * Returns the private key for the given agent's underlying vault account.
+     */
+    async getAgentPrivateKey(underlyingAddress: string, secrets: Secrets): Promise<string | undefined> {
+        const walletKeys = DBWalletKeys.from(this.orm.em, secrets);
+        return walletKeys.getKey(underlyingAddress);
+    }
+
+    /**
+     * Returns the owned underlying accounts for the context's asset manager agents.
+     */
+    async getOwnedUnderlyingAccounts(secrets: Secrets): Promise<{
+        vaultAddress: string;
+        underlyingAddress: string;
+        privateKey: string | undefined;
+    }[]> {
+        const data = []
+        const agents = await this.getAllActiveAgents(this.context.fAssetSymbol);
+        for (const agent of agents) {
+            const privateKey = await this.getAgentPrivateKey(agent.underlyingAddress, secrets);
+            data.push({ vaultAddress: agent.vaultAddress, underlyingAddress: agent.underlyingAddress, privateKey });
+        }
+        return data
+    }
+
+    /**
      * Return all active agents belonging to this context's asset manager.
      */
     async getActiveAgentsForFAsset() {
