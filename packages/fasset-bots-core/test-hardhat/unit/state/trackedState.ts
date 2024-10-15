@@ -148,7 +148,7 @@ describe("Tracked state tests", () => {
 
     it("Should handle event 'PriceEpochFinalized'", async () => {
         // mock price changes
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         const spyPrices = spy.on(trackedState, "getPrices");
         await trackedState.readUnhandledEvents();
         expect(spyPrices).to.have.been.called.once;
@@ -457,8 +457,8 @@ describe("Tracked state tests", () => {
         await trackedState.readUnhandledEvents();
         const lots = 3;
         const liquidatorAddress = accounts[100];
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 40), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 40), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 40), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 40), 0);
         // liquidator "buys" f-assets
         await context.fAsset.transfer(liquidatorAddress, minted.mintedAmountUBA, { from: minter.address });
         // liquidate agent (partially)

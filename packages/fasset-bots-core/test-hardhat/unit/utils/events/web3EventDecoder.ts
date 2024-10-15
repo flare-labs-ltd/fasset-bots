@@ -16,7 +16,7 @@ describe("Web3 event decoder unit tests", () => {
 
     it("Should filter out one event", async () => {
         const eventDecoder = new Web3ContractEventDecoder(
-            { assetManager: context.assetManager, ftsoManager: context.ftsoManager },
+            { assetManager: context.assetManager, priceChangeEmitter: context.priceChangeEmitter },
             { filter: ["RewardEpochFinalized"], requireKnownAddress: true }
         );
         expect(eventDecoder.eventTypes.size).to.eq(1);
@@ -36,7 +36,7 @@ describe("Web3 event decoder unit tests", () => {
             topics: ["0x0a93c441628a8345854526201d5fec9110fe2e4ad5a0822eb6eda950864075e6"],
             id: "log_4059b9da",
         };
-        const eventDecoder = new Web3ContractEventDecoder({ assetManager: context.assetManager, ftsoManager: context.ftsoManager }, { requireKnownAddress: true });
+        const eventDecoder = new Web3ContractEventDecoder({ assetManager: context.assetManager, priceChangeEmitter: context.priceChangeEmitter }, { requireKnownAddress: true });
         // set event as anonymous and do some id changes to satisy requirements
         // must make a copy, otherwise later tests break
         const evtType = JSON.parse(JSON.stringify(eventDecoder.eventTypes.get("0xfa93c441628a8345854526201d5fec9110fe2e4ad5a0822eb6eda950864075e6"))) as AbiItem;
@@ -47,7 +47,7 @@ describe("Web3 event decoder unit tests", () => {
         const decode = eventDecoder.decodeEvent(rawEvent);
         expect(decode?.event).eq("<unknown>");
         // change address
-        const otherAddress = context.assetFtso.address;
+        const otherAddress = context.priceChangeEmitter.address;
         rawEvent.address = otherAddress;
         const decode2 = eventDecoder.decodeEvent(rawEvent);
         expect(decode2).to.be.null;

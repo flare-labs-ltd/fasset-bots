@@ -78,6 +78,7 @@ import { FakePriceReaderContract } from "./FakePriceReader";
 import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
+import { FtsoV2PriceStoreMockContract } from "./FtsoV2PriceStoreMock";
 import { WhitelistMockContract } from "./WhitelistMock";
 import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
 import { GovernedFacetContract } from "./GovernedFacet";
@@ -267,6 +268,7 @@ export type * from "./types";
       require(name: "FtsoManagerMock"): FtsoManagerMockContract;
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
+      require(name: "FtsoV2PriceStoreMock"): FtsoV2PriceStoreMockContract;
       require(name: "WhitelistMock"): WhitelistMockContract;
       require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
       require(name: "GovernedFacet"): GovernedFacetContract;
@@ -601,6 +603,10 @@ export {
   FtsoRegistryMockContract,
   FtsoRegistryMockInstance,
 } from "./FtsoRegistryMock";
+export {
+  FtsoV2PriceStoreMockContract,
+  FtsoV2PriceStoreMockInstance,
+} from "./FtsoV2PriceStoreMock";
 export { WhitelistMockContract, WhitelistMockInstance } from "./WhitelistMock";
 export {
   DiamondLoupeFacetContract,
