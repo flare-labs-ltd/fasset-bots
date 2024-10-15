@@ -140,6 +140,7 @@
             },
             "required": [
                 "chainId",
+                "priceChangeEmitter",
                 "tokenDecimals",
                 "tokenName",
                 "tokenSymbol"

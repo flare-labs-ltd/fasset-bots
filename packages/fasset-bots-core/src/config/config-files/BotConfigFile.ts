@@ -54,7 +54,7 @@ export interface BotFAssetInfo {
     tokenDecimals: number;   // decimals for both underlying token and fasset
     walletUrl?: string; // for agent bot and user
     indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    priceChangeEmitter: string; // the name of the contract (in Contracts file) that emits price change event
     minimumAccountBalance?: string; // only needed for XRP
     faucet?: string;
     feeServiceOptions?: FeeServiceOptions;
