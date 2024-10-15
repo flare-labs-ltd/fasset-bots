@@ -1,9 +1,8 @@
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
-import axios, { AxiosInstance } from "axios";
-import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../utils/constants";
+import { AxiosInstance } from "axios";
+import { ChainType} from "../utils/constants";
 import type { AccountInfoRequest } from "xrpl";
-import { createAxiosConfig, createAxiosInstance, tryWithClients } from "../utils/axios-error-utils";
+import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
 
 export class XRPBlockchainAPI {
     client: AxiosInstance;
@@ -11,12 +10,12 @@ export class XRPBlockchainAPI {
 
     constructor(chainType: ChainType, createConfig: BaseWalletConfig) {
 
-        this.client = createAxiosInstance(chainType, createConfig);
+        this.client = createAxiosInstance(createConfig);
         this.clients[createConfig.url] = this.client;
 
         if (createConfig.fallbackAPIs) {
             for (const fallbackAPI of createConfig.fallbackAPIs) {
-                this.clients[fallbackAPI.url] = createAxiosInstance(chainType, createConfig);
+                this.clients[fallbackAPI.url] = createAxiosInstance(createConfig);
             }
         }
     }

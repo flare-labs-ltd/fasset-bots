@@ -12,7 +12,7 @@ import winston from "winston";
 import { logger } from "../../src/utils/logger";
 import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { toBN } from "../../src/utils/bnutils";
-import { isORMError } from "../../src/utils/axios-error-utils";
+import { isORMError } from "../../src/utils/axios-utils";
 
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;

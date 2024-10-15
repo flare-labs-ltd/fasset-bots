@@ -30,7 +30,7 @@ import { ServiceRepository } from "../../ServiceRepository";
 import { TransactionService } from "../utxo/TransactionService";
 import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../utxo/TransactionFeeService";
-import { errorMessage, isORMError, LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import { errorMessage, isORMError, LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
 import { BlockData } from "../../interfaces/IBlockchainAPI";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {

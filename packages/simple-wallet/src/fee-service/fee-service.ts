@@ -1,17 +1,18 @@
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import {
-    DEFAULT_RATE_LIMIT_OPTIONS, DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE,
+    DEFAULT_RATE_LIMIT_OPTIONS,
     DOGE_DEFAULT_FEE_PER_KB,
 } from "../utils/constants";
-import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
-import {excludeNullFields, sleepMs} from "../utils/utils";
+import axios, {AxiosInstance} from "axios";
+import {sleepMs} from "../utils/utils";
 import {BlockStats, FeeServiceConfig} from "../interfaces/IWalletTransaction";
 import {toBN} from "../utils/bnutils";
 import BN from "bn.js";
 import {logger} from "../utils/logger";
 
 import { IService } from "../interfaces/IService";
-import { errorMessage } from "../utils/axios-error-utils";
+import { errorMessage } from "../utils/axios-utils";
+import { createAxiosConfig } from "../utils/axios-utils";
 
 const FEE_DECILES_COUNT = 11;
 export interface FeeStats {
@@ -27,15 +28,7 @@ export class BlockchainFeeService implements IService {
     sleepTimeMs;
 
     constructor(config: FeeServiceConfig) {
-        const createAxiosConfig: AxiosRequestConfig = {
-            headers: excludeNullFields({
-                "Content-Type": "application/json",
-            }),
-            timeout: config.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE.timeoutMs,
-            baseURL: config.indexerUrl,
-        };
-
-        const client = axios.create(createAxiosConfig);
+        const client = axios.create(createAxiosConfig(config.indexerUrl, config.apiKey));
         this.client = axiosRateLimit(client, {
             ...DEFAULT_RATE_LIMIT_OPTIONS,
             ...config.rateLimitOptions,

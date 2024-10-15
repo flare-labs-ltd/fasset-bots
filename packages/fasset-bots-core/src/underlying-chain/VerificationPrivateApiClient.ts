@@ -4,6 +4,7 @@ import { formatArgs } from "../utils/formatting";
 import { DEFAULT_TIMEOUT } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { IVerificationApiClient } from "./interfaces/IVerificationApiClient";
+import { createAxiosConfig } from "../../../simple-wallet/src/utils/axios-utils";
 
 export class VerificationApiError extends Error {}
 
@@ -20,7 +21,7 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
         public verifierUrl: string,
         public verifierUrlApiKey: string,
     ) {
-        this.verifier = axios.create(this.createAxiosConfig(verifierUrl, verifierUrlApiKey));
+        this.verifier = axios.create(createAxiosConfig(verifierUrl, verifierUrlApiKey));
     }
 
     async checkAddressValidity(chainId: string, addressStr: string): Promise<AddressValidity.ResponseBody> {
@@ -48,26 +49,5 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
                 throw new VerificationApiError(message);
             });
         return response.data;
-    }
-
-    private createAxiosConfig(url: string, apiKey: string | null): AxiosRequestConfig {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: url,
-            timeout: DEFAULT_TIMEOUT,
-            headers: {
-                "Content-Type": "application/json",
-            },
-
-            validateStatus: function (status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
-        /* istanbul ignore next */
-        if (apiKey) {
-            createAxiosConfig.headers ??= {};
-            createAxiosConfig.headers["X-API-KEY"] = apiKey;
-        }
-        return createAxiosConfig;
     }
 }

@@ -4,6 +4,7 @@ import { formatArgs } from "../formatting";
 import { DEFAULT_TIMEOUT, systemTimestamp } from "../helpers";
 import { logger } from "../logger";
 import { BotType, NotificationLevel, NotifierTransport } from "./BaseNotifier";
+import { createAxiosConfig } from "../../../../simple-wallet/src/utils/axios-utils";
 
 export class ConsoleNotifierTransport implements NotifierTransport {
     async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {
@@ -68,20 +69,7 @@ export class ApiNotifierTransport implements NotifierTransport {
     client: AxiosInstance;
 
     constructor(public alertsUrl: string, public apiKey: string) {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: alertsUrl,
-            timeout: DEFAULT_TIMEOUT,
-            headers: {
-                "X-API-KEY": apiKey,
-                "Content-Type": "application/json",
-            },
-            validateStatus: function (status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
-        // set client
-        this.client = axios.create(createAxiosConfig);
+        this.client = axios.create(createAxiosConfig(alertsUrl, apiKey));
     }
 
     async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {

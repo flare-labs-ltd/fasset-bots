@@ -9,6 +9,7 @@ import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { attestationProved } from "./AttestationHelper";
 import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof, StateConnectorClientError } from "./interfaces/IStateConnectorClient";
+import { createAxiosConfig } from "../../../simple-wallet/src/utils/axios-utils";
 
 export interface PrepareRequestResult {
     abiEncodedRequest: string;
@@ -54,9 +55,9 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     ) {
         for (const url of attestationProviderUrls) {
             // set clients
-            this.clients.push(axios.create(this.createAxiosConfig(url, null)));
+            this.clients.push(axios.create(createAxiosConfig(url)));
         }
-        this.verifier = axios.create(this.createAxiosConfig(verifierUrl, verifierUrlApiKey));
+        this.verifier = axios.create(createAxiosConfig(verifierUrl, verifierUrlApiKey));
     }
 
     async initStateConnector(): Promise<void> {
@@ -229,26 +230,5 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
                 logger.error(`State connector error: invalid attestation type ${proofData.data.attestationType}`);
                 throw new StateConnectorClientError(`Invalid attestation type ${proofData.data.attestationType}`);
         }
-    }
-
-    private createAxiosConfig(url: string, apiKey: string | null): AxiosRequestConfig {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: url,
-            timeout: DEFAULT_TIMEOUT,
-            headers: {
-                "Content-Type": "application/json",
-            },
-
-            validateStatus: function (status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
-        /* istanbul ignore next */
-        if (apiKey) {
-            createAxiosConfig.headers ??= {};
-            createAxiosConfig.headers["X-API-KEY"] = apiKey;
-        }
-        return createAxiosConfig;
     }
 }

@@ -25,7 +25,7 @@ import UnspentOutput = Transaction.UnspentOutput;
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
-import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
 
 export class TransactionService implements IService {

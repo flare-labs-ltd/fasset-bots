@@ -14,7 +14,7 @@ import Output = Transaction.Output;
 import { TransactionInputEntity } from "../entity/transactionInput";
 import { getCurrentTimestampInSeconds } from "../utils/utils";
 import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
-import { errorMessage } from "../utils/axios-error-utils";
+import { errorMessage } from "../utils/axios-utils";
 
 // transaction operations
 export async function createInitialTransactionEntity(

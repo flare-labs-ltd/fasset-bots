@@ -4,9 +4,9 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
+import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { createInitialTransactionEntity, fetchTransactionEntityById, getTransactionInfoById, updateTransactionEntity } from "../../src/db/dbutils";
+import { createInitialTransactionEntity, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionStatus } from "../../src/entity/transaction";
 import {
     addConsoleTransportForTests,
@@ -24,7 +24,7 @@ import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
 import axiosRateLimit from "../../src/axios-rate-limiter/axios-rate-limit";
 import axios, { AxiosError } from "axios";
-import { createAxiosConfig } from "../../src/utils/axios-error-utils";
+import { createAxiosConfig } from "../../src/utils/axios-utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { sleepMs } from "../../src/utils/utils";
@@ -365,8 +365,8 @@ describe("Xrp wallet tests", () => {
         const url = "https://xrpl-testnet-api.flare.network/";
 
         wClient.blockchainAPI.clients[url] = axiosRateLimit(
-            axios.create(createAxiosConfig(ChainType.testXRP, url)), {
-                ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
+            axios.create(createAxiosConfig(url)), {
+                ...DEFAULT_RATE_LIMIT_OPTIONS,
             });
 
         const interceptorId = wClient.blockchainAPI.clients[process.env.XRP_URL ?? ""].interceptors.request.use(

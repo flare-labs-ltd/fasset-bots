@@ -28,7 +28,7 @@ import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplement
 import { UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
-import { errorMessage } from "../../utils/axios-error-utils";
+import { errorMessage } from "../../utils/axios-utils";
 
 /*
  * COMMON UTILS

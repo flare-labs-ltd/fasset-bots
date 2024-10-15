@@ -10,11 +10,10 @@ import {
     unPrefix0x,
 } from "../../src/utils/utils";
 import { toBN, toNumber } from "../../src/utils/bnutils";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../../src/utils/constants";
+import { ChainType } from "../../src/utils/constants";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
-import { getDefaultRateLimitOptions } from "../../src/utils/axios-error-utils";
 
 const BTCMccConnectionTestInitial = {
     url: process.env.BTC_URL ?? "",
@@ -123,12 +122,4 @@ describe("Util tests", () => {
         const expectedOutput = "1725050284";
         expect(convertToTimestamp(input)).to.eq(expectedOutput);
     });
-
-    it("Should return default rate limit", async function () {
-      const limits = getDefaultRateLimitOptions("" as ChainType)
-      expect(limits.maxRPS).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.maxRPS);
-      expect(limits.maxRequests).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.maxRequests);
-      expect(limits.timeoutMs).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);
-      expect(limits.retries).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.retries);
-  });
 });

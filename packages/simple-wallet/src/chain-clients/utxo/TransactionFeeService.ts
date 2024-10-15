@@ -26,7 +26,7 @@ import { UTXOFeeParams } from "../../interfaces/IWalletTransaction";
 import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
-import { errorMessage } from "../../utils/axios-error-utils";
+import { errorMessage } from "../../utils/axios-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
 
 export enum FeeStatus {

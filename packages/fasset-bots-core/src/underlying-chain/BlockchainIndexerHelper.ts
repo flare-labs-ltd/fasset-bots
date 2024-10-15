@@ -5,6 +5,7 @@ import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { ChainId } from "./ChainId";
 import BN from "bn.js";
+import { createAxiosConfig } from "../../../simple-wallet/src/utils/axios-utils";
 
 // Satoshi to BTC 100_000_000
 export const BTC_MDU = 1e8;
@@ -28,21 +29,8 @@ export class BlockchainIndexerHelper implements IBlockChain {
         public chainId: ChainId,
         private indexerWebServerApiKey: string
     ) {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: indexerWebServerUrl,
-            timeout: DEFAULT_TIMEOUT,
-            headers: {
-                "Content-Type": "application/json",
-                "X-API-KEY": this.indexerWebServerApiKey,
-            },
-
-            validateStatus: function (status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
         // set client
-        this.client = axios.create(createAxiosConfig);
+        this.client = axios.create(createAxiosConfig(indexerWebServerUrl, this.indexerWebServerApiKey));
         this.finalizationBlocks = this.finalizationBlocksByChain();
         this.secondsPerBlock = this.secondsPerBlockByChain();
     }

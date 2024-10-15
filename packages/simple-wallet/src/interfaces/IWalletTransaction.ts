@@ -139,6 +139,7 @@ export interface IWalletKeys {
 
 export interface FeeServiceConfig {
    indexerUrl: string;
+   apiKey?: string;
    rateLimitOptions?: RateLimitOptions;
    sleepTimeMs: number;
    numberOfBlocksInHistory: number;

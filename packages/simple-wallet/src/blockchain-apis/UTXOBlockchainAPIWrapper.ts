@@ -3,7 +3,7 @@ import { AxiosInstance, AxiosResponse } from "axios";
 import { BlockbookAPI } from "./BlockbookAPI";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { ChainType } from "../utils/constants";
-import { createAxiosConfig, tryWithClients } from "../utils/axios-error-utils";
+import { createAxiosConfig, tryWithClients } from "../utils/axios-utils";
 
 export class BlockchainAPIWrapper implements IBlockchainAPI {
     client: AxiosInstance;
@@ -11,7 +11,7 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
     chainType: ChainType;
 
     constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
-        const axiosConfig = createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey);
+        const axiosConfig = createAxiosConfig(createConfig.url, createConfig.apiTokenKey, createConfig.rateLimitOptions?.timeoutMs);
 
         this.chainType = chainType;
         this.clients[createConfig.url] = new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
@@ -19,7 +19,7 @@ export class BlockchainAPIWrapper implements IBlockchainAPI {
 
         if (createConfig.fallbackAPIs) {
             for (const fallbackAPI of createConfig.fallbackAPIs) {
-                const axiosConfig = createAxiosConfig(chainType, fallbackAPI.url, createConfig.rateLimitOptions, fallbackAPI.apiTokenKey);
+                const axiosConfig = createAxiosConfig(fallbackAPI.url, fallbackAPI.apiTokenKey, createConfig.rateLimitOptions?.timeoutMs);
                 this.clients[fallbackAPI.url] = new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
             }
         }

@@ -73,18 +73,9 @@ export const DOGE_TESTNET = {
 export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
    maxRPS: 5,
    maxRequests: 10,
-   timeoutMs: 30000,
+   timeoutMs: 20000,
    retries: 10,
 };
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
-   ...DEFAULT_RATE_LIMIT_OPTIONS,
-   timeoutMs: 20000,
-};
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
-   timeoutMs: 1000,
-}
 
 // Approximate times between blocks, in milliseconds
 export const BTC_LEDGER_CLOSE_TIME_MS = 600_000; // 10min

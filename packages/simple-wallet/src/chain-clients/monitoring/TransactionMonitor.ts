@@ -6,7 +6,7 @@ import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, BUFFER_PING_INTERVAL, PING_INTERVAL } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { getRandomInt, sleepMs } from "../../utils/utils";
-import { errorMessage } from "../../utils/axios-error-utils";
+import { errorMessage } from "../../utils/axios-utils";
 
 export class TransactionMonitor {
     private monitoring: boolean = false;
