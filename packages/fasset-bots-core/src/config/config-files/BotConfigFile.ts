@@ -1,6 +1,3 @@
-import { FeeServiceOptions, WalletApi } from "../../underlying-chain/interfaces/IBlockChainWallet";
-import { StuckTransaction } from "../../../../simple-wallet/src/index";
-
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
@@ -22,6 +19,32 @@ export interface OrmConfigOptions {
     }
     // allow other options
     [key: string]: any;
+}
+
+interface WalletApi {
+    url: string;
+}
+
+interface RateLimitOptions {
+    maxRequests?: number;
+    perMilliseconds?: number;
+    maxRPS?: number;
+    timeoutMs?: number;
+    retries?: number;
+}
+
+interface FeeServiceOptions {
+    rateLimitOptions?: RateLimitOptions;
+    sleepTimeMs: number;
+    numberOfBlocksInHistory: number;
+}
+
+interface StuckTransaction {
+    blockOffset?: number; // How many block to wait for transaction to be validated
+    retries?: number; // How many times should transaction retry to successfully submit
+    feeIncrease?: number; // Factor to increase fee in resubmitting process
+    executionBlockOffset?: number; //
+    enoughConfirmations?: number; // number of confirmations to be declared successful
 }
 
 export interface BotFAssetInfo {
