@@ -12,6 +12,7 @@ export { InfoBotCommands } from "./commands/InfoBotCommands";
 export { generateSecrets, SecretsUser, generateUnderlyingAccount } from "./config/generate-secrets";
 export { ActorBaseKind } from "./fasset-bots/ActorBase";
 export { ChainId } from "./underlying-chain/ChainId";
+export { ActivityTimestampEntity } from "./entities/activityTimestamp";
 export { AgentEntity } from "./entities/agent";
 export { AgentSettingName, AgentUpdateSettingState } from "./entities/common";
 export { ApiNotifierTransport } from "./utils/notifier/NotifierTransports";
