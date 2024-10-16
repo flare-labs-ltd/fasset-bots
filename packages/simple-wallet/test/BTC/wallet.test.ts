@@ -154,6 +154,9 @@ describe("Bitcoin wallet tests", () => {
 
     it("Should get fee for delete account", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
+        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
         const [transaction,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
         const fee = transaction.getFee();
         expect(fee).to.be.gt(0);

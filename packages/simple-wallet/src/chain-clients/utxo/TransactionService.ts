@@ -169,6 +169,7 @@ export class TransactionService {
             }
             const balance = await getAccountBalance(this.chainType, source);
             amountInSatoshi = balance.sub(feeInSatoshi);
+            txData.amount = amountInSatoshi;
         } else {
             utxos = await utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
