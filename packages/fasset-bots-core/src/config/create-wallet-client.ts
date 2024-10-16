@@ -33,12 +33,11 @@ export async function createWalletClient(
 ): Promise<WalletClient> {
     requireSupportedChainId(chainId);
     const walletKeys = DBWalletKeys.from(em, secrets);
-
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
         return await WALLET.BTC.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testBTC,
-            apiTokenKeys: secrets.optionalArray("apiKey.btc_rpc"),
+            apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
             stuckTransactionOptions: options,
             em,
             walletKeys
@@ -47,7 +46,7 @@ export async function createWalletClient(
         return await WALLET.DOGE.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testDOGE,
-            apiTokenKeys: secrets.optionalArray("apiKey.doge_rpc"),
+            apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
             stuckTransactionOptions: options,
             em,
             walletKeys
@@ -56,7 +55,7 @@ export async function createWalletClient(
         return await WALLET.XRP.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testXRP,
-            apiTokenKeys: secrets.optionalArray("apiKey.xrp_rpc"),
+            apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
             stuckTransactionOptions: options,
             em,
             walletKeys
