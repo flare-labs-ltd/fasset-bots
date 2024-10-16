@@ -137,7 +137,7 @@ const UTXOResponseData = {
 describe("testXRP blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testXRP;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
+    const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/xrp"];
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -147,8 +147,8 @@ describe("testXRP blockchain tests via indexer", () => {
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
-        blockchainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        const info = await receiveBlockAndTransaction(chainId, blockchainIndexerClient, indexerUrl, indexerApiKey(secrets));
+        blockchainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
+        const info = await receiveBlockAndTransaction(chainId, blockchainIndexerClient, indexerUrls, indexerApiKey(secrets));
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;
@@ -363,7 +363,7 @@ describe("testXRP blockchain tests via indexer", () => {
 describe("testDOGE blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testDOGE;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/doge/";
+    const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/doge/"];
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -373,8 +373,8 @@ describe("testDOGE blockchain tests via indexer", () => {
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
-        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrl, indexerApiKey(secrets));
+        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
+        const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrls, indexerApiKey(secrets));
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;
@@ -417,7 +417,7 @@ describe("testDOGE blockchain tests via indexer", () => {
 describe("testBTC blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testBTC;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/btc/";
+    const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/btc/"];
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -426,9 +426,9 @@ describe("testBTC blockchain tests via indexer", () => {
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrl, chainId, indexerApiKey(secrets));
-        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrl, indexerApiKey(secrets));
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrls, chainId, indexerApiKey(secrets));
+        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
+        const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrls, indexerApiKey(secrets));
         if (info) {
             blockId = info?.blockNumber;
             blockHash = info?.blockHash;

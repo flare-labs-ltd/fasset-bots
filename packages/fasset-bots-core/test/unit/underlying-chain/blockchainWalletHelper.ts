@@ -25,14 +25,14 @@ export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3
 describe("testXRP wallet tests", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testXRP;
-    const walletUrl: string = "https://s.altnet.rippletest.net:51234";
+    const walletUrls: string[] = ["https://s.altnet.rippletest.net:51234"];
     const amountToSendDrops = 1000000;
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
     });
 
     it("Should create account", async () => {
@@ -109,7 +109,7 @@ describe("testXRP wallet tests", () => {
 describe("testBTC wallet tests", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testBTC;
-    const walletUrl: string = "https://api.bitcore.io/api/BTC/testnet/";
+    const walletUrls: string[] = ["https://api.bitcore.io/api/BTC/testnet/"];
     const fundedAddress = "mzM88w7CdxrFyzE8RKZmDmgYQgT5YPdA6S";
     const fundedPrivateKey = "cNcsDiLQrYLi8rBERf9XPEQqVPHA7mUXHKWaTrvJVCTaNa68ZDqF";
     const targetAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
@@ -119,7 +119,7 @@ describe("testBTC wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl, undefined);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls, undefined);
     });
 
     it("Should create account", async () => {
@@ -143,7 +143,7 @@ describe("testBTC wallet tests", () => {
 describe("testDOGE wallet tests", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testDOGE;
-    const walletUrl: string = "https://api.bitcore.io/api/DOGE/testnet/";
+    const walletUrls: string[] = ["https://api.bitcore.io/api/DOGE/testnet/"];
     const fundedAddress = "nou7f8j829FAEb4SzLz3F1N1CrMAy58ohw";
     const fundedPrivateKey = "cfHf9MCiZbPidE1XXxCCBnzwJSKRtvpfoZrY6wFvy17HmKbBqt1j";
     const targetAddress = "nk1Uc5w6MHC1DgtRvnoQvCj3YgPemzha7D";
@@ -154,7 +154,7 @@ describe("testDOGE wallet tests", () => {
         secrets = Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
     });
 
     it("Should create account", async () => {

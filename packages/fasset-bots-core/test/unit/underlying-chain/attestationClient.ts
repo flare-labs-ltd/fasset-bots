@@ -18,8 +18,8 @@ import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./block
 use(chaiAsPromised);
 
 const chainId = ChainId.testXRP;
-const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
-const walletUrl: string = "https://s.altnet.rippletest.net:51234";
+const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/xrp"];
+const walletUrls: string[] = ["https://s.altnet.rippletest.net:51234"];
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";
 const finalizationBlocks: number = 6;
 
@@ -29,14 +29,14 @@ async function createAttestationHelper(
     scProofVerifierAddress: string,
     stateConnectorAddress: string,
     owner: string,
-    indexerUrl: string,
-    indexerApiKey: string,
+    indexerUrls: string[],
+    indexerApiKeys: string[],
 ): Promise<AttestationHelper> {
     if (!supportedChainId(chainId)) {
         throw new Error(`SourceId ${chainId} not supported.`);
     }
-    const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
-    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
+    const stateConnector = await createStateConnectorClient(indexerUrls, indexerApiKeys, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
+    const indexer = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
     return new AttestationHelper(stateConnector, indexer, chainId);
 }
 
@@ -62,12 +62,12 @@ describe("Attestation client unit tests", () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             accounts[0],
-            indexerUrl,
+            indexerUrls,
             indexerApiKey(secrets)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
-        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
+        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
     });
 
     it("Should not obtain proofs - no attestation providers", async () => {
@@ -77,7 +77,7 @@ describe("Attestation client unit tests", () => {
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
-            indexerUrl,
+            indexerUrls,
             indexerApiKey(secrets)
         );
         await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))

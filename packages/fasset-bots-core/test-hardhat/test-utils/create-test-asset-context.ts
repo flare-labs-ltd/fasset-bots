@@ -222,7 +222,7 @@ export async function createTestAssetContext(
     const [assetManager, fAsset] = await newAssetManager(governance, options.assetManagerControllerAddress ?? assetManagerController,
         fAssetName, fAssetSymbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
     // indexer
-    const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
+    const blockchainIndexer = new MockIndexer([""], chainInfo.chainId, chain);
     // return context
     return {
         fAssetSymbol,

@@ -21,11 +21,28 @@ export class Secrets {
         throw new Error(`Secret variable ${key} not defined or not typeof string`);
     }
 
+    requiredArray(key: string): string[] {
+        const value = valueForKeyPath(this.data, key);
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} not defined or not typeof string[]`);
+    }
+
     optional(key: string): string | undefined {
         const value = valueForKeyPath(this.data, key);
         if (value == undefined) return undefined;
         if (typeof value === "string") return value;
         throw new Error(`Secret variable ${key} not typeof string`);
+    }
+
+    optionalArray(key: string): string[] | undefined {
+        const value = valueForKeyPath(this.data, key);
+        if (value == undefined) return undefined;
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} not typeof string[]`);
     }
 
     requiredEncryptionPassword(key: string): string {

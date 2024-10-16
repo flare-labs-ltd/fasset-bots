@@ -2,7 +2,6 @@ import { AxiosInstance, AxiosResponse } from "axios";
 import { ChainType } from "../utils/constants";
 
 export interface IBlockchainAPI {
-    client: AxiosInstance;
 
     getAccountBalance(account: string): Promise<number | undefined>;
 

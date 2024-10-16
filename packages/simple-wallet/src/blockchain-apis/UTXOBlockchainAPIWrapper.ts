@@ -1,28 +1,20 @@
 import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
-import { AxiosInstance, AxiosResponse } from "axios";
-import { BlockbookAPI } from "./BlockbookAPI";
+import { AxiosResponse } from "axios";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { ChainType } from "../utils/constants";
-import { createAxiosConfig, tryWithClients } from "../utils/axios-utils";
+import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
+import { BlockbookAPI } from "./BlockbookAPI";
 
 export class BlockchainAPIWrapper implements IBlockchainAPI {
-    client: AxiosInstance;
-    clients: any = {};
+    clients: BlockbookAPI[] = [];
     chainType: ChainType;
 
     constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
-        const axiosConfig = createAxiosConfig(createConfig.url, createConfig.apiTokenKey, createConfig.rateLimitOptions?.timeoutMs);
-
-        this.chainType = chainType;
-        this.clients[createConfig.url] = new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
-        this.client = this.clients[createConfig.url].client;
-
-        if (createConfig.fallbackAPIs) {
-            for (const fallbackAPI of createConfig.fallbackAPIs) {
-                const axiosConfig = createAxiosConfig(fallbackAPI.url, fallbackAPI.apiTokenKey, createConfig.rateLimitOptions?.timeoutMs);
-                this.clients[fallbackAPI.url] = new BlockbookAPI(axiosConfig, createConfig.rateLimitOptions, createConfig.em);
-            }
+        for (const [index, url] of createConfig.urls.entries()) {
+            const client = createAxiosInstance(url, createConfig.apiTokenKeys?.[index], createConfig.rateLimitOptions)
+            this.clients.push(new BlockbookAPI(client, createConfig.em));
         }
+        this.chainType = chainType;
     }
 
     async getAccountBalance(account: string): Promise<number | undefined> {

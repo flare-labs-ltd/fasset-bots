@@ -26,7 +26,7 @@ use(chaiAsPromised);
 
 const walletSecret = "wallet_secret";
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
+    urls: [process.env.BTC_URL ?? ""],
     username: "",
     password: "",
     apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",

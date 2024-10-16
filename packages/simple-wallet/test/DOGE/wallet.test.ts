@@ -23,7 +23,7 @@ import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionF
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
-    url: process.env.DOGE_URL ?? "",
+    urls: [process.env.DOGE_URL ?? ""],
     inTestnet: true,
 };
 const feeServiceConfig: FeeServiceConfig = {

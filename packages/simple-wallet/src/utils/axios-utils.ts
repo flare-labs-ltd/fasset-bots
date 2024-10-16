@@ -1,6 +1,6 @@
 import { logger } from "../utils/logger";
 import { DriverException, UniqueConstraintViolationException, ValidationError } from "@mikro-orm/core";
-import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
+import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import axios, { AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
@@ -12,7 +12,7 @@ export async function tryWithClients<T>(clients: any, operation: (client: any) =
             return result;
         } catch (error) {
             logger.warn(`Client ${url} - ${method} failed with: ${errorMessage(error)}`);
-            const lastClient = Object.keys(clients).length - 1
+            const lastClient = Object.keys(clients).length - 1;
             if (index === lastClient) {
                 throw error;
             }
@@ -66,9 +66,9 @@ export class NegativeFeeError extends Error {
     }
 }
 
-export function createAxiosInstance(createConfig: BaseWalletConfig) {
-    return axiosRateLimit(axios.create(createAxiosConfig(createConfig.url, createConfig.apiTokenKey, createConfig.rateLimitOptions?.timeoutMs)), {
+export function createAxiosInstance(url: string, apiKey?: string, rateLimitOptions?: RateLimitOptions) {
+    return axiosRateLimit(axios.create(createAxiosConfig(url, apiKey, rateLimitOptions?.timeoutMs)), {
         ...DEFAULT_RATE_LIMIT_OPTIONS,
-        ...createConfig.rateLimitOptions,
+        ...rateLimitOptions,
     });
 }

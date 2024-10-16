@@ -16,7 +16,7 @@ import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
 
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
+    urls: [process.env.BTC_URL ?? ""],
     username: "",
     password: "",
     inTestnet: true,

@@ -9,7 +9,7 @@ import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { attestationProved } from "./AttestationHelper";
 import { AttestationNotProved, AttestationProof, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof, StateConnectorClientError } from "./interfaces/IStateConnectorClient";
-import { createAxiosConfig } from "../../../simple-wallet/src/utils/axios-utils";
+import { createAxiosConfig, tryWithClients } from "@flarelabs/simple-wallet";
 
 export interface PrepareRequestResult {
     abiEncodedRequest: string;
@@ -37,7 +37,7 @@ export interface VotingRoundResult<RES> {
 
 export class StateConnectorClientHelper implements IStateConnectorClient {
     clients: AxiosInstance[] = [];
-    verifier: AxiosInstance;
+    verifierClients: AxiosInstance[] = [];
     // initialized at initStateConnector()
     stateConnector!: IStateConnectorInstance;
     scProofVerifier!: ISCProofVerifierInstance;
@@ -49,15 +49,16 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         public attestationProviderUrls: string[],
         public scProofVerifierAddress: string,
         public stateConnectorAddress: string,
-        public verifierUrl: string,
-        public verifierUrlApiKey: string,
+        public verifierUrls: string[],
+        public verifierUrlApiKeys: string[],
         public account: string
     ) {
         for (const url of attestationProviderUrls) {
-            // set clients
             this.clients.push(axios.create(createAxiosConfig(url)));
         }
-        this.verifier = axios.create(createAxiosConfig(verifierUrl, verifierUrlApiKey));
+        for (const [index, url] of verifierUrls.entries()) {
+            this.verifierClients.push(axios.create(createAxiosConfig(url, verifierUrlApiKeys[index])));
+        }
     }
 
     async initStateConnector(): Promise<void> {
@@ -73,11 +74,11 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
         urls: string[],
         attestationClientAddress: string,
         stateConnectorAddress: string,
-        verifierUrl: string,
-        verifierUrlApiKey: string,
+        verifierUrls: string[],
+        verifierUrlApiKeys: string[],
         account: string
     ): Promise<StateConnectorClientHelper> {
-        const helper = new StateConnectorClientHelper(urls, attestationClientAddress, stateConnectorAddress, verifierUrl, verifierUrlApiKey, account);
+        const helper = new StateConnectorClientHelper(urls, attestationClientAddress, stateConnectorAddress, verifierUrls, verifierUrlApiKeys, account);
         await helper.initStateConnector();
         return helper;
     }
@@ -109,13 +110,15 @@ export class StateConnectorClientHelper implements IStateConnectorClient {
     /* istanbul ignore next */
     async submitRequestToStateConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);
-        const response = await this.verifier
-            .post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
-            .catch((e: AxiosError) => {
-                const message = `State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
-                logger.error(message);
-                throw new StateConnectorClientError(message);
-            });
+        const response = await tryWithClients(
+            this.verifierClients,
+            (verifier: AxiosInstance) => verifier.post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request),
+            "submitRequestToStateConnector"
+        ).catch((e: AxiosError) => {
+            const message = `State connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
+            logger.error(message);
+            throw new StateConnectorClientError(message);
+        });
         const data = response.data?.abiEncodedRequest;
         if (data == null) {
             logger.error(`Problem in prepare request: ${JSON.stringify(response.data)} for request ${formatArgs(request)}`);

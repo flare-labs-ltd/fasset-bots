@@ -60,11 +60,11 @@ export async function performRedemptionPayment(agent: Agent, request: EventArgs<
 export async function receiveBlockAndTransaction(
     chainId: ChainId,
     blockChainIndexerClient: BlockchainIndexerHelper,
-    indexerUrl: string,
-    indexerApiKey: string,
+    indexerUrls: string[],
+    indexerApiKeys: string[],
 ): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
-    const blockChainHelper = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
-    const resp = (await blockChainIndexerClient.client.get(`/api/indexer/block-range`)).data;
+    const blockChainHelper = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
+    const resp = (await blockChainIndexerClient.clients[0].get(`/api/indexer/block-range`)).data;//TODO - add trywithclients
     if (resp.status === "OK") {
         const blockNumber = resp.data.last;
         const block = await blockChainHelper.getBlockAt(blockNumber);

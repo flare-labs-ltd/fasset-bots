@@ -238,17 +238,14 @@
                 "chainId": {
                     "type": "string"
                 },
-                "fallbackApis": {
-                    "items": {
-                        "$ref": "#/definitions/WalletApi"
-                    },
-                    "type": "array"
-                },
                 "faucet": {
                     "type": "string"
                 },
-                "indexerUrl": {
-                    "type": "string"
+                "indexerUrls": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
                 },
                 "minimumAccountBalance": {
                     "type": "string"
@@ -268,8 +265,11 @@
                 "tokenSymbol": {
                     "type": "string"
                 },
-                "walletUrl": {
-                    "type": "string"
+                "walletUrls": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
                 }
             },
             "type": "object"
@@ -317,18 +317,6 @@
                     "type": "number"
                 }
             },
-            "type": "object"
-        },
-        "WalletApi": {
-            "additionalProperties": false,
-            "properties": {
-                "url": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "url"
-            ],
             "type": "object"
         }
     },

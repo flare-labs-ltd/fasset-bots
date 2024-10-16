@@ -35,7 +35,7 @@ const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/implement
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
 const XRPMccConnectionTestInitial = {
-    url: process.env.XRP_URL ?? "",
+    urls: [process.env.XRP_URL ?? ""],
     username: "",
     password: "",
     stuckTransactionOptions: {
@@ -44,10 +44,7 @@ const XRPMccConnectionTestInitial = {
     rateLimitOptions: {
         timeoutMs: 60000,
     },
-    inTestnet: true,
-    fallbackAPIs: [
-        { url: process.env.XRP_URL ?? "", }
-    ]
+    inTestnet: true
 };
 let XRPMccConnectionTest: RippleWalletConfig;
 
@@ -359,30 +356,6 @@ describe("Xrp wallet tests", () => {
         for (const id of ids) {
             await waitForTxToFinishWithStatus(2, 600, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
-    });
-
-    it("Should successfully use fallback APIs", async () => {
-        const url = "https://xrpl-testnet-api.flare.network/";
-
-        wClient.blockchainAPI.clients[url] = axiosRateLimit(
-            axios.create(createAxiosConfig(url)), {
-                ...DEFAULT_RATE_LIMIT_OPTIONS,
-            });
-
-        const interceptorId = wClient.blockchainAPI.clients[process.env.XRP_URL ?? ""].interceptors.request.use(
-            (config: any) => {
-                return Promise.reject(new AxiosError("Simulated connection down", "ECONNABORTED"));
-            },
-            (error: any) => {
-                return Promise.reject(error);
-            },
-        );
-
-        const balance = await wClient.getAccountBalance(fundedAddress);
-        expect(balance.toNumber()).to.be.gt(0);
-
-        wClient.blockchainAPI.clients[process.env.XRP_URL ?? ""].interceptors.request.eject(interceptorId);
-        delete wClient.blockchainAPI.clients[url];
     });
 
     it("Should receive no service found ", async () => {

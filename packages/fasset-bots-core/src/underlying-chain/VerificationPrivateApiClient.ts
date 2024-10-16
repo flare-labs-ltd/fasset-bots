@@ -4,7 +4,7 @@ import { formatArgs } from "../utils/formatting";
 import { DEFAULT_TIMEOUT } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { IVerificationApiClient } from "./interfaces/IVerificationApiClient";
-import { createAxiosConfig } from "../../../simple-wallet/src/utils/axios-utils";
+import { createAxiosConfig, tryWithClients } from "@flarelabs/simple-wallet";
 
 export class VerificationApiError extends Error {}
 
@@ -15,13 +15,15 @@ interface PreparedResponseRes<T> {
 
 // Uses prepareResponse from private API.
 export class VerificationPrivateApiClient implements IVerificationApiClient {
-    verifier: AxiosInstance;
+    verifiers: AxiosInstance [] = [];
 
     constructor(
-        public verifierUrl: string,
-        public verifierUrlApiKey: string,
+        public verifierUrls: string[],
+        public verifierUrlApiKeys: string[],
     ) {
-        this.verifier = axios.create(createAxiosConfig(verifierUrl, verifierUrlApiKey));
+        for (const [index, url] of verifierUrls.entries()) {
+            this.verifiers.push(axios.create(createAxiosConfig(url, verifierUrlApiKeys[index])));
+        }
     }
 
     async checkAddressValidity(chainId: string, addressStr: string): Promise<AddressValidity.ResponseBody> {
@@ -41,13 +43,16 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
     async prepareResponse<T>(request: ARBase): Promise<PreparedResponseRes<T>> {
         const attestationName = decodeAttestationName(request.attestationType);
         /* istanbul ignore next */
-        const response = await this.verifier
-            .post<PreparedResponseRes<T>>(`/${encodeURIComponent(attestationName)}/prepareResponse`, request)
-            .catch((e: AxiosError) => {
-                const message = `Verification API error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
-                logger.error(message);
-                throw new VerificationApiError(message);
-            });
+        const response = await tryWithClients(
+            this.verifiers,
+            (verifier: AxiosInstance) => verifier
+            .post<PreparedResponseRes<T>>(`/${encodeURIComponent(attestationName)}/prepareResponse`, request),
+            "prepareResponse"
+        ).catch((e: AxiosError) => {
+            const message = `Verification API error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
+            logger.error(message);
+            throw new VerificationApiError(message);
+        });
         return response.data;
     }
 }

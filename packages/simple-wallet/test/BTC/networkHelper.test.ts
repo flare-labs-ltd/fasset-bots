@@ -8,7 +8,7 @@ import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
 describe("Bitcoin network helper tests", () => {
    it("Should switch to mainnet", async () => {
       const BTCMccConnectionMainInitial = {
-         url: process.env.BTC_URL ?? "",
+         urls: [process.env.BTC_URL ?? ""],
          rateLimitOptions: {
             timeoutMs: 15000,
          },
@@ -23,7 +23,7 @@ describe("Bitcoin network helper tests", () => {
 
    it("Should switch to testnet", async () => {
       const BTCMccConnectionTestInitial = {
-         url: process.env.BTC_URL ?? "",
+         urls: [process.env.BTC_URL ?? ""],
          inTestnet: true,
 
       };
@@ -37,7 +37,7 @@ describe("Bitcoin network helper tests", () => {
 
    it("Should check monitoring", async () => {
       const BTCMccConnectionTestInitial = {
-         url: process.env.BTC_URL ?? "",
+         urls: [process.env.BTC_URL ?? ""],
          inTestnet: true,
 
       };

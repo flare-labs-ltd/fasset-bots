@@ -54,7 +54,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
-      this.blockchainAPI = new XRPBlockchainAPI(this.chainType, createConfig);
+      this.blockchainAPI = new XRPBlockchainAPI(createConfig);
       const resubmit = stuckTransactionConstants(this.chainType);
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;

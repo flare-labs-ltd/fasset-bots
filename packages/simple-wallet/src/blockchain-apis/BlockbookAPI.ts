@@ -1,8 +1,6 @@
 import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
-import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-import { RateLimitOptions } from "../interfaces/IWalletTransaction";
+import { AxiosInstance, AxiosResponse } from "axios";
+import { ChainType } from "../utils/constants";
 import { EntityManager } from "@mikro-orm/core";
 import { getDateTimestampInSeconds } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
@@ -12,13 +10,8 @@ export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
     rootEm: EntityManager;
 
-    constructor(axiosConfig: AxiosRequestConfig, rateLimitOptions: RateLimitOptions | undefined, rootEm: EntityManager) {
-        const client = axios.create(axiosConfig);
-        this.client = axiosRateLimit(client, {
-            ...DEFAULT_RATE_LIMIT_OPTIONS,
-            ...rateLimitOptions,
-
-        });
+    constructor(client: AxiosInstance, rootEm: EntityManager) {
+        this.client = client;
         this.rootEm = rootEm;
     }
 

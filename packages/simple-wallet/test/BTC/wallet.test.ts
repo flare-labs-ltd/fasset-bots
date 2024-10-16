@@ -39,12 +39,9 @@ const walletSecret = "wallet_secret";
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
+    urls: [process.env.BTC_URL ?? ""],
     inTestnet: true,
-    walletSecret: walletSecret,
-    fallbackAPIs: [
-        { url: process.env.BTC_URL ?? "", }
-    ]
+    walletSecret: walletSecret
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
 const feeServiceConfig: FeeServiceConfig = {
@@ -256,12 +253,12 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedWallet.address, fundedWallet.privateKey, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
-        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
+        const interceptorId = wClient.blockchainAPI.clients[0].client.interceptors.request.use(
             config => Promise.reject(`Down`),
         );
         await sleepMs(5000);
         console.info("API connection up");
-        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+        wClient.blockchainAPI.clients[0].client.interceptors.request.eject(interceptorId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
@@ -269,7 +266,7 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
 
         wClient.feeService = undefined;
-        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
+        const interceptorId = wClient.blockchainAPI.clients[0].client.interceptors.request.use(
             config => {
                 if (config.url?.includes("fee")) {
                     return Promise.reject("Down");
@@ -285,7 +282,7 @@ describe("Bitcoin wallet tests", () => {
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
 
         if (interceptorId) {
-            wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+            wClient.blockchainAPI.clients[0].client.interceptors.request.eject(interceptorId);
         }
 
         wClient.feeService = new BlockchainFeeService(feeServiceConfig);
@@ -297,7 +294,7 @@ describe("Bitcoin wallet tests", () => {
         const fee = "0.005";
         const feeRateInSatoshi = toBNExp(fee, BTC_DOGE_DEC_PLACES).muln(wClient.feeIncrease);
 
-        const interceptorId = wClient.blockchainAPI.client.interceptors.response.use(
+        const interceptorId = wClient.blockchainAPI.clients[0].client.interceptors.response.use(
             response => {
                 if (response.config.url?.includes("fee")) {
                     const value = {
@@ -322,7 +319,7 @@ describe("Bitcoin wallet tests", () => {
         const [dbFee, calculatedFee] = await calculateNewFeeForTx(id, feeRateInSatoshi, getCore(wClient.chainType), wClient.rootEm);
         expect(dbFee?.toNumber()).to.be.equal(calculatedFee);
 
-        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+        wClient.blockchainAPI.clients[0].client.interceptors.request.eject(interceptorId);
         sinon.restore();
     });
 

@@ -34,9 +34,9 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     const secrets: SecretsFile = { apiKey: {} };
     secrets.apiKey.native_rpc = "";
     if (users.includes("agent") || users.includes("user")) {
-        secrets.apiKey.xrp_rpc = "";
-        secrets.apiKey.btc_rpc = "";
-        secrets.apiKey.indexer = "";
+        secrets.apiKey.testXRP_rpc = [];
+        secrets.apiKey.testBTC_rpc = [];
+        secrets.apiKey.indexer = [];
     }
     if (users.includes("agent")) {
         secrets.apiKey.agent_bot = crypto.randomBytes(32).toString("hex");

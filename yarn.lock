@@ -1280,7 +1280,6 @@ __metadata:
     web3: 1.10.2
   bin:
     agent-bot: dist/src/cli/agent-bot.js
-    api: dist/src/cli/add-fallbacks.js
     fake-price-reader: dist/src/cli/fake-price-reader.js
     key-gen: dist/src/cli/key-gen.js
     test-governance: dist/src/cli/test-governance.js

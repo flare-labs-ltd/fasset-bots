@@ -100,9 +100,9 @@ export interface WalletApi {
 }
 
 export interface BaseWalletConfig {
-   url: string;
+   urls: string[];
    inTestnet?: boolean;
-   apiTokenKey?: string;
+   apiTokenKeys?: string[];
    rateLimitOptions?: RateLimitOptions;
    stuckTransactionOptions?: StuckTransaction;
    enoughConfirmations?: number,
@@ -110,7 +110,6 @@ export interface BaseWalletConfig {
    feeDecileIndex?: number, // the decile from which to use the fee if there's a fee-service running (eg 8 is 8-th decile)
    em: EntityManager;
    walletKeys: IWalletKeys;
-   fallbackAPIs?: WalletApi[]
 }
 
 export type RippleWalletConfig = BaseWalletConfig;

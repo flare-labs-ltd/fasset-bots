@@ -4,7 +4,7 @@ import { formatArgs } from "../formatting";
 import { DEFAULT_TIMEOUT, systemTimestamp } from "../helpers";
 import { logger } from "../logger";
 import { BotType, NotificationLevel, NotifierTransport } from "./BaseNotifier";
-import { createAxiosConfig } from "../../../../simple-wallet/src/utils/axios-utils";
+import { createAxiosConfig } from "@flarelabs/simple-wallet";
 
 export class ConsoleNotifierTransport implements NotifierTransport {
     async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {
