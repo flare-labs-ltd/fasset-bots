@@ -451,14 +451,14 @@ describe("Tracked state tests", () => {
         const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const agentBefore = Object.assign({}, await trackedState.getAgentTriggerAdd(agentB.vaultAddress));
-        const minted = await createCRAndPerformMinting(minter, agentB.vaultAddress, 3, chain);
+        const lots = 30_000;
+        const minted = await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
         const supplyBefore = trackedState.fAssetSupply;
         const freeUnderlyingBalanceUBABefore = trackedState.agents.get(agentB.vaultAddress)!.freeUnderlyingBalanceUBA;
         await trackedState.readUnhandledEvents();
-        const lots = 3;
         const liquidatorAddress = accounts[100];
-        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 40), 0);
-        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 40), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(1, 5), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(1, 5), 0);
         // liquidator "buys" f-assets
         await context.fAsset.transfer(liquidatorAddress, minted.mintedAmountUBA, { from: minter.address });
         // liquidate agent (partially)

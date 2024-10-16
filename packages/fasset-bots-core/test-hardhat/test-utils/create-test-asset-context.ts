@@ -74,7 +74,7 @@ export type TestAssetTrackedStateContext = Modify<
     }
 >;
 
-export async function createTestChainContracts(governance: string, updateExecutor?: string) {
+export async function createTestChainContracts(governance: string, updateExecutor?: string, supportedChains: Record<string, TestChainInfo> = testChainInfo) {
     // create governance settings
     const governanceSettings = await GovernanceSettings.new();
     await governanceSettings.initialise(governance, 60, [governance], { from: GENESIS_GOVERNANCE });
@@ -109,7 +109,7 @@ export async function createTestChainContracts(governance: string, updateExecuto
     const testUSDT = await FakeERC20.new(governanceSettings.address, governance, "Test Tether", "testUSDT", 6);
     const testETH = await FakeERC20.new(governanceSettings.address, governance, "Test Ethereum", "testETH", 18);
     // create ftsov2 price store
-    const priceStore = await createMockFtsoV2PriceStore(governanceSettings.address, governance, addressUpdater.address, testChainInfo);
+    const priceStore = await createMockFtsoV2PriceStore(governanceSettings.address, governance, addressUpdater.address, supportedChains);
     // create allow-all agent owner registry
     const agentOwnerRegistry = await AgentOwnerRegistry.new(governanceSettings.address, governance, true);
     await agentOwnerRegistry.setAllowAll(true, { from: governance });

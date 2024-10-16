@@ -368,7 +368,7 @@ describe("Liquidator tests", () => {
         await agentBot.runStep(orm.em);
         // calculate vault collateral price that brings CR to ccbMinCollateralRatioBIPS
         const { 0: assetFtsoPrice, 2: assetFtsoDecimals } = await context.priceStore.getPrice(context.chainInfo.symbol);
-        const { 2: vaultFtsoDecimals } = await context.priceStore.getPrice("USDC");
+        const { 2: vaultFtsoDecimals } = await context.priceStore.getPrice("testUSDC");
         const assetTokenDecimals = await context.fAsset.decimals();
         const agentInfo = await agentBot.agent.getAgentInfo();
         const vaultTokenPrice = assetPriceForAgentCr(
@@ -381,8 +381,8 @@ describe("Liquidator tests", () => {
             Number(vaultFtsoDecimals),
             Number(collateralType.decimals),
         )
-        await context.priceStore.setCurrentPrice("USDC", vaultTokenPrice, 0);
-        await context.priceStore.setCurrentPriceFromTrustedProviders("USDC", vaultTokenPrice, 0);
+        await context.priceStore.setCurrentPrice("testUSDC", vaultTokenPrice, 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders("testUSDC", vaultTokenPrice, 0);
         await context.priceStore.finalizePrices();
         // check that collateral ratios and agent status are set up correctly for the upcomming liquidations
         const agentInfo2 = await agentBot.agent.getAgentInfo();
