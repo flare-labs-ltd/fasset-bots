@@ -75,7 +75,7 @@ export async function createNativeContext(config: BotConfig, chainConfig: BotFAs
         agentOwnerRegistry: await AgentOwnerRegistry.at(settings.agentOwnerRegistry),
         assetManager: assetManager,
         fAsset: await FAsset.at(settings.fAsset),
-        priceChangeEmitter: await retriever.getContract(IPriceChangeEmitter, chainConfig.priceChangeEmitter ?? "PriceReader"),
+        priceChangeEmitter: await retriever.getContract(IPriceChangeEmitter, chainConfig.priceChangeEmitter),
         wNat: await WNat.at(await assetManager.getWNat()),
     }
 }

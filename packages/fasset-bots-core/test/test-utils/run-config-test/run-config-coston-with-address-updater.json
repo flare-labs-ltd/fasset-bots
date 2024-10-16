@@ -16,7 +16,7 @@
             "tokenDecimals": 6,
             "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
-            "priceChangeEmitter": "FtsoV2PriceStore"
+            "priceChangeEmitter": "FtsoManager"
         }
     },
     "agentBotSettings": {
