@@ -149,8 +149,8 @@ describe("State connector tests - decoding", () => {
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
-            "",
-            "",
+            [""],
+            [""],
             accounts[0]
         );
     });

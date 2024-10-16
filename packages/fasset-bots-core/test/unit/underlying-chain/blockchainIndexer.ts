@@ -146,7 +146,7 @@ describe("testXRP blockchain tests via indexer", () => {
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass([""], chainId, [""]);
         blockchainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
         const info = await receiveBlockAndTransaction(chainId, blockchainIndexerClient, indexerUrls, indexerApiKey(secrets));
         if (info) {
@@ -372,7 +372,7 @@ describe("testDOGE blockchain tests via indexer", () => {
 
     before(async () => {
         secrets = Secrets.load(TEST_SECRETS);
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass([""], chainId, [""]);
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
         const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrls, indexerApiKey(secrets));
         if (info) {
@@ -491,11 +491,11 @@ describe("other blockchain tests via indexer", () => {
     const sourceIdXRP: ChainId = ChainId.XRP;
 
     it("Should not handle inputs and outputs - not supported chain id", async () => {
-        const rewiredBTCIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdBTC, "");
+        const rewiredBTCIndexerClient = new rewiredBlockchainIndexerHelperClass([""], sourceIdBTC, [""]);
         const resultBTC = await rewiredBTCIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true);
         expect(resultBTC[0][0]).to.eq("");
 
-        const rewiredDOGEIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdDOGE, "");
+        const rewiredDOGEIndexerClient = new rewiredBlockchainIndexerHelperClass([""], sourceIdDOGE, [""]);
         const resultDOGE = await rewiredDOGEIndexerClient.handleInputsOutputs({ transactionType: "coinbase", response: { data: UTXOResponseData } }, true);
         expect(resultDOGE[0][0]).to.eq("");
 
@@ -513,7 +513,7 @@ describe("other blockchain tests via indexer", () => {
                 },
             },
         };
-        const rewiredXRPIndexerClient = new rewiredBlockchainIndexerHelperClass("", sourceIdXRP, "");
+        const rewiredXRPIndexerClient = new rewiredBlockchainIndexerHelperClass([""], sourceIdXRP, [""]);
         const resultXRP = await rewiredXRPIndexerClient.handleInputsOutputs(data, true);
         expect(resultXRP[0][0]).to.eq(data.response.result.Account);
     });

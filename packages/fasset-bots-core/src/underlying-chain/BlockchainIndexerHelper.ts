@@ -27,7 +27,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
     constructor(
         public indexerWebServerUrls: string[],
         public chainId: ChainId,
-        private indexerWebServerApiKeys: string[]
+        private readonly indexerWebServerApiKeys: string[]
     ) {
         // set client
         for (const [index, url] of indexerWebServerUrls.entries()) {
