@@ -315,11 +315,7 @@ program
     .action(async (agentVault: string, recipient: string, share: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        try {
-            await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
-        } catch (error: any) {
-            translateError(error, { "unknown account": `Account ${recipient} not viable for delegation` });
-        }
+        await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
     });
 
 program

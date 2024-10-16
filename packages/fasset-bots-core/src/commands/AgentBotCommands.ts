@@ -646,7 +646,7 @@ export class AgentBotCommands {
     async delegatePoolCollateral(agentVault: string, recipient: string, bips: string | BN): Promise<void> {
         const { readAgentEnt } = await this.getAgentBot(agentVault);
         const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
-        await collateralPool.delegate(recipient, bips, { from: readAgentEnt.ownerAddress });
+        await collateralPool.delegate(recipient, bips, { from: this.owner.workAddress });
         const bipsFmt = formatBips(toBN(bips));
         await this.notifierFor(agentVault).sendDelegatePoolCollateral(collateralPool.address, recipient, bipsFmt);
         logger.info(`Agent ${agentVault} delegated pool collateral to ${recipient} with percentage ${bipsFmt}.`);
@@ -659,7 +659,7 @@ export class AgentBotCommands {
     async undelegatePoolCollateral(agentVault: string): Promise<void> {
         const { readAgentEnt } = await this.getAgentBot(agentVault);
         const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
-        await collateralPool.undelegateAll({ from: readAgentEnt.ownerAddress });
+        await collateralPool.undelegateAll({ from: this.owner.workAddress });
         await this.notifierFor(agentVault).sendUndelegatePoolCollateral(collateralPool.address);
         logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
     }
