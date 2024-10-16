@@ -16,7 +16,7 @@ import {
 } from "../../utils/constants";
 import BN from "bn.js";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
@@ -36,12 +36,12 @@ export enum FeeStatus {
 export class TransactionFeeService {
     readonly feeIncrease: number;
     readonly chainType: ChainType;
-    readonly blockchainAPI: BlockchainAPIWrapper;
+    readonly blockchainAPI: UTXOBlockchainAPI;
 
     constructor(chainType: ChainType, feeIncrease: number) {
         this.chainType = chainType;
         this.feeIncrease = feeIncrease;
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
     }
 
     /**
@@ -111,13 +111,14 @@ export class TransactionFeeService {
                     neededUTXOs.push(utxo);
                     sum = sum.add(utxo.value);
                     est_fee = await this.getEstimateFee(neededUTXOs.length, numOfOut);
+                    /* istanbul ignore else */
                     if (sum.gt(params.amount.add(est_fee))) {
                         break;
                     }
                 }
                 return est_fee;
             }
-        } /* istanbul ignore next */ catch (error) {
+        } catch (error) /* istanbul ignore next */ {
             logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount?.toString()}: ${errorMessage(error)}`);
             throw error;
         }

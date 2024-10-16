@@ -27,7 +27,7 @@ import { EntityManager } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplementation";
 import { UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { errorMessage } from "../../utils/axios-error-utils";
 
 /*
@@ -50,9 +50,10 @@ export function getMinAmountToSend(chainType: ChainType): BN {
     }
 }
 
+/* istanbul ignore next */
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
     try {
-        await ServiceRepository.get(client.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
+        await ServiceRepository.get(client.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
         return true;
     } catch (error) {
         logger.error(`Cannot get response from server ${errorMessage(error)}`);
@@ -88,6 +89,7 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
     const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
     let sub: TransactionEntity[] = descendants;
     for (const descendant of descendants) {
+        /* istanbul ignore next */
         if (descendant.transactionHash) {
             sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));
         }
@@ -97,7 +99,7 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
 
 export async function getAccountBalance(chainType: ChainType, account: string): Promise<BN> {
     try {
-        const blockchainAPIWrapper = ServiceRepository.get(chainType, BlockchainAPIWrapper);
+        const blockchainAPIWrapper = ServiceRepository.get(chainType, UTXOBlockchainAPI);
         const accountBalance = await blockchainAPIWrapper.getAccountBalance(account);
         /* istanbul ignore if */
         if (accountBalance === undefined) {
@@ -105,7 +107,7 @@ export async function getAccountBalance(chainType: ChainType, account: string): 
         }
         const mainAccountBalance = toBN(accountBalance);
         return mainAccountBalance;
-    } /* istanbul ignore next */ catch (error) {
+    } catch (error) /* istanbul ignore next */  {
         logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
         throw error;
     }

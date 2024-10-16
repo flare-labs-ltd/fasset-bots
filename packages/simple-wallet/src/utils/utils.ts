@@ -1,14 +1,18 @@
 import {
    ChainType,
-   DEFAULT_FEE_INCREASE,
+   DEFAULT_FEE_INCREASE, DEFAULT_RATE_LIMIT_OPTIONS,
    DROPS_PER_XRP,
 } from "./constants";
-import { StuckTransaction } from "../interfaces/IWalletTransaction";
+import { RateLimitOptions, StuckTransaction } from "../interfaces/IWalletTransaction";
 import BN from "bn.js";
 import { toBN } from "./bnutils";
 import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
+import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
+import { logger } from "./logger";
+import { errorMessage } from "./axios-error-utils";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -134,4 +138,28 @@ export function getDateTimestampInSeconds(dateTime: string): number {
 
 export function roundUpXrpToDrops(amount: number): number {
    return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
+}
+
+
+export function createAxiosClient(axiosConfig: AxiosRequestConfig, rateLimitOptions: RateLimitOptions | undefined) {
+   const client = axios.create(axiosConfig);
+   return axiosRateLimit(client, {
+      ...DEFAULT_RATE_LIMIT_OPTIONS,
+      ...rateLimitOptions,
+   });
+}
+
+export async function tryWithClients<TResult>(clients: Record<string, AxiosInstance>, operation: (client: AxiosInstance) => Promise<TResult>, method: string) {
+   for (const [index, url] of Object.keys(clients).entries()) {
+      try {
+         const result = await operation(clients[url]);
+         return result;
+      } catch (error) {
+         if (index == Object.keys(clients).length - 1) {
+            throw error;
+         }
+         logger.warn(`Client ${url} - ${method} failed with: ${errorMessage(error)}`);
+      }
+   }
+   throw new Error(`All blockchain clients failed.`);
 }

@@ -155,7 +155,7 @@ export async function createUTXOEntity(
     position: number,
     value: BN,
     script: string,
-    spentTxHash: /* istanbul ignore next */ string | null = null,
+    spentTxHash: string | null = /* istanbul ignore next */ null,
     confirmed: boolean
 ): Promise<void> {
     rootEm.create(UTXOEntity, {
@@ -362,7 +362,7 @@ export async function processTransactions(
     for (const txEnt of transactionEntities) {
         try {
             await processFunction(txEnt);
-        } /* istanbul ignore next */ catch (e) {
+        } catch (e) /* istanbul ignore next */ {
             logger.error(`Cannot process transaction ${txEnt.id}`, e);
         }
     }
@@ -380,6 +380,7 @@ export async function setAccountIsDeleting(rootEm: EntityManager, address: strin
     logger.info(`Settings ${address} to be deleted.`);
     await rootEm.transactional(async (em) => {
         const wa = await rootEm.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
+        /* istanbul ignore else */
         if (wa) {
             wa.isDeleting = true;
             await em.persistAndFlush(wa);

@@ -1,25 +1,9 @@
-import { logger } from "../utils/logger";
 import { DriverException, UniqueConstraintViolationException, ValidationError } from "@mikro-orm/core";
 import { BaseWalletConfig, RateLimitOptions } from "../interfaces/IWalletTransaction";
 import axios, { AxiosRequestConfig } from "axios";
 import { excludeNullFields } from "../utils/utils";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, DEFAULT_RATE_LIMIT_OPTIONS_XRP } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-
-export async function tryWithClients<T, TResult>(clients: Record<string, T>, operation: (client: T) => Promise<TResult>, method: string) {
-    for (const [index, url] of Object.keys(clients).entries()) {
-        try {
-            const result = await operation(clients[url]);
-            return result;
-        } catch (error) {
-            if (index == Object.keys(clients).length - 1) {
-                throw error;
-            }
-            logger.warn(`Client ${url} - ${method} failed with: ${errorMessage(error)}`);
-        }
-    }
-    throw new Error(`All blockchain clients failed.`);
-}
 
 export function isORMError(e: unknown) {
     return e instanceof ValidationError || e instanceof DriverException || e instanceof UniqueConstraintViolationException;

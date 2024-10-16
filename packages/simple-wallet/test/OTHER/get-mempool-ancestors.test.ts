@@ -7,7 +7,7 @@ import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { expect } from "chai";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { MockBlockchainAPI } from "../test-util/common_utils";
 
 
@@ -25,7 +25,7 @@ describe("getNumberOfMempoolAncestors", () => {
         conf.dbName = "getTransactionDescendants-test-db";
         em = (await initializeTestMikroORMWithConfig(conf)).em;
         ServiceRepository.register(ChainType.testBTC, EntityManager, em);
-        ServiceRepository.register(ChainType.testBTC, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register(ChainType.testBTC, UTXOBlockchainAPI, new MockBlockchainAPI());
         ServiceRepository.register(ChainType.testBTC, TransactionUTXOService, new TransactionUTXOService(chainType, 25, 2));
     });
 

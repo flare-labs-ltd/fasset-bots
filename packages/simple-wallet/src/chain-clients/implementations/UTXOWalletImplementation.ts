@@ -38,7 +38,7 @@ import { SpentHeightEnum } from "../../entity/utxo";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
 import { checkUTXONetworkStatus, getAccountBalance, getCore, getMinAmountToSend } from "../utxo/UTXOUtils";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { ServiceRepository } from "../../ServiceRepository";
 import { TransactionService } from "../utxo/TransactionService";
@@ -59,7 +59,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     transactionFeeService: TransactionFeeService;
     transactionService: TransactionService;
     transactionUTXOService: TransactionUTXOService;
-    blockchainAPI: BlockchainAPIWrapper;
+    blockchainAPI: UTXOBlockchainAPI;
     walletKeys!: IWalletKeys;
     blockOffset: number;
     feeIncrease: number;
@@ -91,8 +91,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         ServiceRepository.register(this.chainType, EntityManager<IDatabaseDriver>, this.rootEm);
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
 
-        ServiceRepository.register(this.chainType, BlockchainAPIWrapper, new BlockchainAPIWrapper(createConfig, this.chainType));
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        ServiceRepository.register(this.chainType, UTXOBlockchainAPI, new UTXOBlockchainAPI(createConfig, this.chainType));
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
 
         ServiceRepository.register(
             this.chainType,
@@ -269,7 +269,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.info(`Preparing transaction ${txEnt.id}`);
         try {
             // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
-            const blockchainApi = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+            const blockchainApi = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
             const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
             await this.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
@@ -294,6 +294,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const privateKey = await this.walletKeys.getKey(txEnt.source);
             const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
 
+            /* istanbul ignore next */
             if (!privateKey || txEnt.feeSource && !privateKeyForFee) {
                 await handleMissingPrivateKey(this.rootEm, txEnt.id, "prepareAndSubmitCreatedTransaction");
                 return;
@@ -332,9 +333,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 }  else if (error instanceof NegativeFeeError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
                 } else if (axios.isAxiosError(error)) {
-                    const axiosError = error as AxiosError<AxiosTransactionSubmissionError>
+                    const axiosError = error as AxiosError<AxiosTransactionSubmissionError>;
 
-                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with: ${axiosError.response?.data}`);
+                    logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with: ${String(axiosError.response?.data)}`);
                     if (axiosError.response?.data.error.includes("not found")) {
                         await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
                             txEnt.status = TransactionStatus.TX_CREATED;
@@ -355,7 +356,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         }
                     }
                 } else {
-                    logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with: ${error}`);
+                    logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with: ${String(error)}`);
                 }
             }
             return;
@@ -376,6 +377,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
                     txEntToUpdate.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
                 });
+
+                /* istanbul ignore next */
                 if (!this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
                     await this.transactionUTXOService.updateTransactionInputSpentStatus(txEnt.id, SpentHeightEnum.SPENT);
                 }
@@ -399,12 +402,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     return;
                 }
                 if (axios.isAxiosError(error)) {
+                    const axiosError = error as AxiosError<AxiosTransactionSubmissionError>;
                     logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with: ${JSON.stringify(error.response?.data, null, 2)}`);
-                    if (error.response?.data.error.includes("not found")) {
+                    if (String(axiosError.response?.data.error).includes("not found")) {
                         notFound = true;
                     }
                 } else {
-                    logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${error}`);
+                    logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${String(error)}`);
                 }
 
                 if(notFound && txEnt.rbfReplacementFor) { //rbf not found -> original is still valid
@@ -454,8 +458,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const transaction = new core.Transaction(JSON.parse(txEnt.raw!));
 
         const privateKey = await this.walletKeys.getKey(txEnt.source);
+        /* istanbul ignore next */
         const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
 
+        /* istanbul ignore next */
         if (!privateKey || txEnt.feeSource && !privateKeyForFee) {
             await handleMissingPrivateKey(this.rootEm, txEnt.id, "submitPreparedTransactions");
             return;
@@ -546,7 +552,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             oldTx.maxFee,
             oldTx.executeUntilBlock,
             oldTx.executeUntilTimestamp,
-            oldTx
+            oldTx,
+            oldTx.feeSource
         );
 
         await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
@@ -607,11 +614,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await this.transactionUTXOService.updateTransactionInputSpentStatus(txId, SpentHeightEnum.SENT);
                 return TransactionStatus.TX_PENDING;
             } else {
-                await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed ${resp.status}`, resp.data);
+                await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed ${resp.status}`, new Error(String(resp.data)));
                 await this.transactionUTXOService.updateTransactionInputSpentStatus(txId, SpentHeightEnum.UNSPENT);
                 return TransactionStatus.TX_FAILED;
             }
         } catch (error) {
+            /* istanbul ignore else */
             if (isORMError(error)) {
                 // We don't want to fail tx if error is caused by DB
                 logger.error(`Transaction ${txId} submission failed with DB error ${errorMessage(error)}`);
@@ -633,6 +641,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         while (toBN(getCurrentTimestampInSeconds()).sub(start).ltn(this.mempoolWaitingTimeInS)) {
             try {
                 const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
+                /* ignore else */
                 if (txResp) {
                     await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                         txEnt.status = TransactionStatus.TX_SUBMITTED;

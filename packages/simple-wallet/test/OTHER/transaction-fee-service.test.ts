@@ -3,7 +3,7 @@ import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/T
 import { BTC_LOW_FEE_PER_KB, BTC_MID_FEE_PER_KB, ChainType, DOGE_LOW_FEE_PER_KB, DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB, TEST_DOGE_LOW_FEE_PER_KB, TEST_DOGE_MID_FEE_PER_KB } from "../../src/utils/constants";
 import sinon from "sinon";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { MockBlockchainAPI } from "../test-util/common_utils";
 
 describe("Transaction fee service tests", () => {
@@ -13,7 +13,7 @@ describe("Transaction fee service tests", () => {
     });
 
     it("Should get current fee status - DOGE", async () => {
-        ServiceRepository.register(ChainType.DOGE, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register(ChainType.DOGE, UTXOBlockchainAPI, new MockBlockchainAPI());
         const feeService = new TransactionFeeService(ChainType.DOGE, 1)
         sinon.stub(feeService, 'getFeePerKB')
             .onFirstCall().resolves(DOGE_MID_FEE_PER_KB)
@@ -29,7 +29,7 @@ describe("Transaction fee service tests", () => {
     });
 
     it("Should get current fee status - testDOGE", async () => {
-        ServiceRepository.register(ChainType.testDOGE, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register(ChainType.testDOGE, UTXOBlockchainAPI, new MockBlockchainAPI());
         const feeService = new TransactionFeeService(ChainType.testDOGE, 1)
         sinon.stub(feeService, 'getFeePerKB')
             .onFirstCall().resolves(TEST_DOGE_MID_FEE_PER_KB)
@@ -45,7 +45,7 @@ describe("Transaction fee service tests", () => {
     });
 
     it("Should get current fee status - BTC", async () => {
-        ServiceRepository.register(ChainType.BTC, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register(ChainType.BTC, UTXOBlockchainAPI, new MockBlockchainAPI());
         const feeService = new TransactionFeeService(ChainType.BTC, 1)
         sinon.stub(feeService, 'getFeePerKB')
             .onFirstCall().resolves(BTC_MID_FEE_PER_KB)
@@ -61,7 +61,7 @@ describe("Transaction fee service tests", () => {
     });
 
     it("Should get current fee status - testBTC", async () => {
-        ServiceRepository.register(ChainType.testBTC, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register(ChainType.testBTC, UTXOBlockchainAPI, new MockBlockchainAPI());
         const feeService = new TransactionFeeService(ChainType.testBTC, 1)
         sinon.stub(feeService, 'getFeePerKB')
             .onFirstCall().resolves(TEST_BTC_MID_FEE_PER_KB)
@@ -77,7 +77,7 @@ describe("Transaction fee service tests", () => {
     });
 
     it("Should get current fee status - unsupported", async () => {
-        ServiceRepository.register("LTC" as ChainType, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register("LTC" as ChainType, UTXOBlockchainAPI, new MockBlockchainAPI());
         const feeService = new TransactionFeeService("LTC" as ChainType, 1)
         sinon.stub(feeService, 'getFeePerKB').resolves(TEST_BTC_LOW_FEE_PER_KB.subn(1));
         const status = await feeService.getCurrentFeeStatus();

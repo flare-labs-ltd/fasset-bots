@@ -1,8 +1,9 @@
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
-import { AxiosInstance } from "axios";
+import { AxiosInstance, AxiosResponse } from "axios";
 import { ChainType } from "../utils/constants";
-import type { AccountInfoRequest } from "xrpl";
-import { createAxiosInstance, tryWithClients } from "../utils/axios-error-utils";
+import type { AccountInfoRequest, AccountInfoResponse, ServerInfoResponse, SubmitResponse, TxResponse } from "xrpl";
+import { createAxiosInstance } from "../utils/axios-error-utils";
+import { tryWithClients } from "../utils/utils";
 
 export class XRPBlockchainAPI {
     client: AxiosInstance;
@@ -20,28 +21,28 @@ export class XRPBlockchainAPI {
         }
     }
 
-    async getTransaction(transactionHash: string) {
+    async getTransaction(transactionHash: string): Promise<AxiosResponse<TxResponse>> {
         return tryWithClients(this.clients,(client: AxiosInstance) => client.post("", {
             method: "tx",
             params: [{ transaction: transactionHash }],
         }), "getTransaction");
     }
 
-    async submitTransaction(params: SubmitTransactionRequest) {
+    async submitTransaction(params: SubmitTransactionRequest): Promise<AxiosResponse<SubmitResponse>> {
         return tryWithClients(this.clients,(client: AxiosInstance) => client.post("", {
             method: "submit",
             params: [params],
         }), "submitTransaction");
     }
 
-    async getAccountInfo(params: AccountInfoRequest) {
+    async getAccountInfo(params: AccountInfoRequest): Promise<AxiosResponse<AccountInfoResponse>> {
         return tryWithClients(this.clients,(client: AxiosInstance) => client.post("", {
                 method: "account_info", params: [params],
             },
         ), "getAccountInfo");
     }
 
-    async getServerInfo() {
+    async getServerInfo(): Promise<AxiosResponse<ServerInfoResponse>> {
         return tryWithClients(this.clients,(client: AxiosInstance) => client.post("", {
             method: "server_info",
             params: [],

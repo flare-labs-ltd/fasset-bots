@@ -20,7 +20,7 @@ import { TransactionService } from "../../src/chain-clients/utxo/TransactionServ
 import { correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { setMonitoringStatus } from "../test-util/entity_utils";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
@@ -94,6 +94,8 @@ describe("Dogecoin wallet tests", () => {
     it("Should not create transaction: amount = dust amount", async () => {
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
+        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
+
         await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
@@ -119,9 +121,11 @@ describe("Dogecoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(targetAddress, fundedAddress, toSend);
         expect(txId).to.be.greaterThan(0);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, txId);
-        const blockchainApi = ServiceRepository.get(chainType, BlockchainAPIWrapper);
+        const blockchainApi = ServiceRepository.get(chainType, UTXOBlockchainAPI);
         const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, txEnt.source, utxosFromMempool);
+        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
+
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(
             txEnt.id,
             txEnt.source,

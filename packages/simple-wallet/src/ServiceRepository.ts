@@ -2,6 +2,7 @@ import { ChainType } from "./utils/constants";
 
 type Constructor<T> = new (...args: any[]) => T;
 
+/* istanbul ignore next */
 export class Repository {
     private services = new Map<ChainType, Map<Constructor<unknown>, unknown>>();
 

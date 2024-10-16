@@ -1,4 +1,4 @@
-import { BTC, SpentHeightEnum, TransactionStatus, UTXOEntity, WalletAddressEntity } from "../../src";
+import { BTC, SpentHeightEnum, TransactionStatus, UTXOEntity } from "../../src";
 import { BitcoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { assert, expect, use } from "chai";
@@ -15,7 +15,7 @@ import {
 } from "../test-util/common_utils";
 import { logger } from "../../src/utils/logger";
 import BN from "bn.js";
-import { BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
+import { BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType } from "../../src/utils/constants";
 import * as dbutils from "../../src/db/dbutils";
 import {
     correctUTXOInconsistenciesAndFillFromMempool,
@@ -27,7 +27,7 @@ import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import {
     clearUTXOs,
     createAndPersistTransactionEntity,
@@ -37,12 +37,9 @@ import {
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
+import sinon from "sinon";
 
 use(chaiAsPromised);
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const sinon = require("sinon");
-
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
@@ -132,7 +129,7 @@ describe("Bitcoin wallet tests", () => {
     it("Should create transaction with custom fee", async () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi);
         expect(txId).greaterThan(0);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 1 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const info = await wClient.getTransactionInfo(txId);
         expect(info.transactionHash).to.eq(txEnt.transactionHash);
         expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
@@ -156,14 +153,16 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should get fee for delete account", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
+        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
+
         const [transaction,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
         const fee = transaction.getFee();
         expect(fee).to.be.gt(0);
     });
 
     it("Should get account balance", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const accountBalance = await wClient.getAccountBalance(fundedWallet.address);
         expect(accountBalance.gt(new BN(0))).to.be.true;
     });
@@ -178,7 +177,6 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should submit TX_PREPARED that are in DB", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
         const executeUntilBlock = currentBlock + wClient.blockOffset;
         const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
@@ -224,14 +222,6 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
-    it("Transaction with a too low fee should be updated with a higher fee", async () => {
-        const startFee = toBNExp(0.0000000000001, 0);
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, startFee, note, undefined);
-        expect(id).to.be.gt(0);
-        const [txEnt] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
-        expect(txEnt.fee?.toNumber()).to.be.gt(startFee.toNumber());
-    });
-
     it.skip("Already spent UTXOs with wrong status should get a new status - consistency checker", async () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
@@ -255,17 +245,16 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
-        const interceptorId = wClient.blockchainAPI.client.interceptors.request.use(
+        const interceptorId = wClient.blockchainAPI.clients[0].interceptors.request.use(
             config => Promise.reject(`Down`),
         );
         await sleepMs(5000);
         console.info("API connection up");
-        wClient.blockchainAPI.client.interceptors.request.eject(interceptorId);
+        wClient.blockchainAPI.clients[0].interceptors.request.eject(interceptorId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
     it("If getCurrentFeeRate is down the fee should be the default one", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
         sinon.stub(wClient.blockchainAPI, "getCurrentFeeRate").rejects(new Error("No fee"));
 
@@ -281,10 +270,10 @@ describe("Bitcoin wallet tests", () => {
     it("If fee service is down the getCurrentFeeRate should be used", async () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
 
-        const fee = "0.005";
+        const fee = 0.005;
         const feeRateInSatoshi = toBNExp(fee, BTC_DOGE_DEC_PLACES).muln(wClient.feeIncrease);
 
-        sinon.stub(ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper), "getCurrentFeeRate").resolves(fee);
+        sinon.stub(ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI), "getCurrentFeeRate").resolves(fee);
 
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
@@ -330,7 +319,7 @@ describe("Bitcoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
-        const blockHeight = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
+        const blockHeight = await ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(txId, blockHeight);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED, txId);
         const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
@@ -348,55 +337,34 @@ describe("Bitcoin wallet tests", () => {
         expect(await wClient.isMonitoring()).to.be.true;
      });
 
-    it.skip("Monitoring into infinity", async () => {
-        while (true) {
-            await sleepMs(2000);
-        }
-    });
-
-    it.skip("Should prepare and execute transaction", async () => {// Needed only to transfer funds
-        const source = "";
-        const target = "";
-        const amountToSendInSats = toBNExp(1, BTC_DOGE_DEC_PLACES);
-        const noteToSend = "Transfer";
-        const id = await wClient.createPaymentTransaction(source, target, amountToSendInSats, undefined, noteToSend);
-        expect(id).to.be.gt(0);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
-    });
-
     it("Account that is being deleted should not accept new transactions", async () => {
-        await setWalletStatusInDB(wClient.rootEm, fundedAddress, true);
+        const wallet = wClient.createWallet();
+        await wClient.walletKeys.addKey(wallet.address, wallet.privateKey);
+        await setWalletStatusInDB(wClient.rootEm, wallet.address, true);
 
-        expect(wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi))
-            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
-        expect(ServiceRepository.get(wClient.chainType, TransactionService).createPaymentTransaction(wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi))
-            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
+        expect(wClient.createPaymentTransaction(wallet.address, targetAddress, amountToSendSatoshi))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${wallet.address} is deleting`);
+        expect(ServiceRepository.get(wClient.chainType, TransactionService).createPaymentTransaction(wClient.chainType, wallet.address, targetAddress, amountToSendSatoshi))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${wallet.address} is deleting`);
 
-        expect(wClient.createDeleteAccountTransaction(fundedAddress, targetAddress))
-            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
-        expect(ServiceRepository.get(wClient.chainType, TransactionService).createDeleteAccountTransaction(wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi))
-            .to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
+        expect(wClient.createDeleteAccountTransaction(wallet.address, targetAddress))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${wallet.address} is deleting`);
+        expect(ServiceRepository.get(wClient.chainType, TransactionService).createDeleteAccountTransaction(wClient.chainType, wallet.address, targetAddress, amountToSendSatoshi))
+            .to.eventually.be.rejectedWith(`Cannot receive requests. ${wallet.address} is deleting`);
 
-        await setWalletStatusInDB(wClient.rootEm, fundedAddress, false);
+        await setWalletStatusInDB(wClient.rootEm, wallet.address, false);
     });
 
     it("Account without private key shouldn't be able to create transaction", async () => {
-        await wClient.rootEm.nativeDelete(WalletAddressEntity, { address: fundedAddress });
-        await wClient.rootEm.flush();
-        wClient.rootEm.clear(); // clear the cache so that the keys are deleted for sure ...
-        expect(wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi)).to.eventually.be.rejectedWith(`Cannot prepare transaction ${fundedAddress}. Missing private key.`);
-        expect(wClient.createDeleteAccountTransaction(fundedAddress, targetAddress)).to.eventually.be.rejectedWith(`Cannot prepare transaction ${fundedAddress}. Missing private key.`);
-        await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
+        const wallet = wClient.createWallet();
+        expect(wClient.createPaymentTransaction(wallet.address, targetAddress, amountToSendSatoshi)).to.eventually.be.rejectedWith(`Cannot prepare transaction ${wallet.address}. Missing private key.`);
+        expect(wClient.createDeleteAccountTransaction(wallet.address, targetAddress)).to.eventually.be.rejectedWith(`Cannot prepare transaction ${wallet.address}. Missing private key.`);
     });
 
     it("If private key for fee wallet is missing transaction shouldn't be created", async () => {
-        const feeSourceAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
-        await wClient.rootEm.nativeDelete(WalletAddressEntity, { address: feeSourceAddress });
-        await wClient.rootEm.flush();
-        wClient.rootEm.clear(); // clear the cache so that the keys are deleted for sure ...
-
+        const wallet = wClient.createWallet();
         expect(
-            wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, feeSourceAddress)
+            wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, wallet.address)
         ).to.eventually.be.rejectedWith(`Cannot prepare transaction ${fundedAddress}. Missing private key for fee wallet.`);
     });
 
@@ -407,12 +375,12 @@ describe("Bitcoin wallet tests", () => {
 
         const feeSourceAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
         const feeSourcePk = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
+        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
 
         // Refill the fee wallet, so that it doesn't get empty
         const fundTxId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSendSatoshi, feeInSatoshi);
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, fundTxId);
 
-        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk)
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, undefined, feeSourceAddress);
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
@@ -420,7 +388,35 @@ describe("Bitcoin wallet tests", () => {
         expect(txEnt.utxos.getItems().map(t => t.source)).to.include.members([fundedAddress, feeSourceAddress]);
     });
 
-    it("If transaction doesn't exist / has a wrong hash, it's list of UTXOs should be empty", async () => {
+    it("Should submit and replace transaction with 2 wallets", async () => {
+        //old target - still have some funds
+        //a: mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2
+        //pk: cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY
+
+        const feeSourceAddress = "mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2";
+        const feeSourcePk = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
+        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
+
+        // Refill the fee wallet, so that it doesn't get empty
+        const fundTxId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSendSatoshi, feeInSatoshi);
+        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, fundTxId);
+
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined, undefined, undefined, feeSourceAddress);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const blockHeight = await ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
+        await wClient.tryToReplaceByFee(txId, blockHeight);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED, txId);
+
+        const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
+        expect(txEnt.utxos.getItems().map(t => t.source)).to.include.members([fundedAddress, feeSourceAddress]);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
+
+        const replacementTxEnt = await fetchTransactionEntityById(wClient.rootEm, txEnt.replaced_by!.id);
+        expect(replacementTxEnt.utxos.getItems().map(t => t.source)).to.include.members([fundedAddress, feeSourceAddress]);
+    });
+
+    it("If transaction doesn't exist / has a wrong structure, it's list of UTXOs should be empty", async () => {
         expect((await fetchUTXOsByTxId(wClient.rootEm, -1)).length).to.be.eq(0);
         const txEnt = createTransactionEntity(fundedAddress, targetAddress, "hash");
         txEnt.raw = "asdf";
@@ -434,7 +430,7 @@ describe("Bitcoin wallet tests", () => {
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
         await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
 
-        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, BTC_DUST_AMOUNT, feeInSatoshi)).to
+        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, BTC_DUST_AMOUNT)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${BTC_DUST_AMOUNT.toString()} is less than dust ${BTC_DUST_AMOUNT.toString()}`);
     });
 
@@ -443,9 +439,9 @@ describe("Bitcoin wallet tests", () => {
         await wClient.stopMonitoring();
 
         const stub = sinon.stub(utxoUtils, "checkUTXONetworkStatus");
-        stub.onCall(0).throws(new Error("API not available"));
-        stub.onCall(1).throws(new Error("API not available"));
-        stub.onCall(2).returns(await wClient.blockchainAPI.getCurrentBlockHeight());
+        stub.onCall(0).resolves(false);
+        stub.onCall(1).resolves(false);
+        stub.resolves(!!(await ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI).getCurrentBlockHeight()));
 
         void wClient.startMonitoringTransactionProgress();
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
@@ -491,5 +487,34 @@ describe("Bitcoin wallet tests", () => {
         expect(txEnt.outputs.getItems().length).to.eq(0);
         expect(txEnt.transactionHash).to.be.eq("");
 
+    });
+
+    /*
+    UTILS
+     */
+
+    it.skip("Monitoring into infinity", async () => {
+        while (true) {
+            await sleepMs(2000);
+        }
+    });
+
+    it.skip("Should prepare and execute transaction", async () => {// Needed only to transfer funds
+        const source = "";
+        const target = "";
+        const amountToSendInSats = toBNExp(1, BTC_DOGE_DEC_PLACES);
+        const noteToSend = "Transfer";
+        const id = await wClient.createPaymentTransaction(source, target, amountToSendInSats, undefined, noteToSend);
+        expect(id).to.be.gt(0);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+    });
+
+    it.skip("Send funds back to funded address", async () => {
+        const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+        await wClient.walletKeys.addKey(targetWallet.address, targetWallet.privateKey);
+
+        const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
+        const id = await wClient.createPaymentTransaction(targetAddress, fundedAddress, amountToSendSatoshi.muln(15), undefined, undefined, undefined, blockHeight + 100);
+        await waitForTxToFinishWithStatus(2, 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 });

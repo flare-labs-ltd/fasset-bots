@@ -1,10 +1,8 @@
-import { AxiosInstance, AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 
 export interface IBlockchainAPI {
-    client: AxiosInstance;
-
     getAccountBalance(account: string): Promise<number | undefined>;
 
     sendTransaction(tx: string): Promise<AxiosResponse>;

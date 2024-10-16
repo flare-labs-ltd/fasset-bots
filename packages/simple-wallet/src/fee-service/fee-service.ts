@@ -9,11 +9,11 @@ import BN from "bn.js";
 import { logger } from "../utils/logger";
 
 import { errorMessage } from "../utils/axios-error-utils";
-import { BlockchainAPIWrapper } from "../blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
 import { ServiceRepository } from "../ServiceRepository";
 
 export class BlockchainFeeService {
-    blockchainAPI: BlockchainAPIWrapper;
+    blockchainAPI: UTXOBlockchainAPI;
     history: BlockStats[] = [];
     numberOfBlocksInHistory = 11;
     sleepTimeMs = 5000;
@@ -22,7 +22,7 @@ export class BlockchainFeeService {
 
     constructor(chainType: ChainType) {
         this.chainType = chainType;
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
     }
 
     getLatestFeeStats(): BN {
@@ -124,7 +124,7 @@ export class BlockchainFeeService {
         try {
             const blockHeight = await this.blockchainAPI.getCurrentBlockHeight()
             return blockHeight;
-        } /* istanbul ignore else */ catch (error) {
+        } catch (error) /* istanbul ignore next */ {
             logger.error(`Fee service failed to fetch block height ${errorMessage(error)}`);
             return 0;
         }
@@ -139,7 +139,7 @@ export class BlockchainFeeService {
                 averageFeePerKB: toBNExp(avgFee, BTC_DOGE_DEC_PLACES),
                 blockTime: blockTime
             };
-        } /* istanbul ignore next */ catch (error) {
+        } catch (error) /* istanbul ignore next */ {
             logger.error(`Error fetching fee stats from indexer for block ${blockHeight}: ${errorMessage(error)}`);
             return null;
         }
@@ -153,7 +153,7 @@ export class BlockchainFeeService {
                 if (feeStats) {
                     return feeStats;
                 }
-            } /* istanbul ignore next */ catch (error) {
+            } catch (error) /* istanbul ignore next */ {
                 logger.warn(`Failed to fetch fee stats for block ${blockHeight} on attempt ${attempts + 1}: ${errorMessage(error)}`);
             }
             attempts++;

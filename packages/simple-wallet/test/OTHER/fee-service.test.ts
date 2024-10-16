@@ -3,7 +3,7 @@ import {expect} from "chai";
 import { sleepMs } from "../../src/utils/utils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { ChainType } from "../../src/utils/constants";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { BitcoinWalletConfig, BTC, logger } from "../../src";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -78,7 +78,7 @@ describe("Fee service tests BTC", () => {
     });
 
     it("Should get fee and median time", async () => {
-        ServiceRepository.register(ChainType.testBTC, BlockchainAPIWrapper, new MockBlockchainAPI());
+        ServiceRepository.register(ChainType.testBTC, UTXOBlockchainAPI, new MockBlockchainAPI());
         void feeService.monitorFees(true);
         await sleepMs(5000);
         const chainType = ChainType.testBTC;

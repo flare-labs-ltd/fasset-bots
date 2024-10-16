@@ -10,11 +10,11 @@ import winston, { Logger } from "winston";
 import { logger } from "../../src/utils/logger";
 import { toBN } from "../../src/utils/bnutils";
 import { isORMError } from "../../src/utils/axios-error-utils";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { IBlockchainAPI, MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
-import { Transaction } from "bitcore-lib";
+import { MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
 import * as bitcore from "bitcore-lib";
+import { Transaction } from "bitcore-lib";
 
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -163,9 +163,9 @@ export const TEST_WALLET_XRP = {
 }
 
 
-export class MockBlockchainAPI implements BlockchainAPIWrapper {
+export class MockBlockchainAPI implements UTXOBlockchainAPI {
     client: AxiosInstance;
-    clients: Record<string, IBlockchainAPI>;
+    clients: Record<string, AxiosInstance>;
     chainType: ChainType;
 
     constructor() {

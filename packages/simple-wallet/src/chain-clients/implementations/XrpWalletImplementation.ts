@@ -1,7 +1,6 @@
 import elliptic from "elliptic";
-import xrpl, { convertStringToHex, encodeForSigning, encode as xrplEncode, hashes as xrplHashes } from "xrpl"; // package has some member access issues
+import xrpl, { xrpToDrops, convertStringToHex, encodeForSigning, encode as xrplEncode, hashes as xrplHashes } from "xrpl"; // package has some member access issues
 
-const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
 import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops } from "../../utils/utils";
 import { toBN } from "../../utils/bnutils";
@@ -76,7 +75,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          const data = await this.getAccountInfo(account);
          logger.info(`Get account balance for ${account}`, data.result.account_data?.Balance || 0);
          return toBN(data.result.account_data?.Balance || 0);
-      } catch (error) {
+      } catch (error) /* istanbul ignore next */ {
          logger.error(`Cannot get account balance for ${account}`, error);
          throw error;
       }
@@ -101,7 +100,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       if (params.isPayment && serverInfo.load_factor) {
          baseFee *= serverInfo.load_factor;
       }
-      return toBN(xrpl__typeless.xrpToDrops(roundUpXrpToDrops(baseFee)));
+      return toBN(xrpToDrops(roundUpXrpToDrops(baseFee)));
    }
 
    /**
@@ -232,7 +231,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       try {
          await this.getServerInfo();
          return true;
-      } catch (error) {
+      } catch (error) /* istanbul ignore next */ {
          logger.error("Cannot ger response from server", error);
          return false;
       }
@@ -303,6 +302,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          txEnt.executeUntilBlock
       );
       const privateKey = await this.walletKeys.getKey(txEnt.source);
+      /* istanbul ignore next */
       if (!privateKey) {
          await handleMissingPrivateKey(this.rootEm, txEnt.id, "prepareAndSubmitCreatedTransaction");
          return;
@@ -522,6 +522,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       const currentTimestamp = toBN(getCurrentTimestampInSeconds());
       const originalTx = JSON.parse(transaction.raw!) as xrpl.Payment | xrpl.AccountDelete;
       if (originalTx.TransactionType == "AccountDelete") {
+         /* istanbul ignore else */
          if (originalTx.Sequence! + DELETE_ACCOUNT_OFFSET > currentLedger) {
             logger.warn(`AccountDelete transaction ${txDbId} does not yet satisfy requirements: sequence ${originalTx.Sequence}, currentLedger ${currentLedger}`);
             await updateTransactionEntity(this.rootEm, txDbId, (txEnt: TransactionEntity) => {

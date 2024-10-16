@@ -5,13 +5,16 @@ import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
 import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { createInitialTransactionEntity, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import {
+    createInitialTransactionEntity,
+    fetchTransactionEntityById,
+    updateTransactionEntity,
+} from "../../src/db/dbutils";
 import { TransactionStatus } from "../../src/entity/transaction";
 import {
     addConsoleTransportForTests,
     loop,
     resetMonitoringOnForceExit,
-    TEST_WALLET_XRP,
     waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus,
 } from "../test-util/common_utils";
@@ -22,14 +25,16 @@ import axiosRateLimit from "../../src/axios-rate-limiter/axios-rate-limit";
 import axios, { AxiosError } from "axios";
 import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { sleepMs } from "../../src/utils/utils";
-import { XRP } from "../../src";
+import { WalletAddressEntity, XRP } from "../../src";
 import {
     createAndSignXRPTransactionWithStatus,
     setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
+import { ECDSA } from "../../src/chain-clients/account-generation/XrpAccountGeneration";
+import sinon from "sinon";
 
 use(chaiAsPromised);
 
@@ -84,7 +89,7 @@ describe("Xrp wallet tests", () => {
         await sleepMs(2000);
         resetMonitoringOnForceExit(wClient);
 
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+        fundedWallet = wClient.createWalletFromSeed(fundedSeed, ECDSA.secp256k1);
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
@@ -128,8 +133,8 @@ describe("Xrp wallet tests", () => {
     it("Should get public key from private key", async () => {
         const seed0 = "sh8N3CZNMqdjBhgsbdzp8NoEnr8MH";
         const seed1 = "sEdTcEtUFE7BxDKj5QfdgyGorRKmq73";
-        const wallet0 = wClient.createWalletFromSeed(seed0, "ecdsa-secp256k1");
-        const wallet1 = wClient.createWalletFromSeed(seed1, "ed25519");
+        const wallet0 = wClient.createWalletFromSeed(seed0, ECDSA.secp256k1);
+        const wallet1 = wClient.createWalletFromSeed(seed1, ECDSA.ed25519);
 
         const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
         const public0 = rewired.getPublicKeyFromPrivateKey(wallet0.privateKey, wallet0.address);
@@ -173,7 +178,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should not submit transaction: fee > maxFee", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsSecond, feeInDrops, "Submit", maxFeeInDrops);
         expect(id).to.be.gt(0);
 
@@ -195,7 +199,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should not submit resubmitted transaction - fee to low", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const lowFee = toBN(2);
         const maxFee = toBN(3);
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, lowFee, note, maxFee);
@@ -213,7 +216,6 @@ describe("Xrp wallet tests", () => {
         await wClient.walletKeys.addKey(toDelete.address, toDelete.privateKey);
         expect(toDelete.address).to.not.be.null;
         expect(WAValidator.validate(toDelete.address, "XRP", "testnet")).to.be.true;
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
         const toSendInDrops = toBNExp(20, 6); // 20 XPR
         // fund toDelete account
@@ -241,7 +243,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should successfully resubmit transaction with fee < minFee", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const lowFee = toBN("5"); // toBN("10") is minFee for XRP
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, lowFee, note);
         expect(id).to.be.gt(0);
@@ -251,7 +252,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should handle TX_PENDING", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const txEnt = await createAndSignXRPTransactionWithStatus(wClient, fundedWallet.address,
             targetAddress, amountToSendDropsFirst, note, feeInDrops, TransactionStatus.TX_PENDING);
 
@@ -264,7 +264,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should not resubmit TX_PENDING - already on chain", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note);
         await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
@@ -280,7 +279,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should handle TX_FAILED_SUBMISSION", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const txEnt = await createAndSignXRPTransactionWithStatus(wClient, fundedWallet.address,
             targetAddress, amountToSendDropsFirst, note, feeInDrops, TransactionStatus.TX_SUBMISSION_FAILED);
 
@@ -293,7 +291,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should submit TX_PREPARED that are in DB", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const txEnt = await createAndSignXRPTransactionWithStatus(wClient, fundedWallet.address,
             targetAddress, amountToSendDropsFirst, note, feeInDrops, TransactionStatus.TX_PREPARED);
 
@@ -304,7 +301,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Transaction with executeUntilBlock before current ledger index should fail", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const currentBlock = await wClient.getLatestValidatedLedgerIndex();
         const id = await wClient.createPaymentTransaction(
             fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops,
@@ -314,7 +310,6 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Transaction with executeUntilBlock too low should fail", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const currentBlock = await wClient.getLatestValidatedLedgerIndex();
         const id = await wClient.createPaymentTransaction(
             fundedAddress, targetAddress, amountToSendDropsFirst, maxFeeInDrops,
@@ -324,16 +319,35 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Account that is deleting should not enable creating transaction", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
-        await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, true);
+        const wallet = wClient.createWallet();
+        await wClient.walletKeys.addKey(wallet.address, wallet.privateKey);
+
+        await setWalletStatusInDB(wClient.rootEm, wallet.address, true);
         await expect(
-            wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops),
-        ).to.eventually.be.rejectedWith(`Cannot receive requests. ${fundedAddress} is deleting`);
-        await setWalletStatusInDB(wClient.rootEm, TEST_WALLET_XRP.address, false);
+            wClient.createPaymentTransaction(wallet.address, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops),
+        ).to.eventually.be.rejectedWith(`Cannot receive requests. ${wallet.address} is deleting`);
+
+        await expect(
+            wClient.createDeleteAccountTransaction(wallet.address, targetAddress, amountToSendDropsFirst),
+        ).to.eventually.be.rejectedWith(`Cannot receive requests. ${wallet.address} is deleting`);
+
+        await setWalletStatusInDB(wClient.rootEm, wallet.address, false);
+        await wClient.rootEm.nativeDelete(WalletAddressEntity, {address: wallet.address});
+    });
+
+    it("Account that has missing private key should not enable creating transaction", async () => {
+        const wallet = wClient.createWallet();
+        await expect(
+            wClient.createPaymentTransaction(wallet.address, targetAddress, amountToSendDropsFirst, feeInDrops, note, maxFeeInDrops),
+        ).to.eventually.be.rejectedWith(`Cannot prepare transaction ${wallet.address}. Missing private key.`);
+
+        await expect(
+            wClient.createDeleteAccountTransaction(wallet.address, targetAddress, amountToSendDropsFirst),
+        ).to.eventually.be.rejectedWith(`Cannot prepare transaction ${wallet.address}. Missing private key.`);
+        await wClient.rootEm.nativeDelete(WalletAddressEntity, {address: wallet.address});
     });
 
     it("Account balance should change after transaction", async () => {
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note);
 
         const balanceStart = await wClient.getAccountBalance(fundedAddress);
@@ -392,7 +406,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should receive no service found ", async () => {
         const fn = () => {
-            return ServiceRepository.get(ChainType.testXRP, BlockchainAPIWrapper).getUTXOsFromMempool("");
+            return ServiceRepository.get(ChainType.testXRP, UTXOBlockchainAPI).getUTXOsFromMempool("");
         };
         expect(fn).to.throw("No service registered for testXRP");
     });
@@ -401,7 +415,6 @@ describe("Xrp wallet tests", () => {
         const account = wClient.createWallet();
         await wClient.stopMonitoring();
         await sleepMs(20000);
-        fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
 
         const txEnt0 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
         const id0 = txEnt0.id;
@@ -433,4 +446,14 @@ describe("Xrp wallet tests", () => {
         const txEntAfter2 = await fetchTransactionEntityById(wClient.rootEm, id2);
         expect(txEntAfter2.status).to.eq(TransactionStatus.TX_FAILED);
     });
+
+    it("If blockchain submission API fails transaction's status should be set to TX_PENDING and resent", async () => {
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst);
+        sinon.stub(wClient.blockchainAPI, "submitTransaction").throws(new Error("API down"));
+        const [txEnt, ] = await waitForTxToFinishWithStatus(0.01, 20, wClient.rootEm, TransactionStatus.TX_PENDING, id);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_PENDING);
+        sinon.restore();
+        await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_SUCCESS, id);
+    });
+
 });

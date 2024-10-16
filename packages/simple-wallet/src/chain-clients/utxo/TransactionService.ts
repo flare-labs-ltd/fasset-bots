@@ -173,7 +173,7 @@ export class TransactionService {
             utxos = await utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
 
-        this.transactionChecks(txDbId, txData, utxos);
+        this.transactionChecks(txDbId, amountInSatoshi, txData, utxos);
         const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, isPayment, note);
 
         if (feeInSatoshi && !txForReplacement) {
@@ -209,7 +209,7 @@ export class TransactionService {
 
         /* istanbul ignore next: skip for the ?.utxos ... */
         const utxosForAmount = await this.utxoService.fetchUTXOs(txDataForAmount, txForReplacement?.utxos.getItems());
-        this.transactionChecks(txDbId, txDataForAmount, utxosForAmount);
+        this.transactionChecks(txDbId, amountInSatoshi, txDataForAmount, utxosForAmount);
 
         const baseTransaction = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxosForAmount, true, note);
         const txDataForFee = {
@@ -248,7 +248,7 @@ export class TransactionService {
         }
 
         const utxosForFeeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
-        const correctedFee = tr.getFee() + feePerKB.muln(31).divn(1000).toNumber(); // Fee should be higher since we have additional output (+31vB)!
+        const correctedFee = tr.getFee() + (feeInSatoshi ? 0 : feePerKB.muln(31).divn(1000).toNumber()); // Fee should be higher since we have additional output (+31vB)!
         if (utxosForFeeAmount.subn(correctedFee).gt(getDustAmount(this.chainType))) {
             const remainder = utxosForFeeAmount.subn(correctedFee).toNumber();
             tr.to(feeSource, remainder);
@@ -278,17 +278,17 @@ export class TransactionService {
         }
     }
 
-    private transactionChecks( txDbId: number, txData: TransactionData, utxos: UTXOEntity[]) {
+    private transactionChecks( txDbId: number, amount: BN, txData: TransactionData, utxos: UTXOEntity[]) {
         const utxosValue = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
-        if (utxos.length === 0 || utxosValue.lt(txData.amount.add(txData.fee ?? new BN(0)))) {
-            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
+        if (utxos.length === 0 || utxosValue.lt(amount.add(txData.fee ?? new BN(0)))) {
+            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${amount.toString()}`);
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${amount.toString()}`);
         }
 
-        if (txData.amount.lte(getDustAmount(this.chainType))) {
-            logger.warn(`Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
+        if (amount.lte(getDustAmount(this.chainType))) {
+            logger.warn(`Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
             throw new LessThanDustAmountError(
-                `Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
+                `Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
             );
         }
     }
@@ -318,6 +318,7 @@ export class TransactionService {
         }
         tr.enableRBF();
 
+        /* istanbul ignore else */
         if (fee) {
             tr.fee(toNumber(fee));
         } else if (feePerKB) {

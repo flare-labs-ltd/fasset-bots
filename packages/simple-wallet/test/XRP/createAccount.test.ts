@@ -1,7 +1,7 @@
 import { XrpAccount, XrpAccountGeneration } from "../../src";
 import { expect } from "chai";
 import WAValidator from "wallet-address-validator";
-
+import { ECDSA } from "../../src/chain-clients/account-generation/XrpAccountGeneration";
 
 const fundedSeed = "sannPkA1sGXzM1MzEZBjrE1TDj4Fr";
 const fundedAddress = "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8";
@@ -24,14 +24,14 @@ describe("Xrp create account tests", () => {
 
     it("Should create account 2", async () => {
         const wClient = new XrpAccount(true);
-        const newAccount = wClient.createWalletFromEntropy(Buffer.from(entropyBase), "ecdsa-secp256k1");
+        const newAccount = wClient.createWalletFromEntropy(Buffer.from(entropyBase), ECDSA.secp256k1);
         expect(newAccount.address).to.equal(entropyBasedAddress);
         expect(WAValidator.validate(newAccount.address, "XRP", "testnet")).to.be.true;
     });
 
     it("Should create account 3", async () => {
         const wClient = new XrpAccountGeneration(true);
-        const fundedWallet = wClient.createWalletFromSeed(fundedSeed, "ecdsa-secp256k1");
+        const fundedWallet = wClient.createWalletFromSeed(fundedSeed, ECDSA.secp256k1);
         expect(fundedWallet.address).to.equal(fundedAddress);
         expect(WAValidator.validate(fundedWallet.address, "XRP", "testnet")).to.be.true;
     });

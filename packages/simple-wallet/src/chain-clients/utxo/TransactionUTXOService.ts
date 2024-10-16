@@ -11,7 +11,7 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { BTC_DOGE_DEC_PLACES, ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
@@ -41,7 +41,7 @@ export class TransactionUTXOService {
     readonly minimumUTXOValue: BN;
 
     private readonly rootEm: EntityManager;
-    private readonly blockchainAPI: BlockchainAPIWrapper;
+    private readonly blockchainAPI: UTXOBlockchainAPI;
 
     constructor(chainType: ChainType, mempoolChainLengthLimit: number, enoughConfirmations: number) {
         this.chainType = chainType;
@@ -60,7 +60,7 @@ export class TransactionUTXOService {
         }
 
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
     }
 
     /**
@@ -98,9 +98,11 @@ export class TransactionUTXOService {
         }
 
         let res: UTXOEntity[] | null = null;
+
+        /* istanbul ignore else */
         if (feeStatus == FeeStatus.HIGH) {
             // order by value, confirmed
-            utxos.sort(
+            utxos = utxos.sort(
                 /* istanbul ignore next*/
                 (a, b) => (a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed))
             );
@@ -151,6 +153,7 @@ export class TransactionUTXOService {
                 }
 
                 if (Math.random() > 0.5) {
+                    /* istanbul ignore else */
                     if (!positiveValueReached) {
                         baseUTXOs.push(utxo);
                     }
@@ -262,6 +265,7 @@ export class TransactionUTXOService {
         if (!txEnt) {
             const tr = await this.blockchainAPI.getTransaction(txHash);
             logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
+            /* istanbul ignore else */
             if (tr) {
                 await this.rootEm.transactional(async (em) => {
                     /* istanbul ignore next */
@@ -289,15 +293,22 @@ export class TransactionUTXOService {
     }
 
     async handleMissingUTXOScripts(utxos: MempoolUTXO[]) {
-        for (const utxo of utxos) {
-            if (!utxo.script) {
-                utxo.script = await this.blockchainAPI.getUTXOScript(utxo.mintTxid, utxo.mintIndex);
-                await updateUTXOEntity(this.rootEm, utxo.mintTxid, utxo.mintIndex, (utxoEnt) => {
-                    utxoEnt.script = utxo.script;
-                });
+        await this.rootEm.transactional(async em => {
+            const utxoEnts = await em.find(UTXOEntity, {
+                $or: utxos.map((utxo) => ({
+                    mint_transaction_hash: utxo.mintTxid,
+                    position: utxo.mintIndex,
+                })),
+            });
+            for (const utxo of utxoEnts) {
+                /* istanbul ignore else */
+                if (!utxo.script) {
+                    utxo.script = await this.blockchainAPI.getUTXOScript(utxo.mintTransactionHash, utxo.position);
+                }
             }
-        }
-        return utxos;
+
+            await em.persistAndFlush(utxoEnts);
+        });
     }
 
     async createInputsFromUTXOs(dbUTXOs: UTXOEntity[], txId: number) {
