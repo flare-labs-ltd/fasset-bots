@@ -8,6 +8,8 @@ export const DEFAULT_FEE_INCREASE = 2;
 export const PING_INTERVAL = 10_000; // 10seconds
 export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
 
+export const BTC_PER_SATOSHI = 1 / 100000000;
+
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 
@@ -109,7 +111,7 @@ export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);
 // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
 export const DOGE_DEFAULT_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
 
-export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.00001000, BTC_DOGE_DEC_PLACES);
+export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
 export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES);
 
 export const BTC_MIN_ALLOWED_FEE = toBN(10000); //10000 sats/kb

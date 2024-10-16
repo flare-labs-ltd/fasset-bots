@@ -323,6 +323,8 @@ export class Agent {
      * @param paymentAmount amount to be transferred
      * @param paymentReference payment reference
      * @param options instance of TransactionOptionsWithFee
+     * @param untilBlockNumber
+     * @param untilBlockTimestamp
      * @returns transaction hash
      */
     async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
@@ -336,6 +338,8 @@ export class Agent {
      * @param paymentAmount amount to be transferred
      * @param paymentReference payment reference
      * @param options instance of TransactionOptionsWithFee
+     * @param untilBlockNumber
+     * @param untilBlockTimestamp
      * @returns transaction id from local database
      */
     async initiatePayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<number> {

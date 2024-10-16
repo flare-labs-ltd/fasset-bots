@@ -1,41 +1,38 @@
-import { IService } from "../../interfaces/IService";
 import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
     checkIfIsDeleting,
-    createInitialTransactionEntity, setAccountIsDeleting,
+    createInitialTransactionEntity,
+    fetchUnspentUTXOs,
+    setAccountIsDeleting,
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
-import { EntityManager } from "@mikro-orm/core";
-import {
-    ChainType,
-} from "../../utils/constants";
+import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
+import { ChainType } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
-import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
-import {
-    getAccountBalance,
-    getCore,
-    getDustAmount,
-    getOutputSize,
-} from "./UTXOUtils";
+import { getAccountBalance, getCore, getDustAmount, getOutputSize } from "./UTXOUtils";
 import { unPrefix0x } from "../../utils/utils";
-import UnspentOutput = Transaction.UnspentOutput;
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
 import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
+import UnspentOutput = Transaction.UnspentOutput;
 
-export class TransactionService implements IService {
+export class TransactionService {
 
     private readonly chainType: ChainType;
     private readonly transactionFeeService: TransactionFeeService;
+    private readonly rootEm: EntityManager;
+    private readonly utxoService: TransactionUTXOService;
 
     constructor(chainType: ChainType) {
         this.chainType = chainType;
         this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
+        this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
+        this.utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
     }
 
     async createPaymentTransaction(
@@ -48,15 +45,17 @@ export class TransactionService implements IService {
         maxFeeInSatoshi?: BN,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
+        feeSource?: string,
     ): Promise<number> {
-        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp}`);
-        const em = ServiceRepository.get(this.chainType, EntityManager);
-        if (await checkIfIsDeleting(em, source)) {
+        /* istanbul ignore next */
+        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}`);
+        /* istanbul ignore if */
+        if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
         }
         const ent = await createInitialTransactionEntity(
-            em,
+            this.rootEm,
             chainType,
             source,
             destination,
@@ -66,6 +65,8 @@ export class TransactionService implements IService {
             maxFeeInSatoshi,
             executeUntilBlock,
             executeUntilTimestamp,
+            undefined,
+            feeSource
         );
         return ent.id;
     }
@@ -81,14 +82,14 @@ export class TransactionService implements IService {
         executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
-        const em = ServiceRepository.get(this.chainType, EntityManager);
-        if (await checkIfIsDeleting(em, source)) {
+        /* istanbul ignore if */
+        if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
             throw new Error(`Cannot receive requests. ${source} is deleting`);
         }
-        await setAccountIsDeleting(em, source);
+        await setAccountIsDeleting(this.rootEm, source);
         const ent = await createInitialTransactionEntity(
-            em,
+            this.rootEm,
             chainType,
             source,
             destination,
@@ -110,6 +111,7 @@ export class TransactionService implements IService {
      * @param {BN|undefined} feeInSatoshi - automatically set if undefined
      * @param {string|undefined} note
      * @param txForReplacement
+     * @param feeSource - source of the wallet for paying fees
      * @returns {Object} - BTC/DOGE transaction object
      */
     async preparePaymentTransaction(
@@ -120,7 +122,24 @@ export class TransactionService implements IService {
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
-    ): Promise<[bitcore.Transaction, UTXOEntity[]]> {
+        feeSource?: string
+    ): Promise<[Transaction, UTXOEntity[]]> {
+        if (feeSource && amountInSatoshi) {
+            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement);
+        } else {
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement)
+        }
+    }
+
+    async preparePaymentTransactionWithSingleWallet(
+        txDbId: number,
+        source: string,
+        destination: string,
+        amountInSatoshi: BN | null,
+        feeInSatoshi?: BN,
+        note?: string,
+        txForReplacement?: TransactionEntity,
+    ): Promise<[Transaction, UTXOEntity[]]> {
         const isPayment = amountInSatoshi != null;
         const txData = {
             source: source,
@@ -130,17 +149,15 @@ export class TransactionService implements IService {
             useChange: isPayment,
             note: note,
         } as TransactionData;
-
+        const utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
         let utxos;
-        const feePerKBOriginal = await ServiceRepository.get(this.chainType, TransactionFeeService).getFeePerKB();
-        const feePerKB = feePerKBOriginal;
+        const feePerKB = await this.transactionFeeService.getFeePerKB();
 
         if (isPayment && !feeInSatoshi) {
             txData.feePerKB = feePerKB;
         }
-
         if (amountInSatoshi == null) {
-            utxos = await ServiceRepository.get(this.chainType, TransactionUTXOService).getAllUTXOs(source);
+            utxos = await fetchUnspentUTXOs(this.rootEm, source);
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
             const bitcoreTx = this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
             feeInSatoshi = toBN(bitcoreTx.getFee()).sub(feePerKB.muln(getOutputSize(this.chainType)).divn(1000));
@@ -153,23 +170,10 @@ export class TransactionService implements IService {
             const balance = await getAccountBalance(this.chainType, source);
             amountInSatoshi = balance.sub(feeInSatoshi);
         } else {
-            utxos = await ServiceRepository.get(this.chainType, TransactionUTXOService).fetchUTXOs(txData, txForReplacement);
+            utxos = await utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
 
-        const utxosAmount = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
-
-        if (utxos.length === 0 || utxosAmount.lt(amountInSatoshi.add(feeInSatoshi ?? new BN(0)))) {
-            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`)
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosAmount.toString()}, needed amount ${amountInSatoshi.toString()}`);
-        }
-
-        if (amountInSatoshi.lte(getDustAmount(this.chainType))) {
-            logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
-            throw new LessThanDustAmountError(
-                `Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
-            );
-        }
-
+        this.transactionChecks(txDbId, txData, utxos);
         const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, isPayment, note);
 
         if (feeInSatoshi && !txForReplacement) {
@@ -177,26 +181,116 @@ export class TransactionService implements IService {
         }
 
         if (isPayment && !feeInSatoshi || txForReplacement) {
-            let feeRatePerKB: BN = await this.transactionFeeService.getFeePerKB();
-            logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`);
-            if (txForReplacement && feeInSatoshi) {
-                const feeToCover: BN = feeInSatoshi;
-                if (txForReplacement.size && txForReplacement.fee) {
-                    const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease);
-                    if (feeRatePerKB.lt(minRequiredFeePerKb)) {
-                        feeRatePerKB = minRequiredFeePerKb;
-                    }
-                    const estimateFee = await this.transactionFeeService.getEstimateFee(utxos.length, 3, feeRatePerKB);
-                    const newTxFee: BN = feeToCover.add(estimateFee);
-                    tr.fee(toNumber(newTxFee));
-                    logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
-                }
-            } else {
-                tr.feePerKb(Number(feeRatePerKB));
-            }
+            await this.correctFee(txDbId, tr, txForReplacement, feeInSatoshi, utxos);
         }
 
         return [tr, utxos];
+    }
+
+    async preparePaymentTransactionWithAdditionalFeeWallet(
+        txDbId: number,
+        source: string,
+        feeSource: string,
+        destination: string,
+        amountInSatoshi: BN,
+        feeInSatoshi?: BN,
+        note?: string,
+        txForReplacement?: TransactionEntity
+    ): Promise<[Transaction, UTXOEntity[]]> {
+        const feePerKB = feeInSatoshi ?? await this.transactionFeeService.getFeePerKB();
+        const txDataForAmount = {
+            source: source,
+            destination: destination,
+            amount: amountInSatoshi,
+            fee: toBN(0),
+            useChange: true,
+            note: note,
+        } as TransactionData;
+
+        /* istanbul ignore next: skip for the ?.utxos ... */
+        const utxosForAmount = await this.utxoService.fetchUTXOs(txDataForAmount, txForReplacement?.utxos.getItems());
+        this.transactionChecks(txDbId, txDataForAmount, utxosForAmount);
+
+        const baseTransaction = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxosForAmount, true, note);
+        const txDataForFee = {
+            source: feeSource,
+            destination: destination,
+            amount: toBN(baseTransaction.getFee()),
+            fee: toBN(0),
+            feePerKB: feePerKB,
+            useChange: false,
+            note: note,
+        } as TransactionData;
+
+        let utxosForFee = await this.utxoService.fetchUTXOs(txDataForFee);
+        let utxos = []
+        // Not enough funds on wallet for handling fees - we use additional UTXOs from main wallet
+        if (utxosForFee.length === 0) {
+            utxosForFee = await fetchUnspentUTXOs(this.rootEm, feeSource);
+            const txData = {
+                source: source,
+                destination: destination,
+                amount: amountInSatoshi,
+                fee: feeInSatoshi,
+                feePerKB: feePerKB,
+                useChange: true,
+                note: note,
+            } as TransactionData;
+
+            utxos = await this.utxoService.fetchUTXOs(txData, utxosForFee);
+        } else {
+            utxos = utxosForAmount.concat(utxosForFee);
+        }
+
+        const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
+        if (!feeInSatoshi || txForReplacement) {
+            await this.correctFee(txDbId, tr, txForReplacement, feeInSatoshi, utxos);
+        }
+
+        const utxosForFeeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
+        const correctedFee = tr.getFee() + feePerKB.muln(31).divn(1000).toNumber(); // Fee should be higher since we have additional output (+31vB)!
+        if (utxosForFeeAmount.subn(correctedFee).gt(getDustAmount(this.chainType))) {
+            const remainder = utxosForFeeAmount.subn(correctedFee).toNumber();
+            tr.to(feeSource, remainder);
+            tr.change(source);
+        }
+
+        return [tr, utxos];
+    }
+
+    private async correctFee(txDbId: number, tr: Transaction, txForReplacement: TransactionEntity | undefined, feeInSatoshi: BN | undefined, allUTXOs: UTXOEntity[]) {
+        let feeRatePerKB: BN = await this.transactionFeeService.getFeePerKB();
+        logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`);
+        if (txForReplacement && feeInSatoshi) {
+            const feeToCover: BN = feeInSatoshi;
+            if (txForReplacement.size && txForReplacement.fee) {
+                const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease);
+                if (feeRatePerKB.lt(minRequiredFeePerKb)) {
+                    feeRatePerKB = minRequiredFeePerKb;
+                }
+                const estimateFee = await this.transactionFeeService.getEstimateFee(allUTXOs.length, 4, feeRatePerKB);
+                const newTxFee: BN = feeToCover.add(estimateFee);
+                tr.fee(toNumber(newTxFee));
+                logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
+            }
+        } else {
+            tr.feePerKb(Number(feeRatePerKB));
+        }
+    }
+
+    private transactionChecks( txDbId: number, txData: TransactionData, utxos: UTXOEntity[]) {
+        const utxosValue = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
+        if (utxos.length === 0 || utxosValue.lt(txData.amount.add(txData.fee ?? new BN(0)))) {
+            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
+        }
+
+        if (txData.amount.lte(getDustAmount(this.chainType))) {
+            logger.warn(`Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
+            throw new LessThanDustAmountError(
+                `Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
+            );
+        }
     }
 
     createBitcoreTransaction(

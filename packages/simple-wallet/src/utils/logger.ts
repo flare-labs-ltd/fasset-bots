@@ -2,7 +2,7 @@ import { createLogger, format } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import * as Transport from "winston-transport";
 
-export type LoggerPaths = { text?: string, json?: string };
+export interface LoggerPaths { text?: string, json?: string }
 
 export function createCustomizedLogger(paths: LoggerPaths) {
     const transports: Transport[] = [];
@@ -41,7 +41,7 @@ export function createCustomizedLogger(paths: LoggerPaths) {
 
 // use different
 const mainFileName = (require.main?.filename ?? "").replace(/\\/g, "/");
-const fnMatch = mainFileName.match(/\/src\/(cli|run)\/([^/]+)\.(cjs|mjs|js|ts)$/);
+const fnMatch = /\/src\/(cli|run)\/([^/]+)\.(cjs|mjs|js|ts)$/.exec(mainFileName);
 const loggerName = fnMatch ? fnMatch[2] : "log";
 
 export const logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log` });

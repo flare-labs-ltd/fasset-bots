@@ -1,4 +1,4 @@
-import { StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet";
+import { BTC, DOGE, StuckTransaction, WalletClient, XRP } from "@flarelabs/simple-wallet";
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
@@ -34,16 +34,16 @@ export async function createWalletClient(
     requireSupportedChainId(chainId);
     const walletKeys = DBWalletKeys.from(em, secrets);
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        return await WALLET.BTC.initialize({
+        return await BTC.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testBTC,
             apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
             stuckTransactionOptions: options,
             em,
-            walletKeys
+            walletKeys,
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        return await WALLET.DOGE.initialize({
+        return await DOGE.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testDOGE,
             apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
@@ -52,7 +52,7 @@ export async function createWalletClient(
             walletKeys
         }); // UtxoMccCreate
     } else {
-        return await WALLET.XRP.initialize({
+        return await XRP.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testXRP,
             apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),

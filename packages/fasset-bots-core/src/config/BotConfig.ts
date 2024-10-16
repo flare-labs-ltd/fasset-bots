@@ -16,7 +16,6 @@ import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPr
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import {
     IBlockChainWallet,
-    WalletApi,
 } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";

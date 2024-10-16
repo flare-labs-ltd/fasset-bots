@@ -1,10 +1,13 @@
-import { BlockData, IBlockchainAPI, MempoolUTXO, MempoolUTXOMWithoutScript } from "../interfaces/IBlockchainAPI";
-import { AxiosInstance, AxiosResponse } from "axios";
-import { ChainType } from "../utils/constants";
+import { UTXOBlockHeightResponse, FeeStatsResponse, IBlockchainAPI, MempoolUTXO, UTXOAddressResponse, UTXOResponse, UTXOBlockResponse, UTXOTransactionResponse } from "../interfaces/IBlockchainAPI";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { BTC_PER_SATOSHI, ChainType, DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
+import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
+import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
-import { getDateTimestampInSeconds } from "../utils/utils";
 import { toBN, toNumber } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
+import BN from "bn.js";
+import { stuckTransactionConstants } from "../utils/utils";
 
 export class BlockbookAPI implements IBlockchainAPI {
     client: AxiosInstance;
@@ -17,8 +20,9 @@ export class BlockbookAPI implements IBlockchainAPI {
 
     async getAccountBalance(account: string): Promise<number | undefined> {
         const res = await this.client.get(`/address/${account}`);
-        const totalBalance = res.data?.balance;
-        const unconfirmedBalance = res.data?.unconfirmedBalance;
+        const data: UTXOAddressResponse = res.data as UTXOAddressResponse;
+        const totalBalance = data.balance;
+        const unconfirmedBalance = data.unconfirmedBalance;
         /* istanbul ignore else */
         if (!!totalBalance && !!unconfirmedBalance) {
             const totBalance = toBN(totalBalance);
@@ -29,52 +33,50 @@ export class BlockbookAPI implements IBlockchainAPI {
         return undefined;
     }
 
-    async getCurrentBlockHeight(): Promise<BlockData> {
+    async getCurrentBlockHeight(): Promise<number> {
         const res = await this.client.get(``);
-        return {
-            number: res.data.blockbook.bestHeight,
-            timestamp: getDateTimestampInSeconds(res.data.blockbook.lastBlockTime)
-        };
+        const data: UTXOBlockHeightResponse = res.data as UTXOBlockHeightResponse;
+        return data.blockbook.bestHeight;
     }
 
-    async getCurrentFeeRate(): Promise<number> {
-        const block = await this.getCurrentBlockHeight();
-        const res = await this.client.get(`/feestats/${block.number}`);
-        const BTC_PER_SATOSHI = 1 / 100000000;
-        const fee = res.data.averageFeePerKb * BTC_PER_SATOSHI
+    async getCurrentFeeRate(blockNumber?: number): Promise<number> {
+        const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
+        const res = await this.client.get(`/feestats/${blockToCheck}`);
+        const data = res.data as FeeStatsResponse;
+        const fee = data.averageFeePerKb * BTC_PER_SATOSHI;
         return fee;
     }
 
-    async getTransaction(txHash: string): Promise<AxiosResponse<any>> {
-        return await this.client.get(`/tx/${txHash}`);
+    async getBlockTimeAt(blockNumber: number): Promise<BN> {
+        const res = await this.client.get(`/block/${blockNumber}`);
+        const data = res.data as UTXOBlockResponse;
+        return toBN(data.time);
+    }
+
+    async getTransaction(txHash: string): Promise<UTXOTransactionResponse> {
+        const res = await this.client.get(`/tx/${txHash}`);
+        const data = res.data as UTXOTransactionResponse;
+        return data;
     }
 
     async getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]> {
         const res = await this.client.get(`/utxo/${address}`);
-        return Promise.all(res.data.map(async (utxo: any) => {
-            return {
-                mintTxid: utxo.txid,
-                mintIndex: utxo.vout,
-                value: utxo.value,
-                script: "",
-                confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
-            };
-        }));
-    }
+        const data = res.data as UTXOResponse[];
 
-    async getUTXOsWithoutScriptFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXOMWithoutScript[]> {
-        const res = await this.client.get(`/utxo/${address}`);
-        return res.data.map((utxo: any) => ({
+        return data.map((utxo: UTXOResponse): MempoolUTXO => ({
             mintTxid: utxo.txid,
             mintIndex: utxo.vout,
-            value: utxo.value,
-            confirmed: utxo.confirmations >= getConfirmedAfter(chainType),
+            value: toBN(utxo.value),
+            script: "",
+            /* istanbul ignore next */
+            confirmed: utxo.confirmations >= (stuckTransactionConstants(chainType).enoughConfirmations ?? getConfirmedAfter(chainType)),
         }));
     }
 
-    async getUTXOScript(address: string, txHash: string, vout: number) {
-        const res = await this.client.get(`/tx-specific/${txHash}`);
-        return res.data.vout[vout]?.scriptPubKey?.hex ?? "";
+    async getUTXOScript(txHash: string, voutParam: number) {
+        const res = await this.getTransaction(txHash)
+        /* istanbul ignore next: ignore for the ?? */
+        return res.vout[voutParam]?.hex ?? "";
     }
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {

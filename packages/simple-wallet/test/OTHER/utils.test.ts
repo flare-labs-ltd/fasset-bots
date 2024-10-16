@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { WALLET } from "../../src";
 import {
     bytesToHex,
     convertToTimestamp,
@@ -14,6 +13,7 @@ import { ChainType } from "../../src/utils/constants";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
+import { BTC } from "../../src";
 
 const BTCMccConnectionTestInitial = {
     urls: [process.env.BTC_URL ?? ""],
@@ -28,7 +28,7 @@ describe("Util tests", () => {
         const testOrm = await initializeTestMikroORM();
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-        const wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
+        const wClient = await BTC.initialize(BTCMccConnectionTest);
         wClient.chainType = invalidChainType;
         const fn = () => {
             return getCurrentNetwork(wClient.chainType);

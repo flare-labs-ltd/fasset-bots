@@ -1,5 +1,5 @@
 import { Wallet as xrplWallet } from "xrpl"; // package has some member access issues
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 const xrpl__typeless = require("xrpl");
 import { generateMnemonic } from "bip39";
 import { ICreateWalletResponse, WalletAccountGenerationInterface } from "../../interfaces/IWalletTransaction";

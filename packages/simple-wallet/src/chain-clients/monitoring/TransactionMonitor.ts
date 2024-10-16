@@ -1,15 +1,18 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
 import { fetchMonitoringState, updateMonitoringState, processTransactions } from "../../db/dbutils";
-import { MonitoringStateEntity } from "../../entity/monitoring_state";
+import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, BUFFER_PING_INTERVAL, PING_INTERVAL } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { getRandomInt, sleepMs } from "../../utils/utils";
 import { errorMessage } from "../../utils/axios-utils";
+import { ServiceRepository } from "../../ServiceRepository";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
+import { utxoOnly } from "../utxo/UTXOUtils";
 
 export class TransactionMonitor {
-    private monitoring: boolean = false;
+    private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
 
@@ -18,8 +21,8 @@ export class TransactionMonitor {
         this.rootEm = rootEm;
     }
 
-    restartInDueToError: number = 2000; //2s
-    restartInDueNoResponse: number = 20000; //20s
+    restartInDueToError = 2000; //2s
+    restartInDueNoResponse = 20000; //20s
 
     async isMonitoring(): Promise<boolean> {
         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
@@ -32,10 +35,14 @@ export class TransactionMonitor {
     }
 
     async stopMonitoring(): Promise<void> {
-        await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+        await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
             monitoringEnt.lastPingInTimestamp = toBN(0);
         });
         this.monitoring = false;
+        if (utxoOnly(this.chainType)) {
+            const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+            await feeService.monitorFees(false);
+        }
     }
 
     async startMonitoringTransactionProgress(
@@ -74,12 +81,18 @@ export class TransactionMonitor {
                 }
             }
 
-            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+            await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                 monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
             });
 
             this.monitoring = true;
             logger.info(`Monitoring started for chain ${this.chainType}`);
+
+            if (utxoOnly(this.chainType)) {
+                const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+                await feeService.setupHistory();
+                void feeService.monitorFees(this.monitoring);
+            }
 
             void this.updatePing();
 
@@ -109,14 +122,14 @@ export class TransactionMonitor {
                      /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
 
-                } catch (error) {
+                } /* istanbul ignore next */ catch (error) {
                     logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}: ${errorMessage(error)}`);
                 }
                 await sleepMs(this.restartInDueToError);
             }
 
             logger.info(`Monitoring stopped for chain ${this.chainType}`);
-        } catch (error) {
+        } /* istanbul ignore next */ catch (error) {
             logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
         }
     }
@@ -132,7 +145,7 @@ export class TransactionMonitor {
     private async updatePing(): Promise<void> {
         while (this.monitoring) {
             try {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                     monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
                 });
                 await sleepMs(PING_INTERVAL);

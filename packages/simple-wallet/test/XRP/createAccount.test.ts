@@ -1,4 +1,4 @@
-import { WALLET, XrpAccountGeneration } from "../../src";
+import { XrpAccount, XrpAccountGeneration } from "../../src";
 import { expect } from "chai";
 import WAValidator from "wallet-address-validator";
 
@@ -23,7 +23,7 @@ describe("Xrp create account tests", () => {
     });
 
     it("Should create account 2", async () => {
-        const wClient = new WALLET.XrpAccount(true);
+        const wClient = new XrpAccount(true);
         const newAccount = wClient.createWalletFromEntropy(Buffer.from(entropyBase), "ecdsa-secp256k1");
         expect(newAccount.address).to.equal(entropyBasedAddress);
         expect(WAValidator.validate(newAccount.address, "XRP", "testnet")).to.be.true;

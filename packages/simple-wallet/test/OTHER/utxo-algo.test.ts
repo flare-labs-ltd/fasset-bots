@@ -1,11 +1,10 @@
 import {
     BitcoinWalletConfig,
+    BTC,
     logger,
-    SpentHeightEnum, TransactionEntity,
-    UTXOEntity,
-    WALLET,
+    SpentHeightEnum,
 } from "../../src";
-import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/util";
+import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/common_utils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import chaiAsPromised from "chai-as-promised";
@@ -20,15 +19,14 @@ import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/T
 import { BTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
+import { createTransactionEntityBase, createUTXOEntity } from "../test-util/entity_utils";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sinon = require("sinon");
 use(chaiAsPromised);
 
 const walletSecret = "wallet_secret";
 const BTCMccConnectionTestInitial = {
-    urls: [process.env.BTC_URL ?? ""],
-    username: "",
-    password: "",
+    urls:[ process.env.BTC_URL ?? ""],
     apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",
     inTestnet: true,
     walletSecret: walletSecret,
@@ -38,14 +36,13 @@ let BTCMccConnectionTest: BitcoinWalletConfig;
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
 const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
-let wClient: WALLET.BTC;
+let wClient: BTC;
 let testOrm: ORM;
 
 describe("UTXO selection algorithm test", () => {
 
     before(async () => {
         addConsoleTransportForTests(logger);
-
         testOrm = await initializeTestMikroORM();
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
@@ -54,18 +51,15 @@ describe("UTXO selection algorithm test", () => {
             walletKeys: unprotectedDBWalletKeys,
             enoughConfirmations: 1,
         };
-        wClient = await WALLET.BTC.initialize(BTCMccConnectionTest);
-
-        await wClient.feeService?.setupHistory();
-        void wClient.feeService?.startMonitoringFees();
-
+        wClient = BTC.initialize(BTCMccConnectionTest);
         resetMonitoringOnForceExit(wClient);
     });
 
     beforeEach(async () => {
         sinon.restore();
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionUTXOService), "getNumberOfMempoolAncestors").resolves(0);
         sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "getFeePerKB").resolves(new BN(1000));
-    })
+    });
 
     it("It should fail if there's not enough UTXOs 1", async () => {
         sinon.stub(dbutils, "fetchUnspentUTXOs").resolves([
@@ -164,7 +158,7 @@ describe("UTXO selection algorithm test", () => {
             createUTXOEntity(0, fundedAddress, "b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, SpentHeightEnum.UNSPENT, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
         ];
 
-        const originalTxEnt = createTransactionEntity(0, fundedAddress, targetAddress, toBNExp(1, BTC_DOGE_DEC_PLACES), originalUTXOs);
+        const originalTxEnt = createTransactionEntityBase(0, fundedAddress, targetAddress, toBNExp(1, BTC_DOGE_DEC_PLACES), originalUTXOs);
 
         const [tr, newUTXOs] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(2002000), undefined, undefined, originalTxEnt);
 
@@ -188,7 +182,7 @@ describe("UTXO selection algorithm test", () => {
     });
 
     it("If the remaining part is less than dust it should be used as additional fee when fee status is", async () => {
-        sinon.stub(dbutils, "fetchUnspentUTXOs").resolves([
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionUTXOService), "fetchUTXOs").resolves([
             createUTXOEntity(0, fundedAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXOEntity(0, fundedAddress, "b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, SpentHeightEnum.UNSPENT, toBN(2000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXOEntity(0, fundedAddress, "52cf7492f717363cef1befcb7b4972adb053b65f2ec1763ac95c1e6312868dc6", 0, SpentHeightEnum.UNSPENT, toBN(5000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -214,30 +208,28 @@ describe("UTXO selection algorithm test", () => {
         expect(tr.outputs[0].satoshis).to.be.eq(7755); // 3 inputs + 1 output = 245 vBytes
     });
 
+    it("If UTXO has more than 24 ancestors, it should be skipped", async () => {
+        sinon.restore();
+        sinon.stub(dbutils, "fetchUnspentUTXOs").resolves([
+            createUTXOEntity(0, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, SpentHeightEnum.UNSPENT, toBN(100200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, SpentHeightEnum.UNSPENT, toBN(900000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, SpentHeightEnum.UNSPENT, toBN(900000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(110200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+        ]);
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "getCurrentFeeStatus").resolves(FeeStatus.LOW);
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionUTXOService), "getNumberOfMempoolAncestors").callsFake((txHash: string) => {
+            if (txHash !== "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c") {
+                return 25;
+            } else {
+                return 0;
+            }
+        })
+
+        const [tr, utxos] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(1000000), undefined);
+        expect(utxos.length).to.be.eq(1);
+    });
 });
 
-
-function createUTXOEntity(id: number, source: string, mintTransactionHash: string, position: 0, spentHeight: SpentHeightEnum, value: BN, script: string) {
-    const utxoEnt = new UTXOEntity();
-    utxoEnt.id = id;
-    utxoEnt.source = source;
-    utxoEnt.mintTransactionHash = mintTransactionHash;
-    utxoEnt.position = position;
-    utxoEnt.spentHeight = spentHeight;
-    utxoEnt.script = script;
-    utxoEnt.value = value;
-    return utxoEnt;
-}
-
-function createTransactionEntity(id: number, source: string, destination: string, fee: BN, utxos: UTXOEntity[]) {
-    const txEnt = new TransactionEntity();
-    txEnt.id = id;
-    txEnt.source = source;
-    txEnt.destination = destination;
-    txEnt.fee = fee;
-    txEnt.utxos.set(utxos);
-    return txEnt;
-}
 
 const utxoList = [
     createUTXOEntity(0, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, SpentHeightEnum.UNSPENT, toBN(10020), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),

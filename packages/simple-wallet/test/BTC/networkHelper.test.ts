@@ -1,9 +1,9 @@
 import { expect } from "chai";
-import { WALLET } from "../../src";
 import { BTC_MAINNET, BTC_TESTNET } from "../../src/utils/constants";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
+import { BTC } from "../../src";
 
 describe("Bitcoin network helper tests", () => {
    it("Should switch to mainnet", async () => {
@@ -16,7 +16,7 @@ describe("Bitcoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionMain = { ...BTCMccConnectionMainInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = new WALLET.BTC(BTCMccConnectionMain);
+      const wClient: BTC = new BTC(BTCMccConnectionMain);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_MAINNET);
    });
@@ -30,7 +30,7 @@ describe("Bitcoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
+      const wClient: BTC = await BTC.initialize(BTCMccConnectionTest);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_TESTNET);
    });
@@ -44,7 +44,7 @@ describe("Bitcoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
+      const wClient: BTC = await BTC.initialize(BTCMccConnectionTest);
       const isMonitoring =  await wClient.isMonitoring();
       expect(isMonitoring).to.be.false;
    });

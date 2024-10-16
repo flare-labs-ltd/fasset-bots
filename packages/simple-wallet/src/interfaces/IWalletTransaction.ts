@@ -17,7 +17,6 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    createPaymentTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       amount: BN | null,
       fee?: BN,
@@ -29,7 +28,6 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    createDeleteAccountTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       fee?: BN,
       note?: string,
@@ -94,23 +92,20 @@ export interface StuckTransaction {
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
 
-export interface WalletApi {
-   url: string;
-   apiTokenKey?: string;
+export interface BaseWalletConfig extends WalletServiceConfigBase {
+   stuckTransactionOptions?: StuckTransaction;
+   enoughConfirmations?: number,
+   em: EntityManager;
+   walletKeys: IWalletKeys;
 }
 
-export interface BaseWalletConfig {
+export interface WalletServiceConfigBase {
    urls: string[];
    inTestnet?: boolean;
    apiTokenKeys?: string[];
    rateLimitOptions?: RateLimitOptions;
-   stuckTransactionOptions?: StuckTransaction;
-   enoughConfirmations?: number,
-   feeServiceConfig?: FeeServiceConfig;
-   feeDecileIndex?: number, // the decile from which to use the fee if there's a fee-service running (eg 8 is 8-th decile)
-   em: EntityManager;
-   walletKeys: IWalletKeys;
 }
+
 
 export type RippleWalletConfig = BaseWalletConfig;
 export type BitcoinWalletConfig = BaseWalletConfig;
@@ -136,18 +131,8 @@ export interface IWalletKeys {
    addKey(address: string, privateKey: string): Promise<void>;
 }
 
-export interface FeeServiceConfig {
-   indexerUrl: string;
-   apiKey?: string;
-   rateLimitOptions?: RateLimitOptions;
-   sleepTimeMs: number;
-   numberOfBlocksInHistory: number;
-}
-
 export interface BlockStats {
    blockHeight: number;
-   blockTime: number;
-   timeSincePreviousBlock: number;
    averageFeePerKB: BN;
-   decilesFeePerKB: BN[];
+   blockTime: BN;
 }

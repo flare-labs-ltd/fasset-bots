@@ -1,13 +1,12 @@
-import { SpentHeightEnum, TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
+import { TransactionEntity, UTXOEntity } from "../../src";
 
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
-import { toBN } from "web3-utils";
 import { getTransactionDescendants } from "../../src/chain-clients/utxo/UTXOUtils";
 
 import { expect } from "chai";
-import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
+import { EntityManager } from "@mikro-orm/core";
 import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
-import { createTransactionEntity, MockBlockchainAPI } from "../test-util/utils";
+import { createAndPersistUTXOEntity, createTransactionEntity } from "../test-util/entity_utils";
 
 describe("getTransactionDescendants", () => {
     let em: EntityManager;
@@ -36,7 +35,7 @@ describe("getTransactionDescendants", () => {
         tx1: utxo1 -> tx2
          */
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
-        const utxo1 = await createUTXOEntity("address1", "txHash1", 0);
+        const utxo1 = await createAndPersistUTXOEntity(em,"address1", "txHash1", 0);
 
         const tx2 = createTransactionEntity("address1", "address3", "txHash2", [utxo1]);
         await em.persistAndFlush([tx1, tx2]);
@@ -51,10 +50,10 @@ describe("getTransactionDescendants", () => {
         tx1: utxo1 -> tx2: utxo2 -> tx3
          */
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
-        const utxo1 = await createUTXOEntity("address1", "txHash1", 0);
+        const utxo1 = await createAndPersistUTXOEntity(em,"address1", "txHash1", 0);
 
         const tx2 = createTransactionEntity("address1", "address3", "txHash2", [utxo1]);
-        const utxo2 = await createUTXOEntity("address1", "txHash2", 0);
+        const utxo2 = await createAndPersistUTXOEntity(em,"address1", "txHash2", 0);
 
         const tx3 = createTransactionEntity("address1", "address4", "txHash3", [utxo2]);
         await em.persistAndFlush([tx1, tx2, tx3]);
@@ -71,11 +70,11 @@ describe("getTransactionDescendants", () => {
                         _: utxo3
          */
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
-        const utxo1 = await createUTXOEntity("address1", "txHash1", 0);
+        const utxo1 = await createAndPersistUTXOEntity(em,"address1", "txHash1", 0);
 
         const tx2 = createTransactionEntity("address1", "address3", "txHash2", [utxo1]);
-        const utxo2 = await createUTXOEntity("address1", "txHash2", 0);
-        const utxo3 = await createUTXOEntity("address1", "txHashOther", 0);
+        const utxo2 = await createAndPersistUTXOEntity(em,"address1", "txHash2", 0);
+        const utxo3 = await createAndPersistUTXOEntity(em,"address1", "txHashOther", 0);
 
         const tx3 = createTransactionEntity("address1", "address4", "txHash3", [utxo2, utxo3]);
         await em.persistAndFlush([tx1, tx2, tx3]);
@@ -85,20 +84,4 @@ describe("getTransactionDescendants", () => {
         expect(descendants).to.include.members([tx2, tx3]);
     });
 
-    async function createUTXOEntity(
-        source: string,
-        mintTransactionHash: string,
-        position: number,
-    ) {
-        const utxoEntity = em.create(UTXOEntity, {
-            source: source,
-            mintTransactionHash: mintTransactionHash,
-            position: position,
-            value: toBN(0),
-            spentHeight: SpentHeightEnum.SPENT,
-            script: "",
-        } as RequiredEntityData<UTXOEntity>);
-        await em.persistAndFlush(utxoEntity);
-        return utxoEntity;
-    }
 });

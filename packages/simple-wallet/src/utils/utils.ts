@@ -75,11 +75,14 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    return false;
 }
 
-export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<boolean> {
+export function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): boolean {
    const blockRestrictionMet = !!executeUntilBlock && (currentBlockHeight + client.executionBlockOffset >= executeUntilBlock);
    // It probably should be following, but due to inconsistent block time on btc, we use currentTime
    //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)
-   const now = toBN(getCurrentTimestampInSeconds());
+   let now = toBN(getCurrentTimestampInSeconds());
+   if (client instanceof UTXOWalletImplementation) {
+      now = client.feeService.getLatestMedianTime() ?? now;
+   }
    if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
        executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
    }

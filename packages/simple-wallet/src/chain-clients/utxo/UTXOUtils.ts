@@ -86,7 +86,7 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
 export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
     const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
     const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
-    let sub: any[] = descendants;
+    let sub: TransactionEntity[] = descendants;
     for (const descendant of descendants) {
         if (descendant.transactionHash) {
             sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));
@@ -95,26 +95,18 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
     return sub;
 }
 
-export async function getAccountBalance(chainType: ChainType, account: string, otherAddresses?: string[]): Promise<BN> {
+export async function getAccountBalance(chainType: ChainType, account: string): Promise<BN> {
     try {
         const blockchainAPIWrapper = ServiceRepository.get(chainType, BlockchainAPIWrapper);
         const accountBalance = await blockchainAPIWrapper.getAccountBalance(account);
+        /* istanbul ignore if */
         if (accountBalance === undefined) {
             throw new Error("Account balance not found");
         }
         const mainAccountBalance = toBN(accountBalance);
-        if (!otherAddresses) {
-            return mainAccountBalance;
-        } else {
-            const balancePromises = otherAddresses.map((address) => blockchainAPIWrapper.getAccountBalance(address));
-            const balanceResponses = await Promise.all(balancePromises);
-            const totalAddressesBalance = balanceResponses.reduce((sum, balance) => {
-                return balance !== undefined ? sum! + balance : balance;
-            }, 0);
-            return toBN(totalAddressesBalance!).add(mainAccountBalance);
-        }
-    } catch (error) {
-        logger.error(`Cannot get account balance for ${account} and other addresses ${otherAddresses}: ${errorMessage(error)}`);
+        return mainAccountBalance;
+    } /* istanbul ignore next */ catch (error) {
+        logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
         throw error;
     }
 }
@@ -168,10 +160,10 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
     switch (chainType) {
         case ChainType.BTC:
         case ChainType.testBTC:
-            return toBN(BTC_DEFAULT_FEE_PER_KB); // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+            return toBN(BTC_DEFAULT_FEE_PER_KB);
         case ChainType.DOGE:
         case ChainType.testDOGE:
-            return toBN(DOGE_DEFAULT_FEE_PER_KB); // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+            return toBN(DOGE_DEFAULT_FEE_PER_KB);
         default:
             throw new Error(`Unsupported chain type ${chainType}`);
     }
@@ -192,4 +184,15 @@ export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN):
             return feePerKB;
         }
     }
+}
+
+export function utxoOnly(chainType: ChainType) {
+    if (chainType === ChainType.BTC || chainType === ChainType.testBTC ||
+        chainType === ChainType.DOGE || chainType === ChainType.testDOGE
+    ) {
+        return true;
+    } else {
+        return false;
+    }
+
 }

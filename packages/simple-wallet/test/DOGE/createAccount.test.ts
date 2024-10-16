@@ -1,4 +1,4 @@
-import { DogeAccountGeneration, WALLET } from "../../src";
+import { DogeAccount, DogeAccountGeneration } from "../../src";
 import { expect } from "chai";
 import WAValidator from "wallet-address-validator";
 
@@ -25,7 +25,7 @@ describe("Dogecoin create account tests", () => {
     });
 
     it("Should create mainnet account", async () => {
-        const wClient = new WALLET.DogeAccount(false);
+        const wClient = new DogeAccount(false);
         const newAccount = wClient.createWallet();
         expect(newAccount.address).to.not.be.null;
         expect(WAValidator.validate(newAccount.address, "DOGE", "mainnet")).to.be.true;

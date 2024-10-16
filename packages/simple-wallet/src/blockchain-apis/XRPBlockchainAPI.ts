@@ -19,8 +19,8 @@ export class XRPBlockchainAPI {
         }), "getTransaction");
     }
 
-    async submitTransaction(params: any) {
-        return tryWithClients(this.clients, (client: AxiosInstance) => client.post("", {
+    async submitTransaction(params: SubmitTransactionRequest) {
+        return tryWithClients(this.clients,(client: AxiosInstance) => client.post("", {
             method: "submit",
             params: [params],
         }), "submitTransaction");
@@ -39,4 +39,8 @@ export class XRPBlockchainAPI {
             params: [],
         }), "getServerInfo");
     }
+}
+
+export interface SubmitTransactionRequest {
+    tx_blob: string;
 }

@@ -1,4 +1,3 @@
-import { WalletApi } from "../../underlying-chain/interfaces/IBlockChainWallet";
 import { StuckTransaction } from "../../../../simple-wallet/src/index";
 
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
