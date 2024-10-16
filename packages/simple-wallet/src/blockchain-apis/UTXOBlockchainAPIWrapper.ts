@@ -6,46 +6,46 @@ import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
 import { BlockbookAPI } from "./BlockbookAPI";
 
 export class BlockchainAPIWrapper implements IBlockchainAPI {
-    clients: BlockbookAPI[] = [];
+    blockbookClients: BlockbookAPI[] = [];
     chainType: ChainType;
 
     constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
         for (const [index, url] of createConfig.urls.entries()) {
             const client = createAxiosInstance(url, createConfig.apiTokenKeys?.[index], createConfig.rateLimitOptions)
-            this.clients.push(new BlockbookAPI(client, createConfig.em));
+            this.blockbookClients.push(new BlockbookAPI(client, createConfig.em));
         }
         this.chainType = chainType;
     }
 
     async getAccountBalance(account: string): Promise<number | undefined> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getAccountBalance(account), "getAccountBalance");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.getAccountBalance(account), "getAccountBalance");
     }
 
     async getCurrentBlockHeight(): Promise<BlockData> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentBlockHeight(), "getCurrentBlockHeight");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.getCurrentBlockHeight(), "getCurrentBlockHeight");
     }
 
     async getCurrentFeeRate(nextBlocks: number): Promise<number> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getCurrentFeeRate(nextBlocks), "getCurrentFeeRate");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.getCurrentFeeRate(nextBlocks), "getCurrentFeeRate");
     }
 
     async getTransaction(txHash: string): Promise<any> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getTransaction(txHash), "getTransaction");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.getTransaction(txHash), "getTransaction");
     }
 
     async getUTXOScript(address: string, txHash: string, vout: number): Promise<string> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOScript(address, txHash, vout, this.chainType), "getUTXOScript");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.getUTXOScript(address, txHash, vout, this.chainType), "getUTXOScript");
     }
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsFromMempool(address, this.chainType), "getUTXOsFromMempool");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.getUTXOsFromMempool(address, this.chainType), "getUTXOsFromMempool");
     }
 
     async getUTXOsWithoutScriptFromMempool(address: string): Promise<MempoolUTXOMWithoutScript[]> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.getUTXOsWithoutScriptFromMempool(address, this.chainType), "getUTXOsWithoutScriptFromMempool");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.getUTXOsWithoutScriptFromMempool(address, this.chainType), "getUTXOsWithoutScriptFromMempool");
     }
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {
-        return tryWithClients(this.clients, (client: IBlockchainAPI) => client.sendTransaction(tx), "sendTransaction");
+        return tryWithClients(this.blockbookClients, (client: IBlockchainAPI) => client.sendTransaction(tx), "sendTransaction");
     }
 }

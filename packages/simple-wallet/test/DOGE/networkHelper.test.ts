@@ -48,6 +48,6 @@ describe("Dogecoin network helper tests", () => {
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const DOGEMccConnectionTest = { ...DOGEMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       const wClient = await WALLET.DOGE.initialize({... DOGEMccConnectionTest});
-      expect(wClient.blockchainAPI.clients[0].client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);
+      expect(wClient.blockchainAPI.blockbookClients[0].client.defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);
    });
 });

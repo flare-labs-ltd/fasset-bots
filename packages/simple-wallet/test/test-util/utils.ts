@@ -32,13 +32,11 @@ export function createTransactionInputEntity(transactionHash: string, vout: numb
 }
 
 export class MockBlockchainAPI implements IService, BlockchainAPIWrapper {
-    client: AxiosInstance;
-    clients: any;
+    blockbookClients: any;
     chainType: ChainType;
 
     constructor() {
-        this.clients = [];
-        this.client = axios.create({});
+        this.blockbookClients = [];
         this.chainType = ChainType.testBTC;
     }
 

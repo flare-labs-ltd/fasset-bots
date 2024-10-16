@@ -5,14 +5,15 @@ import axios, { AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 
-export async function tryWithClients<T>(clients: any, operation: (client: any) => Promise<T>, method: string) {
-    for (const [index, url] of Object.keys(clients).entries()) {
+export async function tryWithClients<T>(clients: any[], operation: (client: any) => Promise<T>, method: string) {
+    for (const [index, _] of clients.entries()) {
         try {
-            const result = await operation(clients[url]);
+            const result = await operation(clients[index]);
             return result;
         } catch (error) {
-            logger.warn(`Client ${url} - ${method} failed with: ${errorMessage(error)}`);
-            const lastClient = Object.keys(clients).length - 1;
+            logger.warn(`Client with index ${index} and method ${method} failed with: ${errorMessage(error)}`);
+            console.warn(`Client with index ${index} and method ${method} failed with: ${errorMessage(error)}`);
+            const lastClient = clients.length - 1;
             if (index === lastClient) {
                 throw error;
             }

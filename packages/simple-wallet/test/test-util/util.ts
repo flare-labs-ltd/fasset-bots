@@ -234,14 +234,14 @@ function addRequestTimers(wClient: WALLET.DOGE | WALLET.BTC) {
         };
     }
 
-    wClient.blockchainAPI.clients[0].client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    wClient.blockchainAPI.blockbookClients[0].client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
         (config as AxiosRequestConfigWithMetadata).metadata = { startTime: new Date() };
         return config;
     }, error => {
         return Promise.reject(error);
     });
 
-    wClient.blockchainAPI.clients[0].client.interceptors.response.use((response: AxiosResponse) => {
+    wClient.blockchainAPI.blockbookClients[0].client.interceptors.response.use((response: AxiosResponse) => {
         const config = response.config as AxiosRequestConfigWithMetadata;
 
         if (config.metadata?.startTime) {
