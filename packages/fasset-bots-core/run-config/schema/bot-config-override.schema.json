@@ -424,14 +424,8 @@
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
         },
-        "priceFeedApiPath": {
+        "priceFeedApiUrl": {
             "type": "string"
-        },
-        "pricePublisherContracts": {
-            "items": {
-                "type": "string"
-            },
-            "type": "array"
         },
         "pricePublisherMaxDelayMs": {
             "type": "number"
