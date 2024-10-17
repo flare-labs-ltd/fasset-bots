@@ -15,10 +15,12 @@ export class TransactionMonitor {
     private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
+    monitoringId = "";
 
     constructor(chainType: ChainType, rootEm: EntityManager) {
         this.chainType = chainType;
         this.rootEm = rootEm;
+        this.monitoringId = `${this.chainType}-${Math.random().toString(36).substring(2, 10)}`;
     }
 
     restartInDueToError = 2000; //2s
@@ -59,23 +61,23 @@ export class TransactionMonitor {
         try {
             const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
             if (!monitoringState) {
-                logger.info(`Monitoring created for chain ${this.chainType}`);
+                logger.info(`Monitoring created for chain ${this.monitoringId}`);
                 this.rootEm.create(MonitoringStateEntity, {
                     chainType: this.chainType,
                     lastPingInTimestamp: toBN((new Date()).getTime()),
                 } as RequiredEntityData<MonitoringStateEntity>);
                 await this.rootEm.flush();
             } else if (monitoringState.lastPingInTimestamp) {
-                logger.info(`Monitoring possibly running for chain ${this.chainType}`);
+                logger.info(`Monitoring possibly running for chain ${this.monitoringId}`);
                 const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
                 const now = (new Date()).getTime();
                 if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
-                    logger.info(`Monitoring checking if already running for chain ${this.chainType} ...`);
+                    logger.info(`Monitoring checking if already running for chain ${this.monitoringId} ...`);
                     await sleepMs(BUFFER_PING_INTERVAL + randomMs);
-                    const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+                    const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.monitoringId);
                     const newNow = (new Date()).getTime();
                     if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                        logger.info(`Another monitoring instance is already running for chain ${this.chainType}`);
+                        logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
                         return;
                     }
                 }
@@ -86,7 +88,7 @@ export class TransactionMonitor {
             });
 
             this.monitoring = true;
-            logger.info(`Monitoring started for chain ${this.chainType}`);
+            logger.info(`Monitoring started for chain ${this.monitoringId}`);
 
             if (utxoOnly(this.chainType)) {
                 const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
@@ -100,7 +102,7 @@ export class TransactionMonitor {
                 try {
                     const networkUp = await checkNetworkStatus();
                     if (!networkUp) {
-                        logger.error(`Network is down - trying again in ${this.restartInDueNoResponse}`);
+                        logger.error(`Network is down ${this.monitoringId} - trying again in ${this.restartInDueNoResponse}`);
                         await sleepMs(this.restartInDueNoResponse);
                         continue;
                     }
@@ -123,20 +125,20 @@ export class TransactionMonitor {
                     if (this.shouldStopMonitoring()) break;
 
                 } /* istanbul ignore next */ catch (error) {
-                    logger.error(`Monitoring run into error. Restarting in ${this.restartInDueToError}: ${errorMessage(error)}`);
+                    logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${this.restartInDueToError}: ${errorMessage(error)}`);
                 }
                 await sleepMs(this.restartInDueToError);
             }
 
-            logger.info(`Monitoring stopped for chain ${this.chainType}`);
+            logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
         } /* istanbul ignore next */ catch (error) {
-            logger.error(`Monitoring failed for chain ${this.chainType} error: ${errorMessage(error)}.`);
+            logger.error(`Monitoring failed for chain ${this.monitoringId} error: ${errorMessage(error)}.`);
         }
     }
 
     private shouldStopMonitoring(): boolean {
         if (!this.monitoring) {
-            logger.info(`Monitoring should be stopped for chain ${this.chainType}`);
+            logger.info(`Monitoring should be stopped for chain ${this.monitoringId}`);
             return true;
         }
         return false;
@@ -150,7 +152,7 @@ export class TransactionMonitor {
                 });
                 await sleepMs(PING_INTERVAL);
             } catch (error) {
-                logger.error(`Error updating ping status for chain ${this.chainType}`, error);
+                logger.error(`Error updating ping status for chain ${this.monitoringId}`, error);
                 this.monitoring = false;
             }
         }

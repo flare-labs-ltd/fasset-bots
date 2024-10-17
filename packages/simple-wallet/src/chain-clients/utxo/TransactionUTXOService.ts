@@ -235,6 +235,8 @@ export class TransactionUTXOService {
                 await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                     txEnt.status = TransactionStatus.TX_CREATED;
                     txEnt.utxos.removeAll();
+                    txEnt.inputs.removeAll();
+                    txEnt.outputs.removeAll();
                     txEnt.raw = "";
                     txEnt.transactionHash = "";
                 });
