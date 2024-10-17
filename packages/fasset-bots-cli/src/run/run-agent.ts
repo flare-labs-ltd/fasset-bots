@@ -1,15 +1,12 @@
 import "dotenv/config";
 import "source-map-support/register";
-import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig, PricePublisherService } from "@flarelabs/fasset-bots-core";
-import { Secrets, closeBotConfig, createBotConfig, loadAgentConfigFile, createContractsMap } from "@flarelabs/fasset-bots-core/config";
 
-import { ActivityTimestampEntity, AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
-import { closeBotConfig, createBotConfig, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
+import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
+import { closeBotConfig, createBotConfig, createContractsMap, EM, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
-import { EM } from "../../../fasset-bots-core/src/config/orm";
 
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: 172800,
@@ -61,20 +58,15 @@ async function activityTimestampUpdate(rootEm: EM) {
             stateEnt.lastActiveTimestamp = toBN(Math.floor((new Date()).getTime() / 1000));
         }
         await em.persistAndFlush(stateEnt);
+    }).catch(error => {
+        logger.error("Error updating timestamp:", error);
+        console.error("Error updating timestamp:", error);
     });
 }
 
 function startTimestampUpdater(rootEm: EM) {
-    activityTimestampUpdate(rootEm);
-
-    activityUpdateTimer = setInterval(async () => {
-        try {
-            await activityTimestampUpdate(rootEm);
-        } catch (error) {
-            logger.error("Error updating timestamp:", error);
-            console.error("Error updating timestamp:", error);
-        }
-    }, activityUpdateInterval);
+    void activityTimestampUpdate(rootEm);
+    activityUpdateTimer = setInterval(() => void activityTimestampUpdate(rootEm), activityUpdateInterval);
 }
 
 program.action(async () => {
