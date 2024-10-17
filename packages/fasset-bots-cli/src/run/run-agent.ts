@@ -101,7 +101,7 @@ program.action(async () => {
         timekeeperService.startAll();
         // run price publisher only if price feed api path is set
         let pricePublisherService: PricePublisherService | null = null;
-        if (runConfig.priceFeedApiUrl && pricePublisher && runConfig.contractsJsonFile) {
+        if (runConfig.priceFeedApiUrls && pricePublisher) {
             if (pricePublisher.address !== owner.address) {
                 await fundAccount(owner.address, pricePublisher.address, minNativeBalance, "price publisher");
                 serviceAccounts.set("price publisher", pricePublisher.address);

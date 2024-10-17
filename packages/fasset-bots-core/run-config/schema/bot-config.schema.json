@@ -372,8 +372,11 @@
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
         },
-        "priceFeedApiUrl": {
-            "type": "string"
+        "priceFeedApiUrls": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
         },
         "pricePublisherMaxDelayMs": {
             "type": "number"
