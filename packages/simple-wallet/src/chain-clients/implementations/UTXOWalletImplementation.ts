@@ -67,10 +67,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     useRBFFactor = 1.4;
 
+    monitoringId: string;
     private monitor: TransactionMonitor;
 
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
+        this.monitoringId = `${this.chainType}-${Math.random().toString(36).substring(2, 10)}`;
         this.inTestnet = createConfig.inTestnet ?? false;
         const resubmit = stuckTransactionConstants(this.chainType);
 
@@ -105,10 +107,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         ServiceRepository.register(this.chainType, TransactionService, new TransactionService(this.chainType));
         this.transactionService = ServiceRepository.get(this.chainType, TransactionService);
 
-        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType));
+        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType, this.monitoringId));
         this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
 
-        this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
+        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
     }
 
     async getAccountBalance(account: string): Promise<BN> {

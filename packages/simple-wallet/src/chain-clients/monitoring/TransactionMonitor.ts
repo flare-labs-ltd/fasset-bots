@@ -15,12 +15,12 @@ export class TransactionMonitor {
     private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
-    monitoringId = "";
+    monitoringId: string;
 
-    constructor(chainType: ChainType, rootEm: EntityManager) {
+    constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
         this.chainType = chainType;
         this.rootEm = rootEm;
-        this.monitoringId = `${this.chainType}-${Math.random().toString(36).substring(2, 10)}`;
+        this.monitoringId = monitoringId;
     }
 
     restartInDueToError = 2000; //2s
