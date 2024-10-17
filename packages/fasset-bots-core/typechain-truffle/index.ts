@@ -51,6 +51,8 @@ import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
 import { CollateralPoolTokenContract } from "./CollateralPoolToken";
 import { CollateralPoolTokenFactoryContract } from "./CollateralPoolTokenFactory";
 import { FtsoV1PriceReaderContract } from "./FtsoV1PriceReader";
+import { FtsoV2PriceStoreContract } from "./FtsoV2PriceStore";
+import { IRelayContract } from "./IRelay";
 import { WhitelistContract } from "./Whitelist";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
 import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
@@ -61,6 +63,7 @@ import { IIAssetManagerControllerContract } from "./IIAssetManagerController";
 import { IICollateralPoolContract } from "./IICollateralPool";
 import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
 import { IPriceChangeEmitterContract } from "./IPriceChangeEmitter";
+import { IPricePublisherContract } from "./IPricePublisher";
 import { IPriceReaderContract } from "./IPriceReader";
 import { IWNatContract } from "./IWNat";
 import { AMEventsContract } from "./AMEvents";
@@ -75,6 +78,7 @@ import { FakePriceReaderContract } from "./FakePriceReader";
 import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
+import { FtsoV2PriceStoreMockContract } from "./FtsoV2PriceStoreMock";
 import { WhitelistMockContract } from "./WhitelistMock";
 import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
 import { GovernedFacetContract } from "./GovernedFacet";
@@ -231,6 +235,8 @@ export type * from "./types";
         name: "CollateralPoolTokenFactory"
       ): CollateralPoolTokenFactoryContract;
       require(name: "FtsoV1PriceReader"): FtsoV1PriceReaderContract;
+      require(name: "FtsoV2PriceStore"): FtsoV2PriceStoreContract;
+      require(name: "IRelay"): IRelayContract;
       require(name: "Whitelist"): WhitelistContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
       require(name: "ICollateralPoolFactory"): ICollateralPoolFactoryContract;
@@ -245,6 +251,7 @@ export type * from "./types";
       require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "IICollateralPoolToken"): IICollateralPoolTokenContract;
       require(name: "IPriceChangeEmitter"): IPriceChangeEmitterContract;
+      require(name: "IPricePublisher"): IPricePublisherContract;
       require(name: "IPriceReader"): IPriceReaderContract;
       require(name: "IWNat"): IWNatContract;
       require(name: "AMEvents"): AMEventsContract;
@@ -261,6 +268,7 @@ export type * from "./types";
       require(name: "FtsoManagerMock"): FtsoManagerMockContract;
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
+      require(name: "FtsoV2PriceStoreMock"): FtsoV2PriceStoreMockContract;
       require(name: "WhitelistMock"): WhitelistMockContract;
       require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
       require(name: "GovernedFacet"): GovernedFacetContract;
@@ -514,6 +522,11 @@ export {
   FtsoV1PriceReaderContract,
   FtsoV1PriceReaderInstance,
 } from "./FtsoV1PriceReader";
+export {
+  FtsoV2PriceStoreContract,
+  FtsoV2PriceStoreInstance,
+} from "./FtsoV2PriceStore";
+export { IRelayContract, IRelayInstance } from "./IRelay";
 export { WhitelistContract, WhitelistInstance } from "./Whitelist";
 export {
   IAgentVaultFactoryContract,
@@ -548,6 +561,10 @@ export {
   IPriceChangeEmitterContract,
   IPriceChangeEmitterInstance,
 } from "./IPriceChangeEmitter";
+export {
+  IPricePublisherContract,
+  IPricePublisherInstance,
+} from "./IPricePublisher";
 export { IPriceReaderContract, IPriceReaderInstance } from "./IPriceReader";
 export { IWNatContract, IWNatInstance } from "./IWNat";
 export { AMEventsContract, AMEventsInstance } from "./AMEvents";
@@ -586,6 +603,10 @@ export {
   FtsoRegistryMockContract,
   FtsoRegistryMockInstance,
 } from "./FtsoRegistryMock";
+export {
+  FtsoV2PriceStoreMockContract,
+  FtsoV2PriceStoreMockInstance,
+} from "./FtsoV2PriceStoreMock";
 export { WhitelistMockContract, WhitelistMockInstance } from "./WhitelistMock";
 export {
   DiamondLoupeFacetContract,

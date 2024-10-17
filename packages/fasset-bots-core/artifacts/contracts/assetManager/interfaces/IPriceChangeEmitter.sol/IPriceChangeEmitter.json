@@ -21,6 +21,19 @@
       ],
       "name": "PriceEpochFinalized",
       "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint32",
+          "name": "votingRoundId",
+          "type": "uint32"
+        }
+      ],
+      "name": "PricesPublished",
+      "type": "event"
     }
   ],
   "bytecode": "0x",

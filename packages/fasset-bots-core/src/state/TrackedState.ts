@@ -1,6 +1,7 @@
 import { AgentDestroyed } from "../../typechain-truffle/IIAssetManager";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
+import { isPriceChangeEvent } from "../utils";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EventArgs, EvmEvent, eventOrder } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
@@ -132,8 +133,8 @@ export class TrackedState {
     }
 
     async registerStateEvent(event: EvmEvent): Promise<void> {
-        if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
-            logger.info(`Tracked State received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
+        if (isPriceChangeEvent(this.context, event)) {
+            logger.info(`Tracked State received event '${event.event}' with data ${formatArgs(event.args)}.`);
             [this.prices, this.trustedPrices] = await this.getPrices();
         } else if (eventIs(event, this.context.assetManager, "SettingChanged")) {
             logger.info(`Tracked State received event 'SettingChanged' with data ${formatArgs(event.args)}.`);

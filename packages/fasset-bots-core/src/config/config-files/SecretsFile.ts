@@ -28,4 +28,5 @@ export type SecretsFile = {
     systemKeeper?: ChainAccount;
     deployer?: ChainAccount;
     database?: DatabaseAccount;
+    pricePublisher?: ChainAccount;
 }
