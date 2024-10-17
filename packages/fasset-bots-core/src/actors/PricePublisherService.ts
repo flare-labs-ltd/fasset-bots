@@ -78,7 +78,7 @@ export class PricePublisherService {
                     await this.getAndPublishFeedData(lastAvailableRoundId);
                     prevAvailableRoundId = lastAvailableRoundId;
                 }
-                await sleep(Math.random() * this.maxDelayMs);
+                await sleep(Math.round(Math.random() * this.maxDelayMs));
             } catch (error) {
                 logger.error(`Error in publishing prices: ${error}`);
             }
