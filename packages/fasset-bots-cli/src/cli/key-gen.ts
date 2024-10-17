@@ -99,8 +99,7 @@ program
     .argument("<chainName>", "chain name, e.g. XRP or testXRP")
     .action(async (chainName: string) => {
         const account = generateUnderlyingAccount(chainName);
-        console.log("Address:", account.address);
-        console.log("Private key:", account.privateKey);
+        console.log(JSON.stringify({ address: account.address, private_key: account.privateKey }, null, 4));
     });
 
 program
@@ -108,8 +107,7 @@ program
     .description("create new address/private key pair on the native chain")
     .action(async () => {
         const account = web3.eth.accounts.create();
-        console.log("Address:", account.address);
-        console.log("Private key:", account.privateKey);
+        console.log(JSON.stringify({ address: account.address, private_key: account.privateKey }, null, 4));
     });
 
 toplevelRun(async () => {

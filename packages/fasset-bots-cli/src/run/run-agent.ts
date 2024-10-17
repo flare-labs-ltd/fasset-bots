@@ -55,7 +55,6 @@ program.action(async () => {
         const timekeeper = getAccount(secrets, "timeKeeper") ?? owner;
         const requestSubmitter = getAccount(secrets, "requestSubmitter") ?? owner;
         const pricePublisher = getAccount(secrets, "pricePublisher") ?? null;
-        const priceFeedApiPath = runConfig.priceFeedApiPath ?? null;
         const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey]));
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), walletPrivateKeys, owner.address);
         // check balances and fund addresses so there is enough for gas
@@ -77,7 +76,8 @@ program.action(async () => {
         const timekeeperService = await TimeKeeperService.create(botConfig, timekeeper.address, timekeeperConfig);
         timekeeperService.startAll();
         // run price publisher only if price feed api path is set
-        let pricePublisherService;
+        const priceFeedApiPath = runConfig.priceFeedApiPath ?? null;
+        let pricePublisherService: PricePublisherService | null = null;
         if (priceFeedApiPath && pricePublisher && runConfig.contractsJsonFile && runConfig.pricePublisherContracts) {
             if (pricePublisher.address !== owner.address) {
                 await fundAccount(owner.address, pricePublisher.address, minNativeBalance, "price publisher");
@@ -85,7 +85,8 @@ program.action(async () => {
             }
             const contractsMap = await createContractsMap(runConfig.contractsJsonFile, runConfig.pricePublisherContracts);
             const publisherApiKey = secrets.optional("apiKey.price_publisher_api");
-            pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisher.privateKey, runConfig.pricePublisherMaxDelayMs ?? 5000, priceFeedApiPath, publisherApiKey ?? "");
+            pricePublisherService = new PricePublisherService(botConfig.orm.em, contractsMap, pricePublisher.privateKey,
+                    runConfig.pricePublisherMaxDelayMs ?? 5000, priceFeedApiPath, publisherApiKey ?? "");
             pricePublisherService.start();
         }
         // create runner and agents
