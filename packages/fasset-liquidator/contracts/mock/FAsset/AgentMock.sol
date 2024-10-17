@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "fasset/contracts/userInterfaces/data/AgentInfo.sol";
+import "@flarelabs/fasset/contracts/userInterfaces/data/AgentInfo.sol";
 import "../ERC20Mock.sol";
 import "./AssetManagerMock.sol";
 

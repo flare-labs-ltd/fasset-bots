@@ -275,6 +275,10 @@ export class MockChainWallet implements IBlockChainWallet {
         this.transactionList.push(transaction);
         return transaction.hash;
     }
+    async waitForTransactionFinalization(id: number): Promise<string> {
+        const transaction = this.transactionList[id];
+        return transaction.hash;
+    }
     async addMultiTransaction(spent: SpentReceivedObject, received: SpentReceivedObject, reference: string | null, options?: MockTransactionOptions): Promise<string> {
         const transaction = this.createMultiTransaction(spent, received, reference, options);
         this.chain.addTransaction(transaction);

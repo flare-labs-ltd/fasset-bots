@@ -97,7 +97,7 @@ describe("Agent bot unit tests", () => {
         const [events, lastBlock] = await agentBot.eventReader.readNewEvents(orm.em, 10);
         expect(events.length).to.eq(0);
     });
-    
+
     it("Should report outdated agents", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const latest = await time.latestBlock();
@@ -603,6 +603,24 @@ describe("Agent bot unit tests", () => {
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
     });
 
+    it("Should cancel underlying withdrawal announcement", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // announce
+        await agentBot.agent.announceUnderlyingWithdrawal();
+        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
+        agentEnt.underlyingWithdrawalWaitingForCancelation = true;
+        await orm.em.persist(agentEnt).flush();
+        // cancelation not yet allowed
+        await agentBot.handleTimelockedProcesses(orm.em);
+        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
+        // cancelation allowed
+        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
+        await agentBot.handleTimelockedProcesses(orm.em);
+        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
+        expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
+    });
+
     it("Should ignore 'MintingExecuted' when self mint", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
         const lots = 3;
@@ -628,24 +646,6 @@ describe("Agent bot unit tests", () => {
         // check
         const mintings = await orm.em.createQueryBuilder(AgentMinting).where({ agentAddress: agentBot.agent.vaultAddress }).getResultList();
         expect(mintings.length).to.eq(0);
-    });
-
-    it("Should cancel underlying withdrawal announcement", async () => {
-        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        // announce
-        await agentBot.agent.announceUnderlyingWithdrawal();
-        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-        agentEnt.underlyingWithdrawalWaitingForCancelation = true;
-        await orm.em.persist(agentEnt).flush();
-        // cancelation not yet allowed
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
-        // cancelation allowed
-        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
-        expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
 
     it("Should not request proofs - cannot prove requests yet", async () => {

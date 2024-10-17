@@ -4,10 +4,11 @@ import { DatabaseAccount } from "./config/config-files/SecretsFile";
 import { CreateOrmOptions, ORM, createOrm } from "./config/orm";
 import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event, PricePublisherState } from "./entities/agent";
 import { MonitoringStateEntity, TransactionEntity, UTXOEntity, WalletAddressEntity } from "@flarelabs/simple-wallet";
+import { ActivityTimestampEntity } from "./entities/activityTimestamp";
 
 /* istanbul ignore next */
 const options: Options<AbstractSqlDriver> = {
-    entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity, MonitoringStateEntity, PricePublisherState],
+    entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity, MonitoringStateEntity, ActivityTimestampEntity, PricePublisherState],
     dbName: "fasset-bots.db",
     debug: false,
 };

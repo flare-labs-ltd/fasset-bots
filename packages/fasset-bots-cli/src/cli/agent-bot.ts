@@ -315,11 +315,7 @@ program
     .action(async (agentVault: string, recipient: string, share: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
-        try {
-            await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
-        } catch (error: any) {
-            translateError(error, { "unknown account": `Account ${recipient} not viable for delegation` });
-        }
+        await cli.delegatePoolCollateral(agentVault, recipient, toBIPS(share));
     });
 
 program
@@ -415,6 +411,18 @@ program
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.upgradeWNatContract(agentVault);
     });
+
+program
+    .command("exportPrivateKeys")
+    .description("export underlying agent vault private keys")
+    .argument("<exportFile>")
+    .action(async (exportFile: string) => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const data = await cli.getOwnedUnderlyingAccounts(secrets);
+        fs.writeFileSync(exportFile, JSON.stringify(data, null, 4));
+    })
 
 toplevelRun(async () => {
     try {

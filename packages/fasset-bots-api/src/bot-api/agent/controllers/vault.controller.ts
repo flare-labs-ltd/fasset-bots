@@ -69,4 +69,23 @@ export class AgentVaultController {
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.closeVault(fAssetSymbol, agentVaultAddress));
     }
+
+
+    @Get("backedAmount/:fAssetSymbol/:agentVaultAddress")
+    @ApiOkResponse({
+        description: 'Example of successful response.',
+        schema: {
+            type: 'object',
+            properties: {
+                status: { type: 'string', example: 'OK' },
+                data: { type: 'string', example: '12.5' }
+            }
+        }
+    })
+    public async getBackedAmount(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+    ): Promise<ApiResponseWrapper<string>> {
+        return handleApiResponse(this.agentService.backedAmount(fAssetSymbol, agentVaultAddress));
+    }
 }
