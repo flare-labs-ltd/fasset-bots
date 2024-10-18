@@ -10,13 +10,6 @@ if ! [ -d ${fassetsdir} ]; then echo "Missing dir ${fassetsdir}"; exit 1; fi
 if ! [ -d ${liquidatordir} ]; then echo "Missing dir ${liquidatordir}"; exit 1; fi
 
 # build
-
-rm -rf artifacts; mkdir -p artifacts
-rm -rf typechain-truffle; mkdir -p typechain-truffle
-rm -rf fasset-deployment; mkdir -p fasset-deployment
-rm -rf fasset-config; mkdir -p fasset-config
-
-# build
 echo "***** Building fasset... ****************************************"
 cd ${fassetsdir}
 yarn
@@ -30,6 +23,13 @@ yarn clean
 yarn compile
 
 echo "***** Copying artifacts... **************************************"
+# clean
+cd ${projdir}
+rm -rf artifacts; mkdir -p artifacts
+rm -rf typechain-truffle; mkdir -p typechain-truffle
+rm -rf fasset-deployment; mkdir -p fasset-deployment
+rm -rf fasset-config; mkdir -p fasset-config
+
 # copy fasset artifacts
 cd ${fassetsdir}/artifacts
 find -name '*.json' -not -name '*.dbg.json' -not -path './build-info/*' -not -path './cache/*' -not -path './flattened/*' | xargs cp -t ${projdir}/artifacts --parents

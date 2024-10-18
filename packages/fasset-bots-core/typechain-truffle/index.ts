@@ -52,7 +52,6 @@ import { CollateralPoolTokenContract } from "./CollateralPoolToken";
 import { CollateralPoolTokenFactoryContract } from "./CollateralPoolTokenFactory";
 import { FtsoV1PriceReaderContract } from "./FtsoV1PriceReader";
 import { FtsoV2PriceStoreContract } from "./FtsoV2PriceStore";
-import { IRelayContract } from "./IRelay";
 import { WhitelistContract } from "./Whitelist";
 import { IAgentVaultFactoryContract } from "./IAgentVaultFactory";
 import { ICollateralPoolFactoryContract } from "./ICollateralPoolFactory";
@@ -65,6 +64,7 @@ import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
 import { IPriceChangeEmitterContract } from "./IPriceChangeEmitter";
 import { IPricePublisherContract } from "./IPricePublisher";
 import { IPriceReaderContract } from "./IPriceReader";
+import { IRelayContract } from "./IRelay";
 import { IWNatContract } from "./IWNat";
 import { AMEventsContract } from "./AMEvents";
 import { ConversionMockContract } from "./ConversionMock";
@@ -236,7 +236,6 @@ export type * from "./types";
       ): CollateralPoolTokenFactoryContract;
       require(name: "FtsoV1PriceReader"): FtsoV1PriceReaderContract;
       require(name: "FtsoV2PriceStore"): FtsoV2PriceStoreContract;
-      require(name: "IRelay"): IRelayContract;
       require(name: "Whitelist"): WhitelistContract;
       require(name: "IAgentVaultFactory"): IAgentVaultFactoryContract;
       require(name: "ICollateralPoolFactory"): ICollateralPoolFactoryContract;
@@ -253,6 +252,7 @@ export type * from "./types";
       require(name: "IPriceChangeEmitter"): IPriceChangeEmitterContract;
       require(name: "IPricePublisher"): IPricePublisherContract;
       require(name: "IPriceReader"): IPriceReaderContract;
+      require(name: "IRelay"): IRelayContract;
       require(name: "IWNat"): IWNatContract;
       require(name: "AMEvents"): AMEventsContract;
       require(name: "ConversionMock"): ConversionMockContract;
@@ -526,7 +526,6 @@ export {
   FtsoV2PriceStoreContract,
   FtsoV2PriceStoreInstance,
 } from "./FtsoV2PriceStore";
-export { IRelayContract, IRelayInstance } from "./IRelay";
 export { WhitelistContract, WhitelistInstance } from "./Whitelist";
 export {
   IAgentVaultFactoryContract,
@@ -566,6 +565,7 @@ export {
   IPricePublisherInstance,
 } from "./IPricePublisher";
 export { IPriceReaderContract, IPriceReaderInstance } from "./IPriceReader";
+export { IRelayContract, IRelayInstance } from "./IRelay";
 export { IWNatContract, IWNatInstance } from "./IWNat";
 export { AMEventsContract, AMEventsInstance } from "./AMEvents";
 export {

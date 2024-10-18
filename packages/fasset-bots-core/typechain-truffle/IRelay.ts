@@ -11,21 +11,362 @@ export interface IRelayContract extends Truffle.Contract<IRelayInstance> {
   "new"(meta?: Truffle.TransactionDetails): Promise<IRelayInstance>;
 }
 
-export type AllEvents = never;
+export interface ProtocolMessageRelayed {
+  name: "ProtocolMessageRelayed";
+  args: {
+    protocolId: BN;
+    votingRoundId: BN;
+    isSecureRandom: boolean;
+    merkleRoot: string;
+    0: BN;
+    1: BN;
+    2: boolean;
+    3: string;
+  };
+}
+
+export interface SigningPolicyInitialized {
+  name: "SigningPolicyInitialized";
+  args: {
+    rewardEpochId: BN;
+    startVotingRoundId: BN;
+    threshold: BN;
+    seed: BN;
+    voters: string[];
+    weights: BN[];
+    signingPolicyBytes: string;
+    timestamp: BN;
+    0: BN;
+    1: BN;
+    2: BN;
+    3: BN;
+    4: string[];
+    5: BN[];
+    6: string;
+    7: BN;
+  };
+}
+
+export interface SigningPolicyRelayed {
+  name: "SigningPolicyRelayed";
+  args: {
+    rewardEpochId: BN;
+    0: BN;
+  };
+}
+
+export type AllEvents =
+  | ProtocolMessageRelayed
+  | SigningPolicyInitialized
+  | SigningPolicyRelayed;
 
 export interface IRelayInstance extends Truffle.ContractInstance {
+  feeCollectionAddress(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  getVotingRoundId(
+    _timestamp: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  governanceFeeSetup: {
+    (
+      _relayMessage: string,
+      _config: {
+        descriptionHash: string;
+        chainId: number | BN | string;
+        newFeeConfigs: {
+          protocolId: number | BN | string;
+          feeInWei: number | BN | string;
+        }[];
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _relayMessage: string,
+      _config: {
+        descriptionHash: string;
+        chainId: number | BN | string;
+        newFeeConfigs: {
+          protocolId: number | BN | string;
+          feeInWei: number | BN | string;
+        }[];
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _relayMessage: string,
+      _config: {
+        descriptionHash: string;
+        chainId: number | BN | string;
+        newFeeConfigs: {
+          protocolId: number | BN | string;
+          feeInWei: number | BN | string;
+        }[];
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _relayMessage: string,
+      _config: {
+        descriptionHash: string;
+        chainId: number | BN | string;
+        newFeeConfigs: {
+          protocolId: number | BN | string;
+          feeInWei: number | BN | string;
+        }[];
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  isFinalized(
+    _protocolId: number | BN | string,
+    _votingRoundId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  lastInitializedRewardEpochData(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
   merkleRoots(
     _protocolId: number | BN | string,
     _votingRoundId: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
+  protocolFeeInWei(
+    _protocolId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  relay: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
+  startingVotingRoundIds(
+    _rewardEpochId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  toSigningPolicyHash(
+    _rewardEpochId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  verify: {
+    (
+      _protocolId: number | BN | string,
+      _votingRoundId: number | BN | string,
+      _leaf: string,
+      _proof: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _protocolId: number | BN | string,
+      _votingRoundId: number | BN | string,
+      _leaf: string,
+      _proof: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+    sendTransaction(
+      _protocolId: number | BN | string,
+      _votingRoundId: number | BN | string,
+      _leaf: string,
+      _proof: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _protocolId: number | BN | string,
+      _votingRoundId: number | BN | string,
+      _leaf: string,
+      _proof: string[],
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  verifyCustomSignature: {
+    (
+      _relayMessage: string,
+      _messageHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _relayMessage: string,
+      _messageHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+    sendTransaction(
+      _relayMessage: string,
+      _messageHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _relayMessage: string,
+      _messageHash: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
+    feeCollectionAddress(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getVotingRoundId(
+      _timestamp: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    governanceFeeSetup: {
+      (
+        _relayMessage: string,
+        _config: {
+          descriptionHash: string;
+          chainId: number | BN | string;
+          newFeeConfigs: {
+            protocolId: number | BN | string;
+            feeInWei: number | BN | string;
+          }[];
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _relayMessage: string,
+        _config: {
+          descriptionHash: string;
+          chainId: number | BN | string;
+          newFeeConfigs: {
+            protocolId: number | BN | string;
+            feeInWei: number | BN | string;
+          }[];
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _relayMessage: string,
+        _config: {
+          descriptionHash: string;
+          chainId: number | BN | string;
+          newFeeConfigs: {
+            protocolId: number | BN | string;
+            feeInWei: number | BN | string;
+          }[];
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _relayMessage: string,
+        _config: {
+          descriptionHash: string;
+          chainId: number | BN | string;
+          newFeeConfigs: {
+            protocolId: number | BN | string;
+            feeInWei: number | BN | string;
+          }[];
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    isFinalized(
+      _protocolId: number | BN | string,
+      _votingRoundId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
+    lastInitializedRewardEpochData(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+
     merkleRoots(
       _protocolId: number | BN | string,
       _votingRoundId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
+
+    protocolFeeInWei(
+      _protocolId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    relay: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
+    startingVotingRoundIds(
+      _rewardEpochId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    toSigningPolicyHash(
+      _rewardEpochId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    verify: {
+      (
+        _protocolId: number | BN | string,
+        _votingRoundId: number | BN | string,
+        _leaf: string,
+        _proof: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _protocolId: number | BN | string,
+        _votingRoundId: number | BN | string,
+        _leaf: string,
+        _proof: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<boolean>;
+      sendTransaction(
+        _protocolId: number | BN | string,
+        _votingRoundId: number | BN | string,
+        _leaf: string,
+        _proof: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _protocolId: number | BN | string,
+        _votingRoundId: number | BN | string,
+        _leaf: string,
+        _proof: string[],
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    verifyCustomSignature: {
+      (
+        _relayMessage: string,
+        _messageHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _relayMessage: string,
+        _messageHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<BN>;
+      sendTransaction(
+        _relayMessage: string,
+        _messageHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _relayMessage: string,
+        _messageHash: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
   };
 
   getPastEvents(event: string): Promise<EventData[]>;
