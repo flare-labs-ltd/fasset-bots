@@ -1343,6 +1343,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@flarelabs/fasset-liquidator@workspace:packages/fasset-liquidator"
   dependencies:
+    "@flarelabs/fasset": 1.0.0-beta.12
     "@nomicfoundation/hardhat-chai-matchers": ^2.0.2
     "@nomicfoundation/hardhat-ethers": ^3.0.4
     "@nomicfoundation/hardhat-network-helpers": ^1.0.9
@@ -1362,7 +1363,6 @@ __metadata:
     cross-env: ^7.0.3
     dotenv: ^16.3.1
     ethers: ^6.7.1
-    fasset: "git+https://github.com/flare-labs-ltd/fassets.git#2a2cad73ea9eca9f242359ff3dadd0b1437f15aa"
     hardhat: 2.20.1
     hardhat-gas-reporter: ^1.0.9
     mocha: ^10.3.0
@@ -1374,6 +1374,17 @@ __metadata:
     typescript: ^4.6.3
   languageName: unknown
   linkType: soft
+
+"@flarelabs/fasset@npm:1.0.0-beta.12":
+  version: 1.0.0-beta.12
+  resolution: "@flarelabs/fasset@npm:1.0.0-beta.12"
+  dependencies:
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.3
+    "@openzeppelin/contracts": 4.9.2
+    flare-smart-contracts: "git+https://gitlab.com/flarenetwork/flare-smart-contracts.git#flare-distribution-to-delegators"
+  checksum: 2702c2550bdf99b3738497e06c16a5a1f1a6106c5541af8a3b4c073d283dd34cf3960dfcacd065e98d933421000dfd9ae3352b350bc441a49756c7ac57c13a15
+  languageName: node
+  linkType: hard
 
 "@flarelabs/simple-wallet@workspace:*, @flarelabs/simple-wallet@workspace:packages/simple-wallet":
   version: 0.0.0-use.local
@@ -8653,17 +8664,6 @@ __metadata:
     typescript: 5.2.2
   languageName: unknown
   linkType: soft
-
-"fasset@git+https://github.com/flare-labs-ltd/fassets.git#2a2cad73ea9eca9f242359ff3dadd0b1437f15aa":
-  version: 1.0.0-beta.12
-  resolution: "fasset@https://github.com/flare-labs-ltd/fassets.git#commit=2a2cad73ea9eca9f242359ff3dadd0b1437f15aa"
-  dependencies:
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.3
-    "@openzeppelin/contracts": 4.9.2
-    flare-smart-contracts: "git+https://gitlab.com/flarenetwork/flare-smart-contracts.git#flare-distribution-to-delegators"
-  checksum: 8696e24098a95300c0dde224a9726a19b8bfc878263d9debaac294186e8a331e36ae00cd3bff6add33a7234c523301f8efd2b0a9822d76f23adde9f168576583
-  languageName: node
-  linkType: hard
 
 "fast-check@npm:3.1.1":
   version: 3.1.1

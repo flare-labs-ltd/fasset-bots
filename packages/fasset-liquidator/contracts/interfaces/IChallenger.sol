@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {BalanceDecreasingTransaction} from  "fasset/contracts/stateConnector/interfaces/ISCProofVerifier.sol";
+import {BalanceDecreasingTransaction} from "@flarelabs/fasset/contracts/stateConnector/interfaces/ISCProofVerifier.sol";
 
 
 interface IChallenger {

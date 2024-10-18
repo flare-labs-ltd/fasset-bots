@@ -1,12 +1,13 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
+import { ActivityTimestampEntity, AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
+import { EM } from "../../../fasset-bots-core/src/config/orm";
 
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: 3600,
@@ -15,6 +16,9 @@ const timekeeperConfig: TimekeeperTimingConfig = {
     maxUnderlyingTimestampAgeS: 60,
     maxUpdateTimeDelayMs: 30_000,
 }
+
+let activityUpdateTimer: NodeJS.Timeout | null = null;
+const activityUpdateInterval = 60000; // 1min
 
 const program = programWithCommonOptions("agent", "all_fassets");
 
@@ -44,6 +48,31 @@ async function validateBalance(address: string, minBalance: BN) {
     if (fromBalance.lt(minBalance)) {
         throw new CommandLineError(`Balance on owner address too small`);
     }
+}
+
+async function activityTimestampUpdate(rootEm: EM) {
+    await rootEm.transactional(async (em) => {
+        let stateEnt = await em.findOne(ActivityTimestampEntity, {id: 1});
+        if (!stateEnt) {
+            stateEnt = new ActivityTimestampEntity();
+        } else {
+            stateEnt.lastActiveTimestamp = toBN(Math.floor((new Date()).getTime() / 1000));
+        }
+        await em.persistAndFlush(stateEnt);
+    });
+}
+
+function startTimestampUpdater(rootEm: EM) {
+    activityTimestampUpdate(rootEm);
+
+    activityUpdateTimer = setInterval(async () => {
+        try {
+            await activityTimestampUpdate(rootEm);
+        } catch (error) {
+            logger.error("Error updating timestamp:", error);
+            console.error("Error updating timestamp:", error);
+        }
+    }, activityUpdateInterval);
 }
 
 program.action(async () => {
@@ -85,6 +114,8 @@ program.action(async () => {
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
         }
+        // start activity update
+        void startTimestampUpdater(botConfig.orm.em);
         // run
         try {
             console.log("Agent bot started, press CTRL+C to end");
@@ -96,6 +127,11 @@ program.action(async () => {
             process.on("SIGTERM", stopBot);
             await runner.run();
         } finally {
+            if (activityUpdateTimer) {
+                clearInterval(activityUpdateTimer);
+                logger.info("Activity update timer was cleared.");
+                console.log("Activity update timer was cleared.");
+            }
             await timekeeperService.stopAll();
             await closeBotConfig(botConfig);
         }

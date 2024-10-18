@@ -8,7 +8,7 @@ import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
-import { validateDecimal, validateInteger } from "../utils/validation";
+import { translateError, validateDecimal, validateInteger } from "../utils/validation";
 import BN from "bn.js";
 
 const program = programWithCommonOptions("agent", "single_fasset");
@@ -424,6 +424,18 @@ program
         const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.upgradeWNatContract(agentVault);
     });
+
+program
+    .command("exportPrivateKeys")
+    .description("export underlying agent vault private keys")
+    .argument("<exportFile>")
+    .action(async (exportFile: string) => {
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const data = await cli.getOwnedUnderlyingAccounts(secrets);
+        fs.writeFileSync(exportFile, JSON.stringify(data, null, 4));
+    })
 
 toplevelRun(async () => {
     try {

@@ -13,7 +13,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { Secrets } from "../config/secrets";
 import { AgentEntity } from "../entities/agent";
-import { AgentSettingName } from "../entities/common";
+import { AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
@@ -28,6 +28,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
+import { TransactionStatus } from "@flarelabs/simple-wallet";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -458,22 +459,23 @@ export class AgentBotCommands {
      * @param amount amount to be transferred
      * @param destinationAddress underlying destination address
      */
-    async withdrawUnderlying(agentVault: string, amount: string | BN, destinationAddress: string): Promise<string | null> {
+    async withdrawUnderlying(agentVault: string, amount: string | BN, destinationAddress: string): Promise<number | null> {
         logger.info(`Agent ${agentVault} is trying to announce underlying withdrawal with amount ${amount.toString()} to destination ${destinationAddress}.`);
         try {
             const { agentBot } = await this.getAgentBot(agentVault);
             const announce = await agentBot.agent.announceUnderlyingWithdrawal();
             const latestBlock = await latestBlockTimestampBN();
-            const txHash = await agentBot.agent.performPayment(destinationAddress, amount, announce.paymentReference);
-
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
-                agentEnt.underlyingWithdrawalConfirmTransaction = txHash;
             });
-
-            await this.notifierFor(agentVault).sendUnderlyingWithdrawalPerformed(txHash, announce.paymentReference);
-            logger.info(`Agent ${agentVault} performed underlying withdrawal ${amount} to ${destinationAddress} with reference ${announce.paymentReference} and txHash ${txHash}.`);
-            return txHash;
+            const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference);
+            await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+                agentEnt.underlyingWithdrawalConfirmTransactionId = txDbId;
+            });
+            await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAYING);
+            logger.info(`Agent ${agentVault} initiated transaction with database id ${txDbId}.`)
+            console.log(`Agent ${agentVault} initiated transaction with database id ${txDbId}. Please ensure 'run-agent' is running for the transaction to be processed further.`)
+            return txDbId;
         } catch (error) {
             logger.error(`Agent ${agentVault} is received error while announcing underlying withdrawal.`, error);
             console.error(error);
@@ -507,9 +509,23 @@ export class AgentBotCommands {
                 logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${confirmationAllowedAt}. Current ${latestTimestamp.toString()}.`);
                 console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${confirmationAllowedAt}. Current ${latestTimestamp.toString()}.`);
             }
-        } else {
-            await this.notifierFor(agentVault).sendNoActiveWithdrawal();
-            logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
+        } else { // should not happen. But try anyway.
+            try {
+                await agentBot.agent.cancelUnderlyingWithdrawal();
+            } catch(error: any) {
+                if (error.message?.includes("cancel too soon")) {
+                    logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Try again later.`);
+                    console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Try again later.`)
+                } else if (error.message?.includes("no active announcement")) {
+                    await this.notifierFor(agentVault).sendNoActiveWithdrawal();
+                    logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
+                    console.log(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
+                } else {
+                    await this.notifierFor(agentVault).sendNoActiveWithdrawal();
+                    logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
+                    console.log(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
+                }
+            }
         }
     }
 
@@ -530,6 +546,31 @@ export class AgentBotCommands {
         const assetManagers = await this.context.assetManagerController.getAssetManagers();
         const query = this.orm.em.createQueryBuilder(AgentEntity);
         return await query.where({ fassetSymbol, active: true, assetManager: { $in: assetManagers } }).getResultList();
+    }
+
+    /**
+     * Returns the private key for the given agent's underlying vault account.
+     */
+    async getAgentPrivateKey(underlyingAddress: string, secrets: Secrets): Promise<string | undefined> {
+        const walletKeys = DBWalletKeys.from(this.orm.em, secrets);
+        return walletKeys.getKey(underlyingAddress);
+    }
+
+    /**
+     * Returns the owned underlying accounts for the context's asset manager agents.
+     */
+    async getOwnedUnderlyingAccounts(secrets: Secrets): Promise<{
+        vaultAddress: string;
+        underlyingAddress: string;
+        privateKey: string | undefined;
+    }[]> {
+        const data = []
+        const agents = await this.getAllActiveAgents(this.context.fAssetSymbol);
+        for (const agent of agents) {
+            const privateKey = await this.getAgentPrivateKey(agent.underlyingAddress, secrets);
+            data.push({ vaultAddress: agent.vaultAddress, underlyingAddress: agent.underlyingAddress, privateKey });
+        }
+        return data
     }
 
     /**
@@ -605,7 +646,7 @@ export class AgentBotCommands {
     async delegatePoolCollateral(agentVault: string, recipient: string, bips: string | BN): Promise<void> {
         const { readAgentEnt } = await this.getAgentBot(agentVault);
         const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
-        await collateralPool.delegate(recipient, bips, { from: readAgentEnt.ownerAddress });
+        await collateralPool.delegate(recipient, bips, { from: this.owner.workAddress });
         const bipsFmt = formatBips(toBN(bips));
         await this.notifierFor(agentVault).sendDelegatePoolCollateral(collateralPool.address, recipient, bipsFmt);
         logger.info(`Agent ${agentVault} delegated pool collateral to ${recipient} with percentage ${bipsFmt}.`);
@@ -618,7 +659,7 @@ export class AgentBotCommands {
     async undelegatePoolCollateral(agentVault: string): Promise<void> {
         const { readAgentEnt } = await this.getAgentBot(agentVault);
         const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
-        await collateralPool.undelegateAll({ from: readAgentEnt.ownerAddress });
+        await collateralPool.undelegateAll({ from: this.owner.workAddress });
         await this.notifierFor(agentVault).sendUndelegatePoolCollateral(collateralPool.address);
         logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
     }

@@ -428,11 +428,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} transaction with database id ${txDbId}.`);
     }
 
-    async sendAgentUnderlyingPaymentCreated(txHashOrTxDbId: string | number, type: string) {
-        if (typeof txHashOrTxDbId == 'string') {
-            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txHashOrTxDbId}.`);
+    async sendAgentUnderlyingPaymentCreated(txDbId: number, type: string, txHash?: string) {
+        if (txHash) {
+            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txDbId} (${txHash}).`);
         } else {
-            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} payment with transaction database id ${txHashOrTxDbId}.`);
+            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} payment with transaction database id ${txDbId}.`);
         }
     }
 

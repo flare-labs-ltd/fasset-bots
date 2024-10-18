@@ -1,6 +1,6 @@
-import { AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, BNish, Currencies, MAX_BIPS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -17,6 +17,7 @@ import { Alert } from "../../common/entities/AlertDB";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
+const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20Metadata = artifacts.require("IERC20Metadata");
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
@@ -52,7 +53,8 @@ export class AgentService {
 
     async withdrawVaultCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.announceWithdrawFromVault(agentVaultAddress, amount);
+        const currency = await Currencies.agentVaultCollateral(cli.context, agentVaultAddress);
+        await cli.announceWithdrawFromVault(agentVaultAddress, currency.parse(amount));
     }
 
     async closeVault(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
@@ -62,7 +64,8 @@ export class AgentService {
 
     async selfClose(fAssetSymbol: string, agentVaultAddress: string, amountUBA: string): Promise<void> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.selfClose(agentVaultAddress, amountUBA);
+        const currency = await Currencies.fasset(cli.context);
+        await cli.selfClose(agentVaultAddress, currency.parse(amountUBA));
     }
 
     async buyPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
@@ -82,16 +85,36 @@ export class AgentService {
         return { balance };
     }
 
+    async withdrawPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const currency = await Currencies.agentPoolCollateral(cli.context, agentVaultAddress);
+        await cli.announceRedeemCollateralPoolTokens(agentVaultAddress, currency.parse(amount));
+    }
+
+    async poolTokenBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
+        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const poolToken = await CollateralPoolToken.at(info.collateralPoolToken);
+        const balance = await poolToken.balanceOf(agentVaultAddress);
+        const currency = await Currencies.agentPoolCollateral(cli.context, agentVaultAddress);
+        const amount = currency.formatValue(balance);
+        return { balance: amount };
+    }
+
     async freePoolCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         const balance = await cli.getFreePoolCollateral(agentVaultAddress);
-        return { balance };
+        const currency = await Currencies.agentPoolCollateral(cli.context, agentVaultAddress);
+        const amount = currency.formatValue(balance);
+        return { balance: amount };
     }
 
     async getFreeVaultCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
         const balance = await cli.getFreeVaultCollateral(agentVaultAddress);
-        return { balance };
+        const currency = await Currencies.agentVaultCollateral(cli.context, agentVaultAddress);
+        const amount = currency.formatValue(balance);
+        return { balance: amount };
     }
 
     async delegatePoolCollateral(fAssetSymbol: string, agentVaultAddress: string, recipientAddress: string, bips: string): Promise<void> {
@@ -121,9 +144,9 @@ export class AgentService {
 
     async withdrawUnderlying(fAssetSymbol: string, agentVaultAddress: string, amount: string, destinationAddress: string,): Promise<AgentUnderlying> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const transactionHash = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
+        const transactionDatabaseId = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
         return {
-            transactionHash,
+            transactionDatabaseId: transactionDatabaseId || null,
         };
     }
 
@@ -389,7 +412,7 @@ export class AgentService {
             const agentInfo = await this.getAgentInfo(fasset);
             const collateral: AllCollaterals = { fassetSymbol: fasset, collaterals: agentInfo.collaterals };
             collaterals.push(collateral);
-            break;
+            break; //Might need to delete this if different collaterals for different fassets.
         }
         return collaterals;
     }
@@ -587,5 +610,12 @@ export class AgentService {
     async generateSecrets(): Promise<SecretsFile> {
         const secrets = generateSecrets(process.env.FASSET_BOT_CONFIG ?? resolveInFassetBotsCore("run-config/coston-bot.json"), ["agent"], "");
         return secrets;
+    }
+
+    async backedAmount(fAssetSymbol: string, agentVaultAddress: string): Promise<string> {
+        const cli = await InfoBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const fassetBR = await TokenBalances.fasset(cli.context);
+        return fassetBR.formatValue(info.mintedUBA);
     }
 }
