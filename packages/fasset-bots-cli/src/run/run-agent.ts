@@ -1,13 +1,12 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { ActivityTimestampEntity, AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
-import { closeBotConfig, createBotConfig, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
+import { closeBotConfig, createBotConfig, EM, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, isNotNull, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
-import { EM } from "../../../fasset-bots-core/src/config/orm";
 
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: 172800,
@@ -25,13 +24,13 @@ const program = programWithCommonOptions("agent", "all_fassets");
 function getAccount(secrets: Secrets, key: string) {
     const address = secrets.optional(`${key}.address`);
     const privateKey = secrets.optional(`${key}.private_key`);
-    if (address && privateKey) return { address, privateKey } as const;
+    if (address && privateKey) return { address, privateKey };
 }
 
 function getAccountRequired(secrets: Secrets, key: string) {
     const address = secrets.required(`${key}.address`);
     const privateKey = secrets.required(`${key}.private_key`);
-    return { address, privateKey } as const;
+    return { address, privateKey };
 }
 
 async function fundAccount(from: string, to: string, minBalance: BN, name: string) {
@@ -59,20 +58,15 @@ async function activityTimestampUpdate(rootEm: EM) {
             stateEnt.lastActiveTimestamp = toBN(Math.floor((new Date()).getTime() / 1000));
         }
         await em.persistAndFlush(stateEnt);
+    }).catch(error => {
+        logger.error("Error updating timestamp:", error);
+        console.error("Error updating timestamp:", error);
     });
 }
 
 function startTimestampUpdater(rootEm: EM) {
-    activityTimestampUpdate(rootEm);
-
-    activityUpdateTimer = setInterval(async () => {
-        try {
-            await activityTimestampUpdate(rootEm);
-        } catch (error) {
-            logger.error("Error updating timestamp:", error);
-            console.error("Error updating timestamp:", error);
-        }
-    }, activityUpdateInterval);
+    void activityTimestampUpdate(rootEm);
+    activityUpdateTimer = setInterval(() => void activityTimestampUpdate(rootEm), activityUpdateInterval);
 }
 
 program.action(async () => {
@@ -84,7 +78,8 @@ program.action(async () => {
         const owner = getAccountRequired(secrets, "owner.native");
         const timekeeper = getAccount(secrets, "timeKeeper") ?? owner;
         const requestSubmitter = getAccount(secrets, "requestSubmitter") ?? owner;
-        const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey]));
+        const pricePublisher = getAccount(secrets, "pricePublisher") ?? null;
+        const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey, pricePublisher?.privateKey])).filter(isNotNull);
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), walletPrivateKeys, owner.address);
         // check balances and fund addresses so there is enough for gas
         const minNativeBalance = toBNExp(runConfig.agentBotSettings.minBalanceOnServiceAccount, 18);
@@ -104,6 +99,16 @@ program.action(async () => {
         // create timekeepers
         const timekeeperService = await TimeKeeperService.create(botConfig, timekeeper.address, timekeeperConfig);
         timekeeperService.startAll();
+        // run price publisher only if price feed api path is set
+        let pricePublisherService: PricePublisherService | null = null;
+        if (runConfig.priceFeedApiUrls && pricePublisher) {
+            if (pricePublisher.address !== owner.address) {
+                await fundAccount(owner.address, pricePublisher.address, minNativeBalance, "price publisher");
+                serviceAccounts.set("price publisher", pricePublisher.address);
+            }
+            pricePublisherService = await PricePublisherService.create(runConfig, secrets, pricePublisher.address);
+            pricePublisherService.start();
+        }
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         runner.serviceAccounts = serviceAccounts;
@@ -127,6 +132,9 @@ program.action(async () => {
             process.on("SIGTERM", stopBot);
             await runner.run();
         } finally {
+            if (pricePublisherService) {
+                await pricePublisherService.stop();
+            }
             if (activityUpdateTimer) {
                 clearInterval(activityUpdateTimer);
                 logger.info("Activity update timer was cleared.");

@@ -14,7 +14,8 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrls": ["https://attestation-coston.aflabs.net/verifier/xrp"]
+            "indexerUrls": ["https://attestation-coston.aflabs.net/verifier/xrp"],
+            "priceChangeEmitter": "FtsoManager"
         }
     },
     "agentBotSettings": {

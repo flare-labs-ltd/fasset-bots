@@ -15,7 +15,8 @@
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
             "indexerUrls": ["https://attestation-coston.aflabs.net/verifier/xrp"],
-            "walletUrls": ["https://s.altnet.rippletest.net:51234"]
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"],
+            "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
     "agentBotSettings": {

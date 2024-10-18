@@ -1,5 +1,3 @@
-import { StuckTransaction } from "../../../../simple-wallet/src/index";
-
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
@@ -23,6 +21,14 @@ export interface OrmConfigOptions {
     [key: string]: any;
 }
 
+interface StuckTransaction {
+    blockOffset?: number; // How many block to wait for transaction to be validated
+    retries?: number; // How many times should transaction retry to successfully submit
+    feeIncrease?: number; // Factor to increase fee in resubmitting process
+    executionBlockOffset?: number; //
+    enoughConfirmations?: number; // number of confirmations to be declared successful
+}
+
 export interface BotFAssetInfo {
     chainId: string;
     tokenName: string;       // underlying token name
@@ -30,7 +36,7 @@ export interface BotFAssetInfo {
     tokenDecimals: number;   // decimals for both underlying token and fasset
     walletUrls?: string[]; // for agent bot and user
     indexerUrls?: string[]; // for agent bot, user, challenger and timeKeeper
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    priceChangeEmitter: string; // the name of the contract (in Contracts file) that emits price change event
     minimumAccountBalance?: string; // only needed for XRP
     faucet?: string;
     stuckTransactionOptions?: StuckTransaction;
@@ -80,6 +86,9 @@ export interface BotConfigFile {
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator
     challengeStrategy?: BotStrategyDefinition; // only for challenge
+    // price publisher settings
+    pricePublisherMaxDelayMs?: number; // only for price publisher
+    priceFeedApiUrls?: string[]; // only for price publisher
 }
 
 export interface AgentBotFassetSettingsJson {

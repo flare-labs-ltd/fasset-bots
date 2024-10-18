@@ -1,5 +1,5 @@
-import { AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
-import { AgentSettingsConfig, Secrets, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
+import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { AgentSettingsConfig, Secrets, createBotOrm, loadAgentConfigFile, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
@@ -8,12 +8,13 @@ import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/No
 import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
-import { exec } from "child_process";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
 import { allTemplate } from "../../common/VaultTemplates";
 import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
 import { EntityManager } from "@mikro-orm/core";
 import { Alert } from "../../common/entities/AlertDB";
+import { ORM } from "../../../../../fasset-bots-core/src/config/orm";
+import BN from "bn.js";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -25,10 +26,18 @@ const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
 
 @Injectable()
 export class AgentService {
+    public orm!: ORM;
     constructor(
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private readonly em: EntityManager
-    ) {}
+    ) {
+    }
+
+    async onModuleInit() {
+        const configFile = loadAgentConfigFile(FASSET_BOT_CONFIG, `Backend`);
+        const secrets = Secrets.load(FASSET_BOT_SECRETS);
+        this.orm = await createBotOrm("agent", configFile.ormOptions, secrets.data.database) as ORM;
+    }
 
     async createAgent(fAssetSymbol: string, agentSettings: AgentSettingsConfig): Promise<AgentCreateResponse | null> {
         const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
@@ -437,17 +446,15 @@ export class AgentService {
     }
 
     async checkBotStatus(): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            exec("ps -ef", (err, stdout, stderr) => {
-                if (err) {
-                    console.error(`Error executing command: ${err}`);
-                    reject('Internal server error');
-                }
-                else{
-                    resolve(stdout.toLowerCase().indexOf("run-agent") > -1);
-                }
-            });
-        });
+        const query = this.orm.em.createQueryBuilder(ActivityTimestampEntity);
+        const result = await query.limit(1).getSingleResult();
+        if (result == null) {
+            return false;
+        }
+        if ((toBN(result?.lastActiveTimestamp as BN).toNumber()) * 1000 >= (Date.now() - 120000)) {
+            return true;
+        }
+        return false;
     }
 
     async generateAPIKey(): Promise<APIKey> {

@@ -51,7 +51,7 @@ export interface BotFAssetConfig {
     stateConnector?: IStateConnectorClient; // for agent bot, user, challenger and timeKeeper
     verificationClient?: IVerificationApiClient; // only for agent bot and user
     assetManager: IIAssetManagerInstance;
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    priceChangeEmitter: string; // the name of the contract (in Contracts file) that emits price change event
     agentBotSettings?: AgentBotSettings;
 }
 

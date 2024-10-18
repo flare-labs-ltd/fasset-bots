@@ -359,3 +359,18 @@ export class AgentUpdateSetting {
     @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     updatedAt: Date = new Date();
 }
+
+@Entity({ tableName: 'price-publisher-state' })
+export class PricePublisherState {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property({ type: 'varchar' })
+    name!: string;
+
+    @Property()
+    valueNumber: number = 0;
+
+    @Property()
+    timestamp: number = 0;
+}
