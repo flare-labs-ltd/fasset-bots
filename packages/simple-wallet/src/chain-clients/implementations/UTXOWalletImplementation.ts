@@ -268,12 +268,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const blockchainApi = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
             const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
-            await this.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
 
             if (txEnt.feeSource) {
                 const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.feeSource);
                 await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.feeSource, utxosFromMempool);
-                await this.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
             }
 
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;

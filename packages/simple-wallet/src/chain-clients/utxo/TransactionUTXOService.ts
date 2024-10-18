@@ -2,6 +2,7 @@ import {
     createTransactionInputEntity,
     fetchTransactionEntityById,
     fetchUnspentUTXOs,
+    fetchUTXOEntity,
     fetchUTXOsByTxId,
     transformUTXOEntToTxInputEntity,
     updateTransactionEntity,
@@ -131,7 +132,7 @@ export class TransactionUTXOService {
         const baseUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
         const additionalUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= minimalUTXOSize output
 
-        const rbfUTXOsValue = rbfUTXOs.length > 0 ? this.calculateTransactionValue(txData, baseUTXOs) : new BN(0);
+        const rbfUTXOsValue = rbfUTXOs.length > 0 ? await this.calculateTransactionValue(txData, baseUTXOs) : new BN(0);
         if (rbfUTXOsValue.gte(minimumUTXOValue)) {
             return baseUTXOs;
         }
@@ -157,11 +158,11 @@ export class TransactionUTXOService {
                     additionalUTXOs.push(utxo);
                     utxoSet.delete(utxo);
 
-                    if (!positiveValueReached && this.calculateTransactionValue(txData, baseUTXOs).gten(0)) {
+                    if (!positiveValueReached && (await this.calculateTransactionValue(txData, baseUTXOs)).gten(0)) {
                         positiveValueReached = true;
                     }
 
-                    if (this.calculateTransactionValue(txData, additionalUTXOs).gte(minimumUTXOValue)) {
+                    if ((await this.calculateTransactionValue(txData, additionalUTXOs)).gte(minimumUTXOValue)) {
                         return additionalUTXOs;
                     }
                 }
@@ -199,9 +200,9 @@ export class TransactionUTXOService {
         }
     }
 
-    private calculateTransactionValue(txData: TransactionData, utxos: UTXOEntity[]) {
+    private async calculateTransactionValue(txData: TransactionData, utxos: UTXOEntity[]) {
         const transactionService = ServiceRepository.get(this.chainType, TransactionService);
-        const tr = transactionService.createBitcoreTransaction(
+        const tr = await transactionService.createBitcoreTransaction(
             txData.source,
             txData.destination,
             txData.amount,
@@ -290,16 +291,21 @@ export class TransactionUTXOService {
         return txEnt;
     }
 
-    async handleMissingUTXOScripts(utxos: MempoolUTXO[]) {
+    async handleMissingUTXOScripts(utxos: UTXOEntity[]) {
+        const updatedUtxos: UTXOEntity[] = [];
         for (const utxo of utxos) {
             if (!utxo.script) {
-                utxo.script = await this.blockchainAPI.getUTXOScript(utxo.mintTxid, utxo.mintIndex);
-                await updateUTXOEntity(this.rootEm, utxo.mintTxid, utxo.mintIndex, (utxoEnt) => {
-                    utxoEnt.script = utxo.script;
+                const script = await this.blockchainAPI.getUTXOScript(utxo.mintTransactionHash, utxo.position);
+                await updateUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position, (utxoEnt) => {
+                    utxoEnt.script = script;
                 });
+                const updatedUtxo = await fetchUTXOEntity(this.rootEm, utxo.mintTransactionHash, utxo.position);
+                updatedUtxos.push(updatedUtxo);
+            } else {
+                updatedUtxos.push(utxo);
             }
         }
-        return utxos;
+        return updatedUtxos;
     }
 
     async createInputsFromUTXOs(dbUTXOs: UTXOEntity[], txId: number) {

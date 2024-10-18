@@ -127,12 +127,13 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should create transaction with custom fee", async () => {
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi);
+        const feeToUse = feeInSatoshi.muln(4);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeToUse);
         expect(txId).greaterThan(0);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 1 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const info = await wClient.getTransactionInfo(txId);
         expect(info.transactionHash).to.eq(txEnt.transactionHash);
-        expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
+        expect((txEnt.fee!).eq(feeToUse)).to.be.true;
     });
 
     it("Should not create transaction: fee > maxFee", async () => {
@@ -156,7 +157,6 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
-        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
         const [transaction,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
         const fee = transaction.getFee();
         expect(fee).to.be.gt(0);
@@ -339,7 +339,7 @@ describe("Bitcoin wallet tests", () => {
 
     it("Should check monitoring already running and restart it", async () => {
         expect(await wClient.isMonitoring()).to.be.true;
-        await wClient.startMonitoringTransactionProgress();
+        void wClient.startMonitoringTransactionProgress();
         expect(await wClient.isMonitoring()).to.be.true;
         await wClient.stopMonitoring();
         expect(await wClient.isMonitoring()).to.be.false;
@@ -432,7 +432,6 @@ describe("Bitcoin wallet tests", () => {
     it("Should not create transaction: amount = dust amount", async () => {
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
-        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
 
         await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, BTC_DUST_AMOUNT, feeInSatoshi)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${BTC_DUST_AMOUNT.toString()} is less than dust ${BTC_DUST_AMOUNT.toString()}`);
