@@ -356,10 +356,11 @@ describe("Bitcoin wallet tests", () => {
 
     it.skip("Should prepare and execute transaction", async () => {// Needed only to transfer funds
         const source = "";
+        const privateKey = "";
+        await wClient.walletKeys.addKey(source, privateKey);
         const target = "";
         const amountToSendInSats = toBNExp(1, BTC_DOGE_DEC_PLACES);
-        const noteToSend = "Transfer";
-        const id = await wClient.createPaymentTransaction(source, target, amountToSendInSats, undefined, noteToSend);
+        const id = await wClient.createPaymentTransaction(source, target, amountToSendInSats);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
