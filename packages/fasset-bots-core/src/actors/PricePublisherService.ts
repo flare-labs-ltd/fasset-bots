@@ -4,7 +4,7 @@ import { BotConfigFile, loadContracts, Secrets } from '../config';
 import { artifacts, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 
-export const DEFAULT_PRICE_PUBLISHER_MAX_DELAY_MS = 5_000;
+export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
 
 const FtsoV2PriceStore = artifacts.require("FtsoV2PriceStore");
 
@@ -16,17 +16,20 @@ export interface FeedResult {
     readonly decimals: number | string;
 }
 
-export interface LatestRoundResult {
-    voting_round_id: number | string;
-    timestamp: number | string;
+export interface FeedResultWithProof {
+    body: FeedResult;
+    merkleProof: string[];
 }
 
-interface FeedDataWithRound {
-    feeds: {
-        body: FeedResult;
-        merkleProof: string[];
-    }[];
-    roundId: number;
+export interface LatestRoundResult {
+    voting_round_id: number | string;
+    start_timestamp: number | string;
+}
+
+export interface FspStatusResult {
+    active: LatestRoundResult;
+    latest_fdc: LatestRoundResult;
+    latest_ftso: LatestRoundResult;
 }
 
 export class PricePublisherService {
@@ -36,7 +39,7 @@ export class PricePublisherService {
         private publisherAddress: string,
         private priceFeedApiUrls: string[],
         private apiKey: string,
-        private maxDelayMs: number,
+        private loopDelayMs: number,
     ) {
     }
 
@@ -48,7 +51,7 @@ export class PricePublisherService {
         assertNotNullCmd(runConfig.contractsJsonFile, "Contracts file is required for price publisher");
         const contracts = loadContracts(runConfig.contractsJsonFile);
         const publisherApiKey = secrets.optional("apiKey.price_publisher_api") ?? "";
-        const maxDelayMs = runConfig.pricePublisherMaxDelayMs ?? DEFAULT_PRICE_PUBLISHER_MAX_DELAY_MS;
+        const maxDelayMs = runConfig.pricePublisherLoopDelayMs ?? DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS;
         const ftsoV2PriceStore = await FtsoV2PriceStore.at(contracts.FtsoV2PriceStore.address);
         const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.priceFeedApiUrls, publisherApiKey, maxDelayMs);
         return pricePublisherService;
@@ -70,15 +73,14 @@ export class PricePublisherService {
         logger.info(`Started price publishing service...`);
         console.log(`Started price publishing service...`);
         this.stopped = false;
-        let prevAvailableRoundId = -1;
         while (this.running) {
             try {
                 const lastAvailableRoundId = await this.getLastAvailableRoundId();
-                if (lastAvailableRoundId > prevAvailableRoundId) {
+                const lastPublishedRoundId = Number(await this.ftsoV2PriceStore.lastPublishedVotingRoundId());
+                if (lastAvailableRoundId > lastPublishedRoundId) {
                     await this.getAndPublishFeedData(lastAvailableRoundId);
-                    prevAvailableRoundId = lastAvailableRoundId;
                 }
-                await sleep(Math.round(Math.random() * this.maxDelayMs));
+                await sleep(this.loopDelayMs);
             } catch (error) {
                 logger.error(`Error in publishing prices: ${error}`);
             }
@@ -92,12 +94,12 @@ export class PricePublisherService {
         let lastRoundId = -1;
         for (const url of this.priceFeedApiUrls) {
             try {
-                const response = await axios.get<LatestRoundResult>(`${url}/api/v0/fsp/latest-voting-round`, {
+                const response = await axios.get<FspStatusResult>(`${url}/api/v0/fsp/status`, {
                     headers: {
                         'x-api-key': this.apiKey
                     }
                 });
-                const roundId = Number(requireNotNull(response.data.voting_round_id));
+                const roundId = Number(requireNotNull(response.data.latest_ftso.voting_round_id));
                 lastRoundId = Math.max(lastRoundId, roundId);
             } catch (error) {
                 logger.error(`Problem getting last price feed round id at ${url}: ${error}`);
@@ -107,31 +109,28 @@ export class PricePublisherService {
             throw new Error(`No working price feed providers.`);
         }
         return lastRoundId;
-
     }
 
     async getFeedData(votingRoundId: number, feedIds: string[]) {
-        let latest: FeedDataWithRound | null = null;
+        let errors = 0;
         for (const url of this.priceFeedApiUrls) {
             try {
-                const feed = await this.getFeedDataForUrl(url, votingRoundId, feedIds);
-                if (feed.roundId === votingRoundId) {
-                    return feed;
-                }
-                if (latest == null || feed.roundId > latest.roundId) {
-                    latest = feed;
+                const feeds = await this.getFeedDataForUrl(url, votingRoundId, feedIds);
+                if (feeds != null) {
+                    return feeds;
                 }
             } catch (error) {
                 logger.error(`Problem getting price feed at ${url}: ${error}`);
+                ++errors;
             }
         }
-        if (latest == null) {
+        if (errors === this.priceFeedApiUrls.length) {
             throw new Error(`No working price feed providers.`);
         }
-        return latest;
+        return null;
     }
 
-    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FeedDataWithRound> {
+    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FeedResultWithProof[] | null> {
         const response = await axios.post(`${url}/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}`, {
             feed_ids: feedIds
         }, {
@@ -141,29 +140,30 @@ export class PricePublisherService {
         });
         // get data
         const feedsData: { data: FeedResult; proof: string[]; }[] = response.data;
-        // make sure the data is fresh - at least one price point must be from this round or newer
-        const maxRoundId = Math.max(-1, ...feedsData.map(fd => Number(fd.data.votingRoundId)));
-        if (maxRoundId < 0) {
-            throw new Error(`Empty feed`);
+        // check that voting round is correct
+        if (feedsData.some(fd => Number(fd.data.votingRoundId) !== votingRoundId)) {
+            return null;
         }
-        // filter the feeds with max round id
-        const feedsDataRenamed = feedsData
-            .filter(fd => Number(fd.data.votingRoundId) === maxRoundId)
-            .map(fd => ({ body: fd.data, merkleProof: fd.proof }));
+        // rename data field to body
+        const feedsDataRenamed = feedsData.map(fd => ({ body: fd.data, merkleProof: fd.proof }));
         // sort nodes by order of feedIds array
         feedsDataRenamed.sort((a, b) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
-        return { feeds: feedsDataRenamed, roundId: maxRoundId };
+        return feedsDataRenamed;
     }
 
     async getAndPublishFeedData(votingRoundId: number) {
         logger.info(`Publishing prices for ${votingRoundId}`);
         const feedIds = await this.ftsoV2PriceStore.getFeedIds();
         const feedsData = await this.getFeedData(votingRoundId, feedIds);
-        const lastPublishedRoundId = Number(await this.ftsoV2PriceStore.lastPublishedVotingRoundId());
-        if (feedsData.roundId > lastPublishedRoundId) {
-            const gasPrice = await this.estimateGasPrice();
-            await this.ftsoV2PriceStore.publishPrices(feedsData.feeds, { from: this.publisherAddress, gasPrice: gasPrice.toString() });
-            logger.info(`Prices published for round ${votingRoundId} (feed round is ${feedsData.roundId})`);
+        if (feedsData != null) {
+            const lastPublishedRoundId = Number(await this.ftsoV2PriceStore.lastPublishedVotingRoundId());
+            if (votingRoundId > lastPublishedRoundId) {
+                const gasPrice = await this.estimateGasPrice();
+                await this.ftsoV2PriceStore.publishPrices(feedsData, { from: this.publisherAddress, gasPrice: gasPrice.toString() });
+                logger.info(`Prices published for round ${votingRoundId}`);
+            } else {
+                logger.info(`Prices for round ${votingRoundId} already published`);
+            }
         } else {
             logger.info(`No new price data available`);
         }

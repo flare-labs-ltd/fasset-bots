@@ -107,7 +107,7 @@ export interface BotConfigFile {
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator
     challengeStrategy?: BotStrategyDefinition; // only for challenge
     // price publisher settings
-    pricePublisherMaxDelayMs?: number; // only for price publisher
+    pricePublisherLoopDelayMs?: number; // only for price publisher
     priceFeedApiUrls?: string[]; // only for price publisher
 }
 
