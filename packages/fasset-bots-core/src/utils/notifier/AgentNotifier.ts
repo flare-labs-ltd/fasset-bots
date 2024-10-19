@@ -7,6 +7,7 @@ export enum AgentNotificationKey {
     // agent status and settings,
     CCB_STARTED = "CCB",
     LIQUIDATION_STARTED = "LIQUIDATION STARTED",
+    LIQUIDATION_ENDED = "LIQUIDATION ENDED",
     FULL_LIQUIDATION_STARTED = "FULL LIQUIDATION",
     LIQUIDATION_WAS_PERFORMED = "LIQUIDATION WAS PERFORMED",
     AGENT_DESTROYED = "AGENT DESTROYED",
@@ -99,6 +100,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendLiquidationStartAlert(timestamp: string) {
         await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}.`);
+    }
+
+    async sendLiquidationEndedAlert(timestamp: string) {
+        await this.info(AgentNotificationKey.LIQUIDATION_ENDED, `Liquidation has ended for agent ${this.address} at ${timestamp}.`);
     }
 
     async sendFullLiquidationAlert(payment1?: string, payment2?: string) {
