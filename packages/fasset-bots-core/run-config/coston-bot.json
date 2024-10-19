@@ -20,7 +20,8 @@
             "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234",
             "minimumAccountBalance": "10",
-            "faucet": "https://faucet.tequ.dev/"
+            "faucet": "https://faucet.tequ.dev/",
+            "priceChangeEmitter": "FtsoV2PriceStore"
         },
         "FSimCoinX": {
             "chainId": "testXRP",
@@ -39,7 +40,8 @@
             "tokenSymbol": "testBTC",
             "tokenDecimals": 8,
             "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
-            "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2"
+            "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2",
+            "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
     "agentBotSettings": {

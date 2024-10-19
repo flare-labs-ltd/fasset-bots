@@ -130,7 +130,7 @@ describe("Toplevel runner and commands integration test", () => {
     async function initialize() {
         console.log("Creating context...");
         orm = await createTestOrm();
-        const contracts = await createTestChainContracts(accounts[0]);
+        const contracts = await createTestChainContracts(accounts[0], undefined, { testXrp: testXrpChainInfo, simCoinX: simCoinXChainInfo });
         const stateConnector = await StateConnector.at(contracts.StateConnector.address);
         const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto", submitterAddress);
         // secrets
@@ -241,7 +241,7 @@ describe("Toplevel runner and commands integration test", () => {
         chain.mine(300);    // agent will only execute minting once the time for payment expires on underlying chain
         await waitForEvent(context.assetManager, lastEvmBlock, 5000, (ev) => eventIs(ev, context.assetManager, "MintingExecuted") && ev.args.agentVault === agentVault);
     });
-  
+
     it("Runner should create new bots and remove stopped ones", async () => {
         const context = firstValue(contexts)!;
         const agentCommands = createAgentCommands(context);
@@ -268,7 +268,7 @@ describe("Toplevel runner and commands integration test", () => {
         // update agent settings
         const settingName = "feeBIPS";
         const settingValue = 50;
-        await agentCommand.updateAgentSetting(agentVault, settingName, settingValue.toString()); 
+        await agentCommand.updateAgentSetting(agentVault, settingName, settingValue.toString());
         // increase time and run step
         const validAt = await agentBot!.agent.announceAgentSettingUpdate(settingName, settingValue);
         await time.increaseTo(validAt);
