@@ -54,13 +54,13 @@ export class UTXOAccountGeneration implements WalletAccountGenerationInterface {
          throw new Error(`Invalid chainType ${this.chainType}`);
       }
       return {
-         address: account as string,
+         address: account,
          mnemonic: mnemonic,
          privateKey: account0.getPrivateKey(0),
       };
    }
 
-   private getBip84(): typeof bip84btc {
+   private getBip84(): typeof bip84btc | typeof bip84doge {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return bip84doge;
       } else {

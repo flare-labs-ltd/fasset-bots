@@ -24,6 +24,7 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
       maxFee?: BN,
       executeUntilBlock?: number,
       executeUntilTimestamp?: BN,
+      feeSource?: string
    ): Promise<number>;
 
    createDeleteAccountTransaction(

@@ -332,13 +332,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEntToUpdate.reachedFinalStatusInTimestamp = toBN(currentTimestamp);
          });
          logger.info(`Transaction ${txEnt.id} was accepted`);
-      } else {
-         const currentLedger = await this.getLatestValidatedLedgerIndex();
-         const shouldSubmit = checkIfShouldStillSubmit(this, currentLedger, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
-         if (!shouldSubmit) {
-            await handleNoTimeToSubmitLeft(this.rootEm, txEnt.id, currentLedger, this.executionBlockOffset, "checkSubmittedTransaction", txEnt.executeUntilBlock, txEnt.executeUntilTimestamp?.toString());
-            return;
-         }
       }
    }
 
