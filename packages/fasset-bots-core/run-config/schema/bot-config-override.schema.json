@@ -375,7 +375,7 @@
             },
             "type": "array"
         },
-        "pricePublisherMaxDelayMs": {
+        "pricePublisherLoopDelayMs": {
             "type": "number"
         },
         "prioritizeAddressUpdater": {
