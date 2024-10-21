@@ -22,7 +22,7 @@ export function createCustomizedLogger(paths: LoggerPaths) {
             ),
             filename: paths.json,
             json: true,
-            ...(commonOptions as any),
+            options: commonOptions,
         }));
     }
     if (paths.text) {
@@ -33,7 +33,7 @@ export function createCustomizedLogger(paths: LoggerPaths) {
                 format.printf(info => `${info.timestamp}  ${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`)
             ),
             filename: paths.text,
-            ...(commonOptions as any),
+            options: commonOptions,
         }));
     }
     return createLogger({ transports });

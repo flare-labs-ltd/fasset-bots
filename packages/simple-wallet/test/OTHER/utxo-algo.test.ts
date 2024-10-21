@@ -69,7 +69,7 @@ describe("UTXO selection algorithm test", () => {
             createUTXOEntity(0, fundedAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
         ]);
 
-        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(100), toBN(15000)))
+        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(600), toBN(15000)))
             .to.eventually.be.rejectedWith(`Not enough UTXOs for creating transaction 0`);
     });
 

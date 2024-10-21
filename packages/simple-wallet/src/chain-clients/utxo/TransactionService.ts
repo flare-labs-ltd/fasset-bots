@@ -124,6 +124,13 @@ export class TransactionService {
         txForReplacement?: TransactionEntity,
         feeSource?: string
     ): Promise<[Transaction, UTXOEntity[]]> {
+        if (amountInSatoshi && amountInSatoshi.lte(getDustAmount(this.chainType))) {
+            logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
+            throw new LessThanDustAmountError(
+                `Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
+            );
+        }
+
         if (feeSource && amountInSatoshi) {
             return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement);
         } else {

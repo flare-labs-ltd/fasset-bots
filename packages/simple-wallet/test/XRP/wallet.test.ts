@@ -388,7 +388,7 @@ describe("Xrp wallet tests", () => {
                 ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
             });
 
-        const interceptorId = wClient.blockchainAPI.clients[process.env.XRP_URL ?? ""].interceptors.request.use(
+        const interceptorId = wClient.blockchainAPI.clients[process.env.XRP_URL!].interceptors.request.use(
             (config: any) => {
                 return Promise.reject(new AxiosError("Simulated connection down", "ECONNABORTED"));
             },
@@ -400,7 +400,7 @@ describe("Xrp wallet tests", () => {
         const balance = await wClient.getAccountBalance(fundedAddress);
         expect(balance.toNumber()).to.be.gt(0);
 
-        wClient.blockchainAPI.clients[process.env.XRP_URL ?? ""].interceptors.request.eject(interceptorId);
+        wClient.blockchainAPI.clients[process.env.XRP_URL!].interceptors.request.eject(interceptorId);
         delete wClient.blockchainAPI.clients[url];
     });
 
@@ -409,6 +409,15 @@ describe("Xrp wallet tests", () => {
             return ServiceRepository.get(ChainType.testXRP, UTXOBlockchainAPI).getUTXOsFromMempool("");
         };
         expect(fn).to.throw("No service registered for testXRP");
+    });
+
+    it("If blockchain submission API fails transaction's status should be set to TX_PENDING and resent", async () => {
+        sinon.stub(wClient.blockchainAPI, "submitTransaction").throws(new Error("API down"));
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(0.01, 60, wClient.rootEm, TransactionStatus.TX_PENDING, id);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_PENDING);
+        sinon.restore();
+        await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_SUCCESS, id);
     });
 
     it("Should fail - no privateKey ", async () => {
@@ -445,15 +454,6 @@ describe("Xrp wallet tests", () => {
         await wClient.submitPreparedTransactions(txEntBefore2);
         const txEntAfter2 = await fetchTransactionEntityById(wClient.rootEm, id2);
         expect(txEntAfter2.status).to.eq(TransactionStatus.TX_FAILED);
-    });
-
-    it("If blockchain submission API fails transaction's status should be set to TX_PENDING and resent", async () => {
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst);
-        sinon.stub(wClient.blockchainAPI, "submitTransaction").throws(new Error("API down"));
-        const [txEnt, ] = await waitForTxToFinishWithStatus(0.01, 20, wClient.rootEm, TransactionStatus.TX_PENDING, id);
-        expect(txEnt.status).to.eq(TransactionStatus.TX_PENDING);
-        sinon.restore();
-        await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_SUCCESS, id);
     });
 
 });

@@ -245,12 +245,12 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
-        const interceptorId = wClient.blockchainAPI.clients[0].interceptors.request.use(
+        const interceptorId = wClient.blockchainAPI.clients[process.env.BTC_URL!].interceptors.request.use(
             config => Promise.reject(`Down`),
         );
         await sleepMs(5000);
         console.info("API connection up");
-        wClient.blockchainAPI.clients[0].interceptors.request.eject(interceptorId);
+        wClient.blockchainAPI.clients[process.env.BTC_URL!].interceptors.request.eject(interceptorId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
