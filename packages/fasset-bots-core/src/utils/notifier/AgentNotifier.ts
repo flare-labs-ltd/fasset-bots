@@ -95,11 +95,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendCCBAlert(timestamp: string) {
-        await this.danger(AgentNotificationKey.CCB_STARTED, `Agent ${this.address} is in collateral call band since ${timestamp}.`);
+        await this.danger(AgentNotificationKey.CCB_STARTED, `Agent ${this.address} is in collateral call band since ${timestamp}. Agent is trying to automatically top up vaults.`);
     }
 
     async sendLiquidationStartAlert(timestamp: string) {
-        await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}.`);
+        await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}. Agent is trying to automatically top up vaults.`);
     }
 
     async sendLiquidationEndedAlert(timestamp: string) {
