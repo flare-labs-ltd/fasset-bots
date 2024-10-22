@@ -29,14 +29,17 @@ export class TransactionMonitor {
     async isMonitoring(): Promise<boolean> {
         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
         if (!monitoringState) {
+            console.warn(`Is monitoring? ${this.monitoringId} - false`)
             return false;
         }
         const now = (new Date()).getTime();
         const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
+        console.warn(`Is monitoring? ${this.monitoringId} - ${elapsed < BUFFER_PING_INTERVAL}`, elapsed, BUFFER_PING_INTERVAL)
         return elapsed < BUFFER_PING_INTERVAL;
     }
 
     async stopMonitoring(): Promise<void> {
+        logger.info(`Monitoring will stop for ${this.monitoringId} ...`);
         await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
             monitoringEnt.lastPingInTimestamp = toBN(0);
         });
@@ -45,6 +48,8 @@ export class TransactionMonitor {
             const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
             await feeService.monitorFees(false);
         }
+        logger.info(`Monitoring stooped for ${this.monitoringId}`);
+        console.info(`Monitoring stooped for ${this.monitoringId}`);
     }
 
     async startMonitoringTransactionProgress(
@@ -60,36 +65,42 @@ export class TransactionMonitor {
 
         try {
             const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+            console.warn(`BEGIN: ${monitoringState?.lastPingInTimestamp.toString()}, ${this.monitoringId}`)
             if (!monitoringState) {
+                const createdAt = toBN((new Date()).getTime());
                 logger.info(`Monitoring created for chain ${this.monitoringId}`);
+                console.warn(`Monitoring created for chain ${this.monitoringId} at ${createdAt.toString()}`);
                 this.rootEm.create(MonitoringStateEntity, {
                     chainType: this.chainType,
-                    lastPingInTimestamp: toBN((new Date()).getTime()),
+                    lastPingInTimestamp: createdAt,
                 } as RequiredEntityData<MonitoringStateEntity>);
                 await this.rootEm.flush();
             } else if (monitoringState.lastPingInTimestamp) {
                 logger.info(`Monitoring possibly running for chain ${this.monitoringId}`);
+                console.warn(`Monitoring possibly running for chain ${this.monitoringId} at ${monitoringState.lastPingInTimestamp.toString()}`);
                 const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
                 const now = (new Date()).getTime();
                 if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
                     logger.info(`Monitoring checking if already running for chain ${this.monitoringId} ...`);
+                    console.warn(`Monitoring checking if already running for chain ${this.monitoringId} ... at ${now}`);
                     await sleepMs(BUFFER_PING_INTERVAL + randomMs);
                     const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.monitoringId);
                     const newNow = (new Date()).getTime();
                     if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
                         logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
+                        console.warn(`Another monitoring instance is already running for chain ${this.monitoringId} at ${newNow.toString()}`);
                         return;
                     }
                 }
             }
-
+            const lastPingInTimestamp = toBN((new Date()).getTime());
             await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
-                monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
+                monitoringEnt.lastPingInTimestamp = lastPingInTimestamp;
             });
 
             this.monitoring = true;
             logger.info(`Monitoring started for chain ${this.monitoringId}`);
-
+            console.warn(`Monitoring started for chain ${this.monitoringId} at ${lastPingInTimestamp.toString()}`);
             if (utxoOnly(this.chainType)) {
                 const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
                 await feeService.setupHistory();

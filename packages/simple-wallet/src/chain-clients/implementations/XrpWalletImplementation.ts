@@ -69,6 +69,10 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
    }
 
+   getMonitoringId(): string {
+      return this.monitoringId;
+  }
+
    /**
     * @param {string} account
     * @returns {BN} - balance in drops

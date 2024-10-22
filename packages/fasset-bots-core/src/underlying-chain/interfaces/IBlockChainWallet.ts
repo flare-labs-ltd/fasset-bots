@@ -85,4 +85,7 @@ export interface IBlockChainWallet {
     startMonitoringTransactionProgress(): Promise<void>;
     stopMonitoring(): Promise<void>;
     isMonitoring(): Promise<boolean>;
+
+    //
+    monitoringId(): string;
 }

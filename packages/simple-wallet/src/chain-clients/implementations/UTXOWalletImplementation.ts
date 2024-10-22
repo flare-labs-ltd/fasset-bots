@@ -113,6 +113,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
     }
 
+    getMonitoringId(): string {
+        return this.monitoringId;
+    }
+
     async getAccountBalance(account: string): Promise<BN> {
         return await getAccountBalance(this.chainType, account);
     }

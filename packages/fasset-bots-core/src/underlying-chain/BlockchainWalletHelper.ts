@@ -13,6 +13,10 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
 
     requestStopVal: boolean = false;
 
+    monitoringId(): string {
+        return this.walletClient.getMonitoringId();
+    }
+
     async addTransaction(
         sourceAddress: string,
         targetAddress: string,

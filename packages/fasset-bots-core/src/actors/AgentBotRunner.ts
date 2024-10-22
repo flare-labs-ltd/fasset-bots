@@ -11,7 +11,6 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
-import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 export const FUND_MIN_INTERVAL_MS = 60 * 3 * 1000; // 3 minutes
 
@@ -44,7 +43,6 @@ export class AgentBotRunner {
 
     public serviceAccounts = new Map<string, string>();
 
-    private simpleWalletBackgroundTasks: Map<string, IBlockChainWallet> = new Map();
     private fundServiceRateLimit = new SimpleRateLimiter<string>(FUND_MIN_INTERVAL_MS);
 
     @CreateRequestContext()
@@ -53,17 +51,11 @@ export class AgentBotRunner {
         this.restartRequested = false;
         this.running = true;
         try {
-            /* istanbul ignore next */
-            void this.ensureWalletMonitoringRunning().catch((error) => {
-                logger.error(`Ensure wallet monitoring is running ended unexpectedly:`, error);
-                console.error(`Ensure wallet monitoring is running ended unexpectedly ended unexpectedly:`, error);
-            });
             while (!this.readyToStop()) {
                 await this.runStep();
             }
         } finally {
             this.running = false;
-            await this.stopAllWalletMonitoring();
         }
     }
 
@@ -186,8 +178,6 @@ export class AgentBotRunner {
         agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
         agentBot.locks = this.locks;
         agentBot.loopDelay = this.loopDelay;
-        // add wallet to the background loop
-        this.addSimpleWalletToLoop(agentBot);
         // run initial topup etc.
         await agentBot.runBotInitialOperations(this.orm.em);
         return agentBot;
@@ -268,47 +258,4 @@ export class AgentBotRunner {
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
     }
-
-    addSimpleWalletToLoop(agentBot: AgentBot): void {
-        const vaultAddress = agentBot.agent.vaultAddress;
-        if (this.simpleWalletBackgroundTasks.get(vaultAddress)) {
-            return;
-        }
-        const newWallet = agentBot.context.wallet
-        this.simpleWalletBackgroundTasks.set(vaultAddress, newWallet);
-        void newWallet.startMonitoringTransactionProgress().catch((error) => {
-            logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-            console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-        });
-    }
-
-    async ensureWalletMonitoringRunning() {
-        const sleepFor = 30_000;
-        while (!this.readyToStop()) {
-            await sleep(sleepFor);
-            if (this.readyToStop()) return;
-            for (const [_, wallet] of this.simpleWalletBackgroundTasks) {
-                const isMonitoring = await wallet.isMonitoring();
-                /* istanbul ignore next */
-                if (!isMonitoring) {
-                    logger.info(`Wallet monitoring restarted.`);
-                    console.info(`Wallet monitoring restarted.`);
-                    void wallet.startMonitoringTransactionProgress().catch((error) => {
-                        logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                        console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                    });
-                }
-            }
-        }
-    }
-
-    async stopAllWalletMonitoring(): Promise<void> {
-        for (const [vaultAddress, wallet] of this.simpleWalletBackgroundTasks) {
-            await wallet.stopMonitoring();
-            logger.info(`Stopped monitoring wallet for agent ${vaultAddress}.`);
-        }
-        //clear simpleWalletBackgroundTasks
-        this.simpleWalletBackgroundTasks.clear();
-    }
-
 }
