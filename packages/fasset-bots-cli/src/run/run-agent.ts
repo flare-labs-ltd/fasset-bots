@@ -113,15 +113,19 @@ program.action(async () => {
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         runner.serviceAccounts = serviceAccounts;
         // store owner's underlying address and start running wallets
+        const runningWalletBySymbol: string[] = [];
         for (const ctx of runner.contexts.values()) {
             const chainName = ctx.chainInfo.chainId.chainName;
             const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
-            void ctx.wallet.startMonitoringTransactionProgress().catch((error) => {
-                logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-            });
+            if(!runningWalletBySymbol.includes(chainName)) {
+                void ctx.wallet.startMonitoringTransactionProgress().catch((error) => {
+                    logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                    console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                });
+                runningWalletBySymbol.push(chainName);
+            }
         }
         // start activity update
         void startTimestampUpdater(botConfig.orm.em);
