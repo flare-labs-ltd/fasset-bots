@@ -3,12 +3,12 @@ import "source-map-support/register";
 
 import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
 import { Secrets, loadAgentSettings, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, errorIncluded, logger, requireNotNullCmd, squashSpace, toBIPS, toBN } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
-import { translateError, validateDecimal, validateInteger } from "../utils/validation";
+import { validateDecimal, validateInteger } from "../utils/validation";
 import BN from "bn.js";
 
 const program = programWithCommonOptions("agent", "single_fasset");

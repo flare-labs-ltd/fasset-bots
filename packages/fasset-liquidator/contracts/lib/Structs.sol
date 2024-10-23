@@ -18,6 +18,7 @@ struct EcosystemData {
     uint256 maxLiquidatedFAssetUBA;
     uint256 liquidationFactorVaultBips;
     uint256 liquidationFactorPoolBips;
+    // asset manager vars
     uint256 assetMintingGranularityUBA;
     uint256 assetMintingDecimals;
     // ftso prices
