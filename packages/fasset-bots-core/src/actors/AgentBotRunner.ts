@@ -291,11 +291,11 @@ export class AgentBotRunner {
                 const isMonitoring = await wallet.isMonitoring();
                 /* istanbul ignore next */
                 if (!isMonitoring) {
-                    logger.info(`Wallet monitoring restarted.`);
-                    console.info(`Wallet monitoring restarted.`);
+                    logger.info(`Wallet monitoring restarted for ${wallet.monitoringId()}.`);
+                    console.info(`Wallet monitoring restarted for ${wallet.monitoringId()}.`);
                     void wallet.startMonitoringTransactionProgress().catch((error) => {
-                        logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                        console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                        logger.error(`Background task to monitor wallet ${wallet.monitoringId()} ended unexpectedly:`, error);
+                        console.error(`Background task to monitor wallet ${wallet.monitoringId()} ended unexpectedly:`, error);
                     });
                 }
             }

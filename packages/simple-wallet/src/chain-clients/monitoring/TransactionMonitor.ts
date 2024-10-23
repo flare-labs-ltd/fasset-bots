@@ -34,22 +34,24 @@ export class TransactionMonitor {
     }
 
     async stopMonitoring(): Promise<void> {
-        logger.info(`Monitoring will stop for ${this.monitoringId} ...`);
-        const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-        if (monitoringState?.processOwner && monitoringState.processOwner === this.monitoringId) {
-            await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
-                monitoringEnt.lastPingInTimestamp = toBN(0);
-            });
-            this.monitoring = false;
-            if (utxoOnly(this.chainType)) {
-                const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-                await feeService.monitorFees(false);
+        if (this.monitoring) {
+            logger.info(`Monitoring will stop for ${this.monitoringId} ...`);
+            const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+            if (monitoringState?.processOwner && monitoringState.processOwner === this.monitoringId) {
+                this.monitoring = false;
+                const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
+                await sleepMs(PING_INTERVAL + randomMs); // to make sure pinger stops
+                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
+                    monitoringEnt.lastPingInTimestamp = toBN(0);
+                });
+                if (utxoOnly(this.chainType)) {
+                    const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+                    await feeService.monitorFees(false);
+                }
+                logger.info(`Monitoring stopped for ${this.monitoringId}`);
+            } else {
+                logger.info(`Monitoring will NOT stop. Process ${this.monitoringId} is not owner of current process ${monitoringState?.processOwner}`);
             }
-            logger.info(`Monitoring stopped for ${this.monitoringId}`);
-            console.info(`Monitoring stopped for ${this.monitoringId}`);
-        } else {
-            logger.info(`Monitoring will NOT stop. Process ${this.monitoringId} is not owner of current process ${monitoringState?.processOwner}`);
-            console.info(`Monitoring will NOT stop. Process ${this.monitoringId} is not owner of current process ${monitoringState?.processOwner}`);
         }
     }
 
