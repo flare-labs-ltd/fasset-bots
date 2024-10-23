@@ -12,6 +12,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     ) {}
 
     requestStopVal: boolean = false;
+    private isMonitoringInProgress = false;
 
     async addTransaction(
         sourceAddress: string,
@@ -86,17 +87,21 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     /* istanbul ignore next */
     async waitForTransactionFinalization(id: number): Promise<string> {
         try {
-            void this.startMonitoringTransactionProgress().catch((error) => {
-                logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-            });
+            if (!(await this.isMonitoring())) {
+                if (!this.isMonitoringInProgress) {
+                    this.isMonitoringInProgress = true; // lock monitoring
+                    void this.startMonitoringTransactionProgress().catch((error) => {
+                        logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                        console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                    });
+                }
+            }
             logger.info(`Transactions txDbId ${id} is being checked`);
             let info = await this.checkTransactionStatus(id);
-
+            logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
             while (!this.requestStopVal && (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
             {
                 await sleep(5000); //sleep for 5 seconds
-                logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
                 if (info.status === TransactionStatus.TX_REPLACED && info.replacedByDdId) {
                     const replacedId = info.replacedByDdId;
                     logger.info(`Replacement transaction txDbId ${replacedId}`);
@@ -116,6 +121,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                     }
                 }
                 info = await this.checkTransactionStatus(id);
+                logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
                 await this.ensureWalletMonitoringRunning();
                 if (this.requestStopVal) {
                     logger.warn(`Transaction monitoring was stopped due to termination signal.`);
@@ -129,6 +135,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
             }
             return info.transactionHash;
         } finally {
+            this.isMonitoringInProgress = false;
             await this.stopMonitoring();
         }
     }
@@ -157,7 +164,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     /* istanbul ignore next */
     private async ensureWalletMonitoringRunning() {
         const isMonitoring = await this.isMonitoring();
-        if (!isMonitoring) {
+        if (!isMonitoring && !this.isMonitoringInProgress) {
+            this.isMonitoringInProgress = true;
             void this.startMonitoringTransactionProgress().catch((error) => {
                 logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
                 console.error(`Background task to monitor wallet ended unexpectedly:`, error);
