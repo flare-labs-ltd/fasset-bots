@@ -119,13 +119,6 @@ program.action(async () => {
             const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
-            if(!runningWalletBySymbol.includes(chainName)) {
-                void ctx.wallet.startMonitoringTransactionProgress().catch((error) => {
-                    logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                    console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                });
-                runningWalletBySymbol.push(chainName);
-            }
         }
         // start activity update
         void startTimestampUpdater(botConfig.orm.em);
@@ -140,9 +133,6 @@ program.action(async () => {
             process.on("SIGTERM", stopBot);
             await runner.run();
         } finally {
-            for (const ctx of runner.contexts.values()) {
-                await ctx.wallet.stopMonitoring();
-            }
             if (pricePublisherService) {
                 await pricePublisherService.stop();
             }
