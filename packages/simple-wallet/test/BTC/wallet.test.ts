@@ -194,7 +194,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it.skip("Balance should change after transaction", async () => {
+    it("Balance should change after transaction", async () => {
         const sourceBalanceStart = await wClient.getAccountBalance(fundedWallet.address);
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
@@ -252,7 +252,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it.skip("If getCurrentFeeRate is down the fee should be the default one", async () => {
+    it("If getCurrentFeeRate is down the fee should be the default one", async () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
         sinon.stub(wClient.blockchainAPI, "getCurrentFeeRate").rejects(new Error("No fee"));
 
@@ -265,7 +265,7 @@ describe("Bitcoin wallet tests", () => {
         sinon.restore();
     });
 
-    it.skip("If fee service is down the getCurrentFeeRate should be used", async () => {
+    it("If fee service is down the getCurrentFeeRate should be used", async () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
 
         const fee = 0.005;
