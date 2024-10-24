@@ -65,7 +65,7 @@ export class PoolUserBotCommands {
 
     async exitPool(poolAddress: string, tokenAmountWei: BNish) {
         const pool = await CollateralPool.at(poolAddress);
-        const res = await pool.exit(tokenAmountWei, TokenExitType.KEEP_RATIO, { from: this.nativeAddress });
+        const res = await pool.exit(tokenAmountWei, TokenExitType.MINIMIZE_FEE_DEBT, { from: this.nativeAddress });
         return requiredEventArgs(res, "Exited");
     }
 

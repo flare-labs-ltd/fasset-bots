@@ -8,7 +8,7 @@ import { DOGE } from "../../src";
 describe("Dogecoin network helper tests", () => {
    it("Should switch to mainnet", async () => {
       const DOGEMccConnectionMainInitial = {
-         url: process.env.DOGE_URL ?? "",
+         urls: [process.env.DOGE_URL ?? ""],
          username: "",
          password: "",
       };
@@ -22,7 +22,7 @@ describe("Dogecoin network helper tests", () => {
 
    it("Should switch to testnet", async () => {
       const DOGEMccConnectionTestInitial = {
-         url: process.env.DOGE_URL ?? "",
+         urls: [process.env.DOGE_URL ?? ""],
          username: "",
          password: "",
          inTestnet: true,
@@ -38,7 +38,7 @@ describe("Dogecoin network helper tests", () => {
 
    it("Should create config with predefined 'stuckTransactionConstants'", async () => {
       const DOGEMccConnectionTestInitial = {
-         url: process.env.DOGE_URL ?? "",
+         urls: [process.env.DOGE_URL ?? ""],
          username: "",
          password: "",
          inTestnet: true, stuckTransactionOptions: { blockOffset: 10, retries: 5, feeIncrease: 4 },
@@ -47,7 +47,7 @@ describe("Dogecoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const DOGEMccConnectionTest = { ...DOGEMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient = DOGE.initialize({... DOGEMccConnectionTest});
-      expect(wClient.blockchainAPI.clients[process.env.DOGE_URL!].defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);
+      const wClient = await DOGE.initialize({... DOGEMccConnectionTest});
+      expect(wClient.blockchainAPI.clients[0].defaults.timeout).to.eq(DEFAULT_RATE_LIMIT_OPTIONS.timeoutMs);
    });
 });

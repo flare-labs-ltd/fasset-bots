@@ -1,10 +1,9 @@
 import { EM } from "../config/orm";
 import { Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { DAYS, blockTimestamp, latestBlockTimestamp } from "../utils";
+import { DAYS, blockTimestamp, isPriceChangeEvent, latestBlockTimestamp } from "../utils";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EvmEvent, eventOrder } from "../utils/events/common";
-import { eventIs } from "../utils/events/truffle";
 import { logger } from "../utils/logger";
 import { AgentNotificationKey, AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3 } from "../utils/web3";
@@ -179,7 +178,7 @@ export class AgentBotEventReader {
 
 
     /**
-     * Check if any new PriceEpochFinalized events happened, which means that it may be necessary to topup collateral.
+     * Check if any new price change events happened, which means that it may be necessary to topup collateral.
      */
     async checkForPriceChangeEvents() {
         try {
@@ -193,7 +192,7 @@ export class AgentBotEventReader {
             }
             this.bot.transientStorage.lastPriceReaderEventBlock = lastPriceReaderEventBlock;
             if (needToCheckPrices) {
-                logger.info(`Agent ${this.agentVaultAddress} received event 'PriceEpochFinalized'.`);
+                logger.info(`Agent ${this.agentVaultAddress} received price change event.`);
                 await this.bot.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
             }
         } catch (error) {
@@ -214,7 +213,7 @@ export class AgentBotEventReader {
                 topics: [null],
             });
             for (const event of this.eventDecoder.decodeEvents(logsPriceChangeEmitter)) {
-                if (eventIs(event, this.context.priceChangeEmitter, "PriceEpochFinalized")) {
+                if (isPriceChangeEvent(this.context, event)) {
                     return [true, lastBlock];
                 }
             }

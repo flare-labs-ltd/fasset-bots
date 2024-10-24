@@ -1,23 +1,14 @@
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { AxiosInstance, AxiosResponse } from "axios";
-import { ChainType } from "../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse, ServerInfoResponse, SubmitResponse, TxResponse } from "xrpl";
-import { createAxiosInstance } from "../utils/axios-error-utils";
-import { tryWithClients } from "../utils/utils";
+import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
 
 export class XRPBlockchainAPI {
-    client: AxiosInstance;
-    clients: Record<string, AxiosInstance> = {};
+    clients: AxiosInstance[] = [];
 
-    constructor(chainType: ChainType, createConfig: BaseWalletConfig) {
-
-        this.client = createAxiosInstance(chainType, createConfig);
-        this.clients[createConfig.url] = this.client;
-
-        if (createConfig.fallbackAPIs) {
-            for (const fallbackAPI of createConfig.fallbackAPIs) {
-                this.clients[fallbackAPI.url] = createAxiosInstance(chainType, createConfig);
-            }
+    constructor(createConfig: BaseWalletConfig) {
+        for (const [index, url] of createConfig.urls.entries()) {
+            this.clients.push(createAxiosInstance(url, createConfig.apiTokenKeys?.[index], createConfig.rateLimitOptions));
         }
     }
 

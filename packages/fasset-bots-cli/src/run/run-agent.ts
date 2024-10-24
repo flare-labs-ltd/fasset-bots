@@ -1,9 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { AgentBotRunner, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
-import { closeBotConfig, createBotConfig, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
+import { closeBotConfig, createBotConfig, EM, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
+import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, isNotNull, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -16,18 +16,21 @@ const timekeeperConfig: TimekeeperTimingConfig = {
     maxUpdateTimeDelayMs: 30_000,
 }
 
+let activityUpdateTimer: NodeJS.Timeout | null = null;
+const activityUpdateInterval = 60000; // 1min
+
 const program = programWithCommonOptions("agent", "all_fassets");
 
 function getAccount(secrets: Secrets, key: string) {
     const address = secrets.optional(`${key}.address`);
     const privateKey = secrets.optional(`${key}.private_key`);
-    if (address && privateKey) return { address, privateKey } as const;
+    if (address && privateKey) return { address, privateKey };
 }
 
 function getAccountRequired(secrets: Secrets, key: string) {
     const address = secrets.required(`${key}.address`);
     const privateKey = secrets.required(`${key}.private_key`);
-    return { address, privateKey } as const;
+    return { address, privateKey };
 }
 
 async function fundAccount(from: string, to: string, minBalance: BN, name: string) {
@@ -46,6 +49,26 @@ async function validateBalance(address: string, minBalance: BN) {
     }
 }
 
+async function activityTimestampUpdate(rootEm: EM) {
+    await rootEm.transactional(async (em) => {
+        let stateEnt = await em.findOne(ActivityTimestampEntity, {id: 1});
+        if (!stateEnt) {
+            stateEnt = new ActivityTimestampEntity();
+        } else {
+            stateEnt.lastActiveTimestamp = toBN(Math.floor((new Date()).getTime() / 1000));
+        }
+        await em.persistAndFlush(stateEnt);
+    }).catch(error => {
+        logger.error("Error updating timestamp:", error);
+        console.error("Error updating timestamp:", error);
+    });
+}
+
+function startTimestampUpdater(rootEm: EM) {
+    void activityTimestampUpdate(rootEm);
+    activityUpdateTimer = setInterval(() => void activityTimestampUpdate(rootEm), activityUpdateInterval);
+}
+
 program.action(async () => {
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -55,7 +78,8 @@ program.action(async () => {
         const owner = getAccountRequired(secrets, "owner.native");
         const timekeeper = getAccount(secrets, "timeKeeper") ?? owner;
         const requestSubmitter = getAccount(secrets, "requestSubmitter") ?? owner;
-        const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey]));
+        const pricePublisher = getAccount(secrets, "pricePublisher") ?? null;
+        const walletPrivateKeys = Array.from(new Set([owner.privateKey, timekeeper.privateKey, requestSubmitter.privateKey, pricePublisher?.privateKey])).filter(isNotNull);
         await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), walletPrivateKeys, owner.address);
         // check balances and fund addresses so there is enough for gas
         const minNativeBalance = toBNExp(runConfig.agentBotSettings.minBalanceOnServiceAccount, 18);
@@ -75,16 +99,29 @@ program.action(async () => {
         // create timekeepers
         const timekeeperService = await TimeKeeperService.create(botConfig, timekeeper.address, timekeeperConfig);
         timekeeperService.startAll();
+        // run price publisher only if price feed api path is set
+        let pricePublisherService: PricePublisherService | null = null;
+        if (runConfig.priceFeedApiUrls && pricePublisher) {
+            if (pricePublisher.address !== owner.address) {
+                await fundAccount(owner.address, pricePublisher.address, minNativeBalance, "price publisher");
+                serviceAccounts.set("price publisher", pricePublisher.address);
+            }
+            pricePublisherService = await PricePublisherService.create(runConfig, secrets, pricePublisher.address);
+            pricePublisherService.start();
+        }
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         runner.serviceAccounts = serviceAccounts;
-        // store owner's underlying address
+        // store owner's underlying address and start running wallets
+        const runningWalletBySymbol: string[] = [];
         for (const ctx of runner.contexts.values()) {
             const chainName = ctx.chainInfo.chainId.chainName;
             const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);
             const ownerUnderlyingPrivateKey = secrets.required(`owner.${chainName}.private_key`);
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
         }
+        // start activity update
+        void startTimestampUpdater(botConfig.orm.em);
         // run
         try {
             console.log("Agent bot started, press CTRL+C to end");
@@ -96,6 +133,14 @@ program.action(async () => {
             process.on("SIGTERM", stopBot);
             await runner.run();
         } finally {
+            if (pricePublisherService) {
+                await pricePublisherService.stop();
+            }
+            if (activityUpdateTimer) {
+                clearInterval(activityUpdateTimer);
+                logger.info("Activity update timer was cleared.");
+                console.log("Activity update timer was cleared.");
+            }
             await timekeeperService.stopAll();
             await closeBotConfig(botConfig);
         }

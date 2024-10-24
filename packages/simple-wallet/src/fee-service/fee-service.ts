@@ -8,9 +8,9 @@ import { toBN, toBNExp } from "../utils/bnutils";
 import BN from "bn.js";
 import { logger } from "../utils/logger";
 
-import { errorMessage } from "../utils/axios-error-utils";
-import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
+import { errorMessage } from "../utils/axios-utils";
 import { ServiceRepository } from "../ServiceRepository";
+import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
 
 export class BlockchainFeeService {
     blockchainAPI: UTXOBlockchainAPI;
@@ -19,10 +19,12 @@ export class BlockchainFeeService {
     sleepTimeMs = 5000;
     chainType: ChainType;
     useNBlocksToCalculateFee = 5;
+    monitoringId: string;
 
-    constructor(chainType: ChainType) {
+    constructor(chainType: ChainType, monitoringId: string) {
         this.chainType = chainType;
         this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
+        this.monitoringId = monitoringId;
     }
 
     getLatestFeeStats(): BN {
@@ -55,10 +57,10 @@ export class BlockchainFeeService {
 
     async monitorFees(monitoring: boolean): Promise<void> {
         if (monitoring === false) {
-            logger.info(`${this.chainType}: Stopped monitoring fees.`)
+            logger.info(`${this.monitoringId}: Stopped monitoring fees.`)
             return;
         }
-        logger.info(`${this.chainType}: Started monitoring fees.`);
+        logger.info(`${this.monitoringId}: Started monitoring fees.`);
 
         while (monitoring) {
             const currentBlockHeight = await this.getCurrentBlockHeight();
@@ -96,7 +98,7 @@ export class BlockchainFeeService {
         if (this.history.length === this.numberOfBlocksInHistory) {
             return;
         }
-        logger.info(`${this.chainType}: Setup history started.`)
+        logger.info(`${this.monitoringId}: Setup history started.`)
         const currentBlockHeight = await this.getCurrentBlockHeight();
         /* istanbul ignore next */
         if (currentBlockHeight === 0) {
@@ -117,7 +119,7 @@ export class BlockchainFeeService {
                 logger.error(`Failed to retrieve fee stats for block ${blockHeightToFetch} during history setup.`);
             }
         }
-        logger.info(`${this.chainType}: Setup history completed.`)
+        logger.info(`${this.monitoringId}: Setup history completed.`)
     }
 
     async getCurrentBlockHeight() {

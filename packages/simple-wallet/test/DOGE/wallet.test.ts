@@ -24,7 +24,7 @@ import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
-    url: process.env.DOGE_URL ?? "",
+    urls: [process.env.DOGE_URL ?? ""],
     inTestnet: true,
 };
 let DOGEMccConnectionTest: DogecoinWalletConfig;
@@ -94,7 +94,6 @@ describe("Dogecoin wallet tests", () => {
     it("Should not create transaction: amount = dust amount", async () => {
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
-        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
 
         await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
@@ -124,7 +123,6 @@ describe("Dogecoin wallet tests", () => {
         const blockchainApi = ServiceRepository.get(chainType, UTXOBlockchainAPI);
         const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, txEnt.source, utxosFromMempool);
-        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
 
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(
             txEnt.id,

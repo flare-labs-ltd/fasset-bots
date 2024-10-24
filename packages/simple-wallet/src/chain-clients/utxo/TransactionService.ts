@@ -17,7 +17,7 @@ import { unPrefix0x } from "../../utils/utils";
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
 import { TransactionFeeService } from "./TransactionFeeService";
-import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-error-utils";
+import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
 import UnspentOutput = Transaction.UnspentOutput;
 
@@ -166,7 +166,7 @@ export class TransactionService {
         if (amountInSatoshi == null) {
             utxos = await fetchUnspentUTXOs(this.rootEm, source);
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
-            const bitcoreTx = this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
+            const bitcoreTx = await this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
             feeInSatoshi = toBN(bitcoreTx.getFee()).sub(feePerKB.muln(getOutputSize(this.chainType)).divn(1000));
             if (feeInSatoshi.ltn(0)) {
                 logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Negative fee ${feeInSatoshi.toString()}`);
@@ -176,12 +176,13 @@ export class TransactionService {
             }
             const balance = await getAccountBalance(this.chainType, source);
             amountInSatoshi = balance.sub(feeInSatoshi);
+            txData.amount = amountInSatoshi;
         } else {
             utxos = await utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
 
-        this.transactionChecks(txDbId, amountInSatoshi, txData, utxos);
-        const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, isPayment, note);
+        this.transactionChecks(txDbId, txData, utxos);
+        const tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, isPayment, note);
 
         if (feeInSatoshi && !txForReplacement) {
             tr.fee(toNumber(feeInSatoshi));
@@ -216,9 +217,9 @@ export class TransactionService {
 
         /* istanbul ignore next: skip for the ?.utxos ... */
         const utxosForAmount = await this.utxoService.fetchUTXOs(txDataForAmount, txForReplacement?.utxos.getItems());
-        this.transactionChecks(txDbId, amountInSatoshi, txDataForAmount, utxosForAmount);
+        this.transactionChecks(txDbId, txDataForAmount, utxosForAmount);
 
-        const baseTransaction = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxosForAmount, true, note);
+        const baseTransaction = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxosForAmount, true, note);
         const txDataForFee = {
             source: feeSource,
             destination: destination,
@@ -249,7 +250,7 @@ export class TransactionService {
             utxos = utxosForAmount.concat(utxosForFee);
         }
 
-        const tr = this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
+        const tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
         if (!feeInSatoshi || txForReplacement) {
             await this.correctFee(txDbId, tr, txForReplacement, feeInSatoshi, utxos);
         }
@@ -285,22 +286,22 @@ export class TransactionService {
         }
     }
 
-    private transactionChecks( txDbId: number, amount: BN, txData: TransactionData, utxos: UTXOEntity[]) {
+    private transactionChecks(txDbId: number, txData: TransactionData, utxos: UTXOEntity[]) {
         const utxosValue = utxos.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
-        if (utxos.length === 0 || utxosValue.lt(amount.add(txData.fee ?? new BN(0)))) {
-            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${amount.toString()}`);
-            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${amount.toString()}`);
+        if (utxos.length === 0 || utxosValue.lt(txData.amount.add(txData.fee ?? new BN(0)))) {
+            logger.warn(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
+            throw new NotEnoughUTXOsError(`Not enough UTXOs for creating transaction ${txDbId}; utxosAmount: ${utxosValue.toString()}, needed amount ${txData.amount.toString()}`);
         }
 
-        if (amount.lte(getDustAmount(this.chainType))) {
-            logger.warn(`Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
+        if (txData.amount.lte(getDustAmount(this.chainType))) {
+            logger.warn(`Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
             throw new LessThanDustAmountError(
-                `Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
+                `Will not prepare transaction ${txDbId}, for ${txData.source}. Amount ${txData.amount.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`,
             );
         }
     }
 
-    createBitcoreTransaction(
+    async createBitcoreTransaction(
         source: string,
         destination: string,
         amountInSatoshi: BN,
@@ -310,7 +311,8 @@ export class TransactionService {
         useChange: boolean,
         note?: string,
     ) {
-        const txUTXOs = utxos.map((utxo) => ({
+        const updatedUtxos = await this.utxoService.handleMissingUTXOScripts(utxos);
+        const txUTXOs = updatedUtxos.map((utxo) => ({
             txid: utxo.mintTransactionHash,
             outputIndex: utxo.position,
             scriptPubKey: utxo.script,

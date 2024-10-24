@@ -17,18 +17,19 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/xrp"],
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"],
             "minimumAccountBalance": "10",
-            "faucet": "https://faucet.tequ.dev/"
+            "faucet": "https://faucet.tequ.dev/",
+            "priceChangeEmitter": "FtsoV2PriceStore"
         },
         "FSimCoinX": {
             "chainId": "testXRP",
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/xrp"],
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"],
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FakePriceReader"
@@ -38,8 +39,9 @@
             "tokenName": "Test BTC",
             "tokenSymbol": "testBTC",
             "tokenDecimals": 8,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
-            "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2"
+            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/btc"],
+            "walletUrls": ["https://blockbook-bitcoin-testnet.flare.network/api/v2"],
+            "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
     "agentBotSettings": {

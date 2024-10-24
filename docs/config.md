@@ -132,8 +132,8 @@ interface BotFAssetInfo {
     chainId: string;
     name: string;
     symbol: string; // Underlying chain's ftso symbol.
-    walletUrl?: string; // Underlying chain's url. Only for agent bot and user.
-    indexerUrl?: string; // Underlying chain's indexer url. Only for agent bot, user, challenger and timeKeeper
+    walletUrls?: string;[] // Underlying chain's url. Only for agent bot and user.
+    indexerUrls?: string[]; // Underlying chain's indexer url. Only for agent bot, user, challenger and timeKeeper
     // either one must be set.
     assetManager?: string; // AssetManager contract address on native chain.
     fAssetSymbol?: string; // Symbol for the fasset.
@@ -171,8 +171,8 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234"
+            "indexerUrls": ["https://attestation-coston.aflabs.net/verifier/xrp"],
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"]
         }
     },
     "ormOptions": {

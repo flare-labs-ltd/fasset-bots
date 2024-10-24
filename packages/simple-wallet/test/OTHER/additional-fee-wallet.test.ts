@@ -15,8 +15,8 @@ import { createUTXOEntity } from "../test-util/entity_utils";
 
 const walletSecret = "wallet_secret";
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
-    apiTokenKey: process.env.FLARE_API_PORTAL_KEY ?? "",
+    urls: [process.env.BTC_URL ?? ""],
+    apiTokenKeys: [process.env.FLARE_API_PORTAL_KEY ?? ""],
     inTestnet: true,
     walletSecret: walletSecret,
 };

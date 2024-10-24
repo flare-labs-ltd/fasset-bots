@@ -1,6 +1,6 @@
 {
   "name": "@flarelabs/fasset-liquidator",
-  "version": "1.0.0-beta.14",
+  "version": "1.0.0-beta.15",
   "description": "Liquidator utilities for the f-asset bridge on the Flare network",
   "scripts": {
     "------------ contracts -------------": "----------------- contracts -----------------",
@@ -47,11 +47,11 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
+    "@flarelabs/fasset": "1.0.0-beta.12",
     "@openzeppelin/contracts": "^4.9.3",
     "blazeswap": "git+https://github.com/kuco23/blazeswap.git#main",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
-    "ethers": "^6.7.1",
-    "fasset": "git+https://github.com/flare-labs-ltd/fassets.git#2a2cad73ea9eca9f242359ff3dadd0b1437f15aa"
+    "ethers": "^6.7.1"
   }
 }

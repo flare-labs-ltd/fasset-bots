@@ -45,6 +45,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    executionBlockOffset: number; //buffer before submitting -> will submit only if (currentLedger - executeUntilBlock) >= executionBlockOffset
    rootEm!: EntityManager;
    walletKeys!: IWalletKeys;
+   monitoringId: string;
 
    private monitor: TransactionMonitor;
 
@@ -53,7 +54,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
-      this.blockchainAPI = new XRPBlockchainAPI(this.chainType, createConfig);
+      this.monitoringId = `${this.chainType}-${Math.random().toString(36).substring(2, 10)}`;
+      this.blockchainAPI = new XRPBlockchainAPI(createConfig);
       const resubmit = stuckTransactionConstants(this.chainType);
 
       this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
@@ -63,8 +65,12 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.rootEm = createConfig.em;
       this.walletKeys = createConfig.walletKeys;
 
-      this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
+      this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
    }
+
+   getMonitoringId(): string {
+      return this.monitoringId;
+  }
 
    /**
     * @param {string} account

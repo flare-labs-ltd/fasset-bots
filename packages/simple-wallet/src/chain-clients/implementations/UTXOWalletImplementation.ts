@@ -38,20 +38,14 @@ import { SpentHeightEnum } from "../../entity/utxo";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
 import { checkUTXONetworkStatus, getAccountBalance, getCore, getMinAmountToSend } from "../utxo/UTXOUtils";
-import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { ServiceRepository } from "../../ServiceRepository";
 import { TransactionService } from "../utxo/TransactionService";
 import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../utxo/TransactionFeeService";
-import {
-    errorMessage,
-    isORMError,
-    LessThanDustAmountError,
-    NegativeFeeError,
-    NotEnoughUTXOsError,
-} from "../../utils/axios-error-utils";
+import { errorMessage, isORMError, LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
 import { AxiosTransactionSubmissionError } from "../../interfaces/IBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;
@@ -73,10 +67,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     useRBFFactor = 1.4;
 
+    monitoringId: string;
     private monitor: TransactionMonitor;
 
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
+        this.monitoringId = `${this.chainType}-${Math.random().toString(36).substring(2, 10)}`;
         this.inTestnet = createConfig.inTestnet ?? false;
         const resubmit = stuckTransactionConstants(this.chainType);
 
@@ -111,10 +107,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         ServiceRepository.register(this.chainType, TransactionService, new TransactionService(this.chainType));
         this.transactionService = ServiceRepository.get(this.chainType, TransactionService);
 
-        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType));
+        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType, this.monitoringId));
         this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
 
-        this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
+        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
+    }
+
+    getMonitoringId(): string {
+        return this.monitoringId;
     }
 
     async getAccountBalance(account: string): Promise<BN> {
@@ -269,15 +269,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.info(`Preparing transaction ${txEnt.id}`);
         try {
             // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
-            const blockchainApi = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
-            const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
+            const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
-            await this.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
 
             if (txEnt.feeSource) {
-                const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.feeSource);
+                const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.feeSource);
                 await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.feeSource, utxosFromMempool);
-                await this.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
             }
 
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;

@@ -12,6 +12,11 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     ) {}
 
     requestStopVal: boolean = false;
+    private isMonitoringInProgress = false;
+
+    monitoringId(): string {
+        return this.walletClient.getMonitoringId();
+    }
 
     async addTransaction(
         sourceAddress: string,
@@ -86,10 +91,15 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     /* istanbul ignore next */
     async waitForTransactionFinalization(id: number): Promise<string> {
         try {
-            void this.startMonitoringTransactionProgress().catch((error) => {
-                logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-            });
+            if (!(await this.isMonitoring())) {
+                if (!this.isMonitoringInProgress) {
+                    this.isMonitoringInProgress = true; // lock monitoring
+                    void this.startMonitoringTransactionProgress().catch((error) => {
+                        logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                        console.error(`Background task to monitor wallet ended unexpectedly:`, error);
+                    });
+                }
+            }
             logger.info(`Transactions txDbId ${id} is being checked`);
             let info = await this.checkTransactionStatus(id);
 
@@ -129,6 +139,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
             }
             return info.transactionHash;
         } finally {
+            this.isMonitoringInProgress = false;
             await this.stopMonitoring();
         }
     }
@@ -157,7 +168,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     /* istanbul ignore next */
     private async ensureWalletMonitoringRunning() {
         const isMonitoring = await this.isMonitoring();
-        if (!isMonitoring) {
+        if (!isMonitoring && !this.isMonitoringInProgress) {
+            this.isMonitoringInProgress = true;
             void this.startMonitoringTransactionProgress().catch((error) => {
                 logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
                 console.error(`Background task to monitor wallet ended unexpectedly:`, error);

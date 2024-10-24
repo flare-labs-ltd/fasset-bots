@@ -4,13 +4,13 @@ import "source-map-support/register";
 import { ActorBaseKind, ActorBaseRunner } from "@flarelabs/fasset-bots-core";
 import { Secrets, closeBotConfig, createBotConfig, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, initWeb3, logger } from "@flarelabs/fasset-bots-core/utils";
-import { programWithCommonOptions } from "../utils/program";
+import { programWithCommonOptions, getOneDefaultToAll } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 
 const program = programWithCommonOptions("bot", "all_fassets");
 
 program.action(async () => {
-    const options: { config: string; secrets: string } = program.opts();
+    const options: { config: string; secrets: string, fasset?: string } = program.opts();
     const secrets = Secrets.load(options.secrets);
     const runConfig = loadConfigFile(options.config);
     const challengerAddress: string = secrets.required("challenger.address");
@@ -18,7 +18,7 @@ program.action(async () => {
     await initWeb3(authenticatedHttpProvider(runConfig.rpcUrl, secrets.optional("apiKey.native_rpc")), [challengerPrivateKey], null);
     const config = await createBotConfig("keeper", secrets, runConfig, challengerAddress);
     logger.info(`Asset manager controller is ${config.contractRetriever.assetManagerController.address}.`);
-    const fassetList = Array.from(config.fAssets.values());
+    const fassetList = getOneDefaultToAll(config.fAssets, options.fasset);
     const runners = await Promise.all(fassetList.map(
         (chainConfig) => ActorBaseRunner.create(config, challengerAddress, ActorBaseKind.CHALLENGER, chainConfig)
     ));

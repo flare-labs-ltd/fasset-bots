@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS_XRP, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
+import { ChainType, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import {
     createInitialTransactionEntity,
@@ -21,11 +21,7 @@ import {
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
-import axiosRateLimit from "../../src/axios-rate-limiter/axios-rate-limit";
-import axios, { AxiosError } from "axios";
-import { createAxiosConfig } from "../../src/utils/axios-error-utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { sleepMs } from "../../src/utils/utils";
 import { WalletAddressEntity, XRP } from "../../src";
 import {
@@ -35,6 +31,7 @@ import {
 } from "../test-util/entity_utils";
 import { ECDSA } from "../../src/chain-clients/account-generation/XrpAccountGeneration";
 import sinon from "sinon";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 use(chaiAsPromised);
 
@@ -42,7 +39,7 @@ const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/implement
 const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
 const XRPMccConnectionTestInitial = {
-    url: process.env.XRP_URL ?? "",
+    urls: [process.env.XRP_URL ?? ""],
     username: "",
     password: "",
     stuckTransactionOptions: {
@@ -51,10 +48,7 @@ const XRPMccConnectionTestInitial = {
     rateLimitOptions: {
         timeoutMs: 60000,
     },
-    inTestnet: true,
-    fallbackAPIs: [
-        { url: process.env.XRP_URL ?? "", }
-    ]
+    inTestnet: true
 };
 let XRPMccConnectionTest: RippleWalletConfig;
 
@@ -378,30 +372,6 @@ describe("Xrp wallet tests", () => {
         for (const id of ids) {
             await waitForTxToFinishWithStatus(2, 600, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
-    });
-
-    it("Should successfully use fallback APIs", async () => {
-        const url = "https://xrpl-testnet-api.flare.network/";
-
-        wClient.blockchainAPI.clients[url] = axiosRateLimit(
-            axios.create(createAxiosConfig(ChainType.testXRP, url)), {
-                ...DEFAULT_RATE_LIMIT_OPTIONS_XRP,
-            });
-
-        const interceptorId = wClient.blockchainAPI.clients[process.env.XRP_URL!].interceptors.request.use(
-            (config: any) => {
-                return Promise.reject(new AxiosError("Simulated connection down", "ECONNABORTED"));
-            },
-            (error: any) => {
-                return Promise.reject(error);
-            },
-        );
-
-        const balance = await wClient.getAccountBalance(fundedAddress);
-        expect(balance.toNumber()).to.be.gt(0);
-
-        wClient.blockchainAPI.clients[process.env.XRP_URL!].interceptors.request.eject(interceptorId);
-        delete wClient.blockchainAPI.clients[url];
     });
 
     it("Should receive no service found ", async () => {

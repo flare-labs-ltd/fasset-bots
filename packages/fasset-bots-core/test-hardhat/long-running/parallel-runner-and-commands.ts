@@ -136,7 +136,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
     async function initialize() {
         console.log("Creating context...");
         orm = await createTestOrm();
-        const contracts = await createTestChainContracts(accounts[0]);
+        const contracts = await createTestChainContracts(accounts[0], undefined, { testXrp: testXrpChainInfo });
         const stateConnector = await StateConnector.at(contracts.StateConnector.address);
         const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto", submitterAddress);
         // secrets

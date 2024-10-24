@@ -27,8 +27,8 @@ import { EntityManager } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplementation";
 import { UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
+import { errorMessage } from "../../utils/axios-utils";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
-import { errorMessage } from "../../utils/axios-error-utils";
 
 /*
  * COMMON UTILS
@@ -99,8 +99,8 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
 
 export async function getAccountBalance(chainType: ChainType, account: string): Promise<BN> {
     try {
-        const blockchainAPIWrapper = ServiceRepository.get(chainType, UTXOBlockchainAPI);
-        const accountBalance = await blockchainAPIWrapper.getAccountBalance(account);
+        const utxoBlockchainAPI = ServiceRepository.get(chainType, UTXOBlockchainAPI);
+        const accountBalance = await utxoBlockchainAPI.getAccountBalance(account);
         /* istanbul ignore if */
         if (accountBalance === undefined) {
             throw new Error("Account balance not found");

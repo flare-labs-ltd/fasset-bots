@@ -9,12 +9,12 @@ import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db
 import winston, { Logger } from "winston";
 import { logger } from "../../src/utils/logger";
 import { toBN } from "../../src/utils/bnutils";
-import { isORMError } from "../../src/utils/axios-error-utils";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import { isORMError } from "../../src/utils/axios-utils";
 import { MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
-import * as bitcore from "bitcore-lib";
 import { Transaction } from "bitcore-lib";
+import * as bitcore from "bitcore-lib";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
+import { AxiosInstance, AxiosResponse } from "axios";
 
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -164,15 +164,12 @@ export const TEST_WALLET_XRP = {
 
 
 export class MockBlockchainAPI implements UTXOBlockchainAPI {
-    client: AxiosInstance;
-    clients: Record<string, AxiosInstance>;
     chainType: ChainType;
 
     constructor() {
-        this.clients = {};
-        this.client = axios.create({});
         this.chainType = ChainType.testBTC;
     }
+    clients: AxiosInstance[] = [];
 
     getBlockTimeAt(): Promise<import("bn.js")> {
         return Promise.resolve(toBN(0));

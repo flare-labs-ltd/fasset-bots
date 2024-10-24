@@ -7,8 +7,8 @@ import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { expect } from "chai";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { MockBlockchainAPI } from "../test-util/common_utils";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 
 describe("getNumberOfMempoolAncestors", () => {

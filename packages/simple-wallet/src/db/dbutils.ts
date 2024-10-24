@@ -19,7 +19,7 @@ import {
     UTXORawTransactionInput,
     UTXORawTransactionOutput,
 } from "../interfaces/IBlockchainAPI";
-import { errorMessage } from "../utils/axios-error-utils";
+import { errorMessage } from "../utils/axios-utils";
 
 // transaction operations
 export async function createInitialTransactionEntity(

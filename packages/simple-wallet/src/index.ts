@@ -17,6 +17,7 @@ export { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAc
 export { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
 export * from "./interfaces/IWalletTransaction";
 export { logger } from "./utils/logger";
+export * from "./utils/axios-utils";
 export class XrpAccount extends XrpAccountGeneration {
     constructor(inTestnet: boolean) {
         super(inTestnet);

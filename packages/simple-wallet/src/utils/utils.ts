@@ -12,7 +12,7 @@ import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWal
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { logger } from "./logger";
-import { errorMessage } from "./axios-error-utils";
+import { errorMessage } from "./axios-utils";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -39,15 +39,6 @@ export function prefix0x(tx: string) {
 
 export function isValidHexString(maybeHexString: string) {
    return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
-}
-
-export function excludeNullFields<T>(dict: Record<string, T>): Record<string, NonNullable<T>> {
-   const result: Record<string, NonNullable<T>> = {};
-   for (const [key, val] of Object.entries(dict)) {
-      if (val == null) continue;
-      result[key] = val;
-   }
-   return result;
 }
 
 export function stuckTransactionConstants(chainType: ChainType): StuckTransaction {

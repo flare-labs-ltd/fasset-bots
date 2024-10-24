@@ -3,7 +3,6 @@ import {expect} from "chai";
 import { sleepMs } from "../../src/utils/utils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { ChainType } from "../../src/utils/constants";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { BitcoinWalletConfig, BTC, logger } from "../../src";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -12,17 +11,15 @@ import { addConsoleTransportForTests, MockBlockchainAPI } from "../test-util/com
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 import sinon from "sinon";
 import BN from "bn.js";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 let feeService: BlockchainFeeService;
 const chainType = ChainType.testBTC;
 
 
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
+    urls: [process.env.BTC_URL ?? ""],
     inTestnet: true,
-    fallbackAPIs: [
-        { url: process.env.BTC_URL ?? "", }
-    ]
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
 let testOrm: ORM;

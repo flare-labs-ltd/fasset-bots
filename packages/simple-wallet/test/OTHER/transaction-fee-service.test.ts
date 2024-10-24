@@ -3,8 +3,8 @@ import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/T
 import { BTC_LOW_FEE_PER_KB, BTC_MID_FEE_PER_KB, ChainType, DOGE_LOW_FEE_PER_KB, DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB, TEST_DOGE_LOW_FEE_PER_KB, TEST_DOGE_MID_FEE_PER_KB } from "../../src/utils/constants";
 import sinon from "sinon";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { MockBlockchainAPI } from "../test-util/common_utils";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 describe("Transaction fee service tests", () => {
 

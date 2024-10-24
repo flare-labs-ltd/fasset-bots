@@ -5,13 +5,15 @@ import {IERC3156FlashLender} from "@openzeppelin/contracts/interfaces/IERC3156Fl
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IAssetManager, IIAssetManager} from "fasset/contracts/assetManager/interfaces/IIAssetManager.sol";
-import {IIAgentVault} from "fasset/contracts/assetManager/interfaces/IIAgentVault.sol";
+import {IAssetManager, IIAssetManager} from "@flarelabs/fasset/contracts/assetManager/interfaces/IIAssetManager.sol";
+import {IIAgentVault} from "@flarelabs/fasset/contracts/assetManager/interfaces/IIAgentVault.sol";
 import {ILiquidator} from "./interfaces/ILiquidator.sol";
 import {ArbitrageConfig, EcosystemData, DexPairConfig} from "./lib/Structs.sol";
 import {UniswapV2} from "./lib/UniswapV2.sol";
 import {Ecosystem} from "./lib/Ecosystem.sol";
 import {Optimum} from "./lib/Optimum.sol";
+
+import "hardhat/console.sol";
 
 
 /**
@@ -122,7 +124,7 @@ contract Liquidator is ILiquidator {
         // we have to start liquidation so that we get correct max f-assets
         // this should be fixed within the asset manager implementation!
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
-        assetManager.startLiquidation(_agentVault);
+        try assetManager.startLiquidation(_agentVault) {} catch {}
         // get data needed for arbitrage strategy calculation
         EcosystemData memory data = Ecosystem.getFAssetData(_agentVault);
         _config.dexPair1.path = _getEnsurePath(

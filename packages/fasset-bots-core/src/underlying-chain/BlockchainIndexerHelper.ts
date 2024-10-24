@@ -5,6 +5,7 @@ import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { ChainId } from "./ChainId";
 import BN from "bn.js";
+import { createAxiosConfig, tryWithClients } from "@flarelabs/simple-wallet";
 
 // Satoshi to BTC 100_000_000
 export const BTC_MDU = 1e8;
@@ -21,28 +22,17 @@ export class BlockChainIndexerHelperError extends Error {
 export class BlockchainIndexerHelper implements IBlockChain {
     finalizationBlocks: number = 0;
     secondsPerBlock: number = 0;
-    client: AxiosInstance;
+    clients: AxiosInstance[] = [];
 
     constructor(
-        public indexerWebServerUrl: string,
+        public indexerWebServerUrls: string[],
         public chainId: ChainId,
-        private indexerWebServerApiKey: string
+        private readonly indexerWebServerApiKeys: string[]
     ) {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: indexerWebServerUrl,
-            timeout: DEFAULT_TIMEOUT,
-            headers: {
-                "Content-Type": "application/json",
-                "X-API-KEY": this.indexerWebServerApiKey,
-            },
-
-            validateStatus: function (status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
         // set client
-        this.client = axios.create(createAxiosConfig);
+        for (const [index, url] of indexerWebServerUrls.entries()) {
+            this.clients.push(axios.create(createAxiosConfig(url, indexerWebServerApiKeys[index])));
+        }
         this.finalizationBlocks = this.finalizationBlocksByChain();
         this.secondsPerBlock = this.secondsPerBlockByChain();
     }
@@ -54,7 +44,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getTransactionFromIndexer(txHash: string): Promise<ITransaction | null> {
-        const resp = await this.client.get(`/api/indexer/transaction/${txHash}`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/transaction/${txHash}`),
+            "getTransactionFromIndexer"
+        );
         const status = resp.data.status;
         const data = resp.data.data;
         const errorMessage = resp.data.errorMessage;
@@ -83,7 +77,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getTransactionBlockFromIndexer(txHash: string): Promise<IBlockId | null> {
-        const resp = await this.client.get(`/api/indexer/transaction-block/${txHash}`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/transaction-block/${txHash}`),
+            "getTransactionBlockFromIndexer"
+        );
         const status = resp.data.status;
         const data = resp.data.data;
         const errorMessage = resp.data.errorMessage;
@@ -114,7 +112,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlockFromIndexer(blockHash: string): Promise<IBlock | null> {
-        const resp = await this.client.get(`/api/indexer/block/${blockHash}`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/block/${blockHash}`),
+            "getBlockFromIndexer"
+        );
         const status = resp.data.status;
         const data = resp.data.data;
         const errorMessage = resp.data.errorMessage;
@@ -143,7 +145,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlockAtFromIndexer(blockNumber: number): Promise<IBlock | null> {
-        const resp = await this.client.get(`/api/indexer/confirmed-block-at/${blockNumber}`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/confirmed-block-at/${blockNumber}`),
+            "getBlockAtFromIndexer"
+        );
         const status = resp.data.status;
         const data = resp.data.data;
         const errorMessage = resp.data.errorMessage;
@@ -175,7 +181,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlockHeightFromIndexer(): Promise<number> {
-        const resp = await this.client.get(`/api/indexer/block-height`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/block-height`),
+            "getBlockHeightFromIndexer"
+        );
         const status = resp.data.status;
         const data = resp.data.data;
         const errorMessage = resp.data.errorMessage;
@@ -198,7 +208,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsByReferenceFromIndexer(reference: string): Promise<ITransaction[]> {
         const returnResponse = true;
-        const resp = await this.client.get(`/api/indexer/transactions?paymentReference=${reference}&returnResponse=${returnResponse}`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/transactions?paymentReference=${reference}&returnResponse=${returnResponse}`),
+            "getTransactionsByReferenceFromIndexer"
+        );
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const errorMessage = resp.data.errorMessage;
@@ -232,7 +246,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsWithinBlockRangeFromIndexer(from: number, to: number): Promise<ITransaction[]> {
         const returnResponse = true;
-        const resp = await this.client.get(`/api/indexer/transactions?from=${from}&to=${to}&returnResponse=${returnResponse}`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/transactions?from=${from}&to=${to}&returnResponse=${returnResponse}`),
+            "getTransactionsWithinBlockRangeFromIndexer"
+        );
         const status = resp.data.status;
         const dataArray: any[] = resp.data.data;
         const txs: ITransaction[] = [];
@@ -280,7 +298,11 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     private async extractTransactionIds(blockNumber: number): Promise<string[]> {
         const transactionIds: string[] = [];
-        const resp = await this.client.get(`/api/indexer/transactions?from=${blockNumber}&to=${blockNumber}`);
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get(`/api/indexer/transactions?from=${blockNumber}&to=${blockNumber}`),
+            "extractTransactionIds"
+        );
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const errorMessage = resp.data.errorMessage;

@@ -8,29 +8,22 @@ import {
 import { AxiosInstance, AxiosResponse } from "axios";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
 import { BTC_PER_SATOSHI, ChainType } from "../utils/constants";
-import { createAxiosConfig } from "../utils/axios-error-utils";
 import BN from "bn.js";
 import { toBN, toNumber } from "../utils/bnutils";
-import { createAxiosClient, stuckTransactionConstants, tryWithClients } from "../utils/utils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
+import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
+import { stuckTransactionConstants } from "../utils/utils";
 
 
 export class UTXOBlockchainAPI implements IBlockchainAPI {
-    clients: Record<string, AxiosInstance> = {};
+    clients: AxiosInstance[] = [];
     chainType: ChainType;
 
     constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
-        const axiosConfig = createAxiosConfig(chainType, createConfig.url, createConfig.rateLimitOptions, createConfig.apiTokenKey);
-
-        this.chainType = chainType;
-        this.clients[createConfig.url] = createAxiosClient(axiosConfig, createConfig.rateLimitOptions);
-
-        if (createConfig.fallbackAPIs) {
-            for (const fallbackAPI of createConfig.fallbackAPIs) {
-                const axiosConfig = createAxiosConfig(chainType, fallbackAPI.url, createConfig.rateLimitOptions, fallbackAPI.apiTokenKey);
-                this.clients[fallbackAPI.url] = createAxiosClient(axiosConfig, createConfig.rateLimitOptions);
-            }
+        for (const [index, url] of createConfig.urls.entries()) {
+            this.clients.push(createAxiosInstance(url, createConfig.apiTokenKeys?.[index], createConfig.rateLimitOptions));
         }
+        this.chainType = chainType;
     }
 
     async getAccountBalance(account: string): Promise<number | undefined> {

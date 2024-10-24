@@ -2,6 +2,9 @@ import { TransactionInfo } from "@flarelabs/simple-wallet";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "../../src/underlying-chain/interfaces/IBlockChainWallet";
 
 export class FaultyWallet implements IBlockChainWallet {
+    monitoringId(): string {
+        throw new Error("Method not implemented.");
+    }
     addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | import("bn.js"), reference: string | null, options?: TransactionOptionsWithFee, executeUntilBlock?: number, executeUntilTimestamp?: import("bn.js")): Promise<string> {
         throw new Error("Method not implemented.");
     }

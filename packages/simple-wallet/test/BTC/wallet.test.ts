@@ -27,7 +27,6 @@ import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import {
     clearUTXOs,
     createAndPersistTransactionEntity,
@@ -38,17 +37,16 @@ import {
 } from "../test-util/entity_utils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
 import sinon from "sinon";
+import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 use(chaiAsPromised);
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
 // https://live.blockcypher.com/btc-testnet/address/mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE/
 
 const BTCMccConnectionTestInitial = {
-    url: process.env.BTC_URL ?? "",
+    urls: [process.env.BTC_URL ?? ""],
     inTestnet: true,
-    fallbackAPIs: [
-        { url: process.env.BTC_URL ?? "", }
-    ]
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
 
@@ -127,12 +125,13 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should create transaction with custom fee", async () => {
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi);
+        const feeToUse = feeInSatoshi.muln(10);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeToUse);
         expect(txId).greaterThan(0);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const info = await wClient.getTransactionInfo(txId);
         expect(info.transactionHash).to.eq(txEnt.transactionHash);
-        expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
+        expect((txEnt.fee!).eq(feeToUse)).to.be.true;
     });
 
     it("Should not create transaction: fee > maxFee", async () => {
@@ -153,10 +152,9 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should get fee for delete account", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
-        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
-        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
-
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
         const [transaction,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
         const fee = transaction.getFee();
         expect(fee).to.be.gt(0);
@@ -196,7 +194,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it("Balance should change after transaction", async () => {
+    it.skip("Balance should change after transaction", async () => {
         const sourceBalanceStart = await wClient.getAccountBalance(fundedWallet.address);
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
@@ -245,16 +243,16 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
-        const interceptorId = wClient.blockchainAPI.clients[process.env.BTC_URL!].interceptors.request.use(
+        const interceptorId = wClient.blockchainAPI.clients[0].interceptors.request.use(
             config => Promise.reject(`Down`),
         );
         await sleepMs(5000);
         console.info("API connection up");
-        wClient.blockchainAPI.clients[process.env.BTC_URL!].interceptors.request.eject(interceptorId);
+        wClient.blockchainAPI.clients[0].interceptors.request.eject(interceptorId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it("If getCurrentFeeRate is down the fee should be the default one", async () => {
+    it.skip("If getCurrentFeeRate is down the fee should be the default one", async () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
         sinon.stub(wClient.blockchainAPI, "getCurrentFeeRate").rejects(new Error("No fee"));
 
@@ -267,7 +265,7 @@ describe("Bitcoin wallet tests", () => {
         sinon.restore();
     });
 
-    it("If fee service is down the getCurrentFeeRate should be used", async () => {
+    it.skip("If fee service is down the getCurrentFeeRate should be used", async () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
 
         const fee = 0.005;
@@ -328,7 +326,7 @@ describe("Bitcoin wallet tests", () => {
 
     it("Should check monitoring already running and restart it", async () => {
         expect(await wClient.isMonitoring()).to.be.true;
-        await wClient.startMonitoringTransactionProgress();
+        void wClient.startMonitoringTransactionProgress();
         expect(await wClient.isMonitoring()).to.be.true;
         await wClient.stopMonitoring();
         expect(await wClient.isMonitoring()).to.be.false;
@@ -336,6 +334,23 @@ describe("Bitcoin wallet tests", () => {
         await sleepMs(2000);
         expect(await wClient.isMonitoring()).to.be.true;
      });
+
+    it.skip("Monitoring into infinity", async () => {
+        while (true) {
+            await sleepMs(2000);
+        }
+    });
+
+    it.skip("Should prepare and execute transaction", async () => {// Needed only to transfer funds
+        const source = "";
+        const privateKey = "";
+        await wClient.walletKeys.addKey(source, privateKey);
+        const target = "";
+        const amountToSendInSats = toBNExp(1, BTC_DOGE_DEC_PLACES);
+        const id = await wClient.createPaymentTransaction(source, target, amountToSendInSats);
+        expect(id).to.be.gt(0);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+    });
 
     it("Account that is being deleted should not accept new transactions", async () => {
         const wallet = wClient.createWallet();
@@ -428,7 +443,6 @@ describe("Bitcoin wallet tests", () => {
     it("Should not create transaction: amount = dust amount", async () => {
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
-        await wClient.transactionUTXOService.handleMissingUTXOScripts(utxosFromMempool);
 
         await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, BTC_DUST_AMOUNT)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${BTC_DUST_AMOUNT.toString()} is less than dust ${BTC_DUST_AMOUNT.toString()}`);

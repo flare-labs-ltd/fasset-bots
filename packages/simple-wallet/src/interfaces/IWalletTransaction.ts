@@ -40,6 +40,8 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
    startMonitoringTransactionProgress(): Promise<void>;
    stopMonitoring(): Promise<void>;
    isMonitoring(): Promise<boolean>;
+
+   getMonitoringId(): string;
 }
 
 export interface ICreateWalletResponse {
@@ -93,25 +95,20 @@ export interface StuckTransaction {
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
 
-export interface WalletApi {
-   url: string;
-   apiTokenKey?: string;
-}
-
 export interface BaseWalletConfig extends WalletServiceConfigBase {
    stuckTransactionOptions?: StuckTransaction;
    enoughConfirmations?: number,
    em: EntityManager;
    walletKeys: IWalletKeys;
-   fallbackAPIs?: WalletApi[]
 }
 
 export interface WalletServiceConfigBase {
-   url: string;
+   urls: string[];
    inTestnet?: boolean;
-   apiTokenKey?: string;
+   apiTokenKeys?: string[];
    rateLimitOptions?: RateLimitOptions;
 }
+
 
 export type RippleWalletConfig = BaseWalletConfig;
 export type BitcoinWalletConfig = BaseWalletConfig;

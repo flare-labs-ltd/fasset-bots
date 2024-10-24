@@ -1,6 +1,6 @@
 {
     "name": "@flarelabs/fasset-bots-cli",
-    "version": "1.0.0-beta.14",
+    "version": "1.0.0-beta.15",
     "description": "FAsset bots command line executables",
     "author": "Flare Labs",
     "homepage": "https://gitlab.com/flarenetwork/fasset-bots",
@@ -11,7 +11,6 @@
     "license": "MIT",
     "bin": {
         "agent-bot": "dist/src/cli/agent-bot.js",
-        "api": "dist/src/cli/add-fallbacks.js",
         "fake-price-reader": "dist/src/cli/fake-price-reader.js",
         "key-gen": "dist/src/cli/key-gen.js",
         "test-governance": "dist/src/cli/test-governance.js",

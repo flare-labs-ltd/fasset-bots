@@ -4,9 +4,12 @@ import { toBN, toBNExp } from "./bnutils";
 export const MNEMONIC_STRENGTH = 256;
 
 export const DEFAULT_FEE_INCREASE = 2;
-
+// monitoring constants
 export const PING_INTERVAL = 10_000; // 10seconds
 export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
+export const RESTART_IN_DUE_TO_ERROR = 2000; // 2s
+export const RESTART_IN_DUE_NO_RESPONSE = 20000; // 20s
+export const RANDOM_SLEEP_MS_MAX = 500;
 
 export const BTC_PER_SATOSHI = 1 / 100000000;
 
@@ -75,18 +78,9 @@ export const DOGE_TESTNET = {
 export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
    maxRPS: 5,
    maxRequests: 10,
-   timeoutMs: 30000,
+   timeoutMs: 20000,
    retries: 10,
 };
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
-   ...DEFAULT_RATE_LIMIT_OPTIONS,
-   timeoutMs: 20000,
-};
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
-   timeoutMs: 1000,
-}
 
 // Approximate times between blocks, in milliseconds
 export const BTC_LEDGER_CLOSE_TIME_MS = 600_000; // 10min

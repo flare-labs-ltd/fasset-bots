@@ -549,6 +549,31 @@ export class AgentBotCommands {
     }
 
     /**
+     * Returns the private key for the given agent's underlying vault account.
+     */
+    async getAgentPrivateKey(underlyingAddress: string, secrets: Secrets): Promise<string | undefined> {
+        const walletKeys = DBWalletKeys.from(this.orm.em, secrets);
+        return walletKeys.getKey(underlyingAddress);
+    }
+
+    /**
+     * Returns the owned underlying accounts for the context's asset manager agents.
+     */
+    async getOwnedUnderlyingAccounts(secrets: Secrets): Promise<{
+        vaultAddress: string;
+        underlyingAddress: string;
+        privateKey: string | undefined;
+    }[]> {
+        const data = []
+        const agents = await this.getAllActiveAgents(this.context.fAssetSymbol);
+        for (const agent of agents) {
+            const privateKey = await this.getAgentPrivateKey(agent.underlyingAddress, secrets);
+            data.push({ vaultAddress: agent.vaultAddress, underlyingAddress: agent.underlyingAddress, privateKey });
+        }
+        return data
+    }
+
+    /**
      * Return all active agents belonging to this context's asset manager.
      */
     async getActiveAgentsForFAsset() {
@@ -621,7 +646,7 @@ export class AgentBotCommands {
     async delegatePoolCollateral(agentVault: string, recipient: string, bips: string | BN): Promise<void> {
         const { readAgentEnt } = await this.getAgentBot(agentVault);
         const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
-        await collateralPool.delegate(recipient, bips, { from: readAgentEnt.ownerAddress });
+        await collateralPool.delegate(recipient, bips, { from: this.owner.workAddress });
         const bipsFmt = formatBips(toBN(bips));
         await this.notifierFor(agentVault).sendDelegatePoolCollateral(collateralPool.address, recipient, bipsFmt);
         logger.info(`Agent ${agentVault} delegated pool collateral to ${recipient} with percentage ${bipsFmt}.`);
@@ -634,7 +659,7 @@ export class AgentBotCommands {
     async undelegatePoolCollateral(agentVault: string): Promise<void> {
         const { readAgentEnt } = await this.getAgentBot(agentVault);
         const collateralPool = await CollateralPool.at(readAgentEnt.collateralPoolAddress);
-        await collateralPool.undelegateAll({ from: readAgentEnt.ownerAddress });
+        await collateralPool.undelegateAll({ from: this.owner.workAddress });
         await this.notifierFor(agentVault).sendUndelegatePoolCollateral(collateralPool.address);
         logger.info(`Agent ${agentVault} undelegated all pool collateral.`);
     }
