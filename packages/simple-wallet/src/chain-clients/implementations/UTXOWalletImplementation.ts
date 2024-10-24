@@ -171,6 +171,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             logger.error(`Cannot prepare transaction ${source}. Missing private key for fee wallet.`);
             throw new Error(`Cannot prepare transaction ${source}. Missing private key for fee wallet.`);
         }
+        // If maxFeeInSatoshi is not defined && feeInSatoshi is defined => maxFeeInSatoshi = feeInSatoshi
+        if (!maxFeeInSatoshi && feeInSatoshi) {
+            maxFeeInSatoshi = feeInSatoshi;
+        }
 
         return this.transactionService.createPaymentTransaction(
             this.chainType,
@@ -214,6 +218,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
             throw new Error(`Cannot prepare transaction ${source}. Missing private key.`);
         }
+        // If maxFeeInSatoshi is not defined && feeInSatoshi is defined => maxFeeInSatoshi = feeInSatoshi
+        if (!maxFeeInSatoshi && feeInSatoshi) {
+            maxFeeInSatoshi = feeInSatoshi;
+        }
+
         return this.transactionService.createDeleteAccountTransaction(
             this.chainType,
             source,
