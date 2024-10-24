@@ -385,7 +385,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 // if only one block left to submit => replace by fee
                 const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
-                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.blockHash) {
+                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.blockHash && !txEnt.replaced_by) { // allow only one rbf
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }
             }
