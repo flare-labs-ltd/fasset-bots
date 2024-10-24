@@ -11,8 +11,8 @@ export async function tryWithClients<T>(clients: AxiosInstance[], operation: (cl
             const result = await operation(clients[index]);
             return result;
         } catch (error) {
-            logger.warn(`Client with index ${index} and method ${method} failed with: ${errorMessage(error)}`);
-            console.warn(`Client with index ${index} and method ${method} failed with: ${errorMessage(error)}`);
+            const failedUrl = clients[index].defaults.baseURL || 'Unknown URL';
+            logger.warn(`Client with index ${index}, url ${failedUrl} and method ${method} failed with: ${errorMessage(error)}`);
             const lastClient = clients.length - 1;
             if (index === lastClient) {
                 throw error;
