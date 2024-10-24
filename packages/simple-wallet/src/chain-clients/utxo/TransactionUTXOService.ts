@@ -12,7 +12,6 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { BTC_DOGE_DEC_PLACES, ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
@@ -22,6 +21,7 @@ import { TransactionInputEntity } from "../../entity/transactionInput";
 import { TransactionService } from "./TransactionService";
 import { isEnoughUTXOs } from "./UTXOUtils";
 import { MempoolUTXO, UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export interface TransactionData {
     source: string;
@@ -42,7 +42,7 @@ export class TransactionUTXOService {
     readonly minimumUTXOValue: BN;
 
     private readonly rootEm: EntityManager;
-    private readonly blockchainAPI: BlockchainAPIWrapper;
+    private readonly blockchainAPI: UTXOBlockchainAPI;
 
     constructor(chainType: ChainType, mempoolChainLengthLimit: number, enoughConfirmations: number) {
         this.chainType = chainType;
@@ -61,7 +61,7 @@ export class TransactionUTXOService {
         }
 
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
     }
 
     /**

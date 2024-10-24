@@ -9,11 +9,11 @@ import BN from "bn.js";
 import { logger } from "../utils/logger";
 
 import { errorMessage } from "../utils/axios-utils";
-import { BlockchainAPIWrapper } from "../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { ServiceRepository } from "../ServiceRepository";
+import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
 
 export class BlockchainFeeService {
-    blockchainAPI: BlockchainAPIWrapper;
+    blockchainAPI: UTXOBlockchainAPI;
     history: BlockStats[] = [];
     numberOfBlocksInHistory = 11;
     sleepTimeMs = 5000;
@@ -23,7 +23,7 @@ export class BlockchainFeeService {
 
     constructor(chainType: ChainType, monitoringId: string) {
         this.chainType = chainType;
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
         this.monitoringId = monitoringId;
     }
 

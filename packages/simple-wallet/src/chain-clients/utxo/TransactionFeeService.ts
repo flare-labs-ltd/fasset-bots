@@ -16,7 +16,6 @@ import {
 } from "../../utils/constants";
 import BN from "bn.js";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
@@ -28,6 +27,7 @@ import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
 import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export enum FeeStatus {
     LOW, MEDIUM, HIGH
@@ -36,12 +36,12 @@ export enum FeeStatus {
 export class TransactionFeeService {
     readonly feeIncrease: number;
     readonly chainType: ChainType;
-    readonly blockchainAPI: BlockchainAPIWrapper;
+    readonly blockchainAPI: UTXOBlockchainAPI;
 
     constructor(chainType: ChainType, feeIncrease: number) {
         this.chainType = chainType;
         this.feeIncrease = feeIncrease;
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
     }
 
     /**

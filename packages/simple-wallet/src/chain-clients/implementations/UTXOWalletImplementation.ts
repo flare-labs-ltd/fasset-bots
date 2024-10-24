@@ -38,7 +38,6 @@ import { SpentHeightEnum } from "../../entity/utxo";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
 import { checkUTXONetworkStatus, getAccountBalance, getCore, getMinAmountToSend } from "../utxo/UTXOUtils";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
 import { TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { ServiceRepository } from "../../ServiceRepository";
 import { TransactionService } from "../utxo/TransactionService";
@@ -46,6 +45,7 @@ import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../utxo/TransactionFeeService";
 import { errorMessage, isORMError, LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
 import { AxiosTransactionSubmissionError } from "../../interfaces/IBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
     inTestnet: boolean;
@@ -53,7 +53,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     transactionFeeService: TransactionFeeService;
     transactionService: TransactionService;
     transactionUTXOService: TransactionUTXOService;
-    blockchainAPI: BlockchainAPIWrapper;
+    blockchainAPI: UTXOBlockchainAPI;
     walletKeys!: IWalletKeys;
     blockOffset: number;
     feeIncrease: number;
@@ -87,8 +87,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         ServiceRepository.register(this.chainType, EntityManager<IDatabaseDriver>, this.rootEm);
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
 
-        ServiceRepository.register(this.chainType, BlockchainAPIWrapper, new BlockchainAPIWrapper(createConfig, this.chainType));
-        this.blockchainAPI = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
+        ServiceRepository.register(this.chainType, UTXOBlockchainAPI, new UTXOBlockchainAPI(createConfig, this.chainType));
+        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
 
         ServiceRepository.register(
             this.chainType,
@@ -269,12 +269,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.info(`Preparing transaction ${txEnt.id}`);
         try {
             // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
-            const blockchainApi = ServiceRepository.get(this.chainType, BlockchainAPIWrapper);
-            const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
+            const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
 
             if (txEnt.feeSource) {
-                const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.feeSource);
+                const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.feeSource);
                 await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.feeSource, utxosFromMempool);
             }
 

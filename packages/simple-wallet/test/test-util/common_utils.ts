@@ -10,12 +10,11 @@ import winston, { Logger } from "winston";
 import { logger } from "../../src/utils/logger";
 import { toBN } from "../../src/utils/bnutils";
 import { isORMError } from "../../src/utils/axios-utils";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { IBlockchainAPI, MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
+import { MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
 import { Transaction } from "bitcore-lib";
 import * as bitcore from "bitcore-lib";
-import { BlockbookAPI } from "../../src/blockchain-apis/BlockbookAPI";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
+import { AxiosInstance, AxiosResponse } from "axios";
 
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -164,13 +163,13 @@ export const TEST_WALLET_XRP = {
 }
 
 
-export class MockBlockchainAPI implements BlockchainAPIWrapper {
+export class MockBlockchainAPI implements UTXOBlockchainAPI {
     chainType: ChainType;
 
     constructor() {
         this.chainType = ChainType.testBTC;
     }
-    blockbookClients: BlockbookAPI[] = [];
+    clients: AxiosInstance[] = [];
 
     getBlockTimeAt(): Promise<import("bn.js")> {
         return Promise.resolve(toBN(0));

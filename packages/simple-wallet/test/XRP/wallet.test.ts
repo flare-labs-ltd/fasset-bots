@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
-import { ChainType, DEFAULT_RATE_LIMIT_OPTIONS, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
+import { ChainType, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import { createInitialTransactionEntity, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionStatus } from "../../src/entity/transaction";
@@ -18,11 +18,7 @@ import {
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
-import axiosRateLimit from "../../src/axios-rate-limiter/axios-rate-limit";
-import axios, { AxiosError } from "axios";
-import { createAxiosConfig } from "../../src/utils/axios-utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import { sleepMs } from "../../src/utils/utils";
 import { XRP } from "../../src";
 import {
@@ -30,6 +26,7 @@ import {
     setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 use(chaiAsPromised);
 
@@ -365,7 +362,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should receive no service found ", async () => {
         const fn = () => {
-            return ServiceRepository.get(ChainType.testXRP, BlockchainAPIWrapper).getUTXOsFromMempool("");
+            return ServiceRepository.get(ChainType.testXRP, UTXOBlockchainAPI).getUTXOsFromMempool("");
         };
         expect(fn).to.throw("No service registered for testXRP");
     });

@@ -27,7 +27,6 @@ import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { getCore } from "../../src/chain-clients/utxo/UTXOUtils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { BlockchainAPIWrapper } from "../../src/blockchain-apis/UTXOBlockchainAPIWrapper";
 import {
     clearUTXOs,
     createAndPersistTransactionEntity,
@@ -38,6 +37,7 @@ import {
 } from "../test-util/entity_utils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
 import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 use(chaiAsPromised);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -255,12 +255,12 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
 
-        const interceptorId = wClient.blockchainAPI.blockbookClients[0].client.interceptors.request.use(
+        const interceptorId = wClient.blockchainAPI.clients[0].interceptors.request.use(
             config => Promise.reject(`Down`),
         );
         await sleepMs(5000);
         console.info("API connection up");
-        wClient.blockchainAPI.blockbookClients[0].client.interceptors.request.eject(interceptorId);
+        wClient.blockchainAPI.clients[0].interceptors.request.eject(interceptorId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
@@ -284,7 +284,7 @@ describe("Bitcoin wallet tests", () => {
         const fee = "0.005";
         const feeRateInSatoshi = toBNExp(fee, BTC_DOGE_DEC_PLACES).muln(wClient.feeIncrease);
 
-        sinon.stub(ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper), "getCurrentFeeRate").resolves(fee);
+        sinon.stub(ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI), "getCurrentFeeRate").resolves(fee);
 
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
@@ -330,7 +330,7 @@ describe("Bitcoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
-        const blockHeight = await ServiceRepository.get(wClient.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
+        const blockHeight = await ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(txId, blockHeight);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED, txId);
         const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
