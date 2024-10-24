@@ -20,7 +20,7 @@ import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
 import { TransactionService } from "./TransactionService";
 import { isEnoughUTXOs } from "./UTXOUtils";
-import { MempoolUTXO, UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
+import { UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export interface TransactionData {

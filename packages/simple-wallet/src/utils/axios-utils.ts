@@ -1,12 +1,12 @@
 import { logger } from "../utils/logger";
 import { DriverException, UniqueConstraintViolationException, ValidationError } from "@mikro-orm/core";
 import { RateLimitOptions } from "../interfaces/IWalletTransaction";
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 
-export async function tryWithClients<T>(clients: any[], operation: (client: any) => Promise<T>, method: string) {
-    for (const [index, _] of clients.entries()) {
+export async function tryWithClients<T>(clients: AxiosInstance[], operation: (client: AxiosInstance) => Promise<T>, method: string) {
+    for (const [index] of clients.entries()) {
         try {
             const result = await operation(clients[index]);
             return result;
@@ -22,12 +22,12 @@ export async function tryWithClients<T>(clients: any[], operation: (client: any)
     throw new Error(`All clients failed.`);
 }
 
-export function isORMError(e: any) {
+export function isORMError(e: unknown) {
     return e instanceof ValidationError || e instanceof DriverException || e instanceof UniqueConstraintViolationException;
 }
 
-export function errorMessage(e: any) {
-    return e instanceof Error ? `${e.name} - ${e.message}: \n ${e.stack}` : e;
+export function errorMessage(e: unknown) {
+    return e instanceof Error ? `${e.name} - ${e.message}: \n ${e.stack}` : String(e);
 }
 
 export function createAxiosConfig(url: string, apiKey?: string, timeoutMs?: number) {

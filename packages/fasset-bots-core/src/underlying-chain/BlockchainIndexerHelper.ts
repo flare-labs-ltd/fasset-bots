@@ -1,6 +1,6 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, prefix0x, retry, sleep, toBN } from "../utils/helpers";
+import axios, { AxiosInstance } from "axios";
+import { DEFAULT_RETRIES, prefix0x, retry, sleep, toBN } from "../utils/helpers";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { ChainId } from "./ChainId";
