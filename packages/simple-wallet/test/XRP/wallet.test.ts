@@ -106,7 +106,7 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Should create delete account transaction", async () => {
-        const account = await wClient.createWallet();
+        const account = wClient.createWallet();
         await wClient.walletKeys.addKey(account.address, account.privateKey);
         const id = await wClient.createPaymentTransaction(fundedAddress, account.address, toBNExp(10, XRP_DECIMAL_PLACES));
         expect(id).to.be.gt(0);

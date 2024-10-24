@@ -70,7 +70,7 @@ describe("Dogecoin wallet tests", () => {
                 timeoutMs: 2000,
             },
         };
-        wClient = await DOGE.initialize(DOGEMccConnectionTest);
+        wClient = DOGE.initialize(DOGEMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
         resetMonitoringOnForceExit(wClient);
         await sleepMs(500);
@@ -105,7 +105,7 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should create delete account transaction", async () => {
-        const account = await wClient.createWallet();
+        const account = wClient.createWallet();
         await wClient.walletKeys.addKey(account.address, account.privateKey);
         const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress);
         expect(txId).to.be.greaterThan(0);

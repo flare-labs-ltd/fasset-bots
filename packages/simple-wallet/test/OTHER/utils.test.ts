@@ -28,7 +28,7 @@ describe("Util tests", () => {
         const testOrm = await initializeTestMikroORM();
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-        const wClient = await BTC.initialize(BTCMccConnectionTest);
+        const wClient = BTC.initialize(BTCMccConnectionTest);
         wClient.chainType = invalidChainType;
         const fn = () => {
             return getCurrentNetwork(wClient.chainType);

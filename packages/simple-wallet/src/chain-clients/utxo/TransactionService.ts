@@ -156,7 +156,6 @@ export class TransactionService {
             useChange: isPayment,
             note: note,
         } as TransactionData;
-        const utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
         let utxos;
         const feePerKB = await this.transactionFeeService.getFeePerKB();
 
@@ -178,7 +177,7 @@ export class TransactionService {
             amountInSatoshi = balance.sub(feeInSatoshi);
             txData.amount = amountInSatoshi;
         } else {
-            utxos = await utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
+            utxos = await this.utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
 
         this.transactionChecks(txDbId, txData, utxos);
@@ -231,7 +230,7 @@ export class TransactionService {
         } as TransactionData;
 
         let utxosForFee = await this.utxoService.fetchUTXOs(txDataForFee);
-        let utxos = []
+        let utxos: UTXOEntity[] = [];
         // Not enough funds on wallet for handling fees - we use additional UTXOs from main wallet
         if (utxosForFee.length === 0) {
             utxosForFee = await fetchUnspentUTXOs(this.rootEm, feeSource);

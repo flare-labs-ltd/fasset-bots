@@ -56,7 +56,7 @@ describe("Fee service tests BTC", () => {
     });
 
     it("Should get latest fee stats", async () => {
-        const feeStats = await feeService.getLatestFeeStats();
+        const feeStats = feeService.getLatestFeeStats();
         expect(feeStats.gtn(0)).to.be.true;
     });
 

@@ -40,6 +40,7 @@ export interface BotFAssetInfo {
     minimumAccountBalance?: string; // only needed for XRP
     faucet?: string;
     stuckTransactionOptions?: StuckTransaction;
+    useOwnerUnderlyingAddressForPayingFees?: boolean
 }
 
 export interface BotNativeChainInfo {

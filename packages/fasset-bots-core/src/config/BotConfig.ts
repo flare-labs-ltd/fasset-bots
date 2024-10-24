@@ -214,6 +214,7 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
         amgDecimals: Number(settings.assetMintingDecimals),
         requireEOAProof: settings.requireEOAAddressProof,
         minimumAccountBalance: toBNExp(fassetInfo.minimumAccountBalance ?? "0", decimals),
+        useOwnerUnderlyingAddressForPayingFees: fassetInfo.useOwnerUnderlyingAddressForPayingFees ?? false,
     }
 }
 

@@ -657,6 +657,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     return;
                 }
             } catch (e) {
+                /* istanbul ignore next */
                 if (axios.isAxiosError(e)) {
                     logger.warn(`Transaction ${txId} not yet seen in mempool`, e.response?.data);
                 } else {

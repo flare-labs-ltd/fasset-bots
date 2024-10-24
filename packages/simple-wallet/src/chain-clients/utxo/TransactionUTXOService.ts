@@ -84,6 +84,11 @@ export class TransactionUTXOService {
     // allUTXOs = currently available UTXOs (either from db or db + fetch from mempool)
     private async selectUTXOs(allUTXOs: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData, feeStatus: FeeStatus) {
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
+            logger.info(`Account doesn't have enough UTXOs - Skipping selection. 
+                Amount: ${txData.amount.toNumber()},
+                UTXO values: [${rbfUTXOs.concat(allUTXOs).map(t => t.value.toNumber()).join(', ')}], 
+                ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
+            );
             return null;
         }
 
@@ -94,8 +99,6 @@ export class TransactionUTXOService {
         if (!isEnoughUTXOs(rbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
             utxos = allUTXOs;
             usingMinimalUTXOs = true;
-        } else {
-            utxos = notMinimalUTXOs;
         }
 
         let res: UTXOEntity[] | null = null;
@@ -103,10 +106,7 @@ export class TransactionUTXOService {
         /* istanbul ignore else */
         if (feeStatus == FeeStatus.HIGH) {
             // order by value, confirmed
-            utxos = utxos.sort(
-                /* istanbul ignore next*/
-                (a, b) => (a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed))
-            );
+            utxos = this.sortUTXOs(utxos);
             res = await this.collectUTXOs(utxos, rbfUTXOs, txData);
         } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
             // check if we can build tx with utxos with utxo.value < amountToSend
@@ -117,6 +117,10 @@ export class TransactionUTXOService {
             if (!res) {
                 res = await this.collectUTXOs(utxos, rbfUTXOs, txData);
             }
+        }
+
+        if (res && (feeStatus == FeeStatus.HIGH || feeStatus == FeeStatus.MEDIUM)) {
+            res = await this.removeExcessUTXOs(res, rbfUTXOs.length, txData);
         }
 
         if (res && !usingMinimalUTXOs && feeStatus == FeeStatus.LOW && res.length < this.maximumNumberOfUTXOs) {
@@ -130,12 +134,11 @@ export class TransactionUTXOService {
     }
 
     private async collectUTXOs(utxos: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData) {
-        const minimumUTXOValue: BN = this.minimumUTXOValue;
         const baseUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
         const additionalUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= minimalUTXOSize output
 
         const rbfUTXOsValue = rbfUTXOs.length > 0 ? await this.calculateTransactionValue(txData, baseUTXOs) : new BN(0);
-        if (rbfUTXOsValue.gte(minimumUTXOValue)) {
+        if (rbfUTXOsValue.gte(this.minimumUTXOValue)) {
             return baseUTXOs;
         }
 
@@ -165,10 +168,46 @@ export class TransactionUTXOService {
                         positiveValueReached = true;
                     }
 
-                    if ((await this.calculateTransactionValue(txData, additionalUTXOs)).gte(minimumUTXOValue)) {
+                    if ((await this.calculateTransactionValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue)) {
                         return additionalUTXOs;
                     }
                 }
+            }
+        }
+
+        if (!positiveValueReached) {
+            logger.info(
+                `Failed to collect enough UTXOs to cover amount and fee. 
+                    Amount: ${txData.amount.toNumber()},
+                    UTXO values: [${baseUTXOs.map(t => t.value.toNumber()).join(', ')}], 
+                    ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
+            );
+        }
+        return positiveValueReached ? baseUTXOs : null;
+    }
+
+    private async removeExcessUTXOs(utxos: UTXOEntity[], rbfUTXOsLength: number, txData: TransactionData) {
+        const baseUTXOs: UTXOEntity[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= 0 output
+        const additionalUTXOs: UTXOEntity[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= minimalUTXOSize output
+
+        const nonRbfUTXOs = this.sortUTXOs(utxos.slice(rbfUTXOsLength));
+        let positiveValueReached = false;
+
+        if (nonRbfUTXOs.length === 0) {
+            return utxos;
+        }
+
+        for (const utxo of nonRbfUTXOs) {
+            if (!positiveValueReached) {
+                baseUTXOs.push(utxo);
+            }
+            additionalUTXOs.push(utxo);
+
+            if (!positiveValueReached && (await this.calculateTransactionValue(txData, baseUTXOs)).gten(0)) {
+                positiveValueReached = true;
+            }
+            if ((await this.calculateTransactionValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue) && (additionalUTXOs.length - baseUTXOs.length) < this.maximumNumberOfUTXOs / 2) {
+                return additionalUTXOs;
             }
         }
 
@@ -335,5 +374,9 @@ export class TransactionUTXOService {
                 utxoEnt.spentHeight = status;
             });
         }
+    }
+
+    private sortUTXOs(utxos: UTXOEntity[]) {
+        return utxos.sort((a, b) => (a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed)));
     }
 }

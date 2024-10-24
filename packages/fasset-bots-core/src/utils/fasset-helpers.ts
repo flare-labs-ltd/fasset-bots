@@ -59,11 +59,19 @@ export function requiredAddressBalance(amount: BNish, minimumBalance: BN, transa
     return toBN(amount).add(minimumBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
 }
 
-export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress: string): Promise<void> {
+export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress: string, feeSourceAddress?: string): Promise<void> {
     const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
     const senderBalance = await balanceReader.balance(sourceAddress);
     const transactionFee = await context.wallet.getTransactionFee({source: sourceAddress, destination: destinationAddress, amount: toBN(amount), isPayment: true});
     const minAccountBalance = context.chainInfo.minimumAccountBalance;
+
+    if (feeSourceAddress) {
+        const senderFeeAddressBalance = await balanceReader.balance(feeSourceAddress);
+        if (senderFeeAddressBalance.gt(transactionFee.muln(TRANSACTION_FEE_FACTOR))) {
+            return;
+        }
+    }
+
     const requiredBalance = requiredAddressBalance(amount, minAccountBalance, transactionFee);
     if (!senderBalance.gte(requiredBalance)) {
         const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
