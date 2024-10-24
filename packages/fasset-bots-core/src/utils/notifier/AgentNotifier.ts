@@ -415,10 +415,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.POOL_UNDELEGATE, `Agent ${this.address} undelegated all pool collateral for pool ${poolAddress}.`);
     }
 
-    async sendAgentCannotUpdateSettingExpired(setting: string) {
+    async sendAgentUnableToUpdateSetting(setting: string, reason: string) {
         await this.danger(
             AgentNotificationKey.AGENT_SETTING_UPDATE_FAILED,
-            `Agent ${this.address} could not update setting ${setting}, as it is not valid anymore.`
+            `Agent ${this.address} could not update setting ${setting} due to "${reason}".`
         );
     }
 

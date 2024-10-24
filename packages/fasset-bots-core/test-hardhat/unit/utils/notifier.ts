@@ -278,8 +278,8 @@ describe("Notifier tests", () => {
     });
 
     it("Should send agent setting update expired", async () => {
-        const spySend = spy.on(notifier, "sendAgentCannotUpdateSettingExpired");
-        await notifier.sendAgentCannotUpdateSettingExpired("setting");
+        const spySend = spy.on(notifier, "sendAgentUnableToUpdateSetting");
+        await notifier.sendAgentUnableToUpdateSetting("setting", "update not valid anymore");
         expect(spySend).to.have.been.called.once;
     });
 
