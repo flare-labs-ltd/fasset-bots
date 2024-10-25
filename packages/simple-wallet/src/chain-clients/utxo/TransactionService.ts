@@ -48,7 +48,7 @@ export class TransactionService {
         feeSource?: string,
     ): Promise<number> {
         /* istanbul ignore next */
-        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}`);
+        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}; and feeSource ${feeSource}`);
         /* istanbul ignore if */
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
