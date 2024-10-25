@@ -1,4 +1,5 @@
 import { readFileSync, statSync } from "fs";
+import { substituteEnvVars } from "../utils/helpers";
 import { CommandLineError } from "../utils/command-line-errors";
 import { SecretsFile } from "./config-files/SecretsFile";
 import { isJSON, promptForPassword } from "../utils/prompt";
@@ -47,7 +48,7 @@ export class Secrets {
 function loadSecrets(secretsPath: string): SecretsFile {
     checkFilePermissions(secretsPath);
     const secrets = JSON.parse(readFileSync(secretsPath).toString());
-    return secrets;
+    return substituteEnvVars(secrets) as SecretsFile;
 }
 
 function loadEncryptedSecrets(secretsPath: string, secretsPassword: string): SecretsFile {
@@ -55,7 +56,7 @@ function loadEncryptedSecrets(secretsPath: string, secretsPassword: string): Sec
     const secretsContent = readFileSync(secretsPath).toString();
     const decryptedContent = decryptText(secretsPassword, secretsContent);
     const secrets = JSON.parse(decryptedContent);
-    return secrets;
+    return substituteEnvVars(secrets) as SecretsFile;
 }
 
 export function validateEncryptionPassword(value: string, key: string): void {
