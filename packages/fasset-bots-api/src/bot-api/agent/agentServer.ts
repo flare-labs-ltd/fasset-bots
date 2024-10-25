@@ -18,8 +18,8 @@ export async function runAgentServer() {
     const config = new DocumentBuilder()
         .setTitle("FAsset agent bot REST APIs")
         .setDescription("FAsset agent bot REST APIs")
-        .addApiKey({ type: "apiKey", name: "X-API-KEY", in: "header" }, "X-API-KEY")
         .setVersion("1.0")
+        .addBearerAuth()
         .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup("api-doc", app, document);

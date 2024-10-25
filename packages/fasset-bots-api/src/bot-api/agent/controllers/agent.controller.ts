@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Body, Controller, Get, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
-import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllCollaterals, ExtendedAgentVaultInfo, VaultCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
@@ -11,11 +10,13 @@ import { AgentSettingsService } from "../services/agentSettings.service";
 import { AgentSettingsConfigDTO } from "../../common/AgentettingsConfigDTO";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @ApiTags("Agent")
 @Controller("api/agent")
 @UseInterceptors(ErrorStatusInterceptor)
-//@ApiSecurity("X-API-KEY")
 export class AgentController {
     constructor(
         private readonly agentService: AgentService,
@@ -23,7 +24,6 @@ export class AgentController {
     ) {}
 
     @Post("create/:fAssetSymbol")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -61,7 +61,6 @@ export class AgentController {
         }
     })
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")
-    //@UseGuards(AuthGuard("api-key"))
     public async enter(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -79,7 +78,6 @@ export class AgentController {
         }
     })
     @Post("available/exit/:fAssetSymbol/:agentVaultAddress")
-    //@UseGuards(AuthGuard("api-key"))
     public async exit(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -88,7 +86,6 @@ export class AgentController {
     }
 
     @Post("selfClose/:fAssetSymbol/:agentVaultAddress/:amountUBA")
-    //@UseGuards(AuthGuard("api-key"))
     public async selfClose(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -98,7 +95,6 @@ export class AgentController {
     }
 
     @Get("settings/list/:fAssetSymbol/:agentVaultAddress")
-    //@UseGuards(AuthGuard("api-key"))
     public async getAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
@@ -116,7 +112,6 @@ export class AgentController {
         }
     })
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress/:settingName/:settingValue")
-    //@UseGuards(AuthGuard("api-key"))
     public async updateAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -136,7 +131,6 @@ export class AgentController {
         }
     })
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress")
-    //@UseGuards(AuthGuard("api-key"))
     public async updateAgentSettings(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string,
@@ -146,7 +140,6 @@ export class AgentController {
     }
 
     @Get("info/data/:fAssetSymbol")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOperation({ summary: 'Get agent info' })
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -186,7 +179,6 @@ export class AgentController {
     }
 
     @Get("info/vaults/:fAssetSymbol")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -222,7 +214,6 @@ export class AgentController {
     }
 
     @Get("info/vault/:fAssetSymbol/:agentVaultAddress")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -286,7 +277,6 @@ export class AgentController {
     }
 
     @Get("info/underlying/balance/:fAssetSymbol")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -309,7 +299,6 @@ export class AgentController {
     }
 
     @Post("botAlert")
-    //@UseGuards(AuthGuard("api-key"))
     public async sendNotification(
         @Body() alert: PostAlert
     ): Promise<ApiResponseWrapper<void>> {
@@ -317,7 +306,6 @@ export class AgentController {
     }
 
     @Get("botAlert")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -346,7 +334,6 @@ export class AgentController {
     }
 
     @Get("workAddress")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -363,7 +350,6 @@ export class AgentController {
     }
 
     @Get("fassetSymbols")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -383,7 +369,6 @@ export class AgentController {
     }
 
     @Get("whitelisted")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
@@ -399,13 +384,6 @@ export class AgentController {
         return handleApiResponse(this.agentService.checkWhitelisted());
     }
 
-    @Post("secrets")
-    public async saveSecrets(
-        @Body() secrets: string
-    ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.saveSecretsFile(secrets));
-    }
-
     @Get("secretsExist")
     public async getSecretsExist(
     ): Promise<ApiResponseWrapper<boolean>> {
@@ -413,14 +391,12 @@ export class AgentController {
     }
 
     @Get("collaterals")
-    //@UseGuards(AuthGuard("api-key"))
     public async getCollaterals(
     ): Promise<ApiResponseWrapper<AllCollaterals[]>> {
         return handleApiResponse(this.agentService.getAllCollaterals());
     }
 
     @Post("workAddress/:publicAddress/:privateKey")
-    //@UseGuards(AuthGuard("api-key"))
     public async changeWorkAddress(
         @Param("publicAddress") publicAddress: string,
         @Param("privateKey") privateKey: string
@@ -428,15 +404,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.saveWorkAddress(publicAddress, privateKey));
     }
 
-    @Get("generateWorkAddress")
-    //@UseGuards(AuthGuard("api-key"))
-    public async generateWorkAddress(
-    ): Promise<ApiResponseWrapper<any>> {
-        return handleApiResponse(this.agentService.generateWorkAddress());
-    }
-
     @Get("botStatus")
-    //@UseGuards(AuthGuard("api-key"))
+    @ApiBearerAuth()
     public async getBotStatus(
     ): Promise<ApiResponseWrapper<boolean>> {
         return handleApiResponse(this.agentService.checkBotStatus());
@@ -449,28 +418,18 @@ export class AgentController {
     }
 
     @Get("vaultCollaterals")
-    //@UseGuards(AuthGuard("api-key"))
     public async getVaultCollaterals(
     ): Promise<ApiResponseWrapper<VaultCollaterals[]>> {
         return handleApiResponse(this.agentService.getVaultCollateralTokens());
     }
 
     @Get("vaults")
-    //@UseGuards(AuthGuard("api-key"))
     public async getAllVaults(
     ): Promise<ApiResponseWrapper<any>> {
         return handleApiResponse(this.agentService.getAgentVaults());
     }
 
-    @Get("secretsTemplate")
-    //@UseGuards(AuthGuard("api-key"))
-    public async generateSecrets(
-    ): Promise<ApiResponseWrapper<any>> {
-        return handleApiResponse(this.agentService.generateSecrets());
-    }
-
     @Get("managementAddress")
-    //@UseGuards(AuthGuard("api-key"))
     @ApiOkResponse({
         description: 'Example of successful response.',
         schema: {
