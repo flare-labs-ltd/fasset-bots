@@ -7,7 +7,7 @@ import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHe
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { EvmEvent } from "./events/common";
 import { ContractWithEvents, eventIs } from "./events/truffle";
-import { BNish, TRANSACTION_FEE_FACTOR, requireNotNull, toBN, toNumber } from "./helpers";
+import { BN_ZERO, BNish, TRANSACTION_FEE_FACTOR, requireNotNull, toBN, toNumber } from "./helpers";
 import { logger } from "./logger";
 import { TokenBalances } from "./token-balances";
 import { web3DeepNormalize } from "./web3normalize";
@@ -66,9 +66,18 @@ export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAd
     const minAccountBalance = context.chainInfo.minimumAccountBalance;
 
     if (feeSourceAddress) {
+        const requiredFeeBalance = requiredAddressBalance(transactionFee.muln(TRANSACTION_FEE_FACTOR), minAccountBalance, BN_ZERO)
         const senderFeeAddressBalance = await balanceReader.balance(feeSourceAddress);
-        if (senderFeeAddressBalance.gt(transactionFee.muln(TRANSACTION_FEE_FACTOR))) {
-            return;
+        if (senderFeeAddressBalance.gt(requiredFeeBalance)) { // check fee source balance
+            const requiredBalance = requiredAddressBalance(amount, minAccountBalance, BN_ZERO);
+            if (!senderBalance.gte(requiredBalance)) { // check source balance
+                const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
+                logger.error(`Cannot perform underlying payment from ${sourceAddress}${destinationInfo}.
+                Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
+                throw new Error(`Not enough funds on underlying address ${sourceAddress}. Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
+            } else { // both have enough balance
+                return;
+            }
         }
     }
 
