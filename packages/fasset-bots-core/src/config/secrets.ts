@@ -1,4 +1,5 @@
 import { readFileSync, statSync } from "fs";
+import { substituteEnvVars } from "../utils/helpers";
 import { CommandLineError } from "../utils/command-line-errors";
 import { SecretsFile } from "./config-files/SecretsFile";
 
@@ -38,7 +39,7 @@ export class Secrets {
 function loadSecrets(secretsPath: string): SecretsFile {
     checkFilePermissions(secretsPath);
     const secrets = JSON.parse(readFileSync(secretsPath).toString());
-    return secrets;
+    return substituteEnvVars(secrets) as SecretsFile;
 }
 
 function validateEncryptionPassword(value: string, key: string) {
