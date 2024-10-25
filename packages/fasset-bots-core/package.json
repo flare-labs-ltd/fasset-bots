@@ -104,6 +104,7 @@
         "commander": "11.0.0",
         "dotenv": "16.3.1",
         "glob": "10.3.10",
+        "read": "^4.0.0",
         "source-map-support": "0.5.21",
         "web3": "1.10.2",
         "web3-core": "1.10.2",
