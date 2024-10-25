@@ -1275,6 +1275,7 @@ __metadata:
     chalk: 4.1.2
     commander: 11.0.0
     dotenv: 16.3.1
+    read: ^4.0.0
     source-map-support: 0.5.21
     typescript: 5.2.2
     web3: 1.10.2
@@ -8658,6 +8659,7 @@ __metadata:
     eslint-plugin-node: 11.1.0
     mocha: 10.2.0
     nyc: 15.1.0
+    read: ^4.0.0
     rimraf: 5.0.5
     source-map-support: 0.5.21
     ts-node: 10.9.1
@@ -12830,6 +12832,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mute-stream@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "mute-stream@npm:2.0.0"
+  checksum: d2e4fd2f5aa342b89b98134a8d899d8ef9b0a6d69274c4af9df46faa2d97aeb1f2ce83d867880d6de63643c52386579b99139801e24e7526c3b9b0a6d1e18d6c
+  languageName: node
+  linkType: hard
+
 "mysql2@npm:3.6.1":
   version: 3.6.1
   resolution: "mysql2@npm:3.6.1"
@@ -14437,6 +14446,15 @@ __metadata:
     normalize-package-data: ^2.3.2
     path-type: ^1.0.0
   checksum: a0f5d5e32227ec8e6a028dd5c5134eab229768dcb7a5d9a41a284ed28ad4b9284fecc47383dc1593b5694f4de603a7ffaee84b738956b9b77e0999567485a366
+  languageName: node
+  linkType: hard
+
+"read@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "read@npm:4.0.0"
+  dependencies:
+    mute-stream: ^2.0.0
+  checksum: 01488ae8a73365879e946e5fbc32c3598ee79deb5b543e7e36c44d2e84185cd180e048871eb950a2166e10a3b38fda31033278576b77f1a2fbb3814522773cab
   languageName: node
   linkType: hard
 

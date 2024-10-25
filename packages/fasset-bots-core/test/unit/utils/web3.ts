@@ -26,7 +26,7 @@ describe("web3 unit tests", () => {
     });
 
     it("Should create wallet accounts", async () => {
-        const secrets = Secrets.load(TEST_SECRETS);
+        const secrets = await Secrets.load(TEST_SECRETS);
         const envPrivateKeys = getNativeAccounts(secrets);
         const accounts = await initWeb3(COSTON_RPC, envPrivateKeys, 0);
         const uniqueEnvAccounts = new Set(envPrivateKeys);

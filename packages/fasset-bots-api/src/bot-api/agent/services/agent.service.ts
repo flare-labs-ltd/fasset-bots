@@ -15,6 +15,7 @@ import { EntityManager } from "@mikro-orm/core";
 import { Alert } from "../../common/entities/AlertDB";
 import { ORM } from "../../../../../fasset-bots-core/src/config/orm";
 import BN from "bn.js";
+import { cachedSecrets } from "../agentServer";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -22,25 +23,26 @@ const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 const IERC20Metadata = artifacts.require("IERC20Metadata");
 
 const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
-const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
+// const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
 
 @Injectable()
 export class AgentService {
     public orm!: ORM;
+    public secrets!: Secrets;
     constructor(
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
-        private readonly em: EntityManager
+        private readonly em: EntityManager,
     ) {
     }
 
     async onModuleInit() {
         const configFile = loadAgentConfigFile(FASSET_BOT_CONFIG, `Backend`);
-        const secrets = Secrets.load(FASSET_BOT_SECRETS);
-        this.orm = await createBotOrm("agent", configFile.ormOptions, secrets.data.database) as ORM;
+        this.secrets = cachedSecrets;
+        this.orm = await createBotOrm("agent", configFile.ormOptions, this.secrets.data.database) as ORM;
     }
 
     async createAgent(fAssetSymbol: string, agentSettings: AgentSettingsConfig): Promise<AgentCreateResponse | null> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const agent = await cli.createAgentVault(agentSettings);
         if (agent) {
             return {
@@ -55,53 +57,53 @@ export class AgentService {
     }
 
     async depositToVault(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currency = await Currencies.agentVaultCollateral(cli.context, agentVaultAddress);
         await cli.depositToVault(agentVaultAddress, currency.parse(amount));
     }
 
     async withdrawVaultCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currency = await Currencies.agentVaultCollateral(cli.context, agentVaultAddress);
         await cli.announceWithdrawFromVault(agentVaultAddress, currency.parse(amount));
     }
 
     async closeVault(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.closeVault(agentVaultAddress);
     }
 
     async selfClose(fAssetSymbol: string, agentVaultAddress: string, amountUBA: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currency = await Currencies.fasset(cli.context);
         await cli.selfClose(agentVaultAddress, currency.parse(amountUBA));
     }
 
     async buyPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currency = await Currencies.agentPoolCollateral(cli.context, agentVaultAddress);
         await cli.buyCollateralPoolTokens(agentVaultAddress, currency.parse(amount));
     }
 
     async withdrawPoolFees(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.withdrawPoolFees(agentVaultAddress, amount);
     }
 
     async poolFeesBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const balance = await cli.poolFeesBalance(agentVaultAddress);
         return { balance };
     }
 
     async withdrawPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currency = await Currencies.agentPoolCollateral(cli.context, agentVaultAddress);
         await cli.announceRedeemCollateralPoolTokens(agentVaultAddress, currency.parse(amount));
     }
 
     async poolTokenBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const poolToken = await CollateralPoolToken.at(info.collateralPoolToken);
         const balance = await poolToken.balanceOf(agentVaultAddress);
@@ -111,7 +113,7 @@ export class AgentService {
     }
 
     async freePoolCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const balance = await cli.getFreePoolCollateral(agentVaultAddress);
         const currency = await Currencies.agentPoolCollateral(cli.context, agentVaultAddress);
         const amount = currency.formatValue(balance);
@@ -119,7 +121,7 @@ export class AgentService {
     }
 
     async getFreeVaultCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const balance = await cli.getFreeVaultCollateral(agentVaultAddress);
         const currency = await Currencies.agentVaultCollateral(cli.context, agentVaultAddress);
         const amount = currency.formatValue(balance);
@@ -127,32 +129,32 @@ export class AgentService {
     }
 
     async delegatePoolCollateral(fAssetSymbol: string, agentVaultAddress: string, recipientAddress: string, bips: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.delegatePoolCollateral(agentVaultAddress, recipientAddress, bips);
     }
 
     async undelegatePoolCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.undelegatePoolCollateral(agentVaultAddress);
     }
 
     async enterAvailable(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.enterAvailableList(agentVaultAddress);
     }
 
     async announceExitAvailable(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.announceExitAvailableList(agentVaultAddress);
     }
 
     async exitAvailable(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.exitAvailableList(agentVaultAddress);
     }
 
     async withdrawUnderlying(fAssetSymbol: string, agentVaultAddress: string, amount: string, destinationAddress: string,): Promise<AgentUnderlying> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const transactionDatabaseId = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
         return {
             transactionDatabaseId: transactionDatabaseId || null,
@@ -160,12 +162,12 @@ export class AgentService {
     }
 
     async cancelUnderlyingWithdrawal(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.cancelUnderlyingWithdrawal(agentVaultAddress);
     }
 
     async getFreeUnderlying(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const balance = await cli.getFreeUnderlying(agentVaultAddress);
         return {
             balance,
@@ -173,7 +175,7 @@ export class AgentService {
     }
 
     async listAgentSetting(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentSettings> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const settings = await cli.printAgentSettings(agentVaultAddress);
         const result = {} as AgentSettings;
         const vaultCollateral = await IERC20.at(settings.vaultCollateralToken);
@@ -192,12 +194,12 @@ export class AgentService {
     }
 
     async updateAgentSetting(fAssetSymbol: string, agentVaultAddress: string, settingName: string, settingValue: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.updateAgentSetting(agentVaultAddress, settingName, settingValue);
     }
 
     async updateAgentSettings(fAssetSymbol: string, agentVaultAddress: string, settings: AgentSettingsDTO[]): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const currentSettings: any = await cli.printAgentSettings(agentVaultAddress);
         for (const setting of settings) {
             if(parseInt(currentSettings[setting.name], 10) != parseInt(setting.value, 10)){
@@ -207,24 +209,23 @@ export class AgentService {
     }
 
     async createUnderlying(fAssetSymbol: string): Promise<AgentUnderlying> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
-        const secrets = Secrets.load(FASSET_BOT_SECRETS);
-        const account = await cli.createUnderlyingAccount(secrets);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        const account = await cli.createUnderlyingAccount(this.secrets);
         return { address: account.address, privateKey: account.privateKey };
     }
 
     async switchVaultCollateral(fAssetSymbol: string, agentVaultAddress: string, tokenAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.switchVaultCollateral(agentVaultAddress, tokenAddress);
     }
 
     async upgradeWNat(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.upgradeWNatContract(agentVaultAddress);
     }
 
     async getAgentInfo(fAssetSymbol: string): Promise<AgentData> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         // get collateral data
         const collateralTypes = await cli.context.assetManager.getCollateralTypes();
         const collaterals = [];
@@ -250,7 +251,7 @@ export class AgentService {
     }
 
     async getAgentVaultsInfo(fAssetSymbol: string): Promise<AgentVaultStatus[]> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         // get agent infos
         const agentVaults = await cli.getAllActiveAgents();
 
@@ -286,7 +287,7 @@ export class AgentService {
     }
 
     async getAgentVaultInfo(fAssetSymbol: string, agentVaultAddress: string): Promise<ExtendedAgentVaultInfo> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const collateralToken = await cli.context.assetManager.getCollateralType(2,info.vaultCollateralToken);
         const agentVaultInfo: any = {};
@@ -305,7 +306,7 @@ export class AgentService {
     }
 
     async getAgentUnderlyingBalance(fAssetSymbol: string): Promise<AgentBalance> {
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const balance = await cli.context.wallet.getBalance(cli.ownerUnderlyingAddress);
         return { balance: balance.toString() };
     }
@@ -344,13 +345,11 @@ export class AgentService {
     }
 
     async getAgentWorkAddress(): Promise<string> {
-        const secrets = Secrets.load(FASSET_BOT_SECRETS);
-        return secrets.required("owner.native.address");
+        return this.secrets.required("owner.native.address");
     }
 
     async getAgentManagementAddress(): Promise<string> {
-        const secrets = Secrets.load(FASSET_BOT_SECRETS);
-        return secrets.required("owner.management.address");
+        return this.secrets.required("owner.management.address");
     }
 
     async getFassetSymbols(): Promise<string[]> {
@@ -364,44 +363,13 @@ export class AgentService {
 
     async checkWhitelisted(): Promise<boolean> {
         const fassets = await this.getFassetSymbols();
-        const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fassets[0]);
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fassets[0]);
         const whitelisted = await cli.context.agentOwnerRegistry.isWhitelisted(cli.owner.managementAddress);
         return whitelisted;
     }
 
-    async saveSecretsFile(secrets: string): Promise<void> {
-        const missingKeys: string[] = [];
-        // Validate json object to include necessary keys
-        function checkNested(obj: any, ...levels: string[]): boolean {
-            if (obj === undefined) return false;
-            if (levels.length === 0) return true;
-            const [level, ...rest] = levels;
-            if (Object.prototype.hasOwnProperty.call(obj, level)) {
-                return checkNested(obj[level], ...rest);
-            }
-            return false;
-        }
-        requiredKeysForSecrets.forEach((attr) => {
-            const props = attr.split(".");
-            if (!checkNested(secrets, ...props)) {
-              missingKeys.push(attr);
-            }
-        });
-        if (missingKeys.length > 0) {
-            throw new Error(`Missing keys: ${missingKeys.join(', ')}`);
-        }
-        const jsonToSave = JSON.stringify(secrets, null, 4);
-        fs.writeFileSync(FASSET_BOT_SECRETS, jsonToSave);
-        fs.chmod(FASSET_BOT_SECRETS, 0o600, (err) => {
-            if (err) {
-              console.error('Error changing file permissions:', err);
-              return;
-            }
-            console.log('File permissions changed successfully.');
-        });
-    }
-
     async checkSecretsFile(): Promise<boolean> {
+        const FASSET_BOT_SECRETS: string = requireEnv("FASSET_BOT_SECRETS");
         try {
             await fs.promises.access(FASSET_BOT_SECRETS, fs.constants.F_OK);
             return true;
@@ -432,19 +400,6 @@ export class AgentService {
         return account;
     }
 
-    async saveWorkAddress(address: string, privateKey: string): Promise<void> {
-        const secrets = Secrets.load(FASSET_BOT_SECRETS);
-        if(secrets.data.owner){
-            secrets.data.owner.native.address = address;
-            secrets.data.owner.native.private_key = privateKey;
-            const json = JSON.stringify(secrets.data, null, 4);
-            fs.writeFileSync(FASSET_BOT_SECRETS, json);
-        }
-        else {
-            throw new Error(`Owner field does not exist in secrets.`);
-        }
-    }
-
     async checkBotStatus(): Promise<boolean> {
         const query = this.orm.em.createQueryBuilder(ActivityTimestampEntity);
         const result = await query.limit(1).getSingleResult();
@@ -466,7 +421,7 @@ export class AgentService {
     async getVaultCollateralTokens(): Promise<VaultCollaterals[]> {
         const fassets = await this.getFassetSymbols();
         const collaterals: VaultCollaterals[] = [];
-        const botConfig = await AgentBotCommands.createBotConfig(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG);
+        const botConfig = await AgentBotCommands.createBotConfig(this.secrets, FASSET_BOT_CONFIG);
         for (const fasset of fassets) {
             const cli = await AgentBotCommands.createBotCommands(botConfig, fasset);
             // get collateral data
@@ -520,7 +475,7 @@ export class AgentService {
         }
         // eslint-disable-next-line guard-for-in
         for (const fasset in config.fAssets) {
-            const cli = await AgentBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fasset);
+            const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fasset);
             const collateralTypes = await cli.context.assetManager.getCollateralTypes();
             // Get agent vaults for fasset from database
             const agentVaults = await cli.getActiveAgentsForFAsset();
@@ -620,7 +575,7 @@ export class AgentService {
     }
 
     async backedAmount(fAssetSymbol: string, agentVaultAddress: string): Promise<string> {
-        const cli = await InfoBotCommands.create(FASSET_BOT_SECRETS, FASSET_BOT_CONFIG, fAssetSymbol);
+        const cli = await InfoBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const fassetBR = await TokenBalances.fasset(cli.context);
         return fassetBR.formatValue(info.mintedUBA);

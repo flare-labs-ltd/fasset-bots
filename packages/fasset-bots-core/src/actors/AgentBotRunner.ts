@@ -12,6 +12,8 @@ import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { readFileSync } from "fs";
+import { isJSON } from "../utils/prompt";
 
 export const FUND_MIN_INTERVAL_MS = 60 * 3 * 1000; // 3 minutes
 
@@ -33,7 +35,6 @@ export class AgentBotRunner {
     ) {}
 
     public stopRequested = false;
-    public restartRequested = false;
     public running = false;
 
     public runningAgentBots = new Map<string, AgentBot>();
@@ -50,7 +51,6 @@ export class AgentBotRunner {
     @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
-        this.restartRequested = false;
         this.running = true;
         try {
             /* istanbul ignore next */
@@ -73,19 +73,15 @@ export class AgentBotRunner {
     }
 
     readyToStop() {
-        return this.stopOrRestartRequested() && this.runningAgentBots.size === 0;
+        return this.stop() && this.runningAgentBots.size === 0;
     }
 
-    stopOrRestartRequested(): boolean {
-        return this.stopRequested || this.restartRequested;
+    stop(): boolean {
+        return this.stopRequested;
     }
 
     requestStop(): void {
         this.stopRequested = true;
-    }
-
-    requestRestart(): void {
-        this.restartRequested = true;
     }
 
     /**
@@ -110,11 +106,10 @@ export class AgentBotRunner {
      */
     async runStepParallel(): Promise<void> {
         this.removeStoppedAgentBots();
-        if (!this.stopOrRestartRequested()) {
-            this.checkForWorkAddressChange();
+        if (!this.stop()) {
             await this.addNewAgentBots();
         }
-        const sleepMS = this.stopOrRestartRequested() ? 100 : this.loopDelay;
+        const sleepMS = this.stop() ? 100 : this.loopDelay;
         await sleep(sleepMS);
     }
 
@@ -125,8 +120,7 @@ export class AgentBotRunner {
     async runStepSerial(): Promise<void> {
         const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
-            this.checkForWorkAddressChange();
-            if (this.stopOrRestartRequested()) break;
+            if (this.stop()) break;
             try {
                 const agentBot = await this.newAgentBot(agentEntity);
                 if (agentBot == null) continue;
@@ -199,17 +193,6 @@ export class AgentBotRunner {
             if (!agentBot.running()) {
                 this.runningAgentBots.delete(address);
             }
-        }
-    }
-    /* istanbul ignore next */
-    checkForWorkAddressChange(): void {
-        if (this.secrets.filePath === "MEMORY") return;     // memory secrets (for tests)
-        const newSecrets = Secrets.load(this.secrets.filePath);
-        if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
-            const ownerAddress = newSecrets.required(`owner.native.address`);
-            this.requestRestart();
-            console.warn(`Owner's native address from secrets file, does not match their used account`);
-            logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
         }
     }
 

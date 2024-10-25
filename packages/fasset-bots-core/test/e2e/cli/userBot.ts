@@ -16,7 +16,7 @@ describe("UserBot cli commands unit tests", () => {
     const userDataDir = "./test-data";
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         accounts = await initWeb3(COSTON_RPC, getNativeAccounts(secrets), null);
         userAddress = accounts[2];
     });

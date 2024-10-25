@@ -27,7 +27,7 @@ describe("AgentBotOwnerValidation cli commands unit tests", () => {
     }
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         accounts = await initWeb3(COSTON_RPC, getNativeAccounts(secrets), null);
         ownerAddress = accounts[0];
         const runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);

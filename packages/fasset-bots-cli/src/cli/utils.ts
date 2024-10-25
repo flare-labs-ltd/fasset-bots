@@ -6,6 +6,7 @@ import { blockTimestamp, getOrCreateAsync, isBigNumber, web3DeepNormalize } from
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateInteger } from "../utils/validation";
+import { Secrets } from "@flarelabs/fasset-bots-core/config";
 
 const program = programWithCommonOptions("util", "single_fasset");
 
@@ -17,7 +18,8 @@ program
     .argument("<blockCount>", "the numer of blocks (until the current block) from which to list logs")
     .action(async (blockCount: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const bot = await InfoBotCommands.create(options.secrets, options.config, options.fasset);
+        const secrets = await Secrets.load(options.secrets);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
         const blockTimestamps = new Map<string, number>();
         validateInteger(blockCount, "blockCount", { min: 1 });
         for await (const event of bot.readAssetManagerLogs(Number(blockCount))) {

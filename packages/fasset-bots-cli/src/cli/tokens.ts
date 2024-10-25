@@ -33,7 +33,7 @@ program
     .action(async (tokenSymbol: string, from: string, to: string, amount: string, cmdOptions: { reference?: string, baseUnit?: boolean }) => {
         const options: { config: string; secrets: string } = program.opts();
         const config = loadConfigFile(options.config);
-        const secrets = Secrets.load(options.secrets);
+        const secrets = await Secrets.load(options.secrets);
         const token = findToken(config, tokenSymbol);
         const accountFrom = await getAccount(config, secrets, token, from);
         const addressTo = await getAddress(secrets, token, to);
@@ -101,7 +101,7 @@ program
     .action(async (tokenSymbol: string, addressOrKey: string, cmdOptions: { baseUnit?: boolean }) => {
         const options: { config: string; secrets: string } = program.opts();
         const config = loadConfigFile(options.config);
-        const secrets = Secrets.load(options.secrets);
+        const secrets = await Secrets.load(options.secrets);
         const token = findToken(config, tokenSymbol);
         const address = await getAddress(secrets, token, addressOrKey);
         if (token.type === "nat") {

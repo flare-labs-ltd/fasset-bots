@@ -1,8 +1,8 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { SecretsUser, generateSecrets, generateUnderlyingAccount } from "@flarelabs/fasset-bots-core";
-import { createSha256Hash, generateRandomHexString, logger, squashSpace, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { EncryptionMethod, SecretsUser, decryptText, encryptText, generateSecrets, generateUnderlyingAccount, isJSON, promptForPassword, validateEncryptionPassword } from "@flarelabs/fasset-bots-core";
+import { CommandLineError, createSha256Hash, generateRandomHexString, logger, squashSpace, web3 } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
@@ -10,6 +10,8 @@ import path from "path";
 import { expandConfigPath } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress } from "../utils/validation";
+import { read } from "read";
+import { ENCRYPTION_PASSWORD_MIN_LENGTH } from "@flarelabs/fasset-bots-core/config";
 
 const program = new Command();
 
@@ -73,6 +75,48 @@ program
                 execute ${chalk.green(`AgentOwnerRegistry.setWorkAddress(${workAddress})`)} on block explorer.`);
             console.error(squashSpace`${chalk.yellow("WARNING:")} Be careful - there can be only one work address per management address,
                 so make sure you don't overwrite it.`);
+        }
+    });
+
+program
+    .command("encryptSecrets")
+    .description("encrypt content of secrets file")
+    .option("-s, --secrets <secretsFile>", "Secrets file path. If omitted, env var FASSET_BOT_SECRETS or FASSET_USER_SECRETS is used.")
+    .action(async (opts: { secretsPath?: string }) => {
+        const secretsPath = opts.secretsPath ?? process.env.FASSET_BOT_SECRETS ?? process.env.FASSET_USER_SECRETS;
+        if (!secretsPath) {
+            throw new CommandLineError("Missing secrets file path.");
+        }
+        const secretsContent = fs.readFileSync(secretsPath).toString();
+        if (isJSON(secretsContent)) {
+            const secretsPassword = await promptForPassword(`Please enter the password (at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long) used to encrypt secrets file content: `);
+            validateEncryptionPassword(secretsPassword, "password");
+            const encryptedSecretsContent = encryptText(secretsPassword, secretsContent, EncryptionMethod.AES_GCM_SCRYPT_AUTH);
+            fs.writeFileSync(secretsPath, encryptedSecretsContent);
+            console.log("Secrets file was encrypted.")
+        } else {
+            console.log("File is not in valid JSON format.");
+        }
+    });
+
+program
+    .command("decryptSecrets")
+    .description("decrypt content of secrets file")
+    .option("-s, --secrets <secretsFile>", "Secrets file path. If omitted, env var FASSET_BOT_SECRETS or FASSET_USER_SECRETS is used.")
+    .action(async (opts: { secretsPath?: string }) => {
+        const secretsPath = opts.secretsPath ?? process.env.FASSET_BOT_SECRETS ?? process.env.FASSET_USER_SECRETS;
+        if (!secretsPath) {
+            throw new CommandLineError("Missing secrets file path.");
+        }
+        const encryptedSecretsContent = fs.readFileSync(secretsPath).toString();
+        if (isJSON(encryptedSecretsContent)) {
+            console.log("File is already in JSON format.");
+        } else {
+            const secretsPassword = await promptForPassword("Please enter the password used to decrypt secrets file content: ");
+            const decryptedSecretsContent = decryptText(secretsPassword, encryptedSecretsContent);
+            const jsonToSave = JSON.stringify(JSON.parse(decryptedSecretsContent), null, 4);
+            fs.writeFileSync(secretsPath, jsonToSave);
+            console.log("Secrets file was decrypted.")
         }
     });
 

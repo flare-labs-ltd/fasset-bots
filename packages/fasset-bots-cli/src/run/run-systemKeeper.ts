@@ -11,7 +11,7 @@ const program = programWithCommonOptions("bot", "all_fassets");
 
 program.action(async () => {
     const options: { config: string; secrets: string } = program.opts();
-    const secrets = Secrets.load(options.secrets);
+    const secrets = await Secrets.load(options.secrets);
     const runConfig = loadConfigFile(options.config);
     const systemKeeperAddress: string = secrets.required("systemKeeper.address");
     const systemKeeperPrivateKey: string = secrets.required("systemKeeper.private_key");

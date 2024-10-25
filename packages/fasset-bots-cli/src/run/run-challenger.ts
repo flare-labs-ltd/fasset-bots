@@ -11,7 +11,7 @@ const program = programWithCommonOptions("bot", "all_fassets");
 
 program.action(async () => {
     const options: { config: string; secrets: string, fasset?: string } = program.opts();
-    const secrets = Secrets.load(options.secrets);
+    const secrets = await Secrets.load(options.secrets);
     const runConfig = loadConfigFile(options.config);
     const challengerAddress: string = secrets.required("challenger.address");
     const challengerPrivateKey: string = secrets.required("challenger.private_key");
