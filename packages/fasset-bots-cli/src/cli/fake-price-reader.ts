@@ -22,7 +22,7 @@ program
     .argument("<price>", "price")
     .argument("[decimals]", "decimals - required only when price not yet initialized")
     .action(async (symbol: string, price: string, decimals: string | null) => {
-        const secrets = Secrets.load(program.opts().secrets);
+        const secrets = await Secrets.load(program.opts().secrets);
         await initEnvironment(secrets, true);
         const priceReader = (await getPriceReader(true)) as FakePriceReaderInstance;
         const deployerAddress = secrets.required("deployer.address");
@@ -35,7 +35,7 @@ program
     .command("sendEvent")
     .description("send 'PriceEcpochFinalized' event for FakePriceReader")
     .action(async () => {
-        const secrets = Secrets.load(program.opts().secrets);
+        const secrets = await Secrets.load(program.opts().secrets);
         await initEnvironment(secrets, true);
         const priceReader = (await getPriceReader(true)) as FakePriceReaderInstance;
         const deployerAddress = secrets.required("deployer.address");
@@ -48,7 +48,7 @@ program
     .argument("symbol")
     .option("-t, --trusted", "get price from trusted providers")
     .action(async (symbol: string, option) => {
-        const secrets = Secrets.load(program.opts().secrets);
+        const secrets = await Secrets.load(program.opts().secrets);
         await initEnvironment(secrets, false);
         const priceReader = await getPriceReader(true);
         if (option.trusted) {
@@ -66,7 +66,7 @@ program
     .argument("symbol")
     .option("-t, --trusted", "get price from trusted providers")
     .action(async (symbol: string, option) => {
-        const secrets = Secrets.load(program.opts().secrets);
+        const secrets = await Secrets.load(program.opts().secrets);
         await initEnvironment(secrets, false);
         const priceReader = await getPriceReader(false);
         if (option.trusted) {

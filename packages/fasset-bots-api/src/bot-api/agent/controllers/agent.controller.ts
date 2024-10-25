@@ -396,14 +396,6 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAllCollaterals());
     }
 
-    @Post("workAddress/:publicAddress/:privateKey")
-    public async changeWorkAddress(
-        @Param("publicAddress") publicAddress: string,
-        @Param("privateKey") privateKey: string
-    ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.saveWorkAddress(publicAddress, privateKey));
-    }
-
     @Get("botStatus")
     @ApiBearerAuth()
     public async getBotStatus(

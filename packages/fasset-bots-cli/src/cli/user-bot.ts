@@ -27,7 +27,8 @@ program
     .description("info about the system")
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const bot = await InfoBotCommands.create(options.secrets, options.config, options.fasset);
+        const secrets = await Secrets.load(options.secrets);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
         await bot.printSystemInfo();
     });
 
@@ -37,7 +38,8 @@ program
     .option("-a, --all", "print all agents, including non-public")
     .action(async (opts: { all: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const bot = await InfoBotCommands.create(options.secrets, options.config, options.fasset);
+        const secrets = await Secrets.load(options.secrets);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
         if (opts.all) {
             await bot.printAllAgents();
         } else {
@@ -53,7 +55,8 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         validateAddress(agentVaultAddress, "Agent vault address");
         try {
-            const bot = await InfoBotCommands.create(options.secrets, options.config, options.fasset);
+            const secrets = await Secrets.load(options.secrets);
+            const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
             await bot.printAgentInfo(agentVaultAddress);
         } catch (error) {
             translateError(error, { "invalid agent vault address": `Agent vault with address ${agentVaultAddress} does not exist.` });
@@ -214,7 +217,8 @@ program
     .description("Print the list of pools of public agents")
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const bot = await InfoBotCommands.create(options.secrets, options.config, options.fasset);
+        const secrets = await Secrets.load(options.secrets);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
         await bot.printPools();
     });
 
@@ -223,8 +227,8 @@ program
     .description("Print the amount of tokens the user owns per pool")
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const bot = await InfoBotCommands.create(options.secrets, options.config, options.fasset);
-        const secrets = Secrets.load(options.secrets);
+        const secrets = await Secrets.load(options.secrets);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
         const address = secrets.required("user.native.address");
         await bot.printPoolTokenBalance(address);
     });

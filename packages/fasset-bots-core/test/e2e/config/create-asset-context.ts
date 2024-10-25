@@ -28,7 +28,7 @@ describe("Create asset context tests", () => {
     let accounts: string[];
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         accounts = await initWeb3(COSTON_RPC, getNativeAccounts(secrets), null);
     });
 

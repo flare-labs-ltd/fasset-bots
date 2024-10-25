@@ -40,7 +40,7 @@ describe("Bot config tests", () => {
     let accounts: string[];
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         actorRunConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         accounts = await initWeb3(COSTON_RPC, getNativeAccounts(secrets), null);
