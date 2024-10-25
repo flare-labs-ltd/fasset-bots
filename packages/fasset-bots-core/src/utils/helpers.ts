@@ -404,3 +404,23 @@ export function* enumerate<T>(array: T[]): Iterable<[T, number]> {
 export function isEnumValue<T extends string>(enumCls: { [key: string]: T }, value: string): value is T {
     return Object.values(enumCls).includes(value as any);
 }
+
+/**
+ * Replaces all occurences of `${VAR}` in strings in the object `obj` with the contents of the environment variable `VAR`.
+ * @param obj the object (NOTE: it will be modified inplace)
+ * @returns inplace modified `obj`
+ */
+export function substituteEnvVars(obj: unknown) {
+    if (typeof obj === "string") {
+        return obj.replace(/\$\{(\w+)\}/, (m, varname) => requireEnv(varname));
+    } else if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) {
+            obj[i] = substituteEnvVars(obj[i]);
+        }
+    } else if (typeof obj === "object" && obj !== null) {
+        for (const [k, v] of Object.entries(obj)) {
+            (obj as any)[k] = substituteEnvVars(v);
+        }
+    }
+    return obj;
+}

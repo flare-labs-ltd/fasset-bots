@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import path from "path";
 import { CommandLineError, assertCmd, logger } from "../utils";
-import { requireNotNull } from "../utils/helpers";
+import { requireNotNull, substituteEnvVars } from "../utils/helpers";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { BotConfigFile, BotConfigFileOverride } from "./config-files/BotConfigFile";
 import { loadContracts } from "./contracts";
@@ -70,7 +70,7 @@ function mergeFAssets(overrideFile: string, configFAssets: Record<string, any>, 
 
 export function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
     try {
-        const json = JsonLoader.loadSimple(fPath);
+        const json = substituteEnvVars(JsonLoader.loadSimple(fPath));
         if ("extends" in (json as any)) {
             return botConfigOverrideLoader.validate(json, fPath);
         } else {
