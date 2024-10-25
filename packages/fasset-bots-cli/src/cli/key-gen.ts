@@ -1,8 +1,8 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { SecretsUser, generateSecrets, generateUnderlyingAccount } from "@flarelabs/fasset-bots-core";
-import { createSha256Hash, generateRandomHexString, logger, squashSpace } from "@flarelabs/fasset-bots-core/utils";
+import { generateSecrets, generateUnderlyingAccount, SecretsUser } from "@flarelabs/fasset-bots-core";
+import { assertCmd, createSha256Hash, generateRandomHexString, logger, squashSpace } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
@@ -24,7 +24,8 @@ program
     .option("--user", "generate secrets for user")
     .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management (cold) address")
     .option("--other", "generate secrets for other bots (challenger, etc.)")
-    .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean }) => {
+    .option("--merge <filename>", "merge into the result the contest of JSON file <filename>")
+    .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean, merge?: string }) => {
         const users: SecretsUser[] = [];
         if (opts.user) users.push("user");
         if (opts.agent) {
@@ -37,6 +38,9 @@ program
         }
         opts.config = expandConfigPath(opts.config, "bot");
         const secrets = generateSecrets(opts.config, users, opts.agent);
+        if (opts.merge) {
+            recursiveAssign(secrets, JSON.parse(fs.readFileSync(opts.merge).toString()));
+        }
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
             if (fs.existsSync(opts.output) && !opts.overwrite) {
@@ -75,6 +79,20 @@ program
                 so make sure you don't overwrite it.`);
         }
     });
+
+function recursiveAssign(dest: any, src: any) {
+    assertCmd(typeof dest === "object" && dest != null, `Trying to assign to non-object ${dest}`);
+    for (const [key, value] of Object.entries(src)) {
+        if (typeof value === "object" && value != null) {
+            if (!(key in dest)) {
+                dest[key] = {};
+            }
+            recursiveAssign(dest[key], value);
+        } else {
+            dest[key] = value;
+        }
+    }
+}
 
 program
     .command("createApiKeyAndHash")
