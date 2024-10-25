@@ -59,7 +59,7 @@ describe("Actor tests - coston", () => {
     const destroyAgentsAfterTests: string[] = [];
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts

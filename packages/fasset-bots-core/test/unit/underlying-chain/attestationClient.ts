@@ -52,7 +52,7 @@ describe("Attestation client unit tests", () => {
     let dbWallet: DBWalletKeys;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         const accountPrivateKey = secrets.required("owner.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);

@@ -24,7 +24,7 @@ describe("testXRP attestation/state connector tests", () => {
     let account: string;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         account = accounts[0];
@@ -134,7 +134,7 @@ describe("State connector tests - decoding", () => {
     };
 
     before(async () => {
-        const secrets = Secrets.load(TEST_SECRETS);
+        const secrets = await Secrets.load(TEST_SECRETS);
         const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(

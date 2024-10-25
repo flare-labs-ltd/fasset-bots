@@ -29,7 +29,7 @@ describe("testXRP wallet tests", () => {
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
         walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
@@ -116,7 +116,7 @@ describe("testBTC wallet tests", () => {
     const targetPrivateKey = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
         walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls, undefined);
@@ -151,7 +151,7 @@ describe("testDOGE wallet tests", () => {
     const amountToSendSatoshies = 100000000;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         dbWallet = DBWalletKeys.from(orm.em, secrets);
         walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);

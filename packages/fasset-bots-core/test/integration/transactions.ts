@@ -28,7 +28,7 @@ describe("XRP transaction integration tests", () => {
     const amountToSendDrops = 1000000;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
         walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);

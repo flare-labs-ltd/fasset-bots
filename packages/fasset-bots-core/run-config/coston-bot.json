@@ -67,7 +67,7 @@
             }
         }
     },
-    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
+    "rpcUrl": "https://coston-api-tracer.flare.network/ext/C/rpc",
     "attestationProviderUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
     ],

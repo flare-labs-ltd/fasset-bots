@@ -145,8 +145,8 @@ describe("testXRP blockchain tests via indexer", () => {
     let txHash: string;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass([""], chainId, [""]);
+        secrets = await Secrets.load(TEST_SECRETS);
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
         blockchainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
         const info = await receiveBlockAndTransaction(chainId, blockchainIndexerClient, indexerUrls, indexerApiKey(secrets));
         if (info) {
@@ -371,8 +371,8 @@ describe("testDOGE blockchain tests via indexer", () => {
     let txHash: string;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
-        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass([""], chainId, [""]);
+        secrets = await Secrets.load(TEST_SECRETS);
+        rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass("", chainId, "");
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
         const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrls, indexerApiKey(secrets));
         if (info) {
@@ -425,7 +425,7 @@ describe("testBTC blockchain tests via indexer", () => {
     let txHash: string;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         rewiredBlockChainIndexerClient = new rewiredBlockchainIndexerHelperClass(indexerUrls, chainId, indexerApiKey(secrets));
         blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
         const info = await receiveBlockAndTransaction(chainId, blockChainIndexerClient, indexerUrls, indexerApiKey(secrets));

@@ -1,6 +1,8 @@
 import { readFileSync, statSync } from "fs";
 import { CommandLineError } from "../utils/command-line-errors";
 import { SecretsFile } from "./config-files/SecretsFile";
+import { isJSON, promptForPassword } from "../utils/prompt";
+import { decryptText } from "../utils/encryption";
 
 export const ENCRYPTION_PASSWORD_MIN_LENGTH = 16;
 
@@ -10,9 +12,16 @@ export class Secrets {
         public data: SecretsFile,
     ) {}
 
-    static load(secretsPath: string) {
-        const data = loadSecrets(secretsPath);
-        return new Secrets(secretsPath, data);
+    static async load(secretsPath: string): Promise<Secrets> {
+        const newSecretsContent = readFileSync(secretsPath).toString();
+        if (!isJSON(newSecretsContent)) {
+            const secretsPassword = await promptForPassword("Please enter the password used to decrypt secrets file content: ");
+            const data = loadEncryptedSecrets(secretsPath, secretsPassword)
+            return new Secrets(secretsPath, data);
+        } else {
+            const data = loadSecrets(secretsPath);
+            return new Secrets(secretsPath, data);
+        }
     }
 
     required(key: string): string {
@@ -58,14 +67,22 @@ function loadSecrets(secretsPath: string): SecretsFile {
     return secrets;
 }
 
-function validateEncryptionPassword(value: string, key: string) {
+function loadEncryptedSecrets(secretsPath: string, secretsPassword: string): SecretsFile {
+    checkFilePermissions(secretsPath);
+    const secretsContent = readFileSync(secretsPath).toString();
+    const decryptedContent = decryptText(secretsPassword, secretsContent);
+    const secrets = JSON.parse(decryptedContent);
+    return secrets;
+}
+
+export function validateEncryptionPassword(value: string, key: string): void {
     if (value.length < ENCRYPTION_PASSWORD_MIN_LENGTH) {
         throw new Error(`'${key}' should be at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long`);
     }
 }
 
 /* istanbul ignore next */
-function checkFilePermissions(fpath: string) {
+function checkFilePermissions(fpath: string): void {
     if (process.platform === "win32") {
         if (process.env.ALLOW_SECRETS_ON_WINDOWS === "true") return;
         throw new CommandLineError(

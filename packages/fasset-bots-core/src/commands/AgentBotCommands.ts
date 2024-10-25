@@ -53,16 +53,15 @@ export class AgentBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of BotCliCommands class
      */
-    static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
+    static async create(secrets: Secrets, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
         console.log(chalk.cyan("Initializing environment..."));
-        const botConfig = await AgentBotCommands.createBotConfig(secretsFile, configFileName, registerCleanup, validate);
+        const botConfig = await AgentBotCommands.createBotConfig(secrets, configFileName, registerCleanup, validate);
         const agentBotCommands = await AgentBotCommands.createBotCommands(botConfig, fAssetSymbol, validate);
         console.log(chalk.cyan("Environment successfully initialized."));
         return agentBotCommands;
     }
 
-    static async createBotConfig(secretsFile: string, configFileName: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
-        const secrets = Secrets.load(secretsFile);
+    static async createBotConfig(secrets: Secrets, configFileName: string, registerCleanup?: CleanupRegistration, validate: boolean = true) {
         const owner = AgentBotCommands.getOwnerAddressPair(secrets);
         // load config
         logger.info(`Owner ${owner.managementAddress} started to initialize cli environment.`);
@@ -429,8 +428,10 @@ export class AgentBotCommands {
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
         await agentBot.updateSetting.createAgentUpdateSetting(this.orm.em, settingName, validAt, readAgentEnt);
         const validAtStr = new Date(Number(validAt) * 1000).toString();
-        logger.info(`Agent ${agentVault} announced agent settings update for ${settingName}. It will take effect after ${validAtStr} (timestamp ${validAt}).`);
-        console.log(`Agent ${agentVault} announced agent settings update for ${settingName}. It will take effect after ${validAtStr}.`);
+        logger.info(`Agent ${agentVault} announced agent settings update for ${settingName}. \
+            If valid it will be executed by your running agent bot after ${validAtStr} (timestamp ${validAt}).`);
+        console.log(`Agent ${agentVault} announced agent settings update for ${settingName}. \
+            If valid it will be executed by your running agent bot after ${validAtStr}.`);
     }
 
     /**

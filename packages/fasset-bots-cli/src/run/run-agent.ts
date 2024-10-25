@@ -1,12 +1,13 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
+import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, promptForPassword, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, EM, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, isNotNull, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
+import { readFileSync } from "fs";
 
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: 172800,
@@ -73,7 +74,7 @@ program.action(async () => {
     // eslint-disable-next-line no-constant-condition
     while (true) {
         const options: { config: string; secrets: string } = program.opts();
-        const secrets = Secrets.load(options.secrets);
+        const secrets = await Secrets.load(options.secrets);
         const runConfig = loadAgentConfigFile(options.config);
         const owner = getAccountRequired(secrets, "owner.native");
         const timekeeper = getAccount(secrets, "timeKeeper") ?? owner;
@@ -146,9 +147,6 @@ program.action(async () => {
         }
         if (runner.stopRequested) {
             break;
-        } else if (runner.restartRequested) {
-            console.log("Agent bot restarting...");
-            continue;
         }
         break;
     }

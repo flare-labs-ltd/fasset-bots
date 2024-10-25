@@ -399,13 +399,6 @@ export class AgentController {
         return handleApiResponse(this.agentService.checkWhitelisted());
     }
 
-    @Post("secrets")
-    public async saveSecrets(
-        @Body() secrets: string
-    ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.saveSecretsFile(secrets));
-    }
-
     @Get("secretsExist")
     public async getSecretsExist(
     ): Promise<ApiResponseWrapper<boolean>> {
@@ -417,15 +410,6 @@ export class AgentController {
     public async getCollaterals(
     ): Promise<ApiResponseWrapper<AllCollaterals[]>> {
         return handleApiResponse(this.agentService.getAllCollaterals());
-    }
-
-    @Post("workAddress/:publicAddress/:privateKey")
-    //@UseGuards(AuthGuard("api-key"))
-    public async changeWorkAddress(
-        @Param("publicAddress") publicAddress: string,
-        @Param("privateKey") privateKey: string
-    ): Promise<ApiResponseWrapper<void>> {
-        return handleApiResponse(this.agentService.saveWorkAddress(publicAddress, privateKey));
     }
 
     @Get("generateWorkAddress")
