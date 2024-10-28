@@ -3,7 +3,8 @@ FROM node:18
 WORKDIR /usr/src/app
 RUN chown node /usr/src/app
 
-RUN apt-get update && apt-get install -y iputils-ping less nano
+RUN apt-get update
+RUN apt-get install -y iputils-ping less nano
 
 RUN chown node .
 
