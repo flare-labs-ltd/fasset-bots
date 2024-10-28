@@ -12,7 +12,7 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BTC_DOGE_DEC_PLACES, ChainType } from "../../utils/constants";
+import { BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
@@ -49,7 +49,7 @@ export class TransactionUTXOService {
         this.enoughConfirmations = enoughConfirmations;
         this.mempoolChainLengthLimit = mempoolChainLengthLimit;
 
-        this.maximumNumberOfUTXOs = 5;
+        this.maximumNumberOfUTXOs = 5; //TODO - should be dynamic number
 
         /* istanbul ignore next */
         if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
@@ -83,21 +83,27 @@ export class TransactionUTXOService {
 
     // allUTXOs = currently available UTXOs (either from db or db + fetch from mempool)
     private async selectUTXOs(allUTXOs: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData, feeStatus: FeeStatus) {
+        // filter out dust inputs
+        const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(BTC_DUST_AMOUNT));
+        const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(BTC_DUST_AMOUNT)); // should not be necessary
+
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
-            logger.info(`Account doesn't have enough UTXOs - Skipping selection. 
+            logger.info(`Account doesn't have enough UTXOs - Skipping selection.
                 Amount: ${txData.amount.toNumber()},
-                UTXO values: [${rbfUTXOs.concat(allUTXOs).map(t => t.value.toNumber()).join(', ')}], 
+                UTXO values: [${rbfUTXOs.concat(allUTXOs).map(t => t.value.toNumber()).join(', ')}],
                 ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
             );
             return null;
         }
 
-        const notMinimalUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(this.minimumUTXOValue));
-        let utxos: UTXOEntity[] = notMinimalUTXOs;
+        const minimalUTXOs = validUTXOs.filter((utxo) => utxo.value.lt(this.minimumUTXOValue));
+        const notMinimalUTXOs = validUTXOs.filter((utxo) => utxo.value.gte(this.minimumUTXOValue));
 
+        let utxos: UTXOEntity[] = notMinimalUTXOs;
         let usingMinimalUTXOs = false; // If we're using the UTXOs which are < this.minimumUTXOValue
-        if (!isEnoughUTXOs(rbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
-            utxos = allUTXOs;
+
+        if (!isEnoughUTXOs(validRbfUTXOs.concat(notMinimalUTXOs), txData.amount, txData.fee)) {
+            utxos = validUTXOs;
             usingMinimalUTXOs = true;
         }
 
@@ -107,24 +113,23 @@ export class TransactionUTXOService {
         if (feeStatus == FeeStatus.HIGH) {
             // order by value, confirmed
             utxos = this.sortUTXOs(utxos);
-            res = await this.collectUTXOs(utxos, rbfUTXOs, txData);
+            res = await this.collectUTXOs(utxos, validRbfUTXOs, txData);
         } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
             // check if we can build tx with utxos with utxo.value < amountToSend
             const smallUTXOs = utxos.filter((utxo) => utxo.value.lte(txData.amount));
             if (isEnoughUTXOs(smallUTXOs, txData.amount, txData.fee)) {
-                res = await this.collectUTXOs(smallUTXOs, rbfUTXOs, txData);
+                res = await this.collectUTXOs(smallUTXOs, validRbfUTXOs, txData);
             }
             if (!res) {
-                res = await this.collectUTXOs(utxos, rbfUTXOs, txData);
+                res = await this.collectUTXOs(utxos, validRbfUTXOs, txData);
             }
         }
 
         if (res && (feeStatus == FeeStatus.HIGH || feeStatus == FeeStatus.MEDIUM)) {
-            res = await this.removeExcessUTXOs(res, rbfUTXOs.length, txData);
+            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData);
         }
 
         if (res && !usingMinimalUTXOs && feeStatus == FeeStatus.LOW && res.length < this.maximumNumberOfUTXOs) {
-            const minimalUTXOs = allUTXOs.filter((utxo) => utxo.value.lt(this.minimumUTXOValue));
             for (let i = 0; i < this.maximumNumberOfUTXOs - res.length && i < minimalUTXOs.length; i++) {
                 res.push(minimalUTXOs[i]);
             }
@@ -177,9 +182,9 @@ export class TransactionUTXOService {
 
         if (!positiveValueReached) {
             logger.info(
-                `Failed to collect enough UTXOs to cover amount and fee. 
+                `Failed to collect enough UTXOs to cover amount and fee.
                     Amount: ${txData.amount.toNumber()},
-                    UTXO values: [${baseUTXOs.map(t => t.value.toNumber()).join(', ')}], 
+                    UTXO values: [${baseUTXOs.map(t => t.value.toNumber()).join(', ')}],
                     ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
             );
         }
