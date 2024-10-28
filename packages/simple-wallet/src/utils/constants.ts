@@ -13,6 +13,8 @@ export const RANDOM_SLEEP_MS_MAX = 500;
 
 export const BTC_PER_SATOSHI = 1 / 100000000;
 
+export const XRP_PENDING_TIMEOUT = 30;// 30s
+export const MEMPOOL_WAITING_TIME = 60;// 1min
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 

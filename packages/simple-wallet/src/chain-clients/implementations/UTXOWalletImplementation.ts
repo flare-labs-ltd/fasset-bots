@@ -8,7 +8,7 @@ import {
     stuckTransactionConstants,
 } from "../../utils/utils";
 import { toBN, toNumber } from "../../utils/bnutils";
-import { ChainType } from "../../utils/constants";
+import { ChainType, MEMPOOL_WAITING_TIME } from "../../utils/constants";
 import {
     BaseWalletConfig,
     IWalletKeys,
@@ -63,7 +63,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     mempoolChainLengthLimit = 25;
 
     enoughConfirmations: number;
-    mempoolWaitingTimeInS = 60; // 1min
 
     useRBFFactor = 1.4;
 
@@ -644,7 +643,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.info(`Transaction ${txId} is waiting to be accepted in mempool.`);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         const start = txEnt.reachedStatusPendingInTimestamp!;
-        while (toBN(getCurrentTimestampInSeconds()).sub(start).ltn(this.mempoolWaitingTimeInS)) {
+        while (toBN(getCurrentTimestampInSeconds()).sub(start).ltn(MEMPOOL_WAITING_TIME)) {
             try {
                 const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
                 /* ignore else */
@@ -656,6 +655,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     logger.info(`Transaction ${txId} is accepted in mempool.`);
                     return;
                 }
+                await sleepMs(5000); // wait for 5s
             } catch (e) {
                 /* istanbul ignore next */
                 if (axios.isAxiosError(e)) {
@@ -663,7 +663,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 } else {
                     logger.warn(`Transaction ${txId} not yet seen in mempool`, e);
                 }
-                await sleepMs(10000);
+                await sleepMs(10000); // wait for 10s
             }
         }
 
