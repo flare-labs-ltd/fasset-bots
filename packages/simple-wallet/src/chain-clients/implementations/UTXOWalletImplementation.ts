@@ -120,8 +120,30 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         return await getAccountBalance(this.chainType, account);
     }
 
+    /**
+     * @param {UTXOFeeParams} params - basic data needed to estimate fee
+     * @returns {BN} - current transaction/network fee in satoshis
+     */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
-        return await this.transactionFeeService.getCurrentTransactionFee(params);
+
+        try {
+            const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(params.source);
+            await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, params.source, utxosFromMempool);
+            const [transaction] = await this.transactionService.preparePaymentTransaction(
+                0,
+                params.source,
+                params.destination,
+                params.amount ?? null,
+                undefined,
+                params.note,
+                undefined,
+                params.feeSource,
+            );
+            return toBN(transaction.getFee());
+        } catch (error) /* istanbul ignore next */ {
+            logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount?.toString()}: ${errorMessage(error)}`);
+            throw error;
+        }
     }
 
     /**

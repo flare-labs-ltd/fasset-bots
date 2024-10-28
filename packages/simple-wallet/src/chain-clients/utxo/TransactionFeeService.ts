@@ -20,13 +20,11 @@ import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
-import { UTXOFeeParams } from "../../interfaces/IWalletTransaction";
-import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
+import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
-import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export enum FeeStatus {
@@ -88,39 +86,6 @@ export class TransactionFeeService {
         } catch (e) {
             logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
             return getDefaultFeePerKB(this.chainType);
-        }
-    }
-
-    /**
-     * @param {UTXOFeeParams} params - basic data needed to estimate fee
-     * @returns {BN} - current transaction/network fee in satoshis
-     */
-    async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
-        try {
-            const utxos = await this.blockchainAPI.getUTXOsFromMempool(params.source);
-            const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
-            let est_fee = await this.getEstimateFee(utxos.length, numOfOut);
-
-            /* istanbul ignore if */
-            if (params.amount == null) {
-                return est_fee;
-            } else {
-                const neededUTXOs: MempoolUTXO[] = [];
-                let sum = toBN(0);
-                for (const utxo of utxos) {
-                    neededUTXOs.push(utxo);
-                    sum = sum.add(utxo.value);
-                    est_fee = await this.getEstimateFee(neededUTXOs.length, numOfOut);
-                    /* istanbul ignore else */
-                    if (sum.gt(params.amount.add(est_fee))) {
-                        break;
-                    }
-                }
-                return est_fee;
-            }
-        } catch (error) /* istanbul ignore next */ {
-            logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount?.toString()}: ${errorMessage(error)}`);
-            throw error;
         }
     }
 
