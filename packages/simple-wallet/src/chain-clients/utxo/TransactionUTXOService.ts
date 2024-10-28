@@ -12,14 +12,14 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType } from "../../utils/constants";
+import { BTC_DOGE_DEC_PLACES, ChainType } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
 import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
 import { TransactionService } from "./TransactionService";
-import { isEnoughUTXOs } from "./UTXOUtils";
+import { getDustAmount, isEnoughUTXOs } from "./UTXOUtils";
 import { UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
@@ -84,8 +84,8 @@ export class TransactionUTXOService {
     // allUTXOs = currently available UTXOs (either from db or db + fetch from mempool)
     private async selectUTXOs(allUTXOs: UTXOEntity[], rbfUTXOs: UTXOEntity[], txData: TransactionData, feeStatus: FeeStatus) {
         // filter out dust inputs
-        const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(BTC_DUST_AMOUNT));
-        const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(BTC_DUST_AMOUNT)); // should not be necessary
+        const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType)));
+        const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType))); // should not be necessary
 
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
             logger.info(`Account doesn't have enough UTXOs - Skipping selection.
