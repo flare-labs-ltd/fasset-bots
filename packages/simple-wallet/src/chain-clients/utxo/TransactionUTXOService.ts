@@ -143,41 +143,31 @@ export class TransactionUTXOService {
         const additionalUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= minimalUTXOSize output
 
         const rbfUTXOsValueLeft = rbfUTXOs.length > 0 ? await this.calculateChangeValue(txData, baseUTXOs) : new BN(0);
-        // allow at least dust in case of rbf
-        if (rbfUTXOsValueLeft.gt(getDustAmount(this.chainType))) {
+        if (rbfUTXOsValueLeft.gte(this.minimumUTXOValue)) {
             return baseUTXOs;
         }
 
-        let positiveValueReached = rbfUTXOsValueLeft.gten(0) && rbfUTXOs.length > 0;
-        const utxoSet = new Set(utxos);
+        let positiveValueReached = rbfUTXOsValueLeft.gt(getDustAmount(this.chainType)) && rbfUTXOs.length > 0;
+        for (const utxo of utxos) {
+            const numAncestors = await this.getNumberOfMempoolAncestors(utxo.mintTransactionHash);
+            if (numAncestors + 1 >= this.mempoolChainLengthLimit) {
+                logger.info(
+                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`
+                );
+                continue; //skip this utxo
+            }
 
-        while (utxoSet.size > 0) {
-            for (const utxo of utxoSet) {
-                const numAncestors = await this.getNumberOfMempoolAncestors(utxo.mintTransactionHash);
-                if (numAncestors + 1 >= this.mempoolChainLengthLimit) {
-                    logger.info(
-                        `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`
-                    );
-                    utxoSet.delete(utxo);
-                    continue; //skip this utxo
-                }
+            if (!positiveValueReached) {
+                baseUTXOs.push(utxo);
+                additionalUTXOs.push(utxo);
+                const satisfiedChangeForBase = (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType));
+                positiveValueReached = satisfiedChangeForBase;
+            } else {
 
-                if (Math.random() > 0.5) {
-                    /* istanbul ignore else */
-                    if (!positiveValueReached) {
-                        baseUTXOs.push(utxo);
-                    }
-                    additionalUTXOs.push(utxo);
-                    utxoSet.delete(utxo);
-
-                    if (!positiveValueReached && (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType))) {
-                        positiveValueReached = true;
-                    }
-
-                    if ((await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue)) {
-                        return additionalUTXOs;
-                    }
-                }
+            }
+            const satisfiedChangeForAdditional = (await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue);
+            if (satisfiedChangeForAdditional) {
+                return additionalUTXOs;
             }
         }
 
@@ -383,6 +373,15 @@ export class TransactionUTXOService {
     }
 
     private sortUTXOs(utxos: UTXOEntity[]) {
-        return utxos.sort((a, b) => (a.confirmed == b.confirmed ? b.value.sub(a.value).toNumber() : Number(b.confirmed) - Number(a.confirmed)));
+        return utxos.sort((a, b) => {
+            if (a.confirmed === b.confirmed) {
+                const valueComparison = b.value.sub(a.value).toNumber(); // if they are both confirmed or unconfirmed, sort by value
+                if (valueComparison === 0) { // if values are also the same => shuffle randomly
+                    return Math.random() < 0.5 ? -1 : 1;
+                }
+                return valueComparison;
+            }
+            return Number(b.confirmed) - Number(a.confirmed);
+        });
     }
 }
