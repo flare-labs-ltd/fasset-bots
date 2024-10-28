@@ -17,7 +17,7 @@ COPY --chown=node . .
 #COPY --chown=node ./yarn.lock .
 
 #RUN yarn install --network-timeout 100000
-RUN yarn install --network-timeout 100000
+RUN yarn install
 
 #################################
 
