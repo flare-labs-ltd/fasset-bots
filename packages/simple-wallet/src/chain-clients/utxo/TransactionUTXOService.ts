@@ -142,12 +142,13 @@ export class TransactionUTXOService {
         const baseUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
         const additionalUTXOs: UTXOEntity[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= minimalUTXOSize output
 
-        const rbfUTXOsValue = rbfUTXOs.length > 0 ? await this.calculateTransactionValue(txData, baseUTXOs) : new BN(0);
-        if (rbfUTXOsValue.gte(this.minimumUTXOValue)) {
+        const rbfUTXOsValueLeft = rbfUTXOs.length > 0 ? await this.calculateChangeValue(txData, baseUTXOs) : new BN(0);
+        // allow at least dust in case of rbf
+        if (rbfUTXOsValueLeft.gt(getDustAmount(this.chainType))) {
             return baseUTXOs;
         }
 
-        let positiveValueReached = rbfUTXOsValue.gten(0) && rbfUTXOs.length > 0;
+        let positiveValueReached = rbfUTXOsValueLeft.gten(0) && rbfUTXOs.length > 0;
         const utxoSet = new Set(utxos);
 
         while (utxoSet.size > 0) {
@@ -169,11 +170,11 @@ export class TransactionUTXOService {
                     additionalUTXOs.push(utxo);
                     utxoSet.delete(utxo);
 
-                    if (!positiveValueReached && (await this.calculateTransactionValue(txData, baseUTXOs)).gten(0)) {
+                    if (!positiveValueReached && (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType))) {
                         positiveValueReached = true;
                     }
 
-                    if ((await this.calculateTransactionValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue)) {
+                    if ((await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue)) {
                         return additionalUTXOs;
                     }
                 }
@@ -208,10 +209,10 @@ export class TransactionUTXOService {
             }
             additionalUTXOs.push(utxo);
 
-            if (!positiveValueReached && (await this.calculateTransactionValue(txData, baseUTXOs)).gten(0)) {
+            if (!positiveValueReached && (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType))) {
                 positiveValueReached = true;
             }
-            if ((await this.calculateTransactionValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue) && (additionalUTXOs.length - baseUTXOs.length) < this.maximumNumberOfUTXOs / 2) {
+            if ((await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue) && (additionalUTXOs.length - baseUTXOs.length) < this.maximumNumberOfUTXOs / 2) {
                 return additionalUTXOs;
             }
         }
@@ -247,7 +248,7 @@ export class TransactionUTXOService {
         }
     }
 
-    private async calculateTransactionValue(txData: TransactionData, utxos: UTXOEntity[]) {
+    private async calculateChangeValue(txData: TransactionData, utxos: UTXOEntity[]): Promise<BN> {
         const transactionService = ServiceRepository.get(this.chainType, TransactionService);
         const tr = await transactionService.createBitcoreTransaction(
             txData.source,
@@ -259,14 +260,14 @@ export class TransactionUTXOService {
             txData.useChange,
             txData.note
         );
-        const val = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
-
+        const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
+        const calculatedTxFee = toBN(tr.getFee());
         if (txData.fee) {
-            return val.sub(txData.fee);
-        } else if (tr.getFee() < 0) {
-            return toBN(-10);
+            return valueBeforeFee.sub(txData.fee);
+        } else if (calculatedTxFee.ltn(0)) {
+            return toBN(-10); // return any negative value
         } else {
-            return val.sub(toBN(tr.getFee()));
+            return valueBeforeFee.sub(calculatedTxFee);
         }
     }
 
