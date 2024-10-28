@@ -163,7 +163,9 @@ export class TransactionUTXOService {
                 const satisfiedChangeForBase = (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType));
                 positiveValueReached = satisfiedChangeForBase;
             } else {
-
+                if (utxo.confirmed) {
+                    additionalUTXOs.push(utxo);
+                }
             }
             const satisfiedChangeForAdditional = (await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue);
             if (satisfiedChangeForAdditional) {
