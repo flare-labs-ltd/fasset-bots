@@ -154,3 +154,7 @@ export async function tryWithClients<TResult>(clients: Record<string, AxiosInsta
    }
    throw new Error(`All blockchain clients failed.`);
 }
+
+export function createMonitoringId(chainType: ChainType): string {
+   return `${chainType}-${Math.random().toString(36).substring(2, 10)}`;
+}

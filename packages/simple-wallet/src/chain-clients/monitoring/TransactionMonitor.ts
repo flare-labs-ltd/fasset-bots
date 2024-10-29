@@ -39,6 +39,7 @@ export class TransactionMonitor {
             const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
             if (monitoringState?.processOwner && monitoringState.processOwner === this.monitoringId) {
                 this.monitoring = false;
+                console.log(`Stopping wallet monitoring ${this.monitoringId} ...`);
                 const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
                 await sleepMs(PING_INTERVAL + randomMs); // to make sure pinger stops
                 await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
@@ -78,6 +79,7 @@ export class TransactionMonitor {
                 } as RequiredEntityData<MonitoringStateEntity>);
                 await this.rootEm.flush();
             } else if (await this.isMonitoring()) {
+                logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
                 return;
             } else if (monitoringState.lastPingInTimestamp) {
                 logger.info(`Monitoring possibly running for chain ${this.monitoringId}`);
@@ -89,7 +91,7 @@ export class TransactionMonitor {
                     const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.monitoringId);
                     const newNow = (new Date()).getTime();
                     if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                        logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
+                        logger.info(`Another monitoring instance is already running for chain ${this.monitoringId} (double check)`);
                         return;
                     }
                 }

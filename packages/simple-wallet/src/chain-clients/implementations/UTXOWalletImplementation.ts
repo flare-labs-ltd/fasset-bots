@@ -3,6 +3,7 @@ import * as bitcore from "bitcore-lib";
 import {
     checkIfFeeTooHigh,
     checkIfShouldStillSubmit,
+    createMonitoringId,
     getCurrentTimestampInSeconds,
     sleepMs,
     stuckTransactionConstants,
@@ -71,7 +72,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
-        this.monitoringId = `${this.chainType}-${Math.random().toString(36).substring(2, 10)}`;
+        this.monitoringId = createMonitoringId(this.chainType);
         this.inTestnet = createConfig.inTestnet ?? false;
         const resubmit = stuckTransactionConstants(this.chainType);
 

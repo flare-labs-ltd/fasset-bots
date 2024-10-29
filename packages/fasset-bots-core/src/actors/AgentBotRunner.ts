@@ -12,8 +12,6 @@ import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { readFileSync } from "fs";
-import { isJSON } from "../utils/prompt";
 
 export const FUND_MIN_INTERVAL_MS = 60 * 3 * 1000; // 3 minutes
 

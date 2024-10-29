@@ -2,7 +2,7 @@ import elliptic from "elliptic";
 import xrpl, { xrpToDrops, convertStringToHex, encodeForSigning, encode as xrplEncode, hashes as xrplHashes } from "xrpl"; // package has some member access issues
 
 import { deriveAddress, sign } from "ripple-keypairs";
-import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops, sleepMs } from "../../utils/utils";
+import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops, createMonitoringId, sleepMs } from "../../utils/utils";
 import { toBN } from "../../utils/bnutils";
 import { ChainType, DELETE_ACCOUNT_OFFSET, XRP_PENDING_TIMEOUT } from "../../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
@@ -54,8 +54,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
-      this.monitoringId = `${this.chainType}-${Math.random().toString(36).substring(2, 10)}`;
       this.blockchainAPI = new XRPBlockchainAPI(createConfig);
+      this.monitoringId = createMonitoringId(this.chainType);
       const resubmit = stuckTransactionConstants(this.chainType);
 
       this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
