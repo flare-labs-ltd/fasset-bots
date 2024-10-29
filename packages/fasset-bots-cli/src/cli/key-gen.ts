@@ -1,8 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { EncryptionMethod, SecretsUser, decryptText, encryptText, generateSecrets, generateUnderlyingAccount, isJSON, promptForPassword, validateEncryptionPassword } from "@flarelabs/fasset-bots-core";
-import { CommandLineError, createSha256Hash, generateRandomHexString, logger, squashSpace, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { decryptText, EncryptionMethod, encryptText, generateSecrets, generateUnderlyingAccount, isJSON, promptForPassword, SecretsUser } from "@flarelabs/fasset-bots-core";
+import { ENCRYPTION_PASSWORD_MIN_LENGTH, validateEncryptionPassword } from "@flarelabs/fasset-bots-core/config";
+import { assertCmd, CommandLineError, createSha256Hash, generateRandomHexString, logger, squashSpace, web3 } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
@@ -10,8 +11,6 @@ import path from "path";
 import { expandConfigPath } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
 import { validateAddress } from "../utils/validation";
-import { read } from "read";
-import { ENCRYPTION_PASSWORD_MIN_LENGTH } from "@flarelabs/fasset-bots-core/config";
 
 const program = new Command();
 
@@ -26,7 +25,8 @@ program
     .option("--user", "generate secrets for user")
     .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management (cold) address")
     .option("--other", "generate secrets for other bots (challenger, etc.)")
-    .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean }) => {
+    .option("--merge <filename>", "merge into the result the contest of JSON file <filename>")
+    .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean, merge?: string }) => {
         const users: SecretsUser[] = [];
         if (opts.user) users.push("user");
         if (opts.agent) {
@@ -39,6 +39,9 @@ program
         }
         opts.config = expandConfigPath(opts.config, "bot");
         const secrets = generateSecrets(opts.config, users, opts.agent);
+        if (opts.merge) {
+            recursiveAssign(secrets, JSON.parse(fs.readFileSync(opts.merge).toString()));
+        }
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
             if (fs.existsSync(opts.output) && !opts.overwrite) {
@@ -77,6 +80,20 @@ program
                 so make sure you don't overwrite it.`);
         }
     });
+
+function recursiveAssign(dest: any, src: any) {
+    assertCmd(typeof dest === "object" && dest != null, `Trying to assign to non-object ${dest}`);
+    for (const [key, value] of Object.entries(src)) {
+        if (typeof value === "object" && value != null) {
+            if (!(key in dest)) {
+                dest[key] = {};
+            }
+            recursiveAssign(dest[key], value);
+        } else {
+            dest[key] = value;
+        }
+    }
+}
 
 program
     .command("encryptSecrets")
