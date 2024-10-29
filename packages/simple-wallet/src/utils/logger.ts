@@ -22,7 +22,7 @@ export function createCustomizedLogger(paths: LoggerPaths) {
             ),
             filename: paths.json,
             json: true,
-            options: commonOptions,
+            ...(commonOptions as any),
         }));
     }
     if (paths.text) {
@@ -30,10 +30,10 @@ export function createCustomizedLogger(paths: LoggerPaths) {
             format: format.combine(
                 format.timestamp(),
                 format.errors({ stack: true }),
-                format.printf(info => `${info.timestamp}  ${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`)
+                format.printf(info => `${info.timestamp}  [simple-wallet] ${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`)
             ),
             filename: paths.text,
-            options: commonOptions,
+            ...(commonOptions as any),
         }));
     }
     return createLogger({ transports });
