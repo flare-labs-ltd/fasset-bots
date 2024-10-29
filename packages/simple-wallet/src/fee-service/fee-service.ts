@@ -138,7 +138,7 @@ export class BlockchainFeeService {
             const blockTime = await this.blockchainAPI.getBlockTimeAt(blockHeight);
             return {
                 blockHeight: blockHeight,
-                averageFeePerKB: toBNExp(avgFee, BTC_DOGE_DEC_PLACES),
+                averageFeePerKB: toBN(avgFee),
                 blockTime: blockTime
             };
         } catch (error) /* istanbul ignore next */ {

@@ -12,7 +12,7 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BTC_DOGE_DEC_PLACES, ChainType } from "../../utils/constants";
+import { BTC_DOGE_DEC_PLACES, ChainType, MEMPOOL_CHAIN_LENGTH_LIMIT } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
@@ -36,7 +36,6 @@ export interface TransactionData {
 export class TransactionUTXOService {
     private readonly chainType: ChainType;
     private readonly enoughConfirmations: number;
-    private readonly mempoolChainLengthLimit: number;
 
     readonly maximumNumberOfUTXOs: number;
     readonly minimumUTXOValue: BN;
@@ -44,10 +43,9 @@ export class TransactionUTXOService {
     private readonly rootEm: EntityManager;
     private readonly blockchainAPI: UTXOBlockchainAPI;
 
-    constructor(chainType: ChainType, mempoolChainLengthLimit: number, enoughConfirmations: number) {
+    constructor(chainType: ChainType, enoughConfirmations: number) {
         this.chainType = chainType;
         this.enoughConfirmations = enoughConfirmations;
-        this.mempoolChainLengthLimit = mempoolChainLengthLimit;
 
         this.maximumNumberOfUTXOs = 5; //TODO - should be dynamic number
 
@@ -150,9 +148,9 @@ export class TransactionUTXOService {
         let positiveValueReached = rbfUTXOsValueLeft.gt(getDustAmount(this.chainType)) && rbfUTXOs.length > 0;
         for (const utxo of utxos) {
             const numAncestors = await this.getNumberOfMempoolAncestors(utxo.mintTransactionHash);
-            if (numAncestors + 1 >= this.mempoolChainLengthLimit) {
+            if (numAncestors + 1 >= MEMPOOL_CHAIN_LENGTH_LIMIT) {
                 logger.info(
-                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${this.mempoolChainLengthLimit} for UTXO with hash ${utxo.mintTransactionHash}`
+                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${MEMPOOL_CHAIN_LENGTH_LIMIT} for UTXO with hash ${utxo.mintTransactionHash}`
                 );
                 continue; //skip this utxo
             }
@@ -232,7 +230,7 @@ export class TransactionUTXOService {
                 // this filter is here because of a weird orm bug
                 const res = await this.getMempoolAncestors(input.transactionHash);
                 ancestors = [...ancestors, ...res];
-                if (ancestors.length >= this.mempoolChainLengthLimit) {
+                if (ancestors.length >= MEMPOOL_CHAIN_LENGTH_LIMIT) {
                     return ancestors;
                 }
             }

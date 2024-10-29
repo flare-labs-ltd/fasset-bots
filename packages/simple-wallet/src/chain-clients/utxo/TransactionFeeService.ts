@@ -81,7 +81,7 @@ export class TransactionFeeService {
             if (fee.toString() === "-1" || fee === 0) {
                 throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
             }
-            const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
+            const rateInSatoshies = toBN(fee);
             return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
         } catch (e) {
             logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);

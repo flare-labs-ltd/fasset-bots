@@ -77,11 +77,11 @@ export async function fetchTransactionEntityById(rootEm: EntityManager, id: numb
     });
 }
 
-export async function fetchTransactionEntities(rootEm: EntityManager, chainType: ChainType, status: TransactionStatus): Promise<TransactionEntity[]> {
+export async function fetchTransactionEntities(rootEm: EntityManager, chainType: ChainType, statuses: TransactionStatus[]): Promise<TransactionEntity[]> {
     return await rootEm.find(
         TransactionEntity,
         {
-            status,
+            status: { $in: statuses },
             chainType,
         } as FilterQuery<TransactionEntity>,
         {
@@ -355,10 +355,10 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
 export async function processTransactions(
     rootEm: EntityManager,
     chainType: ChainType,
-    status: TransactionStatus,
+    statuses: TransactionStatus[],
     processFunction: (txEnt: TransactionEntity) => Promise<void>
 ): Promise<void> {
-    const transactionEntities = await fetchTransactionEntities(rootEm, chainType, status);
+    const transactionEntities = await fetchTransactionEntities(rootEm, chainType, statuses);
     for (const txEnt of transactionEntities) {
         try {
             await processFunction(txEnt);

@@ -58,9 +58,9 @@ export class TransactionMonitor {
 
     async startMonitoringTransactionProgress(
         submitPreparedTransactions: (txEnt: TransactionEntity) => Promise<void>,
-        checkPendingTransaction: (txEnt: TransactionEntity) => Promise<void>,
-        prepareAndSubmitCreatedTransaction: (txEnt: TransactionEntity) => Promise<void>,
-        checkSubmittedTransaction: (txEnt: TransactionEntity) => Promise<void>,
+        checkPendingTransactions: (txEnt: TransactionEntity) => Promise<void>,
+        prepareAndSubmitCreatedTransactions: (txEnt: TransactionEntity) => Promise<void>,
+        checkSubmittedTransactions: (txEnt: TransactionEntity) => Promise<void>,
         checkNetworkStatus: () => Promise<boolean>,
         resubmitSubmissionFailedTransactions?: (txEnt: TransactionEntity) => Promise<void>
     ): Promise<void> {
@@ -121,24 +121,23 @@ export class TransactionMonitor {
                         await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                         continue;
                     }
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, submitPreparedTransactions);
+                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PREPARED], submitPreparedTransactions);
                     /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
                     if (resubmitSubmissionFailedTransactions) {
-                        await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, resubmitSubmissionFailedTransactions);
+                        await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMISSION_FAILED], resubmitSubmissionFailedTransactions);
                         /* istanbul ignore next */
                         if (this.shouldStopMonitoring()) break;
                     }
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, checkPendingTransaction);
+                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PENDING], checkPendingTransactions);
                      /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, prepareAndSubmitCreatedTransaction);
+                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_CREATED], prepareAndSubmitCreatedTransactions);
                      /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, checkSubmittedTransaction);
+                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], checkSubmittedTransactions);
                      /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-
                 } /* istanbul ignore next */ catch (error) {
                     logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${RESTART_IN_DUE_TO_ERROR}: ${errorMessage(error)}`);
                 }

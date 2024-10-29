@@ -26,7 +26,7 @@ describe("getNumberOfMempoolAncestors", () => {
         em = (await initializeTestMikroORMWithConfig(conf)).em;
         ServiceRepository.register(ChainType.testBTC, EntityManager, em);
         ServiceRepository.register(ChainType.testBTC, UTXOBlockchainAPI, new MockBlockchainAPI());
-        ServiceRepository.register(ChainType.testBTC, TransactionUTXOService, new TransactionUTXOService(chainType, 25, 2));
+        ServiceRepository.register(ChainType.testBTC, TransactionUTXOService, new TransactionUTXOService(chainType, 2));
     });
 
     beforeEach(async () => {
