@@ -271,7 +271,7 @@ export class TransactionService {
         if (txForReplacement && feeInSatoshi) {
             const feeToCover: BN = feeInSatoshi;
             if (txForReplacement.size && txForReplacement.fee) {
-                const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.divn(txForReplacement.size).muln(1000)).muln(this.transactionFeeService.feeIncrease);
+                const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.muln(this.transactionFeeService.feeIncrease).muln(1000)).divn(txForReplacement.size);
                 if (feeRatePerKB.lt(minRequiredFeePerKb)) {
                     feeRatePerKB = minRequiredFeePerKb;
                 }
