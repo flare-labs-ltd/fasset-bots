@@ -221,8 +221,8 @@
   },
   {
     "name": "PriceReader",
-    "contractName": "PriceReader.sol",
-    "address": "0xeBF92a31DAEF96Fe68E3d747d7233aE63B2Cf98C"
+    "contractName": "FtsoV2PriceStore.sol",
+    "address": "0x14150aEeced5c1b318b0a78b0bBd8ca73ac891e4"
   },
   {
     "name": "AgentOwnerRegistry",
@@ -387,6 +387,31 @@
   {
     "name": "SystemStateManagementFacet",
     "contractName": "SystemStateManagementFacet.sol",
-    "address": "0x7F9918B5c7A7914748Ceb6174Ffc71bAC46E6346"
+    "address": "0x686B876DcE947A2410413dCe18065d511b9E2AF4"
+  },
+  {
+    "name": "AgentPingFacet",
+    "contractName": "AgentPingFacet.sol",
+    "address": "0x0b6a352cB0e17F878357CFf00154894cde296215"
+  },
+  {
+    "name": "RedemptionTimeExtensionFacet",
+    "contractName": "RedemptionTimeExtensionFacet.sol",
+    "address": "0x91f3a3b20c86e79125350080630EA02C7f75043C"
+  },
+  {
+    "name": "EmergencyPauseFacet",
+    "contractName": "EmergencyPauseFacet.sol",
+    "address": "0x9421dE62Ed391b0B37Bec6B720661b43DEDB36dd"
+  },
+  {
+    "name": "Relay",
+    "contractName": "Relay.sol",
+    "address": "0x32D46A1260BB2D8C9d5Ab1C9bBd7FF7D7CfaabCC"
+  },
+  {
+    "name": "FtsoV2PriceStore",
+    "contractName": "FtsoV2PriceStore.sol",
+    "address": "0x14150aEeced5c1b318b0a78b0bBd8ca73ac891e4"
   }
 ]

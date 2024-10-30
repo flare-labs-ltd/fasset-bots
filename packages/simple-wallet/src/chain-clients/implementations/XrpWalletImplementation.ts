@@ -3,7 +3,7 @@ import xrpl, { convertStringToHex, encodeForSigning, encode as xrplEncode, hashe
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
-import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops } from "../../utils/utils";
+import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops, createMonitoringId } from "../../utils/utils";
 import { toBN } from "../../utils/bnutils";
 import { ChainType, DELETE_ACCOUNT_OFFSET } from "../../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
@@ -46,6 +46,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    executionBlockOffset: number; //buffer before submitting -> will submit only if (currentLedger - executeUntilBlock) >= executionBlockOffset
    rootEm!: EntityManager;
    walletKeys!: IWalletKeys;
+   monitoringId: string;
 
    private monitor: TransactionMonitor;
 
@@ -54,6 +55,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
+      this.monitoringId = createMonitoringId(this.chainType);
       this.blockchainAPI = new XRPBlockchainAPI(this.chainType, createConfig);
       const resubmit = stuckTransactionConstants(this.chainType);
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -64,7 +66,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.rootEm = createConfig.em;
       this.walletKeys = createConfig.walletKeys;
 
-      this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
+      this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
    }
 
    /**

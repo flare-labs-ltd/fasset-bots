@@ -7,6 +7,7 @@ export enum AgentNotificationKey {
     // agent status and settings,
     CCB_STARTED = "CCB",
     LIQUIDATION_STARTED = "LIQUIDATION STARTED",
+    LIQUIDATION_ENDED = "LIQUIDATION ENDED",
     FULL_LIQUIDATION_STARTED = "FULL LIQUIDATION",
     LIQUIDATION_WAS_PERFORMED = "LIQUIDATION WAS PERFORMED",
     AGENT_DESTROYED = "AGENT DESTROYED",
@@ -94,11 +95,15 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendCCBAlert(timestamp: string) {
-        await this.danger(AgentNotificationKey.CCB_STARTED, `Agent ${this.address} is in collateral call band since ${timestamp}.`);
+        await this.danger(AgentNotificationKey.CCB_STARTED, `Agent ${this.address} is in collateral call band since ${timestamp}. Agent is trying to automatically top up vaults.`);
     }
 
     async sendLiquidationStartAlert(timestamp: string) {
-        await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}.`);
+        await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}. Agent is trying to automatically top up vaults.`);
+    }
+
+    async sendLiquidationEndedAlert(timestamp: string) {
+        await this.info(AgentNotificationKey.LIQUIDATION_ENDED, `Liquidation has ended for agent ${this.address} at ${timestamp}.`);
     }
 
     async sendFullLiquidationAlert(payment1?: string, payment2?: string) {
@@ -410,10 +415,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.POOL_UNDELEGATE, `Agent ${this.address} undelegated all pool collateral for pool ${poolAddress}.`);
     }
 
-    async sendAgentCannotUpdateSettingExpired(setting: string) {
+    async sendAgentUnableToUpdateSetting(setting: string, reason: string) {
         await this.danger(
             AgentNotificationKey.AGENT_SETTING_UPDATE_FAILED,
-            `Agent ${this.address} could not update setting ${setting}, as it is not valid anymore.`
+            `Agent ${this.address} could not update setting ${setting} due to "${reason}".`
         );
     }
 

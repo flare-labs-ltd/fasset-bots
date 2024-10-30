@@ -4,9 +4,12 @@ import { toBN, toBNExp } from "./bnutils";
 export const MNEMONIC_STRENGTH = 256;
 
 export const DEFAULT_FEE_INCREASE = 2;
-
+// monitoring constants
 export const PING_INTERVAL = 10_000; // 10seconds
 export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
+export const RESTART_IN_DUE_TO_ERROR = 2000; // 2s
+export const RESTART_IN_DUE_NO_RESPONSE = 20000; // 20s
+export const RANDOM_SLEEP_MS_MAX = 500;
 
 ///////////////////////////////////////////////////////////////////////////
 // chain specs

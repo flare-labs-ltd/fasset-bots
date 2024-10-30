@@ -38,10 +38,9 @@ export class InfoBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of InfoBot
      */
-    static async create(secretsFile: string, configFile: string, fAssetSymbol: string | undefined): Promise<InfoBotCommands> {
+    static async create(secrets: Secrets, configFile: string, fAssetSymbol: string | undefined): Promise<InfoBotCommands> {
         logger.info(`InfoBot started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
-        const secrets = Secrets.load(secretsFile);
         const config = loadConfigFile(configFile, `InfoBot`);
         // init web3 and accounts
         const apiKey = secrets.optional("apiKey.native_rpc");

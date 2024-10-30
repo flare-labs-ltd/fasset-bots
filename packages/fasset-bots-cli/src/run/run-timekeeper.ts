@@ -19,7 +19,7 @@ const program = programWithCommonOptions("bot", "all_fassets");
 
 program.action(async () => {
     const options: { config: string; secrets: string } = program.opts();
-    const secrets = Secrets.load(options.secrets);
+    const secrets = await Secrets.load(options.secrets);
     const runConfig = loadConfigFile(options.config);
     const timekeeperAddress: string = secrets.required("timeKeeper.address");
     const timekeeperPrivateKey: string = secrets.required("timeKeeper.private_key");

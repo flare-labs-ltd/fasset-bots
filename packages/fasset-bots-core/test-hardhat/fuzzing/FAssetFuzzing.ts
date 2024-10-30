@@ -14,11 +14,10 @@ import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
 import { isPoolCollateral } from "../../src/state/CollateralIndexedList";
 import { expectErrors, sleep, sumBN, systemTimestamp, toBIPS, toBN } from "../../src/utils/helpers";
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
-import { artifacts, web3 } from "../../src/utils/web3";
+import { web3 } from "../../src/utils/web3";
 import { latestBlockTimestamp } from "../../src/utils/web3helpers";
 import { TestChainInfo, TestChainType, testAgentBotSettings, testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
-import { FtsoMockInstance } from "../../typechain-truffle";
 import { EventFormatter } from "../test-utils/EventFormatter";
 import { TestAssetBotContext, createTestAssetContext, testTimekeeperTimingConfig } from "../test-utils/create-test-asset-context";
 import { InclusionIterable, currentRealTime, getEnv, mulDecimal, randomChoice, randomInt, randomNum, toWei, weightedRandomChoice } from "../test-utils/fuzzing-utils";
@@ -302,19 +301,21 @@ describe("Fuzzing tests", () => {
         runner.startThread(() => agentBot.makeDoublePayment());
     }
 
+    const allFtsoSymbols = ["NAT", "testUSDC", "testUSDT", "testETH", ...Object.values(testChainInfo).map(ci => ci.symbol)];
+
     async function testChangePrices() {
-        for (const [symbol, ftso] of Object.entries(context.ftsos)) {
-            const [minFactor, maxFactor] = CHANGE_PRICE_FACTOR[symbol] ?? CHANGE_PRICE_FACTOR["default"] ?? [0.9, 1.1];
-            await _changePriceOnFtso(ftso, randomNum(minFactor, maxFactor));
+        for (const symbol of allFtsoSymbols) {
+            const [minFactor, maxFactor] = CHANGE_PRICE_FACTOR?.[symbol] ?? CHANGE_PRICE_FACTOR?.['default'] ?? [0.9, 1.1];
+            await _changePriceOnFtso(symbol, randomNum(minFactor, maxFactor));
         }
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
     }
 
-    async function _changePriceOnFtso(ftso: FtsoMockInstance, factor: number) {
-        const { 0: price } = await ftso.getCurrentPrice();
+    async function _changePriceOnFtso(symbol: string, factor: number) {
+        const { 0: price } = await context.priceStore.getPrice(symbol);
         const newPrice = mulDecimal(price, factor);
-        await ftso.setCurrentPrice(newPrice, 0);
-        await ftso.setCurrentPriceFromTrustedProviders(newPrice, 0);
+        await context.priceStore.setCurrentPrice(symbol, newPrice, 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(symbol, newPrice, 0);
     }
 
     async function setMiningMode(miningMode: MiningMode, interval: number = 0) {

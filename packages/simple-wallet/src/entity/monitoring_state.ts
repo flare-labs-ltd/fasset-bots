@@ -14,6 +14,9 @@ export class MonitoringStateEntity {
     @Property({ type: BNType })
     lastPingInTimestamp: BN = toBN((new Date()).getTime());
 
+    @Property()
+    processOwner: string = "";
+
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();
 

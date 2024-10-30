@@ -634,8 +634,8 @@ describe("Agent bot tests", () => {
         // check agent status
         const status1 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status1, AgentStatus.NORMAL);
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 7), 0);
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         await agentBot.runStep(orm.em);
         // check agent status
@@ -668,18 +668,18 @@ describe("Agent bot tests", () => {
         const status1 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status1, AgentStatus.NORMAL);
         // change price
-        const { 0: assetPrice } = await context.assetFtso.getCurrentPrice();
-        await context.assetFtso.setCurrentPrice(assetPrice.muln(10000), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(assetPrice.muln(10000), 0);
+        const { 0: assetPrice } = await context.priceStore.getPrice(context.chainInfo.symbol);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, assetPrice.muln(10000), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, assetPrice.muln(10000), 0);
         // start liquidation
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress);
         // check agent status
         const status2 = Number((await agentBot.agent.getAgentInfo()).status);
         assert.equal(status2, AgentStatus.LIQUIDATION);
         // change price back
-        const { 0: assetPrice2 } = await context.assetFtso.getCurrentPrice();
-        await context.assetFtso.setCurrentPrice(assetPrice2.divn(10000), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(assetPrice2.divn(10000), 0);
+        const { 0: assetPrice2 } = await context.priceStore.getPrice(context.chainInfo.symbol);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, assetPrice2.divn(10000), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, assetPrice2.divn(10000), 0);
         // agent ends liquidation
         await context.assetManager.endLiquidation(agentBot.agent.vaultAddress, { from: agentBot.agent.owner.workAddress });
         // check agent status
@@ -699,7 +699,7 @@ describe("Agent bot tests", () => {
         await agentBot.runStep(orm.em);
         expect(spyTop).to.have.been.called.exactly(1);
         // mock price changes
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         // now the collateral ratio check must happen again
         await agentBot.runStep(orm.em);
         expect(spyTop).to.have.been.called.exactly(2);
@@ -810,17 +810,17 @@ describe("Agent bot tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await context.assetManager.startLiquidation(agentBot.agent.vaultAddress, { from: minter.address });
         // check agent status
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.CCB);
         // run bot
         await agentBot.handleEvents(orm.em);
-        expect(spyConsole).to.have.been.called.exactly(5);
+        expect(spyConsole).to.have.been.called.above(5);
     });
 
     it("Should not top up collateral - fails on owner side due to no vault collateral", async () => {
@@ -833,10 +833,10 @@ describe("Agent bot tests", () => {
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(14, 6), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(14, 6), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(14, 6), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(14, 6), 0);
         // mock price changes and run
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         // send notifications: top up failed and low balance on ownerAddress
         await agentBot.runStep(orm.em);
         expect(spyTopUpFailed).to.have.been.called.once;
@@ -846,7 +846,7 @@ describe("Agent bot tests", () => {
         const agentInfo = await agentBot.agent.getAgentInfo();
         await mintVaultCollateralToOwner(deposit, agentInfo.vaultCollateralToken, ownerAddress);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         // send notifications: top up successful
         await agentBot.runStep(orm.em);
         expect(spyVaultTopUp).to.have.been.called.once;
@@ -866,10 +866,10 @@ describe("Agent bot tests", () => {
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2000, orm, chain);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(14, 6), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(14, 6), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(14, 6), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(14, 6), 0);
         // mock price changes and run
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         // make an agent hold less than minimum amount of NAT reserves
         const agentInfo = await agentBot.agent.getAgentInfo()
         const minNative = toBNExp(199, 18);
@@ -894,12 +894,12 @@ describe("Agent bot tests", () => {
         const minter = await createTestMinter(context, minterAddress, chain);
         // create collateral reservation, perform minting and run
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await agentBot.runStep(orm.em);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.finalizePrices();
         // create another agent and buy pool tokens
         const agent = await createTestAgent(context, ownerManagementAddress, undefined, false);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));

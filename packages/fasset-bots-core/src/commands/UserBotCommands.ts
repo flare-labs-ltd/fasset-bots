@@ -85,7 +85,7 @@ export class UserBotCommands {
      * @returns instance of UserBot
      */
     static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, userDataDir: string, registerCleanup?: CleanupRegistration) {
-        const secrets = Secrets.load(secretsFile);
+        const secrets = await Secrets.load(secretsFile);
         const nativeAddress = secrets.required("user.native.address");
         logger.info(`User ${nativeAddress} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));

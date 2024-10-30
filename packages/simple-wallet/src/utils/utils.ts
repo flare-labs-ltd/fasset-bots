@@ -132,3 +132,7 @@ export function getDateTimestampInSeconds(dateTime: string): number {
 export function roundUpXrpToDrops(amount: number): number {
    return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
 }
+
+export function createMonitoringId(chainType: ChainType): string {
+   return `${chainType}-${Math.random().toString(36).substring(2, 10)}`;
+}

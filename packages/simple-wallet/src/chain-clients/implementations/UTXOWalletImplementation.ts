@@ -1,6 +1,6 @@
 import axios from "axios";
 import * as bitcore from "bitcore-lib";
-import { checkIfFeeTooHigh, checkIfShouldStillSubmit, getCurrentTimestampInSeconds, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import { checkIfFeeTooHigh, checkIfShouldStillSubmit, createMonitoringId, getCurrentTimestampInSeconds, sleepMs, stuckTransactionConstants } from "../../utils/utils";
 import { toBN, toNumber } from "../../utils/bnutils";
 import { ChainType } from "../../utils/constants";
 import { BaseWalletConfig, IWalletKeys, SignedObject, TransactionInfo, UTXOFeeParams, WriteWalletInterface } from "../../interfaces/IWalletTransaction";
@@ -50,10 +50,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     useRBFFactor = 1.4;
 
+    monitoringId: string;
     private monitor: TransactionMonitor;
 
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
+        this.monitoringId = createMonitoringId(this.chainType);
         this.inTestnet = createConfig.inTestnet ?? false;
         this.blockchainAPI = new BlockchainAPIWrapper(createConfig, this.chainType);
         const resubmit = stuckTransactionConstants(this.chainType);
@@ -69,7 +71,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         if (createConfig.feeServiceConfig) {
             this.feeService = new BlockchainFeeService(createConfig.feeServiceConfig);
         }
-        this.monitor = new TransactionMonitor(this.chainType, this.rootEm);
+        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
 
         ServiceRepository.register(this.chainType, EntityManager, this.rootEm);
 

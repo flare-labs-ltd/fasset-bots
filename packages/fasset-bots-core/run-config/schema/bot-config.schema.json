@@ -140,6 +140,7 @@
             },
             "required": [
                 "chainId",
+                "priceChangeEmitter",
                 "tokenDecimals",
                 "tokenName",
                 "tokenSymbol"
@@ -370,6 +371,15 @@
         },
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
+        },
+        "priceFeedApiUrls": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "pricePublisherLoopDelayMs": {
+            "type": "number"
         },
         "prioritizeAddressUpdater": {
             "type": "boolean"
