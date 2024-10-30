@@ -105,3 +105,7 @@ export async function checkEvmNativeFunds(context: IAssetAgentContext, sourceAdd
 export function isPriceChangeEvent(context: IAssetNativeChainContext, event: EvmEvent) {
     return eventIs(event, context.priceChangeEmitter, "PriceEpochFinalized") || eventIs(event, context.priceChangeEmitter, "PricesPublished");
 }
+
+export function isCollateralRatioChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
+    return eventIs(event, context.assetManager, "CollateralRatiosChanged");
+}

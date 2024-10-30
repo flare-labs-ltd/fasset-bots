@@ -1,7 +1,7 @@
 import { EM } from "../config/orm";
 import { Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { DAYS, blockTimestamp, isPriceChangeEvent, latestBlockTimestamp } from "../utils";
+import { DAYS, blockTimestamp, isCollateralRatioChangedEvent, isPriceChangeEvent, latestBlockTimestamp } from "../utils";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { logger } from "../utils/logger";
@@ -46,6 +46,8 @@ export class AgentBotEventReader {
         const lastBlock = Math.min(readAgentEnt.currentEventBlock + maximumBlocks, lastFinalizedBlock);
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
+        let eventCollateralRatiosChangedDetected = false; // to track occurrence of CollateralRatiosChanged
+
         for (let lastBlockRead = readAgentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
             if (this.bot.stopRequested()) break;
             // asset manager events
@@ -56,10 +58,24 @@ export class AgentBotEventReader {
                 topics: [null, encodedVaultAddress],
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
+
+            if (!eventCollateralRatiosChangedDetected) { // check if CollateralRatiosChanged happened
+                for (const event of events) {
+                    if (isCollateralRatioChangedEvent(this.context, event)) {
+                        eventCollateralRatiosChangedDetected = true;
+                        break;
+                    }
+                }
+            }
         }
         logger.info(`Agent ${this.agentVaultAddress} finished reading native events TO block ${lastBlock}`);
         // sort events first by their block numbers, then internally by their event index
         events.sort(eventOrder);
+
+        if (eventCollateralRatiosChangedDetected) {
+            logger.info(`Agent ${this.agentVaultAddress} received event 'CollateralRatioChanged'.`);
+            await this.bot.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
+        }
         return [events, lastBlock];
     }
 
