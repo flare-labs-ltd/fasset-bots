@@ -71,6 +71,7 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
     poolExitCollateralRatioBIPS: BN;
     poolTopupCollateralRatioBIPS: BN;
     poolTopupTokenPriceFactorBIPS: BN;
+    handshakeType: BN;
   }>;
 
   getAgentLiquidationFactorsAndMaxAmount(
@@ -161,6 +162,7 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
       poolExitCollateralRatioBIPS: BN;
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
+      handshakeType: BN;
     }>;
 
     getAgentLiquidationFactorsAndMaxAmount(

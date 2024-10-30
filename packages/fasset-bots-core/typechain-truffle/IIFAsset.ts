@@ -196,6 +196,24 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setTransferFeesPaidBy: {
+    (_payingAccount: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _payingAccount: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _payingAccount: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _payingAccount: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   terminate: {
@@ -239,6 +257,34 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  transferAndPayFee: {
+    (
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  transferFeesPaidBy(
+    _origin: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   transferFrom: {
     (
       from: string,
@@ -262,6 +308,52 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
       from: string,
       to: string,
       amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  transferInternally: {
+    (
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  transferSubtractingFee: {
+    (
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _to: string,
+      _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -426,6 +518,24 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    setTransferFeesPaidBy: {
+      (_payingAccount: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _payingAccount: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _payingAccount: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _payingAccount: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     terminate: {
@@ -469,6 +579,34 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    transferAndPayFee: {
+      (
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    transferFeesPaidBy(
+      _origin: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
     transferFrom: {
       (
         from: string,
@@ -492,6 +630,52 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
         from: string,
         to: string,
         amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    transferInternally: {
+      (
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    transferSubtractingFee: {
+      (
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _to: string,
+        _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

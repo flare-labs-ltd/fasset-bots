@@ -21,10 +21,22 @@ export interface MathUtilsMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  subOrZero(
+    _a: number | BN | string,
+    _b: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   methods: {
     roundUp(
       x: number | BN | string,
       rounding: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    subOrZero(
+      _a: number | BN | string,
+      _b: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
   };

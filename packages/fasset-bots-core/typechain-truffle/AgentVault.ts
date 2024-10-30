@@ -56,29 +56,65 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  claimFtsoRewards: {
+  claimDelegationRewards: {
     (
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
       _recipient: string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
       _recipient: string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
       _recipient: string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
       _recipient: string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -498,29 +534,65 @@ export interface AgentVaultInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    claimFtsoRewards: {
+    claimDelegationRewards: {
       (
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
         _recipient: string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
         _recipient: string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
         _recipient: string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
         _recipient: string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

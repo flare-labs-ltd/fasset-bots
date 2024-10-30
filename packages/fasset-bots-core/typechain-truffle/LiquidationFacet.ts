@@ -46,9 +46,13 @@ export interface LiquidationPerformed {
     agentVault: string;
     liquidator: string;
     valueUBA: BN;
+    paidVaultCollateralWei: BN;
+    paidPoolCollateralWei: BN;
     0: string;
     1: string;
     2: BN;
+    3: BN;
+    4: BN;
   };
 }
 

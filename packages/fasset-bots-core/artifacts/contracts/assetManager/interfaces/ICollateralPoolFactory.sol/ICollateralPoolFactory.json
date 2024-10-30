@@ -66,6 +66,11 @@
               "internalType": "uint256",
               "name": "poolTopupTokenPriceFactorBIPS",
               "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "handshakeType",
+              "type": "uint256"
             }
           ],
           "internalType": "struct AgentSettings.Data",

@@ -33,6 +33,7 @@ export interface ICollateralPoolFactoryInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
@@ -50,6 +51,7 @@ export interface ICollateralPoolFactoryInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
@@ -67,6 +69,7 @@ export interface ICollateralPoolFactoryInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
@@ -84,6 +87,7 @@ export interface ICollateralPoolFactoryInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -105,6 +109,7 @@ export interface ICollateralPoolFactoryInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
@@ -122,6 +127,7 @@ export interface ICollateralPoolFactoryInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
@@ -139,6 +145,7 @@ export interface ICollateralPoolFactoryInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
@@ -156,6 +163,7 @@ export interface ICollateralPoolFactoryInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;

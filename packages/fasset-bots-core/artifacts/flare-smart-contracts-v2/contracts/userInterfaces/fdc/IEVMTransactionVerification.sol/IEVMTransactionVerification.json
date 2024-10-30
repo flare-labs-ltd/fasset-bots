@@ -1,0 +1,175 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IEVMTransactionVerification",
+  "sourceName": "flare-smart-contracts-v2/contracts/userInterfaces/fdc/IEVMTransactionVerification.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "attestationType",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "sourceId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "votingRound",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "lowestUsedTimestamp",
+                  "type": "uint64"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "transactionHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "uint16",
+                      "name": "requiredConfirmations",
+                      "type": "uint16"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "provideInput",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "listEvents",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint32[]",
+                      "name": "logIndices",
+                      "type": "uint32[]"
+                    }
+                  ],
+                  "internalType": "struct IEVMTransaction.RequestBody",
+                  "name": "requestBody",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "blockNumber",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "timestamp",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "sourceAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "isDeployment",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "receivingAddress",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "input",
+                      "type": "bytes"
+                    },
+                    {
+                      "internalType": "uint8",
+                      "name": "status",
+                      "type": "uint8"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint32",
+                          "name": "logIndex",
+                          "type": "uint32"
+                        },
+                        {
+                          "internalType": "address",
+                          "name": "emitterAddress",
+                          "type": "address"
+                        },
+                        {
+                          "internalType": "bytes32[]",
+                          "name": "topics",
+                          "type": "bytes32[]"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "data",
+                          "type": "bytes"
+                        },
+                        {
+                          "internalType": "bool",
+                          "name": "removed",
+                          "type": "bool"
+                        }
+                      ],
+                      "internalType": "struct IEVMTransaction.Event[]",
+                      "name": "events",
+                      "type": "tuple[]"
+                    }
+                  ],
+                  "internalType": "struct IEVMTransaction.ResponseBody",
+                  "name": "responseBody",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct IEVMTransaction.Response",
+              "name": "data",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IEVMTransaction.Proof",
+          "name": "_proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "verifyEVMTransaction",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "_proved",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

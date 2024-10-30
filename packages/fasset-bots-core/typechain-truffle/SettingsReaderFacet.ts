@@ -27,8 +27,6 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
-  controllerAttached(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
-
   fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   getCollateralPoolTokenTimelockSeconds(
@@ -46,7 +44,7 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
     poolTokenSuffix: string;
     whitelist: string;
     agentOwnerRegistry: string;
-    scProofVerifier: string;
+    fdcVerification: string;
     burnAddress: string;
     priceReader: string;
     assetDecimals: BN;
@@ -92,15 +90,16 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
     diamondCutMinTimelockSeconds: BN;
     maxEmergencyPauseDurationSeconds: BN;
     emergencyPauseDurationResetAfterSeconds: BN;
+    cancelCollateralReservationAfterSeconds: BN;
+    rejectRedemptionRequestWindowSeconds: BN;
+    takeOverRedemptionRequestWindowSeconds: BN;
+    rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;
+    rejectedRedemptionDefaultFactorPoolBIPS: BN;
   }>;
 
   lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
-
   priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   methods: {
     assetManagerController(
@@ -112,10 +111,6 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
     assetMintingGranularityUBA(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
-
-    controllerAttached(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
 
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -134,7 +129,7 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
       poolTokenSuffix: string;
       whitelist: string;
       agentOwnerRegistry: string;
-      scProofVerifier: string;
+      fdcVerification: string;
       burnAddress: string;
       priceReader: string;
       assetDecimals: BN;
@@ -180,15 +175,16 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
       diamondCutMinTimelockSeconds: BN;
       maxEmergencyPauseDurationSeconds: BN;
       emergencyPauseDurationResetAfterSeconds: BN;
+      cancelCollateralReservationAfterSeconds: BN;
+      rejectRedemptionRequestWindowSeconds: BN;
+      takeOverRedemptionRequestWindowSeconds: BN;
+      rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;
+      rejectedRedemptionDefaultFactorPoolBIPS: BN;
     }>;
 
     lotSize(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-    mintingPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
-
     priceReader(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

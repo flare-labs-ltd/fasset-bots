@@ -29,6 +29,12 @@
           "internalType": "string",
           "name": "iconUrl",
           "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "termsOfUseUrl",
+          "type": "string"
         }
       ],
       "name": "AgentDataChanged",
@@ -132,6 +138,25 @@
         }
       ],
       "name": "getAgentName",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_managementAddress",
+          "type": "address"
+        }
+      ],
+      "name": "getAgentTermsOfUseUrl",
       "outputs": [
         {
           "internalType": "string",

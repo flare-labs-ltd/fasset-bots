@@ -4,15 +4,15 @@
 
 import type { Truffle } from "./types";
 
-import { IMerkleRootStorageContract } from "./IMerkleRootStorage";
-import { IStateConnectorContract } from "./IStateConnector";
 import { MockContractContract } from "./MockContract";
 import { MockInterfaceContract } from "./MockInterface";
 import { IERC1822ProxiableContract } from "./IERC1822Proxiable";
 import { IERC1967Contract } from "./IERC1967";
 import { IBeaconContract } from "./IBeacon";
+import { ERC1967ProxyContract } from "./ERC1967Proxy";
 import { ERC1967UpgradeContract } from "./ERC1967Upgrade";
 import { ProxyContract } from "./Proxy";
+import { UUPSUpgradeableContract } from "./UUPSUpgradeable";
 import { ERC20Contract } from "./ERC20";
 import { IERC20MetadataContract } from "./IERC20Metadata";
 import { IERC20PermitContract } from "./IERC20Permit";
@@ -28,6 +28,7 @@ import { AssetManagerDiamondCutFacetContract } from "./AssetManagerDiamondCutFac
 import { AssetManagerInitContract } from "./AssetManagerInit";
 import { AvailableAgentsFacetContract } from "./AvailableAgentsFacet";
 import { ChallengesFacetContract } from "./ChallengesFacet";
+import { CollateralReservationsFacetContract } from "./CollateralReservationsFacet";
 import { CollateralTypesFacetContract } from "./CollateralTypesFacet";
 import { EmergencyPauseFacetContract } from "./EmergencyPauseFacet";
 import { LiquidationFacetContract } from "./LiquidationFacet";
@@ -38,7 +39,9 @@ import { RedemptionRequestsFacetContract } from "./RedemptionRequestsFacet";
 import { RedemptionTimeExtensionFacetContract } from "./RedemptionTimeExtensionFacet";
 import { SettingsManagementFacetContract } from "./SettingsManagementFacet";
 import { SettingsReaderFacetContract } from "./SettingsReaderFacet";
+import { SystemInfoFacetContract } from "./SystemInfoFacet";
 import { SystemStateManagementFacetContract } from "./SystemStateManagementFacet";
+import { TransferFeeFacetContract } from "./TransferFeeFacet";
 import { UnderlyingBalanceFacetContract } from "./UnderlyingBalanceFacet";
 import { UnderlyingTimekeepingFacetContract } from "./UnderlyingTimekeepingFacet";
 import { AgentOwnerRegistryContract } from "./AgentOwnerRegistry";
@@ -46,6 +49,7 @@ import { AgentVaultContract } from "./AgentVault";
 import { AgentVaultFactoryContract } from "./AgentVaultFactory";
 import { AssetManagerContract } from "./AssetManager";
 import { AssetManagerControllerContract } from "./AssetManagerController";
+import { AssetManagerControllerProxyContract } from "./AssetManagerControllerProxy";
 import { CollateralPoolContract } from "./CollateralPool";
 import { CollateralPoolFactoryContract } from "./CollateralPoolFactory";
 import { CollateralPoolTokenContract } from "./CollateralPoolToken";
@@ -61,14 +65,14 @@ import { IIAssetManagerContract } from "./IIAssetManager";
 import { IIAssetManagerControllerContract } from "./IIAssetManagerController";
 import { IICollateralPoolContract } from "./IICollateralPool";
 import { IICollateralPoolTokenContract } from "./IICollateralPoolToken";
+import { IISettingsManagementContract } from "./IISettingsManagement";
 import { IPriceChangeEmitterContract } from "./IPriceChangeEmitter";
 import { IPricePublisherContract } from "./IPricePublisher";
 import { IPriceReaderContract } from "./IPriceReader";
-import { IRelayContract } from "./IRelay";
 import { IWNatContract } from "./IWNat";
-import { AMEventsContract } from "./AMEvents";
 import { ConversionMockContract } from "./ConversionMock";
 import { RedemptionQueueMockContract } from "./RedemptionQueueMock";
+import { TransferFeeTrackingMockContract } from "./TransferFeeTrackingMock";
 import { AgentVaultMockContract } from "./AgentVaultMock";
 import { AssetManagerMockContract } from "./AssetManagerMock";
 import { DistributionToDelegatorsContract } from "./DistributionToDelegators";
@@ -79,9 +83,10 @@ import { FtsoManagerMockContract } from "./FtsoManagerMock";
 import { FtsoMockContract } from "./FtsoMock";
 import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
 import { FtsoV2PriceStoreMockContract } from "./FtsoV2PriceStoreMock";
-import { WhitelistMockContract } from "./WhitelistMock";
+import { MerkleTreeMockContract } from "./MerkleTreeMock";
+import { MinterMockContract } from "./MinterMock";
+import { TokenHolderMockContract } from "./TokenHolderMock";
 import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
-import { GovernedFacetContract } from "./GovernedFacet";
 import { DiamondContract } from "./Diamond";
 import { IDiamondContract } from "./IDiamond";
 import { IDiamondCutContract } from "./IDiamondCut";
@@ -100,18 +105,19 @@ import { IITransparentProxyContract } from "./IITransparentProxy";
 import { CheckPointableMockContract } from "./CheckPointableMock";
 import { CheckPointHistoryMockContract } from "./CheckPointHistoryMock";
 import { CheckPointsByAddressMockContract } from "./CheckPointsByAddressMock";
+import { FdcHubMockContract } from "./FdcHubMock";
+import { FdcVerificationMockContract } from "./FdcVerificationMock";
+import { RelayMockContract } from "./RelayMock";
 import { AddressUpdatableContract } from "./AddressUpdatable";
 import { GovernedContract } from "./Governed";
 import { GovernedBaseContract } from "./GovernedBase";
+import { GovernedProxyImplementationContract } from "./GovernedProxyImplementation";
 import { IGovernedContract } from "./IGoverned";
 import { AddressUpdatableMockContract } from "./AddressUpdatableMock";
 import { GovernedMockContract } from "./GovernedMock";
 import { GovernedWithTimelockMockContract } from "./GovernedWithTimelockMock";
 import { ReentrancyAttackMockContract } from "./ReentrancyAttackMock";
 import { ReentrancyMockContract } from "./ReentrancyMock";
-import { SCProofVerifierContract } from "./SCProofVerifier";
-import { ISCProofVerifierContract } from "./ISCProofVerifier";
-import { StateConnectorMockContract } from "./StateConnectorMock";
 import { IAgentOwnerRegistryContract } from "./IAgentOwnerRegistry";
 import { IAgentPingContract } from "./IAgentPing";
 import { IAgentVaultContract } from "./IAgentVault";
@@ -121,11 +127,27 @@ import { ICollateralPoolContract } from "./ICollateralPool";
 import { ICollateralPoolTokenContract } from "./ICollateralPoolToken";
 import { IFAssetContract } from "./IFAsset";
 import { IRedemptionTimeExtensionContract } from "./IRedemptionTimeExtension";
+import { ITransferFeesContract } from "./ITransferFees";
 import { IWhitelistContract } from "./IWhitelist";
 import { MathUtilsMockContract } from "./MathUtilsMock";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { SuicidalMockContract } from "./SuicidalMock";
+import { TestUUPSProxyImplContract } from "./TestUUPSProxyImpl";
+import { TimeCumulativeMockContract } from "./TimeCumulativeMock";
+import { IAddressValidityVerificationContract } from "./IAddressValidityVerification";
+import { IBalanceDecreasingTransactionVerificationContract } from "./IBalanceDecreasingTransactionVerification";
+import { IConfirmedBlockHeightExistsVerificationContract } from "./IConfirmedBlockHeightExistsVerification";
+import { IEVMTransactionVerificationContract } from "./IEVMTransactionVerification";
+import { IPaymentVerificationContract } from "./IPaymentVerification";
+import { IReferencedPaymentNonexistenceVerificationContract } from "./IReferencedPaymentNonexistenceVerification";
+import { IFdcHubContract } from "./IFdcHub";
+import { IFdcInflationConfigurationsContract } from "./IFdcInflationConfigurations";
+import { IFdcVerificationContract } from "./IFdcVerification";
+import { IRelayContract } from "./IRelay";
+import { IRewardManagerContract } from "./IRewardManager";
+import { RandomNumberV2InterfaceContract } from "./RandomNumberV2Interface";
+import { RewardsV2InterfaceContract } from "./RewardsV2Interface";
 import { IIAddressUpdatableContract } from "./IIAddressUpdatable";
 import { IIAddressUpdaterContract } from "./IIAddressUpdater";
 import { IIFtsoContract } from "./IIFtso";
@@ -142,7 +164,6 @@ import { IDistributionToDelegatorsContract } from "./IDistributionToDelegators";
 import { IFtsoContract } from "./IFtso";
 import { IFtsoManagerContract } from "./IFtsoManager";
 import { IFtsoRegistryContract } from "./IFtsoRegistry";
-import { IFtsoRewardManagerContract } from "./IFtsoRewardManager";
 import { IGovernanceSettingsContract } from "./IGovernanceSettings";
 import { IGovernanceVotePowerContract } from "./IGovernanceVotePower";
 import { IVPContractEventsContract } from "./IVPContractEvents";
@@ -172,15 +193,15 @@ import { MockLibraryNonDepContract } from "./MockLibraryNonDep";
 export type * from "./types";
 
     export interface Artifacts {
-      require(name: "IMerkleRootStorage"): IMerkleRootStorageContract;
-      require(name: "IStateConnector"): IStateConnectorContract;
       require(name: "MockContract"): MockContractContract;
       require(name: "MockInterface"): MockInterfaceContract;
       require(name: "IERC1822Proxiable"): IERC1822ProxiableContract;
       require(name: "IERC1967"): IERC1967Contract;
       require(name: "IBeacon"): IBeaconContract;
+      require(name: "ERC1967Proxy"): ERC1967ProxyContract;
       require(name: "ERC1967Upgrade"): ERC1967UpgradeContract;
       require(name: "Proxy"): ProxyContract;
+      require(name: "UUPSUpgradeable"): UUPSUpgradeableContract;
       require(name: "ERC20"): ERC20Contract;
       require(name: "IERC20Metadata"): IERC20MetadataContract;
       require(name: "IERC20Permit"): IERC20PermitContract;
@@ -202,6 +223,9 @@ export type * from "./types";
       require(name: "AssetManagerInit"): AssetManagerInitContract;
       require(name: "AvailableAgentsFacet"): AvailableAgentsFacetContract;
       require(name: "ChallengesFacet"): ChallengesFacetContract;
+      require(
+        name: "CollateralReservationsFacet"
+      ): CollateralReservationsFacetContract;
       require(name: "CollateralTypesFacet"): CollateralTypesFacetContract;
       require(name: "EmergencyPauseFacet"): EmergencyPauseFacetContract;
       require(name: "LiquidationFacet"): LiquidationFacetContract;
@@ -216,9 +240,11 @@ export type * from "./types";
       ): RedemptionTimeExtensionFacetContract;
       require(name: "SettingsManagementFacet"): SettingsManagementFacetContract;
       require(name: "SettingsReaderFacet"): SettingsReaderFacetContract;
+      require(name: "SystemInfoFacet"): SystemInfoFacetContract;
       require(
         name: "SystemStateManagementFacet"
       ): SystemStateManagementFacetContract;
+      require(name: "TransferFeeFacet"): TransferFeeFacetContract;
       require(name: "UnderlyingBalanceFacet"): UnderlyingBalanceFacetContract;
       require(
         name: "UnderlyingTimekeepingFacet"
@@ -228,6 +254,9 @@ export type * from "./types";
       require(name: "AgentVaultFactory"): AgentVaultFactoryContract;
       require(name: "AssetManager"): AssetManagerContract;
       require(name: "AssetManagerController"): AssetManagerControllerContract;
+      require(
+        name: "AssetManagerControllerProxy"
+      ): AssetManagerControllerProxyContract;
       require(name: "CollateralPool"): CollateralPoolContract;
       require(name: "CollateralPoolFactory"): CollateralPoolFactoryContract;
       require(name: "CollateralPoolToken"): CollateralPoolTokenContract;
@@ -249,14 +278,14 @@ export type * from "./types";
       ): IIAssetManagerControllerContract;
       require(name: "IICollateralPool"): IICollateralPoolContract;
       require(name: "IICollateralPoolToken"): IICollateralPoolTokenContract;
+      require(name: "IISettingsManagement"): IISettingsManagementContract;
       require(name: "IPriceChangeEmitter"): IPriceChangeEmitterContract;
       require(name: "IPricePublisher"): IPricePublisherContract;
       require(name: "IPriceReader"): IPriceReaderContract;
-      require(name: "IRelay"): IRelayContract;
       require(name: "IWNat"): IWNatContract;
-      require(name: "AMEvents"): AMEventsContract;
       require(name: "ConversionMock"): ConversionMockContract;
       require(name: "RedemptionQueueMock"): RedemptionQueueMockContract;
+      require(name: "TransferFeeTrackingMock"): TransferFeeTrackingMockContract;
       require(name: "AgentVaultMock"): AgentVaultMockContract;
       require(name: "AssetManagerMock"): AssetManagerMockContract;
       require(
@@ -269,9 +298,10 @@ export type * from "./types";
       require(name: "FtsoMock"): FtsoMockContract;
       require(name: "FtsoRegistryMock"): FtsoRegistryMockContract;
       require(name: "FtsoV2PriceStoreMock"): FtsoV2PriceStoreMockContract;
-      require(name: "WhitelistMock"): WhitelistMockContract;
+      require(name: "MerkleTreeMock"): MerkleTreeMockContract;
+      require(name: "MinterMock"): MinterMockContract;
+      require(name: "TokenHolderMock"): TokenHolderMockContract;
       require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
-      require(name: "GovernedFacet"): GovernedFacetContract;
       require(name: "Diamond"): DiamondContract;
       require(name: "IDiamond"): IDiamondContract;
       require(name: "IDiamondCut"): IDiamondCutContract;
@@ -292,9 +322,15 @@ export type * from "./types";
       require(
         name: "CheckPointsByAddressMock"
       ): CheckPointsByAddressMockContract;
+      require(name: "FdcHubMock"): FdcHubMockContract;
+      require(name: "FdcVerificationMock"): FdcVerificationMockContract;
+      require(name: "RelayMock"): RelayMockContract;
       require(name: "AddressUpdatable"): AddressUpdatableContract;
       require(name: "Governed"): GovernedContract;
       require(name: "GovernedBase"): GovernedBaseContract;
+      require(
+        name: "GovernedProxyImplementation"
+      ): GovernedProxyImplementationContract;
       require(name: "IGoverned"): IGovernedContract;
       require(name: "AddressUpdatableMock"): AddressUpdatableMockContract;
       require(name: "GovernedMock"): GovernedMockContract;
@@ -303,9 +339,6 @@ export type * from "./types";
       ): GovernedWithTimelockMockContract;
       require(name: "ReentrancyAttackMock"): ReentrancyAttackMockContract;
       require(name: "ReentrancyMock"): ReentrancyMockContract;
-      require(name: "SCProofVerifier"): SCProofVerifierContract;
-      require(name: "ISCProofVerifier"): ISCProofVerifierContract;
-      require(name: "StateConnectorMock"): StateConnectorMockContract;
       require(name: "IAgentOwnerRegistry"): IAgentOwnerRegistryContract;
       require(name: "IAgentPing"): IAgentPingContract;
       require(name: "IAgentVault"): IAgentVaultContract;
@@ -317,11 +350,39 @@ export type * from "./types";
       require(
         name: "IRedemptionTimeExtension"
       ): IRedemptionTimeExtensionContract;
+      require(name: "ITransferFees"): ITransferFeesContract;
       require(name: "IWhitelist"): IWhitelistContract;
       require(name: "MathUtilsMock"): MathUtilsMockContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "SuicidalMock"): SuicidalMockContract;
+      require(name: "TestUUPSProxyImpl"): TestUUPSProxyImplContract;
+      require(name: "TimeCumulativeMock"): TimeCumulativeMockContract;
+      require(
+        name: "IAddressValidityVerification"
+      ): IAddressValidityVerificationContract;
+      require(
+        name: "IBalanceDecreasingTransactionVerification"
+      ): IBalanceDecreasingTransactionVerificationContract;
+      require(
+        name: "IConfirmedBlockHeightExistsVerification"
+      ): IConfirmedBlockHeightExistsVerificationContract;
+      require(
+        name: "IEVMTransactionVerification"
+      ): IEVMTransactionVerificationContract;
+      require(name: "IPaymentVerification"): IPaymentVerificationContract;
+      require(
+        name: "IReferencedPaymentNonexistenceVerification"
+      ): IReferencedPaymentNonexistenceVerificationContract;
+      require(name: "IFdcHub"): IFdcHubContract;
+      require(
+        name: "IFdcInflationConfigurations"
+      ): IFdcInflationConfigurationsContract;
+      require(name: "IFdcVerification"): IFdcVerificationContract;
+      require(name: "IRelay"): IRelayContract;
+      require(name: "IRewardManager"): IRewardManagerContract;
+      require(name: "RandomNumberV2Interface"): RandomNumberV2InterfaceContract;
+      require(name: "RewardsV2Interface"): RewardsV2InterfaceContract;
       require(name: "IIAddressUpdatable"): IIAddressUpdatableContract;
       require(name: "IIAddressUpdater"): IIAddressUpdaterContract;
       require(name: "IIFtso"): IIFtsoContract;
@@ -340,7 +401,6 @@ export type * from "./types";
       require(name: "IFtso"): IFtsoContract;
       require(name: "IFtsoManager"): IFtsoManagerContract;
       require(name: "IFtsoRegistry"): IFtsoRegistryContract;
-      require(name: "IFtsoRewardManager"): IFtsoRewardManagerContract;
       require(name: "IGovernanceSettings"): IGovernanceSettingsContract;
       require(name: "IGovernanceVotePower"): IGovernanceVotePowerContract;
       require(name: "IVPContractEvents"): IVPContractEventsContract;
@@ -370,14 +430,6 @@ export type * from "./types";
 
 
 
-export {
-  IMerkleRootStorageContract,
-  IMerkleRootStorageInstance,
-} from "./IMerkleRootStorage";
-export {
-  IStateConnectorContract,
-  IStateConnectorInstance,
-} from "./IStateConnector";
 export { MockContractContract, MockContractInstance } from "./MockContract";
 export { MockInterfaceContract, MockInterfaceInstance } from "./MockInterface";
 export {
@@ -386,11 +438,16 @@ export {
 } from "./IERC1822Proxiable";
 export { IERC1967Contract, IERC1967Instance } from "./IERC1967";
 export { IBeaconContract, IBeaconInstance } from "./IBeacon";
+export { ERC1967ProxyContract, ERC1967ProxyInstance } from "./ERC1967Proxy";
 export {
   ERC1967UpgradeContract,
   ERC1967UpgradeInstance,
 } from "./ERC1967Upgrade";
 export { ProxyContract, ProxyInstance } from "./Proxy";
+export {
+  UUPSUpgradeableContract,
+  UUPSUpgradeableInstance,
+} from "./UUPSUpgradeable";
 export { ERC20Contract, ERC20Instance } from "./ERC20";
 export {
   IERC20MetadataContract,
@@ -440,6 +497,10 @@ export {
   ChallengesFacetInstance,
 } from "./ChallengesFacet";
 export {
+  CollateralReservationsFacetContract,
+  CollateralReservationsFacetInstance,
+} from "./CollateralReservationsFacet";
+export {
   CollateralTypesFacetContract,
   CollateralTypesFacetInstance,
 } from "./CollateralTypesFacet";
@@ -477,9 +538,17 @@ export {
   SettingsReaderFacetInstance,
 } from "./SettingsReaderFacet";
 export {
+  SystemInfoFacetContract,
+  SystemInfoFacetInstance,
+} from "./SystemInfoFacet";
+export {
   SystemStateManagementFacetContract,
   SystemStateManagementFacetInstance,
 } from "./SystemStateManagementFacet";
+export {
+  TransferFeeFacetContract,
+  TransferFeeFacetInstance,
+} from "./TransferFeeFacet";
 export {
   UnderlyingBalanceFacetContract,
   UnderlyingBalanceFacetInstance,
@@ -502,6 +571,10 @@ export {
   AssetManagerControllerContract,
   AssetManagerControllerInstance,
 } from "./AssetManagerController";
+export {
+  AssetManagerControllerProxyContract,
+  AssetManagerControllerProxyInstance,
+} from "./AssetManagerControllerProxy";
 export {
   CollateralPoolContract,
   CollateralPoolInstance,
@@ -557,6 +630,10 @@ export {
   IICollateralPoolTokenInstance,
 } from "./IICollateralPoolToken";
 export {
+  IISettingsManagementContract,
+  IISettingsManagementInstance,
+} from "./IISettingsManagement";
+export {
   IPriceChangeEmitterContract,
   IPriceChangeEmitterInstance,
 } from "./IPriceChangeEmitter";
@@ -565,9 +642,7 @@ export {
   IPricePublisherInstance,
 } from "./IPricePublisher";
 export { IPriceReaderContract, IPriceReaderInstance } from "./IPriceReader";
-export { IRelayContract, IRelayInstance } from "./IRelay";
 export { IWNatContract, IWNatInstance } from "./IWNat";
-export { AMEventsContract, AMEventsInstance } from "./AMEvents";
 export {
   ConversionMockContract,
   ConversionMockInstance,
@@ -576,6 +651,10 @@ export {
   RedemptionQueueMockContract,
   RedemptionQueueMockInstance,
 } from "./RedemptionQueueMock";
+export {
+  TransferFeeTrackingMockContract,
+  TransferFeeTrackingMockInstance,
+} from "./TransferFeeTrackingMock";
 export {
   AgentVaultMockContract,
   AgentVaultMockInstance,
@@ -607,12 +686,19 @@ export {
   FtsoV2PriceStoreMockContract,
   FtsoV2PriceStoreMockInstance,
 } from "./FtsoV2PriceStoreMock";
-export { WhitelistMockContract, WhitelistMockInstance } from "./WhitelistMock";
+export {
+  MerkleTreeMockContract,
+  MerkleTreeMockInstance,
+} from "./MerkleTreeMock";
+export { MinterMockContract, MinterMockInstance } from "./MinterMock";
+export {
+  TokenHolderMockContract,
+  TokenHolderMockInstance,
+} from "./TokenHolderMock";
 export {
   DiamondLoupeFacetContract,
   DiamondLoupeFacetInstance,
 } from "./DiamondLoupeFacet";
-export { GovernedFacetContract, GovernedFacetInstance } from "./GovernedFacet";
 export { DiamondContract, DiamondInstance } from "./Diamond";
 export { IDiamondContract, IDiamondInstance } from "./IDiamond";
 export { IDiamondCutContract, IDiamondCutInstance } from "./IDiamondCut";
@@ -652,12 +738,22 @@ export {
   CheckPointsByAddressMockContract,
   CheckPointsByAddressMockInstance,
 } from "./CheckPointsByAddressMock";
+export { FdcHubMockContract, FdcHubMockInstance } from "./FdcHubMock";
+export {
+  FdcVerificationMockContract,
+  FdcVerificationMockInstance,
+} from "./FdcVerificationMock";
+export { RelayMockContract, RelayMockInstance } from "./RelayMock";
 export {
   AddressUpdatableContract,
   AddressUpdatableInstance,
 } from "./AddressUpdatable";
 export { GovernedContract, GovernedInstance } from "./Governed";
 export { GovernedBaseContract, GovernedBaseInstance } from "./GovernedBase";
+export {
+  GovernedProxyImplementationContract,
+  GovernedProxyImplementationInstance,
+} from "./GovernedProxyImplementation";
 export { IGovernedContract, IGovernedInstance } from "./IGoverned";
 export {
   AddressUpdatableMockContract,
@@ -676,18 +772,6 @@ export {
   ReentrancyMockContract,
   ReentrancyMockInstance,
 } from "./ReentrancyMock";
-export {
-  SCProofVerifierContract,
-  SCProofVerifierInstance,
-} from "./SCProofVerifier";
-export {
-  ISCProofVerifierContract,
-  ISCProofVerifierInstance,
-} from "./ISCProofVerifier";
-export {
-  StateConnectorMockContract,
-  StateConnectorMockInstance,
-} from "./StateConnectorMock";
 export {
   IAgentOwnerRegistryContract,
   IAgentOwnerRegistryInstance,
@@ -712,6 +796,7 @@ export {
   IRedemptionTimeExtensionContract,
   IRedemptionTimeExtensionInstance,
 } from "./IRedemptionTimeExtension";
+export { ITransferFeesContract, ITransferFeesInstance } from "./ITransferFees";
 export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
 export { MathUtilsMockContract, MathUtilsMockInstance } from "./MathUtilsMock";
 export {
@@ -720,6 +805,60 @@ export {
 } from "./SafeMath64Mock";
 export { SafePctMockContract, SafePctMockInstance } from "./SafePctMock";
 export { SuicidalMockContract, SuicidalMockInstance } from "./SuicidalMock";
+export {
+  TestUUPSProxyImplContract,
+  TestUUPSProxyImplInstance,
+} from "./TestUUPSProxyImpl";
+export {
+  TimeCumulativeMockContract,
+  TimeCumulativeMockInstance,
+} from "./TimeCumulativeMock";
+export {
+  IAddressValidityVerificationContract,
+  IAddressValidityVerificationInstance,
+} from "./IAddressValidityVerification";
+export {
+  IBalanceDecreasingTransactionVerificationContract,
+  IBalanceDecreasingTransactionVerificationInstance,
+} from "./IBalanceDecreasingTransactionVerification";
+export {
+  IConfirmedBlockHeightExistsVerificationContract,
+  IConfirmedBlockHeightExistsVerificationInstance,
+} from "./IConfirmedBlockHeightExistsVerification";
+export {
+  IEVMTransactionVerificationContract,
+  IEVMTransactionVerificationInstance,
+} from "./IEVMTransactionVerification";
+export {
+  IPaymentVerificationContract,
+  IPaymentVerificationInstance,
+} from "./IPaymentVerification";
+export {
+  IReferencedPaymentNonexistenceVerificationContract,
+  IReferencedPaymentNonexistenceVerificationInstance,
+} from "./IReferencedPaymentNonexistenceVerification";
+export { IFdcHubContract, IFdcHubInstance } from "./IFdcHub";
+export {
+  IFdcInflationConfigurationsContract,
+  IFdcInflationConfigurationsInstance,
+} from "./IFdcInflationConfigurations";
+export {
+  IFdcVerificationContract,
+  IFdcVerificationInstance,
+} from "./IFdcVerification";
+export { IRelayContract, IRelayInstance } from "./IRelay";
+export {
+  IRewardManagerContract,
+  IRewardManagerInstance,
+} from "./IRewardManager";
+export {
+  RandomNumberV2InterfaceContract,
+  RandomNumberV2InterfaceInstance,
+} from "./RandomNumberV2Interface";
+export {
+  RewardsV2InterfaceContract,
+  RewardsV2InterfaceInstance,
+} from "./RewardsV2Interface";
 export {
   IIAddressUpdatableContract,
   IIAddressUpdatableInstance,
@@ -760,10 +899,6 @@ export {
 export { IFtsoContract, IFtsoInstance } from "./IFtso";
 export { IFtsoManagerContract, IFtsoManagerInstance } from "./IFtsoManager";
 export { IFtsoRegistryContract, IFtsoRegistryInstance } from "./IFtsoRegistry";
-export {
-  IFtsoRewardManagerContract,
-  IFtsoRewardManagerInstance,
-} from "./IFtsoRewardManager";
 export {
   IGovernanceSettingsContract,
   IGovernanceSettingsInstance,

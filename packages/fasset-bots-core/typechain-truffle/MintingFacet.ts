@@ -12,50 +12,6 @@ export interface MintingFacetContract
   "new"(meta?: Truffle.TransactionDetails): Promise<MintingFacetInstance>;
 }
 
-export interface CollateralReservationDeleted {
-  name: "CollateralReservationDeleted";
-  args: {
-    agentVault: string;
-    minter: string;
-    collateralReservationId: BN;
-    reservedAmountUBA: BN;
-    0: string;
-    1: string;
-    2: BN;
-    3: BN;
-  };
-}
-
-export interface CollateralReserved {
-  name: "CollateralReserved";
-  args: {
-    agentVault: string;
-    minter: string;
-    collateralReservationId: BN;
-    valueUBA: BN;
-    feeUBA: BN;
-    firstUnderlyingBlock: BN;
-    lastUnderlyingBlock: BN;
-    lastUnderlyingTimestamp: BN;
-    paymentAddress: string;
-    paymentReference: string;
-    executor: string;
-    executorFeeNatWei: BN;
-    0: string;
-    1: string;
-    2: BN;
-    3: BN;
-    4: BN;
-    5: BN;
-    6: BN;
-    7: BN;
-    8: string;
-    9: string;
-    10: string;
-    11: BN;
-  };
-}
-
 export interface DustChanged {
   name: "DustChanged";
   args: {
@@ -82,20 +38,6 @@ export interface MintingExecuted {
   };
 }
 
-export interface MintingPaymentDefault {
-  name: "MintingPaymentDefault";
-  args: {
-    agentVault: string;
-    minter: string;
-    collateralReservationId: BN;
-    reservedAmountUBA: BN;
-    0: string;
-    1: string;
-    2: BN;
-    3: BN;
-  };
-}
-
 export interface RedemptionTicketCreated {
   name: "RedemptionTicketCreated";
   args: {
@@ -105,6 +47,34 @@ export interface RedemptionTicketCreated {
     0: string;
     1: BN;
     2: BN;
+  };
+}
+
+export interface RedemptionTicketUpdated {
+  name: "RedemptionTicketUpdated";
+  args: {
+    agentVault: string;
+    redemptionTicketId: BN;
+    ticketValueUBA: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export interface SelfMint {
+  name: "SelfMint";
+  args: {
+    agentVault: string;
+    mintFromFreeUnderlying: boolean;
+    mintedAmountUBA: BN;
+    depositedAmountUBA: BN;
+    poolFeeUBA: BN;
+    0: string;
+    1: boolean;
+    2: BN;
+    3: BN;
+    4: BN;
   };
 }
 
@@ -119,20 +89,14 @@ export interface UnderlyingBalanceChanged {
 }
 
 export type AllEvents =
-  | CollateralReservationDeleted
-  | CollateralReserved
   | DustChanged
   | MintingExecuted
-  | MintingPaymentDefault
   | RedemptionTicketCreated
+  | RedemptionTicketUpdated
+  | SelfMint
   | UnderlyingBalanceChanged;
 
 export interface MintingFacetInstance extends Truffle.ContractInstance {
-  collateralReservationFee(
-    _lots: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
   executeMinting: {
     (
       _payment: {
@@ -151,6 +115,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -183,6 +148,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -215,6 +181,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -247,6 +214,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -264,140 +232,25 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  mintingPaymentDefault: {
-    (
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            minimalBlockNumber: number | BN | string;
-            deadlineBlockNumber: number | BN | string;
-            deadlineTimestamp: number | BN | string;
-            destinationAddressHash: string;
-            amount: number | BN | string;
-            standardPaymentReference: string;
-          };
-          responseBody: {
-            minimalBlockTimestamp: number | BN | string;
-            firstOverflowBlockNumber: number | BN | string;
-            firstOverflowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            minimalBlockNumber: number | BN | string;
-            deadlineBlockNumber: number | BN | string;
-            deadlineTimestamp: number | BN | string;
-            destinationAddressHash: string;
-            amount: number | BN | string;
-            standardPaymentReference: string;
-          };
-          responseBody: {
-            minimalBlockTimestamp: number | BN | string;
-            firstOverflowBlockNumber: number | BN | string;
-            firstOverflowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            minimalBlockNumber: number | BN | string;
-            deadlineBlockNumber: number | BN | string;
-            deadlineTimestamp: number | BN | string;
-            destinationAddressHash: string;
-            amount: number | BN | string;
-            standardPaymentReference: string;
-          };
-          responseBody: {
-            minimalBlockTimestamp: number | BN | string;
-            firstOverflowBlockNumber: number | BN | string;
-            firstOverflowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            minimalBlockNumber: number | BN | string;
-            deadlineBlockNumber: number | BN | string;
-            deadlineTimestamp: number | BN | string;
-            destinationAddressHash: string;
-            amount: number | BN | string;
-            standardPaymentReference: string;
-          };
-          responseBody: {
-            minimalBlockTimestamp: number | BN | string;
-            firstOverflowBlockNumber: number | BN | string;
-            firstOverflowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  reserveCollateral: {
+  mintFromFreeUnderlying: {
     (
       _agentVault: string,
       _lots: number | BN | string,
-      _maxMintingFeeBIPS: number | BN | string,
-      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
       _lots: number | BN | string,
-      _maxMintingFeeBIPS: number | BN | string,
-      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
       _lots: number | BN | string,
-      _maxMintingFeeBIPS: number | BN | string,
-      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
       _lots: number | BN | string,
-      _maxMintingFeeBIPS: number | BN | string,
-      _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -420,6 +273,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -453,6 +307,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -486,6 +341,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -519,6 +375,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -533,111 +390,11 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
       },
       _agentVault: string,
       _lots: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  unstickMinting: {
-    (
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            blockNumber: number | BN | string;
-            queryWindow: number | BN | string;
-          };
-          responseBody: {
-            blockTimestamp: number | BN | string;
-            numberOfConfirmations: number | BN | string;
-            lowestQueryWindowBlockNumber: number | BN | string;
-            lowestQueryWindowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            blockNumber: number | BN | string;
-            queryWindow: number | BN | string;
-          };
-          responseBody: {
-            blockTimestamp: number | BN | string;
-            numberOfConfirmations: number | BN | string;
-            lowestQueryWindowBlockNumber: number | BN | string;
-            lowestQueryWindowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            blockNumber: number | BN | string;
-            queryWindow: number | BN | string;
-          };
-          responseBody: {
-            blockTimestamp: number | BN | string;
-            numberOfConfirmations: number | BN | string;
-            lowestQueryWindowBlockNumber: number | BN | string;
-            lowestQueryWindowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _proof: {
-        merkleProof: string[];
-        data: {
-          attestationType: string;
-          sourceId: string;
-          votingRound: number | BN | string;
-          lowestUsedTimestamp: number | BN | string;
-          requestBody: {
-            blockNumber: number | BN | string;
-            queryWindow: number | BN | string;
-          };
-          responseBody: {
-            blockTimestamp: number | BN | string;
-            numberOfConfirmations: number | BN | string;
-            lowestQueryWindowBlockNumber: number | BN | string;
-            lowestQueryWindowBlockTimestamp: number | BN | string;
-          };
-        };
-      },
-      _collateralReservationId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
   methods: {
-    collateralReservationFee(
-      _lots: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
     executeMinting: {
       (
         _payment: {
@@ -656,6 +413,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -688,6 +446,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -720,6 +479,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -752,6 +512,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -769,140 +530,25 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    mintingPaymentDefault: {
-      (
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              minimalBlockNumber: number | BN | string;
-              deadlineBlockNumber: number | BN | string;
-              deadlineTimestamp: number | BN | string;
-              destinationAddressHash: string;
-              amount: number | BN | string;
-              standardPaymentReference: string;
-            };
-            responseBody: {
-              minimalBlockTimestamp: number | BN | string;
-              firstOverflowBlockNumber: number | BN | string;
-              firstOverflowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              minimalBlockNumber: number | BN | string;
-              deadlineBlockNumber: number | BN | string;
-              deadlineTimestamp: number | BN | string;
-              destinationAddressHash: string;
-              amount: number | BN | string;
-              standardPaymentReference: string;
-            };
-            responseBody: {
-              minimalBlockTimestamp: number | BN | string;
-              firstOverflowBlockNumber: number | BN | string;
-              firstOverflowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              minimalBlockNumber: number | BN | string;
-              deadlineBlockNumber: number | BN | string;
-              deadlineTimestamp: number | BN | string;
-              destinationAddressHash: string;
-              amount: number | BN | string;
-              standardPaymentReference: string;
-            };
-            responseBody: {
-              minimalBlockTimestamp: number | BN | string;
-              firstOverflowBlockNumber: number | BN | string;
-              firstOverflowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              minimalBlockNumber: number | BN | string;
-              deadlineBlockNumber: number | BN | string;
-              deadlineTimestamp: number | BN | string;
-              destinationAddressHash: string;
-              amount: number | BN | string;
-              standardPaymentReference: string;
-            };
-            responseBody: {
-              minimalBlockTimestamp: number | BN | string;
-              firstOverflowBlockNumber: number | BN | string;
-              firstOverflowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    reserveCollateral: {
+    mintFromFreeUnderlying: {
       (
         _agentVault: string,
         _lots: number | BN | string,
-        _maxMintingFeeBIPS: number | BN | string,
-        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
         _lots: number | BN | string,
-        _maxMintingFeeBIPS: number | BN | string,
-        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
         _lots: number | BN | string,
-        _maxMintingFeeBIPS: number | BN | string,
-        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
         _lots: number | BN | string,
-        _maxMintingFeeBIPS: number | BN | string,
-        _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -925,6 +571,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -958,6 +605,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -991,6 +639,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -1024,6 +673,7 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -1038,101 +688,6 @@ export interface MintingFacetInstance extends Truffle.ContractInstance {
         },
         _agentVault: string,
         _lots: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    unstickMinting: {
-      (
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              blockNumber: number | BN | string;
-              queryWindow: number | BN | string;
-            };
-            responseBody: {
-              blockTimestamp: number | BN | string;
-              numberOfConfirmations: number | BN | string;
-              lowestQueryWindowBlockNumber: number | BN | string;
-              lowestQueryWindowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              blockNumber: number | BN | string;
-              queryWindow: number | BN | string;
-            };
-            responseBody: {
-              blockTimestamp: number | BN | string;
-              numberOfConfirmations: number | BN | string;
-              lowestQueryWindowBlockNumber: number | BN | string;
-              lowestQueryWindowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              blockNumber: number | BN | string;
-              queryWindow: number | BN | string;
-            };
-            responseBody: {
-              blockTimestamp: number | BN | string;
-              numberOfConfirmations: number | BN | string;
-              lowestQueryWindowBlockNumber: number | BN | string;
-              lowestQueryWindowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _proof: {
-          merkleProof: string[];
-          data: {
-            attestationType: string;
-            sourceId: string;
-            votingRound: number | BN | string;
-            lowestUsedTimestamp: number | BN | string;
-            requestBody: {
-              blockNumber: number | BN | string;
-              queryWindow: number | BN | string;
-            };
-            responseBody: {
-              blockTimestamp: number | BN | string;
-              numberOfConfirmations: number | BN | string;
-              lowestQueryWindowBlockNumber: number | BN | string;
-              lowestQueryWindowBlockTimestamp: number | BN | string;
-            };
-          };
-        },
-        _collateralReservationId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

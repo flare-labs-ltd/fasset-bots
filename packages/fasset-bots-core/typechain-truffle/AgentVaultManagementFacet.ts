@@ -51,6 +51,7 @@ export interface AgentVaultCreated {
       poolExitCollateralRatioBIPS: BN;
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
+      handshakeType: BN;
     };
     0: string;
     1: string;
@@ -68,6 +69,7 @@ export interface AgentVaultCreated {
       poolExitCollateralRatioBIPS: BN;
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
+      handshakeType: BN;
     };
   };
 }
@@ -138,6 +140,7 @@ export interface AgentVaultManagementFacetInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
@@ -168,6 +171,7 @@ export interface AgentVaultManagementFacetInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
@@ -198,6 +202,7 @@ export interface AgentVaultManagementFacetInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
@@ -228,6 +233,7 @@ export interface AgentVaultManagementFacetInstance
         poolExitCollateralRatioBIPS: number | BN | string;
         poolTopupCollateralRatioBIPS: number | BN | string;
         poolTopupTokenPriceFactorBIPS: number | BN | string;
+        handshakeType: number | BN | string;
       },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -274,6 +280,7 @@ export interface AgentVaultManagementFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -305,6 +312,7 @@ export interface AgentVaultManagementFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -336,6 +344,7 @@ export interface AgentVaultManagementFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -367,6 +376,7 @@ export interface AgentVaultManagementFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -430,6 +440,7 @@ export interface AgentVaultManagementFacetInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
@@ -460,6 +471,7 @@ export interface AgentVaultManagementFacetInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
@@ -490,6 +502,7 @@ export interface AgentVaultManagementFacetInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
@@ -520,6 +533,7 @@ export interface AgentVaultManagementFacetInstance
           poolExitCollateralRatioBIPS: number | BN | string;
           poolTopupCollateralRatioBIPS: number | BN | string;
           poolTopupTokenPriceFactorBIPS: number | BN | string;
+          handshakeType: number | BN | string;
         },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
@@ -566,6 +580,7 @@ export interface AgentVaultManagementFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -597,6 +612,7 @@ export interface AgentVaultManagementFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -628,6 +644,7 @@ export interface AgentVaultManagementFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -659,6 +676,7 @@ export interface AgentVaultManagementFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;

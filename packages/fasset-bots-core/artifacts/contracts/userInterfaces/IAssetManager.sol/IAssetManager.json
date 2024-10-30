@@ -309,6 +309,11 @@
               "internalType": "uint256",
               "name": "poolTopupTokenPriceFactorBIPS",
               "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "handshakeType",
+              "type": "uint256"
             }
           ],
           "indexed": false,
@@ -409,6 +414,31 @@
           "internalType": "uint256",
           "name": "collateralReservationId",
           "type": "uint256"
+        }
+      ],
+      "name": "CollateralReservationCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "minter",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "collateralReservationId",
+          "type": "uint256"
         },
         {
           "indexed": false,
@@ -418,6 +448,31 @@
         }
       ],
       "name": "CollateralReservationDeleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "minter",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "collateralReservationId",
+          "type": "uint256"
+        }
+      ],
+      "name": "CollateralReservationRejected",
       "type": "event"
     },
     {
@@ -721,6 +776,49 @@
           "type": "address"
         },
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "minter",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "collateralReservationId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string[]",
+          "name": "minterUnderlyingAddresses",
+          "type": "string[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "feeUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "HandshakeRequired",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
           "indexed": false,
           "internalType": "bytes32",
           "name": "transactionHash",
@@ -762,6 +860,18 @@
           "indexed": false,
           "internalType": "uint256",
           "name": "valueUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "paidVaultCollateralWei",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "paidPoolCollateralWei",
           "type": "uint256"
         }
       ],
@@ -1001,19 +1111,6 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "RedemptionPaymentExtensionSecondsChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": true,
           "internalType": "address",
           "name": "agentVault",
@@ -1144,6 +1241,74 @@
         }
       ],
       "name": "RedemptionRequestIncomplete",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        }
+      ],
+      "name": "RedemptionRequestRejected",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "redeemer",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint64",
+          "name": "requestId",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueTakenOverUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "newAgentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "newRequestId",
+          "type": "uint64"
+        }
+      ],
+      "name": "RedemptionRequestTakenOver",
       "type": "event"
     },
     {
@@ -1317,6 +1482,43 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "mintFromFreeUnderlying",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "mintedAmountUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "depositedAmountUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolFeeUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "SelfMint",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": false,
           "internalType": "string",
           "name": "name",
@@ -1349,6 +1551,62 @@
         }
       ],
       "name": "SettingChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "nextTransferFeeMillionths",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "scheduledAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferFeeChangeScheduled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "agentClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "remainingUnclaimedEpochs",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferFeesClaimed",
       "type": "event"
     },
     {
@@ -1570,6 +1828,129 @@
         },
         {
           "internalType": "uint256",
+          "name": "_firstRedemptionTicketId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_pageSize",
+          "type": "uint256"
+        }
+      ],
+      "name": "agentRedemptionQueue",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "redemptionTicketId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "agentVault",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "ticketValueUBA",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct RedemptionTicketInfo.Data[]",
+          "name": "_queue",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_nextRedemptionTicketId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxEpochsToClaim",
+          "type": "uint256"
+        }
+      ],
+      "name": "agentTransferFeeShare",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_feeShareUBA",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "agentTransferFeeShareForEpoch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "agentUnclaimedTransferFeeEpochs",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_first",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_count",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
           "name": "_valueNATWei",
           "type": "uint256"
         }
@@ -1690,6 +2071,19 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_collateralReservationId",
+          "type": "uint256"
+        }
+      ],
+      "name": "approveCollateralReservation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "assetManagerController",
       "outputs": [
@@ -1744,6 +2138,19 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_collateralReservationId",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelCollateralReservation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "_agentVault",
           "type": "address"
@@ -1751,6 +2158,45 @@
       ],
       "name": "cancelUnderlyingWithdrawal",
       "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxEpochsToClaim",
+          "type": "uint256"
+        }
+      ],
+      "name": "claimTransferFees",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_agentClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_remainingUnclaimedEpochs",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1822,7 +2268,7 @@
                       "type": "uint256"
                     }
                   ],
-                  "internalType": "struct Payment.RequestBody",
+                  "internalType": "struct IPayment.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -1841,6 +2287,11 @@
                     {
                       "internalType": "bytes32",
                       "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
                       "type": "bytes32"
                     },
                     {
@@ -1889,17 +2340,17 @@
                       "type": "uint8"
                     }
                   ],
-                  "internalType": "struct Payment.ResponseBody",
+                  "internalType": "struct IPayment.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct Payment.Response",
+              "internalType": "struct IPayment.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct Payment.Proof",
+          "internalType": "struct IPayment.Proof",
           "name": "_payment",
           "type": "tuple"
         },
@@ -1963,7 +2414,7 @@
                       "type": "uint256"
                     }
                   ],
-                  "internalType": "struct Payment.RequestBody",
+                  "internalType": "struct IPayment.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -1982,6 +2433,11 @@
                     {
                       "internalType": "bytes32",
                       "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
                       "type": "bytes32"
                     },
                     {
@@ -2030,17 +2486,17 @@
                       "type": "uint8"
                     }
                   ],
-                  "internalType": "struct Payment.ResponseBody",
+                  "internalType": "struct IPayment.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct Payment.Response",
+              "internalType": "struct IPayment.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct Payment.Proof",
+          "internalType": "struct IPayment.Proof",
           "name": "_payment",
           "type": "tuple"
         },
@@ -2104,7 +2560,7 @@
                       "type": "uint256"
                     }
                   ],
-                  "internalType": "struct Payment.RequestBody",
+                  "internalType": "struct IPayment.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -2123,6 +2579,11 @@
                     {
                       "internalType": "bytes32",
                       "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
                       "type": "bytes32"
                     },
                     {
@@ -2171,17 +2632,17 @@
                       "type": "uint8"
                     }
                   ],
-                  "internalType": "struct Payment.ResponseBody",
+                  "internalType": "struct IPayment.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct Payment.Response",
+              "internalType": "struct IPayment.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct Payment.Proof",
+          "internalType": "struct IPayment.Proof",
           "name": "_payment",
           "type": "tuple"
         },
@@ -2261,7 +2722,7 @@
                       "type": "string"
                     }
                   ],
-                  "internalType": "struct AddressValidity.RequestBody",
+                  "internalType": "struct IAddressValidity.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -2283,17 +2744,17 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct AddressValidity.ResponseBody",
+                  "internalType": "struct IAddressValidity.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct AddressValidity.Response",
+              "internalType": "struct IAddressValidity.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct AddressValidity.Proof",
+          "internalType": "struct IAddressValidity.Proof",
           "name": "_addressProof",
           "type": "tuple"
         },
@@ -2348,6 +2809,11 @@
               "internalType": "uint256",
               "name": "poolTopupTokenPriceFactorBIPS",
               "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "handshakeType",
+              "type": "uint256"
             }
           ],
           "internalType": "struct AgentSettings.Data",
@@ -2364,6 +2830,19 @@
         }
       ],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentTransferFeeEpoch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -2451,7 +2930,7 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -2483,17 +2962,17 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "internalType": "struct IBalanceDecreasingTransaction.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct BalanceDecreasingTransaction.Proof",
+          "internalType": "struct IBalanceDecreasingTransaction.Proof",
           "name": "_payment1",
           "type": "tuple"
         },
@@ -2539,7 +3018,7 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -2571,17 +3050,17 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "internalType": "struct IBalanceDecreasingTransaction.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct BalanceDecreasingTransaction.Proof",
+          "internalType": "struct IBalanceDecreasingTransaction.Proof",
           "name": "_payment2",
           "type": "tuple"
         },
@@ -2702,7 +3181,7 @@
                       "type": "uint256"
                     }
                   ],
-                  "internalType": "struct Payment.RequestBody",
+                  "internalType": "struct IPayment.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -2721,6 +3200,11 @@
                     {
                       "internalType": "bytes32",
                       "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
                       "type": "bytes32"
                     },
                     {
@@ -2769,17 +3253,17 @@
                       "type": "uint8"
                     }
                   ],
-                  "internalType": "struct Payment.ResponseBody",
+                  "internalType": "struct IPayment.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct Payment.Response",
+              "internalType": "struct IPayment.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct Payment.Proof",
+          "internalType": "struct IPayment.Proof",
           "name": "_payment",
           "type": "tuple"
         },
@@ -2899,6 +3383,19 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "fassetTransferFeePaid",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "components": [
             {
               "internalType": "bytes32[]",
@@ -2940,7 +3437,7 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ConfirmedBlockHeightExists.RequestBody",
+                  "internalType": "struct IConfirmedBlockHeightExists.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -2967,17 +3464,17 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ConfirmedBlockHeightExists.ResponseBody",
+                  "internalType": "struct IConfirmedBlockHeightExists.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct ConfirmedBlockHeightExists.Response",
+              "internalType": "struct IConfirmedBlockHeightExists.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct ConfirmedBlockHeightExists.Proof",
+          "internalType": "struct IConfirmedBlockHeightExists.Proof",
           "name": "_proof",
           "type": "tuple"
         },
@@ -2990,6 +3487,19 @@
       "name": "finishRedemptionWithoutPayment",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "firstClaimableTransferFeeEpoch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -3036,7 +3546,7 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -3068,17 +3578,17 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "internalType": "struct IBalanceDecreasingTransaction.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct BalanceDecreasingTransaction.Proof[]",
+          "internalType": "struct IBalanceDecreasingTransaction.Proof[]",
           "name": "_payments",
           "type": "tuple[]"
         },
@@ -3352,6 +3862,11 @@
               "internalType": "uint256",
               "name": "poolTopupTokenPriceFactorBIPS",
               "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "handshakeType",
+              "type": "uint256"
             }
           ],
           "internalType": "struct AgentInfo.Info",
@@ -3481,6 +3996,11 @@
               "type": "address"
             },
             {
+              "internalType": "address",
+              "name": "ownerManagementAddress",
+              "type": "address"
+            },
+            {
               "internalType": "uint256",
               "name": "feeBIPS",
               "type": "uint256"
@@ -3499,6 +4019,11 @@
               "internalType": "uint256",
               "name": "freeCollateralLots",
               "type": "uint256"
+            },
+            {
+              "internalType": "enum AgentInfo.Status",
+              "name": "status",
+              "type": "uint8"
             }
           ],
           "internalType": "struct AvailableAgentInfo.Data[]",
@@ -3751,7 +4276,7 @@
             },
             {
               "internalType": "address",
-              "name": "scProofVerifier",
+              "name": "fdcVerification",
               "type": "address"
             },
             {
@@ -3978,6 +4503,31 @@
               "internalType": "uint64",
               "name": "emergencyPauseDurationResetAfterSeconds",
               "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "cancelCollateralReservationAfterSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "rejectRedemptionRequestWindowSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint64",
+              "name": "takeOverRedemptionRequestWindowSeconds",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint32",
+              "name": "rejectedRedemptionDefaultFactorVaultCollateralBIPS",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "rejectedRedemptionDefaultFactorPoolBIPS",
+              "type": "uint32"
             }
           ],
           "internalType": "struct AssetManagerSettings.Data",
@@ -4032,7 +4582,7 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.RequestBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -4064,17 +4614,17 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct BalanceDecreasingTransaction.ResponseBody",
+                  "internalType": "struct IBalanceDecreasingTransaction.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct BalanceDecreasingTransaction.Response",
+              "internalType": "struct IBalanceDecreasingTransaction.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct BalanceDecreasingTransaction.Proof",
+          "internalType": "struct IBalanceDecreasingTransaction.Proof",
           "name": "_transaction",
           "type": "tuple"
         },
@@ -4085,6 +4635,19 @@
         }
       ],
       "name": "illegalPaymentChallenge",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_agentVaults",
+          "type": "address[]"
+        }
+      ],
+      "name": "initAgentsMintingHistory",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -4169,6 +4732,24 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "_lots",
+          "type": "uint64"
+        }
+      ],
+      "name": "mintFromFreeUnderlying",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "mintingPaused",
       "outputs": [
@@ -4243,9 +4824,19 @@
                       "internalType": "bytes32",
                       "name": "standardPaymentReference",
                       "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "checkSourceAddresses",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
+                      "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct ReferencedPaymentNonexistence.RequestBody",
+                  "internalType": "struct IReferencedPaymentNonexistence.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -4267,17 +4858,17 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ReferencedPaymentNonexistence.ResponseBody",
+                  "internalType": "struct IReferencedPaymentNonexistence.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct ReferencedPaymentNonexistence.Response",
+              "internalType": "struct IReferencedPaymentNonexistence.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct ReferencedPaymentNonexistence.Proof",
+          "internalType": "struct IReferencedPaymentNonexistence.Proof",
           "name": "_proof",
           "type": "tuple"
         },
@@ -4354,7 +4945,7 @@
                       "type": "uint256"
                     }
                   ],
-                  "internalType": "struct Payment.RequestBody",
+                  "internalType": "struct IPayment.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -4373,6 +4964,11 @@
                     {
                       "internalType": "bytes32",
                       "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
                       "type": "bytes32"
                     },
                     {
@@ -4421,17 +5017,17 @@
                       "type": "uint8"
                     }
                   ],
-                  "internalType": "struct Payment.ResponseBody",
+                  "internalType": "struct IPayment.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct Payment.Response",
+              "internalType": "struct IPayment.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct Payment.Proof",
+          "internalType": "struct IPayment.Proof",
           "name": "_payment",
           "type": "tuple"
         }
@@ -4532,9 +5128,19 @@
                       "internalType": "bytes32",
                       "name": "standardPaymentReference",
                       "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "checkSourceAddresses",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
+                      "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct ReferencedPaymentNonexistence.RequestBody",
+                  "internalType": "struct IReferencedPaymentNonexistence.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -4556,17 +5162,17 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ReferencedPaymentNonexistence.ResponseBody",
+                  "internalType": "struct IReferencedPaymentNonexistence.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct ReferencedPaymentNonexistence.Response",
+              "internalType": "struct IReferencedPaymentNonexistence.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct ReferencedPaymentNonexistence.Proof",
+          "internalType": "struct IReferencedPaymentNonexistence.Proof",
           "name": "_proof",
           "type": "tuple"
         },
@@ -4592,6 +5198,65 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_firstRedemptionTicketId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_pageSize",
+          "type": "uint256"
+        }
+      ],
+      "name": "redemptionQueue",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "redemptionTicketId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "agentVault",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "ticketValueUBA",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct RedemptionTicketInfo.Data[]",
+          "name": "_queue",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_nextRedemptionTicketId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_collateralReservationId",
+          "type": "uint256"
+        }
+      ],
+      "name": "rejectCollateralReservation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -4633,7 +5298,7 @@
                       "type": "string"
                     }
                   ],
-                  "internalType": "struct AddressValidity.RequestBody",
+                  "internalType": "struct IAddressValidity.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -4655,17 +5320,17 @@
                       "type": "bytes32"
                     }
                   ],
-                  "internalType": "struct AddressValidity.ResponseBody",
+                  "internalType": "struct IAddressValidity.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct AddressValidity.Response",
+              "internalType": "struct IAddressValidity.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct AddressValidity.Proof",
+          "internalType": "struct IAddressValidity.Proof",
           "name": "_proof",
           "type": "tuple"
         },
@@ -4676,6 +5341,32 @@
         }
       ],
       "name": "rejectInvalidRedemption",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_redemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "rejectRedemptionRequest",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_redemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "rejectedRedemptionPaymentDefault",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -4701,6 +5392,11 @@
           "internalType": "address payable",
           "name": "_executor",
           "type": "address"
+        },
+        {
+          "internalType": "string[]",
+          "name": "_minterUnderlyingAddresses",
+          "type": "string[]"
         }
       ],
       "name": "reserveCollateral",
@@ -4781,7 +5477,7 @@
                       "type": "uint256"
                     }
                   ],
-                  "internalType": "struct Payment.RequestBody",
+                  "internalType": "struct IPayment.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -4800,6 +5496,11 @@
                     {
                       "internalType": "bytes32",
                       "name": "sourceAddressHash",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "sourceAddressesRoot",
                       "type": "bytes32"
                     },
                     {
@@ -4848,17 +5549,17 @@
                       "type": "uint8"
                     }
                   ],
-                  "internalType": "struct Payment.ResponseBody",
+                  "internalType": "struct IPayment.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct Payment.Response",
+              "internalType": "struct IPayment.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct Payment.Proof",
+          "internalType": "struct IPayment.Proof",
           "name": "_payment",
           "type": "tuple"
         },
@@ -4887,6 +5588,24 @@
         }
       ],
       "name": "setRedemptionPaymentExtensionSeconds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_scheduledAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTransferFeeMillionths",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -4953,6 +5672,24 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_redemptionRequestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "takeOverRedemptionRequest",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "terminated",
       "outputs": [
@@ -4960,6 +5697,161 @@
           "internalType": "bool",
           "name": "",
           "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFeeCalculationDataForAgent",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "totalFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "cumulativeMinted",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalCumulativeMinted",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimable",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ITransferFees.TransferFeeCalculationDataForAgent",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFeeEpochData",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "startTs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "endTs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "claimedFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimable",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "expired",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ITransferFees.TransferFeeEpochData",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "transferFeeMillionths",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "transferFeeSettings",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "transferFeeMillionths",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "firstEpochStartTs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "epochDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxUnexpiredEpochs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "firstClaimableEpoch",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITransferFees.TransferFeeSettings",
+          "name": "",
+          "type": "tuple"
         }
       ],
       "stateMutability": "view",
@@ -5009,7 +5901,7 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ConfirmedBlockHeightExists.RequestBody",
+                  "internalType": "struct IConfirmedBlockHeightExists.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -5036,17 +5928,17 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ConfirmedBlockHeightExists.ResponseBody",
+                  "internalType": "struct IConfirmedBlockHeightExists.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct ConfirmedBlockHeightExists.Response",
+              "internalType": "struct IConfirmedBlockHeightExists.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct ConfirmedBlockHeightExists.Proof",
+          "internalType": "struct IConfirmedBlockHeightExists.Proof",
           "name": "_proof",
           "type": "tuple"
         },
@@ -5105,7 +5997,7 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ConfirmedBlockHeightExists.RequestBody",
+                  "internalType": "struct IConfirmedBlockHeightExists.RequestBody",
                   "name": "requestBody",
                   "type": "tuple"
                 },
@@ -5132,17 +6024,17 @@
                       "type": "uint64"
                     }
                   ],
-                  "internalType": "struct ConfirmedBlockHeightExists.ResponseBody",
+                  "internalType": "struct IConfirmedBlockHeightExists.ResponseBody",
                   "name": "responseBody",
                   "type": "tuple"
                 }
               ],
-              "internalType": "struct ConfirmedBlockHeightExists.Response",
+              "internalType": "struct IConfirmedBlockHeightExists.Response",
               "name": "data",
               "type": "tuple"
             }
           ],
-          "internalType": "struct ConfirmedBlockHeightExists.Proof",
+          "internalType": "struct IConfirmedBlockHeightExists.Proof",
           "name": "_proof",
           "type": "tuple"
         }

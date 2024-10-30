@@ -46,6 +46,24 @@ export interface RedeemedInCollateral {
   };
 }
 
+export interface RedemptionDefault {
+  name: "RedemptionDefault";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    requestId: BN;
+    redemptionAmountUBA: BN;
+    redeemedVaultCollateralWei: BN;
+    redeemedPoolCollateralWei: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+    4: BN;
+    5: BN;
+  };
+}
+
 export interface RedemptionRejected {
   name: "RedemptionRejected";
   args: {
@@ -67,6 +85,36 @@ export interface RedemptionRequestIncomplete {
     remainingLots: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface RedemptionRequestRejected {
+  name: "RedemptionRequestRejected";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface RedemptionRequestTakenOver {
+  name: "RedemptionRequestTakenOver";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    requestId: BN;
+    valueTakenOverUBA: BN;
+    newAgentVault: string;
+    newRequestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+    4: string;
+    5: BN;
   };
 }
 
@@ -148,8 +196,11 @@ export type AllEvents =
   | DustChanged
   | LiquidationEnded
   | RedeemedInCollateral
+  | RedemptionDefault
   | RedemptionRejected
   | RedemptionRequestIncomplete
+  | RedemptionRequestRejected
+  | RedemptionRequestTakenOver
   | RedemptionRequested
   | RedemptionTicketCreated
   | RedemptionTicketDeleted
@@ -349,6 +400,25 @@ export interface RedemptionRequestsFacetInstance
     ): Promise<number>;
   };
 
+  rejectRedemptionRequest: {
+    (
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   selfClose: {
     (
       _agentVault: string,
@@ -368,6 +438,29 @@ export interface RedemptionRequestsFacetInstance
     estimateGas(
       _agentVault: string,
       _amountUBA: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  takeOverRedemptionRequest: {
+    (
+      _agentVault: string,
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _agentVault: string,
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -564,6 +657,25 @@ export interface RedemptionRequestsFacetInstance
       ): Promise<number>;
     };
 
+    rejectRedemptionRequest: {
+      (
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     selfClose: {
       (
         _agentVault: string,
@@ -583,6 +695,29 @@ export interface RedemptionRequestsFacetInstance
       estimateGas(
         _agentVault: string,
         _amountUBA: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    takeOverRedemptionRequest: {
+      (
+        _agentVault: string,
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _agentVault: string,
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
+        _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

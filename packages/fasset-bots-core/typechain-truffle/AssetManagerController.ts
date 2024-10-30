@@ -10,11 +10,18 @@ import { EventData, PastEventOptions } from "web3-eth-contract";
 export interface AssetManagerControllerContract
   extends Truffle.Contract<AssetManagerControllerInstance> {
   "new"(
-    _governanceSettings: string,
-    _initialGovernance: string,
-    _addressUpdater: string,
     meta?: Truffle.TransactionDetails
   ): Promise<AssetManagerControllerInstance>;
+}
+
+export interface AdminChanged {
+  name: "AdminChanged";
+  args: {
+    previousAdmin: string;
+    newAdmin: string;
+    0: string;
+    1: string;
+  };
 }
 
 export interface AgentAvailable {
@@ -118,6 +125,7 @@ export interface AgentVaultCreated {
       poolExitCollateralRatioBIPS: BN;
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
+      handshakeType: BN;
     };
     0: string;
     1: string;
@@ -135,6 +143,7 @@ export interface AgentVaultCreated {
       poolExitCollateralRatioBIPS: BN;
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
+      handshakeType: BN;
     };
   };
 }
@@ -157,6 +166,14 @@ export interface AvailableAgentExited {
   };
 }
 
+export interface BeaconUpgraded {
+  name: "BeaconUpgraded";
+  args: {
+    beacon: string;
+    0: string;
+  };
+}
+
 export interface CollateralRatiosChanged {
   name: "CollateralRatiosChanged";
   args: {
@@ -173,6 +190,18 @@ export interface CollateralRatiosChanged {
   };
 }
 
+export interface CollateralReservationCancelled {
+  name: "CollateralReservationCancelled";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
 export interface CollateralReservationDeleted {
   name: "CollateralReservationDeleted";
   args: {
@@ -184,6 +213,18 @@ export interface CollateralReservationDeleted {
     1: string;
     2: BN;
     3: BN;
+  };
+}
+
+export interface CollateralReservationRejected {
+  name: "CollateralReservationRejected";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    0: string;
+    1: string;
+    2: BN;
   };
 }
 
@@ -348,6 +389,24 @@ export interface GovernedProductionModeEntered {
   };
 }
 
+export interface HandshakeRequired {
+  name: "HandshakeRequired";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    minterUnderlyingAddresses: string[];
+    valueUBA: BN;
+    feeUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: string[];
+    4: BN;
+    5: BN;
+  };
+}
+
 export interface IllegalPaymentConfirmed {
   name: "IllegalPaymentConfirmed";
   args: {
@@ -372,9 +431,13 @@ export interface LiquidationPerformed {
     agentVault: string;
     liquidator: string;
     valueUBA: BN;
+    paidVaultCollateralWei: BN;
+    paidPoolCollateralWei: BN;
     0: string;
     1: string;
     2: BN;
+    3: BN;
+    4: BN;
   };
 }
 
@@ -540,6 +603,36 @@ export interface RedemptionRequestIncomplete {
   };
 }
 
+export interface RedemptionRequestRejected {
+  name: "RedemptionRequestRejected";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    requestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
+export interface RedemptionRequestTakenOver {
+  name: "RedemptionRequestTakenOver";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    requestId: BN;
+    valueTakenOverUBA: BN;
+    newAgentVault: string;
+    newRequestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+    4: string;
+    5: BN;
+  };
+}
+
 export interface RedemptionRequested {
   name: "RedemptionRequested";
   args: {
@@ -611,6 +704,22 @@ export interface SelfClose {
     valueUBA: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface SelfMint {
+  name: "SelfMint";
+  args: {
+    agentVault: string;
+    mintFromFreeUnderlying: boolean;
+    mintedAmountUBA: BN;
+    depositedAmountUBA: BN;
+    poolFeeUBA: BN;
+    0: string;
+    1: boolean;
+    2: BN;
+    3: BN;
+    4: BN;
   };
 }
 
@@ -720,6 +829,14 @@ export interface UnderlyingWithdrawalConfirmed {
   };
 }
 
+export interface Upgraded {
+  name: "Upgraded";
+  args: {
+    implementation: string;
+    0: string;
+  };
+}
+
 export interface VaultCollateralWithdrawalAnnounced {
   name: "VaultCollateralWithdrawalAnnounced";
   args: {
@@ -733,6 +850,7 @@ export interface VaultCollateralWithdrawalAnnounced {
 }
 
 export type AllEvents =
+  | AdminChanged
   | AgentAvailable
   | AgentCollateralTypeChanged
   | AgentDestroyAnnounced
@@ -743,8 +861,11 @@ export type AllEvents =
   | AgentVaultCreated
   | AvailableAgentExitAnnounced
   | AvailableAgentExited
+  | BeaconUpgraded
   | CollateralRatiosChanged
+  | CollateralReservationCancelled
   | CollateralReservationDeleted
+  | CollateralReservationRejected
   | CollateralReserved
   | CollateralTypeAdded
   | CollateralTypeDeprecated
@@ -758,6 +879,7 @@ export type AllEvents =
   | GovernanceCallTimelocked
   | GovernanceInitialised
   | GovernedProductionModeEntered
+  | HandshakeRequired
   | IllegalPaymentConfirmed
   | LiquidationEnded
   | LiquidationPerformed
@@ -772,11 +894,14 @@ export type AllEvents =
   | RedemptionPerformed
   | RedemptionRejected
   | RedemptionRequestIncomplete
+  | RedemptionRequestRejected
+  | RedemptionRequestTakenOver
   | RedemptionRequested
   | RedemptionTicketCreated
   | RedemptionTicketDeleted
   | RedemptionTicketUpdated
   | SelfClose
+  | SelfMint
   | SettingArrayChanged
   | SettingChanged
   | TimelockedGovernanceCallCanceled
@@ -787,6 +912,7 @@ export type AllEvents =
   | UnderlyingWithdrawalAnnounced
   | UnderlyingWithdrawalCancelled
   | UnderlyingWithdrawalConfirmed
+  | Upgraded
   | VaultCollateralWithdrawalAnnounced;
 
 export interface AssetManagerControllerInstance
@@ -1020,6 +1146,33 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
+  initialize: {
+    (
+      _governanceSettings: string,
+      _initialGovernance: string,
+      _addressUpdater: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      _addressUpdater: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      _addressUpdater: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _governanceSettings: string,
+      _initialGovernance: string,
+      _addressUpdater: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   isExecutor(
     _address: string,
     txDetails?: Truffle.TransactionDetails
@@ -1044,6 +1197,8 @@ export interface AssetManagerControllerInstance
   };
 
   productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+  proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   removeAssetManager: {
     (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -1286,6 +1441,29 @@ export interface AssetManagerControllerInstance
   };
 
   setAverageBlockTimeMS: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setCancelCollateralReservationAfterSeconds: {
     (
       _assetManagers: string[],
       _value: number | BN | string,
@@ -1554,29 +1732,48 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
-  setEmergencyPauseParameters: {
+  setEmergencyPauseDurationResetAfterSeconds: {
     (
       _assetManagers: string[],
-      _maxEmergencyPauseDurationSeconds: number | BN | string,
-      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _assetManagers: string[],
-      _maxEmergencyPauseDurationSeconds: number | BN | string,
-      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _assetManagers: string[],
-      _maxEmergencyPauseDurationSeconds: number | BN | string,
-      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _assetManagers: string[],
-      _maxEmergencyPauseDurationSeconds: number | BN | string,
-      _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setFdcVerification: {
+    (
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1632,6 +1829,29 @@ export interface AssetManagerControllerInstance
   };
 
   setLotSizeAmg: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setMaxEmergencyPauseDurationSeconds: {
     (
       _assetManagers: string[],
       _value: number | BN | string,
@@ -1915,25 +2135,98 @@ export interface AssetManagerControllerInstance
     ): Promise<number>;
   };
 
-  setSCProofVerifier: {
+  setRedemptionPaymentExtensionSeconds: {
     (
       _assetManagers: string[],
-      _value: string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _assetManagers: string[],
-      _value: string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _assetManagers: string[],
-      _value: string,
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _assetManagers: string[],
-      _value: string,
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setRejectRedemptionRequestWindowSeconds: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setRejectedRedemptionDefaultFactorBips: {
+    (
+      _assetManagers: string[],
+      _vaultF: number | BN | string,
+      _poolF: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _vaultF: number | BN | string,
+      _poolF: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _vaultF: number | BN | string,
+      _poolF: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _vaultF: number | BN | string,
+      _poolF: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setTakeOverRedemptionRequestWindowSeconds: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -1984,6 +2277,33 @@ export interface AssetManagerControllerInstance
     estimateGas(
       _assetManagers: string[],
       _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setTransferFeeMillionths: {
+    (
+      _assetManagers: string[],
+      _value: number | BN | string,
+      _scheduledAt: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      _scheduledAt: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      _scheduledAt: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _assetManagers: string[],
+      _value: number | BN | string,
+      _scheduledAt: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2171,6 +2491,48 @@ export interface AssetManagerControllerInstance
       _assetManagers: string[],
       _implementation: string,
       _callData: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeTo: {
+    (
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeToAndCall: {
+    (
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      data: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -2405,6 +2767,33 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
+    initialize: {
+      (
+        _governanceSettings: string,
+        _initialGovernance: string,
+        _addressUpdater: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        _addressUpdater: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        _addressUpdater: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _governanceSettings: string,
+        _initialGovernance: string,
+        _addressUpdater: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     isExecutor(
       _address: string,
       txDetails?: Truffle.TransactionDetails
@@ -2430,6 +2819,8 @@ export interface AssetManagerControllerInstance
     };
 
     productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
+    proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     removeAssetManager: {
       (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -2673,6 +3064,29 @@ export interface AssetManagerControllerInstance
     };
 
     setAverageBlockTimeMS: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setCancelCollateralReservationAfterSeconds: {
       (
         _assetManagers: string[],
         _value: number | BN | string,
@@ -2941,29 +3355,48 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
-    setEmergencyPauseParameters: {
+    setEmergencyPauseDurationResetAfterSeconds: {
       (
         _assetManagers: string[],
-        _maxEmergencyPauseDurationSeconds: number | BN | string,
-        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _assetManagers: string[],
-        _maxEmergencyPauseDurationSeconds: number | BN | string,
-        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _assetManagers: string[],
-        _maxEmergencyPauseDurationSeconds: number | BN | string,
-        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _assetManagers: string[],
-        _maxEmergencyPauseDurationSeconds: number | BN | string,
-        _emergencyPauseDurationResetAfterSeconds: number | BN | string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setFdcVerification: {
+      (
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3019,6 +3452,29 @@ export interface AssetManagerControllerInstance
     };
 
     setLotSizeAmg: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setMaxEmergencyPauseDurationSeconds: {
       (
         _assetManagers: string[],
         _value: number | BN | string,
@@ -3302,25 +3758,98 @@ export interface AssetManagerControllerInstance
       ): Promise<number>;
     };
 
-    setSCProofVerifier: {
+    setRedemptionPaymentExtensionSeconds: {
       (
         _assetManagers: string[],
-        _value: string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _assetManagers: string[],
-        _value: string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _assetManagers: string[],
-        _value: string,
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _assetManagers: string[],
-        _value: string,
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setRejectRedemptionRequestWindowSeconds: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setRejectedRedemptionDefaultFactorBips: {
+      (
+        _assetManagers: string[],
+        _vaultF: number | BN | string,
+        _poolF: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _vaultF: number | BN | string,
+        _poolF: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _vaultF: number | BN | string,
+        _poolF: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _vaultF: number | BN | string,
+        _poolF: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setTakeOverRedemptionRequestWindowSeconds: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3371,6 +3900,33 @@ export interface AssetManagerControllerInstance
       estimateGas(
         _assetManagers: string[],
         _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setTransferFeeMillionths: {
+      (
+        _assetManagers: string[],
+        _value: number | BN | string,
+        _scheduledAt: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        _scheduledAt: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        _scheduledAt: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _assetManagers: string[],
+        _value: number | BN | string,
+        _scheduledAt: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -3561,6 +4117,48 @@ export interface AssetManagerControllerInstance
         _assetManagers: string[],
         _implementation: string,
         _callData: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeTo: {
+      (
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeToAndCall: {
+      (
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        data: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

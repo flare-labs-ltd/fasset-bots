@@ -18,18 +18,24 @@ export interface AssetManagerMockContract
 export interface AgentRedemption {
   name: "AgentRedemption";
   args: {
+    _recipient: string;
+    _underlying: string;
     _amountUBA: BN;
     _executor: string;
-    0: BN;
+    0: string;
     1: string;
+    2: BN;
+    3: string;
   };
 }
 
 export interface AgentRedemptionInCollateral {
   name: "AgentRedemptionInCollateral";
   args: {
+    _recipient: string;
     _amountUBA: BN;
-    0: BN;
+    0: string;
+    1: BN;
   };
 }
 
@@ -135,33 +141,33 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
   redeemFromAgent: {
     (
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
-      arg3: string,
+      _receiverUnderlyingAddress: string,
       _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
-      arg3: string,
+      _receiverUnderlyingAddress: string,
       _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
-      arg3: string,
+      _receiverUnderlyingAddress: string,
       _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
-      arg3: string,
+      _receiverUnderlyingAddress: string,
       _executor: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -170,25 +176,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
   redeemFromAgentInCollateral: {
     (
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       arg0: string,
-      arg1: string,
+      _redeemer: string,
       _amountUBA: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -463,33 +469,33 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     redeemFromAgent: {
       (
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
-        arg3: string,
+        _receiverUnderlyingAddress: string,
         _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
-        arg3: string,
+        _receiverUnderlyingAddress: string,
         _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
-        arg3: string,
+        _receiverUnderlyingAddress: string,
         _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
-        arg3: string,
+        _receiverUnderlyingAddress: string,
         _executor: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
@@ -498,25 +504,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     redeemFromAgentInCollateral: {
       (
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         arg0: string,
-        arg1: string,
+        _redeemer: string,
         _amountUBA: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;

@@ -97,10 +97,12 @@ export interface AvailableAgentsFacetInstance extends Truffle.ContractInstance {
   ): Promise<{
     0: {
       agentVault: string;
+      ownerManagementAddress: string;
       feeBIPS: BN;
       mintingVaultCollateralRatioBIPS: BN;
       mintingPoolCollateralRatioBIPS: BN;
       freeCollateralLots: BN;
+      status: BN;
     }[];
     1: BN;
   }>;
@@ -173,10 +175,12 @@ export interface AvailableAgentsFacetInstance extends Truffle.ContractInstance {
     ): Promise<{
       0: {
         agentVault: string;
+        ownerManagementAddress: string;
         feeBIPS: BN;
         mintingVaultCollateralRatioBIPS: BN;
         mintingPoolCollateralRatioBIPS: BN;
         freeCollateralLots: BN;
+        status: BN;
       }[];
       1: BN;
     }>;

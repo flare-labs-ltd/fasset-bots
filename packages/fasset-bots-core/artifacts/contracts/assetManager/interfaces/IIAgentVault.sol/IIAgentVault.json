@@ -55,22 +55,61 @@
     {
       "inputs": [
         {
-          "internalType": "contract IFtsoRewardManager",
-          "name": "_ftsoRewardManager",
+          "internalType": "contract IRewardManager",
+          "name": "_rewardManager",
           "type": "address"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint24",
           "name": "_lastRewardEpoch",
-          "type": "uint256"
+          "type": "uint24"
         },
         {
           "internalType": "address payable",
           "name": "_recipient",
           "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint24",
+                  "name": "rewardEpochId",
+                  "type": "uint24"
+                },
+                {
+                  "internalType": "bytes20",
+                  "name": "beneficiary",
+                  "type": "bytes20"
+                },
+                {
+                  "internalType": "uint120",
+                  "name": "amount",
+                  "type": "uint120"
+                },
+                {
+                  "internalType": "enum RewardsV2Interface.ClaimType",
+                  "name": "claimType",
+                  "type": "uint8"
+                }
+              ],
+              "internalType": "struct RewardsV2Interface.RewardClaim",
+              "name": "body",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct RewardsV2Interface.RewardClaimWithProof[]",
+          "name": "_proofs",
+          "type": "tuple[]"
         }
       ],
-      "name": "claimFtsoRewards",
+      "name": "claimDelegationRewards",
       "outputs": [
         {
           "internalType": "uint256",

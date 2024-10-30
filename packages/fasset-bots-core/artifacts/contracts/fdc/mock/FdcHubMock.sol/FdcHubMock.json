@@ -1,0 +1,121 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "FdcHubMock",
+  "sourceName": "contracts/fdc/mock/FdcHubMock.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "AttestationRequest",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint24",
+          "name": "rewardEpochId",
+          "type": "uint24"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "attestationType",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "source",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint24",
+              "name": "inflationShare",
+              "type": "uint24"
+            },
+            {
+              "internalType": "uint8",
+              "name": "minRequestsThreshold",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint224",
+              "name": "mode",
+              "type": "uint224"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct IFdcInflationConfigurations.FdcConfiguration[]",
+          "name": "fdcConfigurations",
+          "type": "tuple[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "InflationRewardsOffered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "requestsOffsetSeconds",
+          "type": "uint8"
+        }
+      ],
+      "name": "RequestsOffsetSet",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "requestAttestation",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "requestsOffsetSeconds",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b50610184806100206000396000f3fe6080604052600436106100295760003560e01c80636238f3541461002e57806394d019f114610043575b600080fd5b61004161003c3660046100a3565b610064565b005b34801561004f57600080fd5b50604080516000815290519081900360200190f35b7f251377668af6553101c9bb094ba89c0c536783e005e203625e6cd57345918cc982823460405161009793929190610115565b60405180910390a15050565b600080602083850312156100b657600080fd5b823567ffffffffffffffff808211156100ce57600080fd5b818501915085601f8301126100e257600080fd5b8135818111156100f157600080fd5b86602082850101111561010357600080fd5b60209290920196919550909350505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212206ae84b85b07d6c4cbc4b3be2ae3bdc5526869b710300337104443504fd444f5e64736f6c63430008170033",
+  "deployedBytecode": "0x6080604052600436106100295760003560e01c80636238f3541461002e57806394d019f114610043575b600080fd5b61004161003c3660046100a3565b610064565b005b34801561004f57600080fd5b50604080516000815290519081900360200190f35b7f251377668af6553101c9bb094ba89c0c536783e005e203625e6cd57345918cc982823460405161009793929190610115565b60405180910390a15050565b600080602083850312156100b657600080fd5b823567ffffffffffffffff808211156100ce57600080fd5b818501915085601f8301126100e257600080fd5b8135818111156100f157600080fd5b86602082850101111561010357600080fd5b60209290920196919550909350505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212206ae84b85b07d6c4cbc4b3be2ae3bdc5526869b710300337104443504fd444f5e64736f6c63430008170033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
