@@ -11,7 +11,7 @@ import { AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderly
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockChain } from "../../../src/mock/MockChain";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { MockFlareDataConnectorClient } from "../../../src/mock/MockFlareDataConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MINUTES, ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
@@ -674,7 +674,7 @@ describe("Agent bot unit tests", () => {
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
         // switch attestation prover to always fail mode
-        checkedCast(agentBot.agent.attestationProvider.stateConnector, MockStateConnectorClient).useAlwaysFailsProver = true;
+        checkedCast(agentBot.agent.attestationProvider.flareDataConnector, MockFlareDataConnectorClient).useAlwaysFailsProver = true;
         //
         await agentBot.minting.requestNonPaymentProofForMinting(orm.em, minting)
             .catch(e => console.error(e));
@@ -745,15 +745,15 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         // necessary contracts
         const MockContract = artifacts.require("MockContract");
-        const FtsoRewardManager = artifacts.require("IFtsoRewardManager");
+        const RewardManager = artifacts.require("IRewardManager");
         const DistributionToDelegators = artifacts.require("DistributionToDelegators");
         // mock contracts
         const mockContractFtsoManager = await MockContract.new();
-        const ftsoRewardManager = await FtsoRewardManager.at(mockContractFtsoManager.address);
+        const rewardManager = await RewardManager.at(mockContractFtsoManager.address);
         const mockContractDistribution = await MockContract.new();
         const distributionToDelegators = await DistributionToDelegators.at(mockContractDistribution.address);
         // add contracts to address updater
-        await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["FtsoRewardManager"], [ftsoRewardManager.address]);
+        await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["RewardManager"], [rewardManager.address]);
         await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["DistributionToDelegators"], [distributionToDelegators.address]);
         // mock functions - there is something to claim
         const getEpochs1 = web3.eth.abi.encodeFunctionCall(
@@ -793,7 +793,7 @@ describe("Agent bot unit tests", () => {
         await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(0);
         // clean up
-        await agentBot.context.addressUpdater.removeContracts(["FtsoRewardManager"]);
+        await agentBot.context.addressUpdater.removeContracts(["RewardManager"]);
         await agentBot.context.addressUpdater.removeContracts(["DistributionToDelegators"]);
     });
 

@@ -11,15 +11,15 @@ import { overrideAndCreateOrm } from "../mikro-orm.config";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { BlockchainWalletHelper } from "../underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../underlying-chain/ChainId";
-import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorClientHelper";
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
+import { FlareDataConnectorClientHelper } from "../underlying-chain/FlareDataConnectorClientHelper";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import {
     FeeServiceOptions,
     IBlockChainWallet,
     WalletApi,
 } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { IFlareDataConnectorClient } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
 import { Currency, RequireFields, assertCmd, assertNotNull, assertNotNullCmd, requireNotNull, toBNExp } from "../utils";
 import { agentNotifierThrottlingTimes } from "../utils/notifier/AgentNotifier";
@@ -50,7 +50,7 @@ export interface BotFAssetConfig {
     chainInfo: ChainInfo;
     wallet?: IBlockChainWallet; // for agent bot and user
     blockchainIndexerClient?: BlockchainIndexerHelper; // for agent bot, user and challenger
-    stateConnector?: IStateConnectorClient; // for agent bot, user, challenger and timeKeeper
+    flareDataConnector?: IFlareDataConnectorClient; // for agent bot, user, challenger and timeKeeper
     verificationClient?: IVerificationApiClient; // only for agent bot and user
     assetManager: IIAssetManagerInstance;
     priceChangeEmitter: string; // the name of the contract (in Contracts file) that emits price change event
@@ -69,9 +69,9 @@ export interface AgentBotSettings {
     minBalanceOnWorkAccount: BN;
 }
 
-export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient" | "agentBotSettings">;
-export type BotFAssetConfigWithWallet = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "stateConnector" | "verificationClient">;
-export type BotFAssetConfigWithIndexer = RequireFields<BotFAssetConfig, "blockchainIndexerClient" | "stateConnector" | "verificationClient">;
+export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "flareDataConnector" | "verificationClient" | "agentBotSettings">;
+export type BotFAssetConfigWithWallet = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "flareDataConnector" | "verificationClient">;
+export type BotFAssetConfigWithIndexer = RequireFields<BotFAssetConfig, "blockchainIndexerClient" | "flareDataConnector" | "verificationClient">;
 
 export type AgentBotConfig = RequireFields<BotConfig<BotFAssetAgentConfig>, "orm">; // for agent
 export type UserBotConfig = BotConfig<BotFAssetConfigWithWallet>;                   // for minter and redeemer
@@ -190,7 +190,7 @@ export async function createBotFAssetConfig(
     };
     if (type === "agent" || type === "user") {
         assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, walletOptions, feeServiceOptions, fallbackApis);
+        result.wallet = await createBlockchainWalletHelper(secrets, chainId, requireNotNull(em), fassetInfo.walletUrl, walletOptions, feeServiceOptions, fallbackApis);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
@@ -201,11 +201,12 @@ export async function createBotFAssetConfig(
         assertNotNullCmd(fassetInfo.indexerUrl, `Missing indexerUrl in FAsset type ${fAssetSymbol}`);
         assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
         assertNotNull(submitter);   // if this is missing, it is program error
-        const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
+        const fdcHubAddress = await retriever.getContractAddress("FdcHub");
+        const relayAddress = await retriever.getContractAddress("Relay");
         const apiKey = indexerApiKey(secrets);
         result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrl, apiKey);
         result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrl, apiKey);
-        result.stateConnector = await createStateConnectorClient(fassetInfo.indexerUrl, apiKey, attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter);
+        result.flareDataConnector = await createFlareDataConnectorClient(fassetInfo.indexerUrl, apiKey, attestationProviderUrls, settings.fdcVerification, fdcHubAddress, relayAddress, submitter);
     }
     return result;
 }
@@ -277,24 +278,26 @@ export async function createBlockchainWalletHelper(
 }
 
 /**
- * Creates state connector client
+ * Creates flare data connector client
  * @param indexerWebServerUrl indexer's url
  * @param indexerApiKey
  * @param attestationProviderUrls list of attestation provider's urls
- * @param scProofVerifierAddress SCProofVerifier's contract address
- * @param stateConnectorAddress StateConnector's contract address
+ * @param fdcVerificationAddress FdcVerification's contract address
+ * @param fdcHubAddress FdcHub's contract address
+ * @param relayAddress Relay's contract address
  * @param submitter native address of the account that will call requestAttestations
- * @returns instance of StateConnectorClientHelper
+ * @returns instance of FlareDataConnectorClientHelper
  */
-export async function createStateConnectorClient(
+export async function createFlareDataConnectorClient(
     indexerWebServerUrl: string,
     indexerApiKey: string,
     attestationProviderUrls: string[],
-    scProofVerifierAddress: string,
-    stateConnectorAddress: string,
+    fdcVerificationAddress: string,
+    fdcHubAddress: string,
+    relayAddress: string,
     submitter: string
-): Promise<StateConnectorClientHelper> {
-    return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, indexerApiKey, submitter);
+): Promise<FlareDataConnectorClientHelper> {
+    return await FlareDataConnectorClientHelper.create(attestationProviderUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, indexerWebServerUrl, indexerApiKey, submitter);
 }
 
 export async function createVerificationApiClient(indexerWebServerUrl: string, indexerApiKey: string): Promise<VerificationPrivateApiClient> {

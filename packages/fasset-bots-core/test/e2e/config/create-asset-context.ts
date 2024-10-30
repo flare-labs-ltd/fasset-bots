@@ -40,7 +40,7 @@ describe("Create asset context tests", () => {
         expect(context.chainInfo.chainId).to.eq(firstValue(botConfig.fAssets)!.chainInfo.chainId);
     });
 
-    // with addressUpdater and stateConnectorProofVerifierAddress - cannot use only addressUpdater until SCProofVerifier gets verified in explorer
+    // with addressUpdater and flareDataConnectorProofVerifierAddress - cannot use only addressUpdater until FdcVerification gets verified in explorer
     it("Should create asset context given asset manager controller", async () => {
         runConfig = JSON.parse(readFileSync(COSTON_RUN_CONFIG_ADDRESS_UPDATER).toString()) as BotConfigFile;
         botConfig = await createBotConfig("agent", secrets, runConfig, accounts[0]);
@@ -56,7 +56,7 @@ describe("Create asset context tests", () => {
         expect(context).is.not.null;
     });
 
-    // with addressUpdater and stateConnectorProofVerifierAddress - cannot use only addressUpdater until SCProofVerifier gets verified in explorer
+    // with addressUpdater and flareDataConnectorProofVerifierAddress - cannot use only addressUpdater until FdcVerification gets verified in explorer
     it("Should create simplified asset context from address updater", async () => {
         actorRunConfig = simpleLoadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER);
         actorConfig = await createBotConfig("keeper", secrets, actorRunConfig, accounts[0]);
@@ -64,7 +64,7 @@ describe("Create asset context tests", () => {
         expect(context).is.not.null;
     });
 
-    // with addressUpdater and stateConnectorProofVerifierAddress - cannot use only addressUpdater until SCProofVerifier gets verified in explorer
+    // with addressUpdater and flareDataConnectorProofVerifierAddress - cannot use only addressUpdater until FdcVerification gets verified in explorer
     it("Should create simplified asset context from address updater and not define attestationProvider", async () => {
         actorRunConfig = simpleLoadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER);
         actorRunConfig.attestationProviderUrls = undefined;

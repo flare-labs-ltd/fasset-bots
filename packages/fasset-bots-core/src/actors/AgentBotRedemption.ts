@@ -8,7 +8,7 @@ import { AgentRedemptionFinalState, AgentRedemptionState } from "../entities/com
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { EventArgs } from "../utils/events/common";
 import { squashSpace } from "../utils/formatting";
 import { assertNotNull, BNish, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";

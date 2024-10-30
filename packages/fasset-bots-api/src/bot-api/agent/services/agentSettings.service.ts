@@ -15,7 +15,8 @@ export class AgentSettingsService {
             poolExitCollateralRatio,
             buyFAssetByAgentFactor,
             poolTopupCollateralRatio,
-            poolTopupTokenPriceFactor
+            poolTopupTokenPriceFactor,
+            handshakeType
         } = dto;
         return {
             poolTokenSuffix,
@@ -27,7 +28,8 @@ export class AgentSettingsService {
             poolExitCollateralRatio,
             buyFAssetByAgentFactor,
             poolTopupCollateralRatio,
-            poolTopupTokenPriceFactor
+            poolTopupTokenPriceFactor,
+            handshakeType
         };
     }
 }

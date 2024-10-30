@@ -635,11 +635,7 @@ describe("Tracked state tests", () => {
         const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
         await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
-        await context.assetManager.updateSettings(
-            web3.utils.soliditySha3Raw(web3.utils.asciiToHex("updateContracts(address,IWNat)")),
-            web3.eth.abi.encodeParameters(["address", "address"], [context.assetManagerController.address, newWnat.address]),
-            { from: assetManagerControllerAddress }
-        );
+        await context.assetManager.updateSystemContracts(context.assetManagerController.address, newWnat.address, { from: assetManagerControllerAddress });
         await context.assetManager.upgradeWNatContract(agentB.vaultAddress, { from: agentB.owner.workAddress });
         await trackedState.readUnhandledEvents();
         expect(spyCollateralChanged).to.be.called.exactly(0);

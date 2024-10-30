@@ -53,7 +53,7 @@ export class Minter {
         const lotAmount =  toBN(lots).mul(lotSizeUBA);
         const mintPayment = lotAmount.add(lotAmount.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS));
         await checkUnderlyingFunds(this.context, this.underlyingAddress, mintPayment, agentInfo.underlyingAddressString);
-        const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, { from: this.address, value: totalNatFee });
+        const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, [this.underlyingAddress], { from: this.address, value: totalNatFee });
         return requiredEventArgs(res, 'CollateralReserved');
     }
 

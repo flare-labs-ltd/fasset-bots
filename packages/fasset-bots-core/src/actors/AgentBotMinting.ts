@@ -8,7 +8,7 @@ import { AgentMintingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { ITransaction, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { EventArgs } from "../utils/events/common";
 import { BN_ZERO, MAX_BIPS, assertNotNull, errorIncluded, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";

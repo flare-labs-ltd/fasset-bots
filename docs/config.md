@@ -95,8 +95,6 @@ interface BotConfigFile {
     rpcUrl: string; // Native chain's url.
     alertsUrl?: string; // Url to send notifications to.
     attestationProviderUrls?: string[]; // List of urls of attestation providers. Only for agent bot, user, challenger and timeKeeper.
-    stateConnectorAddress?: string; // Address of StateConnector contract on native chain. Only for agent bot, user, challenger and timeKeeper.
-    stateConnectorProofVerifierAddress?: string; // Address of SCProofVerifier contract on native chain. Only for agent bot, user, challenger and timeKeeper.
     // either one must be set
     addressUpdater?: string; // Address of AddressUpdater contract on native chain.
     contractsJsonFile?: string; // File path to json file containing contract addresses on native chain

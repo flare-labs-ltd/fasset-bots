@@ -210,8 +210,8 @@
         "address": "0xCc255bC593100C1FC19E9c5389D2ecE2E9C72ff0"
     },
     {
-        "name": "SCProofVerifier",
-        "contractName": "SCProofVerifier.sol",
+        "name": "FdcVerification",
+        "contractName": "FdcVerification.sol",
         "address": "0xCa8B43918980875B6a510C87E117F4310e13631e"
     },
     {

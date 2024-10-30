@@ -32,21 +32,22 @@ export class AgentBotClaims {
         if (this.bot.stopRequested()) return;
         try {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for FTSO rewards.`);
-            const IFtsoRewardManager = artifacts.require("IFtsoRewardManager");
-            const ftsoRewardManagerAddress = await this.context.addressUpdater.getContractAddress("FtsoRewardManager");
-            const ftsoRewardManager = await IFtsoRewardManager.at(ftsoRewardManagerAddress);
+            const IRewardManager = artifacts.require("IRewardManager");
+            const rewardManagerAddress = await this.context.addressUpdater.getContractAddress("RewardManager");
+            const rewardManager = await IRewardManager.at(rewardManagerAddress);
             const addressToClaim = type === ClaimType.VAULT ? this.agent.vaultAddress : this.agent.collateralPool.address;
-            const notClaimedRewards: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(addressToClaim);
-            if (notClaimedRewards.length > 0) {
-                const unClaimedEpoch = notClaimedRewards[notClaimedRewards.length - 1];
-                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch}`);
-                if (type === ClaimType.VAULT) {
-                    await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, addressToClaim, { from: this.agent.owner.workAddress });
-                } else {
-                    await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, { from: this.agent.owner.workAddress });
-                }
-            }
-            logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
+            throw new Error("Not implemented yet");
+            // const notClaimedRewards: BN[] = await rewardManager.getEpochsWithUnclaimedRewards(addressToClaim);
+            // if (notClaimedRewards.length > 0) {
+            //     const unClaimedEpoch = notClaimedRewards[notClaimedRewards.length - 1];
+            //     logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch}`);
+            //     if (type === ClaimType.VAULT) {
+            //         await this.agent.agentVault.claimFtsoRewards(rewardManager.address, unClaimedEpoch, addressToClaim, { from: this.agent.owner.workAddress });
+            //     } else {
+            //         await this.agent.collateralPool.claimFtsoRewards(rewardManager.address, unClaimedEpoch, { from: this.agent.owner.workAddress });
+            //     }
+            // }
+            // logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
         } catch (error) {
             console.error(`Error handling FTSO rewards for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling FTSO rewards for ${type}:`, error);

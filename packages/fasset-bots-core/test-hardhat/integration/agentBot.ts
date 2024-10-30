@@ -12,7 +12,7 @@ import { AgentStatus, AssetManagerSettings } from "../../src/fasset/AssetManager
 import { PaymentReference } from "../../src/fasset/PaymentReference";
 import { Minter } from "../../src/mock/Minter";
 import { MockChain } from "../../src/mock/MockChain";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { MockFlareDataConnectorClient } from "../../src/mock/MockFlareDataConnectorClient";
 import { Redeemer } from "../../src/mock/Redeemer";
 import { programVersion } from "../../src/utils";
 import { Web3ContractEventDecoder } from "../../src/utils/events/Web3ContractEventDecoder";
@@ -218,7 +218,7 @@ describe("Agent bot tests", () => {
         assert.equal(mintingDone.state, AgentMintingState.DONE);
     });
 
-    it("Should perform minting - minter pays, agent execute minting; needs to retry state connector payment request", async () => {
+    it("Should perform minting - minter pays, agent execute minting; needs to retry flare data connector payment request", async () => {
         // create collateral reservation
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
         await agentBot.runStep(orm.em);
@@ -245,14 +245,14 @@ describe("Agent bot tests", () => {
         const mintingRequestedPaymentProof = mintings[0];
         assert.equal(mintingRequestedPaymentProof.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // remove the proof
-        const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
+        const scClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
         delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[mintingRequestedPaymentProof.proofRequestData!];
         // check if minting is done
         await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingRequestedPaymentProof1 = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
         assert.equal(mintingRequestedPaymentProof1.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
-        // after one more state connector round, the minitng should be reset to started
+        // after one more flare data connector round, the minitng should be reset to started
         scClient.rounds.push([]);
         await scClient.finalizeRound();
         // check minting status
@@ -275,7 +275,7 @@ describe("Agent bot tests", () => {
         assert.equal(mintingDone2.state, AgentMintingState.DONE);
     });
 
-    it("Should perform minting and redemption; needs to retry state connector payment request in redemption", async () => {
+    it("Should perform minting and redemption; needs to retry flare data connector payment request in redemption", async () => {
         const spyCCP = spy.on(agentBot.redemption, "checkConfirmPayment");
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);
@@ -310,7 +310,7 @@ describe("Agent bot tests", () => {
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         expect(spyCCP).to.have.been.called.exactly(1);
         // remove the proof
-        const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
+        const scClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
         delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[redemption.proofRequestData!];
         // redemption status should be stuck
         await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
@@ -318,7 +318,7 @@ describe("Agent bot tests", () => {
         redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         expect(spyCCP).to.have.been.called.exactly(2);
-        // after one more state connector round, the minitng should be reset to paid
+        // after one more flare data connector round, the minitng should be reset to paid
         scClient.rounds.push([]);
         await scClient.finalizeRound();
         // check minting status

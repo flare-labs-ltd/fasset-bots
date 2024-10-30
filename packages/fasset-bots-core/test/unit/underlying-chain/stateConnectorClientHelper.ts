@@ -3,22 +3,22 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import rewire from "rewire";
 import { Secrets, indexerApiKey } from "../../../src/config";
-import { createBlockchainIndexerHelper, createStateConnectorClient } from "../../../src/config/BotConfig";
+import { createBlockchainIndexerHelper, createFlareDataConnectorClient } from "../../../src/config/BotConfig";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
-import { StateConnectorClientHelper } from "../../../src/underlying-chain/StateConnectorClientHelper";
+import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/FlareDataConnectorClientHelper";
 import { ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../test-utils/TestChainInfo";
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
+import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
 use(chaiAsPromised);
-const rewiredStateConnectorClientHelper = rewire("../../../src/underlying-chain/StateConnectorClientHelper");
-const rewiredStateConnectorClientHelperClass = rewiredStateConnectorClientHelper.__get__("StateConnectorClientHelper");
+const rewiredFlareDataConnectorClientHelper = rewire("../../../src/underlying-chain/FlareDataConnectorClientHelper");
+const rewiredFlareDataConnectorClientHelperClass = rewiredFlareDataConnectorClientHelper.__get__("FlareDataConnectorClientHelper");
 
-let stateConnectorClient: StateConnectorClientHelper;
+let flareDataConnectorClient: FlareDataConnectorClientHelper;
 const chainId = ChainId.testXRP;
 const finalizationBlocks: number = 6;
 
-describe("testXRP attestation/state connector tests", () => {
+describe("testXRP attestation/flare data connector tests", () => {
     let secrets: Secrets;
     const roundId = 571512;
     let account: string;
@@ -28,28 +28,29 @@ describe("testXRP attestation/state connector tests", () => {
         const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         account = accounts[0];
-        stateConnectorClient = await createStateConnectorClient(
+        flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
             indexerApiKey(secrets),
             ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
+            FDC_VERIFICATION_ADDRESS,
+            FDC_HUB_ADDRESS,
+            RELAY_ADDRESS,
             account
         );
     });
 
     it("Should return round is finalized", async () => {
-        const isRoundFinalized = await stateConnectorClient.roundFinalized(roundId);
+        const isRoundFinalized = await flareDataConnectorClient.roundFinalized(roundId);
         expect(isRoundFinalized).to.be.true;
     });
 
     it("Should wait for round finalization", async () => {
-        await stateConnectorClient.waitForRoundFinalization(roundId);
+        await flareDataConnectorClient.waitForRoundFinalization(roundId);
     });
 
     it("Should return round is not finalized", async () => {
         const round = roundId + 1000000000000;
-        const isRoundFinalized = await stateConnectorClient.roundFinalized(round);
+        const isRoundFinalized = await flareDataConnectorClient.roundFinalized(round);
         expect(isRoundFinalized).to.be.false;
     });
 
@@ -66,22 +67,15 @@ describe("testXRP attestation/state connector tests", () => {
                 queryWindow: String(queryWindow),
             },
         };
-        const resp = await stateConnectorClient.submitRequest(request);
+        const resp = await flareDataConnectorClient.submitRequest(request);
         expect(resp!.round).to.be.greaterThan(0);
         expect(resp!.data).is.not.null;
     });
-
-    it("Should convert from timestamp to roundId", async () => {
-        const timestamp = 1687489980;
-        const roundId = stateConnectorClient.timestampToRoundId(timestamp);
-        expect(roundId).to.not.be.null;
-        expect(roundId).to.be.gt(0);
-    });
 });
 
-describe("State connector tests - decoding", () => {
+describe("Flare data connector tests - decoding", () => {
     const invalidAttestationType = encodeAttestationName("invalid");
-    let rewiredStateConnectorHelper: typeof rewiredStateConnectorClientHelperClass;
+    let rewiredFlareDataConnectorHelper: typeof rewiredFlareDataConnectorClientHelperClass;
     const merkleProof = ["0xa2a603a9acad0bca95be28b9cea549b9b1cbe32519ff1389156b6d3c439535d4"];
     const responsePayment = {
         blockNumber: "0x25101bd",
@@ -97,7 +91,7 @@ describe("State connector tests - decoding", () => {
         receivingAddressHash: "0xb79cc459808472d8946de9eccb5f3013ab3b6a8dbeb6bee9a07a104a043ed5cc",
         sourceAddressHash: "0x7f5b4967a9fbe9b447fed6d4e3699051516b6afe5f94db2e77ccf86470bfd74d",
         spentAmount: "0x2540be40c",
-        stateConnectorRound: 571430,
+        flareDataConnectorRound: 571430,
         status: "0x0",
         transactionHash: "0x7CC280718732FD3354B45B3B1EA2119978469BF89AFA56376A7F9D3EF5B82E29",
         utxo: "0x0",
@@ -108,7 +102,7 @@ describe("State connector tests - decoding", () => {
         lowestQueryWindowBlockNumber: "0x2513437",
         lowestQueryWindowBlockTimestamp: "0x64947bcd",
         numberOfConfirmations: "0x1",
-        stateConnectorRound: 571430,
+        flareDataConnectorRound: 571430,
     };
     const responseNonPayment = {
         amount: "0x1404fa27e2c3da0d2990f9f406121a3a",
@@ -120,10 +114,10 @@ describe("State connector tests - decoding", () => {
         lowerBoundaryBlockNumber: "0x251531e",
         lowerBoundaryBlockTimestamp: "0x6494dd1a",
         paymentReference: "0xe530837535d367bc130ee181801f91e1a654a054b9b014cf0aeb79ecc7e6d8d2",
-        stateConnectorRound: 571429,
+        flareDataConnectorRound: 571429,
     };
     const responseBalanceDecreasing = {
-        stateConnectorRound: 571429,
+        flareDataConnectorRound: 571429,
         blockNumber: "0x2513459",
         blockTimestamp: "0x64947c32",
         transactionHash: "0x7CC280718732FD3354B45B3B1EA2119978469BF89AFA56376A7F9D3EF5B82E29",
@@ -137,18 +131,19 @@ describe("State connector tests - decoding", () => {
         const secrets = await Secrets.load(TEST_SECRETS);
         const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
-        stateConnectorClient = await createStateConnectorClient(
+        flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
             indexerApiKey(secrets),
             ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
+            FDC_VERIFICATION_ADDRESS,
+            FDC_HUB_ADDRESS,
+            RELAY_ADDRESS,
             accounts[0]
         );
-        rewiredStateConnectorHelper = new rewiredStateConnectorClientHelperClass(
+        rewiredFlareDataConnectorHelper = new rewiredFlareDataConnectorClientHelperClass(
             ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
+            FDC_VERIFICATION_ADDRESS,
+            FDC_HUB_ADDRESS,
             "",
             "",
             accounts[0]
@@ -178,7 +173,7 @@ describe("State connector tests - decoding", () => {
                 "0xcae4c715a94dae234c49acc329915a28ba853435d6f4fb858a5a0a120beac520",
             ],
         };
-        await expect(rewiredStateConnectorHelper.verifyProof(proofData))
+        await expect(rewiredFlareDataConnectorHelper.verifyProof(proofData))
             .to.eventually.be.rejectedWith(`Invalid attestation type ${invalidAttestationType}`)
             .and.be.an.instanceOf(Error);
     });

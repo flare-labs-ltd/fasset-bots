@@ -29,7 +29,7 @@ import { fundUnderlying } from "../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { MockFlareDataConnectorClient } from "../../src/mock/MockFlareDataConnectorClient";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -257,13 +257,14 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
             poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),
             poolTopupCollateralRatioBIPS: toBN(agentInfo.poolTopupCollateralRatioBIPS),
             poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
+            handshakeType: toBN(0),
         }
     };
     return initialAgentData;
 }
 
 export async function runWithManualSCFinalization(context: IAssetAgentContext, finalizeAfter: boolean, method: () => Promise<void>) {
-    const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
+    const scClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
     scClient.finalizationType = "manual";
     await method();
     if (finalizeAfter) {

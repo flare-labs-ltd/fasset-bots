@@ -72,4 +72,12 @@ export class AgentSettingsConfigDTO {
      */
     @ApiProperty()
     poolTopupTokenPriceFactor: string = "";
+
+    /**
+     * The handshake type required by the agent. Currently supported values are
+     * - 0 - no handshake is performed
+     * - 1 - handhake is performed by external service api (configured further in bot config)
+     */
+    @ApiProperty()
+    handshakeType: number = 0;
 }

@@ -23,5 +23,6 @@ export const ATTESTATION_PROVIDER_URLS: string[] = [
     "https://attestation-coston.aflabs.net/attestation-client",
 ];
 
-export const STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS: string = "0x6356470e9aF457d1900Ad4Ed45D115192506BF51";
-export const STATE_CONNECTOR_ADDRESS: string = "0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3";
+export const FDC_VERIFICATION_ADDRESS: string = "0x6Bd0DBbDB84F667d5C450E517760375c8Ad8De71";
+export const RELAY_ADDRESS: string = "0x92a6E1127262106611e1e129BB64B6D8654273F7";
+export const FDC_HUB_ADDRESS: string = "0x1c78A073E3BD2aCa4cc327d55FB0cD4f0549B55b";

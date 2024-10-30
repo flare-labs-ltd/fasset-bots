@@ -414,11 +414,7 @@ describe("AgentBot cli commands unit tests", () => {
         const agent = await createAgent(localContext);
         botCliCommands.context = localContext;
         const newWnat = await ERC20Mock.new("Wrapped NAT", "WNAT");
-        await localContext.assetManager.updateSettings(
-            web3.utils.soliditySha3Raw(web3.utils.asciiToHex("updateContracts(address,IWNat)")),
-            web3.eth.abi.encodeParameters(["address", "address"], [localContext.assetManagerController.address, newWnat.address]),
-            { from: assetManagerControllerAddress }
-        );
+        await localContext.assetManager.updateSystemContracts(localContext.assetManagerController.address, newWnat.address, { from: assetManagerControllerAddress });
         await botCliCommands.upgradeWNatContract(agent.vaultAddress);
         const token = (await agent.getPoolCollateral()).token;
         expect(token).to.equal(newWnat.address);

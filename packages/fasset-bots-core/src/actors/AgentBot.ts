@@ -287,7 +287,7 @@ export class AgentBot {
     }
 
     requestSubmitterAddress() {
-        return this.context.attestationProvider.stateConnector.account ?? this.owner.workAddress;
+        return this.context.attestationProvider.flareDataConnector.account ?? this.owner.workAddress;
     }
 
     /**
@@ -617,7 +617,7 @@ export class AgentBot {
 
     async enoughTimePassedToObtainProof(request: { proofRequestRound?: number, proofRequestData?: string }) {
         assertNotNull(request.proofRequestRound);
-        return await this.context.attestationProvider.stateConnector.roundFinalized(request.proofRequestRound + 1);
+        return await this.context.attestationProvider.flareDataConnector.roundFinalized(request.proofRequestRound + 1);
     }
 
     /**

@@ -265,7 +265,7 @@ export class UserBotCommands {
         console.log(`User ${this.nativeAddress} is checking for existence of the proof of underlying payment transaction ${state.transactionHash}...`);
         const proof = await minter.obtainPaymentProof(state.proofRequest.round, state.proofRequest.data);
         if (!attestationProved(proof)) {
-            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
+            throw new CommandLineError(`Flare data connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
         }
         console.log(`Executing payment...`);
         logger.info(`User ${this.nativeAddress} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);

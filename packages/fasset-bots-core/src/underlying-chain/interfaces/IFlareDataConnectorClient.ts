@@ -1,6 +1,8 @@
 import { ARBase, ARESBase } from "@flarenetwork/state-connector-protocol";
 
-export class StateConnectorClientError extends Error {
+export const FDC_PROTOCOL_ID = 200;
+
+export class FlareDataConnectorClientError extends Error {
     constructor(message: string) {
         super(message);
     }
@@ -21,11 +23,11 @@ export enum AttestationNotProved {
     DISPROVED = "DISPROVED",
 }
 
-export type OptionalAttestationProof = AttestationProof<ARESBase> | AttestationNotProved;
+export type OptionalAttestationProof = AttestationProof | AttestationNotProved;
 
-// All methods build attestation request, submit it to the state connector and return the encoded request.
+// All methods build attestation request, submit it to the flare data connector and return the encoded request.
 // We create one requester per chain, so chainId is baked in.
-export interface IStateConnectorClient {
+export interface IFlareDataConnectorClient {
     account: string | undefined;
     roundFinalized(round: number): Promise<boolean>;
     waitForRoundFinalization(round: number): Promise<void>;

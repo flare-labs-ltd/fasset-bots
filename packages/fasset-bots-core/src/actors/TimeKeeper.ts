@@ -165,7 +165,7 @@ export class TimeKeeperUpdate {
             throw new Error("Timekeeper: confirmedBlockHeightExists: not proved");
         }
         // wait for round finalization
-        while (!(await this.context.attestationProvider.stateConnector.roundFinalized(request.round))) {
+        while (!(await this.context.attestationProvider.flareDataConnector.roundFinalized(request.round))) {
             await cancelableSleep(this.timing.loopDelayMs, cancelUpdate);
         }
         // sometimes proof is not immediately available, so retry a few times too avoid errors
