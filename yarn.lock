@@ -1294,7 +1294,7 @@ __metadata:
   resolution: "@flarelabs/fasset-bots-core@workspace:packages/fasset-bots-core"
   dependencies:
     "@flarelabs/simple-wallet": "workspace:*"
-    "@flarenetwork/state-connector-protocol": 1.0.0-beta.4
+    "@flarenetwork/state-connector-protocol": 1.0.0-beta.6
     "@mikro-orm/core": 5.8.4
     "@mikro-orm/knex": 5.8.4
     "@mikro-orm/mysql": 5.8.4
@@ -1450,6 +1450,16 @@ __metadata:
     "@openzeppelin/contracts": ^4.9.3
     ethers: ^6.7.1
   checksum: 440132dcd86a3fa47d0214add2c65da165444fe5a856be4acdf56467cd66fa3b31d6c350815586d8a61589f25d134e57770c737e61d2a6b6ff653af1ea8c3902
+  languageName: node
+  linkType: hard
+
+"@flarenetwork/state-connector-protocol@npm:1.0.0-beta.6":
+  version: 1.0.0-beta.6
+  resolution: "@flarenetwork/state-connector-protocol@npm:1.0.0-beta.6"
+  dependencies:
+    "@openzeppelin/contracts": ^4.9.3
+    ethers: ^6.7.1
+  checksum: 13b6e1a84990466b5266ca70192526806389673705706eaab1cfc963efd10714375cd514554dbf33cc554fc1cbd77622b79a633753c18111ac0f42b081af2011
   languageName: node
   linkType: hard
 
