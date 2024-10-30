@@ -428,7 +428,8 @@ program
     .argument("<amount>")
     .action(async (agentVault: string, recipient: string, amount: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
-        const cli = await AgentBotCommands.create(options.secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.fasset(cli.context);
         await cli.makeIllegalPayment(agentVault, recipient, currency.parse(amount));
     })
