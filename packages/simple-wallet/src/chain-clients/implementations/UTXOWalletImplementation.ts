@@ -510,19 +510,20 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     async signAndSubmitProcess(txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string): Promise<void> {
         logger.info(`Submitting transaction ${txId}.`);
-        let signed: SignedObject = { txBlob: "", txHash: "", txSize: undefined };
+        let signed: SignedObject = { txBlob: "", txHash: "" };
         try {
             signed = this.signTransaction(transaction, privateKey, privateKeyForFee);
             logger.info(`Transaction ${txId} is signed.`);
+            const txSize = transaction._calculateVSize(false);
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.transactionHash = signed.txHash;
-                txEnt.size = signed.txSize;
+                txEnt.size = txSize;
             });
-            if (signed.txSize && signed.txSize >=  MAX_UTXO_TX_SIZE_IN_B) {
+            if (txSize >= MAX_UTXO_TX_SIZE_IN_B) {
                 await failTransaction(
                     this.rootEm,
                     txId,
-                    `signAndSubmitProcess: Transaction ${txId} is too big: transaction size ${signed.txSize}, maximal allowed size ${MAX_UTXO_TX_SIZE_IN_B}.`
+                    `signAndSubmitProcess: Transaction ${txId} is too big: transaction size ${txSize}, maximal allowed size ${MAX_UTXO_TX_SIZE_IN_B}.`
                 );
                 return;
             }
@@ -542,7 +543,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         if (await this.transactionUTXOService.checkIfTxUsesAlreadySpentUTXOs(txId)) {
             return;
         }
-
         // submit
         const txStatus = await this.submitTransaction(signed.txBlob, txId);
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
@@ -616,9 +616,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     private signTransaction(transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string): SignedObject {
         const signedTx = privateKeyForFee ? transaction.sign(privateKey).sign(privateKeyForFee) : transaction.sign(privateKey);
         const signedAndSerialized = signedTx.toString();
-        const txSize = Buffer.byteLength(signedAndSerialized, "hex");
         const txId = transaction.id;
-        return { txBlob: signedAndSerialized, txHash: txId, txSize: txSize };
+        return { txBlob: signedAndSerialized, txHash: txId };
     }
 
     /**

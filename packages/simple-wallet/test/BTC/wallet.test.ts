@@ -73,6 +73,7 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 // first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
 
 const amountToSendSatoshi = toBN(100020);
+const feeInSatoshi = toBN(12000);
 const maxFeeInSatoshi = toBN(1100);
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
 
@@ -82,7 +83,6 @@ let testOrm: ORM;
 
 describe("Bitcoin wallet tests", () => {
     let removeConsoleLogging: () => void;
-    let feeInSatoshi: BN;
 
     before(async () => {
         removeConsoleLogging = addConsoleTransportForTests(logger);
@@ -102,9 +102,6 @@ describe("Bitcoin wallet tests", () => {
 
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
-
-        feeInSatoshi = toBN(await wClient.blockchainAPI.getCurrentFeeRate());
-        console.log(feeInSatoshi.toString());
     });
 
     after(async () => {
