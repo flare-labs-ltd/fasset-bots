@@ -8,7 +8,7 @@ import {
 } from "../../db/dbutils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
-import { ChainType } from "../../utils/constants";
+import { ChainType, MIN_RELAY_FEE_INCREASE_RBF_IN_B } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
 import { Transaction } from "bitcore-lib";
@@ -268,17 +268,20 @@ export class TransactionService {
     private async correctFee(txDbId: number, tr: Transaction, txForReplacement: TransactionEntity | undefined, feeInSatoshi: BN | undefined, allUTXOs: UTXOEntity[]) {
         let feeRatePerKB: BN = await this.transactionFeeService.getFeePerKB();
         logger.info(`Transaction ${txDbId} received fee of ${feeRatePerKB.toString()} satoshies per kb.`);
-        if (txForReplacement && feeInSatoshi) {
-            const feeToCover: BN = feeInSatoshi;
-            if (txForReplacement.size && txForReplacement.fee) {
-                const minRequiredFeePerKb: BN = toBN(txForReplacement.fee.muln(this.transactionFeeService.feeIncrease).muln(1000)).divn(txForReplacement.size);
-                if (feeRatePerKB.lt(minRequiredFeePerKb)) {
-                    feeRatePerKB = minRequiredFeePerKb;
+        if (txForReplacement) {
+            if (feeInSatoshi != null) {
+                const feeToCover: BN = feeInSatoshi;
+                if (txForReplacement.size && txForReplacement.fee) {
+                    const feePerKBPaidInOriginal = toBN(txForReplacement.fee.muln(1000)).divn(txForReplacement.size);
+                    const minRequiredFeePerKb: BN = feePerKBPaidInOriginal.addn(MIN_RELAY_FEE_INCREASE_RBF_IN_B * this.transactionFeeService.feeIncrease);
+                    if (feeRatePerKB.lt(minRequiredFeePerKb)) {
+                        feeRatePerKB = minRequiredFeePerKb;
+                    }
+                    const estimateFee = await this.transactionFeeService.getEstimateFee(allUTXOs.length, txForReplacement.feeSource ? 4 : 3, feeRatePerKB);
+                    const newTxFee: BN = feeToCover.add(estimateFee);
+                    tr.fee(toNumber(newTxFee));
+                    logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
                 }
-                const estimateFee = await this.transactionFeeService.getEstimateFee(allUTXOs.length, 4, feeRatePerKB);
-                const newTxFee: BN = feeToCover.add(estimateFee);
-                tr.fee(toNumber(newTxFee));
-                logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
             }
         } else {
             tr.feePerKb(Number(feeRatePerKB));
