@@ -89,6 +89,10 @@ export function isPriceChangeEvent(context: IAssetNativeChainContext, event: Evm
     return eventIs(event, context.priceChangeEmitter, "PriceEpochFinalized") || eventIs(event, context.priceChangeEmitter, "PricesPublished");
 }
 
-export function isCollateralRatioChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
+export function isCollateralRatiosChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
     return eventIs(event, context.assetManager, "CollateralRatiosChanged");
+}
+
+export function isContractChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
+    return eventIs(event, context.assetManager, "ContractChanged");
 }

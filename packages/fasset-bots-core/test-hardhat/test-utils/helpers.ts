@@ -141,7 +141,7 @@ export function createTestAgentBotRunner(
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
     const testAgentBotSettingsMap = new Map(Object.entries(testAgentBotSettings));
-    return new AgentBotRunner(secrets, contexts, testAgentBotSettingsMap, orm, loopDelay, notifiers, testTimekeeperService);
+    return new AgentBotRunner(secrets, contexts, testAgentBotSettingsMap, orm, loopDelay, notifiers, testTimekeeperService, false);
 }
 
 export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
