@@ -102,8 +102,8 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}. Agent is trying to automatically top up vaults.`);
     }
 
-    async sendLiquidationEndedAlert(timestamp: string) {
-        await this.info(AgentNotificationKey.LIQUIDATION_ENDED, `Liquidation has ended for agent ${this.address} at ${timestamp}.`);
+    async sendLiquidationEndedAlert() {
+        await this.info(AgentNotificationKey.LIQUIDATION_ENDED, `Liquidation has ended for agent ${this.address}.`);
     }
 
     async sendFullLiquidationAlert(payment1?: string, payment2?: string) {

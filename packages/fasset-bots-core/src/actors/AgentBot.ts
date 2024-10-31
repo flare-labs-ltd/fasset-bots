@@ -17,7 +17,7 @@ import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion, 
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
-import { formatArgs, squashSpace } from "../utils/formatting";
+import { formatArgs, formatTimestamp, squashSpace } from "../utils/formatting";
 import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, sleepUntil, toBN } from "../utils/helpers";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -391,7 +391,8 @@ export class AgentBot {
 
     async handleEvent(em: EM, event: EvmEvent): Promise<void> {
         // only events for this agent should be handled (this should already be the case due to filter in readNewEvents, but just to be sure)
-        if (event.args.agentVault && event.args.agentVault.toLowerCase() !== this.agent.vaultAddress.toLowerCase()) return;
+        const agentVault = (event.args as any).agentVault;
+        if (agentVault && agentVault.toLowerCase() !== this.agent.vaultAddress.toLowerCase()) return;
         if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
             await this.minting.mintingStarted(em, event.args);
@@ -422,14 +423,14 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
             await this.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
-            await this.notifier.sendCCBAlert(event.args.timestamp);
+            await this.notifier.sendCCBAlert(`${formatTimestamp(event.args.timestamp)} (${event.args.timestamp})`);
         } else if (eventIs(event, this.context.assetManager, "LiquidationStarted")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationStarted' with data ${formatArgs(event.args)}.`);
             await this.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
-            await this.notifier.sendLiquidationStartAlert(event.args.timestamp);
+            await this.notifier.sendLiquidationStartAlert(`${formatTimestamp(event.args.timestamp)} (${event.args.timestamp})`);
         } else if (eventIs(event, this.context.assetManager, "LiquidationEnded")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationEnded' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendLiquidationEndedAlert(event.args.timestamp);
+            await this.notifier.sendLiquidationEndedAlert();
         } else if (eventIs(event, this.context.assetManager, "LiquidationPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendLiquidationWasPerformed(await this.tokens.fAsset.format(event.args.valueUBA));

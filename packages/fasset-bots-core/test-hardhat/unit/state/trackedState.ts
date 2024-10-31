@@ -237,7 +237,7 @@ describe("Tracked state tests", () => {
         );
         const proof = await agentBLocal.attestationProvider.provePayment(transactionHash, null, agentBLocal.underlyingAddress);
         const res = await agentBLocal.assetManager.selfMint(proof, agentBLocal.agentVault.address, lots, { from: agentBLocal.owner.workAddress });
-        const selfMint = requiredEventArgs(res, "MintingExecuted");
+        const selfMint = requiredEventArgs(res, "SelfMint");
 
         await trackedState.readUnhandledEvents();
         const supplyMiddle = trackedState.fAssetSupply;

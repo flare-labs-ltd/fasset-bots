@@ -971,9 +971,15 @@ describe("Agent bot tests", () => {
         // mint
         const freeLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, freeLots.toNumber(), orm, chain);
-        // check all lots are minted
+        // pool share of collateral reservation fee arrived into pool, so now there are again a few free lots
         const freeLotsAfter = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
-        expect(toBN(freeLotsAfter).eqn(0)).to.be.true;
+        expect(toBN(freeLotsAfter).gtn(0)).to.be.true;
+        // mint agin to spend the rest
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, freeLotsAfter.toNumber(), orm, chain);
+        // check all lots are minted
+        const freeLotsAfter2 = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        // trace({ freeLots, freeLotsAfter, freeLotsAfter2 });
+        expect(toBN(freeLotsAfter2).eqn(0)).to.be.true;
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
@@ -983,7 +989,7 @@ describe("Agent bot tests", () => {
         const redBal0 = await vaultCollateralToken.balanceOf(redeemer.address);
         expect(redBal0.eqn(0)).to.be.true;
         //request redemption
-        const [rdReqs] = await redeemer.requestRedemption(freeLots);
+        const [rdReqs] = await redeemer.requestRedemption(freeLots.add(freeLotsAfter));
         assert.equal(rdReqs.length, 1);
         const rdReq = rdReqs[0];
         // skip time so the payment will expire on underlying chain and execute redemption default

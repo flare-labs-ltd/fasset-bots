@@ -206,7 +206,7 @@ export async function createTestAssetContext(
 ): Promise<TestAssetBotContext> {
     const contracts = options.contracts ?? await createTestChainContracts(governance, options.updateExecutor);
     // contract wrappers
-    const relay = await Relay.at(contracts.FdcHub.address);
+    const relay = await Relay.at(contracts.Relay.address);
     const fdcHub = await FdcHub.at(contracts.FdcHub.address);
     const assetManagerController = await AssetManagerController.at(contracts.AssetManagerController.address);
     const wNat = await WNat.at(contracts.WNat.address);

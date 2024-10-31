@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { AgentAvailable, AgentCollateralTypeChanged, CollateralReservationDeleted, CollateralReserved, DustChanged, LiquidationPerformed, MintingExecuted, MintingPaymentDefault, RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, SelfClose, UnderlyingBalanceToppedUp, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/AssetManagerController";
-import { AgentVaultCreated, RedeemedInCollateral } from "../../typechain-truffle/IIAssetManager";
+import { AgentVaultCreated, RedeemedInCollateral, SelfMint } from "../../typechain-truffle/IIAssetManager";
 import { AgentInfo, AgentStatus, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { roundUBAToAmg } from "../fasset/Conversions";
 import { EventArgs } from "../utils/events/common";
@@ -110,14 +110,13 @@ export class TrackedAgentState {
     }
 
     handleStatusChange(status: AgentStatus, timestamp?: BN): void {
-        if (timestamp && this.status === AgentStatus.NORMAL && status === AgentStatus.CCB) {
+        const ccbStarted = this.status === AgentStatus.NORMAL && status === AgentStatus.CCB;
+        if (timestamp && ccbStarted) {
             this.ccbStartTimestamp = timestamp;
         }
-        if (
-            timestamp &&
-            (this.status === AgentStatus.NORMAL || this.status === AgentStatus.CCB) &&
-            (status === AgentStatus.LIQUIDATION || status === AgentStatus.FULL_LIQUIDATION)
-        ) {
+        const liquidationStarted = (this.status === AgentStatus.NORMAL || this.status === AgentStatus.CCB) &&
+            (status === AgentStatus.LIQUIDATION || status === AgentStatus.FULL_LIQUIDATION);
+        if (timestamp && liquidationStarted) {
             this.liquidationStartTimestamp = timestamp;
         }
         this.status = status;
@@ -147,6 +146,17 @@ export class TrackedAgentState {
             this.reservedUBA = this.reservedUBA.sub(mintedAmountUBA).sub(poolFeeUBA);
         }
         logger.info(`Tracked State Agent handled minting executed: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
+    }
+
+    handleSelfMint(args: EventArgs<SelfMint>) {
+        const mintedAmountUBA = toBN(args.mintedAmountUBA);
+        const poolFeeUBA = toBN(args.poolFeeUBA);
+        const depositedAmountUBA = toBN(args.depositedAmountUBA)
+        // update underlying free balance
+        this.underlyingBalanceUBA = this.underlyingBalanceUBA.add(depositedAmountUBA);
+        // create redemption ticket
+        this.mintedUBA = this.mintedUBA.add(mintedAmountUBA).add(poolFeeUBA);
+        logger.info(`Tracked State Agent handled self minting: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     handleMintingPaymentDefault(args: EventArgs<MintingPaymentDefault>) {

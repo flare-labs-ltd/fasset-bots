@@ -25,7 +25,7 @@ program
         for await (const event of bot.readAssetManagerLogs(Number(blockCount))) {
             const timestamp = await getOrCreateAsync(blockTimestamps, String(event.blockNumber), (bn) => blockTimestamp(bn));
             const niceArgs = Object.fromEntries(
-                Object.entries(event.args)
+                Object.entries(event.args as any)
                     .filter(([k, v]) => !isBigNumber(k) && k !== "__length__")
                     .map(([k, v]) => [k, web3DeepNormalize(v)]));
             const niceEvent = {

@@ -640,8 +640,8 @@ describe("Agent bot unit tests", () => {
         );
         const proof = await agentBot.agent.attestationProvider.provePayment(transactionHash, null, agentBot.agent.underlyingAddress);
         const res = await agentBot.agent.assetManager.selfMint(proof, agentBot.agent.agentVault.address, lots, { from: agentBot.agent.owner.workAddress });
-        const selfMint = requiredEventArgs(res, "MintingExecuted");
-        expect(selfMint.collateralReservationId.isZero()).to.be.true;
+        const selfMint = requiredEventArgs(res, "SelfMint");
+        expect(selfMint.agentVault).to.be.eq(agentBot.agent.vaultAddress);
         await agentBot.runStep(orm.em);
         // check
         const mintings = await orm.em.createQueryBuilder(AgentMinting).where({ agentAddress: agentBot.agent.vaultAddress }).getResultList();
@@ -739,7 +739,8 @@ describe("Agent bot unit tests", () => {
         expect(spyError).to.be.called.exactly(4);
     });
 
-    it("Should handle claims", async () => {
+    // TODO: claims not working until DAL contains claim data
+    it.skip("Should handle claims", async () => {
         const spyError = spy.on(console, "error");
         // create agent bot
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);

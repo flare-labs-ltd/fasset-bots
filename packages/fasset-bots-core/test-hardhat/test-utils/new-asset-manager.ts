@@ -129,6 +129,7 @@ export async function deployAssetManagerFacets(): Promise<[DiamondCut[], AssetMa
         await deployFacet('DiamondLoupeFacet', interfaceSelectors),
         await deployFacet('AgentInfoFacet', interfaceSelectors),
         await deployFacet('AvailableAgentsFacet', interfaceSelectors),
+        await deployFacet('CollateralReservationsFacet', interfaceSelectors),
         await deployFacet('MintingFacet', interfaceSelectors),
         await deployFacet('RedemptionRequestsFacet', interfaceSelectors),
         await deployFacet('RedemptionConfirmationsFacet', interfaceSelectors),
@@ -145,6 +146,7 @@ export async function deployAssetManagerFacets(): Promise<[DiamondCut[], AssetMa
         await deployFacet('SettingsManagementFacet', interfaceSelectors),
         await deployFacet('AgentVaultAndPoolSupportFacet', interfaceSelectors),
         await deployFacet('SystemStateManagementFacet', interfaceSelectors),
+        await deployFacet('SystemInfoFacet', interfaceSelectors),
         await deployFacet('EmergencyPauseFacet', interfaceSelectors),
         await deployFacet('AgentPingFacet', interfaceSelectors),
     ];
@@ -189,7 +191,7 @@ export async function deployFacet(facet: string | Truffle.Contract<any>, filterS
 }
 
 export function contractMetadata(contract: Truffle.Contract<any>): { contractName: string, abi: AbiItem[] } {
-    return (contract as any)._json;
+    return contract as any;
 }
 
 export function abiEncodeCall<I extends Truffle.ContractInstance, M extends keyof I>(instance: I, method: M, args: any[]): string {

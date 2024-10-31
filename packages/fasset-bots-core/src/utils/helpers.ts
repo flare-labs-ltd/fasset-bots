@@ -264,10 +264,14 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
     return false;
 }
 
-export function extractRevertMessageFromError(error: any): string | undefined {
+export function isTransactionRevert(error: any): boolean {
+    return typeof error?.message === "string" && /\breverted\b/i.test(error.message);
+}
+
+export function cleanupRevertMessage(error: any): string {
     const message = String(error?.message ?? "");
-    const regex = /execution reverted: (.*?)(?:\n|$)/;
-    return regex.exec(message)?.[1];
+    const regex = /(?:execution reverted:|reverted with reason string) +(.*?)(?:\n|$)/;
+    return regex.exec(message)?.[1] ?? message;
 }
 
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {
