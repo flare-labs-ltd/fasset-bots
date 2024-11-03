@@ -56,7 +56,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         public relayAddress: string,
         public verifierUrl: string,
         public verifierUrlApiKey: string,
-        public account: string
+        public account: string,
     ) {
         for (const url of attestationProviderUrls) {
             // set clients
@@ -109,6 +109,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         logger.info(`Flare data connector helper: retrieved attestation request ${formatArgs(attReq)}`);
         return attReq;
     }
+
     /* istanbul ignore next */
     async submitRequestToFlareDataConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);

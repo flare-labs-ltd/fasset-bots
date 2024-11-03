@@ -18,9 +18,10 @@ let flareDataConnectorClient: FlareDataConnectorClientHelper;
 const chainId = ChainId.testXRP;
 const finalizationBlocks: number = 6;
 
-describe("testXRP attestation/flare data connector tests", () => {
+// TODO: enable when we get fdc version of indexer/verifier
+describe.skip("testXRP attestation/flare data connector tests", () => {
     let secrets: Secrets;
-    const roundId = 571512;
+    const roundId = 802134;
     let account: string;
 
     before(async () => {
