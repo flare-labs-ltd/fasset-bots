@@ -188,7 +188,7 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, t
         } as FilterQuery<UTXOEntity>,
         { refresh: true, orderBy: { confirmed: "desc", value: "desc" } }
     );
-    const utxos = !!txForReplacement ? res.filter((t) => t.confirmed) : res;
+    const utxos = txForReplacement ? res.filter((t) => t.confirmed) : res;
     const alreadyUsed = txForReplacement?.utxos ? txForReplacement?.utxos.getItems() : [];
     return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
 }

@@ -184,13 +184,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     // MONITORING /////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
     async startMonitoringTransactionProgress(): Promise<void> {
-        await this.monitor.startMonitoringTransactionProgress(
-            this.submitPreparedTransactions.bind(this),
-            this.checkPendingTransaction.bind(this),
-            this.prepareAndSubmitCreatedTransaction.bind(this),
-            this.checkSubmittedTransaction.bind(this),
-            async () => checkUTXONetworkStatus(this)
-        );
+        await this.monitor.startMonitoringTransactionProgress({
+            submitPreparedTransactions: this.submitPreparedTransactions.bind(this),
+            checkPendingTransaction: this.checkPendingTransaction.bind(this),
+            prepareAndSubmitCreatedTransaction: this.prepareAndSubmitCreatedTransaction.bind(this),
+            checkSubmittedTransaction: this.checkSubmittedTransaction.bind(this),
+            checkNetworkStatus: async () => checkUTXONetworkStatus(this)
+        });
     }
 
     async isMonitoring(): Promise<boolean> {
@@ -275,7 +275,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     await ServiceRepository.get(this.chainType, TransactionUTXOService).fillUTXOsFromMempool(txEnt.source);
                 } else if (error instanceof LessThanDustAmountError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
-                }  else if (error instanceof NegativeFeeError) {
+                } else if (error instanceof NegativeFeeError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
                 } else if (axios.isAxiosError(error)) {
                     logger.error(`prepareAndSubmitCreatedTransaction (axios) for transaction ${txEnt.id} failed with:`, error.response?.data);
@@ -328,7 +328,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } else {
                 const currentBlockHeight = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
                 // if only one block left to submit => replace by fee
-                const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight.number, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
+                const stillTimeToSubmit = await checkIfShouldStillSubmit(this, currentBlockHeight.number, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
                 if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.data.blockHash) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }

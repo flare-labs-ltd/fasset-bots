@@ -8,6 +8,15 @@ import { logger } from "../../utils/logger";
 import { getRandomInt, sleepMs } from "../../utils/utils";
 import { errorMessage } from "../../utils/axios-error-utils";
 
+export interface IMonitoredWallet {
+    submitPreparedTransactions(txEnt: TransactionEntity): Promise<void>;
+    checkPendingTransaction(txEnt: TransactionEntity): Promise<void>;
+    prepareAndSubmitCreatedTransaction(txEnt: TransactionEntity): Promise<void>;
+    checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void>;
+    checkNetworkStatus(): Promise<boolean>;
+    resubmitSubmissionFailedTransactions?(txEnt: TransactionEntity): Promise<void>;
+}
+
 export class TransactionMonitor {
     private monitoring: boolean = false;
     private chainType: ChainType;
@@ -50,14 +59,7 @@ export class TransactionMonitor {
         }
     }
 
-    async startMonitoringTransactionProgress(
-        submitPreparedTransactions: (txEnt: TransactionEntity) => Promise<void>,
-        checkPendingTransaction: (txEnt: TransactionEntity) => Promise<void>,
-        prepareAndSubmitCreatedTransaction: (txEnt: TransactionEntity) => Promise<void>,
-        checkSubmittedTransaction: (txEnt: TransactionEntity) => Promise<void>,
-        checkNetworkStatus: () => Promise<boolean>,
-        resubmitSubmissionFailedTransactions?: (txEnt: TransactionEntity) => Promise<void>
-    ): Promise<void> {
+    async startMonitoringTransactionProgress(wallet: IMonitoredWallet): Promise<void> {
         const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
         await sleepMs(randomMs);
 
@@ -103,28 +105,28 @@ export class TransactionMonitor {
 
             while (this.monitoring) {
                 try {
-                    const networkUp = await checkNetworkStatus();
+                    const networkUp = await wallet.checkNetworkStatus();
                     if (!networkUp) {
                         logger.error(`Network is down ${this.monitoringId} - trying again in ${RESTART_IN_DUE_NO_RESPONSE}`);
                         await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                         continue;
                     }
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, submitPreparedTransactions);
+                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, wallet.submitPreparedTransactions);
                     /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-                    if (resubmitSubmissionFailedTransactions) {
-                        await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, resubmitSubmissionFailedTransactions);
+                    if (wallet.resubmitSubmissionFailedTransactions) {
+                        await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, wallet.resubmitSubmissionFailedTransactions);
                         /* istanbul ignore next */
                         if (this.shouldStopMonitoring()) break;
                     }
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, checkPendingTransaction);
-                     /* istanbul ignore next */
+                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, wallet.checkPendingTransaction);
+                    /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, prepareAndSubmitCreatedTransaction);
-                     /* istanbul ignore next */
+                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, wallet.prepareAndSubmitCreatedTransaction);
+                    /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, checkSubmittedTransaction);
-                     /* istanbul ignore next */
+                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, wallet.checkSubmittedTransaction);
+                    /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
 
                 } /* istanbul ignore next */ catch (error) {

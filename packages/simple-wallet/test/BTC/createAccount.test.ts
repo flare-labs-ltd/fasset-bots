@@ -37,7 +37,7 @@ describe("Bitcoin create account tests", () => {
     it("Should not create account - invalid chainType", async () => {
         const testClient = new UTXOAccountGeneration(ChainType.testXRP);
         const fn1 = () => {
-            return testClient.createWallet();;
+            return testClient.createWallet();
         };
         expect(fn1).to.throw("Invalid chainType testXRP");
     });
