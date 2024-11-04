@@ -37,7 +37,6 @@ import {
 } from "../test-util/entity_utils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
 import sinon from "sinon";
-import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
 import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { UTXORawTransactionInput } from "../../src/interfaces/IBlockchainAPI";
@@ -595,11 +594,6 @@ describe("Bitcoin wallet tests", () => {
 
         const hash = await wClient.blockchainAPI.findTransactionHashWithInputs("tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0", inputs, 3194810);
         expect(hash === "8a09126a5953d182bf1203de91bac5e89cae279bc1eeb7e302e4fd2093e16043").to.be.true;
-    });
-
-    it("get acc balance", async () => {
-        const bn = await wClient.getAccountBalance(fundedAddress);
-        console.info();
     });
 
     /*
