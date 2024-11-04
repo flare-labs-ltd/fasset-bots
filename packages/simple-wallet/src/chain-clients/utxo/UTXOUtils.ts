@@ -4,7 +4,6 @@ import {
     BTC_DUST_AMOUNT,
     BTC_LEDGER_CLOSE_TIME_MS,
     BTC_MAINNET,
-    BTC_MAX_ALLOWED_FEE,
     BTC_MIN_ALLOWED_AMOUNT_TO_SEND,
     BTC_MIN_ALLOWED_FEE,
     BTC_TESTNET,
@@ -176,11 +175,8 @@ export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN):
         return feePerKB;
     } else {
         const minFee = BTC_MIN_ALLOWED_FEE;
-        const maxFee = BTC_MAX_ALLOWED_FEE;
         if (feePerKB.lt(minFee)) {
             return minFee;
-        } else if (feePerKB.gt(maxFee)) {
-            return maxFee;
         }
         else {
             return feePerKB;
