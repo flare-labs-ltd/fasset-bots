@@ -65,7 +65,7 @@ export async function createInitialTransactionEntity(
 export async function updateTransactionEntity(rootEm: EntityManager, id: number, modify: (transactionEnt: TransactionEntity) => void): Promise<void> {
     await rootEm.transactional(async (em) => {
         const transactionEnt: TransactionEntity = await fetchTransactionEntityById(em, id);
-        await modify(transactionEnt);
+        modify(transactionEnt);
         await em.persistAndFlush(transactionEnt);
     });
 }
@@ -185,7 +185,7 @@ export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string,
 export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, position: number, modify: (utxoEnt: UTXOEntity) => void): Promise<void> {
     await rootEm.transactional(async (em) => {
         const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, txHash, position);
-        await modify(utxoEnt);
+        modify(utxoEnt);
         await em.persistAndFlush(utxoEnt);
     });
 }
@@ -401,7 +401,7 @@ export async function updateMonitoringState(
     await rootEm.transactional(async (em) => {
         const stateEnt = await fetchMonitoringState(em, chainType);
         if (!stateEnt) return;
-        await modify(stateEnt);
+        modify(stateEnt);
         await em.persistAndFlush(stateEnt);
     });
 }

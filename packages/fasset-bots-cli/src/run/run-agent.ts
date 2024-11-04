@@ -112,8 +112,7 @@ program.action(async () => {
         // create runner and agents
         const runner = await AgentBotRunner.create(secrets, botConfig, timekeeperService);
         runner.serviceAccounts = serviceAccounts;
-        // store owner's underlying address and start running wallets
-        const runningWalletBySymbol: string[] = [];
+        // store owner's underlying address
         for (const ctx of runner.contexts.values()) {
             const chainName = ctx.chainInfo.chainId.chainName;
             const ownerUnderlyingAddress = secrets.required(`owner.${chainName}.address`);

@@ -1,10 +1,9 @@
 import {
-    BTC_DOGE_DEC_PLACES,
     ChainType,
 } from "../utils/constants";
 import { sleepMs } from "../utils/utils";
 import { BlockStats } from "../interfaces/IWalletTransaction";
-import { toBN, toBNExp } from "../utils/bnutils";
+import { toBN } from "../utils/bnutils";
 import BN from "bn.js";
 import { logger } from "../utils/logger";
 

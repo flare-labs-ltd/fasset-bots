@@ -1,5 +1,4 @@
 import {
-    BTC_DOGE_DEC_PLACES,
     BTC_LOW_FEE_PER_KB,
     BTC_MID_FEE_PER_KB,
     ChainType,
@@ -16,7 +15,6 @@ import {
 } from "../../utils/constants";
 import BN from "bn.js";
 import { ServiceRepository } from "../../ServiceRepository";
-import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
 import { BlockchainFeeService } from "../../fee-service/fee-service";

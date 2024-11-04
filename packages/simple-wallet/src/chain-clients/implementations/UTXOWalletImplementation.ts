@@ -9,7 +9,7 @@ import {
     stuckTransactionConstants,
 } from "../../utils/utils";
 import { toBN, toNumber } from "../../utils/bnutils";
-import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_CHAIN_LENGTH_LIMIT, MEMPOOL_WAITING_TIME } from "../../utils/constants";
+import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME } from "../../utils/constants";
 import {
     BaseWalletConfig,
     IWalletKeys,

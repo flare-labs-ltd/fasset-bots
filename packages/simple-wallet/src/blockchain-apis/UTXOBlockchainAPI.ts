@@ -7,7 +7,7 @@ import {
 } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
-import { BTC_PER_SATOSHI, ChainType } from "../utils/constants";
+import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 import { toBN, toNumber } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
