@@ -1,20 +1,40 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
-import { fetchMonitoringState, updateMonitoringState, processTransactions } from "../../db/dbutils";
+import {
+    countTransactionsWithStatuses,
+    fetchMonitoringState,
+    fetchTransactionEntities,
+    updateMonitoringState,
+} from "../../db/dbutils";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
-import { ChainType, BUFFER_PING_INTERVAL, PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE, RESTART_IN_DUE_TO_ERROR } from "../../utils/constants";
+import {
+    BUFFER_PING_INTERVAL,
+    ChainType,
+    PING_INTERVAL,
+    RANDOM_SLEEP_MS_MAX,
+    RESTART_IN_DUE_NO_RESPONSE,
+    RESTART_IN_DUE_TO_ERROR,
+} from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { getRandomInt, sleepMs } from "../../utils/utils";
+import {
+    convertToTimestamp,
+    getCurrentTimestampInSeconds,
+    getRandomInt,
+    sleepMs,
+    stuckTransactionConstants,
+} from "../../utils/utils";
 import { errorMessage } from "../../utils/axios-utils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
-import { utxoOnly } from "../utxo/UTXOUtils";
+import {getConfirmedAfter, getDefaultBlockTimeInSeconds, utxoOnly} from "../utxo/UTXOUtils";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export class TransactionMonitor {
     private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
+    private numberOfTransactionsPerBlock = 10; // For FAssets we have 10 transactions per block to complete
     monitoringId: string;
 
     constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
@@ -62,7 +82,8 @@ export class TransactionMonitor {
         prepareAndSubmitCreatedTransactions: (txEnt: TransactionEntity) => Promise<void>,
         checkSubmittedTransactions: (txEnt: TransactionEntity) => Promise<void>,
         checkNetworkStatus: () => Promise<boolean>,
-        resubmitSubmissionFailedTransactions?: (txEnt: TransactionEntity) => Promise<void>
+        resubmitSubmissionFailedTransactions?: (txEnt: TransactionEntity) => Promise<void>,
+        executionBlockOffset?: number
     ): Promise<void> {
         const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
         await sleepMs(randomMs);
@@ -113,6 +134,10 @@ export class TransactionMonitor {
                 void feeService.monitorFees(this.monitoring);
             }
 
+            if (!executionBlockOffset) {
+                executionBlockOffset = stuckTransactionConstants(this.chainType).executionBlockOffset!;
+            }
+
             while (this.monitoring) {
                 try {
                     const networkUp = await checkNetworkStatus();
@@ -121,21 +146,21 @@ export class TransactionMonitor {
                         await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                         continue;
                     }
-                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PREPARED], submitPreparedTransactions);
+                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PREPARED], submitPreparedTransactions, executionBlockOffset);
                     /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
                     if (resubmitSubmissionFailedTransactions) {
-                        await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMISSION_FAILED], resubmitSubmissionFailedTransactions);
+                        await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMISSION_FAILED], resubmitSubmissionFailedTransactions, executionBlockOffset);
                         /* istanbul ignore next */
                         if (this.shouldStopMonitoring()) break;
                     }
-                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PENDING], checkPendingTransactions);
-                     /* istanbul ignore next */
+                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PENDING], checkPendingTransactions, executionBlockOffset);
+                    /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_CREATED], prepareAndSubmitCreatedTransactions);
-                     /* istanbul ignore next */
+                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_CREATED], prepareAndSubmitCreatedTransactions, executionBlockOffset);
+                    /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], checkSubmittedTransactions);
+                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], checkSubmittedTransactions, executionBlockOffset);
                      /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
                 } /* istanbul ignore next */ catch (error) {
@@ -170,5 +195,77 @@ export class TransactionMonitor {
                 this.monitoring = false;
             }
         }
+    }
+
+    private async processTransactions(
+        rootEm: EntityManager,
+        chainType: ChainType,
+        statuses: TransactionStatus[],
+        processFunction: (txEnt: TransactionEntity) => Promise<void>,
+        executionBlockOffset: number
+    ): Promise<void> {
+        let transactionEntities = await fetchTransactionEntities(rootEm, chainType, statuses);
+
+        // Filter out the transactions which can wait a bit to prevent locking of the wallet by consuming all UTXOs
+        if (utxoOnly(chainType) && (statuses.includes(TransactionStatus.TX_CREATED))) {
+            transactionEntities = this.sortTransactionEntities(transactionEntities);
+            const currentBlockHeight = await ServiceRepository.get(chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
+
+            const blockBuffer = executionBlockOffset / 3;
+            // Process only entities that have currentBlockHeight + (executionBlockOffset + blockBuffer) <= executeUntilBlock if there are more than X transactions
+            if ((await countTransactionsWithStatuses(rootEm, chainType, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_SUBMITTED])) > this.numberOfTransactionsPerBlock * getConfirmedAfter(this.chainType) / 2) {
+                transactionEntities = transactionEntities.filter(t => this.calculateTransactionPriority(t, chainType, currentBlockHeight, executionBlockOffset) >= blockBuffer);
+            }
+        }
+
+        for (const txEnt of transactionEntities) {
+            try {
+                await processFunction(txEnt);
+            } catch (e) /* istanbul ignore next */ {
+                logger.error(`Cannot process transaction ${txEnt.id}`, e);
+            }
+        }
+    }
+
+    private sortTransactionEntities(entities: TransactionEntity[]): TransactionEntity[] {
+        return entities.sort((a, b) => {
+            if (a.executeUntilBlock && b.executeUntilBlock) {
+                const blockComparison = a.executeUntilBlock - b.executeUntilBlock;
+                if (blockComparison !== 0) {
+                    return blockComparison;
+                }
+            }
+
+            if (a.executeUntilTimestamp && b.executeUntilTimestamp) {
+                return a.executeUntilTimestamp.sub(b.executeUntilTimestamp).toNumber();
+            }
+
+            return a.id - b.id;
+        });
+    }
+
+    /**
+     * @returns 1 / n where n is number of blocks before executeUntilBlock - executionBlockOffset (if neither are provided it returns 0)
+     */
+    private calculateTransactionPriority(entity: TransactionEntity, chainType: ChainType, currentBlockHeight: number, executionBlockOffset: number): number {
+        let blockPriority = 0;
+        let timestampPriority = 0;
+
+        if (entity.executeUntilBlock && entity.executeUntilTimestamp) {
+            blockPriority = 1 / (entity.executeUntilBlock - currentBlockHeight - executionBlockOffset);
+        }
+
+        let executeUntilTimestamp = entity.executeUntilTimestamp;
+        if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
+            executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
+        }
+
+        if (executeUntilTimestamp) {
+            const now = toBN(getCurrentTimestampInSeconds());
+            const defaultBlockTimeInSeconds = getDefaultBlockTimeInSeconds(chainType);
+            timestampPriority = 1 / (executeUntilTimestamp.sub(now).subn(executionBlockOffset * defaultBlockTimeInSeconds).divn(defaultBlockTimeInSeconds).toNumber());
+        }
+
+        return Math.max(blockPriority, timestampPriority);
     }
 }

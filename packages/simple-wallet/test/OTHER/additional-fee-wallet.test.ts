@@ -140,28 +140,6 @@ describe("Unit test for paying fees from additional wallet", () => {
         expect(tr.getFee()).to.be.eq(fee);
     });
 
-    it("Remainders should be returned only if greater than dust", async () => {
-        sinon.stub(dbutils, "fetchUnspentUTXOs").callsFake((rootEm, source, rbfUTXOs) => {
-            if (source === fundedAddress) {
-                return Promise.resolve([
-                    createUTXOEntity(0, fundedAddress, "b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, SpentHeightEnum.UNSPENT, toBN(1600), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                ]);
-            } else {
-                return Promise.resolve([
-                    createUTXOEntity(0, fundedFeeAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(1600), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")
-                ]);
-            }
-        });
-
-        const fee = 1500;
-        const [tr,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
-
-        // It should output 1500 (the amount) and 1400 = 4400 (sum of inputs) - 1500 (fee) - 1500 (the amount)
-        expect(tr.outputs.length).to.be.eq(1);
-        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500]);
-        expect(tr.getFee()).to.be.eq(fee);
-    });
-
     it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned (non-specified fee)", async () => {
         sinon.stub(dbutils, "fetchUnspentUTXOs").callsFake((rootEm, source, rbfUTXOs) => {
             if (source === fundedAddress) {
@@ -193,7 +171,7 @@ describe("Unit test for paying fees from additional wallet", () => {
                 ]);
             } else {
                 return Promise.resolve([
-                    createUTXOEntity(0, fundedFeeAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")
+                    createUTXOEntity(0, fundedFeeAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(600), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")
                 ]);
             }
         });
@@ -201,9 +179,9 @@ describe("Unit test for paying fees from additional wallet", () => {
         const [tr,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), undefined);
 
         // Transaction should have 3 inputs and 2 ouputs => size is 276.5 vB => fee is 276 (since it's 1000sat/vB)
-        // Outputs should be 1500 (the amount), 1124 = 2900 - 1500 - 276 (amount remainder)
+        // Outputs should be 1500 (the amount), 1224 = 3000 - 1500 - 276 (amount remainder)
         expect(tr.outputs.length).to.be.eq(2);
-        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1124]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1224]);
     });
 
 

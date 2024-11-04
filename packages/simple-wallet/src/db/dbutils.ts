@@ -64,7 +64,7 @@ export async function createInitialTransactionEntity(
 
 export async function updateTransactionEntity(rootEm: EntityManager, id: number, modify: (transactionEnt: TransactionEntity) => void): Promise<void> {
     await rootEm.transactional(async (em) => {
-        const transactionEnt: TransactionEntity = await fetchTransactionEntityById(em, id);
+        const transactionEnt: TransactionEntity = await fetchTransactionEntityById(rootEm, id);
         modify(transactionEnt);
         await em.persistAndFlush(transactionEnt);
     });
@@ -90,6 +90,20 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
             orderBy: { id: "ASC" },
         }
     );
+}
+
+export function resetTransactionEntity(txEnt: TransactionEntity) {
+    txEnt.status = TransactionStatus.TX_CREATED;
+    txEnt.utxos.removeAll();
+    txEnt.inputs.removeAll();
+    txEnt.outputs.removeAll();
+    txEnt.raw = "";
+    txEnt.transactionHash = "";
+    txEnt.fee = undefined;
+    txEnt.size = undefined;
+    txEnt.ancestor = null;
+    txEnt.replaced_by = null;
+    txEnt.rbfReplacementFor = null;
 }
 
 export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number) {
@@ -184,7 +198,7 @@ export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string,
 
 export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, position: number, modify: (utxoEnt: UTXOEntity) => void): Promise<void> {
     await rootEm.transactional(async (em) => {
-        const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, txHash, position);
+        const utxoEnt: UTXOEntity = await fetchUTXOEntity(rootEm, txHash, position);
         modify(utxoEnt);
         await em.persistAndFlush(utxoEnt);
     });
@@ -315,6 +329,10 @@ export async function getTransactionInfoById(rootEm: EntityManager, dbId: number
     };
 }
 
+export async function countTransactionsWithStatuses(rootEm: EntityManager, chainType: ChainType, statuses: TransactionStatus[], source?: string): Promise<number> {
+    return await rootEm.count(TransactionEntity, source ? { status: {$in: statuses}, chainType, source } : { status: {$in: statuses}, chainType });
+}
+
 //others
 export async function handleMissingPrivateKey(rootEm: EntityManager, txId: number, failedInFunction: string): Promise<void> {
     await failTransaction(rootEm, txId, `${failedInFunction}: Cannot prepare transaction ${txId}. Missing private key.`);
@@ -399,8 +417,11 @@ export async function updateMonitoringState(
     modify: (stateEnt: MonitoringStateEntity) => void
 ): Promise<void> {
     await rootEm.transactional(async (em) => {
-        const stateEnt = await fetchMonitoringState(em, chainType);
-        if (!stateEnt) return;
+        const stateEnt = await fetchMonitoringState(rootEm, chainType);
+        /* istanbul ignore if */
+        if (!stateEnt) {
+            return;
+        }
         modify(stateEnt);
         await em.persistAndFlush(stateEnt);
     });

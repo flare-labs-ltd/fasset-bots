@@ -40,6 +40,7 @@ import sinon from "sinon";
 import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
 import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
+import { UTXORawTransactionInput } from "../../src/interfaces/IBlockchainAPI";
 
 use(chaiAsPromised);
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
@@ -129,7 +130,7 @@ describe("Bitcoin wallet tests", () => {
         const feeToUse = feeInSatoshi.muln(10);
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeToUse);
         expect(txId).greaterThan(0);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const [txEnt] = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const info = await wClient.getTransactionInfo(txId);
         expect(info.transactionHash).to.eq(txEnt.transactionHash);
         expect((txEnt.fee!).eq(feeToUse)).to.be.true;
@@ -156,7 +157,7 @@ describe("Bitcoin wallet tests", () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
-        const [transaction,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
+        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
         const fee = transaction.getFee();
         expect(fee).to.be.gt(0);
     });
@@ -560,7 +561,45 @@ describe("Bitcoin wallet tests", () => {
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, walletAddress, utxosFromMempool);
         const [tr] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, walletAddress, fundedAddress, toBN(100020).muln(2));
         expect(tr.inputs.length).to.be.eq(3);
+    });
 
+    it("Should find transaction hash based only on inputs", async () => {
+        const inputs: UTXORawTransactionInput[] = [{
+            prevTxId: "b4dde1f2b716078a4e0fb079e6190e48de37048fd96027e6f85a83f25f3bc825",
+            outputIndex: 1,
+            sequenceNumber: 123123,
+            script: "",
+            scriptString: "",
+            output: {
+                script: "123",
+                satoshis: 123,
+            },
+        }];
+
+        const hash = await wClient.blockchainAPI.findTransactionHashWithInputs("tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0", inputs, 3194814);
+        expect(hash === "8a09126a5953d182bf1203de91bac5e89cae279bc1eeb7e302e4fd2093e16043").to.be.true;
+    });
+
+    it("Should find transaction hash based only on inputs even if block height is not completely accurate", async () => {
+        const inputs: UTXORawTransactionInput[] = [{
+            prevTxId: "b4dde1f2b716078a4e0fb079e6190e48de37048fd96027e6f85a83f25f3bc825",
+            outputIndex: 1,
+            sequenceNumber: 123123,
+            script: "",
+            scriptString: "",
+            output: {
+                script: "123",
+                satoshis: 123,
+            },
+        }];
+
+        const hash = await wClient.blockchainAPI.findTransactionHashWithInputs("tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0", inputs, 3194810);
+        expect(hash === "8a09126a5953d182bf1203de91bac5e89cae279bc1eeb7e302e4fd2093e16043").to.be.true;
+    });
+
+    it("get acc balance", async () => {
+        const bn = await wClient.getAccountBalance(fundedAddress);
+        console.info();
     });
 
     /*

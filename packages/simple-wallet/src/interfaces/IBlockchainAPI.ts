@@ -1,9 +1,10 @@
 import { AxiosResponse } from "axios";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
+import { Transaction } from "bitcore-lib";
 
 export interface IBlockchainAPI {
-    getAccountBalance(account: string): Promise<number | undefined>;
+    getAccountBalance(account: string): Promise<AccountBalanceResponse | undefined>;
 
     sendTransaction(tx: string): Promise<AxiosResponse>;
 
@@ -18,6 +19,8 @@ export interface IBlockchainAPI {
     getCurrentBlockHeight(): Promise<number>;
 
     getTransaction(txHash: string): Promise<UTXOTransactionResponse>;
+
+    findTransactionHashWithInputs(address: string, inputs: UTXORawTransactionInput[], submittedInBlock: number): Promise<string>;
 }
 
 export interface MempoolUTXO {
@@ -27,6 +30,13 @@ export interface MempoolUTXO {
     confirmed: boolean,
     script: string,
 }
+
+export interface AccountBalanceResponse {
+    balance: number,
+    unconfirmedBalance: number;
+    unconfirmedTxs: number;
+}
+
 export interface UTXOResponse {
     txid: string;
     vout: number;
@@ -36,9 +46,12 @@ export interface UTXOResponse {
 
 export interface UTXOAddressResponse {
     address: string;
-    vout: number;
     balance: string;
     unconfirmedBalance: string;
+    unconfirmedTxs: string;
+    txids: string[];
+    totalPages: number;
+    page: number;
 }
 
 export interface UTXOBlockHeightResponse {

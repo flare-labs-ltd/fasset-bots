@@ -37,7 +37,6 @@ export class TransactionUTXOService {
     private readonly chainType: ChainType;
     private readonly enoughConfirmations: number;
 
-    readonly maximumNumberOfUTXOs: number;
     readonly minimumUTXOValue: BN;
 
     private readonly rootEm: EntityManager;
@@ -46,8 +45,6 @@ export class TransactionUTXOService {
     constructor(chainType: ChainType, enoughConfirmations: number) {
         this.chainType = chainType;
         this.enoughConfirmations = enoughConfirmations;
-
-        this.maximumNumberOfUTXOs = 5; //TODO - should be dynamic number
 
         /* istanbul ignore next */
         if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
@@ -124,11 +121,12 @@ export class TransactionUTXOService {
         }
 
         if (res && (feeStatus == FeeStatus.HIGH || feeStatus == FeeStatus.MEDIUM)) {
-            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData);
+            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
         }
 
-        if (res && !usingMinimalUTXOs && feeStatus == FeeStatus.LOW && res.length < this.maximumNumberOfUTXOs) {
-            for (let i = 0; i < this.maximumNumberOfUTXOs - res.length && i < minimalUTXOs.length; i++) {
+        const maximumNumberOfUTXOs = this.getMaximumNumberOfUTXOs(feeStatus);
+        if (res && !usingMinimalUTXOs && feeStatus == FeeStatus.LOW && res.length < maximumNumberOfUTXOs) {
+            for (let i = 0; i < maximumNumberOfUTXOs - res.length && i < minimalUTXOs.length; i++) {
                 res.push(minimalUTXOs[i]);
             }
         }
@@ -182,7 +180,7 @@ export class TransactionUTXOService {
         return positiveValueReached ? baseUTXOs : null;
     }
 
-    private async removeExcessUTXOs(utxos: UTXOEntity[], rbfUTXOsLength: number, txData: TransactionData) {
+    private async removeExcessUTXOs(utxos: UTXOEntity[], rbfUTXOsLength: number, txData: TransactionData, feeStatus: FeeStatus) {
         const baseUTXOs: UTXOEntity[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= 0 output
         const additionalUTXOs: UTXOEntity[] = utxos.slice(0, rbfUTXOsLength); // UTXOs needed for creating tx with >= minimalUTXOSize output
 
@@ -202,7 +200,7 @@ export class TransactionUTXOService {
             if (!positiveValueReached && (await this.calculateChangeValue(txData, baseUTXOs)).gt(getDustAmount(this.chainType))) {
                 positiveValueReached = true;
             }
-            if ((await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue) && (additionalUTXOs.length - baseUTXOs.length) < this.maximumNumberOfUTXOs / 2) {
+            if ((await this.calculateChangeValue(txData, additionalUTXOs)).gte(this.minimumUTXOValue) && (additionalUTXOs.length - baseUTXOs.length) < this.getMaximumNumberOfUTXOs(feeStatus) / 2) {
                 return additionalUTXOs;
             }
         }
@@ -383,5 +381,16 @@ export class TransactionUTXOService {
             }
             return Number(b.confirmed) - Number(a.confirmed);
         });
+    }
+
+    private getMaximumNumberOfUTXOs(status: FeeStatus) {
+        switch (status) {
+            case FeeStatus.HIGH:
+                return 10;
+            case FeeStatus.MEDIUM:
+                return 15;
+            case FeeStatus.LOW:
+                return 20;
+        }
     }
 }

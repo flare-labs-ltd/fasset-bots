@@ -1,4 +1,4 @@
-import { TransactionInfo, type WriteWalletInterface } from "../../src/interfaces/IWalletTransaction";
+import { BaseWalletConfig, TransactionInfo, type WriteWalletInterface } from "../../src/interfaces/IWalletTransaction";
 import { TransactionEntity, TransactionStatus } from "../../src/entity/transaction";
 import { sleepMs } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
@@ -10,7 +10,12 @@ import winston, { Logger } from "winston";
 import { logger } from "../../src/utils/logger";
 import { toBN } from "../../src/utils/bnutils";
 import { isORMError } from "../../src/utils/axios-utils";
-import { MempoolUTXO, UTXOTransactionResponse } from "../../src/interfaces/IBlockchainAPI";
+import {
+    AccountBalanceResponse,
+    MempoolUTXO,
+    UTXORawTransactionInput,
+    UTXOTransactionResponse,
+} from "../../src/interfaces/IBlockchainAPI";
 import { Transaction } from "bitcore-lib";
 import * as bitcore from "bitcore-lib";
 import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
@@ -163,11 +168,9 @@ export const TEST_WALLET_XRP = {
 }
 
 
-export class MockBlockchainAPI implements UTXOBlockchainAPI {
-    chainType: ChainType;
-
+export class MockBlockchainAPI extends UTXOBlockchainAPI {
     constructor() {
-        this.chainType = ChainType.testBTC;
+        super({urls: ["a"]} as BaseWalletConfig, ChainType.testBTC);
     }
     clients: AxiosInstance[] = [];
 
@@ -175,7 +178,7 @@ export class MockBlockchainAPI implements UTXOBlockchainAPI {
         return Promise.resolve(toBN(0));
     }
 
-    async getAccountBalance(): Promise<number | undefined> {
+    async getAccountBalance(): Promise<AccountBalanceResponse | undefined> {
         return Promise.resolve(undefined);
     }
 
@@ -247,5 +250,9 @@ export class MockBlockchainAPI implements UTXOBlockchainAPI {
 
     async sendTransaction(): Promise<AxiosResponse> {
         return Promise.resolve({} as AxiosResponse);
+    }
+
+    async findTransactionHashWithInputs(address: string, inputs: UTXORawTransactionInput[], submittedInBlock: number): Promise<string> {
+        return Promise.resolve("");
     }
 }

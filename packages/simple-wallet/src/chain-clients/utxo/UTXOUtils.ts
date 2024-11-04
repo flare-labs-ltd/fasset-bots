@@ -105,7 +105,7 @@ export async function getAccountBalance(chainType: ChainType, account: string): 
         if (accountBalance === undefined) {
             throw new Error("Account balance not found");
         }
-        const mainAccountBalance = toBN(accountBalance);
+        const mainAccountBalance = toBN(accountBalance.balance);
         return mainAccountBalance;
     } catch (error) /* istanbul ignore next */  {
         logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);

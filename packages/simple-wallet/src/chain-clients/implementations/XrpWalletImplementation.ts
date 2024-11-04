@@ -369,9 +369,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
       const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
       const startChecking = getCurrentTimestampInSeconds();
-      let txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
       while ((await this.getLatestValidatedLedgerIndex() <= waitUntilBlock) || (getCurrentTimestampInSeconds() - startChecking < XRP_PENDING_TIMEOUT)) {
-         txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
+         const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
          if (txResp.data.result.validated) {
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUCCESS;
