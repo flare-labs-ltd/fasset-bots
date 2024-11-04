@@ -20,7 +20,7 @@ import * as dbutils from "../../src/db/dbutils";
 import {
     correctUTXOInconsistenciesAndFillFromMempool,
     fetchTransactionEntityById,
-    fetchUTXOsByTxId,
+    fetchUTXOsByTxId, getTransactionInfoById,
 } from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
@@ -269,10 +269,10 @@ describe("Bitcoin wallet tests", () => {
     it("If fee service is down the getCurrentFeeRate should be used", async () => {
         sinon.stub(wClient.feeService, "getLatestFeeStats").rejects(new Error("No fee stats"));
 
-        const fee = 0.005;
+        const fee = 0.0005;
         const feeRateInSatoshi = toBNExp(fee, BTC_DOGE_DEC_PLACES).muln(wClient.feeIncrease);
 
-        sinon.stub(ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI), "getCurrentFeeRate").resolves(fee);
+        sinon.stub(ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI), "getCurrentFeeRate").resolves(toBNExp(fee, BTC_DOGE_DEC_PLACES).toNumber());
 
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined);
         expect(id).to.be.gt(0);
@@ -452,6 +452,23 @@ describe("Bitcoin wallet tests", () => {
         await loop(500, 60 * 1000, null, async () => {
             return !(await wClient.isMonitoring());
         });
+
+        sinon.restore();
+    });
+
+    it("DB down after creating transaction", async () => {
+        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        const id = await wClient.createPaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi);
+        const txInfo = await getTransactionInfoById(wClient.rootEm, id);
+        expect(txInfo.status).to.be.equal(TransactionStatus.TX_CREATED);
+
+        await waitForTxToFinishWithStatus(0.001, 5 * 60, wClient.rootEm, TransactionStatus.TX_PREPARED, id);
+        await testOrm.close();
+        await sleepMs(5000);
+        await testOrm.connect();
+        // await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
+        const id2 = await wClient.createPaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi);
+        await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id2);
     });
 
     it("If transaction uses already spent UTXOs they should be removed and it's status should be set to TX_CREATED", async () => {

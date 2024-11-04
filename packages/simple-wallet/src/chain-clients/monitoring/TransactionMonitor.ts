@@ -184,15 +184,20 @@ export class TransactionMonitor {
     }
 
     private async updatePing(): Promise<void> {
+        let nFailedPings = 0;
         while (this.monitoring) {
             try {
+                await sleepMs(PING_INTERVAL);
                 await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                     monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
                 });
-                await sleepMs(PING_INTERVAL);
+                nFailedPings = 0;
             } catch (error) {
                 logger.error(`Error updating ping status for chain ${this.monitoringId}`, error);
-                this.monitoring = false;
+                if (nFailedPings > 10) {
+                    this.monitoring = false;
+                }
+                nFailedPings++;
             }
         }
     }

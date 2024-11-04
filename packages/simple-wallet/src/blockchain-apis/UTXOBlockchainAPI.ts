@@ -47,7 +47,7 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
 
             /*istanbul ignore next */
             return undefined;
-        }, "getCurrentBlockHeight");
+        }, "getAccountBalance");
     }
 
     async getCurrentBlockHeight(): Promise<number> {
