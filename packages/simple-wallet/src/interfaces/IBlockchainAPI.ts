@@ -1,7 +1,6 @@
 import { AxiosResponse } from "axios";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
-import { Transaction } from "bitcore-lib";
 
 export interface IBlockchainAPI {
     getAccountBalance(account: string): Promise<AccountBalanceResponse | undefined>;

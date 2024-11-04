@@ -52,7 +52,7 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
 
     async getCurrentBlockHeight(): Promise<number> {
         return tryWithClients(this.clients, async (client: AxiosInstance) => {
-            const res = await client.get(``);
+            const res = await client.get<UTXOBlockHeightResponse>(``);
             return res.data.blockbook.bestHeight;
         }, "getCurrentBlockHeight");
     }
