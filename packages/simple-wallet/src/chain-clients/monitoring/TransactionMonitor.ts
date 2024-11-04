@@ -60,49 +60,82 @@ export class TransactionMonitor {
     }
 
     async startMonitoringTransactionProgress(wallet: IMonitoredWallet): Promise<void> {
+        const acquiredLock = await this.waitAndAcquireMonitoringLock();
+        if (!acquiredLock) return;
+        // mark started
+        this.monitoring = true;
+        logger.info(`Monitoring started for chain ${this.monitoringId}`);
+        // start pinger in the background
+        void this.updatePingLoop();
+        // start main loop
+        await this.monitoringMainLoop(wallet);
+    }
+
+    async acquireMonitoringLock() {
+        const R = 3;
+        for (let i = 1; i <= R; i++) {
+            try {
+                return await this.rootEm.transactional(async em => {
+                    const monitoringState = await fetchMonitoringState(em, this.chainType);
+                    const now = new Date().getTime();
+                    if (monitoringState == null) {
+                        em.create(MonitoringStateEntity,
+                            {
+                                chainType: this.chainType,
+                                lastPingInTimestamp: toBN(now),
+                                processOwner: this.monitoringId
+                            } as RequiredEntityData<MonitoringStateEntity>,
+                            { persist: true });
+                        return { acquired: true } as const;
+                    } else {
+                        const lastPing = monitoringState.lastPingInTimestamp.toNumber();
+                        if (now > lastPing + BUFFER_PING_INTERVAL) {
+                            // old lock expired or released - take over
+                            monitoringState.lastPingInTimestamp = toBN(now);
+                            monitoringState.processOwner = this.monitoringId;
+                            return { acquired: true } as const;
+                        } else {
+                            return { acquired: false, lastPing } as const;
+                        }
+                    }
+                });
+            } catch (error) {
+                const nextAction = i <= R ? `retrying (${i})` : `failed`;
+                logger.error(`Error trying to obtain monitoring lock - ${nextAction}: ${error}`);
+            }
+        }
+        throw new Error("Too many failed attempts for redemption");
+    }
+
+    async waitAndAcquireMonitoringLock() {
         const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
         await sleepMs(randomMs);
-
-        try {
-            const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-            if (!monitoringState) {
-                const createdAt = toBN((new Date()).getTime());
-                logger.info(`Monitoring created for chain ${this.monitoringId}`);
-                this.rootEm.create(MonitoringStateEntity, {
-                    chainType: this.chainType,
-                    lastPingInTimestamp: createdAt,
-                    processOwner: this.monitoringId
-                } as RequiredEntityData<MonitoringStateEntity>);
-                await this.rootEm.flush();
-            } else if (await this.isMonitoring()) {
-                logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
-                return;
-            } else if (monitoringState.lastPingInTimestamp) {
-                logger.info(`Monitoring possibly running for chain ${this.monitoringId}`);
-                const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-                const now = (new Date()).getTime();
-                if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
-                    logger.info(`Monitoring checking if already running for chain ${this.monitoringId} ...`);
-                    await sleepMs(BUFFER_PING_INTERVAL + randomMs);
-                    const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-                    const newNow = (new Date()).getTime();
-                    if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                        logger.info(`Another monitoring instance is already running for chain ${this.monitoringId} (double check)`);
-                        return;
-                    }
-                }
+        //
+        const start = await this.acquireMonitoringLock();
+        if (start.acquired) {
+            logger.info(`Monitoring created for chain ${this.monitoringId}`);
+            return true;
+        }
+        logger.info(`Monitoring possibly running for chain ${this.monitoringId} - waiting for liveness confirmation or expiration`);
+        const startTime = new Date().getTime();
+        while (new Date().getTime() - startTime < BUFFER_PING_INTERVAL + 2 * PING_INTERVAL) {   // should always finish before this
+            await sleepMs(PING_INTERVAL);
+            const next = await this.acquireMonitoringLock();
+            if (next.acquired) {
+                logger.info(`Monitoring created for chain ${this.monitoringId} - old lock released or expired`);
+                return true;
             }
-            const lastPingInTimestamp = toBN((new Date()).getTime());
-            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-                monitoringEnt.lastPingInTimestamp = lastPingInTimestamp;
-                monitoringEnt.processOwner = this.monitoringId;
-            });
+            if (next.lastPing > start.lastPing) { // the current thread is apparently still active
+                logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
+                return false;
+            }
+        }
+        logger.info(`Timeout waiting for monitoring lock for chain ${this.monitoringId}`);
+        return false;
+    }
 
-            this.monitoring = true;
-            logger.info(`Monitoring started for chain ${this.monitoringId}`);
-
-            void this.updatePing();
-
+    async monitoringMainLoop(wallet: IMonitoredWallet) {
+        try {
             while (this.monitoring) {
                 try {
                     const networkUp = await wallet.checkNetworkStatus();
@@ -111,6 +144,7 @@ export class TransactionMonitor {
                         await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                         continue;
                     }
+                    if (this.shouldStopMonitoring()) break;
                     await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, wallet.submitPreparedTransactions);
                     /* istanbul ignore next */
                     if (this.shouldStopMonitoring()) break;
@@ -134,7 +168,6 @@ export class TransactionMonitor {
                 }
                 await sleepMs(RESTART_IN_DUE_TO_ERROR);
             }
-
             logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
         } catch (error) {
             logger.error(`Monitoring failed for chain ${this.monitoringId} error: ${errorMessage(error)}.`);
@@ -149,11 +182,16 @@ export class TransactionMonitor {
         return false;
     }
 
-    private async updatePing(): Promise<void> {
+    private async updatePingLoop(): Promise<void> {
         while (this.monitoring) {
             try {
                 await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-                    monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
+                    if (monitoringEnt.processOwner === this.monitoringId) {
+                        monitoringEnt.lastPingInTimestamp = toBN(new Date().getTime());
+                    } else {
+                        logger.info(`Monitoring thread was taken over from ${this.monitoringId} by ${monitoringEnt.processOwner}`);
+                        this.monitoring = false;
+                    }
                 });
                 await sleepMs(PING_INTERVAL);
             } catch (error) {
