@@ -198,7 +198,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsByReferenceFromIndexer(reference: string): Promise<ITransaction[]> {
         const returnResponse = true;
-        const resp = await this.client.get(`/api/indexer/transactions?paymentReference=${reference}&returnResponse=${returnResponse}`);
+        const resp = await this.client.get(`/api/indexer/transaction?paymentReference=${reference}&returnResponse=${returnResponse}`);
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const errorMessage = resp.data.errorMessage;
@@ -232,7 +232,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsWithinBlockRangeFromIndexer(from: number, to: number): Promise<ITransaction[]> {
         const returnResponse = true;
-        const resp = await this.client.get(`/api/indexer/transactions?from=${from}&to=${to}&returnResponse=${returnResponse}`);
+        const resp = await this.client.get(`/api/indexer/transaction?from=${from}&to=${to}&returnResponse=${returnResponse}`);
         const status = resp.data.status;
         const dataArray: any[] = resp.data.data;
         const txs: ITransaction[] = [];
@@ -280,7 +280,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     private async extractTransactionIds(blockNumber: number): Promise<string[]> {
         const transactionIds: string[] = [];
-        const resp = await this.client.get(`/api/indexer/transactions?from=${blockNumber}&to=${blockNumber}`);
+        const resp = await this.client.get(`/api/indexer/transaction?from=${blockNumber}&to=${blockNumber}`);
         const status = resp.data.status;
         const dataArray = resp.data.data;
         const errorMessage = resp.data.errorMessage;

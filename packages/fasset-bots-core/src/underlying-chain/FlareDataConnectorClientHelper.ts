@@ -3,7 +3,7 @@ import {
     ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, decodeAttestationName
 } from "@flarenetwork/state-connector-protocol";
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { IFdcHubInstance, IFdcVerificationInstance, IRelayInstance } from "../../typechain-truffle";
+import { IFdcHubInstance, IFdcRequestFeeConfigurationsInstance, IFdcVerificationInstance, IRelayInstance } from "../../typechain-truffle";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
 import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, ZERO_BYTES32, requireNotNull, retry, sleep } from "../utils/helpers";
@@ -15,6 +15,7 @@ import {
     AttestationNotProved, AttestationProof, AttestationRequestId, FDC_PROTOCOL_ID,
     FlareDataConnectorClientError, IFlareDataConnectorClient, OptionalAttestationProof
 } from "./interfaces/IFlareDataConnectorClient";
+import { blockTimestamp } from "../utils/web3helpers";
 
 export interface PrepareRequestResult {
     abiEncodedRequest: string;
@@ -46,6 +47,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     // initialized at initFlareDataConnector()
     relay!: IRelayInstance;
     fdcHub!: IFdcHubInstance;
+    fdcRequestFeeConfigurations!: IFdcRequestFeeConfigurationsInstance;
     fdcVerification!: IFdcVerificationInstance;
     definitionStore = new AttestationDefinitionStore();
 
@@ -68,6 +70,9 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     async initFlareDataConnector(): Promise<void> {
         const IFdcHub = artifacts.require("IFdcHub");
         this.fdcHub = await IFdcHub.at(this.fdcHubAddress);
+        const IFdcRequestFeeConfigurations = artifacts.require("IFdcRequestFeeConfigurations");
+        const fdcRequestFeeConfigurationsAddress = await this.fdcHub.fdcRequestFeeConfigurations();
+        this.fdcRequestFeeConfigurations = await IFdcRequestFeeConfigurations.at(fdcRequestFeeConfigurationsAddress);
         const IRelay = artifacts.require("IRelay");
         this.relay = await IRelay.at(this.relayAddress);
         const IFdcVerification = artifacts.require("IFdcVerification");
@@ -125,9 +130,11 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
             logger.error(`Problem in prepare request: ${JSON.stringify(response.data)} for request ${formatArgs(request)}`);
             throw new FlareDataConnectorClientError(`Cannot submit proof request`);
         }
-        const txRes = await this.fdcHub.requestAttestation(data, { from: this.account });
+        const requestFee = await this.fdcRequestFeeConfigurations.getRequestFee(data);
+        const txRes = await this.fdcHub.requestAttestation(data, { from: this.account, value: requestFee });
         const requestEvent = findRequiredEvent(txRes, "AttestationRequest");
-        const roundId = await this.relay.getVotingRoundId(requestEvent.blockNumber);
+        const requestTimestamp = await blockTimestamp(requestEvent.blockNumber);
+        const roundId = await this.relay.getVotingRoundId(requestTimestamp);
         return {
             round: Number(roundId),
             data: data,
