@@ -7,9 +7,9 @@ import type { Truffle } from "./types";
 import BN from "bn.js";
 import { EventData, PastEventOptions } from "web3-eth-contract";
 
-export interface IITransparentProxyContract
-  extends Truffle.Contract<IITransparentProxyInstance> {
-  "new"(meta?: Truffle.TransactionDetails): Promise<IITransparentProxyInstance>;
+export interface IUpgradableProxyContract
+  extends Truffle.Contract<IUpgradableProxyInstance> {
+  "new"(meta?: Truffle.TransactionDetails): Promise<IUpgradableProxyInstance>;
 }
 
 export interface AdminChanged {
@@ -40,7 +40,7 @@ export interface Upgraded {
 
 export type AllEvents = AdminChanged | BeaconUpgraded | Upgraded;
 
-export interface IITransparentProxyInstance extends Truffle.ContractInstance {
+export interface IUpgradableProxyInstance extends Truffle.ContractInstance {
   implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   upgradeTo: {

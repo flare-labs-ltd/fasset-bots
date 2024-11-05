@@ -101,6 +101,11 @@ export interface CollateralPoolFactoryInstance
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
+  upgradeInitCall(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   methods: {
     create: {
       (
@@ -183,6 +188,11 @@ export interface CollateralPoolFactoryInstance
       _interfaceId: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
+
+    upgradeInitCall(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

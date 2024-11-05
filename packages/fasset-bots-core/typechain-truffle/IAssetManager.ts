@@ -3872,6 +3872,24 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  upgradeAgentVaultAndPool: {
+    (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   upgradeWNatContract: {
     (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -6871,6 +6889,24 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
             };
           };
         },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeAgentVaultAndPool: {
+      (_agentVault: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _agentVault: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _agentVault: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

@@ -88,6 +88,19 @@
       "type": "event"
     },
     {
+      "inputs": [],
+      "name": "fdcRequestFeeConfigurations",
+      "outputs": [
+        {
+          "internalType": "contract IFdcRequestFeeConfigurations",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "bytes",

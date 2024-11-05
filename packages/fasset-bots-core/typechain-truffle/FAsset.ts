@@ -11,6 +11,16 @@ export interface FAssetContract extends Truffle.Contract<FAssetInstance> {
   "new"(meta?: Truffle.TransactionDetails): Promise<FAssetInstance>;
 }
 
+export interface AdminChanged {
+  name: "AdminChanged";
+  args: {
+    previousAdmin: string;
+    newAdmin: string;
+    0: string;
+    1: string;
+  };
+}
+
 export interface Approval {
   name: "Approval";
   args: {
@@ -20,6 +30,14 @@ export interface Approval {
     0: string;
     1: string;
     2: BN;
+  };
+}
+
+export interface BeaconUpgraded {
+  name: "BeaconUpgraded";
+  args: {
+    beacon: string;
+    0: string;
   };
 }
 
@@ -43,7 +61,21 @@ export interface Transfer {
   };
 }
 
-export type AllEvents = Approval | CreatedTotalSupplyCache | Transfer;
+export interface Upgraded {
+  name: "Upgraded";
+  args: {
+    implementation: string;
+    0: string;
+  };
+}
+
+export type AllEvents =
+  | AdminChanged
+  | Approval
+  | BeaconUpgraded
+  | CreatedTotalSupplyCache
+  | Transfer
+  | Upgraded;
 
 export interface FAssetInstance extends Truffle.ContractInstance {
   allowance(
@@ -171,6 +203,8 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   increaseAllowance: {
     (
       spender: string,
@@ -253,6 +287,8 @@ export interface FAssetInstance extends Truffle.ContractInstance {
   };
 
   name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   setAssetManager: {
     (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -521,6 +557,48 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  upgradeTo: {
+    (
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeToAndCall: {
+    (
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   methods: {
     allowance(
       owner: string,
@@ -647,6 +725,8 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     increaseAllowance: {
       (
         spender: string,
@@ -729,6 +809,8 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     };
 
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     setAssetManager: {
       (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -994,6 +1076,48 @@ export interface FAssetInstance extends Truffle.ContractInstance {
       estimateGas(
         _to: string,
         _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeTo: {
+      (
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeToAndCall: {
+      (
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        data: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

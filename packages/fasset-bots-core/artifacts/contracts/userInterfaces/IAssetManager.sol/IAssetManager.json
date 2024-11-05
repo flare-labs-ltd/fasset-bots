@@ -6052,6 +6052,19 @@
           "type": "address"
         }
       ],
+      "name": "upgradeAgentVaultAndPool",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
       "name": "upgradeWNatContract",
       "outputs": [],
       "stateMutability": "nonpayable",

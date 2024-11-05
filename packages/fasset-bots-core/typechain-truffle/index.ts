@@ -69,6 +69,7 @@ import { IISettingsManagementContract } from "./IISettingsManagement";
 import { IPriceChangeEmitterContract } from "./IPriceChangeEmitter";
 import { IPricePublisherContract } from "./IPricePublisher";
 import { IPriceReaderContract } from "./IPriceReader";
+import { IUpgradableContractFactoryContract } from "./IUpgradableContractFactory";
 import { IWNatContract } from "./IWNat";
 import { ConversionMockContract } from "./ConversionMock";
 import { RedemptionQueueMockContract } from "./RedemptionQueueMock";
@@ -101,11 +102,11 @@ import { FAssetContract } from "./FAsset";
 import { FAssetProxyContract } from "./FAssetProxy";
 import { ICheckPointableContract } from "./ICheckPointable";
 import { IIFAssetContract } from "./IIFAsset";
-import { IITransparentProxyContract } from "./IITransparentProxy";
 import { CheckPointableMockContract } from "./CheckPointableMock";
 import { CheckPointHistoryMockContract } from "./CheckPointHistoryMock";
 import { CheckPointsByAddressMockContract } from "./CheckPointsByAddressMock";
 import { FdcHubMockContract } from "./FdcHubMock";
+import { FdcRequestFeeConfigurationsMockContract } from "./FdcRequestFeeConfigurationsMock";
 import { FdcVerificationMockContract } from "./FdcVerificationMock";
 import { RelayMockContract } from "./RelayMock";
 import { AddressUpdatableContract } from "./AddressUpdatable";
@@ -129,7 +130,9 @@ import { IFAssetContract } from "./IFAsset";
 import { IRedemptionTimeExtensionContract } from "./IRedemptionTimeExtension";
 import { ITransferFeesContract } from "./ITransferFees";
 import { IWhitelistContract } from "./IWhitelist";
+import { IUpgradableProxyContract } from "./IUpgradableProxy";
 import { MathUtilsMockContract } from "./MathUtilsMock";
+import { MockProxyFactoryContract } from "./MockProxyFactory";
 import { SafeMath64MockContract } from "./SafeMath64Mock";
 import { SafePctMockContract } from "./SafePctMock";
 import { SuicidalMockContract } from "./SuicidalMock";
@@ -143,6 +146,7 @@ import { IPaymentVerificationContract } from "./IPaymentVerification";
 import { IReferencedPaymentNonexistenceVerificationContract } from "./IReferencedPaymentNonexistenceVerification";
 import { IFdcHubContract } from "./IFdcHub";
 import { IFdcInflationConfigurationsContract } from "./IFdcInflationConfigurations";
+import { IFdcRequestFeeConfigurationsContract } from "./IFdcRequestFeeConfigurations";
 import { IFdcVerificationContract } from "./IFdcVerification";
 import { IRelayContract } from "./IRelay";
 import { IRewardManagerContract } from "./IRewardManager";
@@ -282,6 +286,9 @@ export type * from "./types";
       require(name: "IPriceChangeEmitter"): IPriceChangeEmitterContract;
       require(name: "IPricePublisher"): IPricePublisherContract;
       require(name: "IPriceReader"): IPriceReaderContract;
+      require(
+        name: "IUpgradableContractFactory"
+      ): IUpgradableContractFactoryContract;
       require(name: "IWNat"): IWNatContract;
       require(name: "ConversionMock"): ConversionMockContract;
       require(name: "RedemptionQueueMock"): RedemptionQueueMockContract;
@@ -316,13 +323,15 @@ export type * from "./types";
       require(name: "FAssetProxy"): FAssetProxyContract;
       require(name: "ICheckPointable"): ICheckPointableContract;
       require(name: "IIFAsset"): IIFAssetContract;
-      require(name: "IITransparentProxy"): IITransparentProxyContract;
       require(name: "CheckPointableMock"): CheckPointableMockContract;
       require(name: "CheckPointHistoryMock"): CheckPointHistoryMockContract;
       require(
         name: "CheckPointsByAddressMock"
       ): CheckPointsByAddressMockContract;
       require(name: "FdcHubMock"): FdcHubMockContract;
+      require(
+        name: "FdcRequestFeeConfigurationsMock"
+      ): FdcRequestFeeConfigurationsMockContract;
       require(name: "FdcVerificationMock"): FdcVerificationMockContract;
       require(name: "RelayMock"): RelayMockContract;
       require(name: "AddressUpdatable"): AddressUpdatableContract;
@@ -352,7 +361,9 @@ export type * from "./types";
       ): IRedemptionTimeExtensionContract;
       require(name: "ITransferFees"): ITransferFeesContract;
       require(name: "IWhitelist"): IWhitelistContract;
+      require(name: "IUpgradableProxy"): IUpgradableProxyContract;
       require(name: "MathUtilsMock"): MathUtilsMockContract;
+      require(name: "MockProxyFactory"): MockProxyFactoryContract;
       require(name: "SafeMath64Mock"): SafeMath64MockContract;
       require(name: "SafePctMock"): SafePctMockContract;
       require(name: "SuicidalMock"): SuicidalMockContract;
@@ -378,6 +389,9 @@ export type * from "./types";
       require(
         name: "IFdcInflationConfigurations"
       ): IFdcInflationConfigurationsContract;
+      require(
+        name: "IFdcRequestFeeConfigurations"
+      ): IFdcRequestFeeConfigurationsContract;
       require(name: "IFdcVerification"): IFdcVerificationContract;
       require(name: "IRelay"): IRelayContract;
       require(name: "IRewardManager"): IRewardManagerContract;
@@ -642,6 +656,10 @@ export {
   IPricePublisherInstance,
 } from "./IPricePublisher";
 export { IPriceReaderContract, IPriceReaderInstance } from "./IPriceReader";
+export {
+  IUpgradableContractFactoryContract,
+  IUpgradableContractFactoryInstance,
+} from "./IUpgradableContractFactory";
 export { IWNatContract, IWNatInstance } from "./IWNat";
 export {
   ConversionMockContract,
@@ -723,10 +741,6 @@ export {
 } from "./ICheckPointable";
 export { IIFAssetContract, IIFAssetInstance } from "./IIFAsset";
 export {
-  IITransparentProxyContract,
-  IITransparentProxyInstance,
-} from "./IITransparentProxy";
-export {
   CheckPointableMockContract,
   CheckPointableMockInstance,
 } from "./CheckPointableMock";
@@ -739,6 +753,10 @@ export {
   CheckPointsByAddressMockInstance,
 } from "./CheckPointsByAddressMock";
 export { FdcHubMockContract, FdcHubMockInstance } from "./FdcHubMock";
+export {
+  FdcRequestFeeConfigurationsMockContract,
+  FdcRequestFeeConfigurationsMockInstance,
+} from "./FdcRequestFeeConfigurationsMock";
 export {
   FdcVerificationMockContract,
   FdcVerificationMockInstance,
@@ -798,7 +816,15 @@ export {
 } from "./IRedemptionTimeExtension";
 export { ITransferFeesContract, ITransferFeesInstance } from "./ITransferFees";
 export { IWhitelistContract, IWhitelistInstance } from "./IWhitelist";
+export {
+  IUpgradableProxyContract,
+  IUpgradableProxyInstance,
+} from "./IUpgradableProxy";
 export { MathUtilsMockContract, MathUtilsMockInstance } from "./MathUtilsMock";
+export {
+  MockProxyFactoryContract,
+  MockProxyFactoryInstance,
+} from "./MockProxyFactory";
 export {
   SafeMath64MockContract,
   SafeMath64MockInstance,
@@ -842,6 +868,10 @@ export {
   IFdcInflationConfigurationsContract,
   IFdcInflationConfigurationsInstance,
 } from "./IFdcInflationConfigurations";
+export {
+  IFdcRequestFeeConfigurationsContract,
+  IFdcRequestFeeConfigurationsInstance,
+} from "./IFdcRequestFeeConfigurations";
 export {
   IFdcVerificationContract,
   IFdcVerificationInstance,

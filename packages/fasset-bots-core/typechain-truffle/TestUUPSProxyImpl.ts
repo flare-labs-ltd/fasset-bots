@@ -41,6 +41,8 @@ export interface Upgraded {
 export type AllEvents = AdminChanged | BeaconUpgraded | Upgraded;
 
 export interface TestUUPSProxyImplInstance extends Truffle.ContractInstance {
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   initialize: {
     (_message: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -106,6 +108,8 @@ export interface TestUUPSProxyImplInstance extends Truffle.ContractInstance {
   };
 
   methods: {
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     initialize: {
       (_message: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>

@@ -93,6 +93,13 @@ export interface ICollateralPoolFactoryInstance
     ): Promise<number>;
   };
 
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  upgradeInitCall(
+    _proxy: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   methods: {
     create: {
       (
@@ -168,6 +175,13 @@ export interface ICollateralPoolFactoryInstance
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    upgradeInitCall(
+      _proxy: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

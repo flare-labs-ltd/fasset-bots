@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "IITransparentProxy",
-  "sourceName": "contracts/fassetToken/interfaces/IITransparentProxy.sol",
+  "contractName": "IUpgradableProxy",
+  "sourceName": "contracts/utils/interfaces/IUpgradableProxy.sol",
   "abi": [
     {
       "anonymous": false,

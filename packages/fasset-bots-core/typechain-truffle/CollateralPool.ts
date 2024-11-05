@@ -20,6 +20,24 @@ export interface CollateralPoolContract
   ): Promise<CollateralPoolInstance>;
 }
 
+export interface AdminChanged {
+  name: "AdminChanged";
+  args: {
+    previousAdmin: string;
+    newAdmin: string;
+    0: string;
+    1: string;
+  };
+}
+
+export interface BeaconUpgraded {
+  name: "BeaconUpgraded";
+  args: {
+    beacon: string;
+    0: string;
+  };
+}
+
 export interface Entered {
   name: "Entered";
   args: {
@@ -66,7 +84,21 @@ export interface IncompleteSelfCloseExit {
   };
 }
 
-export type AllEvents = Entered | Exited | IncompleteSelfCloseExit;
+export interface Upgraded {
+  name: "Upgraded";
+  args: {
+    implementation: string;
+    0: string;
+  };
+}
+
+export type AllEvents =
+  | AdminChanged
+  | BeaconUpgraded
+  | Entered
+  | Exited
+  | IncompleteSelfCloseExit
+  | Upgraded;
 
 export interface CollateralPoolInstance extends Truffle.ContractInstance {
   MIN_NAT_BALANCE_AFTER_EXIT(
@@ -351,6 +383,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   initialize: {
     (
       _agentVault: string,
@@ -455,6 +489,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
   };
 
   poolToken(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   revokeDelegationAt: {
     (
@@ -655,6 +691,48 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     call(txDetails?: Truffle.TransactionDetails): Promise<void>;
     sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
+  upgradeTo: {
+    (
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeToAndCall: {
+    (
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
   };
 
   upgradeWNatContract: {
@@ -1009,6 +1087,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     initialize: {
       (
         _agentVault: string,
@@ -1113,6 +1193,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     };
 
     poolToken(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     revokeDelegationAt: {
       (
@@ -1315,6 +1397,48 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       call(txDetails?: Truffle.TransactionDetails): Promise<void>;
       sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
+    upgradeTo: {
+      (
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeToAndCall: {
+      (
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
     };
 
     upgradeWNatContract: {
