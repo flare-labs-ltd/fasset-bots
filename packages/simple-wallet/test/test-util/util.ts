@@ -155,7 +155,7 @@ async function clearUTXOs(rootEm: EntityManager) {
 
 async function updateWalletInDB(rootEm: EntityManager, address: string, modify: (walletEnt: WalletAddressEntity) => Promise<void>) {
     await rootEm.transactional(async (em) => {
-        const ent = await rootEm.findOneOrFail(WalletAddressEntity, {'address': address});
+        const ent = await em.findOneOrFail(WalletAddressEntity, {'address': address});
         await modify(ent);
         await em.persistAndFlush(ent);
     });

@@ -342,6 +342,9 @@ export class AgentUpdateSetting {
     id!: number;
 
     @Property()
+    value!: string; // only for logging purposes
+
+    @Property()
     state!: AgentUpdateSettingState;
 
     @Property()
