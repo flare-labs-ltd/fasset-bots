@@ -1,7 +1,6 @@
 import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
-    checkIfIsDeleting,
     createInitialTransactionEntity,
     fetchUnspentUTXOs,
     setAccountIsDeleting,
@@ -27,12 +26,14 @@ export class TransactionService {
     private readonly transactionFeeService: TransactionFeeService;
     private readonly rootEm: EntityManager;
     private readonly utxoService: TransactionUTXOService;
+    private readonly maximumNumberOfUTXOs: number;
 
-    constructor(chainType: ChainType) {
+    constructor(chainType: ChainType, maximumNumberOfUTXOs: number) {
         this.chainType = chainType;
         this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
         this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
         this.utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
+        this.maximumNumberOfUTXOs = maximumNumberOfUTXOs;
     }
 
     async createPaymentTransaction(
@@ -49,11 +50,6 @@ export class TransactionService {
     ): Promise<number> {
         /* istanbul ignore next */
         logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}; and feeSource ${feeSource}`);
-        /* istanbul ignore if */
-        if (await checkIfIsDeleting(this.rootEm, source)) {
-            logger.error(`Cannot receive requests. ${source} is deleting`);
-            throw new Error(`Cannot receive requests. ${source} is deleting`);
-        }
         const ent = await createInitialTransactionEntity(
             this.rootEm,
             chainType,
@@ -82,11 +78,6 @@ export class TransactionService {
         executeUntilTimestamp?: BN,
     ): Promise<number> {
         logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
-        /* istanbul ignore if */
-        if (await checkIfIsDeleting(this.rootEm, source)) {
-            logger.error(`Cannot receive requests. ${source} is deleting`);
-            throw new Error(`Cannot receive requests. ${source} is deleting`);
-        }
         await setAccountIsDeleting(this.rootEm, source);
         const ent = await createInitialTransactionEntity(
             this.rootEm,
@@ -164,6 +155,13 @@ export class TransactionService {
         }
         if (amountInSatoshi == null) {
             utxos = await fetchUnspentUTXOs(this.rootEm, source);
+
+            // In case that account has large number of UTXOs the "delete account transactions" is created as a sequence of smaller transactions
+            const useMultipleTransactions = utxos.length > this.maximumNumberOfUTXOs;
+            if (useMultipleTransactions) {
+                utxos = utxos.slice(0, this.maximumNumberOfUTXOs);
+            }
+
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
             const bitcoreTx = await this.createBitcoreTransaction(source, destination, new BN(0), undefined, feePerKB, utxos, true, note);
             feeInSatoshi = toBN(bitcoreTx.getFee()).sub(feePerKB.muln(getOutputSize(this.chainType)).divn(1000));
@@ -173,9 +171,16 @@ export class TransactionService {
                     `Will not prepare transaction ${txDbId}, for ${source}. Amount ${feeInSatoshi.toString()}`,
                 );
             }
-            const balance = await getAccountBalance(this.chainType, source);
-            amountInSatoshi = balance.sub(feeInSatoshi);
-            txData.amount = amountInSatoshi;
+
+            if (useMultipleTransactions) {
+                amountInSatoshi = utxos.reduce((acc: BN, t: UTXOEntity) => acc.add(t.value), new BN(0)).sub(feeInSatoshi);
+                txData.amount = amountInSatoshi;
+            } else {
+                const balance = await getAccountBalance(this.chainType, source);
+                amountInSatoshi = balance.sub(feeInSatoshi);
+                txData.amount = amountInSatoshi;
+            }
+
         } else {
             utxos = await this.utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }
@@ -230,7 +235,7 @@ export class TransactionService {
         } as TransactionData;
 
         let utxosForFee = await this.utxoService.fetchUTXOs(txDataForFee);
-        let utxos: UTXOEntity[] = [];
+        let utxos: UTXOEntity[];
         // Not enough funds on wallet for handling fees - we use additional UTXOs from main wallet
         if (utxosForFee.length === 0) {
             utxosForFee = await fetchUnspentUTXOs(this.rootEm, feeSource);

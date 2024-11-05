@@ -104,8 +104,4 @@ describe("Fee service tests BTC", () => {
         sinon.restore();
     });
 
-    it("asdfasdf", async () => {
-        const blockheight = await client.blockchainAPI.getCurrentBlockHeight();
-        console.info()
-    });
 });

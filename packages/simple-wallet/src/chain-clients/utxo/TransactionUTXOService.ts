@@ -102,6 +102,10 @@ export class TransactionUTXOService {
             usingMinimalUTXOs = true;
         }
 
+        if (rbfUTXOs) {
+            utxos = utxos.filter(t => t.confirmed);
+        }
+
         let res: UTXOEntity[] | null = null;
 
         /* istanbul ignore else */

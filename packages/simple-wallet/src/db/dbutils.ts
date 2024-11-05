@@ -20,6 +20,7 @@ import {
     UTXORawTransactionOutput,
 } from "../interfaces/IBlockchainAPI";
 import { errorMessage } from "../utils/axios-utils";
+import {getDustAmount} from "../chain-clients/utxo/UTXOUtils";
 
 // transaction operations
 export async function createInitialTransactionEntity(
@@ -234,7 +235,7 @@ export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Pro
             logger.error(`Failed to parse transaction raw data for transaction ${txId}: ${errorMessage(error)}`);
             return [];
         }
-        const utxos = await rootEm.find(UTXOEntity, {
+        const utxos = await em.find(UTXOEntity, {
             $or: inputs.map((input) => ({
                 mint_transaction_hash: input.prevTxId,
                 position: input.outputIndex,
@@ -254,6 +255,17 @@ export async function storeUTXOs(rootEm: EntityManager, source: string, mempoolU
             await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }
+}
+
+export async function countSpendableUTXOs(chainType: ChainType, rootEm: EntityManager, source: string): Promise<number> {
+    return rootEm.count(
+        UTXOEntity,
+        {
+            source: source,
+            spentHeight: SpentHeightEnum.UNSPENT,
+            value: {$gt: toBN(getDustAmount(chainType))},
+        } as FilterQuery<UTXOEntity>
+    );
 }
 
 // it fetches unspent and sent utxos from db that do not match utxos from mempool and marks them as spent
@@ -333,6 +345,10 @@ export async function countTransactionsWithStatuses(rootEm: EntityManager, chain
     return await rootEm.count(TransactionEntity, source ? { status: {$in: statuses}, chainType, source } : { status: {$in: statuses}, chainType });
 }
 
+export async function countDeleteTransactionsWithStatuses(rootEm: EntityManager, chainType: ChainType, statuses: TransactionStatus[], source?: string) {
+    return await rootEm.count(TransactionEntity, source ? { status: {$in: statuses}, amount: null, chainType, source } : { status: {$in: statuses}, chainType, amount: null });
+}
+
 //others
 export async function handleMissingPrivateKey(rootEm: EntityManager, txId: number, failedInFunction: string): Promise<void> {
     await failTransaction(rootEm, txId, `${failedInFunction}: Cannot prepare transaction ${txId}. Missing private key.`);
@@ -370,22 +386,6 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
     }
 }
 
-export async function processTransactions(
-    rootEm: EntityManager,
-    chainType: ChainType,
-    statuses: TransactionStatus[],
-    processFunction: (txEnt: TransactionEntity) => Promise<void>
-): Promise<void> {
-    const transactionEntities = await fetchTransactionEntities(rootEm, chainType, statuses);
-    for (const txEnt of transactionEntities) {
-        try {
-            await processFunction(txEnt);
-        } catch (e) /* istanbul ignore next */ {
-            logger.error(`Cannot process transaction ${txEnt.id}`, e);
-        }
-    }
-}
-
 export async function checkIfIsDeleting(rootEm: EntityManager, address: string): Promise<boolean> {
     const wa = await rootEm.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
     if (wa && wa.isDeleting) {
@@ -397,7 +397,7 @@ export async function checkIfIsDeleting(rootEm: EntityManager, address: string):
 export async function setAccountIsDeleting(rootEm: EntityManager, address: string): Promise<void> {
     logger.info(`Settings ${address} to be deleted.`);
     await rootEm.transactional(async (em) => {
-        const wa = await rootEm.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
+        const wa = await em.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
         /* istanbul ignore else */
         if (wa) {
             wa.isDeleting = true;
@@ -417,7 +417,7 @@ export async function updateMonitoringState(
     modify: (stateEnt: MonitoringStateEntity) => void
 ): Promise<void> {
     await rootEm.transactional(async (em) => {
-        const stateEnt = await fetchMonitoringState(rootEm, chainType);
+        const stateEnt = await fetchMonitoringState(em, chainType);
         /* istanbul ignore if */
         if (!stateEnt) {
             return;

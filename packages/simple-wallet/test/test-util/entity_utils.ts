@@ -39,7 +39,7 @@ export function createTransactionEntityBase(id: number, source: string, destinat
     return txEnt;
 }
 
-export function createUTXOEntity(id: number, source: string, mintTransactionHash: string, position: 0, spentHeight: SpentHeightEnum, value: BN, script: string) {
+export function createUTXOEntity(id: number, source: string, mintTransactionHash: string, position: 0, spentHeight: SpentHeightEnum, value: BN, script: string, confirmed?: boolean) {
     const utxoEnt = new UTXOEntity();
     utxoEnt.id = id;
     utxoEnt.source = source;
@@ -48,6 +48,7 @@ export function createUTXOEntity(id: number, source: string, mintTransactionHash
     utxoEnt.spentHeight = spentHeight;
     utxoEnt.script = script;
     utxoEnt.value = value;
+    utxoEnt.confirmed = confirmed ?? true;
     return utxoEnt;
 }
 
@@ -149,7 +150,7 @@ export async function clearUTXOs(rootEm: EntityManager) {
 
 export async function updateWalletInDB(rootEm: EntityManager, address: string, modify: (walletEnt: WalletAddressEntity) => Promise<void>) {
     await rootEm.transactional(async (em) => {
-        const ent = await rootEm.findOneOrFail(WalletAddressEntity, {'address': address});
+        const ent = await em.findOneOrFail(WalletAddressEntity, {'address': address});
         await modify(ent);
         await em.persistAndFlush(ent);
     });

@@ -169,6 +169,29 @@ describe("UTXO selection algorithm test", () => {
         expect(utxoSet.size).to.be.gt(originalUTXOs.length);
     });
 
+    it("When doing RBF only confirmed UTXOs can be used", async () => {
+        sinon.stub(dbutils, "fetchUnspentUTXOs").resolves([
+            createUTXOEntity(0, fundedAddress, "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, SpentHeightEnum.UNSPENT, toBN(12000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, SpentHeightEnum.UNSPENT, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, SpentHeightEnum.UNSPENT, toBN(100000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", false),
+            createUTXOEntity(0, fundedAddress, "b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, SpentHeightEnum.UNSPENT, toBN(1500000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", false)
+        ]);
+        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "getCurrentFeeStatus").resolves(FeeStatus.HIGH);
+
+        const originalUTXOs = [
+            createUTXOEntity(0, fundedAddress, "52cf7492f717363cef1befcb7b4972adb053b65f2ec1763ac95c1e6312868dc6", 0, SpentHeightEnum.UNSPENT, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXOEntity(0, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, SpentHeightEnum.UNSPENT, toBN(20000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+        ];
+
+        const originalTxEnt = createTransactionEntityBase(0, fundedAddress, targetAddress, toBNExp(1, BTC_DOGE_DEC_PLACES), originalUTXOs);
+        const [, newUTXOs] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(42000), undefined, undefined, originalTxEnt);
+
+        const utxoSet = new Set(newUTXOs);
+        expect(originalUTXOs.filter(t => utxoSet.has(t)).length).to.be.eq(originalUTXOs.length);
+        expect(utxoSet.size).to.be.gt(originalUTXOs.length);
+        expect(newUTXOs.filter(t => t.confirmed).length).to.be.eq(newUTXOs.length);
+    });
+
     it("If a fixed fee is set it should be obliged", async () => {
         sinon.stub(dbutils, "fetchUnspentUTXOs").resolves([
             createUTXOEntity(0, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, SpentHeightEnum.UNSPENT, toBN(100200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),

@@ -22,7 +22,7 @@ import {
 import BN from "bn.js";
 import {
     checkIfIsDeleting,
-    correctUTXOInconsistenciesAndFillFromMempool,
+    correctUTXOInconsistenciesAndFillFromMempool, countDeleteTransactionsWithStatuses, countSpendableUTXOs,
     countTransactionsWithStatuses,
     createInitialTransactionEntity,
     createTransactionOutputEntities,
@@ -77,6 +77,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     enoughConfirmations: number;
 
+    maximumNumberOfUTXOs = 20;
     useRBFFactor = 1.4;
 
     monitoringId: string;
@@ -116,7 +117,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         );
         this.transactionUTXOService = ServiceRepository.get(this.chainType, TransactionUTXOService);
 
-        ServiceRepository.register(this.chainType, TransactionService, new TransactionService(this.chainType));
+        ServiceRepository.register(this.chainType, TransactionService, new TransactionService(this.chainType, this.maximumNumberOfUTXOs));
         this.transactionService = ServiceRepository.get(this.chainType, TransactionService);
 
         ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType, this.monitoringId));
@@ -313,7 +314,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         if (txEnt.amount === null) {
             const balanceResp = await this.blockchainAPI.getAccountBalance(txEnt.source);
             const numTxs = await countTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
-            if (numTxs > 1) { // > 1 since it already has 1 tx which is delete acc tx
+            const numDeleteTxs = await countDeleteTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
+
+            if (numTxs - numDeleteTxs > 0) { // > 1 since it already has 1 tx which is delete acc tx
                 logger.info(`Account ${txEnt.source} can't be deleted because it has unfinished transactions.`);
                 return;
             }
@@ -423,6 +426,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             // success
             if (txResp.blockHash && txResp.confirmations) {
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
+
+                // If account has too many UTXOs for one big delete account transaction we sequentially remove the remainder of UTXOs
+                if (txEnt.amount == null && txResp.confirmations > this.enoughConfirmations / 3) {
+                    const numOfSpendableUTXOs = await countSpendableUTXOs(this.chainType, this.rootEm, txEnt.source);
+                    if (numOfSpendableUTXOs > 0) {
+                        await this.transactionService.createDeleteAccountTransaction(this.chainType, txEnt.source, txEnt.destination);
+                    }
+                }
             }
             if (txResp.blockHash && txResp.confirmations >= this.enoughConfirmations) {
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
@@ -441,7 +452,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 // if only one block left to submit => replace by fee
                 const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
-                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.blockHash && !txEnt.replaced_by) { // allow only one rbf
+                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.blockHash && !txEnt.rbfReplacementFor) { // allow only one rbf
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }
             }
@@ -464,8 +475,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${String(error)}`);
                 }
 
-                if (notFound) {
+                const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
+                const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
+
+                if (notFound && stillTimeToSubmit) {
                     await this.handleNotFound(txEnt);
+                } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor) {
+                    await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }
             }
         }
@@ -520,7 +536,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 } else {
                     logger.warn(`checkSubmittedTransaction transaction ${txEnt.id} not found.`);
                 }
-
             }
         }
     }

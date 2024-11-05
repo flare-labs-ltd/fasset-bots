@@ -21,8 +21,8 @@ const config: CreateOrmOptions = {
     schemaUpdate: "recreate",
     host: "localhost",
     port: 3306,
-    user: "user",
-    password: "user_password",
+    user: "root",
+    password: "root_password",
     type: "mysql"
 };
 
