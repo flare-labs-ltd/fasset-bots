@@ -57,6 +57,12 @@ export interface AllCollaterals {
     }[]
 }
 
+export interface AllBalances {
+    symbol: string;
+    balance: string;
+    wrapped?: string;
+}
+
 export interface VaultInfo {
     address: string;
     updating: boolean;
