@@ -3,12 +3,12 @@ import "source-map-support/register";
 
 import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
 import { Secrets, loadAgentSettings, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS, toBN } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
 import { registerToplevelFinalizer, toplevelRun } from "../utils/toplevel";
-import { validateDecimal, validateInteger } from "../utils/validation";
+import { validateAddress, validateDecimal, validateInteger } from "../utils/validation";
 import BN from "bn.js";
 
 const program = programWithCommonOptions("agent", "single_fasset");
@@ -452,6 +452,36 @@ program
         const data = await cli.getOwnedUnderlyingAccounts(secrets);
         fs.writeFileSync(exportFile, JSON.stringify(data, null, 4));
     })
+
+program
+    .command("selfMint")
+    .description("agent mints against himself - agent does not have to be publicly available")
+    .argument("<agentVaultAddress>")
+    .argument("<numberOfLots>")
+    .action(async (agentVault: string, numberOfLots: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        validateInteger(numberOfLots, "Number of lots", { min: 1 });
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        cli.selfMint(agentVault, toBN(numberOfLots));
+        console.log(`Agent ${agentVault} self minted ${numberOfLots}.`);
+    });
+
+program
+    .command("selfMintFromFreeUnderlying")
+    .description("agent mints against himself from free underlying - agent does not have to be publicly available")
+    .argument("<agentVaultAddress>")
+    .argument("<numberOfLots>")
+    .action(async (agentVault: string, numberOfLots: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        validateInteger(numberOfLots, "Number of lots", { min: 1 });
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        cli.selfMintFromFreeUnderlying(agentVault, toBN(numberOfLots));
+        console.log(`Agent ${agentVault} minted ${numberOfLots} lots from free underlying.`);
+    });
 
 toplevelRun(async () => {
     try {

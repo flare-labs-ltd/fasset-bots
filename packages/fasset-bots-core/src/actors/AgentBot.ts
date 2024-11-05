@@ -402,6 +402,9 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
             await this.minting.mintingExecuted(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "SelfMint")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'SelfMint' with data ${formatArgs(event.args)}.`);
+            await this.minting.selfMintingExecuted(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
             await this.redemption.redemptionStarted(em, event.args);

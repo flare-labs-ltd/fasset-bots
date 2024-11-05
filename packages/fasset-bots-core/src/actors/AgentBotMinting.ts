@@ -1,7 +1,7 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { CollateralReservationDeleted, CollateralReserved, MintingExecuted } from "../../typechain-truffle/IIAssetManager";
+import { CollateralReservationDeleted, CollateralReserved, MintingExecuted, SelfMint } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { AgentMinting } from "../entities/agent";
 import { AgentMintingState } from "../entities/common";
@@ -59,14 +59,18 @@ export class AgentBotMinting {
     }
 
     async mintingExecuted(rootEm: EM, args: EventArgs<MintingExecuted>): Promise<void> {
-        if (!args.collateralReservationId.isZero()) {
-            logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(args)}.`);
-            let minting = await this.findMinting(rootEm, { requestId: args.collateralReservationId });
-            minting = await this.updateMinting(rootEm, minting, {
-                state: AgentMintingState.DONE,
-            });
-            await this.notifier.sendMintingExecuted(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} closed (executed) minting ${minting.requestId}.`);
+        logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(args)}.`);
+        let minting = await this.findMinting(rootEm, { requestId: args.collateralReservationId });
+        minting = await this.updateMinting(rootEm, minting, {
+            state: AgentMintingState.DONE,
+        });
+        await this.notifier.sendMintingExecuted(minting.requestId);
+        logger.info(`Agent ${this.agent.vaultAddress} closed (executed) minting ${minting.requestId}.`)
+    }
+
+    async selfMintingExecuted(args: EventArgs<SelfMint>): Promise<void> {
+        if (args.mintFromFreeUnderlying) {
+            logger.info(`Agent ${this.agent.vaultAddress} executed self-minting from free underlying.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} executed self-minting.`);
         }

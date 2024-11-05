@@ -1,13 +1,13 @@
 import { FilterQuery } from "@mikro-orm/core";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { expectRevert, time } from "@openzeppelin/test-helpers";
-import { expect, spy, use } from "chai";
+import { assert, expect, spy, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import spies from "chai-spies";
 import { AgentBotCommands } from "../../../src/commands/AgentBotCommands";
 import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
-import { AgentEntity, AgentUpdateSetting } from "../../../src/entities/agent";
+import { AgentEntity, AgentUnderlyingPayment, AgentUpdateSetting } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain } from "../../../src/mock/MockChain";
 import { CommandLineError } from "../../../src/utils";
@@ -18,9 +18,10 @@ import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
 import { TestAssetBotContext, createTestAssetContext, ftsoUsdcInitialPrice, ftsoUsdtInitialPrice } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMinter, mintAndDepositVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
-import { AgentSettingName, AgentUpdateSettingState } from "../../../src/entities/common";
+import { AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState } from "../../../src/entities/common";
+import { AgentBot } from "../../../src/actors/AgentBot";
 use(chaiAsPromised);
 use(spies);
 
@@ -43,8 +44,13 @@ describe("AgentBot cli commands unit tests", () => {
     let governance: string;
 
     async function createAgent(contextToUse: TestAssetBotContext = context): Promise<Agent> {
-        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.orm, botCliCommands.owner.managementAddress);
+        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.orm, botCliCommands.owner.managementAddress, botCliCommands.ownerUnderlyingAddress);
         return agentBot.agent;
+    }
+
+    async function createAgentBot(contextToUse: TestAssetBotContext = context): Promise<AgentBot> {
+        const agentBot = await createTestAgentBot(contextToUse, botCliCommands.orm, botCliCommands.owner.managementAddress, botCliCommands.ownerUnderlyingAddress);
+        return agentBot;
     }
 
     before(async () => {
@@ -481,5 +487,133 @@ describe("AgentBot cli commands unit tests", () => {
         expect(Number(res.poolTopupCollateralRatio)).to.be.gt(0);
         expect(Number(res.poolTopupTokenPriceFactor)).to.be.gt(0);
         expect(Number(res.buyFAssetByAgentFactor)).to.be.gt(0);
+    });
+
+    it("Should self mint", async () => {
+        const agent = await createAgent();
+        const vaultAddress = agent.vaultAddress;
+        // deposit to vault
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmountUSDC), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
+        const collateral = await vaultCollateralTokenContract.balanceOf(vaultAddress);
+        expect(collateral.toString()).to.eq(depositAmountUSDC);
+        const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoBefore.publiclyAvailable).to.be.false;
+        // buy collateral pool tokens
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
+        // check free collateral lots
+        const freeCollateralLots = toBN((await agent.getAgentInfo()).freeCollateralLots);
+        const lotsToMint = toBN(1);
+        // self mint
+        await botCliCommands.selfMint(vaultAddress, lotsToMint);
+        // check free collateral lots after
+        const freeCollateralLotsAfter = toBN((await agent.getAgentInfo()).freeCollateralLots);
+        expect(freeCollateralLotsAfter.eq(freeCollateralLots.sub(lotsToMint)));
+    });
+
+    it("Should not self mint - not enough lots", async () => {
+        const agent = await createAgent();
+        const vaultAddress = agent.vaultAddress;
+        // deposit to vault
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmountUSDC), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
+        const collateral = await vaultCollateralTokenContract.balanceOf(vaultAddress);
+        expect(collateral.toString()).to.eq(depositAmountUSDC);
+        const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoBefore.publiclyAvailable).to.be.false;
+        // buy collateral pool tokens
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
+        // check free collateral lots
+        const freeCollateralLots = toBN((await agent.getAgentInfo()).freeCollateralLots);
+        const lotsToMint = freeCollateralLots.addn(1);
+        // self mint
+        await expect(botCliCommands.selfMint(vaultAddress, lotsToMint)).to.eventually.be.rejectedWith(
+            `Cannot self mint. Agent ${vaultAddress} has available ${freeCollateralLots.toString()} lots`
+        );
+    });
+
+    it("Should self mint from free underlying", async () => {
+        const agentBot = await createAgentBot();
+        const agent = agentBot.agent;
+        const vaultAddress = agent.vaultAddress;
+        // deposit to vault
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmountUSDC), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
+        const collateral = await vaultCollateralTokenContract.balanceOf(vaultAddress);
+        expect(collateral.toString()).to.eq(depositAmountUSDC);
+        const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoBefore.publiclyAvailable).to.be.false;
+        // buy collateral pool tokens
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
+        // check free collateral lots
+        const freeCollateralLots = toBN((await agent.getAgentInfo()).freeCollateralLots);
+        const lotsToMint = toBN(1);
+        // top up agent
+        const lotSize = toBN(await context.assetManager.lotSize());
+        const amountUBA = lotsToMint.mul(lotSize).muln(2);
+        await agentBot.underlyingManagement.underlyingTopUp(orm.em, amountUBA);
+        chain.mine(chain.finalizationBlocks + 1);
+        const topUpPayment0 = await orm.em.findOneOrFail(AgentUnderlyingPayment, { type: AgentUnderlyingPaymentType.TOP_UP }  as FilterQuery<AgentUnderlyingPayment>, { orderBy: { id: ('DESC') } });
+        expect(topUpPayment0.state).to.equal(AgentUnderlyingPaymentState.PAID);
+        // run agent's steps until underlying payment process is finished
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if underlying payment is done
+            orm.em.clear();
+            const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, { txHash: topUpPayment0.txHash }  as FilterQuery<AgentUnderlyingPayment> );
+            console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
+            if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        // self mint
+        await botCliCommands.selfMintFromFreeUnderlying(vaultAddress, lotsToMint);
+        // check free collateral lots after
+        const freeCollateralLotsAfter = toBN((await agent.getAgentInfo()).freeCollateralLots);
+        expect(freeCollateralLotsAfter.eq(freeCollateralLots.sub(lotsToMint)));
+    });
+
+    it("Should not self mint from free underlying - not enough lots", async () => {
+        const agent = await createAgent();
+        const vaultAddress = agent.vaultAddress;
+        // deposit to vault
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmountUSDC), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
+        const collateral = await vaultCollateralTokenContract.balanceOf(vaultAddress);
+        expect(collateral.toString()).to.eq(depositAmountUSDC);
+        const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoBefore.publiclyAvailable).to.be.false;
+        // buy collateral pool tokens
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
+        // check free collateral lots
+        const freeCollateralLots = toBN((await agent.getAgentInfo()).freeCollateralLots);
+        const lotsToMint = freeCollateralLots.addn(1);
+        // self mint
+        await expect(botCliCommands.selfMintFromFreeUnderlying(vaultAddress, lotsToMint)).to.eventually.be.rejectedWith(
+            `Cannot self mint from free underlying. Agent ${vaultAddress} has available ${freeCollateralLots.toString()} lots`
+        );
+    });
+
+    it("Should not self mint from free underlying - not enough free underlying", async () => {
+        const agent = await createAgent();
+        const vaultAddress = agent.vaultAddress;
+        // deposit to vault
+        const vaultCollateralTokenContract = await mintAndDepositVaultCollateralToOwner(context, agent, toBN(depositAmountUSDC), ownerAddress);
+        await botCliCommands.depositToVault(vaultAddress, depositAmountUSDC);
+        const collateral = await vaultCollateralTokenContract.balanceOf(vaultAddress);
+        expect(collateral.toString()).to.eq(depositAmountUSDC);
+        const agentInfoBefore = await context.assetManager.getAgentInfo(vaultAddress);
+        expect(agentInfoBefore.publiclyAvailable).to.be.false;
+        // buy collateral pool tokens
+        await botCliCommands.buyCollateralPoolTokens(vaultAddress, depositAmountWei);
+        // check free collateral lots
+        const lotsToMint = toBN(1);
+        // self mint
+        const freeUnderlyingUBA = toBN(((await agent.getAgentInfo()).freeUnderlyingBalanceUBA));
+        await expect(botCliCommands.selfMintFromFreeUnderlying(vaultAddress, lotsToMint)).to.eventually.be.rejectedWith(
+            `Cannot self mint from free underlying. Agent ${vaultAddress} has available ${freeUnderlyingUBA.toString()} underlying in UBA`
+        );
     });
 });
