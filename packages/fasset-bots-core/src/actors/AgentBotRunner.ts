@@ -30,9 +30,11 @@ export class AgentBotRunner {
         public loopDelay: number,
         public notifierTransports: NotifierTransport[],
         public timekeeperService: ITimeKeeperService,
+        public autoUpdateContracts: boolean,
     ) {}
 
     public stopRequested = false;
+    public restartRequested = false;
     public running = false;
 
     public runningAgentBots = new Map<string, AgentBot>();
@@ -49,6 +51,7 @@ export class AgentBotRunner {
     @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
+        this.restartRequested = false
         this.running = true;
         try {
             /* istanbul ignore next */
@@ -71,15 +74,19 @@ export class AgentBotRunner {
     }
 
     readyToStop() {
-        return this.stop() && this.runningAgentBots.size === 0;
+        return this.stopOrRestartRequested() && this.runningAgentBots.size === 0;
     }
 
-    stop(): boolean {
-        return this.stopRequested;
+    stopOrRestartRequested(): boolean {
+        return this.stopRequested || this.restartRequested;
     }
 
     requestStop(): void {
         this.stopRequested = true;
+    }
+
+    requestRestart(): void {
+        this.restartRequested = true;
     }
 
     /**
@@ -104,10 +111,10 @@ export class AgentBotRunner {
      */
     async runStepParallel(): Promise<void> {
         this.removeStoppedAgentBots();
-        if (!this.stop()) {
+        if (!this.stopOrRestartRequested()) {
             await this.addNewAgentBots();
         }
-        const sleepMS = this.stop() ? 100 : this.loopDelay;
+        const sleepMS = this.stopOrRestartRequested() ? 100 : this.loopDelay;
         await sleep(sleepMS);
     }
 
@@ -118,7 +125,7 @@ export class AgentBotRunner {
     async runStepSerial(): Promise<void> {
         const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
-            if (this.stop()) break;
+            if (this.stopOrRestartRequested()) break;
             try {
                 const agentBot = await this.newAgentBot(agentEntity);
                 if (agentBot == null) continue;
@@ -247,7 +254,7 @@ export class AgentBotRunner {
                 on chain ${assetContext.chainInfo.chainId} with asset manager ${assetContext.assetManager.address}`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
+        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, botConfig.autoUpdateContracts);
     }
 
     addSimpleWalletToLoop(agentBot: AgentBot): void {

@@ -7,7 +7,6 @@ import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, isN
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
-import { readFileSync } from "fs";
 
 const timekeeperConfig: TimekeeperTimingConfig = {
     queryWindow: 172800,
@@ -38,7 +37,7 @@ async function fundAccount(from: string, to: string, minBalance: BN, name: strin
     const balance = toBN(await web3.eth.getBalance(to));
     if (balance.lt(minBalance)) {
         const transferBalance = minBalance.muln(2);
-        console.log(`Transfering ${formatFixed(transferBalance, 18)} native tokens to ${name} (${to}) for gas...`);
+        console.log(`Transferring ${formatFixed(transferBalance, 18)} native tokens to ${name} (${to}) for gas...`);
         await sendWeb3Transaction({ from: from, to: to, value: String(transferBalance), gas: 100_000 });
     }
 }
@@ -146,6 +145,9 @@ program.action(async () => {
         }
         if (runner.stopRequested) {
             break;
+        } else if (runner.restartRequested) {
+            console.log("Agent bot restarting...");
+            continue;
         }
         break;
     }

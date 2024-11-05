@@ -1,17 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
-import { ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentBalance } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
+
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @ApiTags("Agent Vault")
 @Controller("api/agentVault")
-//@UseGuards(AuthGuard("api-key"))
 @UseInterceptors(ErrorStatusInterceptor)
-//@ApiSecurity("X-API-KEY")
+@UseGuards(JwtAuthGuard)
 export class AgentVaultController {
     constructor(private readonly agentService: AgentService) {}
 

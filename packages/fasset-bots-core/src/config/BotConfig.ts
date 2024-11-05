@@ -43,6 +43,7 @@ export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator (optional)
     challengeStrategy?: BotStrategyDefinition; // only for challenger (optional)
+    autoUpdateContracts: boolean // used to auto update contract, when ContractChanged event
 }
 
 export interface BotFAssetConfig {
@@ -111,6 +112,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
+            autoUpdateContracts: configFile.prioritizeAddressUpdater
         };
         return result;
     } catch (error) {

@@ -1,7 +1,7 @@
 import { EM } from "../config/orm";
 import { Event } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { DAYS, blockTimestamp, isPriceChangeEvent, latestBlockTimestamp } from "../utils";
+import { DAYS, assertNotNull, blockTimestamp, isCollateralRatiosChangedEvent, isContractChangedEvent, isPriceChangeEvent, latestBlockTimestamp } from "../utils";
 import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { logger } from "../utils/logger";
@@ -13,6 +13,8 @@ const MAX_EVENT_RETRY = 5;
 
 export class AgentBotEventReader {
     static deepCopyWithObjectCreate = true;
+    private needsToCheckPrices = false;
+    private needsToRestartDueToContractChanges = false;
 
     constructor(
         public bot: AgentBot,
@@ -46,6 +48,7 @@ export class AgentBotEventReader {
         const lastBlock = Math.min(readAgentEnt.currentEventBlock + maximumBlocks, lastFinalizedBlock);
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
+
         for (let lastBlockRead = readAgentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
             if (this.bot.stopRequested()) break;
             // asset manager events
@@ -56,6 +59,23 @@ export class AgentBotEventReader {
                 topics: [null, encodedVaultAddress],
             });
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
+
+            if (!this.needsToCheckPrices) { // check if CollateralRatiosChanged happened
+                for (const event of events) {
+                    if (isCollateralRatiosChangedEvent(this.context, event)) {
+                        this.needsToCheckPrices = true;
+                        break;
+                    }
+                }
+            }
+            if (!this.needsToRestartDueToContractChanges) { // check if ContractChanged happened
+                for (const event of events) {
+                    if (isContractChangedEvent(this.context, event)) {
+                        this.needsToRestartDueToContractChanges = true;
+                        break;
+                    }
+                }
+            }
         }
         logger.info(`Agent ${this.agentVaultAddress} finished reading native events TO block ${lastBlock}`);
         // sort events first by their block numbers, then internally by their event index
@@ -117,6 +137,7 @@ export class AgentBotEventReader {
             await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
                 agentEnt.currentEventBlock = lastBlock + 1;
             });
+            await this.oneTimeEventHandler();// handle "one time" events
         } catch (error) {
             console.error(`Error handling events for agent ${this.agentVaultAddress}: ${error}`);
             logger.error(`Agent ${this.agentVaultAddress} run into error while handling events:`, error);
@@ -176,6 +197,42 @@ export class AgentBotEventReader {
         }
     }
 
+    /**
+     * Handles certain "one time" events, ensuring it only reacts once even if multiple events are received within a certain block range
+     */
+    async oneTimeEventHandler() {
+        if (this.bot.transientStorage.lastOutdatedEventReported === 0) { // only react when all events are up to date
+            try {
+                if (this.needsToCheckPrices) {
+                    this.needsToCheckPrices = false;
+                    logger.info(`Agent ${this.agentVaultAddress} received event 'CollateralRatiosChanged'.`);
+                    await this.bot.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
+                }
+            } catch (error) {
+                this.needsToCheckPrices = false;
+                console.error(`Error handling event 'CollateralRatiosChanged' for agent ${this.agentVaultAddress}: ${error}`);
+                logger.error(`Agent ${this.agentVaultAddress} run into error while handling an event 'CollateralRatiosChanged':`, error);
+            }
+            try {
+                if (this.needsToRestartDueToContractChanges) {
+                    if (this.bot.runner?.autoUpdateContracts) {
+                        this.needsToRestartDueToContractChanges = false;
+                        logger.info(`Agent ${this.agentVaultAddress} received event 'ContractChanged'.`);
+                        console.log(`Agent ${this.agentVaultAddress} received event 'ContractChanged'.`);
+                        assertNotNull(this.bot.runner, "Cannot restart - runner not set.");
+                        this.bot.runner.restartRequested = true;
+                    } else {
+                        this.needsToRestartDueToContractChanges = false;
+                        console.warn(`Agent ${this.agentVaultAddress} received event 'ContractChanged'. Contract address/es should be appropriately updated.`);
+                        logger.warn(`Agent ${this.agentVaultAddress} received event 'ContractChanged'. Contract address/es should be appropriately updated.`);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error handling event 'ContractChanged' for agent ${this.agentVaultAddress}: ${error}`);
+                logger.error(`Agent ${this.agentVaultAddress} run into error while handling an event 'ContractChanged':`, error);
+            }
+        }
+    }
 
     /**
      * Check if any new price change events happened, which means that it may be necessary to topup collateral.

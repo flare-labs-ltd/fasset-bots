@@ -45,6 +45,8 @@ const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 export interface IRunner {
     stopRequested: boolean;
+    restartRequested: boolean;
+    autoUpdateContracts: boolean;
 }
 
 export interface ITimeKeeper {
@@ -123,6 +125,7 @@ export class AgentBot {
     // internal
     private _running: boolean = false;
     private _stopRequested: boolean = false;
+    private _restartRequested: boolean = false;
 
     private pingResponseRateLimiter = new SimpleRateLimiter<string>(PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS);
 
@@ -161,7 +164,7 @@ export class AgentBot {
         ownerUnderlyingAddress: string,
         addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentVaultInitSettings,
-        notifierTransports: NotifierTransport[]
+        notifierTransports: NotifierTransport[],
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
         // ensure that work address is defined
@@ -221,7 +224,7 @@ export class AgentBot {
         agentBotSettings: AgentBotSettings,
         agentEntity: AgentEntity,
         ownerUnderlyingAddress: string,
-        notifierTransports: NotifierTransport[]
+        notifierTransports: NotifierTransport[],
     ): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
@@ -274,15 +277,23 @@ export class AgentBot {
         }
     }
 
-    requestStop() {
+    requestStop(): void {
         this._stopRequested = true;
     }
 
-    stopRequested() {
+    stopRequested(): boolean {
         return (this.runner?.stopRequested ?? false) || this._stopRequested;
     }
 
-    running() {
+    restartRequested(): boolean {
+        return (this.runner?.restartRequested ?? false) || this._restartRequested;
+    }
+
+    stopOrRestartRequested(): boolean {
+        return this.stopRequested() || this.restartRequested();
+    }
+
+    running(): boolean {
         return this._running;
     }
 
@@ -347,7 +358,7 @@ export class AgentBot {
     /**
      * Start the read and optionally run it in a loop.
      * @param rootEm the entity manager, will be forked for thread
-     * @param loop if true, the thread loops until `stopRequested()` is true
+     * @param loop if true, the thread loops until `stopOrRestartRequested()` is true
      * @param method the thread method (if loop is true, it will be run repeatedly)
      * @returns promise that resolves when thread exits
      */
@@ -355,7 +366,7 @@ export class AgentBot {
         await loggerAsyncStorage.run(name, async () => {
             logger.info(`Thread started ${name}.`);
             const threadEm = rootEm.fork();
-            while (!this.stopRequested()) {
+            while (!this.stopOrRestartRequested()) {
                 try {
                     await method(threadEm);
                 } catch (error) {
@@ -364,7 +375,7 @@ export class AgentBot {
                 if (!loop) break;
                 // wait a bit so that idle threads do not burn too much time
                 logger.info(`Finished handling, sleeping ${this.loopDelay / 1000}s`);
-                await sleepUntil(this.loopDelay, () => this.stopRequested());
+                await sleepUntil(this.loopDelay, () => this.stopOrRestartRequested());
             }
             logger.info(`Thread ended ${name}.`);
         })
@@ -457,7 +468,7 @@ export class AgentBot {
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
         try {
-            if (this.stopRequested()) return;
+            if (this.stopOrRestartRequested()) return;
             const readAgentEnt = await this.fetchAgentEntity(rootEm)
             const timestamp = await latestBlockTimestampBN();
             if (timestamp.sub(readAgentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
@@ -482,7 +493,7 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleTimelockedProcesses(rootEm: EM): Promise<void> {
-        if (this.stopRequested()) return;
+        if (this.stopOrRestartRequested()) return;
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleTimelockedProcesses'.`);
         await this.collateralWithdrawal.handleWaitForCollateralWithdrawal(rootEm);
         await this.collateralWithdrawal.handleWaitForPoolTokenRedemption(rootEm);
@@ -498,7 +509,7 @@ export class AgentBot {
      * @param agentEnt agent entity
      */
     async handleWaitAgentExitAvailable(rootEm: EM) {
-        if (this.stopRequested()) return;
+        if (this.stopOrRestartRequested()) return;
         try {
             const readAgentEnt = await this.fetchAgentEntity(rootEm);
             const latestTimestamp = await latestBlockTimestampBN();

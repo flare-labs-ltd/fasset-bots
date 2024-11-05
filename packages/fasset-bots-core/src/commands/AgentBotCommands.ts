@@ -428,11 +428,11 @@ export class AgentBotCommands {
         }
         const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
         const validAt = await agentBot.agent.announceAgentSettingUpdate(settingName, settingValue);
-        await agentBot.updateSetting.createAgentUpdateSetting(this.orm.em, settingName, validAt, readAgentEnt);
+        await agentBot.updateSetting.createAgentUpdateSetting(this.orm.em, settingName, settingValue, validAt, readAgentEnt);
         const validAtStr = new Date(Number(validAt) * 1000).toString();
-        logger.info(`Agent ${agentVault} announced agent settings update for ${settingName}. \
+        logger.info(`Agent ${agentVault} announced agent settings update for ${settingName}=${settingValue}. \
             If valid it will be executed by your running agent bot after ${validAtStr} (timestamp ${validAt}).`);
-        console.log(`Agent ${agentVault} announced agent settings update for ${settingName}. \
+        console.log(`Agent ${agentVault} announced agent settings update for ${settingName}=${settingValue}. \
             If valid it will be executed by your running agent bot after ${validAtStr}.`);
     }
 
