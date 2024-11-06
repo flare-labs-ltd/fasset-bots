@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
@@ -16,6 +16,7 @@ import { Alert } from "../../common/entities/AlertDB";
 import { ORM } from "../../../../../fasset-bots-core/src/config/orm";
 import BN from "bn.js";
 import { cachedSecrets } from "../agentServer";
+import { Address } from "cluster";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -359,6 +360,23 @@ export class AgentService {
 
     async getAgentWorkAddress(): Promise<string> {
         return this.secrets.required("owner.native.address");
+    }
+
+    async getUnderlyingAddresses(): Promise<UnderlyingAddress[]> {
+        const fassets = await this.getFassetSymbols();
+        const addresses: UnderlyingAddress[] = [];
+        for (const f of fassets) {
+            if (f === "FSimCoinX") {
+                continue;
+            }
+            const cli = this.infoBotMap.get(f) as AgentBotCommands;
+            if (!cli) {
+                continue;
+            }
+            const underlyingAddress = this.secrets.optional(`owner.${cli.context.chainInfo.symbol}.address`);
+            addresses.push({ asset: cli.context.chainInfo.symbol, address: underlyingAddress as string})
+        }
+        return addresses;
     }
 
     async getAgentManagementAddress(): Promise<string> {

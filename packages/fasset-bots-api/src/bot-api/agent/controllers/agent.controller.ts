@@ -3,7 +3,7 @@ import { Body, Controller, Get, Param, Post, UseGuards, UseInterceptors } from "
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllBalances, AllCollaterals, ExtendedAgentVaultInfo, VaultCollaterals } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllBalances, AllCollaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
@@ -441,5 +441,11 @@ export class AgentController {
     public async getAllBalances(
     ): Promise<ApiResponseWrapper<AllBalances[]>> {
         return handleApiResponse(this.agentService.getAllBalances());
+    }
+
+    @Get("underlyingAddresses")
+    public async getUnderlyingAddresses(
+    ): Promise<ApiResponseWrapper<UnderlyingAddress[]>> {
+        return handleApiResponse(this.agentService.getUnderlyingAddresses());
     }
 }
