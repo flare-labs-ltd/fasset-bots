@@ -137,7 +137,7 @@ const UTXOResponseData = {
 describe("testXRP blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testXRP;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
+    const indexerUrl: string = "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -363,7 +363,7 @@ describe("testXRP blockchain tests via indexer", () => {
 describe("testDOGE blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testDOGE;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/doge/";
+    const indexerUrl: string = "https://testnet-verifier-fdc-test.aflabs.org/verifier/doge/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -417,7 +417,7 @@ describe("testDOGE blockchain tests via indexer", () => {
 describe("testBTC blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testBTC;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/btc/";
+    const indexerUrl: string = "https://testnet-verifier-fdc-test.aflabs.org/verifier/btc/";
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;

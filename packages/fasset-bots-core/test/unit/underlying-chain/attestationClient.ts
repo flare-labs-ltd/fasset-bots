@@ -18,7 +18,7 @@ import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./block
 use(chaiAsPromised);
 
 const chainId = ChainId.testXRP;
-const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
+const indexerUrl: string = "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp";
 const walletUrl: string = "https://s.altnet.rippletest.net:51234";
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";
 const finalizationBlocks: number = 6;

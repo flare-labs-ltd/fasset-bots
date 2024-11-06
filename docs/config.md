@@ -169,7 +169,7 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrl": "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp",
             "walletUrl": "https://s.altnet.rippletest.net:51234"
         }
     },

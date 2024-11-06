@@ -13,9 +13,9 @@ import { getNativeAccounts } from "../../test-utils/test-helpers";
 import { FeeServiceConfig } from "@flarelabs/simple-wallet";
 use(chaiAsPromised);
 
-const indexerTestBTCUrl = "https://attestation-coston.aflabs.net/verifier/btc/";
-const indexerTestDOGEUrl = "https://attestation-coston.aflabs.net/verifier/doge/";
-const indexerTestXRPUrl = "https://attestation-coston.aflabs.net/verifier/xrp";
+const indexerTestBTCUrl = "https://testnet-verifier-fdc-test.aflabs.org/verifier/btc/";
+const indexerTestDOGEUrl = "https://testnet-verifier-fdc-test.aflabs.org/verifier/doge/";
+const indexerTestXRPUrl = "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp";
 const walletTestBTCUrl = "https://api.bitcore.io/api/BTC/testnet/";
 const walletTestDOGEUrl = "https://api.bitcore.io/api/DOGE/testnet/";
 const walletBTCUrl = "https://api.bitcore.io/api/BTC/mainnet/";

@@ -23,7 +23,7 @@ export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3
 describe("XRP transaction integration tests", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testXRP;
-    const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
+    const indexerUrl: string = "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp";
     const walletUrl: string = "https://s.altnet.rippletest.net:51234";
     const amountToSendDrops = 1000000;
 

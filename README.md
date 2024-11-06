@@ -123,5 +123,5 @@ Log files are created every hour and can be found in `packages/fasset-bots-core/
 
 - [Testnet XRP Explorer](https://testnet.xrpl.org/)
 - [Coston Explorer](https://coston-explorer.flare.network/)
-- [Verifier and Indexer Server for testnet XRP](https://attestation-coston.aflabs.net/verifier/xrp/api-doc#).
+- [Verifier and Indexer Server for testnet XRP](https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp/api-doc#).
 - [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
