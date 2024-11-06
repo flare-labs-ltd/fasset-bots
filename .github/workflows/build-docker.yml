@@ -1,6 +1,7 @@
 name: container-images
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "staging-beta" ]
     #tags: [ "v*" ]
