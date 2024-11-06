@@ -97,6 +97,10 @@ export class TransactionEntity {
 
     @Property({ nullable: true })
     feeSource?: string;
+
+    @Property({ nullable: true })
+    maxPaymentForFeeSource?: BN;
+
 }
 
 export enum TransactionStatus {

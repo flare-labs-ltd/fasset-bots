@@ -58,14 +58,18 @@ export async function createAndPersistUTXOEntity(
     mintTransactionHash: string,
     position: number,
     spentHeight?: SpentHeightEnum,
+    value?: BN,
+    script?: string,
+    confirmed?: boolean
 ) {
     const utxoEntity = em.create(UTXOEntity, {
         source: source,
         mintTransactionHash: mintTransactionHash,
         position: position,
-        value: toBN(0),
+        value: value ?? toBN(0),
         spentHeight: spentHeight ?? SpentHeightEnum.SPENT,
-        script: "",
+        script: script ?? "",
+        confirmed: confirmed ?? true
     } as RequiredEntityData<UTXOEntity>);
     await em.persistAndFlush(utxoEntity);
     return utxoEntity;

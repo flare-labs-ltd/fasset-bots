@@ -20,7 +20,6 @@ import { BTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
 import { createTransactionEntityBase, createUTXOEntity } from "../test-util/entity_utils";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 import sinon from "sinon";
 
 use(chaiAsPromised);

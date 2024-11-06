@@ -36,6 +36,7 @@ export async function createInitialTransactionEntity(
     executeUntilTimestamp?: BN,
     replacementFor?: TransactionEntity,
     feeSource?: string,
+    maxPaymentForFeeSource?: BN
 ): Promise<TransactionEntity> {
     logger.info(
         `Creating transaction ${source}, ${destination}, ${amountInDrops?.toString()};${
@@ -55,7 +56,8 @@ export async function createInitialTransactionEntity(
             amount: amountInDrops,
             fee: feeInDrops ?? null,
             rbfReplacementFor: replacementFor ?? null,
-            feeSource: feeSource,
+            feeSource: feeSource ?? null,
+            maxPaymentForFeeSource: maxPaymentForFeeSource ?? null
         } as RequiredEntityData<TransactionEntity>);
         await em.flush();
         logger.info(`Created transaction ${ent.id}.`);
@@ -251,7 +253,7 @@ export async function storeUTXOs(rootEm: EntityManager, source: string, mempoolU
             await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, (utxoEnt) => {
                 utxoEnt.confirmed = utxo.confirmed;
             });
-        } catch (e) { // eslint-disable-line @typescript-eslint/no-unused-vars
+        } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
             await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }

@@ -35,6 +35,7 @@ import { TransactionStatus, TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
 import { XRPBlockchainAPI } from "../../blockchain-apis/XRPBlockchainAPI";
 import { TransactionMonitor } from "../monitoring/TransactionMonitor";
+import {errorMessage} from "../../utils/axios-utils";
 
 export class XrpWalletImplementation extends XrpAccountGeneration implements WriteWalletInterface {
    chainType: ChainType;
@@ -82,7 +83,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          logger.info(`Get account balance for ${account}`, data.result.account_data?.Balance || 0);
          return toBN(data.result.account_data?.Balance || 0);
       } catch (error) /* istanbul ignore next */ {
-         logger.error(`Cannot get account balance for ${account}`, error);
+         logger.error(`Cannot get account balance for ${account}`, errorMessage(error));
          throw error;
       }
    }
@@ -238,7 +239,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          await this.getServerInfo();
          return true;
       } catch (error) /* istanbul ignore next */ {
-         logger.error("Cannot ger response from server", error);
+         logger.error("Cannot ger response from server", errorMessage(error));
          return false;
       }
    }
@@ -554,12 +555,12 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             await failTransaction(this.rootEm, txDbId, `Transaction ${txDbId} submission failed due to ${res.data.result.engine_result}, ${res.data.result.engine_result_message}`)
             return TransactionStatus.TX_FAILED;
          }
-      } catch (e) {
+      } catch (error) {
          await updateTransactionEntity(this.rootEm, txDbId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_PENDING;
             txEnt.reachedStatusPendingInTimestamp = currentTimestamp;
          });
-         logger.error(`Transaction ${txDbId} submission failed`, e);
+         logger.error(`Transaction ${txDbId} submission failed`, errorMessage(error));
          return TransactionStatus.TX_PENDING;
       }
    }

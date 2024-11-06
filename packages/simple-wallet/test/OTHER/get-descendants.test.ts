@@ -12,7 +12,7 @@ describe("getTransactionDescendants", () => {
     let em: EntityManager;
     before(async () => {
         const conf = { ...config };
-        conf.dbName = "getTransactionDescendants-test-db";
+        conf.dbName = "unit-test-db";
         em = (await initializeTestMikroORMWithConfig(conf)).em;
     });
 

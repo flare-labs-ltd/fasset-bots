@@ -19,7 +19,7 @@ import {
     WriteWalletInterface,
 } from "../../interfaces/IWalletTransaction";
 
-import BN from "bn.js";
+import BN, {max} from "bn.js";
 import {
     checkIfIsDeleting,
     correctUTXOInconsistenciesAndFillFromMempool, countDeleteTransactionsWithStatuses, countSpendableUTXOs,
@@ -77,7 +77,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     enoughConfirmations: number;
 
-    maximumNumberOfUTXOs = 20;
+    maximumNumberOfUTXOs = 20; // TODO cca max number of transactions that still go through blockbook (URI issue)
     useRBFFactor = 1.4;
 
     monitoringId: string;
@@ -178,6 +178,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @param executeUntilBlock
      * @param executeUntilTimestamp
      * @param feeSource - address of the wallet which is used for paying transaction fees
+     * @param maxPaymentForFeeSource
      * @returns {Object} - containing transaction id tx_id and optional result
      */
     async createPaymentTransaction(
@@ -189,7 +190,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         maxFeeInSatoshi?: BN,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
-        feeSource?: string
+        feeSource?: string,
+        maxPaymentForFeeSource?: BN
     ): Promise<number> {
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
@@ -221,7 +223,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             maxFeeInSatoshi,
             executeUntilBlock,
             executeUntilTimestamp,
-            feeSource
+            feeSource,
+            maxPaymentForFeeSource
         );
     }
 
@@ -337,7 +340,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
 
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
-            const [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
+            let [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
                 txEnt.id,
                 txEnt.source,
                 txEnt.destination,
@@ -356,11 +359,36 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 return;
             }
 
-            if (checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null)) {
+            const feeToHighForMainSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null);
+            const feeToHighForFeeSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxPaymentForFeeSource ?? null);
+
+            let payingFeesFromFeeSource = !!txEnt.feeSource && !feeToHighForFeeSource;
+            if (txEnt.feeSource && feeToHighForFeeSource && !feeToHighForMainSource) {
+                // If amount to pay from fee source is too high - try to pay it from main source
+                [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
+                    txEnt.id,
+                    txEnt.source,
+                    txEnt.destination,
+                    txEnt.amount ?? null,
+                    txEnt.fee,
+                    txEnt.reference,
+                    rbfReplacementFor
+                );
+                logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxFee})`);
+                payingFeesFromFeeSource = false;
+            } else if (txEnt.feeSource && feeToHighForFeeSource && feeToHighForMainSource && rbfReplacementFor) {
+                // If transaction is rbf and amount to pay from fee source is too high for both - set it to the max of both
+                const maxFee = max(txEnt.maxFee!, txEnt.maxPaymentForFeeSource!);
+                transaction.fee(toNumber(maxFee));
+                payingFeesFromFeeSource = maxFee.eq(txEnt.maxPaymentForFeeSource!);
+            }
+
+            // If fee source is non-existent/doesn't have high enough max amount
+            if (!payingFeesFromFeeSource && checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null)) {
                 if (rbfReplacementFor) {
-                    transaction.fee(toNumber(txEnt.maxFee!));
+                    await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => txEntToUpdate.fee = txEnt.maxFee!);
                 } else {
-                    await failTransaction(this.rootEm, txEnt.id, `Fee restriction (fee: ${transaction.getFee()}, maxFee: ${txEnt.maxFee?.toString()})`);
+                    logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
                     return;
                 }
             } else {
@@ -412,10 +440,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         }
                     }
                 } else {
-                    logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with: ${String(error)}`);
+                    logger.error(`prepareAndSubmitCreatedTransaction for transaction ${txEnt.id} failed with: ${errorMessage(error)}`);
                 }
             }
-            return;
         }
     }
 
@@ -746,12 +773,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     return;
                 }
                 await sleepMs(5000); // wait for 5s
-            } catch (e) {
+            } catch (error) {
                 /* istanbul ignore next */
-                if (axios.isAxiosError(e)) {
-                    logger.warn(`Transaction ${txId} not yet seen in mempool`, e.response?.data);
+                if (axios.isAxiosError(error)) {
+                    logger.warn(`Transaction ${txId} not yet seen in mempool`, error.response?.data);
                 } else {
-                    logger.warn(`Transaction ${txId} not yet seen in mempool`, e);
+                    logger.warn(`Transaction ${txId} not yet seen in mempool`, errorMessage(error));
                 }
                 await sleepMs(10000); // wait for 10s
             }

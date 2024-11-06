@@ -193,7 +193,7 @@ export class TransactionMonitor {
                 });
                 nFailedPings = 0;
             } catch (error) {
-                logger.error(`Error updating ping status for chain ${this.monitoringId}`, error);
+                logger.error(`Error updating ping status for chain ${this.monitoringId}`, errorMessage(error));
                 if (nFailedPings > 10) {
                     this.monitoring = false;
                 }
@@ -226,8 +226,8 @@ export class TransactionMonitor {
         for (const txEnt of transactionEntities) {
             try {
                 await processFunction(txEnt);
-            } catch (e) /* istanbul ignore next */ {
-                logger.error(`Cannot process transaction ${txEnt.id}`, e);
+            } catch (error) /* istanbul ignore next */ {
+                logger.error(`Cannot process transaction ${txEnt.id}`, errorMessage(error));
             }
         }
     }

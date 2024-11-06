@@ -16,6 +16,7 @@ export interface TransactionOptionsWithFee {
     // depending on chain, set either maxFee or (gasPrice, gasLimit), but not both
     // if not used, fee/gas limits will be calculated and added automatically by the wallet
     maxFee?: NumberLike;
+    maxPaymentForFeeSource?: NumberLike,
     gasPrice?: NumberLike;
     gasLimit?: NumberLike;
 }

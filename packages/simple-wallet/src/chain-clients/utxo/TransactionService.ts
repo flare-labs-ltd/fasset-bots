@@ -43,10 +43,11 @@ export class TransactionService {
         amountInSatoshi: BN | null,
         feeInSatoshi?: BN,
         note?: string,
-        maxFeeInSatoshi?: BN,
+        maxFee?: BN,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
         feeSource?: string,
+        maxPaymentForFeeSource?: BN,
     ): Promise<number> {
         /* istanbul ignore next */
         logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}; and feeSource ${feeSource}`);
@@ -58,11 +59,12 @@ export class TransactionService {
             amountInSatoshi,
             feeInSatoshi,
             note,
-            maxFeeInSatoshi,
+            maxFee,
             executeUntilBlock,
             executeUntilTimestamp,
             undefined,
-            feeSource
+            feeSource,
+            maxPaymentForFeeSource
         );
         return ent.id;
     }

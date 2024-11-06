@@ -81,8 +81,8 @@ export class TransactionFeeService {
             }
             const rateInSatoshies = toBN(fee);
             return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
-        } catch (e) {
-            logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
+        } catch (error) {
+            logger.error(`Cannot obtain fee rate ${errorMessage(error)}`);
             return getDefaultFeePerKB(this.chainType);
         }
     }
