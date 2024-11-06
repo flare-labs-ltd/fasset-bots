@@ -11,6 +11,7 @@ export const RESTART_IN_DUE_TO_ERROR = 2000; // 2s
 export const RESTART_IN_DUE_NO_RESPONSE = 20000; // 20s
 export const RANDOM_SLEEP_MS_MAX = 500;
 
+export const WAIT_TO_APPEAR_IN_XRP = 8; // wait for x ledgers
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 

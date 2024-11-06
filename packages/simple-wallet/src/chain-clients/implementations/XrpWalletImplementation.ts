@@ -5,7 +5,7 @@ const xrpl__typeless = require("xrpl");
 import { deriveAddress, sign } from "ripple-keypairs";
 import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops, createMonitoringId } from "../../utils/utils";
 import { toBN } from "../../utils/bnutils";
-import { ChainType, DELETE_ACCOUNT_OFFSET } from "../../utils/constants";
+import { ChainType, DELETE_ACCOUNT_OFFSET, WAIT_TO_APPEAR_IN_XRP } from "../../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type {
    WriteWalletInterface,
@@ -366,7 +366,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    async checkIfTransactionAppears(txId: number) {
       const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
-      const waitUntilBlock = txEnt.submittedInBlock + this.blockOffset;
+      const waitUntilBlock = txEnt.submittedInBlock + WAIT_TO_APPEAR_IN_XRP;
 
       let txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
       while (!(txResp.data.result.validated) && (await this.getLatestValidatedLedgerIndex()) <= waitUntilBlock) {
