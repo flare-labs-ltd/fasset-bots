@@ -81,7 +81,7 @@ export class TransactionFeeService implements IService {
             const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks);
             if (fee.toString() === "-1" || fee === 0) {
                 logger.error(`Cannot obtain valid fee rate ${fee.toString()}`);
-                return getDefaultFeePerKB(this.chainType)
+                return getDefaultFeePerKB(this.chainType);
             }
             const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
             return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
