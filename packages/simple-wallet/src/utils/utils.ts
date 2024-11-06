@@ -59,7 +59,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 8,//accepted in next x blocks
+            blockOffset: 30,//accepted in next x blocks
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 3,//do not submit if "three blocks" time left
             enoughConfirmations: 10
@@ -67,7 +67,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.XRP:
       case ChainType.testXRP:
          return {
-            blockOffset: 6,
+            blockOffset: 30,// cca 1.5 min
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 2
          };
