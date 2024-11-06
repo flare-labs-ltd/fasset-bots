@@ -42,6 +42,15 @@
             "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
             "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2",
             "priceChangeEmitter": "FtsoV2PriceStore"
+        },
+        "FTestDOGE": {
+            "chainId": "testDOGE",
+            "tokenName": "Test DOGE",
+            "tokenSymbol": "testDOGE",
+            "tokenDecimals": 8,
+            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/doge",
+            "walletUrl": "https://testdoge.indexers.flare.space/api/v2",
+            "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
     "agentBotSettings": {
@@ -64,6 +73,10 @@
             "FTestBTC": {
                 "recommendedOwnerBalance": "2",
                 "minimumFreeUnderlyingBalance": "0.5"
+            },
+            "FTestDOGE": {
+                "recommendedOwnerBalance": "20",
+                "minimumFreeUnderlyingBalance": "0.4"
             }
         }
     },
