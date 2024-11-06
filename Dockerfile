@@ -9,6 +9,8 @@ RUN chown node .
 
 USER node
 
+RUN mkdir -p log
+
 COPY --chown=node ./package.json .
 COPY --chown=node ./yarn.lock .
 
