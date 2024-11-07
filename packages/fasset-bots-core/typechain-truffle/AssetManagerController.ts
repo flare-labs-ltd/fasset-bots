@@ -609,9 +609,13 @@ export interface RedemptionRequestRejected {
     agentVault: string;
     redeemer: string;
     requestId: BN;
+    paymentAddress: string;
+    valueUBA: BN;
     0: string;
     1: string;
     2: BN;
+    3: string;
+    4: BN;
   };
 }
 

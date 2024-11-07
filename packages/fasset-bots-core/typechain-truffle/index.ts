@@ -86,7 +86,6 @@ import { FtsoRegistryMockContract } from "./FtsoRegistryMock";
 import { FtsoV2PriceStoreMockContract } from "./FtsoV2PriceStoreMock";
 import { MerkleTreeMockContract } from "./MerkleTreeMock";
 import { MinterMockContract } from "./MinterMock";
-import { TokenHolderMockContract } from "./TokenHolderMock";
 import { DiamondLoupeFacetContract } from "./DiamondLoupeFacet";
 import { DiamondContract } from "./Diamond";
 import { IDiamondContract } from "./IDiamond";
@@ -307,7 +306,6 @@ export type * from "./types";
       require(name: "FtsoV2PriceStoreMock"): FtsoV2PriceStoreMockContract;
       require(name: "MerkleTreeMock"): MerkleTreeMockContract;
       require(name: "MinterMock"): MinterMockContract;
-      require(name: "TokenHolderMock"): TokenHolderMockContract;
       require(name: "DiamondLoupeFacet"): DiamondLoupeFacetContract;
       require(name: "Diamond"): DiamondContract;
       require(name: "IDiamond"): IDiamondContract;
@@ -709,10 +707,6 @@ export {
   MerkleTreeMockInstance,
 } from "./MerkleTreeMock";
 export { MinterMockContract, MinterMockInstance } from "./MinterMock";
-export {
-  TokenHolderMockContract,
-  TokenHolderMockInstance,
-} from "./TokenHolderMock";
 export {
   DiamondLoupeFacetContract,
   DiamondLoupeFacetInstance,

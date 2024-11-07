@@ -244,6 +244,74 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "_from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_sentAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "getReceivedAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_receivedAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_feeAmount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_receivedAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "getSendAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_sendAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_feeAmount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "_owner",
           "type": "address"
         },
@@ -306,19 +374,6 @@
         }
       ],
       "name": "setCleanupBlockNumberManager",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_payingAccount",
-          "type": "address"
-        }
-      ],
-      "name": "setTransferFeesPaidBy",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -425,8 +480,14 @@
           "type": "uint256"
         }
       ],
-      "name": "transferAndPayFee",
-      "outputs": [],
+      "name": "transferExactDest",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -434,16 +495,45 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_origin",
+          "name": "_from",
           "type": "address"
-        }
-      ],
-      "name": "transferFeesPaidBy",
-      "outputs": [
+        },
         {
           "internalType": "address",
-          "name": "_payingAccount",
+          "name": "_to",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferExactDestFrom",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_transferAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFeeAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -492,24 +582,6 @@
         }
       ],
       "name": "transferInternally",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_to",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "transferSubtractingFee",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -80,25 +80,21 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
 
   decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-  name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+  getReceivedAmount(
+    _from: string,
+    _to: string,
+    _sentAmount: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
 
-  setTransferFeesPaidBy: {
-    (_payingAccount: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _payingAccount: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _payingAccount: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _payingAccount: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
+  getSendAmount(
+    _from: string,
+    _to: string,
+    _receivedAmount: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
+  name(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -129,7 +125,7 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  transferAndPayFee: {
+  transferExactDest: {
     (
       _to: string,
       _amount: number | BN | string,
@@ -139,7 +135,7 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
       _to: string,
       _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
+    ): Promise<boolean>;
     sendTransaction(
       _to: string,
       _amount: number | BN | string,
@@ -152,10 +148,37 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  transferFeesPaidBy(
-    _origin: string,
+  transferExactDestFrom: {
+    (
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+    sendTransaction(
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  transferFeeAmount(
+    _transferAmount: number | BN | string,
     txDetails?: Truffle.TransactionDetails
-  ): Promise<string>;
+  ): Promise<BN>;
 
   transferFrom: {
     (
@@ -180,29 +203,6 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
       from: string,
       to: string,
       amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  transferSubtractingFee: {
-    (
-      _to: string,
-      _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _to: string,
-      _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _to: string,
-      _amount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _to: string,
-      _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -250,25 +250,21 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
 
     decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
-    name(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    getReceivedAmount(
+      _from: string,
+      _to: string,
+      _sentAmount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
 
-    setTransferFeesPaidBy: {
-      (_payingAccount: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _payingAccount: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _payingAccount: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _payingAccount: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
+    getSendAmount(
+      _from: string,
+      _to: string,
+      _receivedAmount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+
+    name(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
@@ -299,7 +295,7 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    transferAndPayFee: {
+    transferExactDest: {
       (
         _to: string,
         _amount: number | BN | string,
@@ -309,7 +305,7 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
         _to: string,
         _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
+      ): Promise<boolean>;
       sendTransaction(
         _to: string,
         _amount: number | BN | string,
@@ -322,10 +318,37 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    transferFeesPaidBy(
-      _origin: string,
+    transferExactDestFrom: {
+      (
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<boolean>;
+      sendTransaction(
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    transferFeeAmount(
+      _transferAmount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
+    ): Promise<BN>;
 
     transferFrom: {
       (
@@ -350,29 +373,6 @@ export interface IFAssetInstance extends Truffle.ContractInstance {
         from: string,
         to: string,
         amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    transferSubtractingFee: {
-      (
-        _to: string,
-        _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _to: string,
-        _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _to: string,
-        _amount: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _to: string,
-        _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

@@ -1207,6 +1207,18 @@
           "internalType": "uint64",
           "name": "requestId",
           "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "paymentAddress",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "valueUBA",
+          "type": "uint256"
         }
       ],
       "name": "RedemptionRequestRejected",
