@@ -49,7 +49,7 @@
             "tokenSymbol": "testDOGE",
             "tokenDecimals": 8,
             "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/doge",
-            "walletUrl": "https://testdoge.indexers.flare.space/api/v2",
+            "walletUrl": "https://blockbook-dogecoin-testnet.flare.network/api/v2",
             "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
