@@ -1,34 +1,27 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
-import {
-    countTransactionsWithStatuses,
-    fetchMonitoringState,
-    fetchTransactionEntities,
-    updateMonitoringState,
-} from "../../db/dbutils";
-import { MonitoringStateEntity } from "../../entity/monitoringState";
+import { countTransactionsWithStatuses, fetchMonitoringState, fetchTransactionEntities, updateMonitoringState } from "../../db/dbutils";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
-import {
-    BUFFER_PING_INTERVAL,
-    ChainType,
-    PING_INTERVAL,
-    RANDOM_SLEEP_MS_MAX,
-    RESTART_IN_DUE_NO_RESPONSE,
-    RESTART_IN_DUE_TO_ERROR,
-} from "../../utils/constants";
+import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE, RESTART_IN_DUE_TO_ERROR } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import {
-    convertToTimestamp,
-    getCurrentTimestampInSeconds,
-    getRandomInt,
-    sleepMs,
-    stuckTransactionConstants,
-} from "../../utils/utils";
-import { errorMessage } from "../../utils/axios-utils";
+import { convertToTimestamp, getCurrentTimestampInSeconds, getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import { getConfirmedAfter, getDefaultBlockTimeInSeconds, utxoOnly } from "../utxo/UTXOUtils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
-import {getConfirmedAfter, getDefaultBlockTimeInSeconds, utxoOnly} from "../utxo/UTXOUtils";
+import { MonitoringStateEntity } from "../../entity/monitoringState";
+import { errorMessage } from "../../utils/axios-utils";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
+
+export interface IMonitoredWallet {
+    submitPreparedTransactions(txEnt: TransactionEntity): Promise<void>;
+    checkPendingTransaction(txEnt: TransactionEntity): Promise<void>;
+    prepareAndSubmitCreatedTransaction(txEnt: TransactionEntity): Promise<void>;
+    checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void>;
+    checkNetworkStatus(): Promise<boolean>;
+    resubmitSubmissionFailedTransactions?(txEnt: TransactionEntity): Promise<void>;
+}
+
+class StopTransactionMonitor extends Error {}
 
 export class TransactionMonitor {
     private monitoring = false;
@@ -36,21 +29,34 @@ export class TransactionMonitor {
     private rootEm: EntityManager;
     private numberOfTransactionsPerBlock = 10; // For FAssets we have 10 transactions per block to complete
     monitoringId: string;
+    executionBlockOffset: number;
 
     constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
         this.chainType = chainType;
         this.rootEm = rootEm;
         this.monitoringId = monitoringId;
+        this.executionBlockOffset = stuckTransactionConstants(this.chainType).executionBlockOffset!;
     }
 
     async isMonitoring(): Promise<boolean> {
         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-        if (!monitoringState) {
+        if (!monitoringState || monitoringState.processOwner !== this.monitoringId) {
             return false;
         }
-        const now = (new Date()).getTime();
-        const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
-        return elapsed < BUFFER_PING_INTERVAL;
+        const elapsed = Date.now() - monitoringState.lastPingInTimestamp.toNumber();
+        return elapsed < MONITOR_EXPIRATION_INTERVAL;
+    }
+
+    async startMonitoringTransactionProgress(wallet: IMonitoredWallet): Promise<void> {
+        const acquiredLock = await this.waitAndAcquireMonitoringLock();
+        if (!acquiredLock) return;
+        // mark started
+        this.monitoring = true;
+        logger.info(`Monitoring started for chain ${this.monitoringId}`);
+        // start pinger in the background
+        void this.updatePingLoop();
+        // start main loop
+        await this.monitoringMainLoop(wallet);
     }
 
     async stopMonitoring(): Promise<void> {
@@ -61,8 +67,8 @@ export class TransactionMonitor {
                 this.monitoring = false;
                 console.log(`Stopping wallet monitoring ${this.monitoringId} ...`);
                 const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
-                await sleepMs(PING_INTERVAL + randomMs); // to make sure pinger stops
-                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
+                await sleepMs(MONITOR_PING_INTERVAL + randomMs); // to make sure pinger stops
+                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
                     monitoringEnt.lastPingInTimestamp = toBN(0);
                 });
                 if (utxoOnly(this.chainType)) {
@@ -76,159 +82,169 @@ export class TransactionMonitor {
         }
     }
 
-    async startMonitoringTransactionProgress(
-        submitPreparedTransactions: (txEnt: TransactionEntity) => Promise<void>,
-        checkPendingTransactions: (txEnt: TransactionEntity) => Promise<void>,
-        prepareAndSubmitCreatedTransactions: (txEnt: TransactionEntity) => Promise<void>,
-        checkSubmittedTransactions: (txEnt: TransactionEntity) => Promise<void>,
-        checkNetworkStatus: () => Promise<boolean>,
-        resubmitSubmissionFailedTransactions?: (txEnt: TransactionEntity) => Promise<void>,
-        executionBlockOffset?: number
-    ): Promise<void> {
+    /**
+     * Only one monitoring process can be alive at any time; this is taken care of by this method.
+     */
+    async waitAndAcquireMonitoringLock() {
         const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
         await sleepMs(randomMs);
-
-        try {
-            const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-            if (!monitoringState) {
-                const createdAt = toBN((new Date()).getTime());
-                logger.info(`Monitoring created for chain ${this.monitoringId}`);
-                this.rootEm.create(MonitoringStateEntity, {
-                    chainType: this.chainType,
-                    lastPingInTimestamp: createdAt,
-                    processOwner: this.monitoringId
-                } as RequiredEntityData<MonitoringStateEntity>);
-                await this.rootEm.flush();
-            } else if (await this.isMonitoring()) {
+        // try to acquire free lock
+        const start = await this.acquireMonitoringLock();
+        if (start.acquired) {
+            logger.info(`Monitoring created for chain ${this.monitoringId}`);
+            return true;
+        }
+        // lock is marked as locked, wait a bit to see if it is alive or should be taken over
+        logger.info(`Monitoring possibly running for chain ${this.monitoringId} - waiting for liveness confirmation or expiration`);
+        const startTime = Date.now();
+        while (Date.now() - startTime < MONITOR_EXPIRATION_INTERVAL + 2 * MONITOR_PING_INTERVAL) {   // condition not really necessary - loop should always finish before this
+            await sleepMs(MONITOR_PING_INTERVAL);
+            // try to acquire lock again
+            const next = await this.acquireMonitoringLock();
+            // if the lock expired or was released in the meenatime, it will be acquired now
+            if (next.acquired) {
+                logger.info(`Monitoring created for chain ${this.monitoringId} - old lock released or expired`);
+                return true;
+            }
+            // if the lock ping tme increased, the thread holding it is apparently still active, so we give up and leave the old thread to do the work
+            if (next.lastPing > start.lastPing) {
                 logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
-                return;
-            } else if (monitoringState.lastPingInTimestamp) {
-                logger.info(`Monitoring possibly running for chain ${this.monitoringId}`);
-                const reFetchedMonitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-                const now = (new Date()).getTime();
-                if (reFetchedMonitoringState && ((now - reFetchedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL)) {
-                    logger.info(`Monitoring checking if already running for chain ${this.monitoringId} ...`);
-                    await sleepMs(BUFFER_PING_INTERVAL + randomMs);
-                    const updatedMonitoringState = await fetchMonitoringState(this.rootEm, this.monitoringId);
-                    const newNow = (new Date()).getTime();
-                    if (updatedMonitoringState && (newNow - updatedMonitoringState.lastPingInTimestamp.toNumber()) < BUFFER_PING_INTERVAL) {
-                        logger.info(`Another monitoring instance is already running for chain ${this.monitoringId} (double check)`);
-                        return;
+                return false;
+            }
+        }
+        logger.warn(`Timeout waiting for monitoring lock for chain ${this.monitoringId}`);
+        return false;
+    }
+
+    async acquireMonitoringLock() {
+        const R = 3;
+        for (let i = 1; i <= R; i++) {
+            try {
+                return await this.rootEm.transactional(async em => {
+                    const monitoringState = await fetchMonitoringState(em, this.chainType);
+                    const now = Date.now();
+                    if (monitoringState == null) {
+                        // no lock has been created for this chain yet - create new
+                        em.create(MonitoringStateEntity,
+                            {
+                                chainType: this.chainType,
+                                lastPingInTimestamp: toBN(now),
+                                processOwner: this.monitoringId
+                            } as RequiredEntityData<MonitoringStateEntity>,
+                            { persist: true });
+                        return { acquired: true } as const;
+                    } else {
+                        const lastPing = monitoringState.lastPingInTimestamp.toNumber();
+                        if (now > lastPing + MONITOR_EXPIRATION_INTERVAL) {
+                            // old lock expired or released (marked by lastPing==0) - take over lock
+                            monitoringState.lastPingInTimestamp = toBN(now);
+                            monitoringState.processOwner = this.monitoringId;
+                            return { acquired: true } as const;
+                        } else {
+                            // just retrun the lock state
+                            return { acquired: false, lastPing } as const;
+                        }
                     }
+                });
+            } catch (error) {
+                const nextAction = i <= R ? `retrying (${i})` : `failed`;
+                logger.error(`Error trying to obtain monitoring lock - ${nextAction}: ${error}`);
+            }
+        }
+        throw new Error("Too many failed attempts for acquiring lock");
+    }
+
+    private async updatePingLoop(): Promise<void> {
+        while (this.monitoring) {
+            await this.updatePing();
+            await sleepMs(MONITOR_PING_INTERVAL);
+        }
+    }
+
+    private async updatePing() {
+        try {
+            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                if (monitoringEnt.processOwner === this.monitoringId) {
+                    monitoringEnt.lastPingInTimestamp = toBN(Date.now());
+                } else {
+                    logger.info(`Monitoring thread was taken over from ${this.monitoringId} by ${monitoringEnt.processOwner}`);
+                    this.monitoring = false;
                 }
-            }
-            const lastPingInTimestamp = toBN((new Date()).getTime());
-            await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
-                monitoringEnt.lastPingInTimestamp = lastPingInTimestamp;
-                monitoringEnt.processOwner = this.monitoringId;
             });
+        } catch (error) {
+            logger.error(`Error updating ping status for chain ${this.monitoringId}`, error);
+            this.monitoring = false;
+        }
+    }
 
-            this.monitoring = true;
-            logger.info(`Monitoring started for chain ${this.monitoringId}`);
-
-            void this.updatePing();
-
-            if (utxoOnly(this.chainType)) {
-                const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-                await feeService.setupHistory();
-                void feeService.monitorFees(this.monitoring);
-            }
-
-            if (!executionBlockOffset) {
-                executionBlockOffset = stuckTransactionConstants(this.chainType).executionBlockOffset!;
-            }
-
+    private async monitoringMainLoop(wallet: IMonitoredWallet) {
+        try {
             while (this.monitoring) {
                 try {
-                    const networkUp = await checkNetworkStatus();
+                    const networkUp = await wallet.checkNetworkStatus();
                     if (!networkUp) {
                         logger.error(`Network is down ${this.monitoringId} - trying again in ${RESTART_IN_DUE_NO_RESPONSE}`);
                         await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                         continue;
                     }
-                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PREPARED], submitPreparedTransactions, executionBlockOffset);
-                    /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
-                    if (resubmitSubmissionFailedTransactions) {
-                        await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMISSION_FAILED], resubmitSubmissionFailedTransactions, executionBlockOffset);
-                        /* istanbul ignore next */
-                        if (this.shouldStopMonitoring()) break;
+                    this.checkIfMonitoringStopped();
+                    await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions);
+                    this.checkIfMonitoringStopped();
+                    if (wallet.resubmitSubmissionFailedTransactions) {
+                        await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions);
+                        this.checkIfMonitoringStopped();
                     }
-                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_PENDING], checkPendingTransactions, executionBlockOffset);
-                    /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
-                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_CREATED], prepareAndSubmitCreatedTransactions, executionBlockOffset);
-                    /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
-                    await this.processTransactions(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], checkSubmittedTransactions, executionBlockOffset);
-                     /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
-                } /* istanbul ignore next */ catch (error) {
+                    await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction);
+                    this.checkIfMonitoringStopped();
+                    await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction);
+                    this.checkIfMonitoringStopped();
+                    await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction);
+                    this.checkIfMonitoringStopped();
+                } catch (error) {
+                    if (error instanceof StopTransactionMonitor) break;
                     logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${RESTART_IN_DUE_TO_ERROR}: ${errorMessage(error)}`);
                 }
                 await sleepMs(RESTART_IN_DUE_TO_ERROR);
             }
-
             logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
         } /* istanbul ignore next */ catch (error) {
             logger.error(`Monitoring failed for chain ${this.monitoringId} error: ${errorMessage(error)}.`);
         }
     }
 
-    private shouldStopMonitoring(): boolean {
-        if (!this.monitoring) {
-            logger.info(`Monitoring should be stopped for chain ${this.monitoringId}`);
-            return true;
-        }
-        return false;
-    }
-
-    private async updatePing(): Promise<void> {
-        let nFailedPings = 0;
-        while (this.monitoring) {
-            try {
-                await sleepMs(PING_INTERVAL);
-                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
-                    monitoringEnt.lastPingInTimestamp = toBN((new Date()).getTime());
-                });
-                nFailedPings = 0;
-            } catch (error) {
-                logger.error(`Error updating ping status for chain ${this.monitoringId}`, errorMessage(error));
-                if (nFailedPings > 10) {
-                    this.monitoring = false;
-                }
-                nFailedPings++;
-            }
-        }
-    }
-
-    private async processTransactions(
-        rootEm: EntityManager,
-        chainType: ChainType,
+    async processTransactions(
         statuses: TransactionStatus[],
-        processFunction: (txEnt: TransactionEntity) => Promise<void>,
-        executionBlockOffset: number
+        processFunction: (txEnt: TransactionEntity) => Promise<void>
     ): Promise<void> {
-        let transactionEntities = await fetchTransactionEntities(rootEm, chainType, statuses);
+        let transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
 
         // Filter out the transactions which can wait a bit to prevent locking of the wallet by consuming all UTXOs
-        if (utxoOnly(chainType) && (statuses.includes(TransactionStatus.TX_CREATED))) {
+        if (utxoOnly(this.chainType) && (statuses.includes(TransactionStatus.TX_CREATED))) {
             transactionEntities = this.sortTransactionEntities(transactionEntities);
-            const currentBlockHeight = await ServiceRepository.get(chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
+            const currentBlockHeight = await ServiceRepository.get(this.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
 
-            const blockBuffer = executionBlockOffset / 3;
+            const blockBuffer = this.executionBlockOffset / 3;
             // Process only entities that have currentBlockHeight + (executionBlockOffset + blockBuffer) <= executeUntilBlock if there are more than X transactions
-            if ((await countTransactionsWithStatuses(rootEm, chainType, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_SUBMITTED])) > this.numberOfTransactionsPerBlock * getConfirmedAfter(this.chainType) / 2) {
-                transactionEntities = transactionEntities.filter(t => this.calculateTransactionPriority(t, chainType, currentBlockHeight, executionBlockOffset) >= blockBuffer);
+            const numOfPreparedAndSubmitted = await countTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_SUBMITTED]);
+            if (numOfPreparedAndSubmitted > this.numberOfTransactionsPerBlock * getConfirmedAfter(this.chainType) / 2) {
+                transactionEntities = transactionEntities.filter(t => this.calculateTransactionPriority(t, this.chainType, currentBlockHeight) >= blockBuffer);
             }
         }
 
         for (const txEnt of transactionEntities) {
+            this.checkIfMonitoringStopped();
             try {
                 await processFunction(txEnt);
             } catch (error) /* istanbul ignore next */ {
                 logger.error(`Cannot process transaction ${txEnt.id}`, errorMessage(error));
             }
+        }
+    }
+
+    private checkIfMonitoringStopped() {
+        if (!this.monitoring) {
+            logger.info(`Monitoring should be stopped for chain ${this.monitoringId}`);
+            throw new StopTransactionMonitor();
         }
     }
 
@@ -252,12 +268,12 @@ export class TransactionMonitor {
     /**
      * @returns 1 / n where n is number of blocks before executeUntilBlock - executionBlockOffset (if neither are provided it returns 0)
      */
-    private calculateTransactionPriority(entity: TransactionEntity, chainType: ChainType, currentBlockHeight: number, executionBlockOffset: number): number {
+    private calculateTransactionPriority(entity: TransactionEntity, chainType: ChainType, currentBlockHeight: number): number {
         let blockPriority = 0;
         let timestampPriority = 0;
 
         if (entity.executeUntilBlock && entity.executeUntilTimestamp) {
-            blockPriority = 1 / (entity.executeUntilBlock - currentBlockHeight - executionBlockOffset);
+            blockPriority = 1 / (entity.executeUntilBlock - currentBlockHeight - this.executionBlockOffset);
         }
 
         let executeUntilTimestamp = entity.executeUntilTimestamp;
@@ -268,9 +284,10 @@ export class TransactionMonitor {
         if (executeUntilTimestamp) {
             const now = toBN(getCurrentTimestampInSeconds());
             const defaultBlockTimeInSeconds = getDefaultBlockTimeInSeconds(chainType);
-            timestampPriority = 1 / (executeUntilTimestamp.sub(now).subn(executionBlockOffset * defaultBlockTimeInSeconds).divn(defaultBlockTimeInSeconds).toNumber());
+            timestampPriority = 1 / (executeUntilTimestamp.sub(now).subn(this.executionBlockOffset * defaultBlockTimeInSeconds).divn(defaultBlockTimeInSeconds).toNumber());
         }
 
         return Math.max(blockPriority, timestampPriority);
     }
+
 }

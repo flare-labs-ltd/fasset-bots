@@ -24,7 +24,8 @@ import {
    handleMissingPrivateKey,
    checkIfIsDeleting,
    setAccountIsDeleting,
-   handleNoTimeToSubmitLeft} from "../../db/dbutils";
+   handleNoTimeToSubmitLeft
+} from "../../db/dbutils";
 
 const ed25519 = new elliptic.eddsa("ed25519");
 const secp256k1 = new elliptic.ec("secp256k1");
@@ -216,14 +217,14 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    ///////////////////////////////////////////////////////////////////////////////////////
 
    async startMonitoringTransactionProgress(): Promise<void> {
-      await this.monitor.startMonitoringTransactionProgress(
-          this.submitPreparedTransactions.bind(this),
-          this.resubmitPendingTransaction.bind(this),
-          this.prepareAndSubmitCreatedTransaction.bind(this),
-          this.checkSubmittedTransaction.bind(this),
-          async () => this.checkXrpNetworkStatus(),
-          this.resubmitSubmissionFailedTransactions.bind(this)
-      );
+      await this.monitor.startMonitoringTransactionProgress({
+         submitPreparedTransactions: this.submitPreparedTransactions.bind(this),
+         checkPendingTransaction: this.resubmitPendingTransaction.bind(this),
+         prepareAndSubmitCreatedTransaction: this.prepareAndSubmitCreatedTransaction.bind(this),
+         checkSubmittedTransaction: this.checkSubmittedTransaction.bind(this),
+         checkNetworkStatus: async () => this.checkXrpNetworkStatus(),
+         resubmitSubmissionFailedTransactions: this.resubmitSubmissionFailedTransactions.bind(this)
+      });
    }
 
    async isMonitoring(): Promise<boolean> {
@@ -298,7 +299,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEntToUpdate.executeUntilBlock = currentLedger + this.blockOffset;
          });
       }
-     logger.info(`Preparing transaction ${txEnt.id}`);
+      logger.info(`Preparing transaction ${txEnt.id}`);
       //prepare
       const transaction = await this.preparePaymentTransaction(
          txEnt.source,
@@ -514,7 +515,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       const shouldSubmit = checkIfShouldStillSubmit(this, currentLedger, transaction.executeUntilBlock, transaction.executeUntilTimestamp);
       if (!shouldSubmit) {
          await handleNoTimeToSubmitLeft(this.rootEm, txDbId, currentLedger, this.executionBlockOffset, "submitTransaction", transaction.executeUntilBlock, transaction.executeUntilTimestamp?.toString());
-          return TransactionStatus.TX_FAILED;
+         return TransactionStatus.TX_FAILED;
       }
 
       const currentTimestamp = toBN(getCurrentTimestampInSeconds());

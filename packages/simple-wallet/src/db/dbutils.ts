@@ -74,7 +74,7 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 }
 
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
-    return await rootEm.findOneOrFail(TransactionEntity, { id } as FilterQuery<TransactionEntity>, {
+    return await rootEm.findOneOrFail(TransactionEntity, { id }, {
         refresh: true,
         populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
     });
@@ -86,7 +86,7 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
         {
             status: { $in: statuses },
             chainType,
-        } as FilterQuery<TransactionEntity>,
+        },
         {
             refresh: true,
             populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],

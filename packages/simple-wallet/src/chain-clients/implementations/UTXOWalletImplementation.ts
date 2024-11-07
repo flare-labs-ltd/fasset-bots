@@ -277,13 +277,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     // MONITORING /////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
     async startMonitoringTransactionProgress(): Promise<void> {
-        await this.monitor.startMonitoringTransactionProgress(
-            this.submitPreparedTransactions.bind(this),
-            this.checkPendingTransaction.bind(this),
-            this.prepareAndSubmitCreatedTransaction.bind(this),
-            this.checkSubmittedTransaction.bind(this),
-            async () => checkUTXONetworkStatus(this)
-        );
+        await this.monitor.startMonitoringTransactionProgress({
+            submitPreparedTransactions: this.submitPreparedTransactions.bind(this),
+            checkPendingTransaction: this.checkPendingTransaction.bind(this),
+            prepareAndSubmitCreatedTransaction: this.prepareAndSubmitCreatedTransaction.bind(this),
+            checkSubmittedTransaction: this.checkSubmittedTransaction.bind(this),
+            checkNetworkStatus: async () => checkUTXONetworkStatus(this)
+        });
     }
 
     async isMonitoring(): Promise<boolean> {
