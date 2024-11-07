@@ -64,7 +64,7 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 }
 
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
-    return await rootEm.findOneOrFail(TransactionEntity, { id } as FilterQuery<TransactionEntity>, {
+    return await rootEm.findOneOrFail(TransactionEntity, { id }, {
         refresh: true,
         populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
     });
@@ -76,7 +76,7 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
         {
             status,
             chainType,
-        } as FilterQuery<TransactionEntity>,
+        },
         {
             refresh: true,
             populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
@@ -315,22 +315,6 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
         logger.error(`Transaction ${txId} failed: ${reason}`, error);
     } else {
         logger.error(`Transaction ${txId} failed: ${reason}`);
-    }
-}
-
-export async function processTransactions(
-    rootEm: EntityManager,
-    chainType: ChainType,
-    status: TransactionStatus,
-    processFunction: (txEnt: TransactionEntity) => Promise<void>
-): Promise<void> {
-    const transactionEntities = await fetchTransactionEntities(rootEm, chainType, status);
-    for (const txEnt of transactionEntities) {
-        try {
-            await processFunction(txEnt);
-        } catch (e) {
-            logger.error(`Cannot process transaction ${txEnt.id}`, e);
-        }
     }
 }
 

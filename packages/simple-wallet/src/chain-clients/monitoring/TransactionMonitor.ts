@@ -1,12 +1,12 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
-import { fetchMonitoringState, updateMonitoringState, processTransactions } from "../../db/dbutils";
+import { fetchMonitoringState, fetchTransactionEntities, updateMonitoringState } from "../../db/dbutils";
 import { MonitoringStateEntity } from "../../entity/monitoring_state";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
-import { ChainType, BUFFER_PING_INTERVAL, PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE, RESTART_IN_DUE_TO_ERROR } from "../../utils/constants";
+import { errorMessage } from "../../utils/axios-error-utils";
+import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE, RESTART_IN_DUE_TO_ERROR } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { getRandomInt, sleepMs } from "../../utils/utils";
-import { errorMessage } from "../../utils/axios-error-utils";
 
 export interface IMonitoredWallet {
     submitPreparedTransactions(txEnt: TransactionEntity): Promise<void>;
@@ -16,6 +16,8 @@ export interface IMonitoredWallet {
     checkNetworkStatus(): Promise<boolean>;
     resubmitSubmissionFailedTransactions?(txEnt: TransactionEntity): Promise<void>;
 }
+
+class StopTransactionMonitor extends Error {}
 
 export class TransactionMonitor {
     private monitoring: boolean = false;
@@ -31,32 +33,11 @@ export class TransactionMonitor {
 
     async isMonitoring(): Promise<boolean> {
         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-        if (!monitoringState) {
+        if (!monitoringState || monitoringState.processOwner !== this.monitoringId) {
             return false;
         }
-        const now = (new Date()).getTime();
-        const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
-        return elapsed < BUFFER_PING_INTERVAL;
-    }
-
-    async stopMonitoring(): Promise<void> {
-        if (this.monitoring) {
-            logger.info(`Monitoring will stop for ${this.monitoringId} ...`);
-            const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
-            if (monitoringState?.processOwner && monitoringState.processOwner === this.monitoringId) {
-                this.monitoring = false;
-                console.log(`Stopping wallet monitoring ${this.monitoringId} ...`);
-                const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
-                await sleepMs(PING_INTERVAL + randomMs); // to make sure pinger stops
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-                    monitoringEnt.lastPingInTimestamp = toBN(0);
-                });
-                this.monitoring = false;
-                logger.info(`Monitoring stopped for ${this.monitoringId}`);
-            } else {
-                logger.info(`Monitoring will NOT stop. Process ${this.monitoringId} is not owner of current process ${monitoringState?.processOwner}`);
-            }
-        }
+        const elapsed = Date.now() - monitoringState.lastPingInTimestamp.toNumber();
+        return elapsed < MONITOR_EXPIRATION_INTERVAL;
     }
 
     async startMonitoringTransactionProgress(wallet: IMonitoredWallet): Promise<void> {
@@ -71,14 +52,69 @@ export class TransactionMonitor {
         await this.monitoringMainLoop(wallet);
     }
 
+    async stopMonitoring(): Promise<void> {
+        if (this.monitoring) {
+            logger.info(`Monitoring will stop for ${this.monitoringId} ...`);
+            const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
+            if (monitoringState?.processOwner && monitoringState.processOwner === this.monitoringId) {
+                this.monitoring = false;
+                console.log(`Stopping wallet monitoring ${this.monitoringId} ...`);
+                const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
+                await sleepMs(MONITOR_PING_INTERVAL + randomMs); // to make sure pinger stops
+                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                    monitoringEnt.lastPingInTimestamp = toBN(0);
+                });
+                this.monitoring = false;
+                logger.info(`Monitoring stopped for ${this.monitoringId}`);
+            } else {
+                logger.info(`Monitoring will NOT stop. Process ${this.monitoringId} is not owner of current process ${monitoringState?.processOwner}`);
+            }
+        }
+    }
+
+    /**
+     * Only one monitoring process can be alive at any time; this is taken care of by this method.
+     */
+    async waitAndAcquireMonitoringLock() {
+        const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
+        await sleepMs(randomMs);
+        // try to acquire free lock
+        const start = await this.acquireMonitoringLock();
+        if (start.acquired) {
+            logger.info(`Monitoring created for chain ${this.monitoringId}`);
+            return true;
+        }
+        // lock is marked as locked, wait a bit to see if it is alive or should be taken over
+        logger.info(`Monitoring possibly running for chain ${this.monitoringId} - waiting for liveness confirmation or expiration`);
+        const startTime = Date.now();
+        while (Date.now() - startTime < MONITOR_EXPIRATION_INTERVAL + 2 * MONITOR_PING_INTERVAL) {   // condition not really necessary - loop should always finish before this
+            await sleepMs(MONITOR_PING_INTERVAL);
+            // try to acquire lock again
+            const next = await this.acquireMonitoringLock();
+            // if the lock expired or was released in the meenatime, it will be acquired now
+            if (next.acquired) {
+                logger.info(`Monitoring created for chain ${this.monitoringId} - old lock released or expired`);
+                return true;
+            }
+            // if the lock ping tme increased, the thread holding it is apparently still active, so we give up and leave the old thread to do the work
+            if (next.lastPing > start.lastPing) {
+                logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
+                return false;
+            }
+        }
+        logger.warn(`Timeout waiting for monitoring lock for chain ${this.monitoringId}`);
+        return false;
+    }
+
     async acquireMonitoringLock() {
         const R = 3;
         for (let i = 1; i <= R; i++) {
             try {
                 return await this.rootEm.transactional(async em => {
                     const monitoringState = await fetchMonitoringState(em, this.chainType);
-                    const now = new Date().getTime();
+                    const now = Date.now();
                     if (monitoringState == null) {
+                        // no lock has been created for this chain yet - create new
                         em.create(MonitoringStateEntity,
                             {
                                 chainType: this.chainType,
@@ -89,12 +125,13 @@ export class TransactionMonitor {
                         return { acquired: true } as const;
                     } else {
                         const lastPing = monitoringState.lastPingInTimestamp.toNumber();
-                        if (now > lastPing + BUFFER_PING_INTERVAL) {
-                            // old lock expired or released - take over
+                        if (now > lastPing + MONITOR_EXPIRATION_INTERVAL) {
+                            // old lock expired or released (marked by lastPing==0) - take over lock
                             monitoringState.lastPingInTimestamp = toBN(now);
                             monitoringState.processOwner = this.monitoringId;
                             return { acquired: true } as const;
                         } else {
+                            // just retrun the lock state
                             return { acquired: false, lastPing } as const;
                         }
                     }
@@ -104,37 +141,33 @@ export class TransactionMonitor {
                 logger.error(`Error trying to obtain monitoring lock - ${nextAction}: ${error}`);
             }
         }
-        throw new Error("Too many failed attempts for redemption");
+        throw new Error("Too many failed attempts for acquiring lock");
     }
 
-    async waitAndAcquireMonitoringLock() {
-        const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
-        await sleepMs(randomMs);
-        //
-        const start = await this.acquireMonitoringLock();
-        if (start.acquired) {
-            logger.info(`Monitoring created for chain ${this.monitoringId}`);
-            return true;
+    private async updatePingLoop(): Promise<void> {
+        while (this.monitoring) {
+            await this.updatePing();
+            await sleepMs(MONITOR_PING_INTERVAL);
         }
-        logger.info(`Monitoring possibly running for chain ${this.monitoringId} - waiting for liveness confirmation or expiration`);
-        const startTime = new Date().getTime();
-        while (new Date().getTime() - startTime < BUFFER_PING_INTERVAL + 2 * PING_INTERVAL) {   // should always finish before this
-            await sleepMs(PING_INTERVAL);
-            const next = await this.acquireMonitoringLock();
-            if (next.acquired) {
-                logger.info(`Monitoring created for chain ${this.monitoringId} - old lock released or expired`);
-                return true;
-            }
-            if (next.lastPing > start.lastPing) { // the current thread is apparently still active
-                logger.info(`Another monitoring instance is already running for chain ${this.monitoringId}`);
-                return false;
-            }
-        }
-        logger.info(`Timeout waiting for monitoring lock for chain ${this.monitoringId}`);
-        return false;
     }
 
-    async monitoringMainLoop(wallet: IMonitoredWallet) {
+    private async updatePing() {
+        try {
+            await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                if (monitoringEnt.processOwner === this.monitoringId) {
+                    monitoringEnt.lastPingInTimestamp = toBN(Date.now());
+                } else {
+                    logger.info(`Monitoring thread was taken over from ${this.monitoringId} by ${monitoringEnt.processOwner}`);
+                    this.monitoring = false;
+                }
+            });
+        } catch (error) {
+            logger.error(`Error updating ping status for chain ${this.monitoringId}`, error);
+            this.monitoring = false;
+        }
+    }
+
+    private async monitoringMainLoop(wallet: IMonitoredWallet) {
         try {
             while (this.monitoring) {
                 try {
@@ -144,26 +177,21 @@ export class TransactionMonitor {
                         await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                         continue;
                     }
-                    if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PREPARED, wallet.submitPreparedTransactions);
-                    /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
+                    this.checkIfMonitoringStopped();
+                    await this.processTransactions(TransactionStatus.TX_PREPARED, wallet.submitPreparedTransactions);
+                    this.checkIfMonitoringStopped();
                     if (wallet.resubmitSubmissionFailedTransactions) {
-                        await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMISSION_FAILED, wallet.resubmitSubmissionFailedTransactions);
-                        /* istanbul ignore next */
-                        if (this.shouldStopMonitoring()) break;
+                        await this.processTransactions(TransactionStatus.TX_SUBMISSION_FAILED, wallet.resubmitSubmissionFailedTransactions);
+                        this.checkIfMonitoringStopped();
                     }
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_PENDING, wallet.checkPendingTransaction);
-                    /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_CREATED, wallet.prepareAndSubmitCreatedTransaction);
-                    /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
-                    await processTransactions(this.rootEm, this.chainType, TransactionStatus.TX_SUBMITTED, wallet.checkSubmittedTransaction);
-                    /* istanbul ignore next */
-                    if (this.shouldStopMonitoring()) break;
-
-                } /* istanbul ignore next */ catch (error) {
+                    await this.processTransactions(TransactionStatus.TX_PENDING, wallet.checkPendingTransaction);
+                    this.checkIfMonitoringStopped();
+                    await this.processTransactions(TransactionStatus.TX_CREATED, wallet.prepareAndSubmitCreatedTransaction);
+                    this.checkIfMonitoringStopped();
+                    await this.processTransactions(TransactionStatus.TX_SUBMITTED, wallet.checkSubmittedTransaction);
+                    this.checkIfMonitoringStopped();
+                } catch (error) {
+                    if (error instanceof StopTransactionMonitor) break;
                     logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${RESTART_IN_DUE_TO_ERROR}: ${errorMessage(error)}`);
                 }
                 await sleepMs(RESTART_IN_DUE_TO_ERROR);
@@ -174,30 +202,25 @@ export class TransactionMonitor {
         }
     }
 
-    private shouldStopMonitoring(): boolean {
-        if (!this.monitoring) {
-            logger.info(`Monitoring should be stopped for chain ${this.monitoringId}`);
-            return true;
+    async processTransactions(
+        status: TransactionStatus,
+        processFunction: (txEnt: TransactionEntity) => Promise<void>
+    ): Promise<void> {
+        const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, status);
+        for (const txEnt of transactionEntities) {
+            this.checkIfMonitoringStopped();
+            try {
+                await processFunction(txEnt);
+            } catch (e) {
+                logger.error(`Cannot process transaction ${txEnt.id}`, e);
+            }
         }
-        return false;
     }
 
-    private async updatePingLoop(): Promise<void> {
-        while (this.monitoring) {
-            try {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
-                    if (monitoringEnt.processOwner === this.monitoringId) {
-                        monitoringEnt.lastPingInTimestamp = toBN(new Date().getTime());
-                    } else {
-                        logger.info(`Monitoring thread was taken over from ${this.monitoringId} by ${monitoringEnt.processOwner}`);
-                        this.monitoring = false;
-                    }
-                });
-                await sleepMs(PING_INTERVAL);
-            } catch (error) {
-                logger.error(`Error updating ping status for chain ${this.monitoringId}`, error);
-                this.monitoring = false;
-            }
+    private checkIfMonitoringStopped() {
+        if (!this.monitoring) {
+            logger.info(`Monitoring should be stopped for chain ${this.monitoringId}`);
+            throw new StopTransactionMonitor();
         }
     }
 }
