@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
@@ -16,6 +16,7 @@ import { Alert } from "../../common/entities/AlertDB";
 import { ORM } from "../../../../../fasset-bots-core/src/config/orm";
 import BN from "bn.js";
 import { cachedSecrets } from "../agentServer";
+import { Address } from "cluster";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -28,6 +29,7 @@ const FASSET_BOT_CONFIG: string = requireEnv("FASSET_BOT_CONFIG");
 @Injectable()
 export class AgentService {
     public orm!: ORM;
+    private infoBotMap: Map<string, AgentBotCommands> = new Map();
     public secrets!: Secrets;
     constructor(
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -37,6 +39,18 @@ export class AgentService {
 
     async onModuleInit() {
         const configFile = loadAgentConfigFile(FASSET_BOT_CONFIG, `Backend`);
+        const config = loadConfigFile(FASSET_BOT_CONFIG);
+        const fassets = Object.keys(config.fAssets);
+        for (const f of fassets) {
+            if (f === "FSimCoinX") {
+                continue;
+            }
+            const underlyingAddress = cachedSecrets.optional(`owner.${config.fAssets[f].tokenSymbol}.address`);
+            if (!underlyingAddress) {
+                continue;
+            }
+            this.infoBotMap.set(f, await AgentBotCommands.create(cachedSecrets, FASSET_BOT_CONFIG, f));
+        }
         this.secrets = cachedSecrets;
         this.orm = await createBotOrm("agent", configFile.ormOptions, this.secrets.data.database) as ORM;
     }
@@ -348,6 +362,23 @@ export class AgentService {
         return this.secrets.required("owner.native.address");
     }
 
+    async getUnderlyingAddresses(): Promise<UnderlyingAddress[]> {
+        const fassets = await this.getFassetSymbols();
+        const addresses: UnderlyingAddress[] = [];
+        for (const f of fassets) {
+            if (f === "FSimCoinX") {
+                continue;
+            }
+            const cli = this.infoBotMap.get(f) as AgentBotCommands;
+            if (!cli) {
+                continue;
+            }
+            const underlyingAddress = this.secrets.optional(`owner.${cli.context.chainInfo.symbol}.address`);
+            addresses.push({ asset: cli.context.chainInfo.symbol, address: underlyingAddress as string})
+        }
+        return addresses;
+    }
+
     async getAgentManagementAddress(): Promise<string> {
         return this.secrets.required("owner.management.address");
     }
@@ -392,6 +423,48 @@ export class AgentService {
             break; //Might need to delete this if different collaterals for different fassets.
         }
         return collaterals;
+    }
+
+    async getAllBalances(): Promise<AllBalances[]> {
+        const fassets = await this.getFassetSymbols();
+        const balances: AllBalances[] = [];
+        for (const f of fassets) {
+            if (f === "FSimCoinX") {
+                continue;
+            }
+            const cli = this.infoBotMap.get(f) as AgentBotCommands;
+            if (!cli) {
+                continue;
+            }
+            const collateralTypes = await cli.context.assetManager.getCollateralTypes();
+            for (const collateralType of collateralTypes) {
+                if (Number(collateralType.validUntil) != 0){
+                    continue;
+                }
+                const b = balances.find((c) => c.symbol === collateralType.tokenFtsoSymbol);
+                if (b) {
+                    continue;
+                }
+                const symbol = collateralType.tokenFtsoSymbol;
+                const token = await IERC20.at(collateralType.token);
+                const balance = await token.balanceOf(cli.owner.workAddress);
+                const decimals = (await token.decimals()).toNumber();
+                const collateral = { symbol, balance: formatFixed(toBN(balance), decimals, { decimals: 3, groupDigits: true, groupSeparator: ","  }) } as any;
+                if (symbol === "CFLR" || symbol === "C2FLR" || symbol === "SGB" || symbol == "FLR") {
+                    const nonWrappedBalance = await web3.eth.getBalance(cli.owner.workAddress);
+                    collateral.wrapped = collateral.balance;
+                    collateral.balance = formatFixed(toBN(nonWrappedBalance), decimals, { decimals: 3, groupDigits: true, groupSeparator: "," });
+                }
+                balances.push(collateral);
+            }
+            const underlyingAddress = this.secrets.optional(`owner.${cli.context.chainInfo.symbol}.address`);
+            if (underlyingAddress) {
+                const underlyingBalance = await cli.context.wallet.getBalance(underlyingAddress);
+                const collateral = { symbol: cli.context.chainInfo.symbol , balance: formatFixed(toBN(underlyingBalance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  }) } as any;
+                balances.push(collateral);
+            }
+        }
+        return balances;
     }
 
     async generateWorkAddress(): Promise<any> {

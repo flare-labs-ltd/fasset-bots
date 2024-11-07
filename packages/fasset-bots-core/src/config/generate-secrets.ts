@@ -77,13 +77,13 @@ export function generateUnderlyingAccount(chainName: string): ICreateWalletRespo
 
 function createStubWalletClient(chainId: ChainId): WalletAccount {
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        const inTestnet: boolean = ChainId.testBTC ? true : false;
+        const inTestnet: boolean = chainId === ChainId.testBTC ? true : false;
         return new BtcAccountGeneration(inTestnet);
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        const inTestnet: boolean = ChainId.testDOGE ? true : false;
+        const inTestnet: boolean = chainId === ChainId.testDOGE ? true : false;
         return new DogeAccountGeneration(inTestnet);
     } else if (chainId === ChainId.XRP || chainId === ChainId.testXRP) {
-        const inTestnet: boolean = ChainId.testXRP ? true : false;
+        const inTestnet: boolean = chainId === ChainId.testXRP ? true : false;
         return new XrpAccountGeneration(inTestnet);
     } else {
         throw new CommandLineError(`Chain name ${chainId} not supported.`);

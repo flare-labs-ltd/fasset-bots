@@ -77,7 +77,8 @@ export class TransactionFeeService {
         try {
             const fee = await this.blockchainAPI.getCurrentFeeRate();
             if (fee.toString() === "-1" || fee === 0) {
-                throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
+                logger.error(`Cannot obtain valid fee rate ${fee.toString()}`);
+                return getDefaultFeePerKB(this.chainType);
             }
             const rateInSatoshies = toBN(fee);
             return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
