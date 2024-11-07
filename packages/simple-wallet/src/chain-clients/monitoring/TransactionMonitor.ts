@@ -101,7 +101,7 @@ export class TransactionMonitor {
             await sleepMs(MONITOR_PING_INTERVAL);
             // try to acquire lock again
             const next = await this.acquireMonitoringLock();
-            // if the lock expired or was released in the meenatime, it will be acquired now
+            // if the lock expired or was released in the meantime, it will be acquired now
             if (next.acquired) {
                 logger.info(`Monitoring created for chain ${this.monitoringId} - old lock released or expired`);
                 return true;
