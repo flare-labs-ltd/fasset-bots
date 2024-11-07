@@ -1,0 +1,10 @@
+{
+  "extends": "coston-bot-mysql.json",
+    "ormOptions": {
+          "type": "mysql",
+          "dbName": "fasset_bots",
+          "host": "mysql",
+          "port": 3306,
+          "allowGlobalContext": true
+    }
+}

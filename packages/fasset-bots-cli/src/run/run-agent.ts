@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, promptForPassword, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
+import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, EM, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
 import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, isNotNull, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
