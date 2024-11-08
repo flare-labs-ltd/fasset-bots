@@ -156,7 +156,6 @@ export class AgentBotCommands {
             return agentBot.agent;
         } catch (error) {
             logger.error(`Owner ${this.owner} couldn't create agent:`, error);
-            console.log("bla");
             await this.notifierFor("Owner").agentCreationFailed(error as string);
             throw error;
         }
