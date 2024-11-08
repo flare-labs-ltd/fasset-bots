@@ -152,7 +152,7 @@ export class TransactionMonitor {
                         monitoringState.processOwner = this.monitoringId;
                         return { acquired: true } as const;
                     } else {
-                        // just retrun the lock state
+                        // just return the lock state
                         return { acquired: false, lastPing } as const;
                     }
                 }
@@ -194,7 +194,7 @@ export class TransactionMonitor {
                 }
                 await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction);
                 await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction);
-                await this.processTransactions([TransactionStatus.TX_SUBMITTED], wallet.checkSubmittedTransaction);
+                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction);
             } catch (error) {
                 if (error instanceof StopTransactionMonitor) break;
                 logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${MONITOR_LOOP_SLEEP}: ${errorMessage(error)}`);
