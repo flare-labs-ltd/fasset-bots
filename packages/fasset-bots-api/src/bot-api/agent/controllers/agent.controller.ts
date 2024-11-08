@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Body, Controller, Get, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
 import { AgentService } from "../services/agent.service";
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllBalances, AllCollaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
@@ -11,9 +11,8 @@ import { AgentSettingsConfigDTO } from "../../common/AgentettingsConfigDTO";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { AuthGuard } from "@nestjs/passport";
 
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 @ApiTags("Agent")
 @Controller("api/agent")
 @UseInterceptors(ErrorStatusInterceptor)
@@ -23,6 +22,8 @@ export class AgentController {
         private agentSettingsService: AgentSettingsService
     ) {}
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post("create/:fAssetSymbol")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -60,6 +61,8 @@ export class AgentController {
             }
         }
     })
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post("available/enter/:fAssetSymbol/:agentVaultAddress")
     public async enter(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -77,6 +80,8 @@ export class AgentController {
             }
         }
     })
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post("available/exit/:fAssetSymbol/:agentVaultAddress")
     public async exit(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -85,6 +90,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.announceExitAvailable(fAssetSymbol, agentVaultAddress));
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post("selfClose/:fAssetSymbol/:agentVaultAddress/:amountUBA")
     public async selfClose(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -94,6 +101,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.selfClose(fAssetSymbol, agentVaultAddress, amountUBA));
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("settings/list/:fAssetSymbol/:agentVaultAddress")
     public async getAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -111,6 +120,8 @@ export class AgentController {
             }
         }
     })
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress/:settingName/:settingValue")
     public async updateAgentSetting(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -130,6 +141,8 @@ export class AgentController {
             }
         }
     })
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Post("settings/update/:fAssetSymbol/:agentVaultAddress")
     public async updateAgentSettings(
         @Param("fAssetSymbol") fAssetSymbol: string,
@@ -139,6 +152,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.updateAgentSettings(fAssetSymbol, agentVaultAddress, settingsDTO));
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("info/data/:fAssetSymbol")
     @ApiOperation({ summary: 'Get agent info' })
     @ApiOkResponse({
@@ -178,6 +193,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAgentInfo(fAssetSymbol));
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("info/vaults/:fAssetSymbol")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -213,6 +230,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAgentVaultsInfo(fAssetSymbol));
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("info/vault/:fAssetSymbol/:agentVaultAddress")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -276,6 +295,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAgentVaultInfo(fAssetSymbol, agentVaultAddress));
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("info/underlying/balance/:fAssetSymbol")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -298,6 +319,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAgentUnderlyingBalance(fAssetSymbol));
     }
 
+    @ApiSecurity("X-API-KEY")
+    @UseGuards(AuthGuard("notifier_key"))
     @Post("botAlert")
     public async sendNotification(
         @Body() alert: PostAlert
@@ -305,6 +328,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.saveAlert(alert));
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("botAlert")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -333,6 +358,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAlerts());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("workAddress")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -349,6 +376,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAgentWorkAddress());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("fassetSymbols")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -368,6 +397,8 @@ export class AgentController {
         return handleApiResponse(this.agentService.getFassetSymbols());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("whitelisted")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -384,18 +415,24 @@ export class AgentController {
         return handleApiResponse(this.agentService.checkWhitelisted());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("secretsExist")
     public async getSecretsExist(
     ): Promise<ApiResponseWrapper<boolean>> {
         return handleApiResponse(this.agentService.checkSecretsFile());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("collaterals")
     public async getCollaterals(
     ): Promise<ApiResponseWrapper<AllCollaterals[]>> {
         return handleApiResponse(this.agentService.getAllCollaterals());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("botStatus")
     @ApiBearerAuth()
     public async getBotStatus(
@@ -403,24 +440,32 @@ export class AgentController {
         return handleApiResponse(this.agentService.checkBotStatus());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("APIKey")
     public async generateAPIKey(
     ): Promise<ApiResponseWrapper<APIKey>> {
         return handleApiResponse(this.agentService.generateAPIKey());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("vaultCollaterals")
     public async getVaultCollaterals(
     ): Promise<ApiResponseWrapper<VaultCollaterals[]>> {
         return handleApiResponse(this.agentService.getVaultCollateralTokens());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("vaults")
     public async getAllVaults(
     ): Promise<ApiResponseWrapper<any>> {
         return handleApiResponse(this.agentService.getAgentVaults());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("managementAddress")
     @ApiOkResponse({
         description: 'Example of successful response.',
@@ -437,15 +482,31 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAgentManagementAddress());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("balances")
     public async getAllBalances(
     ): Promise<ApiResponseWrapper<AllBalances[]>> {
         return handleApiResponse(this.agentService.getAllBalances());
     }
 
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
     @Get("underlyingAddresses")
     public async getUnderlyingAddresses(
     ): Promise<ApiResponseWrapper<UnderlyingAddress[]>> {
         return handleApiResponse(this.agentService.getUnderlyingAddresses());
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("calculateCollaterals/:fAssetSymbol/:agentVaultAddress/:lots/:multiplier")
+    public async calculateCollaterals(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: number,
+        @Param("multiplier") multiplier: number
+    ): Promise<ApiResponseWrapper<string>> {
+        return handleApiResponse(this.agentService.calculateCollateralsForLots(fAssetSymbol, agentVaultAddress, lots, multiplier));
     }
 }

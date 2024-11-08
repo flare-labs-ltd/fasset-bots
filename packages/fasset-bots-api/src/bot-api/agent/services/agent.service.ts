@@ -653,4 +653,41 @@ export class AgentService {
         const fassetBR = await TokenBalances.fasset(cli.context);
         return fassetBR.formatValue(info.mintedUBA);
     }
+
+    async depositCollaterals(fAssetSymbol: string, agentVaultAddress: string, lots: number, multiplier: number): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.depositCollateralForLots(agentVaultAddress, lots.toString(), multiplier);
+    }
+
+    async calculateCollateralsForLots(fAssetSymbol: string, agentVaultAddress: string, lots: number, multiplier: number): Promise<string> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        const { agentBot } = await cli.getAgentBot(agentVaultAddress);
+        const settings = await cli.context.assetManager.getSettings();
+        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const amountUBA = toBN(lots).mul(lotSize);
+        const vaultCollateral = await cli.mintingVaultCollateral(agentBot.agent, amountUBA, Number(multiplier));
+        const poolCollateral = await cli.mintingPoolCollateral(agentBot.agent, amountUBA, Number(multiplier));
+        const vaultCollateralType = await agentBot.agent.getVaultCollateral();
+        const ownerVaultBalance = await this.getVaultBalance(cli, agentVaultAddress);
+        const ownerPoolBalance  = await this.getPoolBalance(cli);
+        let message = "To deposit " + lots.toString() + " lots you need " + formatFixed(vaultCollateral, Number(vaultCollateralType.decimals), { decimals: 3, groupDigits: true, groupSeparator: "," });
+        message+= " "+ vaultCollateralType.tokenFtsoSymbol + " (work address has " + ownerVaultBalance + ") and " + formatFixed(poolCollateral, 18, { decimals: 3, groupDigits: true, groupSeparator: "," }) + " " + cli.context.nativeChainInfo.tokenSymbol;
+        message+= " (work address has "+ ownerPoolBalance + " " + cli.context.nativeChainInfo.tokenSymbol + ").";
+
+        return message;
+    }
+
+    async getVaultBalance(cli: AgentBotCommands, vaultAddress: string): Promise<string> {
+        const balanceReader = await TokenBalances.agentVaultCollateral(cli.context, vaultAddress);
+        const ownerBalance = await balanceReader.balance(cli.owner.workAddress);
+        const balanceFmt = balanceReader.format(ownerBalance);
+        return balanceFmt;
+    }
+
+    async getPoolBalance(cli: AgentBotCommands): Promise<string> {
+        const balanceReader = await TokenBalances.evmNative(cli.context);
+        const ownerBalance = await balanceReader.balance(cli.owner.workAddress);
+        const balanceFmt = formatFixed(ownerBalance, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+        return balanceFmt;
+    }
 }

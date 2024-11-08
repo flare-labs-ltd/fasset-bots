@@ -156,6 +156,8 @@ export class AgentBotCommands {
             return agentBot.agent;
         } catch (error) {
             logger.error(`Owner ${this.owner} couldn't create agent:`, error);
+            console.log("bla");
+            await this.notifierFor("Owner").agentCreationFailed(error as string);
             throw error;
         }
     }
@@ -370,7 +372,6 @@ export class AgentBotCommands {
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
         });
-        await this.notifierFor(agentVault).sendCancelRedeemCollateralPoolTokensAnnouncement();
         logger.info(`Agent ${agentVault} cancelled pool token redemption announcement.`);
     }
 
