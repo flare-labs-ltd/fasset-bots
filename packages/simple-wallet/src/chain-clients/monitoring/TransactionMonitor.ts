@@ -51,7 +51,6 @@ export class TransactionMonitor {
             void this.updatePingLoop();
             // start main loop
             await this.monitoringMainLoop(wallet);
-            Promise.allSettled
         } catch (error) {
             logger.error(`Monitoring failed for chain ${this.monitoringId} error: ${errorMessage(error)}.`);
         }
