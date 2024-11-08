@@ -497,16 +497,4 @@ export class AgentController {
     ): Promise<ApiResponseWrapper<UnderlyingAddress[]>> {
         return handleApiResponse(this.agentService.getUnderlyingAddresses());
     }
-
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
-    @Get("calculateCollaterals/:fAssetSymbol/:agentVaultAddress/:lots/:multiplier")
-    public async calculateCollaterals(
-        @Param("fAssetSymbol") fAssetSymbol: string,
-        @Param("agentVaultAddress") agentVaultAddress: string,
-        @Param("lots") lots: number,
-        @Param("multiplier") multiplier: number
-    ): Promise<ApiResponseWrapper<string>> {
-        return handleApiResponse(this.agentService.calculateCollateralsForLots(fAssetSymbol, agentVaultAddress, lots, multiplier));
-    }
 }
