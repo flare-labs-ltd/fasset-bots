@@ -9,6 +9,7 @@ import { toBN } from "./bnutils";
 import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
+import crypto from "crypto";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -134,5 +135,5 @@ export function roundUpXrpToDrops(amount: number): number {
 }
 
 export function createMonitoringId(chainType: ChainType): string {
-   return `${chainType}-${Math.random().toString(36).substring(2, 10)}`;
+   return `${chainType}-${crypto.randomBytes(8).toString("hex")}`;
 }

@@ -1,20 +1,20 @@
 import { EntityManager, FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { Transaction } from "bitcore-lib";
 import BN from "bn.js";
+import { MonitoringStateEntity } from "../entity/monitoring_state";
+import { TransactionEntity, TransactionStatus } from "../entity/transaction";
+import { TransactionInputEntity } from "../entity/transactionInput";
+import { TransactionOutputEntity } from "../entity/transactionOutput";
+import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
+import { WalletAddressEntity } from "../entity/wallet";
+import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
+import { TransactionInfo } from "../interfaces/IWalletTransaction";
+import { errorMessage } from "../utils/axios-error-utils";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
-import { TransactionInfo } from "../interfaces/IWalletTransaction";
 import { logger } from "../utils/logger";
-import { WalletAddressEntity } from "../entity/wallet";
-import { TransactionEntity, TransactionStatus } from "../entity/transaction";
-import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
-import { Transaction } from "bitcore-lib";
-import { TransactionOutputEntity } from "../entity/transactionOutput";
-import { MonitoringStateEntity } from "../entity/monitoring_state";
-import Output = Transaction.Output;
-import { TransactionInputEntity } from "../entity/transactionInput";
 import { getCurrentTimestampInSeconds } from "../utils/utils";
-import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
-import { errorMessage } from "../utils/axios-error-utils";
+import Output = Transaction.Output;
 
 // transaction operations
 export async function createInitialTransactionEntity(
@@ -30,11 +30,7 @@ export async function createInitialTransactionEntity(
     executeUntilTimestamp?: BN,
     replacementFor?: TransactionEntity
 ): Promise<TransactionEntity> {
-    logger.info(
-        `Creating transaction ${source}, ${destination}, ${amountInDrops};${
-            replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ""
-        }`
-    );
+    logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops};${replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ""}`);
     return await rootEm.transactional(async (em) => {
         const ent = em.create(TransactionEntity, {
             chainType,
@@ -370,4 +366,18 @@ export async function handleFeeToLow(rootEm: EntityManager, txEnt: TransactionEn
         txEnt.transactionHash = "";
         txEnt.fee = newFee;
     });
+}
+
+export const DB_MAX_RETRIES = 3;
+
+export async function retryDatabaseTransaction<T>(explanation: string, action: () => Promise<T>, maxRetries: number = DB_MAX_RETRIES) {
+    for (let i = 1; i <= maxRetries; i++) {
+        try {
+            return await action();
+        } catch (error) {
+            const nextAction = i <= maxRetries ? `retrying (${i})` : `failed`;
+            logger.error(`Error ${explanation} - ${nextAction}:`, error);
+        }
+    }
+    throw new Error(`Too many failed attempts ${explanation}`);
 }
