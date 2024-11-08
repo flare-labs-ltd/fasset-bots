@@ -152,6 +152,8 @@ export class PricePublisherService {
     }
 
     async getAndPublishFeedData(votingRoundId: number) {
+        const sleepTime = Math.floor(Math.random() * 2000); // wait small random time, so that there are fewer reverts due to already published prices
+        await sleep(sleepTime);
         logger.info(`Publishing prices for ${votingRoundId}`);
         const feedIds = await this.ftsoV2PriceStore.getFeedIds();
         const feedsData = await this.getFeedData(votingRoundId, feedIds);
