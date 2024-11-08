@@ -55,6 +55,16 @@ export class Secrets {
         throw new Error(`Secret variable ${key} not typeof string[]`);
     }
 
+    optionalOrOptionalArray(key: string): string | string[] | undefined {
+        const value = valueForKeyPath(this.data, key);
+        if (value == undefined) return undefined;
+        if (typeof value === "string") return value;
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} is neither typeof string[] neither string`);
+    }
+
     requiredEncryptionPassword(key: string): string {
         const value = this.required(key);
         validateEncryptionPassword(value, key);

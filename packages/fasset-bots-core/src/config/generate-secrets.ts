@@ -36,6 +36,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     if (users.includes("agent") || users.includes("user")) {
         secrets.apiKey.testXRP_rpc = [];
         secrets.apiKey.testBTC_rpc = [];
+        secrets.apiKey.testDOGE_rpc = [];
         secrets.apiKey.indexer = [];
     }
     if (users.includes("agent")) {
