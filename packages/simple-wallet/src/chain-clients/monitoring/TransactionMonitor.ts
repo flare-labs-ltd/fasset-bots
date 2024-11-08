@@ -57,12 +57,13 @@ export class TransactionMonitor {
             // mark started
             this.monitoring = true;
             logger.info(`Monitoring started for chain ${this.monitoringId}`);
-            // start fee monitoring
-            if (utxoOnly(this.chainType) && this.feeService) {
-                await this.feeService.monitorFees(true);
-            }
             // start pinger in the background
             void this.updatePingLoop();
+            // start fee monitoring
+            if (utxoOnly(this.chainType) && this.feeService) {
+                await this.feeService.setupHistory();
+                void this.feeService.monitorFees(this.monitoring);
+            }
             // start main loop
             await this.monitoringMainLoop(wallet);
             Promise.allSettled
@@ -86,7 +87,7 @@ export class TransactionMonitor {
                     });
                 });
                 if (utxoOnly(this.chainType) && this.feeService) {
-                    this.feeService.monitorFees(false);
+                    await this.feeService.monitorFees(false);
                 }
                 logger.info(`Monitoring stopped for ${this.monitoringId}`);
             } else {
