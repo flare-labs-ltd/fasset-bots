@@ -13,6 +13,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { logger } from "./logger";
 import { errorMessage } from "./axios-utils";
+import crypto from "crypto";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -156,5 +157,5 @@ export async function tryWithClients<TResult>(clients: Record<string, AxiosInsta
 }
 
 export function createMonitoringId(chainType: ChainType): string {
-   return `${chainType}-${Math.random().toString(36).substring(2, 10)}`;
+   return `${chainType}-${crypto.randomBytes(8).toString("hex")}`;
 }
