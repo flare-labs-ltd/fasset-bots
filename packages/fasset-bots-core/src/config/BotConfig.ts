@@ -198,7 +198,7 @@ export async function createBotFAssetConfig(
         assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
         assertNotNull(submitter);   // if this is missing, it is program error
         const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
-        const apiKeys: string[] = indexerApiKey(secrets);
+        const apiKeys: string[] = indexerApiKey(secrets, fassetInfo.indexerUrls);
         result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrls, apiKeys);
         result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrls, apiKeys);
         result.stateConnector = await createStateConnectorClient(fassetInfo.indexerUrls, apiKeys, attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter);
@@ -305,6 +305,11 @@ export async function closeBotConfig(config: BotConfig) {
 /**
  * Extract indexer api key.
  */
-export function indexerApiKey(secrets: Secrets): string[] {
-    return secrets.requiredArray("apiKey.indexer");
+export function indexerApiKey(secrets: Secrets, indexerUrls: string[]): string[] {
+    const apiTokenKey = secrets.requiredOrRequiredArray("apiKey.indexer");
+    if (Array.isArray(apiTokenKey) && apiTokenKey.length != indexerUrls.length) {
+        throw new Error(`Cannot create indexers. The number of URLs and API keys do not match.`);
+    }
+    const apiTokenKeys = Array.isArray(apiTokenKey) ? apiTokenKey : Array(indexerUrls.length).fill(apiTokenKey);
+    return apiTokenKeys;
 }

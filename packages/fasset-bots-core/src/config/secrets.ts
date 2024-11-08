@@ -38,6 +38,14 @@ export class Secrets {
         }
         throw new Error(`Secret variable ${key} not defined or not typeof string[]`);
     }
+    requiredOrRequiredArray(key: string): string | string[] {
+        const value = valueForKeyPath(this.data, key);
+        if (typeof value === "string") return value;
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} not defined or not typeof string or string[]`);
+    }
 
     optional(key: string): string | undefined {
         const value = valueForKeyPath(this.data, key);
