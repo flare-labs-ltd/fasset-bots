@@ -5,7 +5,7 @@ import { AgentEntity, AgentUpdateSetting } from "../entities/agent";
 import { AgentSettingName, AgentUpdateSettingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { latestBlockTimestampBN } from "../utils";
-import { errorIncluded, toBN } from "../utils/helpers";
+import { extractRevertMessageFromError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentBot } from "./AgentBot";
@@ -28,7 +28,7 @@ export class AgentBotUpdateSettings {
      * @param settingValidAt
      * @param readAgentEnt
      */
-    async createAgentUpdateSetting(rootEm: EM, settingName: AgentSettingName, settingValidAt: BN, readAgentEnt: AgentEntity): Promise<void> {
+    async createAgentUpdateSetting(rootEm: EM, settingName: AgentSettingName, settingValue: string, settingValidAt: BN, readAgentEnt: AgentEntity): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             const settingAlreadyUpdating = await em.getRepository(AgentUpdateSetting)
                 .findOne({ agent: readAgentEnt, name: settingName, state: AgentUpdateSettingState.WAITING });
@@ -42,6 +42,7 @@ export class AgentBotUpdateSettings {
                 {
                     state: AgentUpdateSettingState.WAITING,
                     name: settingName,
+                    value: settingValue,
                     agent: readAgentEnt,
                     validAt: toBN(settingValidAt),
                 } as RequiredEntityData<AgentUpdateSetting>,
@@ -84,7 +85,7 @@ export class AgentBotUpdateSettings {
     }
 
     /**
-     * Handles update setting  stored in persistent state according to their state.
+     * Handles update setting stored in persistent state according to their state.
      * @param rootEm entity manager
      * @param id AgentUpdateSetting's entity id
      * @param latestTimestamp
@@ -140,14 +141,17 @@ export class AgentBotUpdateSettings {
                 await this.notifier.sendAgentSettingsUpdate(updateSetting.name);
                 return true;
             } catch (error) {
-                if (errorIncluded(error, ["update not valid anymore", "no pending update"])) {
-                    await this.notifier.sendAgentCannotUpdateSettingExpired(updateSetting.name);
+                const reason = extractRevertMessageFromError(error);
+                if (reason) {
+                    await this.notifier.sendAgentUnableToUpdateSetting(updateSetting.name, reason);
+                    logger.error(`Agent ${this.agent.vaultAddress} cannot update agent setting ${updateSetting.name}=${updateSetting.value} due to error:`, error);
+                    console.log(`Agent ${this.agent.vaultAddress} cannot update agent setting ${updateSetting.name}=${updateSetting.value} due to contract revert: ${reason}`);
                     return true;
                 }
-                logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${updateSetting.name}:`, error);
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while updating setting ${updateSetting.name}=${updateSetting.value}:`, error);
             }
         } else {
-            logger.info(`Agent ${this.agent.vaultAddress} cannot update agent setting ${updateSetting.name}. Allowed at ${updateSetting.validAt}. Current ${latestTimestamp}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} cannot update agent setting ${updateSetting.name}=${updateSetting.value}. Allowed at ${updateSetting.validAt}. Current ${latestTimestamp}.`);
         }
         return false;
     }

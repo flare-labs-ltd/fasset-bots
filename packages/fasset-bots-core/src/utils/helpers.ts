@@ -56,14 +56,14 @@ export async function sleepUntil(delayMS: number, stopCondition: () => boolean, 
  * Return system time as timestamp (seconds since 1.1.1970).
  */
 export function systemTimestamp() {
-    return Math.round(new Date().getTime() / 1000);
+    return Math.floor(Date.now() / 1000);
 }
 
 /**
  * Return system time as millisecond timestamp (milliseconds since 1.1.1970).
  */
 export function systemTimestampMS() {
-    return new Date().getTime();
+    return Date.now();
 }
 
 /**
@@ -262,6 +262,12 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
         }
     }
     return false;
+}
+
+export function extractRevertMessageFromError(error: any): string | undefined {
+    const message = String(error?.message ?? "");
+    const regex = /execution reverted: (.*?)(?:\n|$)/;
+    return regex.exec(message)?.[1];
 }
 
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {

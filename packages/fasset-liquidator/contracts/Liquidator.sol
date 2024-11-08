@@ -13,6 +13,8 @@ import {UniswapV2} from "./lib/UniswapV2.sol";
 import {Ecosystem} from "./lib/Ecosystem.sol";
 import {Optimum} from "./lib/Optimum.sol";
 
+import "hardhat/console.sol";
+
 
 /**
  * It is recommended for each person to deploy their own ownable
@@ -122,7 +124,7 @@ contract Liquidator is ILiquidator {
         // we have to start liquidation so that we get correct max f-assets
         // this should be fixed within the asset manager implementation!
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
-        assetManager.startLiquidation(_agentVault);
+        try assetManager.startLiquidation(_agentVault) {} catch {}
         // get data needed for arbitrage strategy calculation
         EcosystemData memory data = Ecosystem.getFAssetData(_agentVault);
         _config.dexPair1.path = _getEnsurePath(

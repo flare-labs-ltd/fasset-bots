@@ -8,4 +8,5 @@ export * from "./contracts";
 export * from "./create-asset-context";
 export * from "./create-wallet-client";
 export * from "./secrets";
+export * from "./orm";
 export { overrideAndCreateOrm } from "../mikro-orm.config";

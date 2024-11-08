@@ -43,6 +43,7 @@ export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: BotStrategyDefinition; // only for liquidator (optional)
     challengeStrategy?: BotStrategyDefinition; // only for challenger (optional)
+    autoUpdateContracts: boolean // used to auto update contract, when ContractChanged event
 }
 
 export interface BotFAssetConfig {
@@ -53,7 +54,7 @@ export interface BotFAssetConfig {
     stateConnector?: IStateConnectorClient; // for agent bot, user, challenger and timeKeeper
     verificationClient?: IVerificationApiClient; // only for agent bot and user
     assetManager: IIAssetManagerInstance;
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    priceChangeEmitter: string; // the name of the contract (in Contracts file) that emits price change event
     agentBotSettings?: AgentBotSettings;
 }
 
@@ -111,6 +112,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
+            autoUpdateContracts: configFile.prioritizeAddressUpdater
         };
         return result;
     } catch (error) {
@@ -198,7 +200,7 @@ export async function createBotFAssetConfig(
         result.agentBotSettings = createAgentBotSettings(agentSettings, agentSettings.fAssets[fAssetSymbol], result.chainInfo);
     }
     if (type === "agent" || type === "user" || type === "keeper") {
-        assertNotNullCmd(fassetInfo.indexerUrl, "Missing indexerUrl in FAsset type ${fAssetSymbol}");
+        assertNotNullCmd(fassetInfo.indexerUrl, `Missing indexerUrl in FAsset type ${fAssetSymbol}`);
         assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
         assertNotNull(submitter);   // if this is missing, it is program error
         const stateConnectorAddress = await retriever.getContractAddress("StateConnector");

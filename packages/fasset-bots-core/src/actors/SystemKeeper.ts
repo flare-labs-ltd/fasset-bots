@@ -4,7 +4,7 @@ import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
-import { web3 } from "../utils";
+import { isPriceChangeEvent, web3 } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { eventIs } from "../utils/events/truffle";
@@ -52,8 +52,8 @@ export class SystemKeeper extends ActorBase {
             const events = await this.state.readUnhandledEvents();
             logger.info(`SystemKeeper ${this.address} finished reading unhandled native events.`);
             for (const event of events) {
-                if (eventIs(event, this.state.context.priceChangeEmitter, "PriceEpochFinalized")) {
-                    logger.info(`SystemKeeper ${this.address} received event 'PriceEpochFinalized' with data ${formatArgs(event.args)}.`);
+                if (isPriceChangeEvent(this.state.context, event)) {
+                    logger.info(`SystemKeeper ${this.address} received event '${event.event}' with data ${formatArgs(event.args)}.`);
                     await this.checkAllAgentsForLiquidation();
                 } else if (eventIs(event, this.state.context.assetManager, "MintingExecuted")) {
                     logger.info(`SystemKeeper ${this.address} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);

@@ -30,6 +30,7 @@ export class AgentBotRunner {
         public loopDelay: number,
         public notifierTransports: NotifierTransport[],
         public timekeeperService: ITimeKeeperService,
+        public autoUpdateContracts: boolean,
     ) {}
 
     public stopRequested = false;
@@ -43,7 +44,6 @@ export class AgentBotRunner {
     private transientStorage: Map<string, AgentBotTransientStorage> = new Map();
 
     public serviceAccounts = new Map<string, string>();
-    private lastFundedAt = new Map<string, number>();
 
     private simpleWalletBackgroundTasks: Map<string, IBlockChainWallet> = new Map();
     private fundServiceRateLimit = new SimpleRateLimiter<string>(FUND_MIN_INTERVAL_MS);
@@ -51,7 +51,7 @@ export class AgentBotRunner {
     @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
-        this.restartRequested = false;
+        this.restartRequested = false
         this.running = true;
         try {
             /* istanbul ignore next */
@@ -112,7 +112,6 @@ export class AgentBotRunner {
     async runStepParallel(): Promise<void> {
         this.removeStoppedAgentBots();
         if (!this.stopOrRestartRequested()) {
-            this.checkForWorkAddressChange();
             await this.addNewAgentBots();
         }
         const sleepMS = this.stopOrRestartRequested() ? 100 : this.loopDelay;
@@ -126,7 +125,6 @@ export class AgentBotRunner {
     async runStepSerial(): Promise<void> {
         const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
-            this.checkForWorkAddressChange();
             if (this.stopOrRestartRequested()) break;
             try {
                 const agentBot = await this.newAgentBot(agentEntity);
@@ -202,17 +200,6 @@ export class AgentBotRunner {
             }
         }
     }
-    /* istanbul ignore next */
-    checkForWorkAddressChange(): void {
-        if (this.secrets.filePath === "MEMORY") return;     // memory secrets (for tests)
-        const newSecrets = Secrets.load(this.secrets.filePath);
-        if (web3.eth.defaultAccount !== newSecrets.required(`owner.native.address`)) {
-            const ownerAddress = newSecrets.required(`owner.native.address`);
-            this.requestRestart();
-            console.warn(`Owner's native address from secrets file, does not match their used account`);
-            logger.warn(`Owner's native address ${ownerAddress} from secrets file, does not match web3 default account ${web3.eth.defaultAccount}`);
-        }
-    }
 
     async fundServiceAccounts(): Promise<void> {
         const settings = firstValue(this.settings);
@@ -267,7 +254,7 @@ export class AgentBotRunner {
                 on chain ${assetContext.chainInfo.chainId} with asset manager ${assetContext.assetManager.address}`);
         }
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
+        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, botConfig.autoUpdateContracts);
     }
 
     addSimpleWalletToLoop(agentBot: AgentBot): void {
@@ -311,5 +298,4 @@ export class AgentBotRunner {
         //clear simpleWalletBackgroundTasks
         this.simpleWalletBackgroundTasks.clear();
     }
-
 }

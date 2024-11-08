@@ -59,7 +59,7 @@ describe("Actor tests - coston", () => {
     const destroyAgentsAfterTests: string[] = [];
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runSimplifiedConfig = loadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS);
         // accounts
@@ -108,7 +108,7 @@ describe("Actor tests - coston", () => {
         contexts.set(context.chainInfo.symbol, context);
         const settings: Map<string, AgentBotSettings> = new Map();
         settings.set(context.chainInfo.symbol, chainConfigAgent.agentBotSettings);
-        const agentBotRunner = new AgentBotRunner(secrets, contexts, settings, orm, 5, testNotifierTransports, testTimekeeperService);
+        const agentBotRunner = new AgentBotRunner(secrets, contexts, settings, orm, 5, testNotifierTransports, testTimekeeperService, false);
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });

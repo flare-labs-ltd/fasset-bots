@@ -68,6 +68,88 @@ contract AssetManagerMock {
     ////////////////////////////////////////////////////////////////////////
     // asset manager getters
 
+    function fAsset() public view returns (address) {
+        return settings.fAsset;
+    }
+
+    function getWNat() external view returns (address) {
+        return wNat;
+    }
+
+    function priceReader() external view returns (address) {
+        return settings.priceReader;
+    }
+
+    function getAgentInfo(
+        address _agentVault
+    )
+        public view
+        returns (AgentInfo.Info memory)
+    {
+        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
+        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
+        agentInfo.vaultCollateralRatioBIPS = cr.vaultCR;
+        agentInfo.poolCollateralRatioBIPS = cr.poolCR;
+        (agentInfo.liquidationPaymentFactorVaultBIPS, agentInfo.liquidationPaymentFactorPoolBIPS) =
+            _currentLiquidationFactorBIPS(_agentVault, cr.vaultCR, cr.poolCR);
+        agentInfo.maxLiquidationAmountUBA = _maxLiquidationAmountUBA(agentInfo, cr);
+        return agentInfo;
+    }
+
+    function getAgentVaultCollateralToken(
+        address _agentVault
+    )
+        external view
+        returns (IERC20)
+    {
+        AgentInfo.Info memory info = AgentMock(_agentVault).getInfo();
+        return info.vaultCollateralToken;
+    }
+
+    function getAgentLiquidationFactorsAndMaxAmount(
+        address _agentVault
+    )
+        external view
+        returns (uint256, uint256, uint256)
+    {
+        AgentInfo.Info memory info = getAgentInfo(_agentVault);
+        return (
+            info.liquidationPaymentFactorVaultBIPS,
+            info.liquidationPaymentFactorPoolBIPS,
+            info.maxLiquidationAmountUBA
+        );
+    }
+
+    function getCollateralType(
+        CollateralType.Class /* _class */,
+        IERC20 _token
+    ) external view returns (CollateralType.Data memory _collateralData) {
+        _collateralData.assetFtsoSymbol = assetFtsoSymbol;
+        if (address(_token) == wNat) {
+            _collateralData.tokenFtsoSymbol = poolFtsoSymbol;
+        } else {
+            _collateralData.tokenFtsoSymbol = vaultFtsoSymbol;
+        }
+    }
+
+    function getSettings()
+        external view
+        returns (AssetManagerSettings.Data memory)
+    {
+        return settings;
+    }
+
+    function assetMintingGranularityUBA() external view returns (uint256) {
+        return settings.assetMintingGranularityUBA;
+    }
+
+    function assetMintingDecimals() external view returns (uint8) {
+        return settings.assetMintingDecimals;
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // liquidation
+
     function startLiquidation(address /* _agentVault */) external pure returns (uint8, uint256) {
         // in real version, the agent info regarding his liquidation is not updated
         // until startLiquidation is called, so liquidator contract calls this before
@@ -86,29 +168,6 @@ contract AssetManagerMock {
         return _liquidate(msg.sender, _agentVault, _amountUBA);
     }
 
-    function fAsset() public view returns (address) {
-        return settings.fAsset;
-    }
-
-    function getWNat() external view returns (address) {
-        return wNat;
-    }
-
-    function getCollateralType(
-        CollateralType.Class /* _class */,
-        IERC20 _token
-    ) external view returns (CollateralType.Data memory _collateralData) {
-        _collateralData.assetFtsoSymbol = assetFtsoSymbol;
-        if (address(_token) == wNat) {
-            _collateralData.tokenFtsoSymbol = poolFtsoSymbol;
-        } else {
-            _collateralData.tokenFtsoSymbol = vaultFtsoSymbol;
-        }
-    }
-
-    ////////////////////////////////////////////////////////////////
-    // liquidation
-
     function _liquidate(
         address _sender,
         address _agentVault,
@@ -118,7 +177,7 @@ contract AssetManagerMock {
         returns (uint256 _liquidatedAmountUBA, uint256 _amountPaidVault, uint256 _amountPaidPool)
     {
         AgentMock agent = AgentMock(_agentVault);
-        AgentInfo.Info memory agentInfo = agent.getInfo();
+        AgentInfo.Info memory agentInfo = getAgentInfo(_agentVault);
         CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
         // liquidate redemption tickets
         (uint256 liquidatedAmountAMG, uint256 payoutC1Wei, uint256 payoutPoolWei) =
@@ -147,9 +206,7 @@ contract AssetManagerMock {
         (uint256 vaultFactor, uint256 poolFactor) =
             _currentLiquidationFactorBIPS(address(0), _cr.vaultCR, _cr.poolCR);
         // calculate liquidation amount
-        uint256 maxLiquidatedAMG = Math.max(
-            _maxLiquidationAmountAMG(_agentInfo, _cr.vaultCR, vaultFactor, minVaultCollateralRatioBIPS),
-            _maxLiquidationAmountAMG(_agentInfo, _cr.poolCR, poolFactor, minPoolCollateralRatioBIPS));
+        uint256 maxLiquidatedAMG = convertUBAToAmg(_maxLiquidationAmountUBA(_agentInfo, _cr));
         uint256 amountToLiquidateAMG = Math.min(maxLiquidatedAMG, _amountAMG);
         _liquidatedAMG = Math.min(amountToLiquidateAMG, convertUBAToAmg(_agentInfo.mintedUBA));
         // calculate payouts to liquidator
@@ -233,10 +290,25 @@ contract AssetManagerMock {
             assetPrice,
             assetFtsoDecimals
         );
-        uint256 totalAMG = uint256(convertUBAToAmg(_agentInfo.mintedUBA));
+        uint256 totalAMG = convertUBAToAmg(_agentInfo.mintedUBA);
         if (totalAMG == 0) return (1e10, amgToTokenWeiPrice); // nothing minted
         uint256 backingTokenWei = convertAmgToTokenWei(totalAMG, amgToTokenWeiPrice);
         return (collateralWei.mulDiv(SafePct.MAX_BIPS, backingTokenWei), amgToTokenWeiPrice);
+    }
+
+    function _maxLiquidationAmountUBA(
+        AgentInfo.Info memory _agentInfo,
+        CRData memory _cr
+    )
+        private view
+        returns (uint256)
+    {
+        return convertAmgToUBA(Math.max(
+            _maxLiquidationAmountAMG(_agentInfo, _cr.vaultCR,
+                _agentInfo.liquidationPaymentFactorVaultBIPS, minVaultCollateralRatioBIPS),
+            _maxLiquidationAmountAMG(_agentInfo, _cr.poolCR,
+                _agentInfo.liquidationPaymentFactorPoolBIPS, minPoolCollateralRatioBIPS)
+        ));
     }
 
     ////////////////////////////////////////////////////////////////
@@ -342,42 +414,6 @@ contract AssetManagerMock {
 
     ////////////////////////////////////////////////////////////////////////
     // mocks
-
-    function getAgentInfo(
-        address _agentVault
-    )
-        external view
-        returns (AgentInfo.Info memory)
-    {
-        AgentInfo.Info memory agentInfo = AgentMock(_agentVault).getInfo();
-        CRData memory cr = _getCollateralRatiosBIPS(agentInfo);
-        agentInfo.vaultCollateralRatioBIPS = cr.vaultCR;
-        agentInfo.poolCollateralRatioBIPS = cr.poolCR;
-        (agentInfo.liquidationPaymentFactorVaultBIPS, agentInfo.liquidationPaymentFactorPoolBIPS) =
-            _currentLiquidationFactorBIPS(address(0), cr.vaultCR, cr.poolCR);
-        agentInfo.maxLiquidationAmountUBA = convertAmgToUBA(Math.max(
-            _maxLiquidationAmountAMG(
-                agentInfo,
-                cr.vaultCR,
-                agentInfo.liquidationPaymentFactorVaultBIPS,
-                minVaultCollateralRatioBIPS
-            ),
-            _maxLiquidationAmountAMG(
-                agentInfo,
-                cr.poolCR,
-                agentInfo.liquidationPaymentFactorPoolBIPS,
-                minPoolCollateralRatioBIPS
-            )
-        ));
-        return agentInfo;
-    }
-
-    function getSettings()
-        external view
-        returns (AssetManagerSettings.Data memory)
-    {
-        return settings;
-    }
 
     function putAgentInFullLiquidation(address _agentVault) public {
         AgentMock(_agentVault).putInFullLiquidation();

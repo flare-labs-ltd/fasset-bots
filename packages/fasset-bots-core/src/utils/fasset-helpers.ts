@@ -1,11 +1,12 @@
 import BN from "bn.js";
 import { IIAssetManagerInstance } from "../../typechain-truffle";
-import { AssetManagerEvents, IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
+import { AssetManagerEvents, IAssetAgentContext, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
 import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
-import { ContractWithEvents } from "./events/truffle";
+import { EvmEvent } from "./events/common";
+import { ContractWithEvents, eventIs } from "./events/truffle";
 import { BNish, TRANSACTION_FEE_FACTOR, requireNotNull, toBN, toNumber } from "./helpers";
 import { logger } from "./logger";
 import { TokenBalances } from "./token-balances";
@@ -82,4 +83,16 @@ export async function checkEvmNativeFunds(context: IAssetAgentContext, sourceAdd
         Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
         throw new Error(`Not enough funds on evm native address ${sourceAddress}`);
     }
+}
+
+export function isPriceChangeEvent(context: IAssetNativeChainContext, event: EvmEvent) {
+    return eventIs(event, context.priceChangeEmitter, "PriceEpochFinalized") || eventIs(event, context.priceChangeEmitter, "PricesPublished");
+}
+
+export function isCollateralRatiosChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
+    return eventIs(event, context.assetManager, "CollateralRatiosChanged");
+}
+
+export function isContractChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
+    return eventIs(event, context.assetManager, "ContractChanged");
 }

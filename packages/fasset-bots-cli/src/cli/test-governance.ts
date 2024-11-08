@@ -68,7 +68,7 @@ program
     .argument("tokenAddress", "token address")
     .action(async (tokenAddress: string) => {
         const options: { config: string; secrets: string } = program.opts();
-        const secrets = Secrets.load(options.secrets);
+        const secrets = await Secrets.load(options.secrets);
         const deployerAddress = secrets.required("deployer.address");
         await runOnAssetManagerController(options.secrets, options.config, async (controller, managers) => {
             await controller.deprecateCollateralType(managers, CollateralClass.VAULT, tokenAddress, 86400, { from: deployerAddress });
@@ -189,7 +189,7 @@ async function addCollateralToken(secretsFile: string, configFileName: string, p
 async function finalizeAgentOpenBetaRegistration(secrets: string, config: string,
     amountNat: string, amountUsdt: string, amountUsdc: string, amountEth: string
 ) {
-    const registrationApi = new AgentRegistrationTransport(Secrets.load(secrets), 'open');
+    const registrationApi = new AgentRegistrationTransport(await Secrets.load(secrets), 'open');
     const unfinalizedAgents = await registrationApi.awaitingFinalization();
     for (const agent of unfinalizedAgents) {
         try {
@@ -204,7 +204,7 @@ async function finalizeAgentOpenBetaRegistration(secrets: string, config: string
 }
 
 async function finalizeAgentClosedBetaRegistration(secrets: string, config: string) {
-    const registrationApi = new AgentRegistrationTransport(Secrets.load(secrets), 'closed');
+    const registrationApi = new AgentRegistrationTransport(await Secrets.load(secrets), 'closed');
     const unfinalizedAgents = await registrationApi.awaitingFinalization();
     for (const agent of unfinalizedAgents) {
         try {
@@ -236,7 +236,7 @@ function addressFromParameter(contracts: ChainContracts, addressOrName: string) 
 }
 
 async function initEnvironment(secretsFile: string, configFile: string) {
-    const secrets = Secrets.load(secretsFile);
+    const secrets = await Secrets.load(secretsFile);
     const config = loadConfigFile(configFile);
     const deployerAddress = secrets.required("deployer.address");
     const nativePrivateKey = secrets.required("deployer.private_key");

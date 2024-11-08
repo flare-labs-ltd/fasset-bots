@@ -35,13 +35,14 @@ library Ecosystem {
         _data.agentVault = _agentVault;
         // tokens
         _data.fAssetToken = address(assetManager.fAsset());
-        _data.vaultCT = address(assetManager.getAgentVaultCollateralToken(address(_agentVault)));
         _data.poolCT = address(assetManager.getWNat());
-        // agent
-        ( _data.liquidationFactorVaultBips, _data.liquidationFactorPoolBips, _data.maxLiquidatedFAssetUBA)
-            = assetManager.getAgentLiquidationFactorsAndMaxAmount(address(_agentVault));
+        // asset manager settings
         _data.assetMintingGranularityUBA = assetManager.assetMintingGranularityUBA();
         _data.assetMintingDecimals = assetManager.assetMintingDecimals();
+        // agent data
+        _data.vaultCT = address(assetManager.getAgentVaultCollateralToken(address(_agentVault)));
+        ( _data.liquidationFactorVaultBips, _data.liquidationFactorPoolBips, _data.maxLiquidatedFAssetUBA)
+            = assetManager.getAgentLiquidationFactorsAndMaxAmount(address(_agentVault));
         // ftso prices
         (_data.priceFAssetAmgVaultCT, _data.priceFAssetAmgPoolCT)
             = _getPrices(_data, IPriceReader(assetManager.priceReader()));
