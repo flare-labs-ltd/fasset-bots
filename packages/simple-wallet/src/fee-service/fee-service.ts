@@ -152,6 +152,7 @@ export class BlockchainFeeService {
             try {
                 const feeStats = await this.getFeeStatsFromIndexer(blockHeight);
                 if (feeStats) {
+                    logger.warn(`Failed to fetch fee stats for block ${blockHeight} on attempt ${attempts + 1}`);
                     return feeStats;
                 }
             } catch (error) /* istanbul ignore next */ {
