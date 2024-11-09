@@ -27,26 +27,20 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
         this.chainType = chainType;
     }
 
-    async getAccountBalance(account: string): Promise<AccountBalanceResponse | undefined> {
+    async getAccountBalance(account: string): Promise<AccountBalanceResponse> {
         return tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOAddressResponse>(`/address/${account}`);
             const totalBalance = res.data.balance;
             const unconfirmedBalance = res.data.unconfirmedBalance;
             const unconfirmedTxs = res.data.unconfirmedTxs;
 
-            /* istanbul ignore else */
-            if (!!totalBalance && unconfirmedBalance !== undefined && unconfirmedTxs !== undefined) {
-                const totBalance = toBN(totalBalance);
-                const uncBalance = toBN(unconfirmedBalance);
-                return {
-                    balance: toNumber(totBalance.add(uncBalance)),
-                    unconfirmedBalance: toNumber(uncBalance),
-                    unconfirmedTxs: toNumber(unconfirmedTxs),
-                } as AccountBalanceResponse;
-            }
-
-            /*istanbul ignore next */
-            return undefined;
+            const totBalance = toBN(totalBalance);
+            const uncBalance = toBN(unconfirmedBalance);
+            return {
+                balance: toNumber(totBalance.add(uncBalance)),
+                unconfirmedBalance: toNumber(uncBalance),
+                unconfirmedTxs: toNumber(unconfirmedTxs),
+            } as AccountBalanceResponse;
         }, "getAccountBalance");
     }
 

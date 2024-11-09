@@ -4,7 +4,7 @@ import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransactio
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import { getRandomInt, sleepMs } from "../../utils/utils";
 import { utxoOnly } from "../utxo/UTXOUtils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
@@ -26,16 +26,13 @@ export class TransactionMonitor {
     private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
-    private numberOfTransactionsPerBlock = 10; // For FAssets we have 10 transactions per block to complete
     monitoringId: string;
-    executionBlockOffset: number;
     feeService: BlockchainFeeService | undefined;
 
     constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
         this.chainType = chainType;
         this.rootEm = rootEm;
         this.monitoringId = monitoringId;
-        this.executionBlockOffset = stuckTransactionConstants(this.chainType).executionBlockOffset!;
         if (utxoOnly(this.chainType)) {
             this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
         }

@@ -362,7 +362,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const feeToHighForMainSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null);
             const feeToHighForFeeSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxPaymentForFeeSource ?? null);
 
-            let payingFeesFromFeeSource = !!txEnt.feeSource && !feeToHighForFeeSource;
+            let payingFeesFromFeeSource = txEnt.feeSource && !feeToHighForFeeSource;
             if (txEnt.feeSource && feeToHighForFeeSource && !feeToHighForMainSource) {
                 // If amount to pay from fee source is too high - try to pay it from main source
                 [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
@@ -509,6 +509,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     await this.handleNotFound(txEnt);
                 } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
+                } else if (notFound && this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
+                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                        txEntToUpdate.status = TransactionStatus.TX_FAILED;
+                    });
                 }
             }
         }

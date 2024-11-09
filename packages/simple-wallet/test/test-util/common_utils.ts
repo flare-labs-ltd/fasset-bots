@@ -178,8 +178,8 @@ export class MockBlockchainAPI extends UTXOBlockchainAPI {
         return Promise.resolve(toBN(0));
     }
 
-    async getAccountBalance(): Promise<AccountBalanceResponse | undefined> {
-        return Promise.resolve(undefined);
+    async getAccountBalance(): Promise<AccountBalanceResponse> {
+        return Promise.resolve({balance: 0, unconfirmedBalance: 0, unconfirmedTxs: 0});
     }
 
     async getCurrentBlockHeight(): Promise<number> {
