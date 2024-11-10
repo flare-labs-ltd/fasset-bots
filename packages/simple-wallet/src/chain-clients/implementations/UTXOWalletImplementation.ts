@@ -505,14 +505,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
 
-                if (notFound && stillTimeToSubmit) {
-                    await this.handleNotFound(txEnt);
-                } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor) {
-                    await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
-                } else if (notFound && this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
+                if (notFound && this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
                     await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                         txEntToUpdate.status = TransactionStatus.TX_FAILED;
                     });
+                } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor && !txEnt.replaced_by) {
+                    await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
+                } else if (notFound && !stillTimeToSubmit) {
+                    await this.handleNotFound(txEnt);
                 }
             }
         }
