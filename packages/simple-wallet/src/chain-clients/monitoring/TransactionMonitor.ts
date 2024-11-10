@@ -1,15 +1,16 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
-import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, updateMonitoringState } from "../../db/dbutils";
+import { countTransactionsWithStatuses, fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, updateMonitoringState } from "../../db/dbutils";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { getRandomInt, sleepMs } from "../../utils/utils";
-import { utxoOnly } from "../utxo/UTXOUtils";
+import { convertToTimestamp, getCurrentTimestampInSeconds, getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import { getConfirmedAfter, getDefaultBlockTimeInSeconds, utxoOnly } from "../utxo/UTXOUtils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { errorMessage } from "../../utils/axios-utils";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export interface IMonitoredWallet {
     submitPreparedTransactions(txEnt: TransactionEntity): Promise<void>;
@@ -26,8 +27,11 @@ export class TransactionMonitor {
     private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
+    private numberOfTransactionsPerBlock = 10; // For FAssets we have 10 transactions per block to complete
     monitoringId: string;
     feeService: BlockchainFeeService | undefined;
+    executionBlockOffset: number;
+
 
     constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
         this.chainType = chainType;
@@ -36,6 +40,7 @@ export class TransactionMonitor {
         if (utxoOnly(this.chainType)) {
             this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
         }
+        this.executionBlockOffset = stuckTransactionConstants(this.chainType).executionBlockOffset!;
     }
 
     async isMonitoring(): Promise<boolean> {
@@ -202,17 +207,31 @@ export class TransactionMonitor {
         logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
     }
 
-    private async processTransactions(
+    async processTransactions(
         statuses: TransactionStatus[],
         processFunction: (txEnt: TransactionEntity) => Promise<void>
     ): Promise<void> {
-        const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
+        let transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
+
+        // Filter out the transactions which can wait a bit to prevent locking of the wallet by consuming all UTXOs
+        if (utxoOnly(this.chainType) && (statuses.includes(TransactionStatus.TX_CREATED))) {
+            transactionEntities = this.sortTransactionEntities(transactionEntities);
+            const currentBlockHeight = await ServiceRepository.get(this.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
+
+            const blockBuffer = this.executionBlockOffset / 3;
+            // Process only entities that have currentBlockHeight + (executionBlockOffset + blockBuffer) <= executeUntilBlock if there are more than X transactions
+            const numOfPreparedAndSubmitted = await countTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_SUBMITTED]);
+            if (numOfPreparedAndSubmitted > this.numberOfTransactionsPerBlock * getConfirmedAfter(this.chainType) / 2) {
+                transactionEntities = transactionEntities.filter(t => this.calculateTransactionPriority(t, this.chainType, currentBlockHeight) >= blockBuffer);
+            }
+        }
+
         for (const txEnt of transactionEntities) {
             this.checkIfMonitoringStopped();
             try {
                 await processFunction(txEnt);
             } catch (error) /* istanbul ignore next */ {
-                logger.error(`Cannot process transaction ${txEnt.id}: ${errorMessage(error)}`);
+                logger.error(`Cannot process transaction ${txEnt.id}`, errorMessage(error));
             }
         }
         this.checkIfMonitoringStopped();
@@ -224,4 +243,47 @@ export class TransactionMonitor {
             throw new StopTransactionMonitor();
         }
     }
+
+    private sortTransactionEntities(entities: TransactionEntity[]): TransactionEntity[] {
+        return entities.sort((a, b) => {
+            if (a.executeUntilBlock && b.executeUntilBlock) {
+                const blockComparison = a.executeUntilBlock - b.executeUntilBlock;
+                if (blockComparison !== 0) {
+                    return blockComparison;
+                }
+            }
+
+            if (a.executeUntilTimestamp && b.executeUntilTimestamp) {
+                return a.executeUntilTimestamp.sub(b.executeUntilTimestamp).toNumber();
+            }
+
+            return a.id - b.id;
+        });
+    }
+
+    /**
+     * @returns 1 / n where n is number of blocks before executeUntilBlock - executionBlockOffset (if neither are provided it returns 0)
+     */
+    private calculateTransactionPriority(entity: TransactionEntity, chainType: ChainType, currentBlockHeight: number): number {
+        let blockPriority = 0;
+        let timestampPriority = 0;
+
+        if (entity.executeUntilBlock && entity.executeUntilTimestamp) {
+            blockPriority = 1 / (entity.executeUntilBlock - currentBlockHeight - this.executionBlockOffset);
+        }
+
+        let executeUntilTimestamp = entity.executeUntilTimestamp;
+        if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
+            executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
+        }
+
+        if (executeUntilTimestamp) {
+            const now = toBN(getCurrentTimestampInSeconds());
+            const defaultBlockTimeInSeconds = getDefaultBlockTimeInSeconds(chainType);
+            timestampPriority = 1 / (executeUntilTimestamp.sub(now).subn(this.executionBlockOffset * defaultBlockTimeInSeconds).divn(defaultBlockTimeInSeconds).toNumber());
+        }
+
+        return Math.max(blockPriority, timestampPriority);
+    }
+
 }
