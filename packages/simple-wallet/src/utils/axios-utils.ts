@@ -4,6 +4,7 @@ import { RateLimitOptions } from "../interfaces/IWalletTransaction";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
+import { AxiosError } from "axios";
 
 export async function tryWithClients<T>(clients: AxiosInstance[], operation: (client: AxiosInstance) => Promise<T>, method: string) {
     for (const [index] of clients.entries()) {
@@ -27,8 +28,27 @@ export function isORMError(e: unknown) {
 }
 
 export function errorMessage(e: unknown) {
-    return e instanceof Error ? `${e.name} - ${e.message}: \n ${e.stack}` : String(e);
+    if (e instanceof AxiosError) {
+        const { code, config, response } = e;
+        const statusCode = response?.status ?? 'No Status';
+        const statusText = response?.statusText ?? 'No Status Text';
+        const url = config?.url ?? 'No URL';
+        let responseData = 'No Response Data';
+        if (response?.data) {
+            if (typeof response.data === 'string') {
+                responseData = response.data;
+            } else if (typeof response.data === 'object') {
+                responseData = JSON.stringify(response.data, null, 2);
+            }
+        }
+        return `AxiosError - Code: ${code}, URL: ${url}, Status: ${statusCode} ${statusText} - ${e.message}\nResponse Data: ${responseData}\nStack Trace: ${e.stack}`;
+    } else if (e instanceof Error) {
+        return `${e.name} - ${e.message}\nStack Trace: ${e.stack}`;
+    } else {
+        return String(e);
+    }
 }
+
 
 export function createAxiosConfig(url: string, apiKey?: string, timeoutMs?: number) {
     const createAxiosConfig: AxiosRequestConfig = {

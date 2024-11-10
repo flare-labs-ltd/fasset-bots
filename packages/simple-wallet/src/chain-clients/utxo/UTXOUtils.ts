@@ -100,10 +100,6 @@ export async function getAccountBalance(chainType: ChainType, account: string): 
     try {
         const utxoBlockchainAPI = ServiceRepository.get(chainType, UTXOBlockchainAPI);
         const accountBalance = await utxoBlockchainAPI.getAccountBalance(account);
-        /* istanbul ignore if */
-        if (accountBalance === undefined) {
-            throw new Error("Account balance not found");
-        }
         const mainAccountBalance = toBN(accountBalance.balance);
         return mainAccountBalance;
     } catch (error) /* istanbul ignore next */  {

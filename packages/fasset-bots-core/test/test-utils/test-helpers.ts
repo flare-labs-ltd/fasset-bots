@@ -64,7 +64,7 @@ export async function receiveBlockAndTransaction(
     indexerApiKeys: string[],
 ): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
     const blockChainHelper = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
-    const resp = (await blockChainIndexerClient.clients[0].get(`/api/indexer/block-range`)).data;//TODO - add trywithclients
+    const resp = (await blockChainIndexerClient.clients[0].get(`/api/indexer/block-range`)).data;
     if (resp.status === "OK") {
         const blockNumber = resp.data.last;
         const block = await blockChainHelper.getBlockAt(blockNumber);

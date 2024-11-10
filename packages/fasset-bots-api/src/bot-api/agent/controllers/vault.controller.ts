@@ -90,4 +90,28 @@ export class AgentVaultController {
     ): Promise<ApiResponseWrapper<string>> {
         return handleApiResponse(this.agentService.backedAmount(fAssetSymbol, agentVaultAddress));
     }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("calculateCollaterals/:fAssetSymbol/:agentVaultAddress/:lots/:multiplier")
+    public async calculateCollaterals(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: number,
+        @Param("multiplier") multiplier: number
+    ): Promise<ApiResponseWrapper<string>> {
+        return handleApiResponse(this.agentService.calculateCollateralsForLots(fAssetSymbol, agentVaultAddress, lots, multiplier));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("depositCollaterals/:fAssetSymbol/:agentVaultAddress/:lots/:multiplier")
+    public async depositCollaterals(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: number,
+        @Param("multiplier") multiplier: number
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.depositCollaterals(fAssetSymbol, agentVaultAddress, lots, multiplier));
+    }
 }

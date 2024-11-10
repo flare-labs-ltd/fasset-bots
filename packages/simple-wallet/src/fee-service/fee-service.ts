@@ -154,6 +154,7 @@ export class BlockchainFeeService {
                 if (feeStats) {
                     return feeStats;
                 }
+                logger.warn(`Failed to fetch fee stats (= null) for block ${blockHeight} on attempt ${attempts + 1}`);
             } catch (error) /* istanbul ignore next */ {
                 logger.warn(`Failed to fetch fee stats for block ${blockHeight} on attempt ${attempts + 1}: ${errorMessage(error)}`);
             }

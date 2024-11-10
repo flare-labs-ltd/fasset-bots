@@ -362,7 +362,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const feeToHighForMainSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null);
             const feeToHighForFeeSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxPaymentForFeeSource ?? null);
 
-            let payingFeesFromFeeSource = !!txEnt.feeSource && !feeToHighForFeeSource;
+            let payingFeesFromFeeSource = txEnt.feeSource && !feeToHighForFeeSource;
             if (txEnt.feeSource && feeToHighForFeeSource && !feeToHighForMainSource) {
                 // If amount to pay from fee source is too high - try to pay it from main source
                 [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
@@ -505,25 +505,31 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
 
-                if (notFound && stillTimeToSubmit) {
-                    await this.handleNotFound(txEnt);
-                } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor) {
+                if (notFound && this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
+                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                        txEntToUpdate.status = TransactionStatus.TX_FAILED;
+                    });
+                } else if (notFound && stillTimeToSubmit) {
+                    await this.handleMalleableTransactions(txEnt);
+                } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor && !txEnt.replaced_by) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
+                } else if (notFound && !stillTimeToSubmit) {
+                    await this.handleNotFound(txEnt);
                 }
             }
         }
     }
 
     async handleNotFound(txEnt: TransactionEntity): Promise<void> {
-        if (txEnt.status === TransactionStatus.TX_REPLACED_PENDING) {
+        if (txEnt.status === TransactionStatus.TX_REPLACED_PENDING && txEnt.replaced_by?.status === TransactionStatus.TX_SUCCESS) {
             await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                 txEntToUpdate.status = TransactionStatus.TX_REPLACED;
                 txEntToUpdate.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
             });
-            logger.info(`checkSubmittedTransaction (rbf) transaction ${txEnt.id} changed status from ${TransactionStatus.TX_REPLACED_PENDING} to ${TransactionStatus.TX_CREATED}.`);
+            logger.info(`checkSubmittedTransaction (rbf) transaction ${txEnt.id} changed status from ${TransactionStatus.TX_REPLACED_PENDING} to ${TransactionStatus.TX_REPLACED}.`);
         }
-        if (txEnt.status === TransactionStatus.TX_SUBMITTED) { // TODO - legit tx 2904 - 3c5bd7395b3ee8e0c503e48044d029b760a9a0c08e9e78e66ec355b73c9a961b was marked as not found!!!
-            if (txEnt.rbfReplacementFor) { // rbf is not found => original should be accepted
+        else if (txEnt.status === TransactionStatus.TX_SUBMITTED) {
+            if (txEnt.rbfReplacementFor?.status === TransactionStatus.TX_SUCCESS) { // rbf is not found => original should be accepted
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                     txEntToUpdate.status = TransactionStatus.TX_FAILED;
                     txEntToUpdate.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
@@ -541,28 +547,35 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 });
                 logger.info(`checkSubmittedTransaction (ancestor) transaction ${txEnt.id} changed status from ${TransactionStatus.TX_SUBMITTED} to ${TransactionStatus.TX_CREATED}.`);
             } else {
-                // Handle the case that transaction hash changes (transaction malleability for non-segwit transactions)
-                const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
-                const newHash = await this.blockchainAPI.findTransactionHashWithInputs(txEnt.source, tr.inputs, txEnt.submittedInBlock);
+                await this.handleMalleableTransactions(txEnt);
+            }
+        }
+    }
 
-                // If transaction's hash has changed - set all descendants to be reset
-                if (newHash) {
-                    logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
+    async handleMalleableTransactions(txEnt: TransactionEntity): Promise<void> {
+        if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
+            logger.info(`checkSubmittedTransaction transaction ${txEnt.id} is being checked for malleability.`)
+            // Handle the case that transaction hash changes (transaction malleability for non-segwit transactions)
+            const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
+            const newHash = await this.blockchainAPI.findTransactionHashWithInputs(txEnt.source, tr.inputs, txEnt.submittedInBlock);
 
-                    const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
-                    await this.rootEm.transactional(async (em) => {
-                        for (const descendant of descendants) {
-                            descendant.ancestor = txEnt;
-                        }
-                        await em.persistAndFlush(descendants);
-                    });
+            // If transaction's hash has changed - set all descendants to be reset
+            if (newHash) {
+                logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
 
-                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
-                        txEntToUpdate.transactionHash = newHash;
-                    });
-                } else {
-                    logger.warn(`checkSubmittedTransaction transaction ${txEnt.id} not found.`);
-                }
+                const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
+                await this.rootEm.transactional(async (em) => {
+                    for (const descendant of descendants) {
+                        descendant.ancestor = txEnt;
+                    }
+                    await em.persistAndFlush(descendants);
+                });
+
+                await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                    txEntToUpdate.transactionHash = newHash;
+                });
+            } else {
+                logger.warn(`checkSubmittedTransaction transaction ${txEnt.id} not found.`);
             }
         }
     }

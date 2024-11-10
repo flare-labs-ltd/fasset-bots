@@ -4,6 +4,7 @@ import "source-map-support/register";
 import { BlockchainWalletHelper, ChainId, DBWalletKeys, VerificationPrivateApiClient } from "@flarelabs/fasset-bots-core";
 import {
     BotConfigFile, BotFAssetInfo, ChainAccount, Secrets, createBlockchainWalletHelper, createBotConfig, createBotOrm, createNativeContext,
+    indexerApiKey,
     loadConfigFile, loadContracts, overrideAndCreateOrm,
 } from "@flarelabs/fasset-bots-core/config";
 import {
@@ -256,8 +257,8 @@ async function validateAddressForToken(secrets: Secrets, token: TokenType, addre
     if (token.type === "underlying") {
         const chainId = ChainId.from(token.chainInfo.chainId);
         assertCmd(token.chainInfo.indexerUrls != null && token.chainInfo.indexerUrls.length > 0, `At least one indexerUrl for chain ${chainId} is required`);
-        assertCmd(secrets.data.apiKey.indexer != null && secrets.data.apiKey.indexer.length > 0, "Missing indexer api key in secrets");
-        const verificationClient = new VerificationPrivateApiClient(token.chainInfo.indexerUrls, secrets.data.apiKey.indexer as string[]);
+        const apiKeys: string[] = indexerApiKey(secrets, token.chainInfo.indexerUrls);
+        const verificationClient = new VerificationPrivateApiClient(token.chainInfo.indexerUrls, apiKeys);
         const result = await verificationClient.checkAddressValidity(chainId.sourceId, address)
             .catch(e => {
                 logger.error(`Error validating address ${address} on chain ${chainId}`);

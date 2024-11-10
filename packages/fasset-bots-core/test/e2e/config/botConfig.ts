@@ -69,15 +69,15 @@ describe("Bot config tests", () => {
     });
 
     it("Should create block chain indexer", async () => {
-        const btc = createBlockchainIndexerHelper(ChainId.testBTC, indexerTestBTCUrls, indexerApiKey(secrets));
+        const btc = createBlockchainIndexerHelper(ChainId.testBTC, indexerTestBTCUrls, indexerApiKey(secrets, indexerTestBTCUrls));
         expect(btc.chainId).to.eq(ChainId.testBTC);
-        const doge = createBlockchainIndexerHelper(ChainId.testDOGE, indexerTestDOGEUrls, indexerApiKey(secrets));
+        const doge = createBlockchainIndexerHelper(ChainId.testDOGE, indexerTestDOGEUrls, indexerApiKey(secrets, indexerTestBTCUrls));
         expect(doge.chainId).to.eq(ChainId.testDOGE);
-        const xrp = createBlockchainIndexerHelper(ChainId.testXRP, indexerTestXRPUrls, indexerApiKey(secrets));
+        const xrp = createBlockchainIndexerHelper(ChainId.testXRP, indexerTestXRPUrls, indexerApiKey(secrets, indexerTestBTCUrls));
         expect(xrp.chainId).to.eq(ChainId.testXRP);
         const chainId = ChainId.LTC;
         const fn = () => {
-            return createBlockchainIndexerHelper(chainId, [""], indexerApiKey(secrets));
+            return createBlockchainIndexerHelper(chainId, [""], indexerApiKey(secrets, [""]));
         };
         expect(fn).to.throw(`SourceId ${chainId.chainName} not supported.`);
     });
@@ -99,7 +99,7 @@ describe("Bot config tests", () => {
     it("Should create state connector helper", async () => {
         const stateConnector = await createStateConnectorClient(
             indexerTestXRPUrls,
-            indexerApiKey(secrets),
+            indexerApiKey(secrets, indexerTestXRPUrls),
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,

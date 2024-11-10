@@ -63,11 +63,11 @@ describe("Attestation client unit tests", () => {
             STATE_CONNECTOR_ADDRESS,
             accounts[0],
             indexerUrls,
-            indexerApiKey(secrets)
+            indexerApiKey(secrets, indexerUrls)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
         walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
-        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets));
+        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets, indexerUrls));
     });
 
     it("Should not obtain proofs - no attestation providers", async () => {
@@ -78,7 +78,7 @@ describe("Attestation client unit tests", () => {
             STATE_CONNECTOR_ADDRESS,
             OWNER_ADDRESS,
             indexerUrls,
-            indexerApiKey(secrets)
+            indexerApiKey(secrets, indexerUrls)
         );
         await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
             .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)

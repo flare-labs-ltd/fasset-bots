@@ -34,31 +34,45 @@ export async function createWalletClient(
     requireSupportedChainId(chainId);
     const walletKeys = DBWalletKeys.from(em, secrets);
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
+        const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.btc_rpc"); // added the last one to be backward compatible
+        const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
         return await BTC.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testBTC,
-            apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
+            apiTokenKeys: apiTokenKeys,
             stuckTransactionOptions: options,
             em,
             walletKeys,
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
+        const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.doge_rpc"); // added the last one to be backward compatible
+        const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
         return await DOGE.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testDOGE,
-            apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
+            apiTokenKeys: apiTokenKeys,
             stuckTransactionOptions: options,
             em,
             walletKeys
         }); // UtxoMccCreate
     } else {
+        const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.xrp_rpc"); // added the last one to be backward compatible
+        const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
         return await XRP.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testXRP,
-            apiTokenKeys: secrets.optionalArray(`apiKey.${chainId.chainName}_rpc`),
+            apiTokenKeys: apiTokenKeys,
             stuckTransactionOptions: options,
             em,
             walletKeys
         }); // XrpMccCreate
     }
+}
+
+function checkUrlAndApiKeyArraysMatch(apiTokenKey: string | string[] | undefined, walletUrls: string[], chainId: ChainId): string[] | undefined {
+    if (apiTokenKey && Array.isArray(apiTokenKey) && apiTokenKey.length != walletUrls.length) {
+        throw new Error(`Cannot create ${chainId.chainName} wallet. The number of URLs and API keys do not match.`);
+    }
+    const apiTokenKeys = Array.isArray(apiTokenKey) ? apiTokenKey : apiTokenKey ? Array(walletUrls.length).fill(apiTokenKey) : undefined;
+    return apiTokenKeys;
 }
