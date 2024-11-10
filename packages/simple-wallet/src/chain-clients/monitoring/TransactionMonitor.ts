@@ -212,7 +212,7 @@ export class TransactionMonitor {
             try {
                 await processFunction(txEnt);
             } catch (error) /* istanbul ignore next */ {
-                logger.error(`Cannot process transaction ${txEnt.id}`, errorMessage(error));
+                logger.error(`Cannot process transaction ${txEnt.id}: ${errorMessage(error)}`);
             }
         }
         this.checkIfMonitoringStopped();
