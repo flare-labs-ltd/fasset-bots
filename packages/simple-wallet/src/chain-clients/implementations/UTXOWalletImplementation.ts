@@ -526,7 +526,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             });
             logger.info(`checkSubmittedTransaction (rbf) transaction ${txEnt.id} changed status from ${TransactionStatus.TX_REPLACED_PENDING} to ${TransactionStatus.TX_CREATED}.`);
         }
-        if (txEnt.status === TransactionStatus.TX_SUBMITTED) { // TODO - legit tx 2904 - 3c5bd7395b3ee8e0c503e48044d029b760a9a0c08e9e78e66ec355b73c9a961b was marked as not found!!!
+        else if (txEnt.status === TransactionStatus.TX_SUBMITTED) { // TODO - legit tx 2904 - 3c5bd7395b3ee8e0c503e48044d029b760a9a0c08e9e78e66ec355b73c9a961b was marked as not found!!!
             if (txEnt.rbfReplacementFor) { // rbf is not found => original should be accepted
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                     txEntToUpdate.status = TransactionStatus.TX_FAILED;
