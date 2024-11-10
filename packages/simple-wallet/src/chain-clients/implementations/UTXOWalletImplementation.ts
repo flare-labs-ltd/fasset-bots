@@ -509,6 +509,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                         txEntToUpdate.status = TransactionStatus.TX_FAILED;
                     });
+                } else if (notFound && stillTimeToSubmit) {
+                    await this.handleMalleableTransactions(txEnt);
                 } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor && !txEnt.replaced_by) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 } else if (notFound && !stillTimeToSubmit) {
@@ -545,28 +547,35 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 });
                 logger.info(`checkSubmittedTransaction (ancestor) transaction ${txEnt.id} changed status from ${TransactionStatus.TX_SUBMITTED} to ${TransactionStatus.TX_CREATED}.`);
             } else {
-                // Handle the case that transaction hash changes (transaction malleability for non-segwit transactions)
-                const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
-                const newHash = await this.blockchainAPI.findTransactionHashWithInputs(txEnt.source, tr.inputs, txEnt.submittedInBlock);
+                await this.handleMalleableTransactions(txEnt);
+            }
+        }
+    }
 
-                // If transaction's hash has changed - set all descendants to be reset
-                if (newHash) {
-                    logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
+    async handleMalleableTransactions(txEnt: TransactionEntity): Promise<void> {
+        if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
+            logger.info(`checkSubmittedTransaction transaction ${txEnt.id} is being checked for malleability.`)
+            // Handle the case that transaction hash changes (transaction malleability for non-segwit transactions)
+            const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
+            const newHash = await this.blockchainAPI.findTransactionHashWithInputs(txEnt.source, tr.inputs, txEnt.submittedInBlock);
 
-                    const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
-                    await this.rootEm.transactional(async (em) => {
-                        for (const descendant of descendants) {
-                            descendant.ancestor = txEnt;
-                        }
-                        await em.persistAndFlush(descendants);
-                    });
+            // If transaction's hash has changed - set all descendants to be reset
+            if (newHash) {
+                logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
 
-                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
-                        txEntToUpdate.transactionHash = newHash;
-                    });
-                } else {
-                    logger.warn(`checkSubmittedTransaction transaction ${txEnt.id} not found.`);
-                }
+                const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
+                await this.rootEm.transactional(async (em) => {
+                    for (const descendant of descendants) {
+                        descendant.ancestor = txEnt;
+                    }
+                    await em.persistAndFlush(descendants);
+                });
+
+                await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                    txEntToUpdate.transactionHash = newHash;
+                });
+            } else {
+                logger.warn(`checkSubmittedTransaction transaction ${txEnt.id} not found.`);
             }
         }
     }
