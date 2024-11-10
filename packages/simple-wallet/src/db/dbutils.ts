@@ -374,7 +374,7 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
     });
     /* istanbul ignore next */
     if (error) {
-        logger.error(`Transaction ${txId} failed: ${reason}`, error);
+        logger.error(`Transaction ${txId} failed: ${reason}: ${errorMessage(error)}`);
     } else {
         logger.error(`Transaction ${txId} failed: ${reason}`);
     }

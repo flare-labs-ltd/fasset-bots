@@ -84,7 +84,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          logger.info(`Get account balance for ${account}`, data.result.account_data?.Balance || 0);
          return toBN(data.result.account_data?.Balance || 0);
       } catch (error) /* istanbul ignore next */ {
-         logger.error(`Cannot get account balance for ${account}`, errorMessage(error));
+         logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
          throw error;
       }
    }
@@ -240,7 +240,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          await this.getServerInfo();
          return true;
       } catch (error) /* istanbul ignore next */ {
-         logger.error("Cannot ger response from server", errorMessage(error));
+         logger.error(`Cannot ger response from server: ${errorMessage(error)}`);
          return false;
       }
    }
@@ -562,7 +562,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEnt.status = TransactionStatus.TX_PENDING;
             txEnt.reachedStatusPendingInTimestamp = currentTimestamp;
          });
-         logger.error(`Transaction ${txDbId} submission failed`, errorMessage(error));
+         logger.error(`Transaction ${txDbId} submission failed: ${errorMessage(error)}`);
          return TransactionStatus.TX_PENDING;
       }
    }

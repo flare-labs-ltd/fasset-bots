@@ -7,7 +7,7 @@ import { toBN } from "../utils/bnutils";
 import BN from "bn.js";
 import { logger } from "../utils/logger";
 
-import { errorMessage } from "../utils/axios-utils";
+import { errorMessage, withRetry } from "../utils/axios-utils";
 import { ServiceRepository } from "../ServiceRepository";
 import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
 
@@ -62,7 +62,7 @@ export class BlockchainFeeService {
         logger.info(`${this.monitoringId}: Started monitoring fees.`);
 
         while (monitoring) {
-            const currentBlockHeight = await this.getCurrentBlockHeight();
+            const currentBlockHeight = await this.getCurrentBlockHeightWithRetry();
             /* istanbul ignore next */
             const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
             if (!currentBlockHeight || currentBlockHeight <= lastStoredBlockHeight) {
@@ -98,7 +98,7 @@ export class BlockchainFeeService {
             return;
         }
         logger.info(`${this.monitoringId}: Setup history started.`)
-        const currentBlockHeight = await this.getCurrentBlockHeight();
+        const currentBlockHeight = await this.getCurrentBlockHeightWithRetry();
         /* istanbul ignore next */
         if (currentBlockHeight === 0) {
             return;
@@ -131,6 +131,15 @@ export class BlockchainFeeService {
         }
     }
 
+    async getCurrentBlockHeightWithRetry(retryLimit = 3): Promise<number> {
+        return await withRetry(
+            () => this.getCurrentBlockHeight(),
+            retryLimit,
+            this.sleepTimeMs,
+            "fetching block height"
+        ) || 0;
+    }
+
     async getFeeStatsFromIndexer(blockHeight: number): Promise<{ blockHeight: number, averageFeePerKB: BN, blockTime: BN } | null> {
         try {
             const avgFee = await this.blockchainAPI.getCurrentFeeRate(blockHeight);
@@ -147,21 +156,11 @@ export class BlockchainFeeService {
     }
 
     async getFeeStatsWithRetry(blockHeight: number, retryLimit = 3): Promise<{ blockHeight: number, averageFeePerKB: BN, blockTime: BN } | null> {
-        let attempts = 0;
-        while (attempts < retryLimit) {
-            try {
-                const feeStats = await this.getFeeStatsFromIndexer(blockHeight);
-                if (feeStats) {
-                    return feeStats;
-                }
-                logger.warn(`Failed to fetch fee stats (= null) for block ${blockHeight} on attempt ${attempts + 1}`);
-            } catch (error) /* istanbul ignore next */ {
-                logger.warn(`Failed to fetch fee stats for block ${blockHeight} on attempt ${attempts + 1}: ${errorMessage(error)}`);
-            }
-            attempts++;
-            await sleepMs(this.sleepTimeMs);
-        }
-        logger.error(`Failed to fetch fee stats for block ${blockHeight} after ${retryLimit} attempts.`);
-        return null;
+        return await withRetry(
+            () => this.getFeeStatsFromIndexer(blockHeight),
+            retryLimit,
+            this.sleepTimeMs,
+            `fetching fee stats for block ${blockHeight}`
+        );
     }
 }

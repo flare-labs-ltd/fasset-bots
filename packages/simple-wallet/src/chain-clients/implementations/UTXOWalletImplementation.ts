@@ -789,9 +789,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             } catch (error) {
                 /* istanbul ignore next */
                 if (axios.isAxiosError(error)) {
-                    logger.warn(`Transaction ${txId} not yet seen in mempool`, error.response?.data);
+                    logger.warn(`Transaction ${txId} not yet seen in mempool: ${error.response?.data}`);
                 } else {
-                    logger.warn(`Transaction ${txId} not yet seen in mempool`, errorMessage(error));
+                    logger.warn(`Transaction ${txId} not yet seen in mempool: ${errorMessage(error)}`);
                 }
                 await sleepMs(10000); // wait for 10s
             }
