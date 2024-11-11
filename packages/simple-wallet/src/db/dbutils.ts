@@ -301,10 +301,9 @@ export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: Entit
             logger.info(`Marked ${unspentUtxos.length} UTXOs as unspent`);
         }
         await em.persistAndFlush([...spentUtxos, ...unspentUtxos]);
+        // find new UTXOs in the mempool that are not yet in the db
+        await storeUTXOs(em, address, mempoolUTXOs);
     });
-    // find new UTXOs in the mempool that are not yet in the db
-    await storeUTXOs(rootEm, address, mempoolUTXOs);
-
 }
 
 
