@@ -18,8 +18,7 @@ import BN from "bn.js";
 import { BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType } from "../../src/utils/constants";
 import * as dbutils from "../../src/db/dbutils";
 import {
-    correctUTXOInconsistenciesAndFillFromMempool, countSpendableUTXOs,
-    fetchTransactionEntityById,
+    correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById,
     fetchUTXOsByTxId, getTransactionInfoById,
 } from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
@@ -153,17 +152,16 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should get fee for delete account", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
-        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
-        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
+        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, null, undefined);
         const fee = transaction.getFee();
         expect(fee).to.be.gt(0);
     });
 
     it("Should get account balance", async () => {
-        const accountBalance = await wClient.getAccountBalance(fundedWallet.address);
-        expect(accountBalance.gt(new BN(0))).to.be.true;
+        const accountBalance = await wClient.getAccountBalance(fundedAddress);
+        expect(accountBalance.gtn(0)).to.be.true;
     });
 
     it("Transaction with executeUntilBlock before current block height should fail", async () => {
@@ -178,7 +176,7 @@ describe("Bitcoin wallet tests", () => {
     it("Should submit TX_PREPARED that are in DB", async () => {
         const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
         const executeUntilBlock = currentBlock + wClient.blockOffset;
-        const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
+        const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
@@ -196,12 +194,12 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Balance should change after transaction", async () => {
-        const sourceBalanceStart = await wClient.getAccountBalance(fundedWallet.address);
+        const sourceBalanceStart = await wClient.getAccountBalance(fundedAddress);
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         expect(id).to.be.gt(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
-        const sourceBalanceEnd = await wClient.getAccountBalance(fundedWallet.address);
+        const sourceBalanceEnd = await wClient.getAccountBalance(fundedAddress);
         const targetBalanceEnd = await wClient.getAccountBalance(targetAddress);
         expect(sourceBalanceEnd.lt(sourceBalanceStart)).to.be.true;
         expect(targetBalanceEnd.gt(targetBalanceStart)).to.be.true;
@@ -453,8 +451,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("DB down after creating transaction", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const id = await wClient.createPaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         const txInfo = await getTransactionInfoById(wClient.rootEm, id);
         expect(txInfo.status).to.be.equal(TransactionStatus.TX_CREATED);
 
@@ -463,7 +460,7 @@ describe("Bitcoin wallet tests", () => {
         await sleepMs(5000);
         await testOrm.connect();
         // await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
-        const id2 = await wClient.createPaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi);
+        const id2 = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id2);
     });
 
@@ -664,13 +661,13 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
-    it.skip("Send funds back to funded address", async () => {
+    it("Send funds back to funded address", async () => {
         const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
         await wClient.walletKeys.addKey(targetWallet.address, targetWallet.privateKey);
 
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
-        for (let i = 0; i < 3; i++) {
-            const id = await wClient.createPaymentTransaction(targetAddress, fundedAddress, amountToSendSatoshi.muln(15), undefined, undefined, undefined, blockHeight + 100);
+        for (let i = 0; i < 1; i++) {
+            const id = await wClient.createPaymentTransaction(targetAddress, fundedAddress, amountToSendSatoshi.muln(25), undefined, undefined, undefined, blockHeight + 100);
             await waitForTxToFinishWithStatus(2, 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
     });

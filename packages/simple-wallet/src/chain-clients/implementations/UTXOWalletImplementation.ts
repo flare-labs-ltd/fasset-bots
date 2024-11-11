@@ -362,6 +362,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const feeToHighForMainSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null);
             const feeToHighForFeeSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxPaymentForFeeSource ?? null);
 
+            if (txEnt.fee && feeToHighForMainSource) {
+                await failTransaction(this.rootEm, txEnt.id, `Pre-set fee ${txEnt.fee} > max fee ${txEnt.maxFee}`);
+                return;
+            }
+
             let payingFeesFromFeeSource = txEnt.feeSource && !feeToHighForFeeSource;
             if (txEnt.feeSource && feeToHighForFeeSource && !feeToHighForMainSource) {
                 // If amount to pay from fee source is too high - try to pay it from main source

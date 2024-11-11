@@ -34,7 +34,9 @@
         "---------TEST---SCRIPTS": "",
         "test": "yarn run -T mocha",
         "test_all": "yarn run -T mocha --recursive test/**/*.ts ",
-        "test:coverage": "yarn run -T nyc yarn test_all"
+        "test:coverage": "yarn run -T nyc yarn test_all",
+        "encrypt-test-secrets": "node dist/test/test-util/encrypt_secrets.js",
+        "test-mainnet-btc": "yarn run -T mocha test/BTC/mainnet.test.ts"
     },
     "dependencies": {
         "@mikro-orm/core": "5.8.4",
@@ -77,6 +79,7 @@
         "chai": "4.3.8",
         "chai-as-promised": "7.1.1",
         "eslint": "9.11.1",
+        "read": "^4.0.0",
         "rewire": "7.0.0",
         "sinon": "18.0.0",
         "typescript": "5.6.2",
