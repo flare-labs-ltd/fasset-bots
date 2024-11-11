@@ -36,6 +36,7 @@ import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentBotUnderlyingWithdrawal } from "./AgentBotUnderlyingWithdrawal";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+import { AgentBotHandshake } from "./AgentBotHandshake";
 
 const PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS = 2 * MINUTES * 1000;
 
@@ -105,6 +106,7 @@ export class AgentBot {
     context = this.agent.context;
     tokens = new AgentTokenBalances(this.context, this.agent.vaultAddress);
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
+    handshake = new AgentBotHandshake(this, this.agent, this.notifier);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
     underlyingManagement = new AgentBotUnderlyingManagement(this, this.agent, this.agentBotSettings, this.notifier, this.ownerUnderlyingAddress, this.tokens);
@@ -335,6 +337,12 @@ export class AgentBot {
             threads.push(this.startThread(rootEm, `redemptions-expired-${botId}`, true, async (threadEm) => {
                 await this.redemption.handleExpiredRedemptions(threadEm);
             }));
+            threads.push(this.startThread(rootEm, `rejected-redemption-requests-${botId}`, true, async (threadEm) => {
+                await this.redemption.handleRejectedRedemptionRequests(threadEm);
+            }));
+            threads.push(this.startThread(rootEm, `handshakes-${botId}`, true, async (threadEm) => {
+                await this.handshake.handleOpenHandshakes(threadEm);
+            }));
             threads.push(this.startThread(rootEm, `mintings-${botId}`, true, async (threadEm) => {
                 await this.minting.handleOpenMintings(threadEm);
             }));
@@ -388,6 +396,8 @@ export class AgentBot {
     async runStep(rootEm: EM): Promise<void> {
         await this.handleEvents(rootEm);
         await this.redemption.handleOpenRedemptions(rootEm);
+        await this.redemption.handleRejectedRedemptionRequests(rootEm);
+        await this.handshake.handleOpenHandshakes(rootEm);
         await this.minting.handleOpenMintings(rootEm);
         await this.handleTimelockedProcesses(rootEm);
         await this.underlyingManagement.handleOpenUnderlyingPayments(rootEm);
@@ -401,10 +411,28 @@ export class AgentBot {
     }
 
     async handleEvent(em: EM, event: EvmEvent): Promise<void> {
-        // only events for this agent should be handled (this should already be the case due to filter in readNewEvents, but just to be sure)
+
+        // handle all events for RedemptionRequestRejected and RedemptionRequestTakenOver
+        if (eventIs(event, this.context.assetManager, "RedemptionRequestRejected")) {
+            await this.redemption.redemptionRequestRejected(em, event.args, event.blockNumber);
+            return;
+        } else if (eventIs(event, this.context.assetManager, "RedemptionRequestTakenOver")) {
+            await this.redemption.redemptionRequestTakenOver(em, event.args);
+            return;
+        }
+        // all other events are events for this agent (this should already be the case due to filter in readNewEvents, but just to be sure)
         const agentVault = (event.args as any).agentVault;
         if (agentVault && agentVault.toLowerCase() !== this.agent.vaultAddress.toLowerCase()) return;
-        if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
+        if (eventIs(event, this.context.assetManager, "HandshakeRequired")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'HandshakeRequired' with data ${formatArgs(event.args)}.`);
+            await this.handshake.handshakeRequired(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CollateralReservationCancelled")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationCancelled' with data ${formatArgs(event.args)}.`);
+            await this.handshake.mintingCancelled(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CollateralReservationRejected")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationRejected' with data ${formatArgs(event.args)}.`);
+            await this.handshake.mintingRejected(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
             await this.minting.mintingStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "CollateralReservationDeleted")) {

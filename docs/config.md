@@ -79,7 +79,8 @@ Example:
     "poolExitCollateralRatioConstant": 1.3,
     "buyFAssetByAgentFactorBIPS": 9000,
     "poolTopupCollateralRatioConstant": 1.1,
-    "poolTopupTokenPriceFactorBIPS": 8000
+    "poolTopupTokenPriceFactorBIPS": 8000,
+    "handshakeType": 0
 }
 ```
 

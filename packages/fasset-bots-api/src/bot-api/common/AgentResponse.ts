@@ -32,6 +32,7 @@ export interface AgentSettings {
     buyFAssetByAgentFactorBIPS: string;
     poolTopupCollateralRatioBIPS: string;
     poolTopupTokenPriceFactorBIPS: string;
+    handshakeType: string;
 }
 
 export interface AgentData {
@@ -102,6 +103,7 @@ export interface AgentVaultStatus {
     agentSettingUpdateValidAtPoolExitCrBIPS: string;
     agentSettingUpdateValidAtPoolTopupCrBIPS: string;
     agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: string;
+    agentSettingUpdateValidAtHandshakeType: string;
 }
 
 type BNsToStrings<T> = {

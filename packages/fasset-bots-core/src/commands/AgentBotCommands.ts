@@ -616,6 +616,7 @@ export class AgentBotCommands {
         console.log(`buyFAssetByAgentFactorBIPS: ${settings.buyFAssetByAgentFactorBIPS.toString()}`);
         console.log(`poolTopupCollateralRatioBIPS: ${settings.poolTopupCollateralRatioBIPS.toString()}`);
         console.log(`poolTopupTokenPriceFactorBIPS: ${settings.poolTopupTokenPriceFactorBIPS.toString()}`);
+        console.log(`handshakeType: ${settings.handshakeType.toString()}`);
         return settings;
     }
 

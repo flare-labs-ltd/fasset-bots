@@ -257,7 +257,7 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
             poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),
             poolTopupCollateralRatioBIPS: toBN(agentInfo.poolTopupCollateralRatioBIPS),
             poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
-            handshakeType: toBN(0),
+            handshakeType: toBN(agentInfo.handshakeType),
         }
     };
     return initialAgentData;

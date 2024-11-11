@@ -53,6 +53,7 @@ Some of the available commands:
 -   **poolExitCollateralRatioBIPS**: The minimum collateral ratio above which a staker can exit the pool (this is CR that must be left after exit). Must be higher than system minimum collateral ratio for pool collateral.
 -   **poolTopupCollateralRatioBIPS**: The CR below which it is possible to enter the pool at discounted rate (to prevent liquidation). Must be higher than system minimum collateral ratio for pool collateral.
 -   **poolTopupTokenPriceFactorBIPS**: The discount to pool token price when entering and pool CR is below pool topup CR.
+-   **handshakeType**: Handshake type (0 - no verification, 1 - manual verification (minting or redeeming can be rejected), ...)
 
 # CLI `key`
 

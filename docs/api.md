@@ -209,6 +209,7 @@ Agent bot web service routes are documented using the Swagger interface at the `
     | `buyFAssetByAgentFactorBIPS`      | string | The factor set by the agent to multiply the price at which agent buys fassets from pool token holders on self-close exit.   |
     | `poolTopupCollateralRatioBIPS`    | string | The collateral ratio below which it is possible to enter the pool at discounted rate (to prevent liquidation).              |
     | `poolTopupTokenPriceFactorBIPS`   | string | The discount to pool token price when entering and pool collateral ratio is below pool topup collateral ratio.              |
+    | `handshakeType`                   | string | Handshake type (0 - no verification, 1 - manual verification (minting or redeeming can be rejected), ...)                   |
 
     -   POST `/api/agent/settings/update/{fAssetSymbol}/{agentVaultAddress}/{settingName}/{settingValue}`: Given parameters `fAssetSymbol`, `agentVaultAddress`, `settingName` and `settingValue`, returns one of the possible`status` responses, depending on the success of operation.
 

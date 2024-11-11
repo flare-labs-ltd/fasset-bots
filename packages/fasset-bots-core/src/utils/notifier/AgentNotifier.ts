@@ -25,6 +25,9 @@ export enum AgentNotificationKey {
     MINTING_EXECUTED = "MINTING EXECUTED",
     MINTING_DELETED = "MINTING DELETED",
     MINTING_STARTED = "MINTING STARTED",
+    MINTING_HANDSHAKE_REQUESTED = "MINTING HANDSHAKE REQUESTED",
+    MINTING_REJECTED = "MINTING REJECTED",
+    MINTING_CANCELLED = "MINTING CANCELLED",
     MINTING_DEFAULT_STARTED = "MINTING DEFAULT STARTED",
     MINTING_DEFAULT_SUCCESS = "MINTING DEFAULT SUCCESS",
     MINTING_DEFAULT_FAILED = "MINTING DEFAULT FAILED",
@@ -38,6 +41,10 @@ export enum AgentNotificationKey {
     REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED = "NO ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION",
     REDEMPTION_CONFLICTING_ADDRESS_VALIDITY_PROOF_OBTAINED = "CONFLICTING ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION",
     REDEMPTION_STARTED = "REDEMPTION STARTED",
+    REDEMPTION_REJECTED = "REDEMPTION REJECTED",
+    REDEMPTION_REJECTION_FAILED = "REDEMPTION REJECTION FAILED",
+    REDEMPTION_TAKEN_OVER = "REDEMPTION TAKEN OVER",
+    REDEMPTION_TAKEOVER_FAILED = "REDEMPTION TAKEOVER FAILED",
     REDEMPTION_PAID = "REDEMPTION PAID",
     REDEMPTION_PAYMENT_FAILED = "REDEMPTION PAYMENT FAILED",
     REDEMPTION_PAYMENT_PROOF = "REDEMPTION PAYMENT PROOF REQUESTED",
@@ -350,6 +357,18 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.WITHDRAW_UNDERLYING, `Agent ${this.address} withdrew underlying with transaction ${txHash} and payment reference ${paymentReference}.`);
     }
 
+    async sendHandshakeRequested(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_HANDSHAKE_REQUESTED, `Minting ${requestId} handshake requested for ${this.address}.`);
+    }
+
+    async sendMintingRejected(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_REJECTED, `Minting ${requestId} rejected for ${this.address}.`);
+    }
+
+    async sendMintingCancelled(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_CANCELLED, `Minting ${requestId} cancelled for ${this.address}.`);
+    }
+
     async sendMintingExecuted(requestId: BNish) {
         await this.info(AgentNotificationKey.MINTING_EXECUTED, `Minting ${requestId} executed for ${this.address}.`);
     }
@@ -393,6 +412,22 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendRedemptionStarted(requestId: BNish) {
         await this.info(AgentNotificationKey.REDEMPTION_STARTED, `Redemption ${requestId} started for ${this.address}.`);
+    }
+
+    async sendRedemptionRejected(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_REJECTED, `Redemption ${requestId} rejected for ${this.address}.`);
+    }
+
+    async sendRedemptionRejectionFailed(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_REJECTION_FAILED, `Redemption ${requestId} rejection failed for ${this.address}.`);
+    }
+
+    async sendRedemptionTakenOver(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_TAKEN_OVER, `Redemption ${requestId} taken over for ${this.address}.`);
+    }
+
+    async sendRedemptionTakeoverFailed(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_TAKEOVER_FAILED, `Redemption ${requestId} takeover failed for ${this.address}.`);
     }
 
     async sendRedemptionPaid(requestId: BNish) {
