@@ -22,7 +22,7 @@ describe("getNumberOfMempoolAncestors", () => {
 
     before(async () => {
         const conf = { ...config };
-        conf.dbName = "getTransactionDescendants-test-db";
+        conf.dbName = "get-transaction-descendants-test-db";
         em = (await initializeTestMikroORMWithConfig(conf)).em;
         ServiceRepository.register(ChainType.testBTC, EntityManager, em);
         ServiceRepository.register(ChainType.testBTC, UTXOBlockchainAPI, new MockBlockchainAPI());
