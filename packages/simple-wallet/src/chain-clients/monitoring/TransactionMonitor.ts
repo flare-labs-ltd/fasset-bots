@@ -1,12 +1,15 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
 import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, updateMonitoringState } from "../../db/dbutils";
-import { MonitoringStateEntity } from "../../entity/monitoring_state";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
-import { errorMessage } from "../../utils/axios-error-utils";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { getRandomInt, sleepMs } from "../../utils/utils";
+import { utxoOnly } from "../utxo/UTXOUtils";
+import { ServiceRepository } from "../../ServiceRepository";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
+import { MonitoringStateEntity } from "../../entity/monitoringState";
+import { errorMessage } from "../../utils/axios-utils";
 
 export interface IMonitoredWallet {
     submitPreparedTransactions(txEnt: TransactionEntity): Promise<void>;
@@ -20,15 +23,19 @@ export interface IMonitoredWallet {
 class StopTransactionMonitor extends Error {}
 
 export class TransactionMonitor {
-    private monitoring: boolean = false;
+    private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
     monitoringId: string;
+    feeService: BlockchainFeeService | undefined;
 
     constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
         this.chainType = chainType;
         this.rootEm = rootEm;
         this.monitoringId = monitoringId;
+        if (utxoOnly(this.chainType)) {
+            this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+        }
     }
 
     async isMonitoring(): Promise<boolean> {
@@ -49,6 +56,11 @@ export class TransactionMonitor {
             logger.info(`Monitoring started for chain ${this.monitoringId}`);
             // start pinger in the background
             void this.updatePingLoop();
+            // start fee monitoring
+            if (utxoOnly(this.chainType) && this.feeService) {
+                await this.feeService.setupHistory();
+                void this.feeService.monitorFees(this.monitoring);
+            }
             // start main loop
             await this.monitoringMainLoop(wallet);
         } catch (error) {
@@ -70,7 +82,9 @@ export class TransactionMonitor {
                         monitoringEnt.lastPingInTimestamp = toBN(0);
                     });
                 });
-                this.monitoring = false;
+                if (utxoOnly(this.chainType) && this.feeService) {
+                    await this.feeService.monitorFees(false);
+                }
                 logger.info(`Monitoring stopped for ${this.monitoringId}`);
             } else {
                 logger.info(`Monitoring will NOT stop. Process ${this.monitoringId} is not owner of current process ${monitoringState?.processOwner}`);
@@ -97,7 +111,7 @@ export class TransactionMonitor {
             await sleepMs(MONITOR_PING_INTERVAL);
             // try to acquire lock again
             const next = await this.acquireMonitoringLock();
-            // if the lock expired or was released in the meenatime, it will be acquired now
+            // if the lock expired or was released in the meantime, it will be acquired now
             if (next.acquired) {
                 logger.info(`Monitoring created for chain ${this.monitoringId} - old lock released or expired`);
                 return true;
@@ -135,7 +149,7 @@ export class TransactionMonitor {
                         monitoringState.processOwner = this.monitoringId;
                         return { acquired: true } as const;
                     } else {
-                        // just retrun the lock state
+                        // just return the lock state
                         return { acquired: false, lastPing } as const;
                     }
                 }
@@ -171,13 +185,13 @@ export class TransactionMonitor {
                     await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                     continue;
                 }
-                await this.processTransactions(TransactionStatus.TX_PREPARED, wallet.submitPreparedTransactions);
+                await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions);
                 if (wallet.resubmitSubmissionFailedTransactions) {
-                    await this.processTransactions(TransactionStatus.TX_SUBMISSION_FAILED, wallet.resubmitSubmissionFailedTransactions);
+                    await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions);
                 }
-                await this.processTransactions(TransactionStatus.TX_PENDING, wallet.checkPendingTransaction);
-                await this.processTransactions(TransactionStatus.TX_CREATED, wallet.prepareAndSubmitCreatedTransaction);
-                await this.processTransactions(TransactionStatus.TX_SUBMITTED, wallet.checkSubmittedTransaction);
+                await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction);
+                await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction);
+                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction);
             } catch (error) {
                 if (error instanceof StopTransactionMonitor) break;
                 logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${MONITOR_LOOP_SLEEP}: ${errorMessage(error)}`);
@@ -188,16 +202,16 @@ export class TransactionMonitor {
     }
 
     private async processTransactions(
-        status: TransactionStatus,
+        statuses: TransactionStatus[],
         processFunction: (txEnt: TransactionEntity) => Promise<void>
     ): Promise<void> {
-        const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, status);
+        const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
         for (const txEnt of transactionEntities) {
             this.checkIfMonitoringStopped();
             try {
                 await processFunction(txEnt);
-            } catch (e) {
-                logger.error(`Cannot process transaction ${txEnt.id}`, e);
+            } catch (error) /* istanbul ignore next */ {
+                logger.error(`Cannot process transaction ${txEnt.id}: ${errorMessage(error)}`);
             }
         }
         this.checkIfMonitoringStopped();

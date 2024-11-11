@@ -9,6 +9,7 @@ export interface ChainInfo {
     amgDecimals: number;
     requireEOAProof: boolean;
     minimumAccountBalance: BN; // only needed for XRP
+    useOwnerUnderlyingAddressForPayingFees?: boolean;
 }
 
 export interface NativeChainInfo {

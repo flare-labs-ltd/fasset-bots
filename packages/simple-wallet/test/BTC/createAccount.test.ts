@@ -1,4 +1,4 @@
-import { BtcAccountGeneration, WALLET } from "../../src";
+import { BtcAccount, BtcAccountGeneration } from "../../src";
 import { expect } from "chai";
 import WAValidator from "wallet-address-validator";
 import { UTXOAccountGeneration } from "../../src/chain-clients/account-generation/UTXOAccountGeneration";
@@ -12,8 +12,8 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
 describe("Bitcoin create account tests", () => {
 
-    it("Should create testnet accounts", async () => {
-        const testClient = new WALLET.BtcAccount(true);
+    it("Should create testnet accounts", () => {
+        const testClient = new BtcAccount(true);
         const newAccount = testClient.createWallet();
         expect(newAccount.address).to.not.be.null;
         expect(WAValidator.validate(newAccount.address, "BTC", "testnet")).to.be.true;
@@ -27,14 +27,14 @@ describe("Bitcoin create account tests", () => {
         expect(WAValidator.validate(targetWallet.address, "BTC", "testnet")).to.be.true;
     });
 
-    it("Should create mainnet account", async () => {
+    it("Should create mainnet account", () => {
         const testClient = new BtcAccountGeneration(false);
         const newAccount = testClient.createWallet();
         expect(newAccount.address).to.not.be.null;
         expect(WAValidator.validate(newAccount.address, "BTC", "mainnet")).to.be.true;
     });
 
-    it("Should not create account - invalid chainType", async () => {
+    it("Should not create account - invalid chainType", () => {
         const testClient = new UTXOAccountGeneration(ChainType.testXRP);
         const fn1 = () => {
             return testClient.createWallet();

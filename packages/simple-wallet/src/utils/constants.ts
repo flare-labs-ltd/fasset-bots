@@ -11,6 +11,14 @@ export const MONITOR_LOOP_SLEEP = 2000; // 2s
 export const RESTART_IN_DUE_NO_RESPONSE = 20000; // 20s
 export const RANDOM_SLEEP_MS_MAX = 500;
 
+export const BTC_PER_SATOSHI = 1 / 100000000;
+
+export const XRP_PENDING_TIMEOUT = 30;// 30s
+export const MEMPOOL_WAITING_TIME = 60;// 1min
+export const MEMPOOL_CHAIN_LENGTH_LIMIT = 25;
+export const MAX_UTXO_TX_SIZE_IN_B = 100_000;
+export const MIN_RELAY_FEE_INCREASE_RBF_IN_B = 1000;
+export const WAIT_TO_APPEAR_IN_XRP = 8; // wait for x ledgers
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 
@@ -74,20 +82,11 @@ export const DOGE_TESTNET = {
 // network configs
 
 export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
-   maxRPS: 5,
-   maxRequests: 10,
-   timeoutMs: 30000,
+   maxRPS: 30,
+   maxRequests: 50,
+   timeoutMs: 20000,
    retries: 10,
 };
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
-   ...DEFAULT_RATE_LIMIT_OPTIONS,
-   timeoutMs: 20000,
-};
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
-   timeoutMs: 1000,
-}
 
 // Approximate times between blocks, in milliseconds
 export const BTC_LEDGER_CLOSE_TIME_MS = 600_000; // 10min
@@ -121,11 +120,11 @@ export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);
 // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
 export const DOGE_DEFAULT_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
 
-export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.00001000, BTC_DOGE_DEC_PLACES);
+export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
 export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES);
 
-export const BTC_MIN_ALLOWED_FEE = toBN(10000); //10000 sats/kb
-export const BTC_MAX_ALLOWED_FEE = toBN(2000000); //2000000 sats/kb
+export const BTC_MIN_ALLOWED_FEE = toBN(3000); //3000 sats/kb
+export const DOGE_MIN_ALLOWED_FEE = toBNExp(0.5, BTC_DOGE_DEC_PLACES); //0.5 doge/kb
 
 // Derived from https://test.jochen-hoenicke.de/queue/ and https://mempool.space
 export const BTC_LOW_FEE_PER_KB = toBN(10 * 1000); // 10 sat/vB

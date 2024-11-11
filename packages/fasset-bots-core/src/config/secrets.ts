@@ -31,11 +31,46 @@ export class Secrets {
         throw new Error(`Secret variable ${key} not defined or not typeof string`);
     }
 
+    requiredArray(key: string): string[] {
+        const value = valueForKeyPath(this.data, key);
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} not defined or not typeof string[]`);
+    }
+    requiredOrRequiredArray(key: string): string | string[] {
+        const value = valueForKeyPath(this.data, key);
+        if (typeof value === "string") return value;
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} not defined or not typeof string or string[]`);
+    }
+
     optional(key: string): string | undefined {
         const value = valueForKeyPath(this.data, key);
         if (value == undefined) return undefined;
         if (typeof value === "string") return value;
         throw new Error(`Secret variable ${key} not typeof string`);
+    }
+
+    optionalArray(key: string): string[] | undefined {
+        const value = valueForKeyPath(this.data, key);
+        if (value == undefined) return undefined;
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} not typeof string[]`);
+    }
+
+    optionalOrOptionalArray(key: string): string | string[] | undefined {
+        const value = valueForKeyPath(this.data, key);
+        if (value == undefined) return undefined;
+        if (typeof value === "string") return value;
+        if (Array.isArray(value) && value.every(v => typeof v === "string")) {
+            return value;
+        }
+        throw new Error(`Secret variable ${key} is neither typeof string[] neither string`);
     }
 
     requiredEncryptionPassword(key: string): string {

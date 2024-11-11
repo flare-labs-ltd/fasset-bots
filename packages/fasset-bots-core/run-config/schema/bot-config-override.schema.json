@@ -162,25 +162,6 @@
             ],
             "type": "string"
         },
-        "FeeServiceOptions": {
-            "additionalProperties": false,
-            "properties": {
-                "numberOfBlocksInHistory": {
-                    "type": "number"
-                },
-                "rateLimitOptions": {
-                    "$ref": "#/definitions/RateLimitOptions"
-                },
-                "sleepTimeMs": {
-                    "type": "number"
-                }
-            },
-            "required": [
-                "numberOfBlocksInHistory",
-                "sleepTimeMs"
-            ],
-            "type": "object"
-        },
         "OrmConfigOptions": {
             "additionalProperties": {},
             "properties": {
@@ -257,20 +238,14 @@
                 "chainId": {
                     "type": "string"
                 },
-                "fallbackApis": {
-                    "items": {
-                        "$ref": "#/definitions/WalletApi"
-                    },
-                    "type": "array"
-                },
                 "faucet": {
                     "type": "string"
                 },
-                "feeServiceOptions": {
-                    "$ref": "#/definitions/FeeServiceOptions"
-                },
-                "indexerUrl": {
-                    "type": "string"
+                "indexerUrls": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
                 },
                 "minimumAccountBalance": {
                     "type": "string"
@@ -290,8 +265,14 @@
                 "tokenSymbol": {
                     "type": "string"
                 },
-                "walletUrl": {
-                    "type": "string"
+                "useOwnerUnderlyingAddressForPayingFees": {
+                    "type": "boolean"
+                },
+                "walletUrls": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
                 }
             },
             "type": "object"
@@ -320,27 +301,6 @@
             },
             "type": "object"
         },
-        "RateLimitOptions": {
-            "additionalProperties": false,
-            "properties": {
-                "maxRPS": {
-                    "type": "number"
-                },
-                "maxRequests": {
-                    "type": "number"
-                },
-                "perMilliseconds": {
-                    "type": "number"
-                },
-                "retries": {
-                    "type": "number"
-                },
-                "timeoutMs": {
-                    "type": "number"
-                }
-            },
-            "type": "object"
-        },
         "StuckTransaction": {
             "additionalProperties": false,
             "properties": {
@@ -360,18 +320,6 @@
                     "type": "number"
                 }
             },
-            "type": "object"
-        },
-        "WalletApi": {
-            "additionalProperties": false,
-            "properties": {
-                "url": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "url"
-            ],
             "type": "object"
         }
     },

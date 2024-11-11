@@ -226,6 +226,9 @@ export class MockChainWallet implements IBlockChainWallet {
 
     transactionList: MockChainTransaction[] = []
     constructor(public chain: MockChain) {}
+    monitoringId(): string {
+        throw new Error("Method not implemented.");
+    }
 
     monitoring = false;
 

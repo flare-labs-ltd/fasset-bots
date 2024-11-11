@@ -7,3 +7,8 @@ export class AgentSettingsDTO {
     @ApiProperty()
     value: string = "";
 }
+
+export class PasswordDTO {
+    @ApiProperty()
+    password: string = "";
+}

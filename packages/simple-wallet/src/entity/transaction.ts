@@ -1,4 +1,4 @@
-import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -36,10 +36,7 @@ export class TransactionEntity {
     maxFee?: BN;
 
     @Property()
-    submittedInBlock: number = 0; // 0 when tx is created
-
-    @Property({ type: BNType, nullable: true })
-    submittedInTimestamp?: BN; // server time - needed to track when tx appears in mempool
+    submittedInBlock = 0; // 0 when tx is created
 
     @Property({ type: BNType, nullable: true })
     acceptedToMempoolInTimestamp?: BN;
@@ -51,7 +48,7 @@ export class TransactionEntity {
     reachedStatusPreparedInTimestamp?: BN;
 
     @Property({ type: BNType, nullable: true })
-    reachedStatusPendingInTimestamp?: BN;
+    reachedStatusPendingInTimestamp?: BN; // server time - needed to track when tx appears in mempool
 
     @Property({ nullable: true  })
     executeUntilBlock?: number;
@@ -92,17 +89,25 @@ export class TransactionEntity {
     @OneToMany(() => TransactionOutputEntity, output => output.transaction, {orphanRemoval: true})
     outputs = new Collection<TransactionOutputEntity>(this);
 
-    @OneToMany(() => UTXOEntity, utxo => utxo.transaction)
+    @OneToMany(() => UTXOEntity, utxo => utxo.transaction, { orphanRemoval: true })
     utxos = new Collection<UTXOEntity>(this);
 
     @ManyToOne(() => TransactionEntity, { nullable: true })
     ancestor?: TransactionEntity | null;
+
+    @Property({ nullable: true })
+    feeSource?: string;
+
+    @Property({ nullable: true })
+    maxPaymentForFeeSource?: BN;
+
 }
 
 export enum TransactionStatus {
     TX_CREATED = "created", // received tx is initially stored in db
     TX_PREPARED = "prepared",
     TX_REPLACED = "replaced", // tx was replaced with new transaction
+    TX_REPLACED_PENDING = "replaced_pending", // (in utxo) pending replacement (when we don't know if original or replacement will be accepted)
     TX_SUBMISSION_FAILED = "submission_failed", //xrp: failed due ti insufficient fee -> replace tx
     TX_SUBMITTED = "submitted", // utxo: tx is in mempool
     TX_PENDING = "pending", //xrp: submit fn received error -> tx might be submitted or not; utxo: tx was send but was not yet seen in mempool

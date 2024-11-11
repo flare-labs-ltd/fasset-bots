@@ -3,15 +3,6 @@ import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
 
-export interface FeeServiceOptions {
-    rateLimitOptions?: RateLimitOptions;
-    sleepTimeMs: number;
-    numberOfBlocksInHistory: number;
-}
-export interface WalletApi {
-    url: string;
-}
-
 export type UTXO = {
     value: NumberLike;
     // ... Add any other properties you want, like txid, vout, etc.
@@ -25,6 +16,7 @@ export interface TransactionOptionsWithFee {
     // depending on chain, set either maxFee or (gasPrice, gasLimit), but not both
     // if not used, fee/gas limits will be calculated and added automatically by the wallet
     maxFee?: NumberLike;
+    maxPaymentForFeeSource?: NumberLike,
     gasPrice?: NumberLike;
     gasLimit?: NumberLike;
 }
@@ -42,6 +34,7 @@ export interface IBlockChainWallet {
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
+        feeSourceAddress?: string
     ): Promise<number>;
 
     // Add a generic transaction from a set of source addresses to a set of target addresses.
@@ -94,4 +87,7 @@ export interface IBlockChainWallet {
     startMonitoringTransactionProgress(): Promise<void>;
     stopMonitoring(): Promise<void>;
     isMonitoring(): Promise<boolean>;
+
+    //
+    monitoringId(): string;
 }

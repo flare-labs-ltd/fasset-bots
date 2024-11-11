@@ -156,6 +156,7 @@ export class AgentBotCommands {
             return agentBot.agent;
         } catch (error) {
             logger.error(`Owner ${this.owner} couldn't create agent:`, error);
+            await this.notifierFor("Owner").agentCreationFailed(error as string);
             throw error;
         }
     }
@@ -370,7 +371,6 @@ export class AgentBotCommands {
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
         });
-        await this.notifierFor(agentVault).sendCancelRedeemCollateralPoolTokensAnnouncement();
         logger.info(`Agent ${agentVault} cancelled pool token redemption announcement.`);
     }
 
@@ -469,7 +469,9 @@ export class AgentBotCommands {
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
             });
-            const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference);
+            const feeSourceAddress = this.context.chainInfo.useOwnerUnderlyingAddressForPayingFees ? this.ownerUnderlyingAddress : undefined;
+            const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference,
+                undefined, undefined, undefined, undefined, feeSourceAddress);
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalConfirmTransactionId = txDbId;
             });

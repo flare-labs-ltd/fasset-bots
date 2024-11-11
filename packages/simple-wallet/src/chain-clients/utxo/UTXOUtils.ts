@@ -4,7 +4,6 @@ import {
     BTC_DUST_AMOUNT,
     BTC_LEDGER_CLOSE_TIME_MS,
     BTC_MAINNET,
-    BTC_MAX_ALLOWED_FEE,
     BTC_MIN_ALLOWED_AMOUNT_TO_SEND,
     BTC_MIN_ALLOWED_FEE,
     BTC_TESTNET,
@@ -14,6 +13,7 @@ import {
     DOGE_LEDGER_CLOSE_TIME_MS,
     DOGE_MAINNET,
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
+    DOGE_MIN_ALLOWED_FEE,
     DOGE_TESTNET,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
@@ -27,8 +27,8 @@ import { EntityManager } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplementation";
 import { UTXOEntity } from "../../entity/utxo";
 import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
-import { errorMessage } from "../../utils/axios-error-utils";
+import { errorMessage } from "../../utils/axios-utils";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 /*
  * COMMON UTILS
@@ -50,9 +50,10 @@ export function getMinAmountToSend(chainType: ChainType): BN {
     }
 }
 
+/* istanbul ignore next */
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
     try {
-        await ServiceRepository.get(client.chainType, BlockchainAPIWrapper).getCurrentBlockHeight();
+        await ServiceRepository.get(client.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
         return true;
     } catch (error) {
         logger.error(`Cannot get response from server ${errorMessage(error)}`);
@@ -86,8 +87,9 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
 export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
     const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
     const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
-    let sub: any[] = descendants;
+    let sub: TransactionEntity[] = descendants;
     for (const descendant of descendants) {
+        /* istanbul ignore next */
         if (descendant.transactionHash) {
             sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));
         }
@@ -95,26 +97,14 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
     return sub;
 }
 
-export async function getAccountBalance(chainType: ChainType, account: string, otherAddresses?: string[]): Promise<BN> {
+export async function getAccountBalance(chainType: ChainType, account: string): Promise<BN> {
     try {
-        const blockchainAPIWrapper = ServiceRepository.get(chainType, BlockchainAPIWrapper);
-        const accountBalance = await blockchainAPIWrapper.getAccountBalance(account);
-        if (accountBalance === undefined) {
-            throw new Error("Account balance not found");
-        }
-        const mainAccountBalance = toBN(accountBalance);
-        if (!otherAddresses) {
-            return mainAccountBalance;
-        } else {
-            const balancePromises = otherAddresses.map((address) => blockchainAPIWrapper.getAccountBalance(address));
-            const balanceResponses = await Promise.all(balancePromises);
-            const totalAddressesBalance = balanceResponses.reduce((sum, balance) => {
-                return balance !== undefined ? sum! + balance : balance;
-            }, 0);
-            return toBN(totalAddressesBalance!).add(mainAccountBalance);
-        }
-    } catch (error) {
-        logger.error(`Cannot get account balance for ${account} and other addresses ${otherAddresses}: ${errorMessage(error)}`);
+        const utxoBlockchainAPI = ServiceRepository.get(chainType, UTXOBlockchainAPI);
+        const accountBalance = await utxoBlockchainAPI.getAccountBalance(account);
+        const mainAccountBalance = toBN(accountBalance.balance);
+        return mainAccountBalance;
+    } catch (error) /* istanbul ignore next */  {
+        logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
         throw error;
     }
 }
@@ -168,10 +158,10 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
     switch (chainType) {
         case ChainType.BTC:
         case ChainType.testBTC:
-            return toBN(BTC_DEFAULT_FEE_PER_KB); // 0.0001 BTC ; in library 0.001 BTC https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+            return toBN(BTC_DEFAULT_FEE_PER_KB);
         case ChainType.DOGE:
         case ChainType.testDOGE:
-            return toBN(DOGE_DEFAULT_FEE_PER_KB); // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
+            return toBN(DOGE_DEFAULT_FEE_PER_KB);
         default:
             throw new Error(`Unsupported chain type ${chainType}`);
     }
@@ -179,17 +169,31 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
 
 export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
     if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
-        return feePerKB;
-    } else {
-        const minFee = BTC_MIN_ALLOWED_FEE;
-        const maxFee = BTC_MAX_ALLOWED_FEE;
+        const minFee = DOGE_MIN_ALLOWED_FEE;
         if (feePerKB.lt(minFee)) {
             return minFee;
-        } else if (feePerKB.gt(maxFee)) {
-            return maxFee;
+        }
+        else {
+            return feePerKB;
+        }
+    } else {
+        const minFee = BTC_MIN_ALLOWED_FEE;
+        if (feePerKB.lt(minFee)) {
+            return minFee;
         }
         else {
             return feePerKB;
         }
     }
+}
+
+export function utxoOnly(chainType: ChainType) {
+    if (chainType === ChainType.BTC || chainType === ChainType.testBTC ||
+        chainType === ChainType.DOGE || chainType === ChainType.testDOGE
+    ) {
+        return true;
+    } else {
+        return false;
+    }
+
 }
