@@ -144,8 +144,8 @@ export function validateAgentConfigFile(config: BotConfigFile): void {
         throw new CommandLineError(`At least one attestation provider url is required`);
     }
     for (const [symbol, fc] of Object.entries(config.fAssets)) {
-        if (fc.walletUrl == null) {
-            throw new CommandLineError(`Missing walletUrl in FAsset type ${symbol}`);
+        if (fc.walletUrls == null || fc.walletUrls.length === 0) {
+            throw new CommandLineError(`At least one walletUrl in FAsset type ${symbol} is required`);
         }
     }
 }

@@ -171,7 +171,7 @@ export class AgentService {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const transactionDatabaseId = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
         return {
-            transactionDatabaseId: transactionDatabaseId || null,
+            transactionDatabaseId: transactionDatabaseId ?? null,
         };
     }
 

@@ -1,5 +1,5 @@
-import { TransactionStatus, WALLET } from "../../src";
-import { DogecoinWalletConfig, FeeServiceConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
+import { DOGE, TransactionStatus } from "../../src";
+import { DogecoinWalletConfig } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
@@ -10,26 +10,22 @@ import {
     addConsoleTransportForTests,
     loop,
     resetMonitoringOnForceExit,
-    setMonitoringStatus,
     waitForTxToFinishWithStatus,
-} from "../test-util/util";
+} from "../test-util/common_utils";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
 import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
 import { ServiceRepository } from "../../src/ServiceRepository";
 import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import { correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
+import { setMonitoringStatus } from "../test-util/entity_utils";
+import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
-    url: process.env.DOGE_URL ?? "",
+    urls: [process.env.DOGE_URL ?? ""],
     inTestnet: true,
-};
-const feeServiceConfig: FeeServiceConfig = {
-    indexerUrl: process.env.DOGE_URL ?? "",
-    sleepTimeMs: 10000,
-    numberOfBlocksInHistory: 2,
 };
 let DOGEMccConnectionTest: DogecoinWalletConfig;
 
@@ -53,10 +49,9 @@ const targetFirstChange = {
 const DOGE_DECIMAL_PLACES = BTC_DOGE_DEC_PLACES;
 const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 
-let wClient: WALLET.DOGE;
-let fundedWallet: ICreateWalletResponse;
-let targetWallet: ICreateWalletResponse;
+let wClient: DOGE;
 let testOrm: ORM;
+const chainType = ChainType.testDOGE;
 
 describe("Dogecoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -69,19 +64,19 @@ describe("Dogecoin wallet tests", () => {
             ...DOGEMccConnectionTestInitial,
             em: testOrm.em,
             walletKeys: unprotectedDBWalletKeys,
-            feeServiceConfig: feeServiceConfig,
             enoughConfirmations: 2,
             rateLimitOptions: {
                 maxRPS: 100,
                 timeoutMs: 2000,
             },
         };
-        wClient = await WALLET.DOGE.initialize(DOGEMccConnectionTest);
-        await wClient.feeService?.setupHistory();
-        void wClient.feeService?.startMonitoringFees();
+        wClient = DOGE.initialize(DOGEMccConnectionTest);
         void wClient.startMonitoringTransactionProgress();
         resetMonitoringOnForceExit(wClient);
         await sleepMs(500);
+
+        const fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
+        await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
     after(async () => {
@@ -97,46 +92,47 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedWallet.address, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
-            .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedWallet.address}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
+        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
+
+        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
+            .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
 
     it("Should get account balance", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
-        const accountBalance = await wClient.getAccountBalance(fundedWallet.address);
+        const accountBalance = await wClient.getAccountBalance(fundedAddress);
         expect(accountBalance.gt(new BN(0))).to.be.true;
     });
 
-    it("Should get sub-account balances", async () => {
-        const balanceMain = await wClient.getAccountBalance(fundedAddress);
-        const balanceSub = await wClient.getAccountBalance(fundedFirstChange.address);
-        const balanceMainAndSub = await wClient.getAccountBalance(fundedAddress, [fundedFirstChange.address]);
-        expect((balanceSub.add(balanceMain)).eq(balanceMainAndSub)).to.be.true;
-    });
-
     it("Should create delete account transaction", async () => {
-        const account = await wClient.createWallet();
-        const txId = await wClient.createDeleteAccountTransaction(account.address, "", fundedAddress);
+        const account = wClient.createWallet();
+        await wClient.walletKeys.addKey(account.address, account.privateKey);
+        const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress);
         expect(txId).to.be.greaterThan(0);
         const [txEnt, ] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
     });
 
     it("Should check pending transaction", async () => {
+        const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
+        await wClient.walletKeys.addKey(targetWallet.address, targetWallet.privateKey);
         const toSend = toBNExp(10, BTC_DOGE_DEC_PLACES);
-        const txId = await wClient.createPaymentTransaction(targetAddress, "", fundedAddress, toSend);
+        const txId = await wClient.createPaymentTransaction(targetAddress, fundedAddress, toSend);
         expect(txId).to.be.greaterThan(0);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, txId);
+        const blockchainApi = ServiceRepository.get(chainType, UTXOBlockchainAPI);
+        const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
+        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, txEnt.source, utxosFromMempool);
+
         const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(
             txEnt.id,
             txEnt.source,
             txEnt.destination,
-            txEnt.amount || null,
+            txEnt.amount ?? null,
             txEnt.fee,
             txEnt.reference        );
 
-        await updateTransactionEntity(wClient.rootEm, txEnt.id, async (txEntToUpdate) => {
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify(transaction);
             txEntToUpdate.status = TransactionStatus.TX_PREPARED;
             txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());

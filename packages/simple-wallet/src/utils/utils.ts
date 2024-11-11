@@ -1,14 +1,19 @@
 import {
    ChainType,
-   DEFAULT_FEE_INCREASE,
+   DEFAULT_FEE_INCREASE, DEFAULT_RATE_LIMIT_OPTIONS,
    DROPS_PER_XRP,
 } from "./constants";
-import { StuckTransaction } from "../interfaces/IWalletTransaction";
+import { RateLimitOptions, StuckTransaction } from "../interfaces/IWalletTransaction";
 import BN from "bn.js";
 import { toBN } from "./bnutils";
 import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
+import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
+import { logger } from "./logger";
+import { errorMessage } from "./axios-utils";
+import crypto from "crypto";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -35,15 +40,6 @@ export function prefix0x(tx: string) {
 
 export function isValidHexString(maybeHexString: string) {
    return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
-}
-
-export function excludeNullFields<T>(dict: Record<string, T>): Record<string, NonNullable<T>> {
-   const result: Record<string, NonNullable<T>> = {};
-   for (const [key, val] of Object.entries(dict)) {
-      if (val == null) continue;
-      result[key] = val;
-   }
-   return result;
 }
 
 export function stuckTransactionConstants(chainType: ChainType): StuckTransaction {
@@ -84,11 +80,14 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    return false;
 }
 
-export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<boolean> {
+export function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): boolean {
    const blockRestrictionMet = !!executeUntilBlock && (currentBlockHeight + client.executionBlockOffset >= executeUntilBlock);
    // It probably should be following, but due to inconsistent block time on btc, we use currentTime
    //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)
-   const now = toBN(getCurrentTimestampInSeconds());
+   let now = toBN(getCurrentTimestampInSeconds());
+   if (client instanceof UTXOWalletImplementation) {
+      now = client.feeService.getLatestMedianTime() ?? now;
+   }
    if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
        executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
    }
@@ -133,6 +132,30 @@ export function roundUpXrpToDrops(amount: number): number {
    return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
 }
 
+
+export function createAxiosClient(axiosConfig: AxiosRequestConfig, rateLimitOptions: RateLimitOptions | undefined) {
+   const client = axios.create(axiosConfig);
+   return axiosRateLimit(client, {
+      ...DEFAULT_RATE_LIMIT_OPTIONS,
+      ...rateLimitOptions,
+   });
+}
+
+export async function tryWithClients<TResult>(clients: Record<string, AxiosInstance>, operation: (client: AxiosInstance) => Promise<TResult>, method: string) {
+   for (const [index, url] of Object.keys(clients).entries()) {
+      try {
+         const result = await operation(clients[url]);
+         return result;
+      } catch (error) {
+         if (index == Object.keys(clients).length - 1) {
+            throw error;
+         }
+         logger.warn(`Client ${url} - ${method} failed with: ${errorMessage(error)}`);
+      }
+   }
+   throw new Error(`All blockchain clients failed.`);
+}
+
 export function createMonitoringId(chainType: ChainType): string {
-   return `${chainType}-${Math.random().toString(36).substring(2, 10)}`;
+   return `${chainType}-${crypto.randomBytes(8).toString("hex")}`;
 }
