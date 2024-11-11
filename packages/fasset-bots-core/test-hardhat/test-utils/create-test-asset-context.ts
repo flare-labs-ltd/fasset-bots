@@ -384,7 +384,7 @@ function createTestAssetManagerSettings(
         takeOverRedemptionRequestWindowSeconds: 120,
         rejectedRedemptionDefaultFactorVaultCollateralBIPS: toBIPS(1.05),
         rejectedRedemptionDefaultFactorPoolBIPS: toBIPS(0.05),
-        transferFeeMillionths: 0,
+        transferFeeMillionths: 200,
         transferFeeClaimFirstEpochStartTs: Math.floor(new Date("2024-09-01").getTime() / 1000),
         transferFeeClaimEpochDurationSeconds: 1 * WEEKS,
         transferFeeClaimMaxUnexpiredEpochs: 12,

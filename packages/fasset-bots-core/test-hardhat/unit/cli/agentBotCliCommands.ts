@@ -191,10 +191,12 @@ describe("AgentBot cli commands unit tests", () => {
         await minter.executeMinting(crt, txHash);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
         await context.fAsset.transfer(ownerAddress, fBalance, { from: minter.address });
+        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
         await botCliCommands.selfClose(vaultAddress, fBalance.divn(2).toString());
         const fBalanceAfter = await context.fAsset.balanceOf(ownerAddress);
-        expect(fBalanceAfter.toString()).to.eq(fBalance.divn(2).toString());
+        expect(fBalanceAfter.toString()).to.eq(fBalance.divn(2).sub(transferFee).toString());
     });
 
     it("Should close vault", async () => {

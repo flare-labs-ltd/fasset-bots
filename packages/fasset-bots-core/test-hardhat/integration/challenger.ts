@@ -18,7 +18,7 @@ import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { fundUnderlying, performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { assertWeb3DeepEqual, createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -221,9 +221,16 @@ describe("Challenger tests", () => {
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // update underlying block
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // claim transfer fee
+        const balanceBefore = await context.fAsset.balanceOf(redeemer.address);
+        await agentBot.agent.claimAndSendTransferFee(redeemer.address);
+        const balanceAfter = await context.fAsset.balanceOf(redeemer.address);
+        assertWeb3DeepEqual(balanceAfter, balanceBefore.add(transferFee));
         // create redemption requests and perform redemption
         const [reqs] = await redeemer.requestRedemption(3);
         const rdReq = reqs[0];
@@ -308,7 +315,16 @@ describe("Challenger tests", () => {
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 1, orm, chain);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // claim transfer fee
+        const balanceBefore = await context.fAsset.balanceOf(redeemer.address);
+        await agentBot.agent.claimAndSendTransferFee(redeemer.address);
+        const balanceAfter = await context.fAsset.balanceOf(redeemer.address);
+        assertWeb3DeepEqual(balanceAfter, balanceBefore.add(transferFee));
         // update underlying block
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // perform redemption
@@ -582,7 +598,16 @@ describe("Challenger tests", () => {
         await createCRAndPerformMintingAndRunSteps(minter2, agentBot, 3, orm, chain);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // claim transfer fee
+        const balanceBefore = await context.fAsset.balanceOf(redeemer.address);
+        await agentBot.agent.claimAndSendTransferFee(redeemer.address);
+        const balanceAfter = await context.fAsset.balanceOf(redeemer.address);
+        assertWeb3DeepEqual(balanceAfter, balanceBefore.add(transferFee));
         // update underlying block
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
         // create redemption requests and perform redemption
