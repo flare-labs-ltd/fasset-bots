@@ -1,4 +1,4 @@
-import axios, {AxiosError} from "axios";
+import axios, { AxiosError } from "axios";
 import * as bitcore from "bitcore-lib";
 import {
     checkIfFeeTooHigh,
@@ -8,8 +8,8 @@ import {
     sleepMs,
     stuckTransactionConstants,
 } from "../../utils/utils";
-import {toBN, toNumber} from "../../utils/bnutils";
-import {ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME} from "../../utils/constants";
+import { toBN, toNumber } from "../../utils/bnutils";
+import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME } from "../../utils/constants";
 import {
     BaseWalletConfig,
     IWalletKeys,
@@ -19,7 +19,7 @@ import {
     WriteWalletInterface,
 } from "../../interfaces/IWalletTransaction";
 
-import BN, {max} from "bn.js";
+import BN, { max } from "bn.js";
 import {
     checkIfIsDeleting,
     correctUTXOInconsistenciesAndFillFromMempool, countDeleteTransactionsWithStatuses, countSpendableUTXOs,
@@ -34,12 +34,12 @@ import {
     resetTransactionEntity,
     updateTransactionEntity,
 } from "../../db/dbutils";
-import {logger} from "../../utils/logger";
-import {UTXOAccountGeneration} from "../account-generation/UTXOAccountGeneration";
-import {TransactionEntity, TransactionStatus} from "../../entity/transaction";
-import {SpentHeightEnum} from "../../entity/utxo";
-import {BlockchainFeeService} from "../../fee-service/fee-service";
-import {EntityManager, IDatabaseDriver} from "@mikro-orm/core";
+import { logger } from "../../utils/logger";
+import { UTXOAccountGeneration } from "../account-generation/UTXOAccountGeneration";
+import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
+import { SpentHeightEnum } from "../../entity/utxo";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
+import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
     getAccountBalance,
@@ -47,11 +47,11 @@ import {
     getMinAmountToSend,
     getTransactionDescendants,
 } from "../utxo/UTXOUtils";
-import {TransactionMonitor} from "../monitoring/TransactionMonitor";
-import {ServiceRepository} from "../../ServiceRepository";
-import {TransactionService} from "../utxo/TransactionService";
-import {TransactionUTXOService} from "../utxo/TransactionUTXOService";
-import {TransactionFeeService} from "../utxo/TransactionFeeService";
+import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
+import { ServiceRepository } from "../../ServiceRepository";
+import { TransactionService } from "../utxo/TransactionService";
+import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
+import { TransactionFeeService } from "../utxo/TransactionFeeService";
 import {
     errorMessage,
     isORMError,
@@ -59,10 +59,10 @@ import {
     NegativeFeeError,
     NotEnoughUTXOsError,
 } from "../../utils/axios-utils";
-import {AxiosTransactionSubmissionError, UTXORawTransaction} from "../../interfaces/IBlockchainAPI";
-import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
+import { AxiosTransactionSubmissionError, UTXORawTransaction } from "../../interfaces/IBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
-export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
+export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface, IMonitoredWallet {
     inTestnet: boolean;
     rootEm!: EntityManager;
     transactionFeeService: TransactionFeeService;
@@ -81,6 +81,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     useRBFFactor = 1.4;
 
     monitoringId: string;
+
     private monitor: TransactionMonitor;
 
     constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
@@ -277,13 +278,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     // MONITORING /////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
     async startMonitoringTransactionProgress(): Promise<void> {
-        await this.monitor.startMonitoringTransactionProgress({
-            submitPreparedTransactions: this.submitPreparedTransactions.bind(this),
-            checkPendingTransaction: this.checkPendingTransaction.bind(this),
-            prepareAndSubmitCreatedTransaction: this.prepareAndSubmitCreatedTransaction.bind(this),
-            checkSubmittedTransaction: this.checkSubmittedTransaction.bind(this),
-            checkNetworkStatus: async () => checkUTXONetworkStatus(this)
-        });
+        await this.monitor.startMonitoringTransactionProgress(this);
     }
 
     async isMonitoring(): Promise<boolean> {
@@ -292,6 +287,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     async stopMonitoring(): Promise<void> {
         await this.monitor.stopMonitoring();
+    }
+
+    async checkNetworkStatus(): Promise<boolean> {
+        return await checkUTXONetworkStatus(this);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -604,7 +603,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     async signAndSubmitProcess(txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string): Promise<void> {
         logger.info(`Submitting transaction ${txId}.`);
-        let signed: SignedObject = {txBlob: "", txHash: ""};
+        let signed: SignedObject = { txBlob: "", txHash: "" };
         try {
             signed = this.signTransaction(transaction, privateKey, privateKeyForFee);
             logger.info(`Transaction ${txId} is signed.`);
@@ -711,7 +710,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const signedTx = privateKeyForFee ? transaction.sign(privateKey).sign(privateKeyForFee) : transaction.sign(privateKey);
         const signedAndSerialized = signedTx.toString();
         const txId = transaction.id;
-        return {txBlob: signedAndSerialized, txHash: txId};
+        return { txBlob: signedAndSerialized, txHash: txId };
     }
 
     /**
