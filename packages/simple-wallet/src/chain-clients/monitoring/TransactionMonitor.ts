@@ -1,16 +1,15 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
-import { countTransactionsWithStatuses, fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, updateMonitoringState } from "../../db/dbutils";
+import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, updateMonitoringState } from "../../db/dbutils";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { convertToTimestamp, getCurrentTimestampInSeconds, getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
-import { getConfirmedAfter, getDefaultBlockTimeInSeconds, utxoOnly } from "../utxo/UTXOUtils";
+import { getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import { utxoOnly } from "../utxo/UTXOUtils";
 import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { errorMessage } from "../../utils/axios-utils";
-import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export interface IMonitoredWallet {
     submitPreparedTransactions(txEnt: TransactionEntity): Promise<void>;
@@ -27,10 +26,8 @@ export class TransactionMonitor {
     private monitoring = false;
     private chainType: ChainType;
     private rootEm: EntityManager;
-    private numberOfTransactionsPerBlock = 10; // For FAssets we have 10 transactions per block to complete
     monitoringId: string;
     feeService: BlockchainFeeService | undefined;
-    executionBlockOffset: number;
 
 
     constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
@@ -40,7 +37,6 @@ export class TransactionMonitor {
         if (utxoOnly(this.chainType)) {
             this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
         }
-        this.executionBlockOffset = stuckTransactionConstants(this.chainType).executionBlockOffset!;
     }
 
     async isMonitoring(): Promise<boolean> {
