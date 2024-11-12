@@ -33,7 +33,7 @@ export class TransactionMonitor {
         this.rootEm = rootEm;
         this.monitoringId = monitoringId;
         if (utxoOnly(this.chainType)) {
-            this.feeService = requireDefined(feeService);
+            this.feeService = feeService;
         }
     }
 
@@ -184,13 +184,13 @@ export class TransactionMonitor {
                     await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                     continue;
                 }
-                await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions);
+                await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions.bind(wallet));
                 if (wallet.resubmitSubmissionFailedTransactions) {
-                    await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions);
+                    await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions.bind(wallet));
                 }
-                await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction);
-                await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction);
-                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction);
+                await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction.bind(wallet));
+                await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction.bind(wallet));
+                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction.bind(wallet));
             } catch (error) {
                 if (error instanceof StopTransactionMonitor) break;
                 logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${MONITOR_LOOP_SLEEP}: ${errorMessage(error)}`);
