@@ -32,6 +32,7 @@ import {
     handleFeeToLow,
     handleMissingPrivateKey,
     resetTransactionEntity,
+    transactional,
     updateTransactionEntity,
 } from "../../db/dbutils";
 import {logger} from "../../utils/logger";
@@ -564,7 +565,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
 
                 const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
-                await this.rootEm.transactional(async (em) => {
+                await transactional(this.rootEm, async (em) => {
                     for (const descendant of descendants) {
                         descendant.ancestor = txEnt;
                     }
