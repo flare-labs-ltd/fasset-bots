@@ -79,7 +79,7 @@ export class TransactionMonitor {
                 const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
                 await sleepMs(MONITOR_PING_INTERVAL + randomMs); // to make sure pinger stops
                 await retryDatabaseTransaction(`stopping monitor for chain ${this.monitoringId}`, async () => {
-                    await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                    await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                         monitoringEnt.lastPingInTimestamp = toBN(0);
                     });
                 });
@@ -161,7 +161,7 @@ export class TransactionMonitor {
     private async updatePingLoop(): Promise<void> {
         while (this.monitoring) {
             await retryDatabaseTransaction(`updating ping status for chain ${this.monitoringId}`, async () => {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                     if (monitoringEnt.processOwner === this.monitoringId) {
                         monitoringEnt.lastPingInTimestamp = toBN(Date.now());
                     } else {

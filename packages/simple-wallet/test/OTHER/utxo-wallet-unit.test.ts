@@ -77,7 +77,7 @@ describe("UTXOWalletImplementation unit tests", () => {
         sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
         sinon.stub(dbutils, "correctUTXOInconsistenciesAndFillFromMempool").resolves();
         sinon.stub(wClient, "signAndSubmitProcess").callsFake(async (txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string) =>
-            await updateTransactionEntity(wClient.rootEm, txId, async (txEntToUpdate) => {
+            await updateTransactionEntity(wClient.rootEm, txId, (txEntToUpdate) => {
                 txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
             })
         );
