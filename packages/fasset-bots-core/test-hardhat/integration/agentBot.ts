@@ -559,6 +559,50 @@ describe("Agent bot tests", () => {
         assert.equal(handshakeAfter!.state, AgentHandshakeState.CANCELLED);
     });
 
+    it("Should perform minting and redemption with handshake enabled", async () => {
+        await enableHandshake();
+        // perform minting
+        const hs = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2);
+        await agentBot.runStep(orm.em);
+        const blockNumberBeforeHandshake = await web3.eth.getBlockNumber();
+        // update handshake status and create minting request
+        await agentBot.runStep(orm.em);
+        // the handshake status should now be 'APPROVED'
+        const allEvents = await readEventsFrom(context.assetManager, blockNumberBeforeHandshake);
+        const events = filterEventList(allEvents, context.assetManager, "CollateralReserved");
+        assert.equal(events.length, 1);
+        const crt = events[0].args;
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // request redemption
+        const [rdReqs] = await redeemer.requestRedemption(2);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // run agent's steps until redemption process is finished
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        // redeemer should now have some funds on the underlying chain
+        const balance = await chain.getBalance(redeemer.underlyingAddress);
+        assert.equal(String(balance), String(toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA))));
+    });
+
     it("Should not perform redemption - agent does not pay, time expires on underlying", async () => {
         // perform minting
         const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, 2);

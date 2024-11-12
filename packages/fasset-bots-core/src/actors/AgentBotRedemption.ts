@@ -574,7 +574,7 @@ export class AgentBotRedemption {
     async handleRejectedRedemptionRequests(rootEm: EM, batchSize: number = REDEMPTION_BATCH) {
         const rejectedRedemptionRequests = await rootEm.createQueryBuilder(RejectedRedemptionRequest)
             .where({
-                assetManagerAddress: this.context.assetManager.address,
+                agentAddress: this.agent.vaultAddress,
                 state: RejectedRedemptionRequestState.STARTED
             })
             .limit(batchSize)
