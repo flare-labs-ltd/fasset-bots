@@ -157,7 +157,7 @@ export function createTransactionInputEntity(
 
 // utxo operations
 export async function createUTXOEntity(
-    rootEm: EntityManager,
+    em: EntityManager,
     source: string,
     txHash: string,
     position: number,
@@ -166,7 +166,7 @@ export async function createUTXOEntity(
     spentTxHash: string | null = /* istanbul ignore next */ null,
     confirmed: boolean
 ): Promise<void> {
-    rootEm.create(UTXOEntity, {
+    const entity = em.create(UTXOEntity, {
         source: source,
         mintTransactionHash: txHash,
         spentHeight: SpentHeightEnum.UNSPENT,
@@ -175,8 +175,8 @@ export async function createUTXOEntity(
         script: script,
         spentTransactionHash: spentTxHash,
         confirmed: confirmed,
-    } as RequiredEntityData<UTXOEntity>);
-    await rootEm.flush();
+    } as RequiredEntityData<UTXOEntity>, );
+    em.persist(entity);
 }
 
 export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string, position: number): Promise<UTXOEntity> {
@@ -238,14 +238,13 @@ export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Pro
     });
 }
 
-export async function storeUTXOs(rootEm: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
+export async function storeUTXOs(em: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
     for (const utxo of mempoolUTXOs) {
         try {
-            await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, (utxoEnt) => {
-                utxoEnt.confirmed = utxo.confirmed;
-            });
-        } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
-            await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
+            const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, utxo.mintTxid, utxo.mintIndex);
+            utxoEnt.confirmed = utxo.confirmed;
+        } catch (_error) {
+            await createUTXOEntity(em, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }
 }
