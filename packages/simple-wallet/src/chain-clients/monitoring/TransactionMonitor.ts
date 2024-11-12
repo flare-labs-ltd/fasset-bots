@@ -4,9 +4,8 @@ import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransactio
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { getRandomInt, sleepMs } from "../../utils/utils";
+import { getRandomInt, requireDefined, sleepMs } from "../../utils/utils";
 import { utxoOnly } from "../utxo/UTXOUtils";
-import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { errorMessage } from "../../utils/axios-utils";
@@ -29,12 +28,12 @@ export class TransactionMonitor {
     monitoringId: string;
     feeService: BlockchainFeeService | undefined;
 
-    constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
+    constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string, feeService?: BlockchainFeeService) {
         this.chainType = chainType;
         this.rootEm = rootEm;
         this.monitoringId = monitoringId;
         if (utxoOnly(this.chainType)) {
-            this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+            this.feeService = requireDefined(feeService);
         }
     }
 
@@ -78,7 +77,7 @@ export class TransactionMonitor {
                 const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
                 await sleepMs(MONITOR_PING_INTERVAL + randomMs); // to make sure pinger stops
                 await retryDatabaseTransaction(`stopping monitor for chain ${this.monitoringId}`, async () => {
-                    await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                    await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                         monitoringEnt.lastPingInTimestamp = toBN(0);
                     });
                 });
@@ -160,7 +159,7 @@ export class TransactionMonitor {
     private async updatePingLoop(): Promise<void> {
         while (this.monitoring) {
             await retryDatabaseTransaction(`updating ping status for chain ${this.monitoringId}`, async () => {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                     if (monitoringEnt.processOwner === this.monitoringId) {
                         monitoringEnt.lastPingInTimestamp = toBN(Date.now());
                     } else {

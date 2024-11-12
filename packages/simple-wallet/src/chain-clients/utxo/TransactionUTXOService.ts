@@ -11,17 +11,16 @@ import {
 import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { SpentHeightEnum, UTXOEntity } from "../../entity/utxo";
-import { ServiceRepository } from "../../ServiceRepository";
 import { BTC_DOGE_DEC_PLACES, ChainType, MEMPOOL_CHAIN_LENGTH_LIMIT } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { EntityManager, IDatabaseDriver, Loaded, RequiredEntityData } from "@mikro-orm/core";
-import { FeeStatus, TransactionFeeService } from "./TransactionFeeService";
+import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
+import { FeeStatus } from "./TransactionFeeService";
 import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
-import { TransactionService } from "./TransactionService";
 import { getDustAmount, isEnoughUTXOs } from "./UTXOUtils";
 import { UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
+import { IUtxoWalletServices } from "./IUtxoWalletServices";
 
 export interface TransactionData {
     source: string;
@@ -39,10 +38,12 @@ export class TransactionUTXOService {
 
     readonly minimumUTXOValue: BN;
 
+    private readonly services: IUtxoWalletServices;
     private readonly rootEm: EntityManager;
     private readonly blockchainAPI: UTXOBlockchainAPI;
 
-    constructor(chainType: ChainType, enoughConfirmations: number) {
+    constructor(services: IUtxoWalletServices, chainType: ChainType, enoughConfirmations: number) {
+        this.services = services;
         this.chainType = chainType;
         this.enoughConfirmations = enoughConfirmations;
 
@@ -55,8 +56,8 @@ export class TransactionUTXOService {
             this.minimumUTXOValue = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
         }
 
-        this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
-        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
+        this.rootEm = services.rootEm;
+        this.blockchainAPI = services.blockchainAPI;
     }
 
     /**
@@ -67,7 +68,7 @@ export class TransactionUTXOService {
      */
     async fetchUTXOs(txData: TransactionData, rbfUTXOs?: UTXOEntity[]): Promise<UTXOEntity[]> {
         logger.info(`Listing UTXOs for address ${txData.source}`);
-        const currentFeeStatus = await ServiceRepository.get(this.chainType, TransactionFeeService).getCurrentFeeStatus();
+        const currentFeeStatus = await this.services.transactionFeeService.getCurrentFeeStatus();
         const fetchUnspent = await fetchUnspentUTXOs(this.rootEm, txData.source, rbfUTXOs ?? []);
         const needed = await this.selectUTXOs(fetchUnspent, rbfUTXOs ?? [], txData, currentFeeStatus);
         if (needed) {
@@ -241,7 +242,7 @@ export class TransactionUTXOService {
     }
 
     private async calculateChangeValue(txData: TransactionData, utxos: UTXOEntity[]): Promise<BN> {
-        const transactionService = ServiceRepository.get(this.chainType, TransactionService);
+        const transactionService = this.services.transactionService;
         const tr = await transactionService.createBitcoreTransaction(
             txData.source,
             txData.destination,

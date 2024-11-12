@@ -6,17 +6,17 @@ import { createTransactionEntity } from "../test-util/entity_utils";
 import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { expect } from "chai";
-import { ServiceRepository } from "../../src/ServiceRepository";
 import { MockBlockchainAPI } from "../test-util/common_utils";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
+import { IUtxoWalletServices } from "../../src/chain-clients/utxo/IUtxoWalletServices";
 
 
 describe("getNumberOfMempoolAncestors", () => {
     let em: EntityManager;
     const chainType = ChainType.testBTC;
+    const services: IUtxoWalletServices = {} as IUtxoWalletServices;
 
     async function checkNumberOfAncestors(txHash: string, expectedNumberOfMempoolAncestors: number) {
-        const txService = ServiceRepository.get(chainType, TransactionUTXOService);
+        const txService = services.transactionUTXOService;
         expect(await txService.getNumberOfMempoolAncestors(txHash)).to.be.eq(expectedNumberOfMempoolAncestors);
     }
 
@@ -24,9 +24,9 @@ describe("getNumberOfMempoolAncestors", () => {
         const conf = { ...config };
         conf.dbName = "get-transaction-descendants-test-db";
         em = (await initializeTestMikroORMWithConfig(conf)).em;
-        ServiceRepository.register(ChainType.testBTC, EntityManager, em);
-        ServiceRepository.register(ChainType.testBTC, UTXOBlockchainAPI, new MockBlockchainAPI());
-        ServiceRepository.register(ChainType.testBTC, TransactionUTXOService, new TransactionUTXOService(chainType, 2));
+        services.rootEm = em;
+        services.blockchainAPI = new MockBlockchainAPI();
+        services.transactionUTXOService = new TransactionUTXOService(services, chainType, 2);
     });
 
     beforeEach(async () => {
