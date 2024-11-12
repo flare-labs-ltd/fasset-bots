@@ -4,7 +4,7 @@ import { CollateralReserved } from "../../typechain-truffle/IIAssetManager";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { EventArgs } from "../utils/events/common";
-import { requiredEventArgs } from "../utils/events/truffle";
+import { findEvent, requiredEventArgs } from "../utils/events/truffle";
 import { BNish, MAX_BIPS, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
@@ -42,6 +42,16 @@ export class Minter {
     }
 
     async reserveCollateral(agent: string, lots: BNish, executorAddress?: string, executorFeeNatWei?: BNish) {
+        const res = await this._reserveCollateral(agent, lots, true, executorAddress, executorFeeNatWei);
+        return requiredEventArgs(res, 'CollateralReserved');
+    }
+
+    async reserveCollateralHandshake(agent: string, lots: BNish, checkUnderlyingAddressFunds: boolean = true, executorAddress?: string, executorFeeNatWei?: BNish) {
+        const res = await this._reserveCollateral(agent, lots, checkUnderlyingAddressFunds, executorAddress, executorFeeNatWei);
+        return requiredEventArgs(res, 'HandshakeRequired');
+    }
+
+    async _reserveCollateral(agent: string, lots: BNish, checkUnderlyingAddressFunds: boolean, executorAddress?: string, executorFeeNatWei?: BNish) {
         const agentInfo = await this.assetManager.getAgentInfo(agent);
         const settings = await this.assetManager.getSettings();
         const crFee = await this.getCollateralReservationFee(lots);
@@ -52,9 +62,15 @@ export class Minter {
         const lotSizeUBA = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
         const lotAmount =  toBN(lots).mul(lotSizeUBA);
         const mintPayment = lotAmount.add(lotAmount.mul(toBN(agentInfo.feeBIPS)).divn(MAX_BIPS));
-        await checkUnderlyingFunds(this.context, this.underlyingAddress, mintPayment, agentInfo.underlyingAddressString);
-        const res = await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, [this.underlyingAddress], { from: this.address, value: totalNatFee });
-        return requiredEventArgs(res, 'CollateralReserved');
+        if (checkUnderlyingAddressFunds) {
+            await checkUnderlyingFunds(this.context, this.underlyingAddress, mintPayment, agentInfo.underlyingAddressString);
+        }
+        return await this.assetManager.reserveCollateral(agent, lots, agentInfo.feeBIPS, executor, [this.underlyingAddress], { from: this.address, value: totalNatFee });
+    }
+
+    async cancelCollateralReservation(collateralReservationId: BNish) {
+        const res = await this.assetManager.cancelCollateralReservation(collateralReservationId, { from: this.address });
+        return requiredEventArgs(res, 'CollateralReservationCancelled');
     }
 
     async performMintingPayment(crt: EventArgs<CollateralReserved>): Promise<string> {

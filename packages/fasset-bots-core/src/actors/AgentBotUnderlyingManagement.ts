@@ -107,7 +107,7 @@ export class AgentBotUnderlyingManagement {
      */
     async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
-            rootEm.create(
+            em.create(
                 AgentUnderlyingPayment,
                 {
                     agentAddress: this.agent.vaultAddress,

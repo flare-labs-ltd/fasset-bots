@@ -37,11 +37,9 @@ export class AgentBotMinting {
      */
     async mintingStarted(rootEm: EM, request: EventArgs<CollateralReserved>): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
-            const handshake = await this.bot.handshake.findHandshake(rootEm, { requestId: request.collateralReservationId });
+            const handshake = await this.bot.handshake.findHandshake(em, { requestId: request.collateralReservationId });
             if (handshake != null) {
-                await this.bot.handshake.updateHandshake(rootEm, handshake, {
-                    state: AgentHandshakeState.APPROVED
-                });
+                handshake.state = AgentHandshakeState.APPROVED;
             }
             em.create(
                 AgentMinting,

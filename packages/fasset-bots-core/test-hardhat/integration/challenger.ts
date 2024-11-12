@@ -397,7 +397,7 @@ describe("Challenger tests", () => {
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
         await agentBot.runInTransaction(orm.em, async em => {
-            const rd = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+            const rd = await agentBot.redemption.findRedemption(em, { requestId: rdReq.requestId });
             rd.txDbId = txDbId;
             rd.state = AgentRedemptionState.PAID;
         })
