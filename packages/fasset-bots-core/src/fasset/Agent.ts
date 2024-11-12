@@ -433,12 +433,25 @@ export class Agent {
         await this.assetManager.agentPingResponse(this.vaultAddress, query, response, { from: this.owner.workAddress });
     }
 
-    async claimTransferFees(recipient: string, maxEpochs: BNish) {
-        const res = await this.assetManager.claimTransferFees(this.vaultAddress, recipient, maxEpochs, { from: this.owner.workAddress });
+    /**
+     * Claim transfer fees
+     * @param recipient native address that receives pool fees
+     * @param maxEpochsToClaim maximum number of epochs to claim
+     * @returns
+     */
+    async claimTransferFees(maxEpochsToClaim: BNish, recipient: string = this.owner.workAddress): Promise<void> {
+        await this.assetManager.claimTransferFees(this.vaultAddress, recipient, maxEpochsToClaim, { from: this.owner.workAddress });
+    }
+
+    // used for tests
+    async claimTransferFeesWithRes(recipient: string, maxClaimEpochs: BNish) {
+        const res = await this.assetManager.claimTransferFees(this.vaultAddress, recipient, maxClaimEpochs, { from: this.owner.workAddress });
         return requiredEventArgs(res, "TransferFeesClaimed");
     }
 
+    // used for tests
     async claimAndSendTransferFee(recipient: string) {
+        if ((await this.assetManager.transferFeeMillionths()).eqn(0)) return;
         const transferFeeEpoch = await this.assetManager.currentTransferFeeEpoch();
         // get epoch duration
         const settings = await this.assetManager.transferFeeSettings();
@@ -446,7 +459,7 @@ export class Agent {
         // move to next epoch
         await time.increase(epochDuration);
         // agent claims fee to redeemer address
-        const args = await this.claimTransferFees(recipient, transferFeeEpoch);
+        const args = await this.claimTransferFeesWithRes(recipient, transferFeeEpoch);
         const poolClaimedFee = args.poolClaimedUBA;
         // agent withdraws transfer fee from the pool
         const transferFeeMillionths = await this.assetManager.transferFeeMillionths();

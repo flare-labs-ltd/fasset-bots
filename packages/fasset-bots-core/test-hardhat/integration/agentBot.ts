@@ -771,7 +771,7 @@ describe("Agent bot tests", () => {
         const fBalance = await context.fAsset.balanceOf(minter.address);
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // claim and send transfer fee to redeemer address
-        const args = await agentBot.agent.claimAndSendTransferFee(redeemer.address);
+        await agentBot.agent.claimAndSendTransferFee(redeemer.address);
         // exit available
         const exitAllowedAt = await agentBot.agent.announceExitAvailable();
         await time.increaseTo(exitAllowedAt);
@@ -797,9 +797,25 @@ describe("Agent bot tests", () => {
             if (redemption.state === AgentRedemptionState.DONE) break;
             assert.isBelow(i, 50);  // prevent infinite loops
         }
-        // clear dust
         const info = await agentBot.agent.getAgentInfo();
+        // clear dust
+        const workAddress = agentBot.agent.owner.workAddress;
+        const balanceBefore = await context.fAsset.balanceOf(workAddress);
+        let balanceAfter: BN = toBN(0);
         if (!toBN(info.dustUBA).eqn(0)) {
+            // agent needs to claim and withdraw fees to have enough fAssets to self close dust
+            while (balanceAfter < balanceBefore.add(toBN(info.dustUBA))) {
+                const transferFeeEpoch = await agentBot.agent.assetManager.currentTransferFeeEpoch();
+                // get epoch duration
+                const settings = await agentBot.agent.assetManager.transferFeeSettings();
+                const epochDuration = settings.epochDuration;
+                // move to next epoch
+                await time.increase(epochDuration);
+                // agent claims fee to redeemer address
+                const args = await agentBot.agent.claimTransferFeesWithRes(workAddress, transferFeeEpoch);
+                await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, workAddress);
+                balanceAfter = await context.fAsset.balanceOf(workAddress);
+            }
             await agentBot.agent.selfClose(info.dustUBA);
         }
         // run agent's steps until destroy is announced
@@ -1049,6 +1065,30 @@ describe("Agent bot tests", () => {
             await time.advanceBlock();
             chain.mine();
             await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
+            try {
+                const info = await agentBot.agent.getAgentInfo();
+                // claim fee and withdraw pool fees to have enough fAssets to self close dust
+                if (!toBN(info.dustUBA).eqn(0)) {
+                    const workAddress = agentBot.agent.owner.workAddress;
+                    const balanceBefore = await context.fAsset.balanceOf(workAddress);
+                    let balanceAfter: BN = toBN(0);
+                    while (balanceAfter < balanceBefore.add(toBN(info.dustUBA))) {
+                        const transferFeeEpoch = await agentBot.agent.assetManager.currentTransferFeeEpoch();
+                        // get epoch duration
+                        const settings = await agentBot.agent.assetManager.transferFeeSettings();
+                        const epochDuration = settings.epochDuration;
+                        // move to next epoch
+                        await time.increase(epochDuration);
+                        // agent claims fee to redeemer address
+                        const args = await agentBot.agent.claimTransferFeesWithRes(workAddress, transferFeeEpoch);
+                        await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, workAddress);
+                        balanceAfter = await context.fAsset.balanceOf(workAddress);
+                    }
+                    await agentBot.agent.selfClose(info.dustUBA);
+                }
+            } catch (e) {
+                // agent destroyed, vault doesn't exist anymore
+            }
             // check if agent is not active
             orm.em.clear();
             const agentEnt = await agentBot.fetchAgentEntity(orm.em)
