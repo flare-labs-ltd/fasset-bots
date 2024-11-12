@@ -130,8 +130,13 @@ export class AgentBotRedemption {
     }
 
     async redemptionDefault(rootEm: EM, args: EventArgs<RedemptionDefault>) {
-        await this.updateRedemption(rootEm, { requestId: toBN(args.requestId) }, {
-            defaulted: true,
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            const redemption = await this.findRedemption(em, { requestId: toBN(args.requestId) });
+            redemption.defaulted = true;
+            if (redemption.state === AgentRedemptionState.UNPAID || redemption.state === AgentRedemptionState.REJECTED) {
+                redemption.finalState = this.getFinalState(redemption);
+                redemption.state = AgentRedemptionState.DONE;
+            }
         });
         await this.notifier.sendRedemptionDefaulted(args.requestId.toString(), args.redeemer);
     }
@@ -593,7 +598,7 @@ export class AgentBotRedemption {
             }
 
             const info = await this.agent.getAgentInfo();
-            if (info.mintedUBA.eq(BN_ZERO)) {
+            if (toBN(info.mintedUBA).eq(BN_ZERO)) {
                 continue; // agent has no tickets, so cannot take over
             }
 
