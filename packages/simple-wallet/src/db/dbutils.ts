@@ -301,10 +301,9 @@ export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: Entit
             logger.info(`Marked ${unspentUtxos.length} UTXOs as unspent`);
         }
         await em.persistAndFlush([...spentUtxos, ...unspentUtxos]);
+        // find new UTXOs in the mempool that are not yet in the db
+        await storeUTXOs(em, address, mempoolUTXOs);
     });
-    // find new UTXOs in the mempool that are not yet in the db
-    await storeUTXOs(rootEm, address, mempoolUTXOs);
-
 }
 
 
@@ -374,7 +373,7 @@ export async function failTransaction(rootEm: EntityManager, txId: number, reaso
     });
     /* istanbul ignore next */
     if (error) {
-        logger.error(`Transaction ${txId} failed: ${reason}`, error);
+        logger.error(`Transaction ${txId} failed: ${reason}: ${errorMessage(error)}`);
     } else {
         logger.error(`Transaction ${txId} failed: ${reason}`);
     }

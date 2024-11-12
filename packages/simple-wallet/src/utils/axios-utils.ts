@@ -5,6 +5,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { AxiosError } from "axios";
+import { sleepMs } from "./utils";
 
 export async function tryWithClients<T>(clients: AxiosInstance[], operation: (client: AxiosInstance) => Promise<T>, method: string) {
     for (const [index] of clients.entries()) {
@@ -92,4 +93,28 @@ export function createAxiosInstance(url: string, apiKey?: string, rateLimitOptio
         ...DEFAULT_RATE_LIMIT_OPTIONS,
         ...rateLimitOptions,
     });
+}
+
+export async function withRetry<T>(
+    fn: () => Promise<T>,
+    retryLimit = 3,
+    sleepTimeMs = 5000,
+    actionDescription = "action"
+): Promise<T | null> {
+    let attempts = 0;
+    while (attempts < retryLimit) {
+        try {
+            const result = await fn();
+            if (result) {
+                return result;
+            }
+            logger.warn(`Failed to complete ${actionDescription} (received null/0 result) on attempt ${attempts + 1}`);
+        } catch (error) /* istanbul ignore next */ {
+            logger.warn(`Error during ${actionDescription} on attempt ${attempts + 1}: ${errorMessage(error)}`);
+        }
+        attempts++;
+        if (attempts < retryLimit) await sleepMs(sleepTimeMs);
+    }
+    logger.error(`Failed to complete ${actionDescription} after ${retryLimit} attempts.`);
+    return null;
 }

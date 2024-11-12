@@ -124,6 +124,7 @@ export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0001, BTC_DOGE_DEC_PLACE
 export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES);
 
 export const BTC_MIN_ALLOWED_FEE = toBN(3000); //3000 sats/kb
+export const DOGE_MIN_ALLOWED_FEE = toBNExp(0.5, BTC_DOGE_DEC_PLACES); //0.5 doge/kb
 
 // Derived from https://test.jochen-hoenicke.de/queue/ and https://mempool.space
 export const BTC_LOW_FEE_PER_KB = toBN(10 * 1000); // 10 sat/vB
