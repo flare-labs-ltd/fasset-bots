@@ -68,6 +68,12 @@ export interface UnderlyingAddress {
     address: string;
 }
 
+export interface Collaterals {
+    symbol: string;
+    amount: string;
+    ownerBalance: string;
+}
+
 export interface VaultInfo {
     address: string;
     updating: boolean;

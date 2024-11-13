@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, Collaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
@@ -659,7 +659,7 @@ export class AgentService {
         await cli.depositCollateralForLots(agentVaultAddress, lots.toString(), multiplier);
     }
 
-    async calculateCollateralsForLots(fAssetSymbol: string, agentVaultAddress: string, lots: number, multiplier: number): Promise<string> {
+    async calculateCollateralsForLots(fAssetSymbol: string, agentVaultAddress: string, lots: number, multiplier: number): Promise<Collaterals[]> {
         const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
         const { agentBot } = await cli.getAgentBot(agentVaultAddress);
         const settings = await cli.context.assetManager.getSettings();
@@ -670,17 +670,21 @@ export class AgentService {
         const vaultCollateralType = await agentBot.agent.getVaultCollateral();
         const ownerVaultBalance = await this.getVaultBalance(cli, agentVaultAddress);
         const ownerPoolBalance  = await this.getPoolBalance(cli);
-        let message = "To deposit " + lots.toString() + " lots you need " + formatFixed(vaultCollateral, Number(vaultCollateralType.decimals), { decimals: 3, groupDigits: true, groupSeparator: "," });
+        /*let message = "To deposit " + lots.toString() + " lots you need " + formatFixed(vaultCollateral, Number(vaultCollateralType.decimals), { decimals: 3, groupDigits: true, groupSeparator: "," });
         message+= " "+ vaultCollateralType.tokenFtsoSymbol + " (work address has " + ownerVaultBalance + ") and " + formatFixed(poolCollateral, 18, { decimals: 3, groupDigits: true, groupSeparator: "," }) + " " + cli.context.nativeChainInfo.tokenSymbol;
-        message+= " (work address has "+ ownerPoolBalance + " " + cli.context.nativeChainInfo.tokenSymbol + ").";
-
-        return message;
+        message+= " (work address has "+ ownerPoolBalance + " " + cli.context.nativeChainInfo.tokenSymbol + ").";*/
+        const amountVaultNeeded = formatFixed(vaultCollateral, Number(vaultCollateralType.decimals), { decimals: 3, groupDigits: true, groupSeparator: "," });
+        const amountPoolNeeded = formatFixed(poolCollateral, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+        const col: Collaterals [] = [];
+        col.push({symbol: vaultCollateralType.tokenFtsoSymbol, amount: amountVaultNeeded, ownerBalance: ownerVaultBalance});
+        col.push({symbol: cli.context.nativeChainInfo.tokenSymbol, amount: amountPoolNeeded, ownerBalance: ownerPoolBalance})
+        return col;
     }
 
     async getVaultBalance(cli: AgentBotCommands, vaultAddress: string): Promise<string> {
         const balanceReader = await TokenBalances.agentVaultCollateral(cli.context, vaultAddress);
         const ownerBalance = await balanceReader.balance(cli.owner.workAddress);
-        const balanceFmt = balanceReader.format(ownerBalance);
+        const balanceFmt = balanceReader.formatValue(ownerBalance);
         return balanceFmt;
     }
 
