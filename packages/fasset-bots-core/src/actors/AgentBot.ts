@@ -37,6 +37,7 @@ import { AgentBotUnderlyingWithdrawal } from "./AgentBotUnderlyingWithdrawal";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 import { AgentBotHandshake } from "./AgentBotHandshake";
+import { KycClient } from "./plugins/KycStrategy";
 
 const PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS = 2 * MINUTES * 1000;
 
@@ -101,12 +102,13 @@ export class AgentBot {
         public notifier: AgentNotifier,
         public owner: OwnerAddressPair,
         public ownerUnderlyingAddress: string,
+        public kycClient: KycClient | null
     ) {}
 
     context = this.agent.context;
     tokens = new AgentTokenBalances(this.context, this.agent.vaultAddress);
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
-    handshake = new AgentBotHandshake(this, this.agent, this.notifier);
+    handshake = new AgentBotHandshake(this, this.agent, this.notifier, this.kycClient);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
     underlyingManagement = new AgentBotUnderlyingManagement(this, this.agent, this.agentBotSettings, this.notifier, this.ownerUnderlyingAddress, this.tokens);
@@ -167,6 +169,7 @@ export class AgentBot {
         addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentVaultInitSettings,
         notifierTransports: NotifierTransport[],
+        kycClient: KycClient | null = null
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
         // ensure that work address is defined
@@ -193,7 +196,7 @@ export class AgentBot {
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
 
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress, kycClient);
     }
 
     /**
@@ -227,6 +230,7 @@ export class AgentBot {
         agentEntity: AgentEntity,
         ownerUnderlyingAddress: string,
         notifierTransports: NotifierTransport[],
+        kycClient: KycClient | null = null
     ): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
@@ -246,7 +250,7 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress, kycClient);
     }
 
     static underlyingAddress(secrets: Secrets, chainId: ChainId) {
