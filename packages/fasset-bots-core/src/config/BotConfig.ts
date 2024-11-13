@@ -31,6 +31,7 @@ import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
 import { AgentBotDbUpgrades } from "../actors/AgentBotDbUpgrades";
+import { ChainalysisClient, KycClient } from "../actors/plugins/KycStrategy";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     secrets: Secrets;
@@ -319,4 +320,16 @@ export async function closeBotConfig(config: BotConfig) {
  */
 export function indexerApiKey(secrets: Secrets) {
     return secrets.required("apiKey.indexer");
+}
+
+/**
+ * Get the kyc client.
+ */
+export function getKycClient(secrets: Secrets): KycClient | null {
+    const kycClientUrl = secrets.optional("kyc.url");
+    if (kycClientUrl == null || kycClientUrl == "") {
+        return null;
+    }
+    const kycClientApiKey = secrets.required("kyc.api_key");
+    return new ChainalysisClient(kycClientUrl, kycClientApiKey);
 }

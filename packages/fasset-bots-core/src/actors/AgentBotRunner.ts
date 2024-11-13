@@ -1,6 +1,6 @@
 import { CreateRequestContext } from "@mikro-orm/core";
 import BN from "bn.js";
-import { AgentBotConfig, AgentBotSettings, Secrets } from "../config";
+import { AgentBotConfig, AgentBotSettings, getKycClient, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
@@ -255,7 +255,7 @@ export class AgentBotRunner {
             logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol}
                 on chain ${assetContext.chainInfo.chainId} with asset manager ${assetContext.assetManager.address}`);
         }
-        const kycClient = AgentBotRunner.getKycClient(secrets);
+        const kycClient = getKycClient(secrets);
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
         return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, botConfig.autoUpdateContracts, kycClient);
     }
@@ -300,14 +300,5 @@ export class AgentBotRunner {
         }
         //clear simpleWalletBackgroundTasks
         this.simpleWalletBackgroundTasks.clear();
-    }
-
-    static getKycClient(secrets: Secrets): KycClient | null {
-        const kycClientUrl = secrets.optional("kyc.url");
-        if (kycClientUrl == null || kycClientUrl == "") {
-            return null;
-        }
-        const kycClientApiKey = secrets.required("kyc.api_key");
-        return new ChainalysisClient(kycClientUrl, kycClientApiKey);
     }
 }
