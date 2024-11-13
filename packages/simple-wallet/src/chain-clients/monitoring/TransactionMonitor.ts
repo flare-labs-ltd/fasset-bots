@@ -4,9 +4,8 @@ import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransactio
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { getRandomInt, sleepMs } from "../../utils/utils";
+import { getRandomInt, requireDefined, sleepMs } from "../../utils/utils";
 import { utxoOnly } from "../utxo/UTXOUtils";
-import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { errorMessage } from "../../utils/axios-utils";
@@ -29,12 +28,12 @@ export class TransactionMonitor {
     monitoringId: string;
     feeService: BlockchainFeeService | undefined;
 
-    constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
+    constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string, feeService?: BlockchainFeeService) {
         this.chainType = chainType;
         this.rootEm = rootEm;
         this.monitoringId = monitoringId;
         if (utxoOnly(this.chainType)) {
-            this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+            this.feeService = feeService;
         }
     }
 
@@ -63,7 +62,6 @@ export class TransactionMonitor {
             }
             // start main loop
             await this.monitoringMainLoop(wallet);
-            Promise.allSettled
         } catch (error) {
             logger.error(`Monitoring failed for chain ${this.monitoringId} error: ${errorMessage(error)}.`);
         }
@@ -186,13 +184,13 @@ export class TransactionMonitor {
                     await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                     continue;
                 }
-                await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions);
+                await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions.bind(wallet));
                 if (wallet.resubmitSubmissionFailedTransactions) {
-                    await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions);
+                    await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions.bind(wallet));
                 }
-                await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction);
-                await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction);
-                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction);
+                await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction.bind(wallet));
+                await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction.bind(wallet));
+                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction.bind(wallet));
             } catch (error) {
                 if (error instanceof StopTransactionMonitor) break;
                 logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${MONITOR_LOOP_SLEEP}: ${errorMessage(error)}`);

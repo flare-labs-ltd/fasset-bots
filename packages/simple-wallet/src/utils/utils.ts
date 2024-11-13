@@ -159,3 +159,8 @@ export async function tryWithClients<TResult>(clients: Record<string, AxiosInsta
 export function createMonitoringId(chainType: ChainType): string {
    return `${chainType}-${crypto.randomBytes(8).toString("hex")}`;
 }
+
+export function requireDefined<T>(x: T, errorMessage?: string): NonNullable<T> {
+   if (x != null) return x as any;
+   throw new Error(errorMessage ?? "Value is null or undefined");
+}

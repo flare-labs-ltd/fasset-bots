@@ -5,11 +5,8 @@ import { toBN } from "web3-utils";
 import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/common_utils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
-import { ServiceRepository } from "../../src/ServiceRepository";
-import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
+import { FeeStatus } from "../../src/chain-clients/utxo/TransactionFeeService";
 import BN from "bn.js";
-import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
-import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
 import { expect } from "chai";
 import { createUTXOEntity } from "../test-util/entity_utils";
 
@@ -47,9 +44,9 @@ describe("Unit test for paying fees from additional wallet", () => {
 
     beforeEach(() => {
         sinon.restore();
-        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "getCurrentFeeStatus").resolves(FeeStatus.LOW);
-        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionFeeService), "getFeePerKB").resolves(new BN(1000));
-        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionUTXOService), "getNumberOfMempoolAncestors").resolves(0);
+        sinon.stub(wClient.transactionFeeService, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
+        sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
+        sinon.stub(wClient.transactionUTXOService, "getNumberOfMempoolAncestors").resolves(0);
     });
 
     it("It should create transaction from 'base' wallet even if the 'fee' wallet doesn't have enough funds", async () => {
@@ -68,7 +65,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 2000;
-        const [tr, utxos] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
 
         expect(utxos.map(t => t.source)).to.include(fundedAddress);
         expect(tr.getFee()).to.be.eq(fee);
@@ -88,7 +85,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 2000;
-        const [tr, utxos] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
 
         expect(utxos.filter(t => t.source !== fundedAddress)).to.be.empty;
         expect(tr.getFee()).to.be.eq(fee);
@@ -109,7 +106,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 1000;
-        const [tr,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
 
         // It should output 1500 (the amount), 2000 (fee remainder), 900 (remainder of amount)
         expect(tr.outputs.length).to.be.eq(3);
@@ -132,7 +129,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 1500;
-        const [tr,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
 
         // It should output 1500 (the amount) and 1400 = 4400 (sum of inputs) - 1500 (fee) - 1500 (the amount)
         expect(tr.outputs.length).to.be.eq(2);
@@ -154,7 +151,7 @@ describe("Unit test for paying fees from additional wallet", () => {
             }
         });
 
-        const [tr,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), undefined);
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), undefined);
 
         // Transaction should have 3 inputs and 3 ouputs => size is 307.5 vB => fee is 307 (since it's 1000sat/vB)
         // Outputs should be 1500 (the amount), 1693 (fee remainder), 900 (amount remainder)
@@ -176,7 +173,7 @@ describe("Unit test for paying fees from additional wallet", () => {
             }
         });
 
-        const [tr,] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), undefined);
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), undefined);
 
         // Transaction should have 3 inputs and 2 ouputs => size is 276.5 vB => fee is 276 (since it's 1000sat/vB)
         // Outputs should be 1500 (the amount), 1224 = 3000 - 1500 - 276 (amount remainder)

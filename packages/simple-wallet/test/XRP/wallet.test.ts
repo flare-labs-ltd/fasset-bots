@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
 import rewire from "rewire";
-import { ChainType, XRP_DECIMAL_PLACES } from "../../src/utils/constants";
+import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import {
     createInitialTransactionEntity,
@@ -21,7 +21,6 @@ import {
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
-import { ServiceRepository } from "../../src/ServiceRepository";
 import { sleepMs } from "../../src/utils/utils";
 import { WalletAddressEntity, XRP } from "../../src";
 import {
@@ -31,7 +30,6 @@ import {
 } from "../test-util/entity_utils";
 import { ECDSA } from "../../src/chain-clients/account-generation/XrpAccountGeneration";
 import sinon from "sinon";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 
 use(chaiAsPromised);
 
@@ -372,13 +370,6 @@ describe("Xrp wallet tests", () => {
         for (const id of ids) {
             await waitForTxToFinishWithStatus(2, 600, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
-    });
-
-    it("Should receive no service found ", async () => {
-        const fn = () => {
-            return ServiceRepository.get(ChainType.testXRP, UTXOBlockchainAPI).getUTXOsFromMempool("");
-        };
-        expect(fn).to.throw("No service registered for testXRP");
     });
 
     it("If blockchain submission API fails transaction's status should be set to TX_PENDING and resent", async () => {

@@ -1,4 +1,3 @@
-import {ServiceRepository} from "../../src/ServiceRepository";
 import {
     BitcoinWalletConfig,
     BTC,
@@ -7,24 +6,22 @@ import {
     SpentHeightEnum,
     TransactionStatus,
 } from "../../src";
-import config, {initializeTestMikroORMWithConfig} from "../test-orm/mikro-orm.config";
-import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {addConsoleTransportForTests, loop, waitForTxToFinishWithStatus} from "../test-util/common_utils";
-import {UTXOWalletImplementation} from "../../src/chain-clients/implementations/UTXOWalletImplementation";
+import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import { addConsoleTransportForTests, loop, waitForTxToFinishWithStatus } from "../test-util/common_utils";
+import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 import sinon from "sinon";
 import * as dbutils from "../../src/db/dbutils";
-import {fetchTransactionEntityById, updateTransactionEntity} from "../../src/db/dbutils";
+import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import {
     createAndPersistTransactionEntity,
     createAndPersistUTXOEntity,
     setMonitoringStatus
 } from "../test-util/entity_utils";
-import {toBN} from "web3-utils";
-import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
+import { toBN } from "web3-utils";
 import BN from "bn.js";
 import * as bitcore from "bitcore-lib";
-import {UTXOBlockchainAPI} from "../../src/blockchain-apis/UTXOBlockchainAPI";
-import {expect} from "chai";
+import { expect } from "chai";
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -72,8 +69,8 @@ describe("UTXOWalletImplementation unit tests", () => {
         await wClient.walletKeys.addKey(feeWallet.address, feeWallet.privateKey);
         await createUTXOs();
 
-        sinon.stub(ServiceRepository.get(wClient.chainType, TransactionUTXOService), "getNumberOfMempoolAncestors").resolves(0);
-        sinon.stub(ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI), "getUTXOsFromMempool").resolves([]);
+        sinon.stub(wClient.transactionUTXOService, "getNumberOfMempoolAncestors").resolves(0);
+        sinon.stub(wClient.blockchainAPI, "getUTXOsFromMempool").resolves([]);
         sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
         sinon.stub(dbutils, "correctUTXOInconsistenciesAndFillFromMempool").resolves();
         sinon.stub(wClient, "signAndSubmitProcess").callsFake(async (txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string) =>
@@ -86,14 +83,12 @@ describe("UTXOWalletImplementation unit tests", () => {
     });
 
     beforeEach(() => {
-        let startTime: number;
-
-        getBlockHeightStub = sinon.stub(ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI), "getCurrentBlockHeight").callsFake(async () => {
+        getBlockHeightStub = sinon.stub(wClient.blockchainAPI, "getCurrentBlockHeight").callsFake(async () => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
             return startBlockHeight + Math.floor(elapsedSeconds / 5);
         });
 
-        startTime = Date.now();
+        const startTime = Date.now();
     });
 
     afterEach(() => {
