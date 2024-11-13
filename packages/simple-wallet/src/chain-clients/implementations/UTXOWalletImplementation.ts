@@ -32,6 +32,7 @@ import {
     handleFeeToLow,
     handleMissingPrivateKey,
     resetTransactionEntity,
+    transactional,
     updateTransactionEntity,
 } from "../../db/dbutils";
 import {logger} from "../../utils/logger";
@@ -391,7 +392,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             // If fee source is non-existent/doesn't have high enough max amount
             if (!payingFeesFromFeeSource && checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null)) {
                 if (rbfReplacementFor) {
-                    await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => txEntToUpdate.fee = txEnt.maxFee!);
+                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => txEntToUpdate.fee = txEnt.maxFee!);
                 } else {
                     logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
                     return;
@@ -569,7 +570,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
 
                 const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
-                await this.rootEm.transactional(async (em) => {
+                await transactional(this.rootEm, async (em) => {
                     for (const descendant of descendants) {
                         descendant.ancestor = txEnt;
                     }

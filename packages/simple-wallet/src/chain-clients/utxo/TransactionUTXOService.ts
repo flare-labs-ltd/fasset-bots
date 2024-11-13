@@ -4,6 +4,7 @@ import {
     fetchUnspentUTXOs,
     fetchUTXOEntity,
     fetchUTXOsByTxId,
+    transactional,
     transformUTXOEntToTxInputEntity,
     updateTransactionEntity,
     updateUTXOEntity,
@@ -307,7 +308,7 @@ export class TransactionUTXOService {
             logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
             /* istanbul ignore else */
             if (tr) {
-                await this.rootEm.transactional(async (em) => {
+                await transactional(this.rootEm, async (em) => {
                     /* istanbul ignore next */
                     const txEnt = em.create(TransactionEntity, {
                         chainType: this.chainType,
