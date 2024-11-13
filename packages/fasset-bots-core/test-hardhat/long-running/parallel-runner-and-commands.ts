@@ -214,7 +214,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         const NAG = 5;
         const agents: Agent[] = [];
         for (let i = 0; i < NAG; i++) {
-            const agent = await agentCommands.createAgentVault(newAgentSettings(i));
+            const agent = await agentCommands.createAgentVault(newAgentSettings(i), secrets);
             const agentVault = agent.vaultAddress;
             await agentCommands.depositToVault(agentVault, usdcCurrency.parse("10000"));
             await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("3000000"));

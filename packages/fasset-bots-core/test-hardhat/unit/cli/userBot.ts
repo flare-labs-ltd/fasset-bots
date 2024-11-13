@@ -11,7 +11,7 @@ import { ORM } from "../../../src/config/orm";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
-import { ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
+import { ZERO_ADDRESS, assertNotNull, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -369,6 +369,7 @@ describe("UserBot cli commands unit tests", () => {
         const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined);
+        assertNotNull(resId);
         const userBalanceAfter = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoAfter = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfter.freePoolCollateralNATWei).lt(toBN(agentInfoBefore.freePoolCollateralNATWei)));
@@ -387,6 +388,7 @@ describe("UserBot cli commands unit tests", () => {
         const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, executor, fee);
+        assertNotNull(resId);
         const userBalanceAfter = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoAfter = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfter.freePoolCollateralNATWei).lt(toBN(agentInfoBefore.freePoolCollateralNATWei)));

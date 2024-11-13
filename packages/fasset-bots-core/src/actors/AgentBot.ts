@@ -169,7 +169,7 @@ export class AgentBot {
         addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentVaultInitSettings,
         notifierTransports: NotifierTransport[],
-        kycClient: KycClient | null = null
+        kycClient: KycClient | null
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
         // ensure that work address is defined

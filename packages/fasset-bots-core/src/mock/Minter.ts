@@ -3,13 +3,16 @@ import BN from "bn.js";
 import { CollateralReserved } from "../../typechain-truffle/IIAssetManager";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
-import { EventArgs } from "../utils/events/common";
-import { findEvent, requiredEventArgs } from "../utils/events/truffle";
-import { BNish, MAX_BIPS, ZERO_ADDRESS, fail, requireNotNull, toBN } from "../utils/helpers";
+import { EventArgs, EvmEvent } from "../utils/events/common";
+import { requiredEventArgs } from "../utils/events/truffle";
+import { BNish, MAX_BIPS, ZERO_ADDRESS, fail, requireNotNull, sleep, toBN } from "../utils/helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { MockChainWallet } from "./MockChain";
 import { MockIndexer } from "./MockIndexer";
 import { checkEvmNativeFunds, checkUnderlyingFunds } from "../utils/fasset-helpers";
+import { Truffle } from "../../typechain-truffle/types";
+import { Web3ContractEventDecoder } from "../utils/events/Web3ContractEventDecoder";
+import { web3 } from "../utils/web3";
 
 export class Minter {
     static deepCopyWithObjectCreate = true;
@@ -46,7 +49,7 @@ export class Minter {
         return requiredEventArgs(res, 'CollateralReserved');
     }
 
-    async reserveCollateralHandshake(agent: string, lots: BNish, checkUnderlyingAddressFunds: boolean = true, executorAddress?: string, executorFeeNatWei?: BNish) {
+    async reserveCollateralHandshake(agent: string, lots: BNish, executorAddress?: string, executorFeeNatWei?: BNish, checkUnderlyingAddressFunds: boolean = true) {
         const res = await this._reserveCollateral(agent, lots, checkUnderlyingAddressFunds, executorAddress, executorFeeNatWei);
         return requiredEventArgs(res, 'HandshakeRequired');
     }
@@ -118,5 +121,23 @@ export class Minter {
     async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
         await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAmount, paymentAddress);
         return this.wallet.addTransactionAndWaitForItsFinalization(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, undefined, untilBlockNumber, untilBlockTimestamp);
+    }
+
+    async waitForEvent(contract: Truffle.ContractInstance, fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
+        const sleepTime = 1000;
+        const eventDecoder = new Web3ContractEventDecoder({ contract });
+        for (let t = 0; t < maxWaitMs; t += sleepTime) {
+            const toBlock = await web3.eth.getBlockNumber();
+            if (fromBlock <= toBlock) {
+                const rawEvents = await web3.eth.getPastLogs({ address: contract.address, fromBlock, toBlock });
+                const events = eventDecoder.decodeEvents(rawEvents);
+                for (const event of events) {
+                    if (predicate(event)) return event;
+                }
+                fromBlock = toBlock + 1;
+            }
+            await sleep(sleepTime);
+        }
+        return null;
     }
 }

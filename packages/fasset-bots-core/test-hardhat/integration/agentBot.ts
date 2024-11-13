@@ -505,7 +505,7 @@ describe("Agent bot tests", () => {
         await enableHandshake();
         // perform minting
         minter = await createTestMinter(context, minterAddress, chain, "RANDOM_MINTER_UNDERLYING_ADDRESS", BN_ZERO);
-        const hr = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2, false);
+        const hr = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2, ZERO_ADDRESS, "0",false);
         await agentBot.runStep(orm.em);
         // should have an open handshake but no mintings
         orm.em.clear();

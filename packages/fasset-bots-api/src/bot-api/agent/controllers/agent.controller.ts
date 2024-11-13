@@ -7,7 +7,7 @@ import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, Ag
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
-import { AgentSettingsConfigDTO } from "../../common/AgentettingsConfigDTO";
+import { AgentSettingsConfigDTO } from "../../common/AgentSettingsConfigDTO";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
