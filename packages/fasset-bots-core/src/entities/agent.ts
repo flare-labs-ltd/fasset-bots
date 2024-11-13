@@ -410,7 +410,7 @@ export class AgentUpdateSetting {
 
 // Track of rejected redemption requests, so that agent can take it over.
 @Entity()
-@Unique({ properties: ["assetManagerAddress", "requestId"] })
+@Unique({ properties: ["agentAddress", "requestId"] })
 export class RejectedRedemptionRequest {
     @PrimaryKey({ autoincrement: true })
     id!: number;
@@ -419,7 +419,7 @@ export class RejectedRedemptionRequest {
     state!: RejectedRedemptionRequestState;
 
     @Property({ length: ADDRESS_LENGTH })
-    assetManagerAddress!: string;
+    agentAddress!: string;
 
     @Property({ type: BNType })
     requestId!: BN;

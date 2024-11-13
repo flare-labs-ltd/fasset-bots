@@ -72,7 +72,7 @@ export class AgentBotRedemption {
                 RejectedRedemptionRequest,
                 {
                     state: thisAgent ? RejectedRedemptionRequestState.DONE : RejectedRedemptionRequestState.STARTED,
-                    assetManagerAddress: this.context.assetManager.address,
+                    agentAddress: this.agent.vaultAddress,
                     requestId: toBN(args.requestId),
                     redeemerAddress: args.redeemer,
                     paymentAddress: args.paymentAddress,
@@ -94,6 +94,12 @@ export class AgentBotRedemption {
         const newAgent = args.newAgentVault.toLowerCase() === this.agent.vaultAddress.toLowerCase();
         await this.bot.runInTransaction(rootEm, async (em) => {
             const rejectedRedemptionRequest = await this.findRejectedRedemptionRequest(em, { requestId: toBN(args.requestId) });
+            if (rejectedRedemptionRequest == null) {
+                if (oldAgent || newAgent) {
+                    throw new Error(`Rejected redemption request not found for redemption ${args.requestId}`);
+                }
+                return; // just ignore as agent bot was started after the rejection
+            }
             rejectedRedemptionRequest.valueTakenOverUBA = rejectedRedemptionRequest.valueTakenOverUBA.add(toBN(args.valueTakenOverUBA));
             if (oldAgent && rejectedRedemptionRequest.valueTakenOverUBA.gte(rejectedRedemptionRequest.valueUBA)) {
                 // we are the agent who rejected the request but whole request was already taken over, mark as done
@@ -124,8 +130,13 @@ export class AgentBotRedemption {
     }
 
     async redemptionDefault(rootEm: EM, args: EventArgs<RedemptionDefault>) {
-        await this.updateRedemption(rootEm, { requestId: toBN(args.requestId) }, {
-            defaulted: true,
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            const redemption = await this.findRedemption(em, { requestId: toBN(args.requestId) });
+            redemption.defaulted = true;
+            if (redemption.state === AgentRedemptionState.UNPAID || redemption.state === AgentRedemptionState.REJECTED) {
+                redemption.finalState = this.getFinalState(redemption);
+                redemption.state = AgentRedemptionState.DONE;
+            }
         });
         await this.notifier.sendRedemptionDefaulted(args.requestId.toString(), args.redeemer);
     }
@@ -568,7 +579,7 @@ export class AgentBotRedemption {
     async handleRejectedRedemptionRequests(rootEm: EM, batchSize: number = REDEMPTION_BATCH) {
         const rejectedRedemptionRequests = await rootEm.createQueryBuilder(RejectedRedemptionRequest)
             .where({
-                assetManagerAddress: this.context.assetManager.address,
+                agentAddress: this.agent.vaultAddress,
                 state: RejectedRedemptionRequestState.STARTED
             })
             .limit(batchSize)
@@ -587,7 +598,7 @@ export class AgentBotRedemption {
             }
 
             const info = await this.agent.getAgentInfo();
-            if (info.mintedUBA.eq(BN_ZERO)) {
+            if (toBN(info.mintedUBA).eq(BN_ZERO)) {
                 continue; // agent has no tickets, so cannot take over
             }
 
@@ -656,6 +667,7 @@ export class AgentBotRedemption {
      async updateRejectedRedemptionRequest(rootEm: EM, rd: RedemptionId, modifications: Partial<RejectedRedemptionRequest>): Promise<RejectedRedemptionRequest> {
         return await this.bot.runInTransaction(rootEm, async (em) => {
             const redemption = await this.findRejectedRedemptionRequest(em, rd);
+            if (redemption == null) throw new Error(`Rejected redemption request not found for redemption ${rd}`);
             Object.assign(redemption, modifications);
             return redemption;
         });
@@ -668,9 +680,9 @@ export class AgentBotRedemption {
      */
     async findRejectedRedemptionRequest(em: EM, rd: RedemptionId) {
         if ("id" in rd) {
-            return await em.findOneOrFail(RejectedRedemptionRequest, { id: rd.id }, { refresh: true });
+            return await em.findOne(RejectedRedemptionRequest, { id: rd.id }, { refresh: true });
         } else {
-            return await em.findOneOrFail(RejectedRedemptionRequest, { assetManagerAddress: this.context.assetManager.address, requestId: rd.requestId }, { refresh: true });
+            return await em.findOne(RejectedRedemptionRequest, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true });
         }
     }
 }

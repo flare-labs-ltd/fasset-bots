@@ -674,7 +674,7 @@ export class AgentBot {
      */
     async updateAgentEntity(rootEm: EM, modify: (agentEnt: AgentEntity) => Promise<void>): Promise<void> {
         await this.runInTransaction(rootEm, async (em) => {
-            const agentEnt: AgentEntity = await this.fetchAgentEntity(rootEm);
+            const agentEnt: AgentEntity = await this.fetchAgentEntity(em);
             await modify(agentEnt);
         });
     }
