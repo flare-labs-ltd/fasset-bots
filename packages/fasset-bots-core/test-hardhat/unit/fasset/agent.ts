@@ -192,10 +192,10 @@ describe("Agent unit tests", () => {
         // withdraw pool fees
         const fPoolBalance = await agent.poolFeeBalance();
         await agent.withdrawPoolFees(fPoolBalance);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fPoolBalance.mul(transferFeeMillionths).divn(1e6);
         const fPoolBalanceAfterWithdraw = await agent.poolFeeBalance();
         const ownerFassets = await context.fAsset.balanceOf(agent.owner.workAddress);
-        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
-        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
         expect(ownerFassets.eq(fPoolBalance.sub(transferFee))).to.be.true;
         expect(fPoolBalanceAfterWithdraw.eqn(0)).to.be.true;
     });

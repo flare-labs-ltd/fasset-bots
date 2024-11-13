@@ -464,6 +464,7 @@ export class Agent {
         // agent withdraws transfer fee from the pool
         const transferFeeMillionths = await this.assetManager.transferFeeMillionths();
         // send more than pool claimed fee to cover transfer fee
+        // assuming that agent has enough pool fees (from minting, ...)
         const withdrawAmount = poolClaimedFee.muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
         await this.withdrawPoolFees(withdrawAmount, recipient);
         return args;

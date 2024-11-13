@@ -486,9 +486,11 @@ describe("Agent bot tests", () => {
         // redemption started
         await agentBot.handleEvents(orm.em);
         // skip time so the it will be too late for payment
-        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp) + 10);
-        chain.mine(Number(crt.lastUnderlyingBlock) + 10);
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp) + 10);
+        chain.mine(Number(rdReq.lastUnderlyingBlock) + 10);
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        const blockHeight = await agentBot.context.blockchainIndexer.getBlockHeight();
+        const lastBlock = await agentBot.context.blockchainIndexer.getBlockAt(blockHeight);
         // first step wil set state to UNPAID
         await agentBot.runStep(orm.em);
         orm.em.clear();
@@ -993,9 +995,11 @@ describe("Agent bot tests", () => {
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // withdraw pool fees to have enough fAssets for redemption
         const transferFeeMillionths = await agentBot.agent.assetManager.transferFeeMillionths();
-        const feePaid = fBalance.mul(transferFeeMillionths).divn(1e6);
-        const withdrawAmount = feePaid.muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
-        await agentBot.agent.withdrawPoolFees(withdrawAmount, redeemerAddress);
+        if (transferFeeMillionths.gt(toBN(0))) {
+            const feePaid = fBalance.mul(transferFeeMillionths).divn(1e6);
+            const withdrawAmount = feePaid.muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
+            await agentBot.agent.withdrawPoolFees(withdrawAmount, redeemerAddress);
+        }
         // request redemption
         await redeemer.requestRedemption(2);
         await agentBot.runStep(orm.em);
@@ -1067,12 +1071,15 @@ describe("Agent bot tests", () => {
             await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
             try {
                 const info = await agentBot.agent.getAgentInfo();
+                console.log("dust", String(info.dustUBA));
                 // claim fee and withdraw pool fees to have enough fAssets to self close dust
                 if (!toBN(info.dustUBA).eqn(0)) {
                     const workAddress = agentBot.agent.owner.workAddress;
                     const balanceBefore = await context.fAsset.balanceOf(workAddress);
                     let balanceAfter: BN = toBN(0);
+                    console.log("balance before", String(balanceBefore))
                     while (balanceAfter < balanceBefore.add(toBN(info.dustUBA))) {
+                        console.log(String(balanceAfter))
                         const transferFeeEpoch = await agentBot.agent.assetManager.currentTransferFeeEpoch();
                         // get epoch duration
                         const settings = await agentBot.agent.assetManager.transferFeeSettings();
