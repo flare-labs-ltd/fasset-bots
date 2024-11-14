@@ -264,12 +264,12 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
     return initialAgentData;
 }
 
-export async function runWithManualSCFinalization(context: IAssetAgentContext, finalizeAfter: boolean, method: () => Promise<void>) {
-    const scClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
-    scClient.finalizationType = "manual";
+export async function runWithManualFDCFinalization(context: IAssetAgentContext, finalizeAfter: boolean, method: () => Promise<void>) {
+    const fdcClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
+    fdcClient.finalizationType = "manual";
     await method();
     if (finalizeAfter) {
-        await scClient.finalizeRound();
+        await fdcClient.finalizeRound();
     }
-    scClient.finalizationType = "auto";
+    fdcClient.finalizationType = "auto";
 }

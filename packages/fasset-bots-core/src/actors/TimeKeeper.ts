@@ -31,7 +31,7 @@ export interface TimekeeperTimingConfig {
     maxUnderlyingTimestampAgeS: number;
 
     /**
-     * To prevent many bots submitting time concurrently (immediately after SC round finalization),
+     * To prevent many bots submitting time concurrently (immediately after FDC round finalization),
      * delay execution time by a random number of milliseconds, up to this amount.
      */
     maxUpdateTimeDelayMs: number;

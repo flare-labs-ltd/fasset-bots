@@ -26,7 +26,7 @@ import { AgentOwnerRegistryInstance, Truffle } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { QUERY_WINDOW_SECONDS, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, runWithManualFDCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -259,16 +259,16 @@ describe("Agent bot tests", () => {
         const mintingRequestedPaymentProof = mintings[0];
         assert.equal(mintingRequestedPaymentProof.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
         // remove the proof
-        const scClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
-        delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[mintingRequestedPaymentProof.proofRequestData!];
+        const fdcClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
+        delete fdcClient.finalizedRounds[fdcClient.finalizedRounds.length - 1].proofs[mintingRequestedPaymentProof.proofRequestData!];
         // check if minting is done
         await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
         const mintingRequestedPaymentProof1 = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
         assert.equal(mintingRequestedPaymentProof1.state, AgentMintingState.REQUEST_PAYMENT_PROOF);
-        // after one more flare data connector round, the minitng should be reset to started
-        scClient.rounds.push([]);
-        await scClient.finalizeRound();
+        // after one more flare data connector round, the minting should be reset to started
+        fdcClient.rounds.push([]);
+        await fdcClient.finalizeRound();
         // check minting status
         await agentBot.minting.handleOpenMintings(orm.em);
         orm.em.clear();
@@ -318,36 +318,36 @@ describe("Agent bot tests", () => {
         assert.equal(redemption.state, AgentRedemptionState.PAID);
         chain.mine(5);
         // submit proof
-        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
+        await runWithManualFDCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
         redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         expect(spyCCP).to.have.been.called.exactly(1);
         // remove the proof
-        const scClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
-        delete scClient.finalizedRounds[scClient.finalizedRounds.length - 1].proofs[redemption.proofRequestData!];
+        const fdcClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
+        delete fdcClient.finalizedRounds[fdcClient.finalizedRounds.length - 1].proofs[redemption.proofRequestData!];
         // redemption status should be stuck
-        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
+        await runWithManualFDCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
         redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         expect(spyCCP).to.have.been.called.exactly(2);
-        // after one more flare data connector round, the minitng should be reset to paid
-        scClient.rounds.push([]);
-        await scClient.finalizeRound();
+        // after one more flare data connector round, the minting should be reset to paid
+        fdcClient.rounds.push([]);
+        await fdcClient.finalizeRound();
         // check minting status
-        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
+        await runWithManualFDCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
         redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.PAID);
         // handle again
-        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
+        await runWithManualFDCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
         redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.REQUESTED_PROOF);
         expect(spyCCP).to.have.been.called.exactly(4);
         // and now it should be done
-        await runWithManualSCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
+        await runWithManualFDCFinalization(context, true, () => agentBot.redemption.handleOpenRedemptions(orm.em));
         orm.em.clear();
         redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
         assert.equal(redemption.state, AgentRedemptionState.DONE);
@@ -1372,7 +1372,7 @@ describe("Agent bot tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerManagementAddress, undefined, false);
         const ownerBalance = toBN(await web3.eth.getBalance(ownerAddress));
         const agentB = await createTestAgent(context, ownerManagementAddress, undefined, false);
-        // calculate minuimum amount of native currency to hold by agent owner
+        // calculate minimum amount of native currency to hold by agent owner
         const spyVaultTopUpFailed = spy.on(agentBot.notifier, "sendVaultCollateralTopUpFailedAlert");
         const spyPoolTopUpFailed = spy.on(agentBot.notifier, "sendPoolCollateralTopUpFailedAlert");
         const spyLowOwnerBalance = spy.on(agentBot.notifier, "sendLowBalanceOnOwnersAddress");
@@ -1529,7 +1529,7 @@ describe("Agent bot tests", () => {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
+            await runWithManualFDCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if agent is not active
             orm.em.clear();
             const agentEnt = await agentBot.fetchAgentEntity(orm.em)
