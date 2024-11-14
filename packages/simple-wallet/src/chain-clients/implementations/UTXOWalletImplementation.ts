@@ -105,7 +105,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.transactionService = new TransactionService(this, this.chainType, this.maximumNumberOfUTXOs);
         this.feeService = new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
 
-        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
+        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId, this.feeService);
     }
 
     getMonitoringId(): string {
