@@ -436,7 +436,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     async checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void> {
         logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
         try {
-            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
+            if (!txEnt.transactionHash) {
+                logger.warn(`Submitted transaction ${txEnt.id} is missing transactionHash. Recreating it.`);
+                await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
+                    resetTransactionEntity(txEnt);
+                });
+                return;
+            }
+            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
             // success
             if (txResp.blockHash && txResp.confirmations) {
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
