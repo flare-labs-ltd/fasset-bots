@@ -14,6 +14,8 @@ import {UniswapV2} from "./lib/UniswapV2.sol";
 import {Ecosystem} from "./lib/Ecosystem.sol";
 import {Optimum} from "./lib/Optimum.sol";
 
+import "hardhat/console.sol";
+
 
 /**
  * It is recommended for each person to deploy their own ownable
@@ -206,6 +208,8 @@ contract Liquidator is ILiquidator, Ownable {
             address,
             ArbitrageConfig
         ));
+        require(_fee <= _config.maxFlashFee,
+            "Liquidator: Flash lender passed too high fee");
         require(_token == _config.dexPair1.path[0],
             "Liquidator: Flash lender passed invalid token");
         _executeStrategy(_amount, _assetManager, _agentVault, _config);

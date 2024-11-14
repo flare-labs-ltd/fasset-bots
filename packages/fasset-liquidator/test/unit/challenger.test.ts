@@ -29,7 +29,7 @@ const challenges = [
             balanceDecreasingTxProof,
             agent, challenger,
             {
-                flashLender: ZeroAddress, dex: ZeroAddress,
+                flashLender: ZeroAddress, maxFlashFee: 0, dex: ZeroAddress,
                 dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
                 dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
             }
@@ -39,7 +39,7 @@ const challenges = [
         balanceDecreasingTxProof, balanceDecreasingTxProof,
         agent, challenger,
         {
-            flashLender: ZeroAddress, dex: ZeroAddress,
+            flashLender: ZeroAddress, maxFlashFee: 0, dex: ZeroAddress,
             dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
             dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
         }
@@ -49,7 +49,7 @@ const challenges = [
             [balanceDecreasingTxProof],
             agent, challenger,
             {
-                flashLender: ZeroAddress, dex: ZeroAddress,
+                flashLender: ZeroAddress, maxFlashFee: 0, dex: ZeroAddress,
                 dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
                 dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
             }
@@ -147,7 +147,7 @@ describe("Tests for the Challenger contract", () => {
         it("should not allow running any `runArbitrage` function by non challenger contract owner", async () => {
             await expect(context.contracts.challenger.connect(context.signers.liquidator).runArbitrage(
                 ZeroAddress, ZeroAddress, {
-                    flashLender: ZeroAddress, dex: ZeroAddress,
+                    flashLender: ZeroAddress, maxFlashFee: 0, dex: ZeroAddress,
                     dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
                     dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
                 }

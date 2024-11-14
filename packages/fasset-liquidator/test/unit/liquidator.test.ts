@@ -73,7 +73,7 @@ describe("Tests for the Liquidator contract", () => {
                     await contracts.liquidator.connect(signers.liquidator).runArbitrage(
                         contracts.agent, signers.rewardee,
                         {
-                            flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                            flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                             dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: swapPath1 },
                             dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: swapPath2 }
                         }
@@ -133,7 +133,7 @@ describe("Tests for the Liquidator contract", () => {
                 await contracts.liquidator.connect(signers.liquidator).runArbitrage(
                     contracts.agent, signers.rewardee,
                     {
-                        flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                        flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                         dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: swapPath1 },
                         dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: swapPath2 }
                     }
@@ -169,7 +169,7 @@ describe("Tests for the Liquidator contract", () => {
                 await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
                     contracts.agent, signers.rewardee,
                     {
-                        flashLender: ZeroAddress, dex: ZeroAddress,
+                        flashLender: ZeroAddress, maxFlashFee: 0, dex: ZeroAddress,
                         dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: swapPath1 },
                         dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: swapPath2 }
                     }
@@ -184,7 +184,7 @@ describe("Tests for the Liquidator contract", () => {
             await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
                 contracts.agent, signers.rewardee,
                 {
-                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                     dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
                     dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
                 }
@@ -193,7 +193,7 @@ describe("Tests for the Liquidator contract", () => {
             await contracts.liquidator.connect(signers.liquidator).runArbitrage(
                 contracts.agent, signers.rewardee,
                 {
-                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                     dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.vault, contracts.pool, contracts.fAsset] },
                     dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.pool, contracts.vault] }
                 }
@@ -213,7 +213,7 @@ describe("Tests for the Liquidator contract", () => {
             await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
                 contracts.agent, signers.rewardee,
                 {
-                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                     dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
                     dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
                 }
@@ -226,7 +226,7 @@ describe("Tests for the Liquidator contract", () => {
             await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
                 contracts.agent, signers.rewardee,
                 {
-                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                     dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
                     dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
                 }
@@ -239,7 +239,7 @@ describe("Tests for the Liquidator contract", () => {
             await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
                 contracts.agent, signers.rewardee,
                 {
-                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                     dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.vault, contracts.pool] },
                     dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [context.contracts.pool, context.contracts.vault] }
                 }
@@ -247,7 +247,7 @@ describe("Tests for the Liquidator contract", () => {
             await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
                 contracts.agent, signers.rewardee,
                 {
-                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                     dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.vault, contracts.pool, contracts.fAsset] },
                     dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.pool, contracts.fAsset] }
                 }
@@ -265,7 +265,7 @@ describe("Tests for the Liquidator contract", () => {
             await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
                 contracts.agent, signers.rewardee,
                 {
-                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    flashLender: contracts.flashLender, maxFlashFee: 0, dex: contracts.uniswapV2,
                     dexPair1: { minPriceMul: minPriceDex1Mul, minPriceDiv: minPriceDex1Div, path: [] },
                     dexPair2: { minPriceMul: minPriceDex2Mul, minPriceDiv: minPriceDex2Div, path: [] }
                 }
