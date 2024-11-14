@@ -10,7 +10,6 @@ import {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {setMonitoringStatus} from "../test-util/entity_utils";
 import {expect, use} from "chai";
-import {ServiceRepository} from "../../src/ServiceRepository";
 import {UTXOBlockchainAPI} from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import * as dbutils from "../../src/db/dbutils";
 import {decryptTestSecrets} from "../test-util/encryption_utils";
@@ -89,7 +88,7 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
-        const blockHeight = await ServiceRepository.get(wClient.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
+        const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(id, blockHeight);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED, id);
 
@@ -120,4 +119,3 @@ describe("Bitcoin wallet tests", () => {
         }
     }
 });
-
