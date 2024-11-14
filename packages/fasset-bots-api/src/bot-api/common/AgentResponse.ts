@@ -68,6 +68,12 @@ export interface UnderlyingAddress {
     address: string;
 }
 
+export interface Collaterals {
+    symbol: string;
+    amount: string;
+    ownerBalance: string;
+}
+
 export interface VaultInfo {
     address: string;
     updating: boolean;
@@ -84,7 +90,11 @@ export interface VaultInfo {
     health: string;
     poolCollateralUSD: string,
     mintCount: string,
-    poolFee: string
+    poolFee: string,
+    createdAt: number;
+    fasset: string;
+    lotsPoolBacked: string;
+    lotsVaultBacked: string;
 }
 
 export interface AllVaults {

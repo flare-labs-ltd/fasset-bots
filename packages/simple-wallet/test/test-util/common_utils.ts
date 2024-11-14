@@ -20,6 +20,9 @@ import { Transaction } from "bitcore-lib";
 import * as bitcore from "bitcore-lib";
 import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
+import {read} from "read";
+
+export const PASSWORD_MIN_LENGTH = 16;
 
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[]): boolean;
 export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndStatuses: TransactionStatus[], notAllowedEndStatuses: TransactionStatus[]): boolean;
@@ -255,4 +258,40 @@ export class MockBlockchainAPI extends UTXOBlockchainAPI {
     async findTransactionHashWithInputs(address: string, inputs: UTXORawTransactionInput[], submittedInBlock: number): Promise<string> {
         return Promise.resolve("");
     }
+}
+
+export function validateEncryptionPassword(password: string) {
+    if (password.length < PASSWORD_MIN_LENGTH) {
+        throw new Error(`Password should be at least ${PASSWORD_MIN_LENGTH} chars long`);
+    }
+}
+
+export async function promptPassword(): Promise<string> {
+    const password = await read({
+        prompt: `Enter the password: `,
+        silent: true,
+        replace: "*"
+    });
+    validateEncryptionPassword(password)
+    return password;
+}
+
+export function isJSON(content: string): boolean {
+    try {
+        JSON.parse(content);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+export interface AccountSecrets {
+    fundedWallet: Wallet;
+    targetWallet: Wallet;
+}
+
+export interface Wallet {
+    address: string;
+    mnemonic: string;
+    private_key: string;
 }

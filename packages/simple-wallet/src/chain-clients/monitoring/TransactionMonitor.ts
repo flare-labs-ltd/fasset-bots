@@ -259,7 +259,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
     }
 
-    private async processTransactions(
+    async processTransactions(
         threadEm: EntityManager,
         statuses: TransactionStatus[],
         processFunction: (txEnt: TransactionEntity) => Promise<void>

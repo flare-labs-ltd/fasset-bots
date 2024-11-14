@@ -83,8 +83,8 @@ export const DOGE_TESTNET = {
 // network configs
 
 export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
-   maxRPS: 30,
-   maxRequests: 50,
+   maxRPS: 100,
+   maxRequests: 1000,
    timeoutMs: 20000,
    retries: 10,
 };

@@ -1,6 +1,6 @@
 {
     "$schema": "./schema/bot-config.schema.json",
-    "loopDelay": 2500,
+    "loopDelay": 1000,
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
@@ -94,9 +94,15 @@
         }
     },
     "liquidationStrategy": {
-        "className": "DefaultLiquidationStrategy"
+        "className": "DefaultLiquidationStrategy",
+        "config": {
+            "gasPrice": "21000"
+        }
     },
     "challengeStrategy": {
-        "className": "DefaultChallengeStrategy"
+        "className": "DefaultChallengeStrategy",
+        "config": {
+            "gasPrice": "21000"
+        }
     }
 }
