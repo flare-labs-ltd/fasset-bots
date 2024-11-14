@@ -180,11 +180,14 @@ export class UserBotCommands {
             if (event == null) {
                 logger.info(`User ${this.nativeAddress} timed out waiting for agent ${agentVault} approval or rejection, cancelling the request.`);
                 await minter.cancelCollateralReservation(hs.collateralReservationId);
+                console.log("Handshake cancelled.");
                 return null;
             } else if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
+                console.log("Handshake approved.");
                 crt = event.args;
             } else {
                 logger.info(`User ${this.nativeAddress} received rejection for collateral reservation ${hs.collateralReservationId} from agent ${agentVault}.`);
+                console.log("Handshake rejected.");
                 return null;
             }
         }
