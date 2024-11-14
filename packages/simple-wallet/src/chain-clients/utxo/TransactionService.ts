@@ -5,8 +5,7 @@ import {
     fetchUnspentUTXOs,
     setAccountIsDeleting,
 } from "../../db/dbutils";
-import { ServiceRepository } from "../../ServiceRepository";
-import { EntityManager, IDatabaseDriver } from "@mikro-orm/core";
+import { EntityManager } from "@mikro-orm/core";
 import { ChainType, MIN_RELAY_FEE_INCREASE_RBF_IN_B } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
@@ -18,21 +17,24 @@ import { TransactionData, TransactionUTXOService } from "./TransactionUTXOServic
 import { TransactionFeeService } from "./TransactionFeeService";
 import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
 import { UTXO } from "../../interfaces/IWalletTransaction";
+import { IUtxoWalletServices } from "./IUtxoWalletServices";
 import UnspentOutput = Transaction.UnspentOutput;
 
 export class TransactionService {
 
+    private readonly services: IUtxoWalletServices;
     private readonly chainType: ChainType;
     private readonly transactionFeeService: TransactionFeeService;
     private readonly rootEm: EntityManager;
     private readonly utxoService: TransactionUTXOService;
     private readonly maximumNumberOfUTXOs: number;
 
-    constructor(chainType: ChainType, maximumNumberOfUTXOs: number) {
+    constructor(services: IUtxoWalletServices, chainType: ChainType, maximumNumberOfUTXOs: number) {
+        this.services = services;
         this.chainType = chainType;
-        this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
-        this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
-        this.utxoService = ServiceRepository.get(this.chainType, TransactionUTXOService);
+        this.transactionFeeService = services.transactionFeeService;
+        this.rootEm = services.rootEm;
+        this.utxoService = services.transactionUTXOService;
         this.maximumNumberOfUTXOs = maximumNumberOfUTXOs;
     }
 
@@ -178,7 +180,7 @@ export class TransactionService {
                 amountInSatoshi = utxos.reduce((acc: BN, t: UTXOEntity) => acc.add(t.value), new BN(0)).sub(feeInSatoshi);
                 txData.amount = amountInSatoshi;
             } else {
-                const balance = await getAccountBalance(this.chainType, source);
+                const balance = await getAccountBalance(this.services.blockchainAPI, source);
                 amountInSatoshi = balance.sub(feeInSatoshi);
                 txData.amount = amountInSatoshi;
             }

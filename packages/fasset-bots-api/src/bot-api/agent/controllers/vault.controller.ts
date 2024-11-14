@@ -3,7 +3,7 @@ import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } fr
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance } from "../../common/AgentResponse";
+import { AgentBalance, Collaterals } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
@@ -99,7 +99,7 @@ export class AgentVaultController {
         @Param("agentVaultAddress") agentVaultAddress: string,
         @Param("lots") lots: number,
         @Param("multiplier") multiplier: number
-    ): Promise<ApiResponseWrapper<string>> {
+    ): Promise<ApiResponseWrapper<Collaterals[]>> {
         return handleApiResponse(this.agentService.calculateCollateralsForLots(fAssetSymbol, agentVaultAddress, lots, multiplier));
     }
 

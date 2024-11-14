@@ -1,6 +1,4 @@
-import {
-    ChainType,
-} from "../utils/constants";
+import { ChainType } from "../utils/constants";
 import { sleepMs } from "../utils/utils";
 import { BlockStats } from "../interfaces/IWalletTransaction";
 import { toBN } from "../utils/bnutils";
@@ -8,7 +6,6 @@ import BN from "bn.js";
 import { logger } from "../utils/logger";
 
 import { errorMessage, withRetry } from "../utils/axios-utils";
-import { ServiceRepository } from "../ServiceRepository";
 import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
 
 export class BlockchainFeeService {
@@ -20,9 +17,9 @@ export class BlockchainFeeService {
     useNBlocksToCalculateFee = 5;
     monitoringId: string;
 
-    constructor(chainType: ChainType, monitoringId: string) {
+    constructor(blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
         this.chainType = chainType;
-        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
+        this.blockchainAPI = blockchainAPI;
         this.monitoringId = monitoringId;
     }
 
