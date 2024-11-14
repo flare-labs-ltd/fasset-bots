@@ -1,4 +1,4 @@
-import { FeeParams, IWalletKeys, TransactionInfo, TransactionStatus, WalletClient } from "@flarelabs/simple-wallet";
+import { FeeParams, ITransactionMonitor, IWalletKeys, TransactionInfo, TransactionStatus, WalletClient } from "@flarelabs/simple-wallet";
 import { sleep, toBN, unPrefix0x } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
@@ -12,7 +12,6 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     ) {}
 
     requestStopVal: boolean = false;
-    private isMonitoringInProgress = false;
 
     monitoringId(): string {
         return this.walletClient.getMonitoringId();
@@ -92,15 +91,10 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
     // background task (monitoring in simple-wallet) should be running
     /* istanbul ignore next */
     async waitForTransactionFinalization(id: number): Promise<string> {
+        const monitor = await this.createMonitor();
         try {
-            if (!(await this.isMonitoring())) {
-                if (!this.isMonitoringInProgress) {
-                    this.isMonitoringInProgress = true; // lock monitoring
-                    void this.startMonitoringTransactionProgress().catch((error) => {
-                        logger.error(`Background task to monitor wallet ${this.monitoringId()} ended unexpectedly:`, error);
-                        console.error(`Background task to monitor wallet  ${this.monitoringId()} ended unexpectedly:`, error);
-                    });
-                }
+            if (await monitor.runningMonitorId() == null) {
+                await monitor.startMonitoring();
             }
             logger.info(`Transactions txDbId ${id} is being checked`);
             let info = await this.checkTransactionStatus(id);
@@ -128,7 +122,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                 }
                 info = await this.checkTransactionStatus(id);
                 logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
-                await this.ensureWalletMonitoringRunning();
+                await this.ensureWalletMonitoringRunning(monitor);
                 if (this.requestStopVal) {
                     logger.warn(`Transaction monitoring ${this.monitoringId()} was stopped due to termination signal.`);
                     console.warn(`Transaction monitoring ${this.monitoringId()} was stopped due to termination signal.`);
@@ -141,8 +135,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
             }
             return info.transactionHash;
         } finally {
-            this.isMonitoringInProgress = false;
-            await this.stopMonitoring();
+            await monitor.stopMonitoring();
         }
     }
 
@@ -152,30 +145,19 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         return hash;
     }
 
-    async startMonitoringTransactionProgress(): Promise<void> {
-        await this.walletClient.startMonitoringTransactionProgress();
+    async createMonitor() {
+        return await this.walletClient.createMonitor();
     }
 
     async requestStop(): Promise<void> {
         this.requestStopVal = true;
     }
 
-    async stopMonitoring(): Promise<void> {
-        return this.walletClient.stopMonitoring();
-    }
-
-    async isMonitoring(): Promise<boolean> {
-        return this.walletClient.isMonitoring();
-    }
     /* istanbul ignore next */
-    private async ensureWalletMonitoringRunning() {
-        const isMonitoring = await this.isMonitoring();
-        if (!isMonitoring && !this.isMonitoringInProgress) {
-            this.isMonitoringInProgress = true;
-            void this.startMonitoringTransactionProgress().catch((error) => {
-                logger.error(`Background task to monitor wallet ${this.monitoringId()} ended unexpectedly:`, error);
-                console.error(`Background task to monitor wallet ${this.monitoringId()} ended unexpectedly:`, error);
-            });
+    private async ensureWalletMonitoringRunning(monitor: ITransactionMonitor) {
+        const someMonitorRunning = await monitor.runningMonitorId() != null;
+        if (!someMonitorRunning) {
+            await monitor.startMonitoring();
         }
     }
 }

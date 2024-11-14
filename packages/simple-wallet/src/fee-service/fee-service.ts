@@ -51,14 +51,9 @@ export class BlockchainFeeService {
         return latestMedianTime;
     }
 
-    async monitorFees(monitoring: boolean): Promise<void> {
-        if (monitoring === false) {
-            logger.info(`${this.monitoringId}: Stopped monitoring fees.`)
-            return;
-        }
+    async monitorFees(monitoring: () => boolean): Promise<void> {
         logger.info(`${this.monitoringId}: Started monitoring fees.`);
-
-        while (monitoring) {
+        while (monitoring()) {
             const currentBlockHeight = await this.getCurrentBlockHeightWithRetry();
             /* istanbul ignore next */
             const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
@@ -88,6 +83,7 @@ export class BlockchainFeeService {
             }
             await sleepMs(this.sleepTimeMs);
         }
+        logger.info(`${this.monitoringId}: Stopped monitoring fees.`)
     }
 
     async setupHistory(): Promise<void> {
@@ -134,7 +130,7 @@ export class BlockchainFeeService {
             retryLimit,
             this.sleepTimeMs,
             "fetching block height"
-        ) || 0;
+        ) ?? 0;
     }
 
     async getFeeStatsFromIndexer(blockHeight: number): Promise<{ blockHeight: number, averageFeePerKB: BN, blockTime: BN } | null> {

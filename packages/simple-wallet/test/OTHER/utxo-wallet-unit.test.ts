@@ -2,6 +2,7 @@ import {
     BitcoinWalletConfig,
     BTC,
     ICreateWalletResponse,
+    ITransactionMonitor,
     logger,
     SpentHeightEnum,
     TransactionStatus,
@@ -38,6 +39,7 @@ const BTCMccConnectionTestInitial = {
 };
 let BTCMccConnectionTest: BitcoinWalletConfig;
 let wClient: UTXOWalletImplementation;
+let monitor: ITransactionMonitor;
 
 let fundedWallet: ICreateWalletResponse;
 let feeWallet: ICreateWalletResponse;
@@ -79,7 +81,8 @@ describe("UTXOWalletImplementation unit tests", () => {
             })
         );
 
-        void wClient.startMonitoringTransactionProgress();
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
     });
 
     beforeEach(() => {
@@ -97,10 +100,10 @@ describe("UTXOWalletImplementation unit tests", () => {
 
 
     after(async () => {
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                if (!wClient.isMonitoring) return true;
+                if (!monitor.isMonitoring()) return true;
             });
         } catch (e) {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);

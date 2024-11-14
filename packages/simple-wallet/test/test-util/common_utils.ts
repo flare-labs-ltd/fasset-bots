@@ -1,4 +1,4 @@
-import { BaseWalletConfig, TransactionInfo, type WriteWalletInterface } from "../../src/interfaces/IWalletTransaction";
+import { BaseWalletConfig, ITransactionMonitor, TransactionInfo, type WriteWalletInterface } from "../../src/interfaces/IWalletTransaction";
 import { TransactionEntity, TransactionStatus } from "../../src/entity/transaction";
 import { sleepMs } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
@@ -117,7 +117,7 @@ export function addConsoleTransportForTests (logger: Logger) {
     };
 }
 
-export function resetMonitoringOnForceExit<T extends WriteWalletInterface>(wClient: T) {
+export function resetMonitoringOnForceExit<T extends ITransactionMonitor>(wClient: T) {
     process.on("SIGINT", () => {
         wClient.stopMonitoring().then(() => {
             logger.info("Stopped monitoring after SIGINT")

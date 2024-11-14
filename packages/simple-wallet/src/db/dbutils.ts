@@ -243,7 +243,7 @@ export async function storeUTXOs(em: EntityManager, source: string, mempoolUTXOs
         try {
             const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, utxo.mintTxid, utxo.mintIndex);
             utxoEnt.confirmed = utxo.confirmed;
-        } catch (_error) {
+        } catch (error) {
             await createUTXOEntity(em, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }
@@ -400,7 +400,7 @@ export async function setAccountIsDeleting(rootEm: EntityManager, address: strin
 
 // monitoring
 export async function fetchMonitoringState(rootEm: EntityManager, chainType: string): Promise<MonitoringStateEntity | null> {
-    return await rootEm.findOne(MonitoringStateEntity, { chainType } as FilterQuery<MonitoringStateEntity>, { refresh: true });
+    return await rootEm.findOne(MonitoringStateEntity, { chainType }, { refresh: true });
 }
 
 export async function updateMonitoringState(
@@ -415,7 +415,6 @@ export async function updateMonitoringState(
             return;
         }
         modify(stateEnt);
-        await em.persistAndFlush(stateEnt);
     });
 }
 

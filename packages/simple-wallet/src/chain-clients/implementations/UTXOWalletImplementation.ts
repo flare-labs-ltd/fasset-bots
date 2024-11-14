@@ -1,17 +1,16 @@
-import axios, {AxiosError} from "axios";
+import axios, { AxiosError } from "axios";
 import * as bitcore from "bitcore-lib";
 import {
     checkIfFeeTooHigh,
-    checkIfShouldStillSubmit,
-    createMonitoringId,
-    getCurrentTimestampInSeconds,
+    checkIfShouldStillSubmit, createMonitoringId, getCurrentTimestampInSeconds,
     sleepMs,
-    stuckTransactionConstants,
+    stuckTransactionConstants
 } from "../../utils/utils";
-import {toBN, toNumber} from "../../utils/bnutils";
-import {ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME} from "../../utils/constants";
+import { toBN, toNumber } from "../../utils/bnutils";
+import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME } from "../../utils/constants";
 import {
     BaseWalletConfig,
+    ITransactionMonitor,
     IWalletKeys,
     SignedObject,
     TransactionInfo,
@@ -19,7 +18,7 @@ import {
     WriteWalletInterface,
 } from "../../interfaces/IWalletTransaction";
 
-import BN, {max} from "bn.js";
+import BN, { max } from "bn.js";
 import {
     checkIfIsDeleting,
     correctUTXOInconsistenciesAndFillFromMempool, countDeleteTransactionsWithStatuses, countSpendableUTXOs,
@@ -35,11 +34,11 @@ import {
     transactional,
     updateTransactionEntity,
 } from "../../db/dbutils";
-import {logger} from "../../utils/logger";
-import {UTXOAccountGeneration} from "../account-generation/UTXOAccountGeneration";
-import {TransactionEntity, TransactionStatus} from "../../entity/transaction";
-import {SpentHeightEnum} from "../../entity/utxo";
-import {BlockchainFeeService} from "../../fee-service/fee-service";
+import { logger } from "../../utils/logger";
+import { UTXOAccountGeneration } from "../account-generation/UTXOAccountGeneration";
+import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
+import { SpentHeightEnum } from "../../entity/utxo";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { EntityManager } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
@@ -49,9 +48,9 @@ import {
     getTransactionDescendants,
 } from "../utxo/UTXOUtils";
 import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
-import {TransactionService} from "../utxo/TransactionService";
-import {TransactionUTXOService} from "../utxo/TransactionUTXOService";
-import {TransactionFeeService} from "../utxo/TransactionFeeService";
+import { TransactionService } from "../utxo/TransactionService";
+import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
+import { TransactionFeeService } from "../utxo/TransactionFeeService";
 import {
     errorMessage,
     isORMError,
@@ -59,13 +58,13 @@ import {
     NegativeFeeError,
     NotEnoughUTXOsError,
 } from "../../utils/axios-utils";
-import {AxiosTransactionSubmissionError, UTXORawTransaction} from "../../interfaces/IBlockchainAPI";
-import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
+import { AxiosTransactionSubmissionError, UTXORawTransaction } from "../../interfaces/IBlockchainAPI";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { IUtxoWalletServices } from "../utxo/IUtxoWalletServices";
 
 export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface, IMonitoredWallet, IUtxoWalletServices {
     inTestnet: boolean;
-    rootEm!: EntityManager;
+    rootEm: EntityManager;
     transactionFeeService: TransactionFeeService;
     transactionService: TransactionService;
     transactionUTXOService: TransactionUTXOService;
@@ -82,12 +81,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     useRBFFactor = 1.4;
 
     monitoringId: string;
+    createConfig: BaseWalletConfig;
 
-    private monitor: TransactionMonitor;
-
-    constructor(chainType: ChainType, createConfig: BaseWalletConfig) {
+    constructor(chainType: ChainType, monitoringId: string | null, createConfig: BaseWalletConfig) {
         super(chainType);
-        this.monitoringId = createMonitoringId(this.chainType);
+        this.monitoringId = monitoringId ?? createMonitoringId(chainType);
+        this.createConfig = createConfig;
         this.inTestnet = createConfig.inTestnet ?? false;
         const resubmit = stuckTransactionConstants(this.chainType);
 
@@ -104,9 +103,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.transactionUTXOService = new TransactionUTXOService(this, this.chainType, this.enoughConfirmations);
         this.transactionService = new TransactionService(this, this.chainType, this.maximumNumberOfUTXOs);
         this.feeService = new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
-
-        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
     }
+
+    abstract clone(monitoringId: string, rootEm: EntityManager): UTXOWalletImplementation;
 
     getMonitoringId(): string {
         return this.monitoringId;
@@ -258,16 +257,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     ///////////////////////////////////////////////////////////////////////////////////////
     // MONITORING /////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
-    async startMonitoringTransactionProgress(): Promise<void> {
-        await this.monitor.startMonitoringTransactionProgress(this);
-    }
 
-    async isMonitoring(): Promise<boolean> {
-        return await this.monitor.isMonitoring();
-    }
-
-    async stopMonitoring(): Promise<void> {
-        await this.monitor.stopMonitoring();
+    async createMonitor(): Promise<ITransactionMonitor> {
+        return new TransactionMonitor(this.chainType, this.rootEm, this.clone.bind(this), this.feeService);
     }
 
     async checkNetworkStatus(): Promise<boolean> {

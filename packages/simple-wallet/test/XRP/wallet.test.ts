@@ -1,4 +1,4 @@
-import { ICreateWalletResponse, RippleWalletConfig } from "../../src/interfaces/IWalletTransaction";
+import { ICreateWalletResponse, ITransactionMonitor, RippleWalletConfig } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
@@ -66,6 +66,7 @@ let fundedWallet: ICreateWalletResponse; //testnet, seed: sannPkA1sGXzM1MzEZBjrE
 let targetWallet: ICreateWalletResponse; //testnet, account: r4CrUeY9zcd4TpndxU5Qw9pVXfobAXFWqq
 let testOrm: ORM;
 let unprotectedDBWalletKeys: UnprotectedDBWalletKeys;
+let monitor: ITransactionMonitor;
 
 describe("Xrp wallet tests", () => {
     let removeConsoleTransport: () => void;
@@ -77,19 +78,20 @@ describe("Xrp wallet tests", () => {
         unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         XRPMccConnectionTest = { ...XRPMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
         wClient = XRP.initialize(XRPMccConnectionTest);
-        void wClient.startMonitoringTransactionProgress();
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
         await sleepMs(2000);
-        resetMonitoringOnForceExit(wClient);
+        resetMonitoringOnForceExit(monitor);
 
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, ECDSA.secp256k1);
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
     after(async () => {
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                if (!wClient.isMonitoring) return true;
+                if (!monitor.isMonitoring()) return true;
             });
         } catch (e) {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
@@ -99,7 +101,7 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Monitoring should be running", async () => {
-        const monitoring = await wClient.isMonitoring();
+        const monitoring = await monitor.isMonitoring();
         expect(monitoring).to.be.true;
     });
 
@@ -383,7 +385,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should fail - no privateKey ", async () => {
         const account = wClient.createWallet();
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
         await sleepMs(20000);
 
         const txEnt0 = await createInitialTransactionEntity(wClient.rootEm, wClient.chainType, account.address, targetAddress, amountToSendDropsFirst);
