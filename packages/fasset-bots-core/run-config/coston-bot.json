@@ -94,9 +94,15 @@
         }
     },
     "liquidationStrategy": {
-        "className": "DefaultLiquidationStrategy"
+        "className": "DefaultLiquidationStrategy",
+        "config": {
+            "gasPrice": "21000"
+        }
     },
     "challengeStrategy": {
-        "className": "DefaultChallengeStrategy"
+        "className": "DefaultChallengeStrategy",
+        "config": {
+            "gasPrice": "21000"
+        }
     }
 }
