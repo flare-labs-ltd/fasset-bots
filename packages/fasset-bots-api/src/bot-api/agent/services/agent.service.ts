@@ -1,6 +1,6 @@
-import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentInfoReader, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, createBotOrm, loadAgentConfigFile, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, ZERO_ADDRESS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
@@ -16,7 +16,6 @@ import { Alert } from "../../common/entities/AlertDB";
 import { ORM } from "../../../../../fasset-bots-core/src/config/orm";
 import BN from "bn.js";
 import { cachedSecrets } from "../agentServer";
-import { Address } from "cluster";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -541,7 +540,7 @@ export class AgentService {
     */
     async getAgentVaults(): Promise<any> {
         const config = loadConfigFile(FASSET_BOT_CONFIG)
-        const allVaults: AllVaults[] = [];
+        const allVaults: VaultInfo[] = [];
         function formatCR(bips: BNish) {
             if (String(bips) === "10000000000") return "<inf>";
             return formatFixed(toBN(bips), 4);
@@ -562,7 +561,6 @@ export class AgentService {
             const prices = [{ symbol: "CFLR", price: priceUSD, decimals: Number(cflrPrice.decimals) }];
 
             const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
-            const vaultsForFasset: VaultInfo[] = [];
             // For each vault calculate needed info
             for (const vault of agentVaults) {
                 await vault.updateSettings.init()
@@ -624,6 +622,10 @@ export class AgentService {
                 }
                 const totalCollateralUSD = formatFixed(totalVaultCollateralUSD.add(totalPoolCollateralUSD), 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
                 const feeShare = Number(info.poolFeeShareBIPS) / MAX_BIPS;
+                const assetManager = cli.context.assetManager;
+                const air = await AgentInfoReader.create(assetManager, vault.vaultAddress);
+                const lotsPoolBacked = toBN(info.totalPoolCollateralNATWei).div(air.poolCollateral.mintingCollateralRequired(air.lotSizeUBA()));
+                const lotsVaultBacked = toBN(info.totalVaultCollateralWei).div(air.vaultCollateral.mintingCollateralRequired(air.lotSizeUBA()));
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
                     vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), Number(await collateralToken.decimals()), { decimals: 3, groupDigits: true, groupSeparator: "," }),
@@ -632,13 +634,16 @@ export class AgentService {
                     collateralToken: info.vaultCollateralToken, health: status,
                     poolCollateralUSD: totalCollateralUSD,
                     mintCount: "0",
-                    poolFee: (feeShare * 100).toString()
+                    poolFee: (feeShare * 100).toString(),
+                    fasset: fasset,
+                    createdAt: Number(vault.createdAt),
+                    lotsPoolBacked: lotsPoolBacked.toString(),
+                    lotsVaultBacked: lotsVaultBacked.toString(),
                 };
-                vaultsForFasset.push(vaultInfo);
+                allVaults.push(vaultInfo);
             }
-            if (vaultsForFasset.length != 0)
-                allVaults.push({fassetSymbol: fasset, vaults: vaultsForFasset});
         }
+        allVaults.sort((a, b) => a.createdAt - b.createdAt);
         return allVaults;
     }
 

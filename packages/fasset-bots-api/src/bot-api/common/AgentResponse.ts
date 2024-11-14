@@ -90,7 +90,11 @@ export interface VaultInfo {
     health: string;
     poolCollateralUSD: string,
     mintCount: string,
-    poolFee: string
+    poolFee: string,
+    createdAt: number;
+    fasset: string;
+    lotsPoolBacked: string;
+    lotsVaultBacked: string;
 }
 
 export interface AllVaults {
