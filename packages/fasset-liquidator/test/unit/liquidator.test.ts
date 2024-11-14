@@ -1,5 +1,4 @@
 import { expect } from 'chai'
-import { ZeroAddress } from 'ethers'
 import { applySlippageToDexPrice } from '../calculations/calculations'
 import { swapInput, consecutiveSwapOutputs } from './utils/uniswap-v2'
 import { ContextUtils } from './utils/context'
@@ -9,6 +8,7 @@ import { XRP, WFLR, USDT } from './fixtures/assets'
 import { EcosystemFactory } from './fixtures/ecosystem'
 import type { AssetConfig, EcosystemConfig, TestContext } from './fixtures/interfaces'
 import type { ERC20 } from '../../types'
+import { ZeroAddress } from 'ethers'
 
 type SwapPathsFixture = [string[], string[]]
 type SwapPaths = [ERC20[], ERC20[]]
@@ -71,13 +71,12 @@ describe("Tests for the Liquidator contract", () => {
                     const agentVaultBalanceBefore = await contracts.vault.balanceOf(contracts.agent)
                     const agentPoolBalanceBefore = await contracts.pool.balanceOf(contracts.agent)
                     await contracts.liquidator.connect(signers.liquidator).runArbitrage(
-                        contracts.agent,
-                        signers.rewardee,
-                        0, 1, 0, 1,
-                        ZeroAddress,
-                        ZeroAddress,
-                        swapPath1,
-                        swapPath2
+                        contracts.agent, signers.rewardee,
+                        {
+                            flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                            dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: swapPath1 },
+                            dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: swapPath2 }
+                        }
                     )
                     const { mintedUBA: mintedFAssetAfter } = await contracts.assetManager.getAgentInfo(contracts.agent)
                     const agentVaultBalanceAfter = await contracts.vault.balanceOf(contracts.agent)
@@ -132,13 +131,12 @@ describe("Tests for the Liquidator contract", () => {
                 const flashLenderVaultBefore = await contracts.vault.balanceOf(contracts.flashLender)
                 // perform arbitrage by liquidation
                 await contracts.liquidator.connect(signers.liquidator).runArbitrage(
-                    contracts.agent,
-                    signers.rewardee,
-                    0, 1, 0, 1,
-                    ZeroAddress,
-                    ZeroAddress,
-                    swapPath1,
-                    swapPath2
+                    contracts.agent, signers.rewardee,
+                    {
+                        flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                        dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: swapPath1 },
+                        dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: swapPath2 }
+                    }
                 )
                 const { mintedUBA: mintedFAssetAfter } = await contracts.assetManager.getAgentInfo(contracts.agent)
                 const liquidatedFAsset = mintedFAssetBefore - mintedFAssetAfter
@@ -169,13 +167,12 @@ describe("Tests for the Liquidator contract", () => {
                 const { contracts, signers } = context
                 await utils.configureEcosystem(config)
                 await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
-                    contracts.agent,
-                    signers.rewardee,
-                    0, 1, 0, 1,
-                    ZeroAddress,
-                    ZeroAddress,
-                    swapPath1,
-                    swapPath2
+                    contracts.agent, signers.rewardee,
+                    {
+                        flashLender: ZeroAddress, dex: ZeroAddress,
+                        dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: swapPath1 },
+                        dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: swapPath2 }
+                    }
                 )).to.be.revertedWith("Liquidator: No profit available")
             })
         })
@@ -185,17 +182,21 @@ describe("Tests for the Liquidator contract", () => {
             const { contracts, signers } = context
             await utils.configureEcosystem(config)
             await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
-                contracts.agent, signers.rewardee, 0, 1, 0, 1, ZeroAddress, ZeroAddress, [], []
+                contracts.agent, signers.rewardee,
+                {
+                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+                    dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+                }
             )).to.be.revertedWith("Liquidator: No profit available")
             // bypass the broken vault -> f-asset path with vault -> pool -> f-asset
             await contracts.liquidator.connect(signers.liquidator).runArbitrage(
-                contracts.agent,
-                signers.rewardee,
-                0, 1, 0, 1,
-                ZeroAddress,
-                ZeroAddress,
-                [contracts.vault, contracts.pool, contracts.fAsset],
-                [contracts.pool, contracts.vault]
+                contracts.agent, signers.rewardee,
+                {
+                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.vault, contracts.pool, contracts.fAsset] },
+                    dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.pool, contracts.vault] }
+                }
             )
             const profit = await contracts.vault.balanceOf(signers.rewardee)
             expect(profit).to.be.greaterThan(0)
@@ -210,38 +211,46 @@ describe("Tests for the Liquidator contract", () => {
             await utils.configureEcosystem(ecosystemFactory.healthyEcosystemWithVaultUnderwater)
             await contracts.vault.burn(contracts.flashLender, await contracts.vault.balanceOf(contracts.flashLender))
             await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
-                context.contracts.agent, context.signers.rewardee, 0, 1, 0, 1, ZeroAddress, ZeroAddress, [], []
+                contracts.agent, signers.rewardee,
+                {
+                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+                    dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+                }
             )).to.be.revertedWith("Liquidator: Flash loan unavailable")
         })
 
         it("should fail if agent is not in liquidation", async () => {
+            const { contracts, signers } = context
             await utils.configureEcosystem(ecosystemFactory.baseEcosystem)
             await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
-                context.contracts.agent, context.signers.rewardee, 0, 1, 0, 1, ZeroAddress, ZeroAddress, [], []
+                contracts.agent, signers.rewardee,
+                {
+                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+                    dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+                }
             )).to.be.revertedWith("Liquidator: No f-asset to liquidate")
         })
 
         it("should fail when given incorrect liquidation paths", async () => {
+            const { contracts, signers } = context
             await utils.configureEcosystem(ecosystemFactory.healthyEcosystemWithVaultUnderwater)
             await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
-                context.contracts.agent,
-                context.signers.rewardee,
-                0, 1,
-                0, 1,
-                ZeroAddress,
-                ZeroAddress,
-                [context.contracts.vault, context.contracts.pool],
-                [context.contracts.pool, context.contracts.vault]
+                contracts.agent, signers.rewardee,
+                {
+                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.vault, contracts.pool] },
+                    dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [context.contracts.pool, context.contracts.vault] }
+                }
             )).to.be.revertedWith("Liquidator: Invalid token path")
             await expect(context.contracts.liquidator.connect(context.signers.liquidator).runArbitrage(
-                context.contracts.agent,
-                context.signers.rewardee,
-                0, 1,
-                0, 1,
-                ZeroAddress,
-                ZeroAddress,
-                [context.contracts.vault, context.contracts.pool, context.contracts.fAsset],
-                [context.contracts.pool, context.contracts.fAsset]
+                contracts.agent, signers.rewardee,
+                {
+                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.vault, contracts.pool, contracts.fAsset] },
+                    dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [contracts.pool, contracts.fAsset] }
+                }
             )).to.be.revertedWith("Liquidator: Invalid token path")
         })
 
@@ -254,14 +263,12 @@ describe("Tests for the Liquidator contract", () => {
             const [minPriceDex1Mul, minPriceDex1Div] = applySlippageToDexPrice(1000, config.dex1VaultReserve, config.dex1FAssetReserve)
             const [minPriceDex2Mul, minPriceDex2Div] = applySlippageToDexPrice(1000, config.dex2PoolReserve, config.dex2VaultReserve)
             await expect(contracts.liquidator.connect(signers.liquidator).runArbitrage(
-                contracts.agent,
-                signers.rewardee,
-                minPriceDex1Mul,
-                minPriceDex1Div,
-                minPriceDex2Mul,
-                minPriceDex2Div,
-                ZeroAddress, ZeroAddress,
-                [], []
+                contracts.agent, signers.rewardee,
+                {
+                    flashLender: contracts.flashLender, dex: contracts.uniswapV2,
+                    dexPair1: { minPriceMul: minPriceDex1Mul, minPriceDiv: minPriceDex1Div, path: [] },
+                    dexPair2: { minPriceMul: minPriceDex2Mul, minPriceDiv: minPriceDex2Div, path: [] }
+                }
             )).to.be.revertedWith("UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT")
         })
 

@@ -1,5 +1,6 @@
-import { expect } from 'chai'
 import { ethers } from 'hardhat'
+import { ZeroAddress, parseEther } from 'ethers'
+import { expect } from 'chai'
 import { ContextUtils } from './utils/context'
 import { getTestContext } from './fixtures/context'
 import { EcosystemFactory } from './fixtures/ecosystem'
@@ -25,18 +26,33 @@ const ecosystems = [
 const challenges = [
     (challenger: Challenger, agent: AgentMock) =>
         challenger.illegalPaymentChallenge(
-            balanceDecreasingTxProof, agent,
-            0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+            balanceDecreasingTxProof,
+            agent, challenger,
+            {
+                flashLender: ZeroAddress, dex: ZeroAddress,
+                dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+                dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+            }
         ),
-    (challenger: Challenger, agent: AgentMock) =>
-        challenger.doublePaymentChallenge(
-            balanceDecreasingTxProof, balanceDecreasingTxProof, agent,
-            0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
-        ),
+(challenger: Challenger, agent: AgentMock) =>
+    challenger.doublePaymentChallenge(
+        balanceDecreasingTxProof, balanceDecreasingTxProof,
+        agent, challenger,
+        {
+            flashLender: ZeroAddress, dex: ZeroAddress,
+            dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+            dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+        }
+    ),
     (challenger: Challenger, agent: AgentMock) =>
         challenger.freeBalanceNegativeChallenge(
-            [balanceDecreasingTxProof], agent,
-            0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+            [balanceDecreasingTxProof],
+            agent, challenger,
+            {
+                flashLender: ZeroAddress, dex: ZeroAddress,
+                dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+                dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+            }
         )
 ]
 
@@ -103,13 +119,13 @@ describe("Tests for the Challenger contract", () => {
             const { challenger } = context.contracts
             await context.signers.deployer.sendTransaction({
                 to: await challenger.getAddress(),
-                value: ethers.parseEther("1.0")
+                value: parseEther("1.0")
             })
             const balanceBefore = await ethers.provider.getBalance(challenger)
-            await challenger.connect(context.signers.challenger).withderawNat()
+            await challenger.connect(context.signers.challenger).withdrawNat()
             const balanceAfter = await ethers.provider.getBalance(challenger)
             expect(balanceAfter - balanceBefore).to.be.approximately(
-                ethers.parseEther("1"), ethers.parseEther("0.0001"))
+                parseEther("1"), parseEther("0.0001"))
         })
 
     })
@@ -124,13 +140,17 @@ describe("Tests for the Challenger contract", () => {
 
         it("should not allow withdrawing native tokens by non challenger contract owner", async () => {
             const { challenger } = context.contracts
-            await expect(challenger.connect(context.signers.liquidator).withderawNat())
+            await expect(challenger.connect(context.signers.liquidator).withdrawNat())
                 .to.be.revertedWith("Ownable: caller is not the owner")
         })
 
         it("should not allow running any `runArbitrage` function by non challenger contract owner", async () => {
             await expect(context.contracts.challenger.connect(context.signers.liquidator).runArbitrage(
-                ethers.ZeroAddress, ethers.ZeroAddress, 0, 1, 0, 1, ethers.ZeroAddress, ethers.ZeroAddress, [], []
+                ZeroAddress, ZeroAddress, {
+                    flashLender: ZeroAddress, dex: ZeroAddress,
+                    dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+                    dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+                }
             )).to.be.revertedWith("Challenger: Calling an internal method")
         })
     })
