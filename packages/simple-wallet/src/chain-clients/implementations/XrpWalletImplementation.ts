@@ -35,10 +35,10 @@ import { XrpAccountGeneration } from "../account-generation/XrpAccountGeneration
 import { TransactionStatus, TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
 import { XRPBlockchainAPI } from "../../blockchain-apis/XRPBlockchainAPI";
-import { TransactionMonitor } from "../monitoring/TransactionMonitor";
-import {errorMessage} from "../../utils/axios-utils";
+import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
+import { errorMessage } from "../../utils/axios-utils";
 
-export class XrpWalletImplementation extends XrpAccountGeneration implements WriteWalletInterface {
+export class XrpWalletImplementation extends XrpAccountGeneration implements WriteWalletInterface, IMonitoredWallet {
    chainType: ChainType;
    inTestnet: boolean;
    blockchainAPI: XRPBlockchainAPI;
@@ -72,7 +72,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    getMonitoringId(): string {
       return this.monitoringId;
-  }
+   }
 
    /**
     * @param {string} account
@@ -139,8 +139,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       }
       const privateKey = await this.walletKeys.getKey(source);
       if (!privateKey) {
-          logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
-          throw new Error(`Cannot prepare transaction ${source}. Missing private key.`);
+         logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
+         throw new Error(`Cannot prepare transaction ${source}. Missing private key.`);
       }
       const ent = await createInitialTransactionEntity(
          this.rootEm,
@@ -217,14 +217,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    ///////////////////////////////////////////////////////////////////////////////////////
 
    async startMonitoringTransactionProgress(): Promise<void> {
-      await this.monitor.startMonitoringTransactionProgress({
-         submitPreparedTransactions: this.submitPreparedTransactions.bind(this),
-         checkPendingTransaction: this.resubmitPendingTransaction.bind(this),
-         prepareAndSubmitCreatedTransaction: this.prepareAndSubmitCreatedTransaction.bind(this),
-         checkSubmittedTransaction: this.checkSubmittedTransaction.bind(this),
-         checkNetworkStatus: async () => this.checkXrpNetworkStatus(),
-         resubmitSubmissionFailedTransactions: this.resubmitSubmissionFailedTransactions.bind(this)
-      });
+      await this.monitor.startMonitoringTransactionProgress(this);
    }
 
    async isMonitoring(): Promise<boolean> {
@@ -235,7 +228,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       await this.monitor.stopMonitoring();
    }
 
-   async checkXrpNetworkStatus(): Promise<boolean> {
+   async checkNetworkStatus(): Promise<boolean> {
       try {
          await this.getServerInfo();
          return true;
@@ -259,6 +252,10 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       }
       const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
       await this.resubmitTransaction(txEnt.id, privateKey, transaction, newFee);
+   }
+
+   async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
+      await this.resubmitPendingTransaction(txEnt);
    }
 
    async resubmitPendingTransaction(txEnt: TransactionEntity): Promise<void> {

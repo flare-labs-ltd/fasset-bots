@@ -32,6 +32,7 @@ import {
     handleFeeToLow,
     handleMissingPrivateKey,
     resetTransactionEntity,
+    transactional,
     updateTransactionEntity,
 } from "../../db/dbutils";
 import {logger} from "../../utils/logger";
@@ -39,7 +40,7 @@ import {UTXOAccountGeneration} from "../account-generation/UTXOAccountGeneration
 import {TransactionEntity, TransactionStatus} from "../../entity/transaction";
 import {SpentHeightEnum} from "../../entity/utxo";
 import {BlockchainFeeService} from "../../fee-service/fee-service";
-import {EntityManager, IDatabaseDriver} from "@mikro-orm/core";
+import { EntityManager } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
     getAccountBalance,
@@ -47,8 +48,7 @@ import {
     getMinAmountToSend,
     getTransactionDescendants,
 } from "../utxo/UTXOUtils";
-import {TransactionMonitor} from "../monitoring/TransactionMonitor";
-import {ServiceRepository} from "../../ServiceRepository";
+import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
 import {TransactionService} from "../utxo/TransactionService";
 import {TransactionUTXOService} from "../utxo/TransactionUTXOService";
 import {TransactionFeeService} from "../utxo/TransactionFeeService";
@@ -61,8 +61,9 @@ import {
 } from "../../utils/axios-utils";
 import {AxiosTransactionSubmissionError, UTXORawTransaction} from "../../interfaces/IBlockchainAPI";
 import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
+import { IUtxoWalletServices } from "../utxo/IUtxoWalletServices";
 
-export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface {
+export abstract class UTXOWalletImplementation extends UTXOAccountGeneration implements WriteWalletInterface, IMonitoredWallet, IUtxoWalletServices {
     inTestnet: boolean;
     rootEm!: EntityManager;
     transactionFeeService: TransactionFeeService;
@@ -81,9 +82,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     useRBFFactor = 1.4;
 
     monitoringId: string;
+
     private monitor: TransactionMonitor;
 
-    constructor(public chainType: ChainType, createConfig: BaseWalletConfig) {
+    constructor(chainType: ChainType, createConfig: BaseWalletConfig) {
         super(chainType);
         this.monitoringId = createMonitoringId(this.chainType);
         this.inTestnet = createConfig.inTestnet ?? false;
@@ -97,33 +99,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.walletKeys = createConfig.walletKeys;
         this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
 
-        ServiceRepository.register(this.chainType, EntityManager<IDatabaseDriver>, this.rootEm);
-        this.rootEm = ServiceRepository.get(this.chainType, EntityManager<IDatabaseDriver>);
+        this.blockchainAPI = new UTXOBlockchainAPI(createConfig, this.chainType);
+        this.transactionFeeService = new TransactionFeeService(this, this.chainType, this.feeIncrease);
+        this.transactionUTXOService = new TransactionUTXOService(this, this.chainType, this.enoughConfirmations);
+        this.transactionService = new TransactionService(this, this.chainType, this.maximumNumberOfUTXOs);
+        this.feeService = new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
 
-        ServiceRepository.register(this.chainType, UTXOBlockchainAPI, new UTXOBlockchainAPI(createConfig, this.chainType));
-        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
-
-        ServiceRepository.register(
-            this.chainType,
-            TransactionFeeService,
-            new TransactionFeeService(this.chainType, this.feeIncrease)
-        );
-        this.transactionFeeService = ServiceRepository.get(this.chainType, TransactionFeeService);
-
-        ServiceRepository.register(
-            this.chainType,
-            TransactionUTXOService,
-            new TransactionUTXOService(this.chainType, this.enoughConfirmations)
-        );
-        this.transactionUTXOService = ServiceRepository.get(this.chainType, TransactionUTXOService);
-
-        ServiceRepository.register(this.chainType, TransactionService, new TransactionService(this.chainType, this.maximumNumberOfUTXOs));
-        this.transactionService = ServiceRepository.get(this.chainType, TransactionService);
-
-        ServiceRepository.register(this.chainType, BlockchainFeeService, new BlockchainFeeService(this.chainType, this.monitoringId));
-        this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-
-        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
+        this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId, this.feeService);
     }
 
     getMonitoringId(): string {
@@ -131,7 +113,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async getAccountBalance(account: string): Promise<BN> {
-        return await getAccountBalance(this.chainType, account);
+        return await getAccountBalance(this.blockchainAPI, account);
     }
 
     /**
@@ -277,13 +259,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     // MONITORING /////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////
     async startMonitoringTransactionProgress(): Promise<void> {
-        await this.monitor.startMonitoringTransactionProgress({
-            submitPreparedTransactions: this.submitPreparedTransactions.bind(this),
-            checkPendingTransaction: this.checkPendingTransaction.bind(this),
-            prepareAndSubmitCreatedTransaction: this.prepareAndSubmitCreatedTransaction.bind(this),
-            checkSubmittedTransaction: this.checkSubmittedTransaction.bind(this),
-            checkNetworkStatus: async () => checkUTXONetworkStatus(this)
-        });
+        await this.monitor.startMonitoringTransactionProgress(this);
     }
 
     async isMonitoring(): Promise<boolean> {
@@ -292,6 +268,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     async stopMonitoring(): Promise<void> {
         await this.monitor.stopMonitoring();
+    }
+
+    async checkNetworkStatus(): Promise<boolean> {
+        return await checkUTXONetworkStatus(this);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -362,6 +342,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             const feeToHighForMainSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null);
             const feeToHighForFeeSource = checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxPaymentForFeeSource ?? null);
 
+            if (txEnt.fee && feeToHighForMainSource) {
+                await failTransaction(this.rootEm, txEnt.id, `Pre-set fee ${txEnt.fee} > max fee ${txEnt.maxFee}`);
+                return;
+            }
+
             let payingFeesFromFeeSource = txEnt.feeSource && !feeToHighForFeeSource;
             if (txEnt.feeSource && feeToHighForFeeSource && !feeToHighForMainSource) {
                 // If amount to pay from fee source is too high - try to pay it from main source
@@ -386,7 +371,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             // If fee source is non-existent/doesn't have high enough max amount
             if (!payingFeesFromFeeSource && checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null)) {
                 if (rbfReplacementFor) {
-                    await updateTransactionEntity(this.rootEm, txEnt.id, async (txEntToUpdate) => txEntToUpdate.fee = txEnt.maxFee!);
+                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                        txEntToUpdate.fee = txEnt.maxFee!;
+                    });
                 } else {
                     logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
                     return;
@@ -449,7 +436,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     async checkSubmittedTransaction(txEnt: TransactionEntity): Promise<void> {
         logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is being checked.`);
         try {
-            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash!);
+            if (!txEnt.transactionHash) {
+                logger.warn(`Submitted transaction ${txEnt.id} is missing transactionHash. Recreating it.`);
+                await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
+                    resetTransactionEntity(txEnt);
+                });
+                return;
+            }
+            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
             // success
             if (txResp.blockHash && txResp.confirmations) {
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
@@ -564,7 +558,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
 
                 const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
-                await this.rootEm.transactional(async (em) => {
+                await transactional(this.rootEm, async (em) => {
                     for (const descendant of descendants) {
                         descendant.ancestor = txEnt;
                     }
@@ -788,11 +782,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await sleepMs(5000); // wait for 5s
             } catch (error) {
                 /* istanbul ignore next */
-                if (axios.isAxiosError(error)) {
-                    logger.warn(`Transaction ${txId} not yet seen in mempool: ${error.response?.data}`);
-                } else {
-                    logger.warn(`Transaction ${txId} not yet seen in mempool: ${errorMessage(error)}`);
-                }
+                logger.warn(`Transaction ${txId} not yet seen in mempool 2: ${errorMessage(error)}`);
                 await sleepMs(10000); // wait for 10s
             }
         }

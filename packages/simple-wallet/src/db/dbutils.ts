@@ -1,4 +1,4 @@
-import { EntityManager, FilterQuery, RequiredEntityData } from "@mikro-orm/core";
+import { EntityManager, FilterQuery, RequiredEntityData, TransactionOptions } from "@mikro-orm/core";
 import { Transaction } from "bitcore-lib";
 import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
@@ -34,7 +34,7 @@ export async function createInitialTransactionEntity(
     maxPaymentForFeeSource?: BN
 ): Promise<TransactionEntity> {
     logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops};${replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ""}`);
-    return await rootEm.transactional(async (em) => {
+    return await transactional(rootEm, async (em) => {
         const ent = em.create(TransactionEntity, {
             chainType,
             source,
@@ -57,7 +57,7 @@ export async function createInitialTransactionEntity(
 }
 
 export async function updateTransactionEntity(rootEm: EntityManager, id: number, modify: (transactionEnt: TransactionEntity) => void): Promise<void> {
-    await rootEm.transactional(async (em) => {
+    await transactional(rootEm, async (em) => {
         const transactionEnt: TransactionEntity = await fetchTransactionEntityById(em, id);
         modify(transactionEnt);
         await em.persistAndFlush(transactionEnt);
@@ -157,7 +157,7 @@ export function createTransactionInputEntity(
 
 // utxo operations
 export async function createUTXOEntity(
-    rootEm: EntityManager,
+    em: EntityManager,
     source: string,
     txHash: string,
     position: number,
@@ -166,7 +166,7 @@ export async function createUTXOEntity(
     spentTxHash: string | null = /* istanbul ignore next */ null,
     confirmed: boolean
 ): Promise<void> {
-    rootEm.create(UTXOEntity, {
+    const entity = em.create(UTXOEntity, {
         source: source,
         mintTransactionHash: txHash,
         spentHeight: SpentHeightEnum.UNSPENT,
@@ -175,8 +175,8 @@ export async function createUTXOEntity(
         script: script,
         spentTransactionHash: spentTxHash,
         confirmed: confirmed,
-    } as RequiredEntityData<UTXOEntity>);
-    await rootEm.flush();
+    } as RequiredEntityData<UTXOEntity>, );
+    em.persist(entity);
 }
 
 export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string, position: number): Promise<UTXOEntity> {
@@ -191,7 +191,7 @@ export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string,
 }
 
 export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, position: number, modify: (utxoEnt: UTXOEntity) => void): Promise<void> {
-    await rootEm.transactional(async (em) => {
+    await transactional(rootEm, async (em) => {
         const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, txHash, position);
         modify(utxoEnt);
         await em.persistAndFlush(utxoEnt);
@@ -214,7 +214,7 @@ export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, r
 }
 
 export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Promise<UTXOEntity[]> {
-    return await rootEm.transactional(async (em) => {
+    return await transactional(rootEm, async (em) => {
         const txEnt = await em.findOne(TransactionEntity, { id: txId });
         if (!txEnt || !txEnt.raw) {
             logger.error(`Transaction entity or raw data not found for transaction ${txId}`);
@@ -238,14 +238,13 @@ export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Pro
     });
 }
 
-export async function storeUTXOs(rootEm: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
+export async function storeUTXOs(em: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
     for (const utxo of mempoolUTXOs) {
         try {
-            await updateUTXOEntity(rootEm, utxo.mintTxid, utxo.mintIndex, (utxoEnt) => {
-                utxoEnt.confirmed = utxo.confirmed;
-            });
-        } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
-            await createUTXOEntity(rootEm, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
+            const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, utxo.mintTxid, utxo.mintIndex);
+            utxoEnt.confirmed = utxo.confirmed;
+        } catch (_error) {
+            await createUTXOEntity(em, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }
 }
@@ -263,7 +262,7 @@ export async function countSpendableUTXOs(chainType: ChainType, rootEm: EntityMa
 
 // it fetches unspent and sent utxos from db that do not match utxos from mempool and marks them as spent
 export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: EntityManager, address: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
-    await rootEm.transactional(async (em) => {
+    await transactional(rootEm, async (em) => {
         // find UTXOs in the db that are NOT in the mempool and mark them as spent
         const spentCondition = mempoolUTXOs.map((utxo) => ({
             $not: {
@@ -389,7 +388,7 @@ export async function checkIfIsDeleting(rootEm: EntityManager, address: string):
 
 export async function setAccountIsDeleting(rootEm: EntityManager, address: string): Promise<void> {
     logger.info(`Settings ${address} to be deleted.`);
-    await rootEm.transactional(async (em) => {
+    await transactional(rootEm, async (em) => {
         const wa = await em.findOne(WalletAddressEntity, { address } as FilterQuery<WalletAddressEntity>);
         /* istanbul ignore else */
         if (wa) {
@@ -409,7 +408,7 @@ export async function updateMonitoringState(
     chainType: string,
     modify: (stateEnt: MonitoringStateEntity) => void
 ): Promise<void> {
-    await rootEm.transactional(async (em) => {
+    await transactional(rootEm, async (em) => {
         const stateEnt = await fetchMonitoringState(em, chainType);
         /* istanbul ignore if */
         if (!stateEnt) {
@@ -449,4 +448,21 @@ export async function retryDatabaseTransaction<T>(explanation: string, action: (
         }
     }
     throw new Error(`Too many failed attempts ${explanation}`);
+}
+
+/**
+ * Like EntityManager.transactional(...), but throws full stack trace on error.
+ */
+export async function transactional<T>(rootEm: EntityManager, cb: (em: EntityManager) => Promise<T>, options?: TransactionOptions): Promise<T> {
+    try {
+        return await rootEm.transactional(cb, options);
+    } catch (error) {
+        if (error instanceof Error) {
+            const stackError = new Error("just for stack");
+            const extraStack = (stackError.stack ?? "").split("\n").slice(1).join("\n");
+            error.stack = (error.stack ?? "Missing original error stack") + "\n" + extraStack;
+            throw error;
+        }
+        throw new Error(`Unknown error: ${error}`);
+    }
 }

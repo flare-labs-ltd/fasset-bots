@@ -1487,6 +1487,7 @@ __metadata:
     dotenv: 16.3.1
     elliptic: 6.5.4
     eslint: 9.11.1
+    read: ^4.0.0
     rewire: 7.0.0
     ripple-address-codec: 4.2.4
     ripple-binary-codec: 1.4.2

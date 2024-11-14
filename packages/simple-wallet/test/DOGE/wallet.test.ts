@@ -15,12 +15,8 @@ import {
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
 import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
-import { ServiceRepository } from "../../src/ServiceRepository";
-import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
 import { correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
-import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { setMonitoringStatus } from "../test-util/entity_utils";
-import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
@@ -95,7 +91,7 @@ describe("Dogecoin wallet tests", () => {
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
 
-        await expect(ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
+        await expect(wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
 
@@ -120,11 +116,11 @@ describe("Dogecoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(targetAddress, fundedAddress, toSend);
         expect(txId).to.be.greaterThan(0);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, txId);
-        const blockchainApi = ServiceRepository.get(chainType, UTXOBlockchainAPI);
+        const blockchainApi = wClient.blockchainAPI;
         const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, txEnt.source, utxosFromMempool);
 
-        const [transaction] = await ServiceRepository.get(wClient.chainType, TransactionService).preparePaymentTransaction(
+        const [transaction] = await wClient.transactionService.preparePaymentTransaction(
             txEnt.id,
             txEnt.source,
             txEnt.destination,
@@ -146,7 +142,7 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should create estimate fee", async () => {
-        const fee = await ServiceRepository.get(ChainType.testDOGE , TransactionFeeService).getEstimateFee(1, 3, toBNExp(1, BTC_DOGE_DEC_PLACES));
+        const fee = await wClient.transactionFeeService.getEstimateFee(1, 3, toBNExp(1, BTC_DOGE_DEC_PLACES));
         expect(fee.gtn(0));
     });
 });

@@ -26,7 +26,6 @@ import { TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplementation";
 import { UTXOEntity } from "../../entity/utxo";
-import { ServiceRepository } from "../../ServiceRepository";
 import { errorMessage } from "../../utils/axios-utils";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
@@ -53,7 +52,7 @@ export function getMinAmountToSend(chainType: ChainType): BN {
 /* istanbul ignore next */
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
     try {
-        await ServiceRepository.get(client.chainType, UTXOBlockchainAPI).getCurrentBlockHeight();
+        await client.blockchainAPI.getCurrentBlockHeight();
         return true;
     } catch (error) {
         logger.error(`Cannot get response from server ${errorMessage(error)}`);
@@ -97,10 +96,9 @@ export async function getTransactionDescendants(em: EntityManager, txHash: strin
     return sub;
 }
 
-export async function getAccountBalance(chainType: ChainType, account: string): Promise<BN> {
+export async function getAccountBalance(blockchainAPI: UTXOBlockchainAPI, account: string): Promise<BN> {
     try {
-        const utxoBlockchainAPI = ServiceRepository.get(chainType, UTXOBlockchainAPI);
-        const accountBalance = await utxoBlockchainAPI.getAccountBalance(account);
+        const accountBalance = await blockchainAPI.getAccountBalance(account);
         const mainAccountBalance = toBN(accountBalance.balance);
         return mainAccountBalance;
     } catch (error) /* istanbul ignore next */  {

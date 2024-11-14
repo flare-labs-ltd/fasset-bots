@@ -75,8 +75,8 @@
                 "minimumFreeUnderlyingBalance": "0.5"
             },
             "FTestDOGE": {
-                "recommendedOwnerBalance": "20",
-                "minimumFreeUnderlyingBalance": "1"
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "20"
             }
         }
     },

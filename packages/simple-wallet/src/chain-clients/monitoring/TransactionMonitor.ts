@@ -1,12 +1,11 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
-import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, updateMonitoringState } from "../../db/dbutils";
+import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, transactional, updateMonitoringState } from "../../db/dbutils";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { getRandomInt, sleepMs } from "../../utils/utils";
+import { getRandomInt, requireDefined, sleepMs } from "../../utils/utils";
 import { utxoOnly } from "../utxo/UTXOUtils";
-import { ServiceRepository } from "../../ServiceRepository";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { errorMessage } from "../../utils/axios-utils";
@@ -29,12 +28,12 @@ export class TransactionMonitor {
     monitoringId: string;
     feeService: BlockchainFeeService | undefined;
 
-    constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string) {
+    constructor(chainType: ChainType, rootEm: EntityManager, monitoringId: string, feeService?: BlockchainFeeService) {
         this.chainType = chainType;
         this.rootEm = rootEm;
         this.monitoringId = monitoringId;
         if (utxoOnly(this.chainType)) {
-            this.feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
+            this.feeService = feeService;
         }
     }
 
@@ -63,7 +62,6 @@ export class TransactionMonitor {
             }
             // start main loop
             await this.monitoringMainLoop(wallet);
-            Promise.allSettled
         } catch (error) {
             logger.error(`Monitoring failed for chain ${this.monitoringId} error: ${errorMessage(error)}.`);
         }
@@ -79,7 +77,7 @@ export class TransactionMonitor {
                 const randomMs = getRandomInt(0, RANDOM_SLEEP_MS_MAX);
                 await sleepMs(MONITOR_PING_INTERVAL + randomMs); // to make sure pinger stops
                 await retryDatabaseTransaction(`stopping monitor for chain ${this.monitoringId}`, async () => {
-                    await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                    await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                         monitoringEnt.lastPingInTimestamp = toBN(0);
                     });
                 });
@@ -129,7 +127,7 @@ export class TransactionMonitor {
 
     async acquireMonitoringLock() {
         return await retryDatabaseTransaction(`trying to obtain monitoring lock for chain ${this.monitoringId}`, async () => {
-            return await this.rootEm.transactional(async em => {
+            return await transactional(this.rootEm, async em => {
                 const monitoringState = await fetchMonitoringState(em, this.chainType);
                 const now = Date.now();
                 if (monitoringState == null) {
@@ -161,7 +159,7 @@ export class TransactionMonitor {
     private async updatePingLoop(): Promise<void> {
         while (this.monitoring) {
             await retryDatabaseTransaction(`updating ping status for chain ${this.monitoringId}`, async () => {
-                await updateMonitoringState(this.rootEm, this.chainType, async (monitoringEnt) => {
+                await updateMonitoringState(this.rootEm, this.chainType, (monitoringEnt) => {
                     if (monitoringEnt.processOwner === this.monitoringId) {
                         monitoringEnt.lastPingInTimestamp = toBN(Date.now());
                     } else {
@@ -186,13 +184,13 @@ export class TransactionMonitor {
                     await sleepMs(RESTART_IN_DUE_NO_RESPONSE);
                     continue;
                 }
-                await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions);
+                await this.processTransactions([TransactionStatus.TX_PREPARED], wallet.submitPreparedTransactions.bind(wallet));
                 if (wallet.resubmitSubmissionFailedTransactions) {
-                    await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions);
+                    await this.processTransactions([TransactionStatus.TX_SUBMISSION_FAILED], wallet.resubmitSubmissionFailedTransactions.bind(wallet));
                 }
-                await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction);
-                await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction);
-                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction);
+                await this.processTransactions([TransactionStatus.TX_PENDING], wallet.checkPendingTransaction.bind(wallet));
+                await this.processTransactions([TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction.bind(wallet));
+                await this.processTransactions([TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction.bind(wallet));
             } catch (error) {
                 if (error instanceof StopTransactionMonitor) break;
                 logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${MONITOR_LOOP_SLEEP}: ${errorMessage(error)}`);
@@ -202,7 +200,7 @@ export class TransactionMonitor {
         logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
     }
 
-    private async processTransactions(
+    async processTransactions(
         statuses: TransactionStatus[],
         processFunction: (txEnt: TransactionEntity) => Promise<void>
     ): Promise<void> {

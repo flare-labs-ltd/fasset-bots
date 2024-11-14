@@ -12,7 +12,7 @@ import BN from "bn.js";
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
-import { updateMonitoringState } from "../../src/db/dbutils";
+import { transactional, updateMonitoringState } from "../../src/db/dbutils";
 import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
 
 export function createTransactionEntity(source: string, destination: string, txHash: string, utxos?: UTXOEntity[], inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
@@ -106,7 +106,7 @@ export async function createAndPersistTransactionEntity(
     executeUntilBlock?: number,
     executeUntilTimestamp?: BN
 ): Promise<TransactionEntity> {
-    return await rootEm.transactional(async (em) => {
+    return await transactional(rootEm, async (em) => {
         const ent = em.create(
             TransactionEntity,
             {
@@ -153,7 +153,7 @@ export async function clearUTXOs(rootEm: EntityManager) {
 }
 
 export async function updateWalletInDB(rootEm: EntityManager, address: string, modify: (walletEnt: WalletAddressEntity) => Promise<void>) {
-    await rootEm.transactional(async (em) => {
+    await transactional(rootEm, async (em) => {
         const ent = await em.findOneOrFail(WalletAddressEntity, {'address': address});
         await modify(ent);
         await em.persistAndFlush(ent);

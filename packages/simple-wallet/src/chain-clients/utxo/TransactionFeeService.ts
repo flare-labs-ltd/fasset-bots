@@ -14,30 +14,31 @@ import {
     UTXO_OVERHEAD_SIZE_SEGWIT,
 } from "../../utils/constants";
 import BN from "bn.js";
-import { ServiceRepository } from "../../ServiceRepository";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
-import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
+import { IUtxoWalletServices } from "./IUtxoWalletServices";
 
 export enum FeeStatus {
     LOW, MEDIUM, HIGH
 }
 
 export class TransactionFeeService {
+    readonly services: IUtxoWalletServices;
     readonly feeIncrease: number;
     readonly chainType: ChainType;
     readonly blockchainAPI: UTXOBlockchainAPI;
 
-    constructor(chainType: ChainType, feeIncrease: number) {
+    constructor(services: IUtxoWalletServices, chainType: ChainType, feeIncrease: number) {
+        this.services = services;
         this.chainType = chainType;
         this.feeIncrease = feeIncrease;
-        this.blockchainAPI = ServiceRepository.get(this.chainType, UTXOBlockchainAPI);
+        this.blockchainAPI = services.blockchainAPI;
     }
 
     /**
@@ -45,17 +46,17 @@ export class TransactionFeeService {
      */
     async getFeePerKB(): Promise<BN> {
         try {
-            const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-            const movingAverageWeightedFee = feeService.getLatestFeeStats();
-            if (movingAverageWeightedFee?.gtn(0)) {
-                return enforceMinimalAndMaximalFee(this.chainType, movingAverageWeightedFee);
-            } else {
-                return await this.getCurrentFeeRate();
+            const feeService = this.services.feeService;
+            if (feeService) {
+                const movingAverageWeightedFee = feeService.getLatestFeeStats();
+                if (movingAverageWeightedFee?.gtn(0)) {
+                    return enforceMinimalAndMaximalFee(this.chainType, movingAverageWeightedFee);
+                }
             }
         } catch (error) {
             logger.error(`Cannot obtain fee per kb ${errorMessage(error)}`);
-            return await this.getCurrentFeeRate();
         }
+        return await this.getCurrentFeeRate();
     }
 
     async getEstimateFee(inputLength: number, outputLength = 2, feePerKb?: BN ): Promise<BN> {
