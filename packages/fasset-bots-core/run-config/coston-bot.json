@@ -1,6 +1,6 @@
 {
     "$schema": "./schema/bot-config.schema.json",
-    "loopDelay": 2500,
+    "loopDelay": 1000,
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
