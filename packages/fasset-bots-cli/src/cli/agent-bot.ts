@@ -449,7 +449,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const data = await cli.getOwnedUnderlyingAccounts(secrets);
+        const data = await cli.getOwnedEncryptedUnderlyingAccounts();
         fs.writeFileSync(exportFile, JSON.stringify(data, null, 4));
     })
 
