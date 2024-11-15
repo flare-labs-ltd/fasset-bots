@@ -177,11 +177,11 @@ program
 program
     .command("redemptionStatus")
     .description("List all open redemptions")
-    .option('--request-id', 'request id (number)')
-    .action(async () => {
-        const options: { config: string; secrets: string; fasset: string; dir: string, requestId?: string } = program.opts();
+    .option('--request-id <requestId>', 'request id (number)')
+    .action(async (cmdOptions: { requestId?: string }) => {
+        const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
-        await redeemerBot.listRedemptions(options.requestId);
+        await redeemerBot.listRedemptions(cmdOptions.requestId);
     });
 
 program
