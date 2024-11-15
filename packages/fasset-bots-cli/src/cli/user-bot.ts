@@ -181,7 +181,11 @@ program
     .action(async (cmdOptions: { requestId?: string }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const redeemerBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
-        await redeemerBot.listRedemptions(cmdOptions.requestId);
+        if (cmdOptions.requestId !== undefined) {
+            await redeemerBot.listRedemption(cmdOptions.requestId);
+        } else {
+            await redeemerBot.listRedemptions();
+        }
     });
 
 program
