@@ -33,7 +33,7 @@
         "lint": "yarn run -T eslint \"src/**/*ts\" \"test/**/*ts\"",
         "---------TEST---SCRIPTS": "",
         "test": "yarn run -T mocha",
-        "test_all": "yarn run -T mocha --recursive test/**/*.ts ",
+        "test_all": "yarn test --recursive \"test/**/*.test.ts\"",
         "test:coverage": "yarn run -T nyc yarn test_all",
         "encrypt-test-secrets": "node dist/test/test-util/encrypt_secrets.js",
         "test-mainnet-btc": "yarn run -T mocha test/BTC/mainnet.test.ts"
