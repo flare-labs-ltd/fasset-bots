@@ -11,12 +11,13 @@ import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { EventArgs } from "../utils/events/common";
 import { squashSpace } from "../utils/formatting";
-import { assertNotNull, BNish, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
+import { assertNotNull, BNish, MAX_BIPS, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { TransactionStatus } from "@flarelabs/simple-wallet";
+import { maxFeeMultiplier } from "../utils/fasset-helpers";
 
 const REDEMPTION_BATCH = 1000;
 
@@ -255,7 +256,8 @@ export class AgentBotRedemption {
 
     async payForRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>) {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId}.`);
-        const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
+        const redemptionFee = toBN(redemption.feeUBA);
+        const paymentAmount = toBN(redemption.valueUBA).sub(redemptionFee);
         redemption = await this.updateRedemption(rootEm, redemption, {
             state: AgentRedemptionState.PAYING,
         });
@@ -263,7 +265,7 @@ export class AgentBotRedemption {
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
                 const feeSourceAddress = this.context.chainInfo.useOwnerUnderlyingAddressForPayingFees ? this.bot.ownerUnderlyingAddress : undefined;
                 return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined,
-                    undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), feeSourceAddress);
+                    { maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)) }, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), feeSourceAddress);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,

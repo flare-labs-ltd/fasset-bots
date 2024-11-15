@@ -11,6 +11,7 @@ import { BN_ZERO, BNish, TRANSACTION_FEE_FACTOR, requireNotNull, toBN, toNumber 
 import { logger } from "./logger";
 import { TokenBalances } from "./token-balances";
 import { web3DeepNormalize } from "./web3normalize";
+import { ChainId } from "../underlying-chain/ChainId";
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;
@@ -112,4 +113,14 @@ export function isCollateralRatiosChangedEvent(context: IAssetNativeChainContext
 
 export function isContractChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
     return eventIs(event, context.assetManager, "ContractChanged");
+}
+
+export function maxFeeMultiplier(chainId: ChainId): number {
+    if (chainId === ChainId.testBTC) {
+        return 2000;
+    } else if (chainId === ChainId.testDOGE) {
+        return 10;
+    } else {
+        return 1;
+    }
 }
