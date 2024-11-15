@@ -67,7 +67,7 @@ describe("Fee service tests BTC", () => {
     it("Fee stats for block without information/non existent block should be null", async () => {
         const blockHeight = await feeService.getCurrentBlockHeight() + 10;
         const feeStats = await feeService.getFeeStatsFromIndexer(blockHeight);
-        const feeStatsWithRetires = await feeService.getFeeStatsWithRetry(blockHeight);
+        const feeStatsWithRetires = await feeService.getFeeStatsFromIndexer(blockHeight);
         expect(feeStats).to.be.null;
         expect(feeStatsWithRetires).to.be.null;
     });
@@ -95,7 +95,7 @@ describe("Fee service tests BTC", () => {
             blockTime: new BN(600),
         }));
 
-        const feeStats = await feeService.getFeeStatsWithRetry(123, 3);
+        const feeStats = await feeService.getFeeStatsFromIndexer(123);
         expect(feeStats).to.not.be.null;
         expect(feeStats!.averageFeePerKB.eq(new BN(1000))).to.be.true;
         expect(feeStats!.blockTime.eq(new BN(600))).to.be.true;
