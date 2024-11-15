@@ -471,13 +471,16 @@ export class UserBotCommands {
         return { total: list.length, successful, defaulted, expired, remaining };
     }
 
-    async listRedemptions(): Promise<void> {
+    async listRedemptions(requestId?: string): Promise<void> {
         const stateList = this.readStateList("redeem");
         const timestamp = await latestBlockTimestamp();
         const settings = await this.context.assetManager.getSettings();
         for (const state of stateList) {
             const status = await this.redemptionStatus(state, timestamp, settings);
-            console.log(`${state.requestId}  ${status}`);
+            if (requestId === undefined || requestId == state.requestId) {
+                console.log(`${state.requestId}  ${status}`);
+                if (requestId !== undefined) break
+            }
         }
     }
 
