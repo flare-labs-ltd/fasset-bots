@@ -2,7 +2,6 @@ import { ICreateWalletResponse, ITransactionMonitor, RippleWalletConfig } from "
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import WAValidator from "wallet-address-validator";
-import rewire from "rewire";
 import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import {
@@ -30,11 +29,9 @@ import {
 } from "../test-util/entity_utils";
 import { ECDSA } from "../../src/chain-clients/account-generation/XrpAccountGeneration";
 import sinon from "sinon";
+import { XrpWalletImplementation } from "../../src/chain-clients/implementations/XrpWalletImplementation";
 
 use(chaiAsPromised);
-
-const rewiredXrpWalletImplementation = rewire("../../src/chain-clients/implementations/XrpWalletImplementation");
-const rewiredXrpWalletImplementationClass = rewiredXrpWalletImplementation.__get__("XrpWalletImplementation");
 
 const XRPMccConnectionTestInitial = {
     urls: [process.env.XRP_URL ?? ""],
@@ -130,9 +127,9 @@ describe("Xrp wallet tests", () => {
         const wallet0 = wClient.createWalletFromSeed(seed0, ECDSA.secp256k1);
         const wallet1 = wClient.createWalletFromSeed(seed1, ECDSA.ed25519);
 
-        const rewired = new rewiredXrpWalletImplementationClass(XRPMccConnectionTest);
-        const public0 = rewired.getPublicKeyFromPrivateKey(wallet0.privateKey, wallet0.address);
-        const public1 = rewired.getPublicKeyFromPrivateKey(wallet1.privateKey, wallet1.address);
+        const wallet = new XrpWalletImplementation(null, XRPMccConnectionTest);
+        const public0 = (wallet as any).getPublicKeyFromPrivateKey(wallet0.privateKey, wallet0.address);
+        const public1 = (wallet as any).getPublicKeyFromPrivateKey(wallet1.privateKey, wallet1.address);
         expect(wallet0.publicKey).to.eq(public0);
         expect(wallet1.publicKey).to.eq(public1);
     });
