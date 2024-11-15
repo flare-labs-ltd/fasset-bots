@@ -26,7 +26,7 @@ import { AgentOwnerRegistryInstance, Truffle } from "../../typechain-truffle";
 import { FaultyNotifierTransport } from "../test-utils/FaultyNotifierTransport";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { QUERY_WINDOW_SECONDS, assertWeb3DeepEqual, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { QUERY_WINDOW_SECONDS, assertWeb3DeepEqual, convertFromUSD5, createCRAndPerformMinting, createCRAndPerformMintingAndRunSteps, createTestAgent, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, getAgentStatus, mintVaultCollateralToOwner, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -814,12 +814,161 @@ describe("Agent bot tests", () => {
                 // move to next epoch
                 await time.increase(epochDuration);
                 // agent claims fee to redeemer address
-                const args = await agentBot.agent.claimTransferFeesWithRes(workAddress, transferFeeEpoch);
+                const args = await agentBot.agent.claimTransferFees(workAddress, transferFeeEpoch);
                 await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, workAddress);
                 balanceAfter = await context.fAsset.balanceOf(workAddress);
             }
             await agentBot.agent.selfClose(info.dustUBA);
         }
+        // run agent's steps until destroy is announced
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.increase(30);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if destroy is announced
+            orm.em.clear();
+            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            console.log(`Agent step ${i}, waitingForDestructionCleanUp = ${agentEnt.waitingForDestructionCleanUp}`);
+            if (agentEnt.waitingForDestructionCleanUp === false) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        // await agentBot.runStep(orm.em);
+        const info2 = await agentBot.agent.getAgentInfo();
+        assert.equal(String(info2.totalVaultCollateralWei), "0");
+        assert.equal(String(info2.totalPoolCollateralNATWei), "0");
+        const status = Number(info2.status);
+        assert.equal(status, AgentStatus.DESTROYING);
+    });
+
+    it("Should announce to close vault only if no tickets are open for that agent - auto claim transfer fees", async () => {
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // perform minting
+        const lots = 2;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // claim and send transfer fee to redeemer address
+        await agentBot.agent.claimAndSendTransferFee(redeemer.address);
+        // exit available
+        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+        await time.increaseTo(exitAllowedAt);
+        await agentBot.agent.exitAvailable();
+        // close vault
+        agentEnt.waitingForDestructionCleanUp = true;
+        await agentBot.runStep(orm.em);
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
+        // request redemption
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // run agent's steps until redemption process is finished
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        const info = await agentBot.agent.getAgentInfo();
+        if (!toBN(info.dustUBA).eqn(0)) {
+            // move to next epoch so transfer fees will be available for claiming
+            const settings = await agentBot.agent.assetManager.transferFeeSettings();
+            const epochDuration = settings.epochDuration;
+            await time.increase(epochDuration);
+            chain.skipTime(Number(epochDuration));
+        }
+        // run agent's steps until destroy is announced
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.increase(30);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if destroy is announced
+            orm.em.clear();
+            const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+            console.log(`Agent step ${i}, waitingForDestructionCleanUp = ${agentEnt.waitingForDestructionCleanUp}`);
+            if (agentEnt.waitingForDestructionCleanUp === false) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        // await agentBot.runStep(orm.em);
+        const info2 = await agentBot.agent.getAgentInfo();
+        assert.equal(String(info2.totalVaultCollateralWei), "0");
+        assert.equal(String(info2.totalPoolCollateralNATWei), "0");
+        const status = Number(info2.status);
+        assert.equal(status, AgentStatus.DESTROYING);
+    });
+
+    it("Should announce to close vault only if no tickets are open for that agent - buy missing FAssets", async () => {
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // perform minting
+        const lots = 2;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        // claim and send transfer fee to redeemer address
+        await agentBot.agent.claimAndSendTransferFee(redeemer.address);
+        // exit available
+        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+        await time.increaseTo(exitAllowedAt);
+        await agentBot.agent.exitAvailable();
+        // close vault
+        agentEnt.waitingForDestructionCleanUp = true;
+        await agentBot.runStep(orm.em);
+        expect(agentEnt.waitingForDestructionCleanUp).to.be.true;
+        // request redemption
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // run agent's steps until redemption process is finished
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if redemption is done
+            orm.em.clear();
+            const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+            console.log(`Agent step ${i}, state = ${redemption.state}`);
+            if (redemption.state === AgentRedemptionState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+        const info = await agentBot.agent.getAgentInfo();
+        // create another agent and mint some FAssets
+        const agent2 = await createTestAgentAndMakeAvailable(context, accounts[321], "UNDERLYING_ADDRESS_1");
+        // execute minting
+        const minter2 = await createTestMinter(context, minterAddress, chain);
+        const crt1 = await minter2.reserveCollateral(agent2.vaultAddress, 2);
+        const txHash1 = await minter2.performMintingPayment(crt1);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter2.executeMinting(crt1, txHash1);
+        // agent buys missing fAssets
+        const missingFAssets = info.mintedUBA;
+        const transferFeeMillionths = await agentBot.agent.assetManager.transferFeeMillionths();
+        const amount = toBN(missingFAssets).muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
+        await context.fAsset.transfer(agentBot.agent.owner.workAddress, amount, { from: minter.address });
+
         // run agent's steps until destroy is announced
         for (let i = 0; ; i++) {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
@@ -1071,15 +1220,12 @@ describe("Agent bot tests", () => {
             await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
             try {
                 const info = await agentBot.agent.getAgentInfo();
-                console.log("dust", String(info.dustUBA));
                 // claim fee and withdraw pool fees to have enough fAssets to self close dust
                 if (!toBN(info.dustUBA).eqn(0)) {
                     const workAddress = agentBot.agent.owner.workAddress;
                     const balanceBefore = await context.fAsset.balanceOf(workAddress);
                     let balanceAfter: BN = toBN(0);
-                    console.log("balance before", String(balanceBefore))
                     while (balanceAfter < balanceBefore.add(toBN(info.dustUBA))) {
-                        console.log(String(balanceAfter))
                         const transferFeeEpoch = await agentBot.agent.assetManager.currentTransferFeeEpoch();
                         // get epoch duration
                         const settings = await agentBot.agent.assetManager.transferFeeSettings();
@@ -1087,7 +1233,7 @@ describe("Agent bot tests", () => {
                         // move to next epoch
                         await time.increase(epochDuration);
                         // agent claims fee to redeemer address
-                        const args = await agentBot.agent.claimTransferFeesWithRes(workAddress, transferFeeEpoch);
+                        const args = await agentBot.agent.claimTransferFees(workAddress, transferFeeEpoch);
                         await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, workAddress);
                         balanceAfter = await context.fAsset.balanceOf(workAddress);
                     }
@@ -1096,6 +1242,81 @@ describe("Agent bot tests", () => {
             } catch (e) {
                 // agent destroyed, vault doesn't exist anymore
             }
+            // check if agent is not active
+            orm.em.clear();
+            const agentEnt = await agentBot.fetchAgentEntity(orm.em)
+            console.log(`Agent step ${i}, active = ${agentEnt.active}`);
+            if (agentEnt.active === false) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
+    });
+
+    it("Should mint all available lots, agent bot is turned off until redemption default is called - auto claim transfer fees", async () => {
+        // vaultCollateralToken
+        const vaultCollateralType = await agentBot.agent.getVaultCollateral();
+        const vaultCollateralToken = await IERC20.at(vaultCollateralType.token);
+        // mint
+        const freeLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, freeLots.toNumber(), orm, chain);
+        // pool share of collateral reservation fee arrived into pool, so now there are again a few free lots
+        const freeLotsAfter = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        expect(toBN(freeLotsAfter).gtn(0)).to.be.true;
+        // mint agin to spend the rest
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, freeLotsAfter.toNumber(), orm, chain);
+        // check all lots are minted
+        const freeLotsAfter2 = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        // trace({ freeLots, freeLotsAfter, freeLotsAfter2 });
+        expect(toBN(freeLotsAfter2).eqn(0)).to.be.true;
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        const balanceBefore = await context.fAsset.balanceOf(redeemer.address);
+        await agentBot.agent.claimAndSendTransferFee(redeemer.address);
+        const balanceAfter = await context.fAsset.balanceOf(redeemer.address);
+        assertWeb3DeepEqual(balanceAfter, balanceBefore.add(transferFee));
+        // update underlying block
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // redeemer balance of vault collateral should be 0
+        const redBal0 = await vaultCollateralToken.balanceOf(redeemer.address);
+        expect(redBal0.eqn(0)).to.be.true;
+        //request redemption
+        const [rdReqs] = await redeemer.requestRedemption(freeLots.add(freeLotsAfter));
+        assert.equal(rdReqs.length, 1);
+        const rdReq = rdReqs[0];
+        // skip time so the payment will expire on underlying chain and execute redemption default
+        chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp));
+        chain.mine(Number(rdReq.lastUnderlyingBlock));
+        const paymentAmount = toBN(rdReq.valueUBA).sub(toBN(rdReq.feeUBA));
+        const proof = await redeemer.proveNonPayment(redeemer.underlyingAddress, rdReq.paymentReference, paymentAmount,
+            rdReq.firstUnderlyingBlock, rdReq.lastUnderlyingBlock, rdReq.lastUnderlyingTimestamp);
+        const res = await redeemer.executePaymentDefault(PaymentReference.decodeId(rdReq.paymentReference), proof, ZERO_ADDRESS);
+        // redeemer balance of vault collateral should be > 0
+        const redBal1 = await vaultCollateralToken.balanceOf(redeemer.address);
+        expect(redBal1.eq(res.redeemedVaultCollateralWei)).to.be.true;
+        // close agent (first exit available)
+        const exitAllowedAt = await agentBot.agent.announceExitAvailable();
+        await time.increaseTo(exitAllowedAt);
+        await agentBot.agent.exitAvailable();
+        // close
+        await agentBot.updateAgentEntity(orm.em, async (agentEnt) => {
+            agentEnt.waitingForDestructionCleanUp = true;
+        });
+        for (let i = 0; ; i++) {
+            const info = await agentBot.agent.getAgentInfo();
+            if (!toBN(info.dustUBA).eqn(0)) {
+                // move to next epoch so transfer fees will be available for claiming
+                const settings = await agentBot.agent.assetManager.transferFeeSettings();
+                const epochDuration = settings.epochDuration;
+                await time.increase(epochDuration);
+                chain.skipTime(Number(epochDuration));
+            }
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
+
             // check if agent is not active
             orm.em.clear();
             const agentEnt = await agentBot.fetchAgentEntity(orm.em)
@@ -1134,6 +1355,90 @@ describe("Agent bot tests", () => {
         const allEvents = await readEventsFrom(context.assetManager, fromBlock);
         const events = filterEventList(allEvents, context.assetManager, "AgentPingResponse");
         assert.equal(events.length, 0);
+    });
+
+    it("Should claim transfer fees", async () => {
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // perform minting
+        const lots = 2;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+        // transfer FAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+
+        // move to the next transfer fee epoch
+        const settings = await agentBot.agent.assetManager.transferFeeSettings();
+        const epochDuration = settings.epochDuration;
+        // move to next epoch
+        await time.increase(epochDuration);
+
+        // run step
+        // it should claim transfer fees
+        const info = await agentBot.agent.getAgentInfo();
+        const poolFeeShareBIPS = info.poolFeeShareBIPS;
+        const { 1: count } = await agentBot.agent.assetManager.agentUnclaimedTransferFeeEpochs(agentBot.agent.vaultAddress);
+        const agentTransferFeeShare = await agentBot.agent.assetManager.agentTransferFeeShare(agentBot.agent.vaultAddress, count);
+        const agentClaimed = agentTransferFeeShare.mul(toBN(1e4).sub(toBN(poolFeeShareBIPS))).div(toBN(1e4));
+        const balanceBefore = await context.fAsset.balanceOf(agentBot.agent.owner.workAddress);
+        await agentBot.runStep(orm.em);
+        const balanceAfter = await context.fAsset.balanceOf(agentBot.agent.owner.workAddress);
+        assertWeb3DeepEqual(balanceAfter, balanceBefore.add(agentClaimed));
+    });
+
+    it("Should not claim all transfer fees", async () => {
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // perform minting
+        const lots = 2;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        await agentBot.runStep(orm.em);
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash);
+        await agentBot.runStep(orm.em);
+
+        // move to the next transfer fee epoch and transfer fAssets
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        const settings = await agentBot.agent.assetManager.transferFeeSettings();
+        const epochDuration = settings.epochDuration;
+        const amount = 1000000;
+        assert.isBelow(amount * 13, Number(fBalance));
+        for (let i = 0; i < 13; i++) {
+            // move to next epoch
+            await context.fAsset.transfer(redeemer.address, amount, { from: minter.address });
+            await time.increase(epochDuration);
+        }
+
+        const info = await agentBot.agent.getAgentInfo();
+        const poolFeeShareBIPS = info.poolFeeShareBIPS;
+        // it should claim transfer fees for the first 10 epochs
+        const { 1: count } = await agentBot.agent.assetManager.agentUnclaimedTransferFeeEpochs(agentBot.agent.vaultAddress);
+        assertWeb3DeepEqual(count, 13);
+        let agentTransferFeeShare = await agentBot.agent.assetManager.agentTransferFeeShare(agentBot.agent.vaultAddress, count);
+        const feeShare10Epochs = agentTransferFeeShare.mul(toBN(10)).div(toBN(13));
+        let agentClaimed = feeShare10Epochs.mul(toBN(1e4).sub(toBN(poolFeeShareBIPS))).div(toBN(1e4));
+        const balance1 = await context.fAsset.balanceOf(agentBot.agent.owner.workAddress);
+        await agentBot.runStep(orm.em);
+        const balance2 = await context.fAsset.balanceOf(agentBot.agent.owner.workAddress);
+        assertWeb3DeepEqual(balance2, balance1.add(agentClaimed));
+        // it should not claim for the next 2 epochs
+        const { 1: count1 } = await agentBot.agent.assetManager.agentUnclaimedTransferFeeEpochs(agentBot.agent.vaultAddress);
+        agentTransferFeeShare = await agentBot.agent.assetManager.agentTransferFeeShare(agentBot.agent.vaultAddress, count1);
+        agentClaimed = agentTransferFeeShare.mul(toBN(1e4).sub(toBN(poolFeeShareBIPS))).div(toBN(1e4));
+        await agentBot.runStep(orm.em);
+        const balance3 = await context.fAsset.balanceOf(agentBot.agent.owner.workAddress);
+        assertWeb3DeepEqual(balance3, balance2);
+        // it should move to the next day and claim the last 2 epochs
+        await time.increase(24 * 60 * 60);
+        await agentBot.runStep(orm.em);
+        const balance4 = await context.fAsset.balanceOf(agentBot.agent.owner.workAddress);
+        assertWeb3DeepEqual(balance4, balance3.add(agentClaimed));
     });
 
     // it.only("Should close after transfer even without redemption", async () => {

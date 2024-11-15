@@ -384,6 +384,40 @@ describe("Tracked state tests", () => {
         expect(spyRedemption).to.have.been.called.once;
     });
 
+    it("Should handle event 'RedemptionPerformed' - buy missing FAssets", async () => {
+        const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await trackedState.readUnhandledEvents();
+        const lots = 2;
+        await createCRAndPerformMinting(minter, agentB.vaultAddress, lots, chain);
+        const spyRedemption = spy.on(trackedState.getAgent(agentB.vaultAddress)!, "handleRedemptionPerformed");
+        const redeemer = await createTestRedeemer(context, redeemerAddress);
+        const fBalance = await context.fAsset.balanceOf(minter.address);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
+        await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
+        assertWeb3DeepEqual(await context.fAsset.balanceOf(context.assetManager.address), transferFee);
+
+        // create another agent and mint some FAssets
+        const agent2 = await createTestAgentAndMakeAvailable(context, accounts[321], "UNDERLYING_ADDRESS_1");
+        // execute minting
+        const minter2 = await createTestMinter(context, minterAddress, chain);
+        const crt1 = await minter2.reserveCollateral(agent2.vaultAddress, 2);
+        const txHash1 = await minter2.performMintingPayment(crt1);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter2.executeMinting(crt1, txHash1);
+        // agent buys missing fAssets
+        const amount = toBN(transferFee).muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
+        await context.fAsset.transfer(redeemerAddress, amount, { from: minter.address });
+
+        const [rdReqs] = await redeemer.requestRedemption(lots);
+        const tx1Hash = await performRedemptionPayment(agentB, rdReqs[0]);
+        const proof = await agentB.attestationProvider.provePayment(tx1Hash, agentB.underlyingAddress, rdReqs[0].paymentAddress);
+        await agentB.assetManager.confirmRedemptionPayment(proof, rdReqs[0].requestId, { from: agentB.owner.workAddress });
+        await trackedState.readUnhandledEvents();
+        expect(spyRedemption).to.have.been.called.once;
+    });
+
     it("Should handle event 'CollateralReservationDeleted'", async () => {
         const agentB = await createTestAgentAndMakeAvailable(context, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
