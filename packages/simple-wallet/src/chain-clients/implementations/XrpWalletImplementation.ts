@@ -71,6 +71,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    }
 
    clone(monitoringId: string, rootEm: EntityManager) {
+      logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
       return new XrpWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
    }
 

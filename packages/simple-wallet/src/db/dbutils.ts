@@ -11,7 +11,7 @@ import { TransactionInfo } from "../interfaces/IWalletTransaction";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
 import { logger } from "../utils/logger";
-import { getCurrentTimestampInSeconds } from "../utils/utils";
+import { getCurrentTimestampInSeconds, updateErrorWithFullStackTrace } from "../utils/utils";
 import Output = Transaction.Output;
 import { getDustAmount } from "../chain-clients/utxo/UTXOUtils";
 import { errorMessage } from "../utils/axios-utils";
@@ -456,12 +456,6 @@ export async function transactional<T>(rootEm: EntityManager, cb: (em: EntityMan
     try {
         return await rootEm.transactional(cb, options);
     } catch (error) {
-        if (error instanceof Error) {
-            const stackError = new Error("just for stack");
-            const extraStack = (stackError.stack ?? "").split("\n").slice(1).join("\n");
-            error.stack = (error.stack ?? "Missing original error stack") + "\n" + extraStack;
-            throw error;
-        }
-        throw new Error(`Unknown error: ${error}`);
+        throw updateErrorWithFullStackTrace(error);
     }
 }

@@ -5,7 +5,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { AxiosError } from "axios";
-import { sleepMs } from "./utils";
+import { fullStackTrace, sleepMs } from "./utils";
 
 export async function tryWithClients<T>(clients: AxiosInstance[], operation: (client: AxiosInstance) => Promise<T>, method: string) {
     for (const [index] of clients.entries()) {
@@ -42,11 +42,11 @@ export function errorMessage(e: unknown) {
                 responseData = JSON.stringify(response.data, null, 2);
             }
         }
-        return `AxiosError - Code: ${code}, URL: ${url}, Status: ${statusCode} ${statusText} - ${e.message}\nResponse Data: ${responseData}\nStack Trace: ${e.stack}`;
+        return `AxiosError - Code: ${code}, URL: ${url}, Status: ${statusCode} ${statusText} - ${e.message}\nResponse Data: ${responseData}\nStack Trace: ${fullStackTrace(e, 1)}`;
     } else if (e instanceof Error) {
-        return `${e.name} - ${e.message}\nStack Trace: ${e.stack}`;
+        return `${e.name} - ${e.message}\nStack Trace: ${fullStackTrace(e, 1)}`;
     } else {
-        return String(e);
+        return `Unkown error - ${String(e)}\nStack Trace: ${new Error(String(e)).stack}`;
     }
 }
 
