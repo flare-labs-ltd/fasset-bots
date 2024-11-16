@@ -5,6 +5,7 @@ import { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAcco
 import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAccountGeneration";
 import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
 import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/IWalletTransaction";
+import { createMonitoringId } from "./utils/utils";
 
 export * from "./entity/transaction";
 export * from "./entity/wallet";
@@ -35,31 +36,31 @@ export class DogeAccount extends DogeAccountGeneration {
     }
 }
 export class XRP extends XrpWalletImplementation {
-    constructor(options: RippleWalletConfig) {
-        super(options);
+    constructor(monitoringId: string | null, options: RippleWalletConfig) {
+        super(monitoringId, options);
     }
     static initialize(createConfig: RippleWalletConfig) {
-        const wallet = new XrpWalletImplementation(createConfig);
+        const wallet = new XrpWalletImplementation(null, createConfig);
         return wallet;
     }
 }
 
 export class BTC extends BtcWalletImplementation {
-    constructor(options: BitcoinWalletConfig) {
-        super(options);
+    constructor(monitoringId: string | null, options: BitcoinWalletConfig) {
+        super(monitoringId, options);
     }
     static initialize(createConfig: BitcoinWalletConfig) {
-        const wallet = new BtcWalletImplementation(createConfig);
+        const wallet = new BtcWalletImplementation(null, createConfig);
         return wallet;
     }
 }
 
 export class DOGE extends DogeWalletImplementation {
-    constructor(options: DogecoinWalletConfig) {
-        super(options);
+    constructor(monitoringId: string | null, options: DogecoinWalletConfig) {
+        super(monitoringId, options);
     }
     static initialize(createConfig: DogecoinWalletConfig) {
-        const wallet = new DogeWalletImplementation(createConfig);
+        const wallet = new DogeWalletImplementation(null, createConfig);
         return wallet;
     }
 }

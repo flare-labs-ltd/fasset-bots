@@ -474,11 +474,13 @@ describe("Agent bot unit tests", () => {
         const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         // announce updates
-        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
+        const newFeeBIPS = toBN(1100);
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", newFeeBIPS);
         const updateSettingFee = new AgentUpdateSetting();
         updateSettingFee.state = AgentUpdateSettingState.WAITING;
         updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.value = String(newFeeBIPS);
         updateSettingFee.validAt = validAtFeeBIPS;
         await orm.em.persist(updateSettingFee).flush();
         // not yet allowed
@@ -489,11 +491,13 @@ describe("Agent bot unit tests", () => {
         await agentBot.handleTimelockedProcesses(orm.em);
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.DONE);
         // announce and try to update an expired update
-        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
+        const newPoolTopupTokenPriceFactorBIPS = toBN(8100);
+        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", newPoolTopupTokenPriceFactorBIPS);
         const updateSettingPoolTopup = new AgentUpdateSetting();
         updateSettingPoolTopup.state = AgentUpdateSettingState.WAITING;
         updateSettingPoolTopup.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingPoolTopup.name = AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR;
+        updateSettingPoolTopup.value = String(newPoolTopupTokenPriceFactorBIPS);
         updateSettingPoolTopup.validAt = validAt2;
         await orm.em.persist(updateSettingPoolTopup).flush();
         // cannot update, update expired
@@ -506,11 +510,13 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const feeBIPS = toBN((await agentBot.agent.getAgentInfo()).feeBIPS);
         //Announce updates
-        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", feeBIPS.muln(10));
+        const newFeeBIPS = feeBIPS.muln(10);
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", newFeeBIPS);
         const updateSettingFee = new AgentUpdateSetting();
         updateSettingFee.state = AgentUpdateSettingState.WAITING;
         updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.value = String(newFeeBIPS);
         updateSettingFee.validAt = validAtFeeBIPS;
         await orm.em.persist(updateSettingFee).flush();
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.WAITING);

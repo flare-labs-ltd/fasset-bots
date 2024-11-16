@@ -74,14 +74,15 @@ describe("Fee service tests BTC", () => {
 
     it("Should get fee and median time", async () => {
         client.blockchainAPI = new MockBlockchainAPI();
-        void feeService.monitorFees(true);
+        let monitoringFees = true;
+        void feeService.monitorFees(() => monitoringFees);
         await sleepMs(5000);
         const chainType = ChainType.testBTC;
         const transactionFeeService = new TransactionFeeService(client, chainType, 1)
         await transactionFeeService.getFeePerKB();
         const medianTime = feeService.getLatestMedianTime();
         expect(medianTime?.gtn(0)).to.be.true;
-        await feeService.monitorFees(false);
+        monitoringFees = false;
     });
 
     it("If fetching fee stats fails it should be retried until number of tries passes the limit", async () => {

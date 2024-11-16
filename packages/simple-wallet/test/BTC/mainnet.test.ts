@@ -4,15 +4,14 @@ import {
     loop, promptPassword,
     resetMonitoringOnForceExit, waitForTxToFinishWithStatus
 } from "../test-util/common_utils";
-import {BitcoinWalletConfig, BTC, logger, TransactionStatus} from "../../src";
-import {toBN} from "../../src/utils/bnutils";
-import {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config";
-import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {setMonitoringStatus} from "../test-util/entity_utils";
-import {expect, use} from "chai";
-import {UTXOBlockchainAPI} from "../../src/blockchain-apis/UTXOBlockchainAPI";
+import { BitcoinWalletConfig, BTC, ITransactionMonitor, logger, TransactionStatus } from "../../src";
+import { toBN } from "../../src/utils/bnutils";
+import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import { setMonitoringStatus } from "../test-util/entity_utils";
+import { expect, use } from "chai";
 import * as dbutils from "../../src/db/dbutils";
-import {decryptTestSecrets} from "../test-util/encryption_utils";
+import { decryptTestSecrets } from "../test-util/encryption_utils";
 import chaiAsPromised from "chai-as-promised";
 
 use(chaiAsPromised);
@@ -30,6 +29,7 @@ const amountToSendSatoshi = toBN(100020);
 
 let wClient: BTC;
 let testOrm: ORM;
+let monitor: ITransactionMonitor;
 
 describe("Bitcoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -49,8 +49,9 @@ describe("Bitcoin wallet tests", () => {
             enoughConfirmations: 2,
         };
         wClient = BTC.initialize(BTCMccConnection);
-        void wClient.startMonitoringTransactionProgress();
-        resetMonitoringOnForceExit(wClient);
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
+        resetMonitoringOnForceExit(monitor);
 
         fundedAddress = testSecrets["fundedWallet"].address!;
         targetAddress = testSecrets["targetWallet"].address!;
@@ -60,10 +61,10 @@ describe("Bitcoin wallet tests", () => {
     });
 
     after(async () => {
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                if (!wClient.isMonitoring) return true;
+                if (!monitor.isMonitoring()) return true;
             });
         } catch (e) {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
