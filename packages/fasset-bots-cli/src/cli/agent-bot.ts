@@ -464,7 +464,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        cli.selfMint(agentVault, toBN(numberOfLots));
+        await cli.selfMint(agentVault, toBN(numberOfLots));
         console.log(`Agent ${agentVault} self minted ${numberOfLots}.`);
     });
 
@@ -479,7 +479,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        cli.selfMintFromFreeUnderlying(agentVault, toBN(numberOfLots));
+        await cli.selfMintFromFreeUnderlying(agentVault, toBN(numberOfLots));
         console.log(`Agent ${agentVault} minted ${numberOfLots} lots from free underlying.`);
     });
 
