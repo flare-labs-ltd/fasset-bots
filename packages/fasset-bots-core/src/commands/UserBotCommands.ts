@@ -275,6 +275,14 @@ export class UserBotCommands {
         this.deleteState(state, requestIdOrPath);
     }
 
+    async listMinting(id: string): Promise<void> {
+        const state = this.readState("mint", id);
+        const timestamp = await latestBlockTimestamp();
+        const settings = await this.context.assetManager.getSettings();
+        const status = this.mintingStatus(state, timestamp, settings);
+        console.log(`${id} ${status}`);
+    }
+
     async listMintings(): Promise<void> {
         const stateList = this.readStateList("mint");
         const timestamp = await latestBlockTimestamp();

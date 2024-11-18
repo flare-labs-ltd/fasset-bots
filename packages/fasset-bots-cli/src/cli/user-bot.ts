@@ -116,10 +116,15 @@ program
 program
     .command("mintStatus")
     .description("List all open mintings")
-    .action(async () => {
+    .option('--crt-id <crtId>', 'collateral reservation id (number)')
+    .action(async (cmdOptions: { crtId?: string }) => {
         const options: { config: string; secrets: string; fasset: string; dir: string } = program.opts();
         const minterBot = await UserBotCommands.create(options.secrets, options.config, options.fasset, options.dir, registerToplevelFinalizer);
-        await minterBot.listMintings();
+        if (cmdOptions.crtId !== undefined) {
+            await minterBot.listMinting(cmdOptions.crtId);
+        } else {
+            await minterBot.listMintings();
+        }
     });
 
 program
