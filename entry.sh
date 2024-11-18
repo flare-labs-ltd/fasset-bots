@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USAGE_MSG="usage: entry [run-bots|run-liquidator]"
+USAGE_MSG="usage: entry [run-bots|run-liquidator|run-challenger]"
 
 if [[ $# -ne 1 ]]; then
     echo $USAGE_MSG
@@ -15,7 +15,11 @@ case $1 in
     run-liquidator)
         echo 'starting liquidator'
         /bin/sh -c '(yarn run-liquidator > log/liquidator_run.log &) && (/bin/sh)'
-    ;;
+        ;;
+    run-challenger)
+        echo 'starting challenger'
+        /bin/sh -c '(yarn run-challenger > log/challenger_run.log &) && (/bin/sh)'
+        ;;
     *)
         # The wrong first argument.
         echo "invalid argument: '$1'"
