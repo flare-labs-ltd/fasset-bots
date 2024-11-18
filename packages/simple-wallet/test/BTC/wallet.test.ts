@@ -1,5 +1,5 @@
 import { BTC, SpentHeightEnum, TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
-import { BitcoinWalletConfig, ICreateWalletResponse } from "../../src/interfaces/IWalletTransaction";
+import { BitcoinWalletConfig, ICreateWalletResponse, ITransactionMonitor } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { assert, expect, use } from "chai";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
@@ -37,6 +37,7 @@ import {
 import sinon from "sinon";
 import { FeeStatus } from "../../src/chain-clients/utxo/TransactionFeeService";
 import { UTXORawTransactionInput } from "../../src/interfaces/IBlockchainAPI";
+import { TransactionMonitor } from "../../src/chain-clients/monitoring/TransactionMonitor";
 
 use(chaiAsPromised);
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
@@ -77,6 +78,7 @@ const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
 let wClient: BTC;
 let fundedWallet: ICreateWalletResponse;
 let testOrm: ORM;
+let monitor: ITransactionMonitor;
 
 describe("Bitcoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -93,19 +95,20 @@ describe("Bitcoin wallet tests", () => {
             enoughConfirmations: 2,
         };
         wClient = BTC.initialize(BTCMccConnectionTest);
-        void wClient.startMonitoringTransactionProgress();
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
         await sleepMs(2000);
-        resetMonitoringOnForceExit(wClient);
+        resetMonitoringOnForceExit(monitor);
 
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
     });
 
     after(async () => {
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                if (!wClient.isMonitoring) return true;
+                if (!monitor.isMonitoring()) return true;
             });
         } catch (e) {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
@@ -118,7 +121,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Monitoring should be running", async () => {
-        const monitoring = await wClient.isMonitoring();
+        const monitoring = await monitor.isMonitoring();
         expect(monitoring).to.be.true;
     });
 
@@ -284,8 +287,8 @@ describe("Bitcoin wallet tests", () => {
     it("If monitoring restarts wallet should run normally", async () => {
         const N = 2;
         await sleepMs(2000);
-        await wClient.stopMonitoring();
-        const isMonitoring = await wClient.isMonitoring();
+        await monitor.stopMonitoring();
+        const isMonitoring = await monitor.isMonitoring();
         expect(isMonitoring).to.be.false;
 
         const initialTxIds = [];
@@ -293,7 +296,8 @@ describe("Bitcoin wallet tests", () => {
             initialTxIds.push(await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.addn(i)));
         }
         await sleepMs(2000);
-        void wClient.startMonitoringTransactionProgress();
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
         for (let i = 0; i < N; i++) {
             await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, initialTxIds[i]);
         }
@@ -323,14 +327,15 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should check monitoring already running and restart it", async () => {
-        expect(await wClient.isMonitoring()).to.be.true;
-        void wClient.startMonitoringTransactionProgress();
-        expect(await wClient.isMonitoring()).to.be.true;
-        await wClient.stopMonitoring();
-        expect(await wClient.isMonitoring()).to.be.false;
-        void wClient.startMonitoringTransactionProgress();
+        expect(await monitor.isMonitoring()).to.be.true;
+        await monitor.stopMonitoring();
+        await (monitor as TransactionMonitor).startMonitoring();
+        expect(monitor.isMonitoring()).to.be.true;
+        await monitor.stopMonitoring();
+        expect(await monitor.isMonitoring()).to.be.false;
+        await (monitor as TransactionMonitor).startMonitoring();
         await sleepMs(2000);
-        expect(await wClient.isMonitoring()).to.be.true;
+        expect(monitor.isMonitoring()).to.be.true;
     });
 
     it("Account that is being deleted should not accept new transactions", async () => {
@@ -427,14 +432,14 @@ describe("Bitcoin wallet tests", () => {
 
     it("If network is down, the monitoring should continue to operate", async () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
 
         const stub = sinon.stub(utxoUtils, "checkUTXONetworkStatus");
         stub.onCall(0).resolves(false);
         stub.onCall(1).resolves(false);
         stub.resolves(!!(await wClient.blockchainAPI.getCurrentBlockHeight()));
 
-        void wClient.startMonitoringTransactionProgress();
+        await (monitor as TransactionMonitor).startMonitoring();
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
@@ -443,7 +448,7 @@ describe("Bitcoin wallet tests", () => {
         sinon.stub(dbutils, "updateMonitoringState").throws(new Error("Ping down"));
 
         await loop(500, 60 * 1000, null, async () => {
-            return !(await wClient.isMonitoring());
+            return !(monitor.isMonitoring());
         });
 
         sinon.restore();
@@ -465,7 +470,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("If transaction uses already spent UTXOs they should be removed and it's status should be set to TX_CREATED", async () => {
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
 
         const tx1 = createTransactionEntity(targetAddress, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c");
         const tx2 = createTransactionEntity(targetAddress, fundedAddress, "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e");

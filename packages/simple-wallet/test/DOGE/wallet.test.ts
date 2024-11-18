@@ -1,5 +1,5 @@
 import { DOGE, TransactionStatus } from "../../src";
-import { DogecoinWalletConfig } from "../../src/interfaces/IWalletTransaction";
+import { DogecoinWalletConfig, ITransactionMonitor } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
 import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
@@ -48,6 +48,7 @@ const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 let wClient: DOGE;
 let testOrm: ORM;
 const chainType = ChainType.testDOGE;
+let monitor: ITransactionMonitor;
 
 describe("Dogecoin wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -67,8 +68,9 @@ describe("Dogecoin wallet tests", () => {
             },
         };
         wClient = DOGE.initialize(DOGEMccConnectionTest);
-        void wClient.startMonitoringTransactionProgress();
-        resetMonitoringOnForceExit(wClient);
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
+        resetMonitoringOnForceExit(monitor);
         await sleepMs(500);
 
         const fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
@@ -76,10 +78,10 @@ describe("Dogecoin wallet tests", () => {
     });
 
     after(async () => {
-        await wClient.stopMonitoring();
+        await monitor.stopMonitoring();
         try {
             await loop(100, 2000, null, async () => {
-                if (!wClient.isMonitoring) return true;
+                if (!monitor.isMonitoring()) return true;
             });
         } catch (e) {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
