@@ -18,7 +18,7 @@ export class Liquidator extends ActorBase {
     static deepCopyWithObjectCreate = true;
 
     notifier: LiquidatorNotifier;
-    liquidationStrategy: LiquidationStrategy;
+    liquidationStrategy: LiquidationStrategy<any>;
 
     constructor(
         public context: ILiquidatorContext,

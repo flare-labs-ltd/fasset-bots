@@ -5,20 +5,25 @@ import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
 import { Currencies, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
 import { artifacts } from "../../utils/web3";
-import type { DexLiquidationStrategyConfig } from "../../config";
+import type { DefaultLiquidationStrategyConfig, DexLiquidationStrategyConfig } from "../../config/config-files/BotStrategyConfig";
 
 const Liquidator = artifacts.require("Liquidator");
 
-export abstract class LiquidationStrategy {
+export abstract class LiquidationStrategy<T> {
+    config: T;
+
     constructor(
         public context: ILiquidatorContext,
         public state: TrackedState,
         public address: string
-    ) {}
+    ) {
+        this.config = context.liquidationStrategy?.config as T;
+    }
+
     abstract performLiquidations(agent: TrackedAgentState[]): Promise<any>;
 }
 
-export class DefaultLiquidationStrategy extends LiquidationStrategy {
+export class DefaultLiquidationStrategy extends LiquidationStrategy<DefaultLiquidationStrategyConfig | undefined> {
 
     public async performLiquidations(agents: TrackedAgentState[]): Promise<void> {
         if (agents.length === 0) return;
@@ -54,31 +59,16 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy {
     protected async liquidate(agent: TrackedAgentState): Promise<void> {
         const fBalance = await this.context.fAsset.balanceOf(this.address);
         if (fBalance.gte(toBN(this.state.settings.assetMintingGranularityUBA))) {
-            await this.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address, gasPrice: this.getGasPrice() });
+            await this.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address, gasPrice: this.config?.gasPrice });
         } else {
             const fassetSymbol = this.context.fAssetSymbol;
             logger.info(`Liquidator ${this.address} has no ${fassetSymbol} available for liqudating agent ${agent.vaultAddress}`);
             console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
         }
     }
-
-    protected getGasPrice(): BN | undefined {
-        if (this.context.liquidationStrategy?.config?.gasPrice === undefined) return undefined;
-        return toBN(this.context.liquidationStrategy?.config?.gasPrice);
-    }
 }
 
-export class DexLiquidationStrategy extends LiquidationStrategy {
-    config: DexLiquidationStrategyConfig;
-
-    constructor(
-        public context: ILiquidatorContext,
-        public state: TrackedState,
-        public address: string
-    ) {
-        super(context, state, address);
-        this.config = context.liquidationStrategy!.config as DexLiquidationStrategyConfig;
-    }
+export class DexLiquidationStrategy extends LiquidationStrategy<DexLiquidationStrategyConfig> {
 
     protected async dexMinPriceOracle(challenger: LiquidatorInstance, agent: TrackedAgentState): Promise<[BN, BN, BN, BN]> {
         const maxSlippage = this.config.maxAllowedSlippage

@@ -1,3 +1,5 @@
+import type { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./BotStrategyConfig";
+
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
@@ -57,22 +59,6 @@ export interface BotNativeChainInfo {
 export interface ApiNotifierConfig {
     apiUrl: string;
     apiKey: string;
-}
-
-export interface DexLiquidationStrategyConfig {
-    address: string;
-    maxAllowedSlippage: number;
-    gasPrice: string;
-}
-export interface DexChallengeStrategyConfig extends DexLiquidationStrategyConfig {};
-
-export interface LiquidatorBotStrategyDefinition {
-    className: string;
-    config?: DexLiquidationStrategyConfig;
-}
-export interface ChallengerBotStrategyDefinition {
-    className: string;
-    config?: DexChallengeStrategyConfig;
 }
 
 export interface BotConfigFile {
