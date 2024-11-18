@@ -1,4 +1,4 @@
-import { randBigInt, randBigIntInRelRadius } from "../../utils"
+import { randBigInt, randBigIntInRelRadius } from "../../utils/numeric"
 import { lotSizeUba } from "../utils/assets"
 import { priceBasedInitialDexReserve, collateralForAgentCr, convertUsd5ToToken, roundUpWithPrecision } from "../../calculations/calculations"
 import type { AssetConfig, EcosystemConfig } from "./interfaces"

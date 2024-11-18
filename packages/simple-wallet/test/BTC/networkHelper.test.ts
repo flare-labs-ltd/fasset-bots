@@ -4,6 +4,7 @@ import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
 import { BTC } from "../../src";
+import { TransactionMonitor } from "../../src/chain-clients/monitoring/TransactionMonitor";
 
 describe("Bitcoin network helper tests", () => {
    it("Should switch to mainnet", async () => {
@@ -16,7 +17,7 @@ describe("Bitcoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionMain = { ...BTCMccConnectionMainInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: BTC = new BTC(BTCMccConnectionMain);
+      const wClient: BTC = new BTC(null, BTCMccConnectionMain);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_MAINNET);
    });
@@ -45,8 +46,11 @@ describe("Bitcoin network helper tests", () => {
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
       const wClient: BTC = BTC.initialize(BTCMccConnectionTest);
-      const isMonitoring =  await wClient.isMonitoring();
+      const monitor = await wClient.createMonitor();
+      const isMonitoring = monitor.isMonitoring();
+      const liveMonitor = await monitor.runningMonitorId();
       expect(isMonitoring).to.be.false;
+      expect(liveMonitor).to.be.null;
    });
 
 });

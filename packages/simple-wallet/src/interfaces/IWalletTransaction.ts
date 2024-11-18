@@ -38,11 +38,22 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    getTransactionInfo(dbId: number): Promise<TransactionInfo>;
 
-   startMonitoringTransactionProgress(): Promise<void>;
-   stopMonitoring(): Promise<void>;
-   isMonitoring(): Promise<boolean>;
+   createMonitor(): Promise<ITransactionMonitor>;
 
    getMonitoringId(): string;
+}
+
+export interface ITransactionMonitor {
+   getId(): string;
+   isMonitoring(): boolean;
+   startMonitoring(): Promise<boolean>;
+   stopMonitoring(): Promise<void>;
+
+   /**
+    * Return running monitor id (possibly from another process) or null if there is no monitor running.
+    * Can return false positives or negatives wrt to liveness, but only for some time; so after a few repetitions, it will return correct value.
+    */
+   runningMonitorId(): Promise<string | null>;
 }
 
 export interface ICreateWalletResponse {

@@ -8,6 +8,7 @@ import { RequireFields, ZERO_ADDRESS } from "../../utils";
 import { EventScope } from "../../utils/events/ScopedEvents";
 import { artifacts } from "../../utils/web3";
 import { TrackedState } from "../../state/TrackedState";
+import { toBN } from "web3-utils";
 
 const Challenger = artifacts.require("Challenger");
 
@@ -30,7 +31,8 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
         // due to async nature of challenging (and the fact that challenger might start tracking agent later),
         // there may be some false challenges which will be rejected
         // this is perfectly safe for the system, but the errors must be caught
-        await this.context.assetManager.illegalPaymentChallenge(proof, agent.vaultAddress, { from: this.address })
+        const gasPrice = this.context.challengeStrategy?.config?.gasPrice;
+        await this.context.assetManager.illegalPaymentChallenge(proof, agent.vaultAddress, { from: this.address, gasPrice: this.getGasPrice() })
             .catch((e) => scope.exitOnExpectedError(e,
                 ["chlg: already liquidating", "chlg: transaction confirmed", "matching redemption active", "matching ongoing announced pmt"],
                 ActorBaseKind.CHALLENGER, this.address));
@@ -38,16 +40,22 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
 
     public async doublePaymentChallenge(scope: EventScope, agent: TrackedAgentState, proof1: BalanceDecreasingTransaction.Proof, proof2: BalanceDecreasingTransaction.Proof) {
         // due to async nature of challenging there may be some false challenges which will be rejected
-        await this.context.assetManager.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address })
+        const gasPrice = this.context.challengeStrategy?.config?.gasPrice;
+        await this.context.assetManager.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address, gasPrice: this.getGasPrice() })
             .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"],
                 ActorBaseKind.CHALLENGER, this.address));
     }
 
     public async freeBalanceNegativeChallenge(scope: EventScope, agent: TrackedAgentState, proofs: BalanceDecreasingTransaction.Proof[]) {
         // due to async nature of challenging there may be some false challenges which will be rejected
-        await this.context.assetManager.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address })
+        await this.context.assetManager.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, { from: this.address, gasPrice: this.getGasPrice() })
             .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"],
                 ActorBaseKind.CHALLENGER, this.address));
+    }
+
+    protected getGasPrice(): BN | undefined {
+        if (this.context.challengeStrategy?.config?.gasPrice === undefined) return undefined;
+        return toBN(this.context.challengeStrategy?.config?.gasPrice);
     }
 }
 

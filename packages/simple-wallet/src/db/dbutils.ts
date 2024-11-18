@@ -11,7 +11,7 @@ import { TransactionInfo } from "../interfaces/IWalletTransaction";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
 import { logger } from "../utils/logger";
-import { getCurrentTimestampInSeconds } from "../utils/utils";
+import { getCurrentTimestampInSeconds, updateErrorWithFullStackTrace } from "../utils/utils";
 import Output = Transaction.Output;
 import { getDustAmount } from "../chain-clients/utxo/UTXOUtils";
 import { errorMessage } from "../utils/axios-utils";
@@ -243,7 +243,7 @@ export async function storeUTXOs(em: EntityManager, source: string, mempoolUTXOs
         try {
             const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, utxo.mintTxid, utxo.mintIndex);
             utxoEnt.confirmed = utxo.confirmed;
-        } catch (_error) {
+        } catch (error) {
             await createUTXOEntity(em, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
         }
     }
@@ -400,7 +400,7 @@ export async function setAccountIsDeleting(rootEm: EntityManager, address: strin
 
 // monitoring
 export async function fetchMonitoringState(rootEm: EntityManager, chainType: string): Promise<MonitoringStateEntity | null> {
-    return await rootEm.findOne(MonitoringStateEntity, { chainType } as FilterQuery<MonitoringStateEntity>, { refresh: true });
+    return await rootEm.findOne(MonitoringStateEntity, { chainType }, { refresh: true });
 }
 
 export async function updateMonitoringState(
@@ -415,7 +415,6 @@ export async function updateMonitoringState(
             return;
         }
         modify(stateEnt);
-        await em.persistAndFlush(stateEnt);
     });
 }
 
@@ -457,12 +456,6 @@ export async function transactional<T>(rootEm: EntityManager, cb: (em: EntityMan
     try {
         return await rootEm.transactional(cb, options);
     } catch (error) {
-        if (error instanceof Error) {
-            const stackError = new Error("just for stack");
-            const extraStack = (stackError.stack ?? "").split("\n").slice(1).join("\n");
-            error.stack = (error.stack ?? "Missing original error stack") + "\n" + extraStack;
-            throw error;
-        }
-        throw new Error(`Unknown error: ${error}`);
+        throw updateErrorWithFullStackTrace(error);
     }
 }

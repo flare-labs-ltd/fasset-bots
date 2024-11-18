@@ -1,6 +1,7 @@
 import {
     BitcoinWalletConfig,
     BTC,
+    ITransactionMonitor,
     logger,
     SpentHeightEnum,
 } from "../../src";
@@ -36,6 +37,7 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
 let wClient: BTC;
 let testOrm: ORM;
+let monitor: ITransactionMonitor;
 
 describe("UTXO selection algorithm test", () => {
 
@@ -50,7 +52,9 @@ describe("UTXO selection algorithm test", () => {
             enoughConfirmations: 1,
         };
         wClient = BTC.initialize(BTCMccConnectionTest);
-        resetMonitoringOnForceExit(wClient);
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
+        resetMonitoringOnForceExit(monitor);
     });
 
     beforeEach(() => {

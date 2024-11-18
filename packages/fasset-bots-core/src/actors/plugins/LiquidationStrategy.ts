@@ -53,12 +53,17 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy {
     protected async liquidate(agent: TrackedAgentState): Promise<void> {
         const fBalance = await this.context.fAsset.balanceOf(this.address);
         if (fBalance.gte(toBN(this.state.settings.assetMintingGranularityUBA))) {
-            await this.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address });
+            await this.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address, gasPrice: this.getGasPrice() });
         } else {
             const fassetSymbol = this.context.fAssetSymbol;
             logger.info(`Liquidator ${this.address} has no ${fassetSymbol} available for liqudating agent ${agent.vaultAddress}`);
             console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
         }
+    }
+
+    protected getGasPrice(): BN | undefined {
+        if (this.context.liquidationStrategy?.config?.gasPrice === undefined) return undefined;
+        return toBN(this.context.liquidationStrategy?.config?.gasPrice);
     }
 }
 

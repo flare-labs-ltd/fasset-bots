@@ -9,7 +9,7 @@ import { prefix0x } from "../../src/utils/helpers";
 import { createTestOrm } from "../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
-import { TransactionStatus } from "@flarelabs/simple-wallet";
+import { ITransactionMonitor, TransactionStatus } from "@flarelabs/simple-wallet";
 
 let orm: ORM;
 let walletHelper: BlockchainWalletHelper;
@@ -26,17 +26,19 @@ describe("XRP transaction integration tests", () => {
     const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/xrp"];
     const walletUrls: string[] = ["https://s.altnet.rippletest.net:51234"];
     const amountToSendDrops = 1000000;
+    let monitor: ITransactionMonitor;
 
     before(async () => {
         secrets = await Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
         blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets, indexerUrls));
         walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
-        void walletHelper.walletClient.startMonitoringTransactionProgress();
+        monitor = await walletHelper.createMonitor();
+        await monitor.startMonitoring();
     });
 
     after(async () => {
-        await walletHelper.walletClient.stopMonitoring();
+        await monitor.stopMonitoring();
     });
 
     it("Should send funds and retrieve transaction", async () => {

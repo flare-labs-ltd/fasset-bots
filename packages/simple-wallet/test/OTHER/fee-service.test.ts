@@ -67,21 +67,22 @@ describe("Fee service tests BTC", () => {
     it("Fee stats for block without information/non existent block should be null", async () => {
         const blockHeight = await feeService.getCurrentBlockHeight() + 10;
         const feeStats = await feeService.getFeeStatsFromIndexer(blockHeight);
-        const feeStatsWithRetires = await feeService.getFeeStatsWithRetry(blockHeight);
+        const feeStatsWithRetires = await feeService.getFeeStatsFromIndexer(blockHeight);
         expect(feeStats).to.be.null;
         expect(feeStatsWithRetires).to.be.null;
     });
 
     it("Should get fee and median time", async () => {
         client.blockchainAPI = new MockBlockchainAPI();
-        void feeService.monitorFees(true);
+        let monitoringFees = true;
+        void feeService.monitorFees(() => monitoringFees);
         await sleepMs(5000);
         const chainType = ChainType.testBTC;
         const transactionFeeService = new TransactionFeeService(client, chainType, 1)
         await transactionFeeService.getFeePerKB();
         const medianTime = feeService.getLatestMedianTime();
         expect(medianTime?.gtn(0)).to.be.true;
-        await feeService.monitorFees(false);
+        monitoringFees = false;
     });
 
     it("If fetching fee stats fails it should be retried until number of tries passes the limit", async () => {
@@ -94,7 +95,7 @@ describe("Fee service tests BTC", () => {
             blockTime: new BN(600),
         }));
 
-        const feeStats = await feeService.getFeeStatsWithRetry(123, 3);
+        const feeStats = await feeService.getFeeStatsFromIndexer(123);
         expect(feeStats).to.not.be.null;
         expect(feeStats!.averageFeePerKB.eq(new BN(1000))).to.be.true;
         expect(feeStats!.blockTime.eq(new BN(600))).to.be.true;

@@ -1,6 +1,6 @@
 import sinon from "sinon";
 import * as dbutils from "../../src/db/dbutils";
-import { BitcoinWalletConfig, BTC, logger, SpentHeightEnum } from "../../src";
+import { BitcoinWalletConfig, BTC, ITransactionMonitor, logger, SpentHeightEnum } from "../../src";
 import { toBN } from "web3-utils";
 import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/common_utils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
@@ -25,6 +25,7 @@ const targetAddress = "tb1q9szxd7rnvkkspxp0sl8mha5jk38q9t3rlc2wjx";
 
 let wClient: BTC;
 let testOrm: ORM;
+let monitor: ITransactionMonitor;
 
 describe("Unit test for paying fees from additional wallet", () => {
 
@@ -39,7 +40,9 @@ describe("Unit test for paying fees from additional wallet", () => {
             enoughConfirmations: 1,
         };
         wClient = BTC.initialize(BTCMccConnectionTest);
-        resetMonitoringOnForceExit(wClient);
+        monitor = await wClient.createMonitor();
+        await monitor.startMonitoring();
+        resetMonitoringOnForceExit(monitor);
     });
 
     beforeEach(() => {

@@ -30,10 +30,10 @@
         "prebuild": "rm -rf dist",
         "build": "tsc --allowJs",
         "---------LINT---SCRIPTS": "",
-        "lint": "eslint \"src/**/*ts\" \"test/**/*ts\"",
+        "lint": "yarn run -T eslint \"src/**/*ts\" \"test/**/*ts\"",
         "---------TEST---SCRIPTS": "",
         "test": "yarn run -T mocha",
-        "test_all": "yarn run -T mocha --recursive test/**/*.ts ",
+        "test_all": "yarn test --recursive \"test/**/*.test.ts\"",
         "test:coverage": "yarn run -T nyc yarn test_all",
         "encrypt-test-secrets": "node dist/test/test-util/encrypt_secrets.js",
         "test-mainnet-btc": "yarn run -T mocha test/BTC/mainnet.test.ts"
@@ -70,7 +70,6 @@
         "xrpl": "2.3.1"
     },
     "devDependencies": {
-        "@eslint/js": "9.11.1",
         "@types/chai": "4.3.6",
         "@types/chai-as-promised": "7.1.6",
         "@types/eslint__js": "8.42.3",
@@ -78,12 +77,10 @@
         "@types/sinon": "17.0.3",
         "chai": "4.3.8",
         "chai-as-promised": "7.1.1",
-        "eslint": "9.11.1",
         "read": "^4.0.0",
         "rewire": "7.0.0",
         "sinon": "18.0.0",
         "typescript": "5.6.2",
-        "typescript-eslint": "8.8.0",
         "wallet-address-validator": "0.2.4"
     },
     "packageManager": "yarn@3.6.4"

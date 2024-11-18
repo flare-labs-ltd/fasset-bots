@@ -7,7 +7,7 @@ import {
     UTXOTransactionResponse,
 } from "../interfaces/IBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
-import { BaseWalletConfig } from "../interfaces/IWalletTransaction";
+import { WalletServiceConfigBase } from "../interfaces/IWalletTransaction";
 import { ChainType } from "../utils/constants";
 import BN from "bn.js";
 import { toBN, toNumber } from "../utils/bnutils";
@@ -20,7 +20,7 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
     clients: AxiosInstance[] = [];
     chainType: ChainType;
 
-    constructor(createConfig: BaseWalletConfig, chainType: ChainType) {
+    constructor(createConfig: WalletServiceConfigBase, chainType: ChainType) {
         for (const [index, url] of createConfig.urls.entries()) {
             this.clients.push(createAxiosInstance(url, createConfig.apiTokenKeys?.[index], createConfig.rateLimitOptions));
         }

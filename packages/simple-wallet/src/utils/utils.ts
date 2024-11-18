@@ -1,18 +1,13 @@
 import {
    ChainType,
-   DEFAULT_FEE_INCREASE, DEFAULT_RATE_LIMIT_OPTIONS,
-   DROPS_PER_XRP,
+   DEFAULT_FEE_INCREASE, DROPS_PER_XRP
 } from "./constants";
-import { RateLimitOptions, StuckTransaction } from "../interfaces/IWalletTransaction";
+import { StuckTransaction } from "../interfaces/IWalletTransaction";
 import BN from "bn.js";
 import { toBN } from "./bnutils";
 import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-import { logger } from "./logger";
-import { errorMessage } from "./axios-utils";
 import crypto from "crypto";
 
 export async function sleepMs(ms: number) {
@@ -132,35 +127,28 @@ export function roundUpXrpToDrops(amount: number): number {
    return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
 }
 
-
-export function createAxiosClient(axiosConfig: AxiosRequestConfig, rateLimitOptions: RateLimitOptions | undefined) {
-   const client = axios.create(axiosConfig);
-   return axiosRateLimit(client, {
-      ...DEFAULT_RATE_LIMIT_OPTIONS,
-      ...rateLimitOptions,
-   });
-}
-
-export async function tryWithClients<TResult>(clients: Record<string, AxiosInstance>, operation: (client: AxiosInstance) => Promise<TResult>, method: string) {
-   for (const [index, url] of Object.keys(clients).entries()) {
-      try {
-         const result = await operation(clients[url]);
-         return result;
-      } catch (error) {
-         if (index == Object.keys(clients).length - 1) {
-            throw error;
-         }
-         logger.warn(`Client ${url} - ${method} failed with: ${errorMessage(error)}`);
-      }
-   }
-   throw new Error(`All blockchain clients failed.`);
-}
-
-export function createMonitoringId(chainType: ChainType): string {
-   return `${chainType}-${crypto.randomBytes(8).toString("hex")}`;
+export function createMonitoringId(prefix: string | ChainType): string {
+   return `${prefix}-${crypto.randomBytes(8).toString("hex")}`;
 }
 
 export function requireDefined<T>(x: T, errorMessage?: string): NonNullable<T> {
    if (x != null) return x as any;
    throw new Error(errorMessage ?? "Value is null or undefined");
+}
+
+export function updateErrorWithFullStackTrace(error: unknown, skipDepth: number = 0): Error {
+   if (error instanceof Error) {
+      error.stack = fullStackTrace(error, skipDepth + 1);
+      return error;
+   }
+   return new Error(`Unknown error: ${error}`);
+}
+
+export function fullStackTrace(error: Error, skipDepth: number = 0): string {
+   const originalStack = error.stack ?? "Missing original error stack";
+   const stackError = new Error("just for stack");
+   // always skip 1 line for message, 1 for this method
+   const extraStackLines = (stackError.stack ?? "").split("\n").slice(skipDepth + 2);
+   const filteredStackLines = extraStackLines.filter(l => !originalStack.includes(l));
+   return originalStack + filteredStackLines.join("\n");
 }

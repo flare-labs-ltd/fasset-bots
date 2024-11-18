@@ -88,17 +88,13 @@ describe("testXRP wallet tests", () => {
         await removeWalletAddressFromDB(walletHelper, account0);
     });
 
-    it("Should not be monitoring", async () => {
-        const monitoring = await walletHelper.isMonitoring();
-        expect(monitoring).to.be.false;
-    });
-
-    it("Should monitoring", async () => {
-        void walletHelper.startMonitoringTransactionProgress();
+    it("Should be monitoring", async () => {
+        const monitor = await walletHelper.createMonitor();
+        await monitor.startMonitoring();
         await sleep(2000);
-        await walletHelper.stopMonitoring();
-        const monitoring = await walletHelper.isMonitoring();
-        expect(monitoring).to.be.false;
+        expect(monitor.isMonitoring()).to.be.true;
+        await monitor.stopMonitoring();
+        expect(monitor.isMonitoring()).to.be.false;
 
         expect(walletHelper.requestStopVal).to.be.false;
         await walletHelper.requestStop();

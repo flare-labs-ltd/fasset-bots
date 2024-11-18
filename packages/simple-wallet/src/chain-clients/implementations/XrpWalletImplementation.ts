@@ -2,9 +2,9 @@ import elliptic from "elliptic";
 import xrpl, { xrpToDrops, convertStringToHex, encodeForSigning, encode as xrplEncode, hashes as xrplHashes } from "xrpl"; // package has some member access issues
 
 import { deriveAddress, sign } from "ripple-keypairs";
-import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops, createMonitoringId, sleepMs } from "../../utils/utils";
+import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops, sleepMs, createMonitoringId } from "../../utils/utils";
 import { toBN } from "../../utils/bnutils";
-import { ChainType, DELETE_ACCOUNT_OFFSET, XRP_PENDING_TIMEOUT, WAIT_TO_APPEAR_IN_XRP } from "../../utils/constants";
+import { ChainType, DELETE_ACCOUNT_OFFSET, XRP_PENDING_TIMEOUT, WAIT_TO_APPEAR_IN_XRP, XRP_MINIMAL_FEE_DROPS } from "../../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type {
    WriteWalletInterface,
@@ -13,6 +13,7 @@ import type {
    SignedObject,
    TransactionInfo,
    IWalletKeys,
+   ITransactionMonitor,
 } from "../../interfaces/IWalletTransaction";
 import BN from "bn.js";
 import {
@@ -45,19 +46,20 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    blockOffset: number; // number of blocks added to define executeUntilBlock (only if not provided in original data)
    feeIncrease: number;
    executionBlockOffset: number; //buffer before submitting -> will submit only if (currentLedger - executeUntilBlock) >= executionBlockOffset
-   rootEm!: EntityManager;
-   walletKeys!: IWalletKeys;
+   rootEm: EntityManager;
+   walletKeys: IWalletKeys;
    monitoringId: string;
 
-   private monitor: TransactionMonitor;
+   createConfig: RippleWalletConfig;
 
-   constructor(createConfig: RippleWalletConfig) {
+   constructor(monitoringId: string | null, createConfig: RippleWalletConfig) {
       super(createConfig.inTestnet ?? false);
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
       this.blockchainAPI = new XRPBlockchainAPI(createConfig);
-      this.monitoringId = createMonitoringId(this.chainType);
+      this.monitoringId = monitoringId ?? createMonitoringId(this.chainType);
+      this.createConfig = createConfig;
       const resubmit = stuckTransactionConstants(this.chainType);
 
       this.blockOffset = createConfig.stuckTransactionOptions?.blockOffset ?? resubmit.blockOffset!;
@@ -66,8 +68,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
       this.rootEm = createConfig.em;
       this.walletKeys = createConfig.walletKeys;
+   }
 
-      this.monitor = new TransactionMonitor(this.chainType, this.rootEm, this.monitoringId);
+   clone(monitoringId: string, rootEm: EntityManager) {
+      logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
+      return new XrpWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
    }
 
    getMonitoringId(): string {
@@ -108,7 +113,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       if (params.isPayment && serverInfo.load_factor) {
          baseFee *= serverInfo.load_factor;
       }
-      return toBN(xrpToDrops(roundUpXrpToDrops(baseFee)));
+      const feeInDrops = toBN(xrpToDrops(roundUpXrpToDrops(baseFee)));
+      return this.enforceMinimalFee(feeInDrops);
    }
 
    /**
@@ -216,16 +222,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    // MONITORING /////////////////////////////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////////////////
 
-   async startMonitoringTransactionProgress(): Promise<void> {
-      await this.monitor.startMonitoringTransactionProgress(this);
-   }
-
-   async isMonitoring(): Promise<boolean> {
-      return await this.monitor.isMonitoring();
-   }
-
-   async stopMonitoring(): Promise<void> {
-      await this.monitor.stopMonitoring();
+   async createMonitor(): Promise<ITransactionMonitor> {
+      return new TransactionMonitor(this.chainType, this.rootEm, this.clone.bind(this));
    }
 
    async checkNetworkStatus(): Promise<boolean> {
@@ -632,5 +630,13 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    async getAccountSequence(account: string): Promise<number> {
       const data = await this.getAccountInfo(account);
       return data.result.account_data.Sequence;
+   }
+
+   private enforceMinimalFee(fee: BN): BN {
+      if(fee.lt(XRP_MINIMAL_FEE_DROPS)) {
+         return XRP_MINIMAL_FEE_DROPS
+      } else {
+         return fee;
+      }
    }
 }

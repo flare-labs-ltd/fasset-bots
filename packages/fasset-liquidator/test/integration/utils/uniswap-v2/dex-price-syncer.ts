@@ -1,6 +1,6 @@
 import { WeiPerEther, Wallet, JsonRpcProvider, type Signer } from "ethers"
 import { relativeTokenPrice, relativeTokenDexPrice } from "../../../calculations/calculations"
-import { mulFactor } from "../../../utils"
+import { mulFactor } from "../../../utils/numeric"
 import { logRemovedLiquidity } from "./log-format"
 import { sleep, waitFinalize } from "../finalization"
 import { getContracts } from '../contracts'

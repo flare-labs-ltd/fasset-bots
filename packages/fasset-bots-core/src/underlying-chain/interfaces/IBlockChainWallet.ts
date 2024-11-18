@@ -1,4 +1,4 @@
-import { FeeParams, RateLimitOptions, TransactionInfo, TransactionStatus } from "../../../../simple-wallet/src/index";
+import { FeeParams, ITransactionMonitor, TransactionInfo } from "@flarelabs/simple-wallet";
 import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
@@ -84,9 +84,7 @@ export interface IBlockChainWallet {
     checkTransactionStatus(txDbId: number): Promise<TransactionInfo>;
 
     // Background tasks
-    startMonitoringTransactionProgress(): Promise<void>;
-    stopMonitoring(): Promise<void>;
-    isMonitoring(): Promise<boolean>;
+    createMonitor(): Promise<ITransactionMonitor>;
 
     //
     monitoringId(): string;

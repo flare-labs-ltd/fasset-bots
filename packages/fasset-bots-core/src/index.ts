@@ -7,6 +7,7 @@ export { AgentBotRunner } from "./actors/AgentBotRunner";
 export { TimeKeeper, TimeKeeperQueryWindow, TimekeeperTimingConfig } from "./actors/TimeKeeper";
 export { TimeKeeperService } from "./actors/TimeKeeperService";
 export { UserBotCommands } from "./commands/UserBotCommands";
+export { AgentInfoReader } from "./commands/AgentInfoReader";
 export { PoolUserBotCommands } from "./commands/PoolUserBotCommands";
 export { InfoBotCommands } from "./commands/InfoBotCommands";
 export { generateSecrets, SecretsUser, generateUnderlyingAccount } from "./config/generate-secrets";
