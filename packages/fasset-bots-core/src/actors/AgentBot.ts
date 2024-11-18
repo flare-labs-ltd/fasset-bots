@@ -13,7 +13,7 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion, SimpleRateLimiter } from "../utils";
+import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion, SimpleThrottler } from "../utils";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
@@ -127,7 +127,7 @@ export class AgentBot {
     private _stopRequested: boolean = false;
     private _restartRequested: boolean = false;
 
-    private pingResponseRateLimiter = new SimpleRateLimiter<string>(PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS);
+    private pingResponseRateLimiter = new SimpleThrottler<string>(PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS);
 
     static async createUnderlyingAddress(context: IAssetAgentContext) {
         return await context.wallet.createAccount();

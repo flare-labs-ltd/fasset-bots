@@ -1,5 +1,5 @@
 /* istanbul ignore next */
-export class SimpleRateLimiter<T> {
+export class SimpleThrottler<T> {
     private _lastRequestedAt: Map<T, number> = new Map<T, number>();
 
     constructor(public minInterval: number) {}
