@@ -5,6 +5,7 @@ import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
 import { Currencies, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
 import { artifacts } from "../../utils/web3";
+import type { DexLiquidationStrategyConfig } from "../../config";
 
 const Liquidator = artifacts.require("Liquidator");
 
@@ -68,21 +69,32 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy {
 }
 
 export class DexLiquidationStrategy extends LiquidationStrategy {
+    config: DexLiquidationStrategyConfig;
+
+    constructor(
+        public context: ILiquidatorContext,
+        public state: TrackedState,
+        public address: string
+    ) {
+        super(context, state, address);
+        this.config = context.liquidationStrategy!.config as DexLiquidationStrategyConfig;
+    }
+
     protected async dexMinPriceOracle(challenger: LiquidatorInstance, agent: TrackedAgentState): Promise<[BN, BN, BN, BN]> {
+        const maxSlippage = this.config.maxAllowedSlippage
         const { 0: minPriceMulDex1, 1: minPriceDivDex1, 2: minPriceMulDex2, 3: minPriceDivDex2 } =
-            await challenger.maxSlippageToMinPrices(1000, 2000, agent.vaultAddress, { from: this.address });
+            await challenger.maxSlippageToMinPrices(maxSlippage, maxSlippage, agent.vaultAddress, { from: this.address });
         return [minPriceMulDex1, minPriceDivDex1, minPriceMulDex2, minPriceDivDex2];
     }
 
     async performLiquidations(agents: TrackedAgentState[]): Promise<void> {
         for (const agent of agents) {
-            await this.performLiquidation(agent);
+            await this.liquidate(agent);
         }
     }
 
-    async performLiquidation(agent: TrackedAgentState): Promise<void> {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const liquidator = await Liquidator.at(this.context.liquidationStrategy!.config.address);
+    public async liquidate(agent: TrackedAgentState): Promise<void> {
+        const liquidator = await Liquidator.at(this.config.address);
         const oraclePrices = await this.dexMinPriceOracle(liquidator, agent);
         await liquidator.runArbitrage(agent.vaultAddress, this.address, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address });
     }

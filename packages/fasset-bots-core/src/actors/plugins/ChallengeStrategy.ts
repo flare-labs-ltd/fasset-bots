@@ -4,17 +4,18 @@ import type { ChallengerInstance } from "../../../typechain-truffle";
 import { ActorBaseKind } from "../../fasset-bots/ActorBase";
 import { IChallengerContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
-import { RequireFields, ZERO_ADDRESS } from "../../utils";
+import { ZERO_ADDRESS } from "../../utils";
 import { EventScope } from "../../utils/events/ScopedEvents";
 import { artifacts } from "../../utils/web3";
 import { TrackedState } from "../../state/TrackedState";
 import { toBN } from "web3-utils";
+import type { DexChallengeStrategyConfig } from "../../config";
 
 const Challenger = artifacts.require("Challenger");
 
-export abstract class ChallengeStrategy<C extends IChallengerContext = IChallengerContext> {
+export abstract class ChallengeStrategy {
     constructor(
-        public context: C,
+        public context: IChallengerContext,
         public state: TrackedState,
         public address: string
     ) {}
@@ -31,7 +32,6 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
         // due to async nature of challenging (and the fact that challenger might start tracking agent later),
         // there may be some false challenges which will be rejected
         // this is perfectly safe for the system, but the errors must be caught
-        const gasPrice = this.context.challengeStrategy?.config?.gasPrice;
         await this.context.assetManager.illegalPaymentChallenge(proof, agent.vaultAddress, { from: this.address, gasPrice: this.getGasPrice() })
             .catch((e) => scope.exitOnExpectedError(e,
                 ["chlg: already liquidating", "chlg: transaction confirmed", "matching redemption active", "matching ongoing announced pmt"],
@@ -40,7 +40,6 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
 
     public async doublePaymentChallenge(scope: EventScope, agent: TrackedAgentState, proof1: BalanceDecreasingTransaction.Proof, proof2: BalanceDecreasingTransaction.Proof) {
         // due to async nature of challenging there may be some false challenges which will be rejected
-        const gasPrice = this.context.challengeStrategy?.config?.gasPrice;
         await this.context.assetManager.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, { from: this.address, gasPrice: this.getGasPrice() })
             .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"],
                 ActorBaseKind.CHALLENGER, this.address));
@@ -59,17 +58,27 @@ export class DefaultChallengeStrategy extends ChallengeStrategy {
     }
 }
 
-type IDEXChallengerContext = RequireFields<IChallengerContext, "challengeStrategy">;
+export class DexChallengeStrategy extends ChallengeStrategy {
+    config: DexChallengeStrategyConfig;
 
-export class DexChallengeStrategy extends ChallengeStrategy<IDEXChallengerContext> {
+    constructor(
+        public context: IChallengerContext,
+        public state: TrackedState,
+        public address: string
+    ) {
+        super(context, state, address);
+        this.config = context.challengeStrategy!.config as DexChallengeStrategyConfig;
+    }
+
     protected async dexMinPriceOracle(challenger: ChallengerInstance, agent: TrackedAgentState): Promise<[BN, BN, BN, BN]> {
+        const maxSlippage = this.config.maxAllowedSlippage;
         const { 0: minPriceMulDex1, 1: minPriceDivDex1, 2: minPriceMulDex2, 3: minPriceDivDex2 } =
-            await challenger.maxSlippageToMinPrices(1000, 2000, agent.vaultAddress, { from: this.address });
+            await challenger.maxSlippageToMinPrices(maxSlippage, maxSlippage, agent.vaultAddress, { from: this.address });
         return [minPriceMulDex1, minPriceDivDex1, minPriceMulDex2, minPriceDivDex2];
     }
 
     public async illegalTransactionChallenge(scope: EventScope, agent: TrackedAgentState, proof: BalanceDecreasingTransaction.Proof) {
-        const challenger = await Challenger.at(this.context.challengeStrategy.config.address);
+        const challenger = await Challenger.at(this.config.address);
         const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
         await challenger.illegalPaymentChallenge(proof, agent.vaultAddress, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address })
             .catch((e) => scope.exitOnExpectedError(e,
@@ -79,7 +88,7 @@ export class DexChallengeStrategy extends ChallengeStrategy<IDEXChallengerContex
 
     public async doublePaymentChallenge(scope: EventScope, agent: TrackedAgentState, proof1: BalanceDecreasingTransaction.Proof, proof2: BalanceDecreasingTransaction.Proof) {
         // due to async nature of challenging there may be some false challenges which will be rejected
-        const challenger = await Challenger.at(this.context.challengeStrategy.config.address);
+        const challenger = await Challenger.at(this.config.address);
         const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
         await challenger.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address })
             .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"], ActorBaseKind.CHALLENGER, this.address));
@@ -87,7 +96,7 @@ export class DexChallengeStrategy extends ChallengeStrategy<IDEXChallengerContex
 
     public async freeBalanceNegativeChallenge(scope: EventScope, agent: TrackedAgentState, proofs: BalanceDecreasingTransaction.Proof[]) {
         // due to async nature of challenging there may be some false challenges which will be rejected
-        const challenger = await Challenger.at(this.context.challengeStrategy.config.address);
+        const challenger = await Challenger.at(this.config.address);
         const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
         await challenger.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address })
             .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"],

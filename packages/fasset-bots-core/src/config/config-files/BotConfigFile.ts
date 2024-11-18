@@ -55,13 +55,24 @@ export interface BotNativeChainInfo {
 
 
 export interface ApiNotifierConfig {
-    apiUrl: string
-    apiKey: string
+    apiUrl: string;
+    apiKey: string;
 }
 
-export interface BotStrategyDefinition {
+export interface DexLiquidationStrategyConfig {
+    address: string;
+    maxAllowedSlippage: number;
+    gasPrice: string;
+}
+export interface DexChallengeStrategyConfig extends DexLiquidationStrategyConfig {};
+
+export interface LiquidatorBotStrategyDefinition {
     className: string;
-    config?: any;
+    config?: DexLiquidationStrategyConfig;
+}
+export interface ChallengerBotStrategyDefinition {
+    className: string;
+    config?: DexChallengeStrategyConfig;
 }
 
 export interface BotConfigFile {
@@ -84,12 +95,12 @@ export interface BotConfigFile {
     contractsJsonFile?: string;
     // notifier apis
     apiNotifierConfigs?: ApiNotifierConfig[]
-    // liquidation strategies for liquidator and challenger
-    liquidationStrategy?: BotStrategyDefinition; // only for liquidator
-    challengeStrategy?: BotStrategyDefinition; // only for challenge
     // price publisher settings
     pricePublisherLoopDelayMs?: number; // only for price publisher
     priceFeedApiUrls?: string[]; // only for price publisher
+    // liquidation strategies for liquidator and challenger
+    liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator
+    challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenge
 }
 
 export interface AgentBotFassetSettingsJson {
