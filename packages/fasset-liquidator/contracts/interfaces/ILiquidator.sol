@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC3156FlashBorrower} from "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
+import {ArbitrageConfig} from "../lib/Structs.sol";
 
 
 /**
@@ -12,28 +14,14 @@ interface ILiquidator is IERC3156FlashBorrower {
 
     /**
      * Runs the arbitrage with the given parameters.
-     * @param _agentVault The agent vault to liquidate from
-     * @param _profitTo The address to send the profits to
-     * @param _vaultToFAssetMinDexPriceMul The minimum price of the vault fAsset pair on the dex
-     * @param _vaultToFAssetMinDexPriceDiv The minimum price of the vault fAsset pair on the dex
-     * @param _poolToVaultMinDexPriceMul The minimum price at which to buy vault with wnat on the dex
-     * @param _poolToVaultMinDexPriceDiv The minimum price of the pool vault pair on the dex
-     * @param _flashLender The flash lender to use for the liquidation (if address(0), use default))
-     * @param _dex UniswapV2 router contract to use for the liquidation (if address(0), use default))
-     * @param _vaultToFAssetDexPath The path to swap from the vault to the fAsset (if [] use [vault, fAsset])
-     * @param _poolToVaultDexPath The path to swap from the pool to the vault (if [] use [pool, vault])
+     * @param _agentVault The agent vault to be liquidated,
+     * @param _profitTo The address to which the profit should be sent
+     * @param _config The arbitrage configuration
      */
     function runArbitrage(
         address _agentVault,
         address _profitTo,
-        uint256 _vaultToFAssetMinDexPriceMul,
-        uint256 _vaultToFAssetMinDexPriceDiv,
-        uint256 _poolToVaultMinDexPriceMul,
-        uint256 _poolToVaultMinDexPriceDiv,
-        address _flashLender,
-        address _dex,
-        address[] memory _vaultToFAssetDexPath,
-        address[] memory _poolToVaultDexPath
+        ArbitrageConfig memory _config
      ) external;
 
     /**
@@ -47,4 +35,19 @@ interface ILiquidator is IERC3156FlashBorrower {
         uint256 _maxSlippageBipsDex2,
         address _agentVault
     ) external view returns (uint256, uint256, uint256, uint256);
+
+    /**
+     * Withdraws the given ERC-20 token from the contract.
+     * @param token The token to withdraw
+     */
+    function withdrawToken(
+        IERC20 token
+    )
+        external;
+
+    /**
+     * Withdraws the native token from the contract.
+     */
+    function withdrawNat()
+        external;
 }

@@ -17,7 +17,6 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    createPaymentTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       amount: BN | null,
       fee?: BN,
@@ -25,11 +24,12 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
       maxFee?: BN,
       executeUntilBlock?: number,
       executeUntilTimestamp?: BN,
+      feeSource?: string,
+      maxPaymentForFeeSource?: BN
    ): Promise<number>;
 
    createDeleteAccountTransaction(
       source: string,
-      privateKey: string,
       destination: string,
       fee?: BN,
       note?: string,
@@ -38,9 +38,22 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
 
    getTransactionInfo(dbId: number): Promise<TransactionInfo>;
 
-   startMonitoringTransactionProgress(): Promise<void>;
+   createMonitor(): Promise<ITransactionMonitor>;
+
+   getMonitoringId(): string;
+}
+
+export interface ITransactionMonitor {
+   getId(): string;
+   isMonitoring(): boolean;
+   startMonitoring(): Promise<boolean>;
    stopMonitoring(): Promise<void>;
-   isMonitoring(): Promise<boolean>;
+
+   /**
+    * Return running monitor id (possibly from another process) or null if there is no monitor running.
+    * Can return false positives or negatives wrt to liveness, but only for some time; so after a few repetitions, it will return correct value.
+    */
+   runningMonitorId(): Promise<string | null>;
 }
 
 export interface ICreateWalletResponse {
@@ -72,6 +85,7 @@ export interface UTXOFeeParams {
    destination: string;
    amount: BN | null;
    note?: string;
+   feeSource?: string; // use this source to cover fees
 }
 
 export type FeeParams = XRPFeeParams | UTXOFeeParams;
@@ -94,24 +108,20 @@ export interface StuckTransaction {
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
 
-export interface WalletApi {
-   url: string;
-   apiTokenKey?: string;
-}
-
-export interface BaseWalletConfig {
-   url: string;
-   inTestnet?: boolean;
-   apiTokenKey?: string;
-   rateLimitOptions?: RateLimitOptions;
+export interface BaseWalletConfig extends WalletServiceConfigBase {
    stuckTransactionOptions?: StuckTransaction;
    enoughConfirmations?: number,
-   feeServiceConfig?: FeeServiceConfig;
-   feeDecileIndex?: number, // the decile from which to use the fee if there's a fee-service running (eg 8 is 8-th decile)
    em: EntityManager;
    walletKeys: IWalletKeys;
-   fallbackAPIs?: WalletApi[]
 }
+
+export interface WalletServiceConfigBase {
+   urls: string[];
+   inTestnet?: boolean;
+   apiTokenKeys?: string[];
+   rateLimitOptions?: RateLimitOptions;
+}
+
 
 export type RippleWalletConfig = BaseWalletConfig;
 export type BitcoinWalletConfig = BaseWalletConfig;
@@ -120,7 +130,6 @@ export type DogecoinWalletConfig = BaseWalletConfig;
 export interface SignedObject {
    txBlob: string;
    txHash: string;
-   txSize?: number;
 }
 
 export interface TransactionInfo {
@@ -137,17 +146,8 @@ export interface IWalletKeys {
    addKey(address: string, privateKey: string): Promise<void>;
 }
 
-export interface FeeServiceConfig {
-   indexerUrl: string;
-   rateLimitOptions?: RateLimitOptions;
-   sleepTimeMs: number;
-   numberOfBlocksInHistory: number;
-}
-
 export interface BlockStats {
    blockHeight: number;
-   blockTime: number;
-   timeSincePreviousBlock: number;
    averageFeePerKB: BN;
-   decilesFeePerKB: BN[];
+   blockTime: BN;
 }

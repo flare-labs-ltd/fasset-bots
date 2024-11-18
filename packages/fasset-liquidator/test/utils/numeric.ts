@@ -1,5 +1,5 @@
 import * as crypto from 'crypto'
-import { FASSET_MAX_BIPS } from './constants'
+import { FASSET_MAX_BIPS } from '../constants'
 
 
 export function abs(x: bigint): bigint {

@@ -3,7 +3,7 @@ import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } fr
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
-import { AgentBalance } from "../../common/AgentResponse";
+import { AgentBalance, Collaterals } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
@@ -89,5 +89,29 @@ export class AgentVaultController {
         @Param("agentVaultAddress") agentVaultAddress: string,
     ): Promise<ApiResponseWrapper<string>> {
         return handleApiResponse(this.agentService.backedAmount(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("calculateCollaterals/:fAssetSymbol/:agentVaultAddress/:lots/:multiplier")
+    public async calculateCollaterals(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: number,
+        @Param("multiplier") multiplier: number
+    ): Promise<ApiResponseWrapper<Collaterals[]>> {
+        return handleApiResponse(this.agentService.calculateCollateralsForLots(fAssetSymbol, agentVaultAddress, lots, multiplier));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("depositCollaterals/:fAssetSymbol/:agentVaultAddress/:lots/:multiplier")
+    public async depositCollaterals(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: number,
+        @Param("multiplier") multiplier: number
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.depositCollaterals(fAssetSymbol, agentVaultAddress, lots, multiplier));
     }
 }

@@ -29,7 +29,30 @@ Install mysql and create a user by following this [guide](./docs/mysql.md)
 
 ## Setup
 
-### Agent Bot
+#### With Docker (preferred)
+
+1. Create `.env` file containing MySQL username and password for Docker:
+	```
+	FASSET_DB_USER="fassetbot"
+	FASSET_DB_PASSWORD="9owYgVNocTXmRLUGPmcg"
+	```
+2. Start the setup process by executing this Docker command:
+	```
+	docker compose --profile setup up
+	```
+3. Wait until the MySQL and setup services start-up and in another terminal, connect to service to set it up:
+	```
+	docker compose exec setup bash
+	```
+4. Continue with agent setup using Official Docs https://docs.flare.network/infra/fassets/deploying-agent/#configure-the-access-keys
+Once you are finished with setting up the agent, stop the current docker containers and execute the command:
+	```
+	docker compose --profile run-agent up
+	```
+
+### Manually (not preferred)
+
+#### Agent Bot
 
 Follow [this guide](https://docs.flare.network/infra/fassets/agent/) on how to set up an Agent Bot for XRP on Testnet.
 
@@ -41,9 +64,9 @@ Follow [this guide](https://docs.flare.network/infra/fassets/agent/) on how to s
 
 ### Time keeper -->
 
-## How to run
+### How to run
 
-### Agent bot
+#### Agent bot
 
 Run `yarn run-agent`.
 
@@ -51,7 +74,7 @@ The script will create [AgentBotRunner](./packages/fasset-bots-core/src/actors/A
 
 In order to create new agent, deposit funds and do other manual operations, command line interface is provided [`agent-bot`](./docs/cli.md). You can access it with opening another terminal and run command `yarn agent-bot [command]`.
 
-### Challenger, Liquidator, SystemKeeper, TimeKeeper
+#### Challenger, Liquidator, SystemKeeper, TimeKeeper
 
 Other bots can be run using [ActorBaseRunner](./packages/fasset-bots-core/src/actors/ActorBaseRunner.ts). The runner will initiate needed context and create desired actor via method `async create(config: TrackedStateConfig, address: string, kind: ActorBaseKind)`, where `ActorBaseKind` determines which actor should be created.
 

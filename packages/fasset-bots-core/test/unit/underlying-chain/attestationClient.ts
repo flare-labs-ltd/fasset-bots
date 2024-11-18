@@ -18,8 +18,8 @@ import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./block
 use(chaiAsPromised);
 
 const chainId = ChainId.testXRP;
-const indexerUrl: string = "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp";
-const walletUrl: string = "https://s.altnet.rippletest.net:51234";
+const indexerUrls: string[] = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"];
+const walletUrls: string[] = ["https://s.altnet.rippletest.net:51234"];
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";
 const finalizationBlocks: number = 6;
 
@@ -30,14 +30,14 @@ async function createAttestationHelper(
     fdcHubAddress: string,
     relayAddress: string,
     owner: string,
-    indexerUrl: string,
-    indexerApiKey: string,
+    indexerUrls: string[],
+    indexerApiKeys: string[],
 ): Promise<AttestationHelper> {
     if (!supportedChainId(chainId)) {
         throw new Error(`SourceId ${chainId} not supported.`);
     }
-    const flareDataConnector = await createFlareDataConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, owner);
-    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
+    const flareDataConnector = await createFlareDataConnectorClient(indexerUrls, indexerApiKeys, attestationProviderUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, owner);
+    const indexer = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
     return new AttestationHelper(flareDataConnector, indexer, chainId);
 }
 
@@ -64,12 +64,12 @@ describe("Attestation client unit tests", () => {
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
             accounts[0],
-            indexerUrl,
-            indexerApiKey(secrets)
+            indexerUrls,
+            indexerApiKey(secrets, indexerUrls)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
-        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
+        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets, indexerUrls));
     });
 
     it("Should not obtain proofs - no attestation providers", async () => {
@@ -80,8 +80,8 @@ describe("Attestation client unit tests", () => {
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
             OWNER_ADDRESS,
-            indexerUrl,
-            indexerApiKey(secrets)
+            indexerUrls,
+            indexerApiKey(secrets, indexerUrls)
         );
         await expect(localAttestationHelper.flareDataConnector.obtainProof(1, "requestData"))
             .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)

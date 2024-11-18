@@ -28,6 +28,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
+import { WalletAddressEntity } from "@flarelabs/simple-wallet";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { PaymentReference } from "../fasset/PaymentReference";
 
@@ -158,6 +159,7 @@ export class AgentBotCommands {
             return agentBot.agent;
         } catch (error) {
             logger.error(`Owner ${this.owner} couldn't create agent:`, error);
+            await this.notifierFor("Owner").agentCreationFailed(error as string);
             throw error;
         }
     }
@@ -372,7 +374,6 @@ export class AgentBotCommands {
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
         });
-        await this.notifierFor(agentVault).sendCancelRedeemCollateralPoolTokensAnnouncement();
         logger.info(`Agent ${agentVault} cancelled pool token redemption announcement.`);
     }
 
@@ -471,7 +472,9 @@ export class AgentBotCommands {
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
             });
-            const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference);
+            const feeSourceAddress = this.context.chainInfo.useOwnerUnderlyingAddressForPayingFees ? this.ownerUnderlyingAddress : undefined;
+            const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference,
+                undefined, undefined, undefined, undefined, feeSourceAddress);
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalConfirmTransactionId = txDbId;
             });
@@ -562,18 +565,29 @@ export class AgentBotCommands {
     /**
      * Returns the owned underlying accounts for the context's asset manager agents.
      */
-    async getOwnedUnderlyingAccounts(secrets: Secrets): Promise<{
-        vaultAddress: string;
+    async getOwnedEncryptedUnderlyingAccounts(): Promise<{
+        agentVault: string;
         underlyingAddress: string;
-        privateKey: string | undefined;
+        encryptedPrivateKey: string | undefined;
     }[]> {
-        const data = []
-        const agents = await this.getAllActiveAgents(this.context.fAssetSymbol);
-        for (const agent of agents) {
-            const privateKey = await this.getAgentPrivateKey(agent.underlyingAddress, secrets);
-            data.push({ vaultAddress: agent.vaultAddress, underlyingAddress: agent.underlyingAddress, privateKey });
+        const ret = []
+        const em = this.orm.em.fork()
+        const accounts = await em.find(WalletAddressEntity, {})
+        for (const account of accounts) {
+            const underlyingAddress = account.address
+            const agentVault = await em.findOne(AgentEntity, {
+                underlyingAddress,
+                assetManager: this.context.assetManager.address
+            })
+            if (agentVault != null) {
+                ret.push({
+                    agentVault: agentVault.vaultAddress,
+                    underlyingAddress,
+                    encryptedPrivateKey: account.encryptedPrivateKey
+                })
         }
-        return data
+    }
+        return ret
     }
 
     /**

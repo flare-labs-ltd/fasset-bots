@@ -14,7 +14,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
             "priceChangeEmitter": "FtsoManager"
         }
     },

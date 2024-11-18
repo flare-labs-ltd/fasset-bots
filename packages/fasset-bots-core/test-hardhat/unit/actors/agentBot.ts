@@ -473,15 +473,15 @@ describe("Agent bot unit tests", () => {
     it("Should update agent settings and catch it if update expires", async () => {
         const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
-        const valueToUpdate = 1100;
         // announce updates
-        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", valueToUpdate);
+        const newFeeBIPS = toBN(1100);
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", newFeeBIPS);
         const updateSettingFee = new AgentUpdateSetting();
         updateSettingFee.state = AgentUpdateSettingState.WAITING;
         updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.value = String(newFeeBIPS);
         updateSettingFee.validAt = validAtFeeBIPS;
-        updateSettingFee.value = valueToUpdate.toString();
         await orm.em.persist(updateSettingFee).flush();
         // not yet allowed
         await agentBot.handleTimelockedProcesses(orm.em);
@@ -492,11 +492,13 @@ describe("Agent bot unit tests", () => {
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.DONE);
         const valueToUpdate2 = 8100;
         // announce and try to update an expired update
-        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", valueToUpdate2);
+        const newPoolTopupTokenPriceFactorBIPS = toBN(8100);
+        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", newPoolTopupTokenPriceFactorBIPS);
         const updateSettingPoolTopup = new AgentUpdateSetting();
         updateSettingPoolTopup.state = AgentUpdateSettingState.WAITING;
         updateSettingPoolTopup.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingPoolTopup.name = AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR;
+        updateSettingPoolTopup.value = String(newPoolTopupTokenPriceFactorBIPS);
         updateSettingPoolTopup.validAt = validAt2;
         updateSettingPoolTopup.value = valueToUpdate2.toString();
         await orm.em.persist(updateSettingPoolTopup).flush();
@@ -509,15 +511,15 @@ describe("Agent bot unit tests", () => {
     it("Should update agent settings and catch it if error thrown", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const feeBIPS = toBN((await agentBot.agent.getAgentInfo()).feeBIPS);
-        const valueToUpdate = feeBIPS.muln(10);
         //Announce updates
-        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", valueToUpdate);
+        const newFeeBIPS = feeBIPS.muln(10);
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", newFeeBIPS);
         const updateSettingFee = new AgentUpdateSetting();
         updateSettingFee.state = AgentUpdateSettingState.WAITING;
         updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.value = String(newFeeBIPS);
         updateSettingFee.validAt = validAtFeeBIPS;
-        updateSettingFee.value = valueToUpdate.toString();
         await orm.em.persist(updateSettingFee).flush();
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.WAITING);
         //allowed

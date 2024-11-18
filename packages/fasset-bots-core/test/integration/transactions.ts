@@ -9,7 +9,7 @@ import { prefix0x } from "../../src/utils/helpers";
 import { createTestOrm } from "../test-utils/create-test-orm";
 import { TEST_SECRETS } from "../test-utils/test-bot-config";
 import { removeWalletAddressFromDB } from "../test-utils/test-helpers";
-import { TransactionStatus } from "@flarelabs/simple-wallet";
+import { ITransactionMonitor, TransactionStatus } from "@flarelabs/simple-wallet";
 
 let orm: ORM;
 let walletHelper: BlockchainWalletHelper;
@@ -23,20 +23,22 @@ export const targetPrivateKeyXRP = "00AF22D6EB35EFFC065BC7DBA21068DB400F1EC127A3
 describe("XRP transaction integration tests", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testXRP;
-    const indexerUrl: string = "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp";
-    const walletUrl: string = "https://s.altnet.rippletest.net:51234";
+    const indexerUrls: string[] = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"];
+    const walletUrls: string[] = ["https://s.altnet.rippletest.net:51234"];
     const amountToSendDrops = 1000000;
+    let monitor: ITransactionMonitor;
 
     before(async () => {
         secrets = await Secrets.load(TEST_SECRETS);
         orm = await createTestOrm();
-        blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
-        void walletHelper.walletClient.startMonitoringTransactionProgress();
+        blockChainIndexerHelper = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets, indexerUrls));
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
+        monitor = await walletHelper.createMonitor();
+        await monitor.startMonitoring();
     });
 
     after(async () => {
-        await walletHelper.walletClient.stopMonitoring();
+        await monitor.stopMonitoring();
     });
 
     it("Should send funds and retrieve transaction", async () => {

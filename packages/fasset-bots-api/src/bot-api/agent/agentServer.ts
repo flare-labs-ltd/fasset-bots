@@ -27,6 +27,8 @@ export async function runAgentServer() {
         .setVersion("1.0")
         .addBearerAuth()
         .build();
+    const rootPath = process.env.ROOT_PATH || '';
+    app.setGlobalPrefix(rootPath);
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup("api-doc", app, document);
 

@@ -80,10 +80,10 @@ export class PricePublisherService {
                 if (lastAvailableRoundId > lastPublishedRoundId) {
                     await this.getAndPublishFeedData(lastAvailableRoundId);
                 }
-                await sleep(this.loopDelayMs);
             } catch (error) {
                 logger.error(`Error in publishing prices: ${error}`);
             }
+            await sleep(this.loopDelayMs);
         }
         this.stopped = true;
         logger.info(`Price publishing service stopped.`);
@@ -139,19 +139,21 @@ export class PricePublisherService {
             }
         });
         // get data
-        const feedsData: { data: FeedResult; proof: string[]; }[] = response.data;
+        const feedsData: { body: FeedResult; proof: string[]; }[] = response.data;
         // check that voting round is correct
-        if (feedsData.some(fd => Number(fd.data.votingRoundId) !== votingRoundId)) {
+        if (feedsData.some(fd => Number(fd.body.votingRoundId) !== votingRoundId)) {
             return null;
         }
         // rename data field to body
-        const feedsDataRenamed = feedsData.map(fd => ({ body: fd.data, merkleProof: fd.proof }));
+        const feedsDataRenamed = feedsData.map(fd => ({ body: fd.body, merkleProof: fd.proof }));
         // sort nodes by order of feedIds array
         feedsDataRenamed.sort((a, b) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
         return feedsDataRenamed;
     }
 
     async getAndPublishFeedData(votingRoundId: number) {
+        const sleepTime = Math.floor(Math.random() * 2000); // wait small random time, so that there are fewer reverts due to already published prices
+        await sleep(sleepTime);
         logger.info(`Publishing prices for ${votingRoundId}`);
         const feedIds = await this.ftsoV2PriceStore.getFeedIds();
         const feedsData = await this.getFeedData(votingRoundId, feedIds);

@@ -1,10 +1,9 @@
-import { FeeServiceConfig, StuckTransaction, WALLET, WalletClient } from "@flarelabs/simple-wallet";
+import { BTC, DOGE, StuckTransaction, WalletClient, XRP } from "@flarelabs/simple-wallet";
 import { ChainId } from "../underlying-chain/ChainId";
 import { CommandLineError } from "../utils";
 import { Secrets } from "./secrets";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { EntityManager } from "@mikro-orm/core";
-import { WalletApi, FeeServiceOptions } from "../underlying-chain/interfaces/IBlockChainWallet";
 
 const supportedSourceIds = [ChainId.XRP, ChainId.BTC, ChainId.DOGE, ChainId.testXRP, ChainId.testBTC, ChainId.testDOGE];
 
@@ -28,61 +27,52 @@ export function supportedChainId(chainId: ChainId) {
 export async function createWalletClient(
     secrets: Secrets,
     chainId: ChainId,
-    walletUrl: string,
+    walletUrls: string[],
     em: EntityManager,
     options: StuckTransaction = {},
-    feeServiceOptions?: FeeServiceOptions,
-    fallbackApis?: WalletApi[],
 ): Promise<WalletClient> {
     requireSupportedChainId(chainId);
     const walletKeys = DBWalletKeys.from(em, secrets);
-
-    const fallbacks = fallbackApis?.map((api: WalletApi, i: number) => ({
-        apiTokenKey: secrets.optional(`apiKey.${chainId.chainName}_rpc_${i + 1}`),
-        url: api.url,
-    }));
-
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        return await WALLET.BTC.initialize({
-            url: walletUrl,
+        const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.btc_rpc"); // added the last one to be backward compatible
+        const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
+        return await BTC.initialize({
+            urls: walletUrls,
             inTestnet: chainId === ChainId.testBTC,
-            apiTokenKey: secrets.optional("apiKey.btc_rpc"),
+            apiTokenKeys: apiTokenKeys,
             stuckTransactionOptions: options,
             em,
             walletKeys,
-            feeServiceConfig: {
-                indexerUrl: walletUrl,
-                rateLimitOptions: feeServiceOptions?.rateLimitOptions,
-                numberOfBlocksInHistory: feeServiceOptions?.numberOfBlocksInHistory,
-                sleepTimeMs: feeServiceOptions?.sleepTimeMs,
-            } as FeeServiceConfig,
-            fallbackAPIs: fallbacks,
         }); // UtxoMccCreate
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        return await WALLET.DOGE.initialize({
-            url: walletUrl,
+        const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.doge_rpc"); // added the last one to be backward compatible
+        const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
+        return await DOGE.initialize({
+            urls: walletUrls,
             inTestnet: chainId === ChainId.testDOGE,
-            apiTokenKey: secrets.optional("apiKey.doge_rpc"),
+            apiTokenKeys: apiTokenKeys,
             stuckTransactionOptions: options,
             em,
-            walletKeys,
-            feeServiceConfig: {
-                indexerUrl: walletUrl,
-                rateLimitOptions: feeServiceOptions?.rateLimitOptions,
-                numberOfBlocksInHistory: feeServiceOptions?.numberOfBlocksInHistory,
-                sleepTimeMs: feeServiceOptions?.sleepTimeMs,
-            } as FeeServiceConfig,
-            fallbackAPIs: fallbacks,
+            walletKeys
         }); // UtxoMccCreate
     } else {
-        return await WALLET.XRP.initialize({
-            url: walletUrl,
-            apiTokenKey: secrets.optional("apiKey.xrp_rpc"),
+        const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.xrp_rpc"); // added the last one to be backward compatible
+        const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
+        return await XRP.initialize({
+            urls: walletUrls,
             inTestnet: chainId === ChainId.testXRP,
+            apiTokenKeys: apiTokenKeys,
             stuckTransactionOptions: options,
             em,
-            walletKeys,
-            fallbackAPIs: fallbacks,
+            walletKeys
         }); // XrpMccCreate
     }
+}
+
+function checkUrlAndApiKeyArraysMatch(apiTokenKey: string | string[] | undefined, walletUrls: string[], chainId: ChainId): string[] | undefined {
+    if (apiTokenKey && Array.isArray(apiTokenKey) && apiTokenKey.length != walletUrls.length) {
+        throw new Error(`Cannot create ${chainId.chainName} wallet. The number of URLs and API keys do not match.`);
+    }
+    const apiTokenKeys = Array.isArray(apiTokenKey) ? apiTokenKey : apiTokenKey ? Array(walletUrls.length).fill(apiTokenKey) : undefined;
+    return apiTokenKeys;
 }

@@ -35,7 +35,7 @@ export class Challenger extends ActorBase {
     static deepCopyWithObjectCreate = true;
 
     notifier: ChallengerNotifier;
-    challengeStrategy: ChallengeStrategy;
+    challengeStrategy: ChallengeStrategy<any>;
 
     constructor(
         public context: IChallengerContext,

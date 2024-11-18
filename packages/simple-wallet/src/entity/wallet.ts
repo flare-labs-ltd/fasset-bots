@@ -8,8 +8,8 @@ export class WalletAddressEntity {
     @Property()
     encryptedPrivateKey!: string;
 
-    @Property()
-    isDeleting: boolean = false;
+    @Property({ type: 'boolean', default: false })
+    isDeleting = false;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();

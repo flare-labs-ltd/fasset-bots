@@ -16,6 +16,7 @@ import {
     FlareDataConnectorClientError, IFlareDataConnectorClient, OptionalAttestationProof
 } from "./interfaces/IFlareDataConnectorClient";
 import { blockTimestamp } from "../utils/web3helpers";
+import { createAxiosConfig, tryWithClients } from "@flarelabs/simple-wallet";
 
 export interface PrepareRequestResult {
     abiEncodedRequest: string;
@@ -43,7 +44,7 @@ export interface VotingRoundResult<RES> {
 
 export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient {
     clients: AxiosInstance[] = [];
-    verifier: AxiosInstance;
+    verifierClients: AxiosInstance[] = [];
     // initialized at initFlareDataConnector()
     relay!: IRelayInstance;
     fdcHub!: IFdcHubInstance;
@@ -56,15 +57,16 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         public fdcVerificationAddress: string,
         public fdcHubAddress: string,
         public relayAddress: string,
-        public verifierUrl: string,
-        public verifierUrlApiKey: string,
+        public verifierUrls: string[],
+        public verifierUrlApiKeys: string[],
         public account: string,
     ) {
         for (const url of attestationProviderUrls) {
-            // set clients
-            this.clients.push(axios.create(this.createAxiosConfig(url, null)));
+            this.clients.push(axios.create(createAxiosConfig(url)));
         }
-        this.verifier = axios.create(this.createAxiosConfig(verifierUrl, verifierUrlApiKey));
+        for (const [index, url] of verifierUrls.entries()) {
+            this.verifierClients.push(axios.create(createAxiosConfig(url, verifierUrlApiKeys[index])));
+    }
     }
 
     async initFlareDataConnector(): Promise<void> {
@@ -84,11 +86,11 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         attestationClientAddress: string,
         fdcHubAddress: string,
         relayAddress: string,
-        verifierUrl: string,
-        verifierUrlApiKey: string,
+        verifierUrls: string[],
+        verifierUrlApiKeys: string[],
         account: string
     ): Promise<FlareDataConnectorClientHelper> {
-        const helper = new FlareDataConnectorClientHelper(urls, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrl, verifierUrlApiKey, account);
+        const helper = new FlareDataConnectorClientHelper(urls, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrls, verifierUrlApiKeys, account);
         await helper.initFlareDataConnector();
         return helper;
     }
@@ -118,9 +120,11 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     /* istanbul ignore next */
     async submitRequestToFlareDataConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);
-        const response = await this.verifier
-            .post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
-            .catch((e: AxiosError) => {
+        const response = await tryWithClients(
+            this.verifierClients,
+            (verifier: AxiosInstance) => verifier.post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request),
+            "submitRequestToStateConnector"
+        ).catch((e: AxiosError) => {
                 const message = `Flare data connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
                 logger.error(message);
                 throw new FlareDataConnectorClientError(message);
@@ -237,25 +241,4 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
                 throw new FlareDataConnectorClientError(`Invalid attestation type ${proofData.data.attestationType}`);
         }
     }
-
-    private createAxiosConfig(url: string, apiKey: string | null): AxiosRequestConfig {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: url,
-            timeout: DEFAULT_TIMEOUT,
-            headers: {
-                "Content-Type": "application/json",
-            },
-
-            validateStatus: function (status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
-        /* istanbul ignore next */
-        if (apiKey) {
-            createAxiosConfig.headers ??= {};
-            createAxiosConfig.headers["X-API-KEY"] = apiKey;
         }
-        return createAxiosConfig;
-    }
-}

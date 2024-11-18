@@ -31,7 +31,7 @@ describe("testXRP attestation/flare data connector tests", () => {
         account = accounts[0];
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
-            indexerApiKey(secrets),
+            indexerApiKey(secrets, INDEXER_URL_XRP),
             ATTESTATION_PROVIDER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
@@ -56,7 +56,7 @@ describe("testXRP attestation/flare data connector tests", () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets));
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets, INDEXER_URL_XRP));
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
@@ -134,7 +134,7 @@ describe("Flare data connector tests - decoding", () => {
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
-            indexerApiKey(secrets),
+            indexerApiKey(secrets, INDEXER_URL_XRP),
             ATTESTATION_PROVIDER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
@@ -145,8 +145,8 @@ describe("Flare data connector tests - decoding", () => {
             ATTESTATION_PROVIDER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
-            "",
-            "",
+            [""],
+            [""],
             accounts[0]
         );
     });
