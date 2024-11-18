@@ -43,28 +43,28 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy<DefaultLiqui
     }
 
     async performLiquidation(agent: TrackedAgentState) {
-        const before = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
-        await this.liquidate(agent);
-        const after = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
-        const diff = toBN(before.mintedUBA).sub(toBN(after.mintedUBA));
-        const cur = await Currencies.fasset(this.context);
-        const message = squashSpace`Liquidator ${this.address} liquidated agent ${agent.vaultAddress} for ${cur.format(diff)}.
-            Minted before: ${cur.format(before.mintedUBA)}, after: ${cur.format(after.mintedUBA)}.
-            Vault CR before: ${formatFixed(toBN(before.vaultCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.vaultCollateralRatioBIPS), 4)}.
-            Pool CR before: ${formatFixed(toBN(before.poolCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.poolCollateralRatioBIPS), 4)}.`;
-        logger.info(message);
-        console.log(message);
-    }
-
-    protected async liquidate(agent: TrackedAgentState): Promise<void> {
         const fBalance = await this.context.fAsset.balanceOf(this.address);
         if (fBalance.gte(toBN(this.state.settings.assetMintingGranularityUBA))) {
-            await this.context.assetManager.liquidate(agent.vaultAddress, fBalance, { from: this.address, gasPrice: this.config?.gasPrice });
+            await this.liquidate(agent, fBalance);
         } else {
             const fassetSymbol = this.context.fAssetSymbol;
             logger.info(`Liquidator ${this.address} has no ${fassetSymbol} available for liqudating agent ${agent.vaultAddress}`);
             console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
         }
+    }
+
+    protected async liquidate(agent: TrackedAgentState, amountUBA: BN): Promise<void> {
+        const before = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
+        await this.context.assetManager.liquidate(agent.vaultAddress, amountUBA, { from: this.address, gasPrice: this.config?.gasPrice });
+        const after = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
+        const diff = toBN(before.mintedUBA).sub(toBN(after.mintedUBA));
+        const cur = await Currencies.fasset(this.context);
+        const message = squashSpace`Liquidator ${this.address} liquidated agent ${agent.vaultAddress} for ${cur.format(diff)}.
+                Minted before: ${cur.format(before.mintedUBA)}, after: ${cur.format(after.mintedUBA)}.
+                Vault CR before: ${formatFixed(toBN(before.vaultCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.vaultCollateralRatioBIPS), 4)}.
+                Pool CR before: ${formatFixed(toBN(before.poolCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.poolCollateralRatioBIPS), 4)}.`;
+        logger.info(message);
+        console.log(message);
     }
 }
 
