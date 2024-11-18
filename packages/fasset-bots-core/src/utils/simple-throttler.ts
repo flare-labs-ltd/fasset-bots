@@ -1,21 +1,21 @@
 /* istanbul ignore next */
 export class SimpleThrottler<T> {
-    private _lastRequestedAt: Map<T, number> = new Map<T, number>();
+    private lastAccessed: Map<T, number> = new Map<T, number>();
 
     constructor(public minInterval: number) {}
 
-    allow(sender: T): boolean {
-        const lastRequestedAt = this._lastRequestedAt.get(sender) ?? 0;
+    allow(service: T): boolean {
+        const la = this.lastAccessed.get(service) ?? 0;
         const now = Date.now();
-        if (now - lastRequestedAt >= this.minInterval) {
+        if (now - la >= this.minInterval) {
             // update only if request was allowed
-            this.updateLastReqeusted(sender, now);
+            this.updateLastReqeusted(service, now);
             return true;
         }
         return false;
     }
 
     private updateLastReqeusted(sender: T, time: number) {
-        this._lastRequestedAt.set(sender, time);
+        this.lastAccessed.set(sender, time);
     }
 }
