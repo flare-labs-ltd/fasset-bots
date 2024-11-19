@@ -4,7 +4,7 @@ import xrpl, { xrpToDrops, convertStringToHex, encodeForSigning, encode as xrplE
 import { deriveAddress, sign } from "ripple-keypairs";
 import { bytesToHex, prefix0x, stuckTransactionConstants, isValidHexString, checkIfFeeTooHigh, getCurrentTimestampInSeconds, checkIfShouldStillSubmit, roundUpXrpToDrops, sleepMs, createMonitoringId } from "../../utils/utils";
 import { toBN } from "../../utils/bnutils";
-import { ChainType, DELETE_ACCOUNT_OFFSET, XRP_PENDING_TIMEOUT, WAIT_TO_APPEAR_IN_XRP } from "../../utils/constants";
+import { ChainType, DELETE_ACCOUNT_OFFSET, XRP_PENDING_TIMEOUT, WAIT_TO_APPEAR_IN_XRP, XRP_MINIMAL_FEE_DROPS } from "../../utils/constants";
 import type { AccountInfoRequest, AccountInfoResponse } from "xrpl";
 import type {
    WriteWalletInterface,
@@ -113,7 +113,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       if (params.isPayment && serverInfo.load_factor) {
          baseFee *= serverInfo.load_factor;
       }
-      return toBN(xrpToDrops(roundUpXrpToDrops(baseFee)));
+      const feeInDrops = toBN(xrpToDrops(roundUpXrpToDrops(baseFee)));
+      return this.enforceMinimalFee(feeInDrops);
    }
 
    /**
@@ -318,6 +319,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEntToUpdate.executeUntilBlock = transaction.LastLedgerSequence;
             txEntToUpdate.status = TransactionStatus.TX_PREPARED;
             txEntToUpdate.reachedStatusPreparedInTimestamp = currentTimestamp;
+            txEntToUpdate.fee = transaction.Fee? toBN(transaction.Fee) : undefined;
          });
          logger.info(`Transaction ${txEnt.id} prepared.`);
          await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
@@ -629,5 +631,13 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    async getAccountSequence(account: string): Promise<number> {
       const data = await this.getAccountInfo(account);
       return data.result.account_data.Sequence;
+   }
+
+   private enforceMinimalFee(fee: BN): BN {
+      if(fee.lt(XRP_MINIMAL_FEE_DROPS)) {
+         return XRP_MINIMAL_FEE_DROPS
+      } else {
+         return fee;
+      }
    }
 }

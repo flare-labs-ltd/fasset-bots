@@ -7,6 +7,7 @@ import { logger } from "../utils/logger";
 
 import { errorMessage, withRetry } from "../utils/axios-utils";
 import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
+import { getDefaultFeePerKB } from "../chain-clients/utxo/UTXOUtils";
 
 export class BlockchainFeeService {
     blockchainAPI: UTXOBlockchainAPI;
@@ -24,8 +25,7 @@ export class BlockchainFeeService {
     }
 
     getLatestFeeStats(): BN {
-        const totalBlocks = this.history.length;
-        if (totalBlocks === 0) {
+        if (this.history.length < this.useNBlocksToCalculateFee) {
             return toBN(0);
         }
         const recentHistory = this.history.slice(- this.useNBlocksToCalculateFee);
@@ -42,7 +42,7 @@ export class BlockchainFeeService {
 
     getLatestMedianTime(): BN | null {
         /* istanbul ignore if */
-        if (this.history.length < this.numberOfBlocksInHistory) {
+        if (this.history.length < this.numberOfBlocksInHistory || !this.checkConsecutiveBlocks()) {
             return null;
         }
         const blockTimes = this.history.map(block => block.blockTime);
@@ -63,8 +63,8 @@ export class BlockchainFeeService {
             }
 
             let blockHeightToFetch = lastStoredBlockHeight + 1;
-            while (blockHeightToFetch <= currentBlockHeight) {
-                const feeStats = await this.getFeeStatsWithRetry(blockHeightToFetch);
+            while (monitoring() && blockHeightToFetch <= currentBlockHeight) {
+                const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
                 /* istanbul ignore else */
                 if (feeStats) {
                     /* istanbul ignore else */
@@ -81,7 +81,9 @@ export class BlockchainFeeService {
                 }
                 blockHeightToFetch++;
             }
-            await sleepMs(this.sleepTimeMs);
+            if (!monitoring()) {
+                await sleepMs(this.sleepTimeMs);
+            }
         }
         logger.info(`${this.monitoringId}: Stopped monitoring fees.`)
     }
@@ -98,7 +100,7 @@ export class BlockchainFeeService {
         }
         let blockHeightToFetch = currentBlockHeight;
         while (this.history.length < this.numberOfBlocksInHistory) {
-            const feeStats = await this.getFeeStatsWithRetry(blockHeightToFetch);
+            const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
             /* istanbul ignore else */
             if (feeStats) {
                 this.history.unshift({
@@ -135,11 +137,11 @@ export class BlockchainFeeService {
 
     async getFeeStatsFromIndexer(blockHeight: number): Promise<{ blockHeight: number, averageFeePerKB: BN, blockTime: BN } | null> {
         try {
-            const avgFee = await this.blockchainAPI.getCurrentFeeRate(blockHeight);
+            const avgFee = await this.getAvgFeeWithRetry(blockHeight);
             const blockTime = await this.blockchainAPI.getBlockTimeAt(blockHeight);
             return {
                 blockHeight: blockHeight,
-                averageFeePerKB: toBN(avgFee),
+                averageFeePerKB: toBN(avgFee ?? getDefaultFeePerKB(this.chainType)),
                 blockTime: blockTime
             };
         } catch (error) /* istanbul ignore next */ {
@@ -148,12 +150,24 @@ export class BlockchainFeeService {
         }
     }
 
-    async getFeeStatsWithRetry(blockHeight: number, retryLimit = 3): Promise<{ blockHeight: number, averageFeePerKB: BN, blockTime: BN } | null> {
+    async getAvgFeeWithRetry(blockHeight: number, retryLimit = 3): Promise<number | null> {
         return await withRetry(
-            () => this.getFeeStatsFromIndexer(blockHeight),
+            () => this.blockchainAPI.getCurrentFeeRate(blockHeight),
             retryLimit,
             this.sleepTimeMs,
             `fetching fee stats for block ${blockHeight}`
         );
+    }
+
+    private checkConsecutiveBlocks(): boolean {
+        for (let i = 1; i < this.history.length; i++) {
+            const currentBlockHeight = this.history[i].blockHeight;
+            const previousBlockHeight = this.history[i - 1].blockHeight;
+
+            if (currentBlockHeight !== previousBlockHeight + 1) {
+                return false;
+            }
+        }
+        return true;
     }
 }

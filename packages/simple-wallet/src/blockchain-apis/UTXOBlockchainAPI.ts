@@ -97,7 +97,9 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {
         return tryWithClients(this.clients, async (client: AxiosInstance) => {
-            return await client.get(`/sendtx/${tx}`);
+            return await client.post('/sendtx/', tx, {
+                headers: { 'Content-Type': 'text/plain' }
+            });
         }, "sendTransaction");
     }
 

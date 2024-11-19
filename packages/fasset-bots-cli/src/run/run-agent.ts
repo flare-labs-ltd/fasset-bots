@@ -65,8 +65,9 @@ async function activityTimestampUpdate(rootEm: EM) {
 }
 
 function startTimestampUpdater(rootEm: EM) {
-    void activityTimestampUpdate(rootEm);
-    activityUpdateTimer = setInterval(() => void activityTimestampUpdate(rootEm), activityUpdateInterval);
+    const threadEm = rootEm.fork();
+    void activityTimestampUpdate(threadEm);
+    activityUpdateTimer = setInterval(() => void activityTimestampUpdate(threadEm), activityUpdateInterval);
 }
 
 program.action(async () => {
@@ -121,7 +122,7 @@ program.action(async () => {
             await ctx.wallet.addExistingAccount(ownerUnderlyingAddress, ownerUnderlyingPrivateKey);
         }
         // start activity update
-        void startTimestampUpdater(botConfig.orm.em);
+        startTimestampUpdater(botConfig.orm.em);
         // run
         try {
             console.log("Agent bot started, press CTRL+C to end");

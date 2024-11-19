@@ -98,7 +98,7 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Monitoring should be running", async () => {
-        const monitoring = await monitor.isMonitoring();
+        const monitoring = monitor.isMonitoring();
         expect(monitoring).to.be.true;
     });
 

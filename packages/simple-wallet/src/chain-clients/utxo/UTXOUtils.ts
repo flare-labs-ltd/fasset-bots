@@ -15,6 +15,7 @@ import {
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
     DOGE_MIN_ALLOWED_FEE,
     DOGE_TESTNET,
+    TEST_BTC_DEFAULT_FEE_PER_KB,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
 } from "../../utils/constants";
@@ -155,8 +156,9 @@ export function getConfirmedAfter(chainType: ChainType): number {
 export function getDefaultFeePerKB(chainType: ChainType): BN {
     switch (chainType) {
         case ChainType.BTC:
-        case ChainType.testBTC:
             return toBN(BTC_DEFAULT_FEE_PER_KB);
+        case ChainType.testBTC:
+            return toBN(TEST_BTC_DEFAULT_FEE_PER_KB);
         case ChainType.DOGE:
         case ChainType.testDOGE:
             return toBN(DOGE_DEFAULT_FEE_PER_KB);

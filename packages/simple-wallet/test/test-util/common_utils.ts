@@ -3,7 +3,7 @@ import { TransactionEntity, TransactionStatus } from "../../src/entity/transacti
 import { sleepMs } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
 import { EntityManager } from "@mikro-orm/core";
-import { BTC, DOGE, XRP } from "../../src";
+import {BTC, decryptText, DOGE, XRP} from "../../src";
 import BN from "bn.js";
 import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
 import winston, { Logger } from "winston";
@@ -21,6 +21,7 @@ import * as bitcore from "bitcore-lib";
 import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import {read} from "read";
+import fs from "fs";
 
 export const PASSWORD_MIN_LENGTH = 16;
 
@@ -260,6 +261,24 @@ export class MockBlockchainAPI extends UTXOBlockchainAPI {
     }
 }
 
+export function createNote() {
+    const fixedPart = "10000000000000000000000000000000000000000";
+    const randomPartLength = 64 - 41;
+
+    let randomPart = "";
+    for (let i = 0; i < randomPartLength; i++) {
+        randomPart += Math.floor(Math.random() * 16).toString(16);
+    }
+
+    return fixedPart + randomPart;
+}
+
+export async function decryptTestSecrets(filePath: string, password: string) {
+    const encryptedSecretsContent = fs.readFileSync(filePath).toString();
+    const decryptedSecretsContent = decryptText(password, encryptedSecretsContent);
+    return JSON.parse(decryptedSecretsContent);
+}
+
 export function validateEncryptionPassword(password: string) {
     if (password.length < PASSWORD_MIN_LENGTH) {
         throw new Error(`Password should be at least ${PASSWORD_MIN_LENGTH} chars long`);
@@ -285,9 +304,30 @@ export function isJSON(content: string): boolean {
     }
 }
 
+export async function createWallet(wClient: DOGE | BTC | XRP, secrets: any, walletType: "fundedWallet" | "targetWallet") {
+    if (secrets[walletType].private_key) {
+        await wClient.walletKeys.addKey(secrets[walletType].address, secrets[walletType].private_key);
+    } else if (secrets[walletType].mnemonic) {
+        const wallet = wClient.createWalletFromMnemonic(secrets[walletType].mnemonic);
+        await wClient.walletKeys.addKey(wallet.address, wallet.privateKey);
+    } else {
+        throw new Error(`Both mnemonic and private key missing for ${walletType}`);
+    }
+}
+
 export interface AccountSecrets {
-    fundedWallet: Wallet;
-    targetWallet: Wallet;
+    BTC: {
+        fundedWallet: Wallet;
+        targetWallet: Wallet;
+    },
+    DOGE: {
+        fundedWallet: Wallet;
+        targetWallet: Wallet;
+    },
+    XRP: {
+        fundedWallet: Wallet;
+        targetWallet: Wallet;
+    }
 }
 
 export interface Wallet {

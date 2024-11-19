@@ -302,7 +302,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
         logger.info(`Preparing transaction ${txEnt.id}`);
         try {
-            // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
             const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
 
@@ -311,6 +310,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.feeSource, utxosFromMempool);
             }
 
+            // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
             const rbfReplacementFor = txEnt.rbfReplacementFor ? await fetchTransactionEntityById(this.rootEm, txEnt.rbfReplacementFor.id) : undefined;
             let [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
                 txEnt.id,
@@ -441,7 +441,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
 
                 // If account has too many UTXOs for one big delete account transaction we sequentially remove the remainder of UTXOs
-                if (txEnt.amount == null && txResp.confirmations > this.enoughConfirmations / 3) {
+                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && txEnt.amount == null && txResp.confirmations > this.enoughConfirmations / 3) {
                     const numOfSpendableUTXOs = await countSpendableUTXOs(this.chainType, this.rootEm, txEnt.source);
                     if (numOfSpendableUTXOs > 0) {
                         await this.transactionService.createDeleteAccountTransaction(this.chainType, txEnt.source, txEnt.destination);
@@ -539,8 +539,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async handleMalleableTransactions(txEnt: TransactionEntity): Promise<void> {
+        if (txEnt.replaced_by !== undefined) {
+            return;
+        }
+
         if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
-            logger.info(`checkSubmittedTransaction transaction ${txEnt.id} is being checked for malleability.`)
+            logger.info(`checkSubmittedTransaction transaction ${txEnt.id} is being checked for malleability.`);
             // Handle the case that transaction hash changes (transaction malleability for non-segwit transactions)
             const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
             const newHash = await this.blockchainAPI.findTransactionHashWithInputs(txEnt.source, tr.inputs, txEnt.submittedInBlock);
@@ -662,14 +666,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         }
         // send minimal amount (as time for payment passed) or "delete transaction" amount
         const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType);
-        const descendantsFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)); // covering conflicting txs
+        const totalFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)).add(oldTx.fee!); // covering conflicting txs
+        logger.info(`Descendants fee ${totalFee.sub(oldTx.fee!).toNumber()}, oldTx fee ${oldTx.fee}, total fee ${totalFee}`);
         const replacementTx = await createInitialTransactionEntity(
             this.rootEm,
             this.chainType,
             oldTx.source,
             oldTx.destination,
             newValue,
-            descendantsFee,
+            totalFee,
             oldTx.reference,
             oldTx.maxFee,
             oldTx.executeUntilBlock,
@@ -848,6 +853,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             });
             logger.info(`Transaction ${txId} changed status to ${txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED}.`);
             return TransactionStatus.TX_FAILED;
+        } else {
+            logger.error(`Transaction ${txId} submission failed because of ${errorDescription}, transaction is: ${txEnt.raw ?? ""}`);
         }
         return TransactionStatus.TX_PREPARED;
     }

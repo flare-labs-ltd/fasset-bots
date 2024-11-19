@@ -431,10 +431,7 @@ export class AgentController {
         return handleApiResponse(this.agentService.getAllCollaterals());
     }
 
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth()
     @Get("botStatus")
-    @ApiBearerAuth()
     public async getBotStatus(
     ): Promise<ApiResponseWrapper<boolean>> {
         return handleApiResponse(this.agentService.checkBotStatus());

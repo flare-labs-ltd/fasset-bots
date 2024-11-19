@@ -102,6 +102,8 @@ More information about the user bot can be found [here](./docs/user/user-cli.md)
 ### Examples
 
 - [How to create secrets file for agent?](./docs/examples.md#how-to-create-secrets-file-for-agent)
+- [How to encrypt secrets file for agent?](./docs/examples.md#how-to-encrypt-secrets-file-for-agent)
+- [How to decrypt secrets file for agent?](./docs/examples.md#how-to-decrypt-secrets-file-for-agent)
 - [How to create agent bot and make it available?](./docs/examples.md#how-to-create-agent-bot-and-make-it-available-only-available-agents-can-be-minted-against-to)
 - [How to list and change agent settings?](./docs/examples.md#how-to-list-and-change-agent-settings)
 - [How to withdraw underlying?](./docs/examples.md#how-to-withdraw-underlying)
@@ -139,12 +141,23 @@ Log files are created every hour and can be found in `packages/fasset-bots-core/
   - [https://test.bithomp.com/faucet](https://test.bithomp.com/faucet)
   - [https://xrpl.org/xrp-testnet-faucet.html](https://xrpl.org/xrp-testnet-faucet.html) - 1000 XRP (not really a faucet, because it generates new address each time)
 
+- Testnet BTC
+  - [https://bitcoinfaucet.uo1.net](https://bitcoinfaucet.uo1.net/)
+  - [https://coinfaucet.eu/en/btc-testnet](https://coinfaucet.eu/en/btc-testnet/)
+
+- Testnet DOGE
+  - [https://dogecoin-faucet.ruan.dev](https://dogecoin-faucet.ruan.dev/)
+
 - Coston
   - [https://faucet.flare.network](https://faucet.flare.network) - 100 CFLR per account per day
 
 ### Other Useful Web Clients
 
-- [Testnet XRP Explorer](https://testnet.xrpl.org/)
-- [Coston Explorer](https://coston-explorer.flare.network/)
-- [Verifier and Indexer Server for testnet XRP](https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp/api-doc#).
+- [Testnet XRP Explorer](https://testnet.xrpl.org)
+- [Testnet BTC Explorer](https://blockstream.info/testnet)
+- [Testnet DOGE Explorer](https://sochain.com/DOGETEST)
+- [Coston Explorer](https://coston-explorer.flare.network)
+- [Verifier and Indexer Server for testnet XRP](https://testnet-verifier.aflabs.org/verifier/xrp/api-doc#)
+- [Verifier and Indexer Server for testnet BTC](https://testnet-verifier.aflabs.org/verifier/btc/api-doc#)
+- [Verifier and Indexer Server for testnet DOGE](https://testnet-verifier.aflabs.org/verifier/doge/api-doc#)
 - [Attestation Client Public Server connected to Coston](https://attestation-coston.aflabs.net/attestation-client/api-doc)
