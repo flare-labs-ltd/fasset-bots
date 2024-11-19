@@ -319,6 +319,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             txEntToUpdate.executeUntilBlock = transaction.LastLedgerSequence;
             txEntToUpdate.status = TransactionStatus.TX_PREPARED;
             txEntToUpdate.reachedStatusPreparedInTimestamp = currentTimestamp;
+            txEntToUpdate.fee = transaction.Fee? toBN(transaction.Fee) : undefined;
          });
          logger.info(`Transaction ${txEnt.id} prepared.`);
          await this.signAndSubmitProcess(txEnt.id, privateKey, transaction);
