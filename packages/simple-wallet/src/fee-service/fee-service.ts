@@ -63,7 +63,7 @@ export class BlockchainFeeService {
             }
 
             let blockHeightToFetch = lastStoredBlockHeight + 1;
-            while (blockHeightToFetch <= currentBlockHeight) {
+            while (monitoring() && blockHeightToFetch <= currentBlockHeight) {
                 const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
                 /* istanbul ignore else */
                 if (feeStats) {
