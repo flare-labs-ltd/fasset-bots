@@ -24,7 +24,8 @@ import { agentNotifierThrottlingTimes } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport, ThrottlingNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, BotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./config-files/BotStrategyConfig";
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
@@ -39,9 +40,9 @@ export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     nativeChainInfo: NativeChainInfo;
     contractRetriever: AssetContractRetriever;
     // liquidation strategies for liquidator and challenger
-    liquidationStrategy?: BotStrategyDefinition; // only for liquidator (optional)
-    challengeStrategy?: BotStrategyDefinition; // only for challenger (optional)
     autoUpdateContracts: boolean // used to auto update contract, when ContractChanged event
+    liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator (optional)
+    challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenger (optional)
 }
 
 export interface BotFAssetConfig {

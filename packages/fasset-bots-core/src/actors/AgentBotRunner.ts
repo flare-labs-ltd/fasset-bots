@@ -5,7 +5,7 @@ import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { EVMNativeTokenBalance, sendWeb3Transaction, SimpleRateLimiter, squashSpace } from "../utils";
+import { EVMNativeTokenBalance, sendWeb3Transaction, SimpleThrottler, squashSpace } from "../utils";
 import { firstValue, getOrCreate, requireNotNull, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -47,7 +47,7 @@ export class AgentBotRunner {
     public serviceAccounts = new Map<string, string>();
 
     private walletMonitors: Map<ChainId, ITransactionMonitor> = new Map();
-    private fundServiceRateLimit = new SimpleRateLimiter<string>(FUND_MIN_INTERVAL_MS);
+    private fundServiceRateLimit = new SimpleThrottler<string>(FUND_MIN_INTERVAL_MS);
 
     @CreateRequestContext()
     async run(): Promise<void> {

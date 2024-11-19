@@ -1,3 +1,5 @@
+import type { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./BotStrategyConfig";
+
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
 export type SchemaUpdate = "none" | "safe" | "full" | "recreate";
@@ -55,13 +57,8 @@ export interface BotNativeChainInfo {
 
 
 export interface ApiNotifierConfig {
-    apiUrl: string
-    apiKey: string
-}
-
-export interface BotStrategyDefinition {
-    className: string;
-    config?: any;
+    apiUrl: string;
+    apiKey: string;
 }
 
 export interface BotConfigFile {
@@ -84,12 +81,12 @@ export interface BotConfigFile {
     contractsJsonFile?: string;
     // notifier apis
     apiNotifierConfigs?: ApiNotifierConfig[]
-    // liquidation strategies for liquidator and challenger
-    liquidationStrategy?: BotStrategyDefinition; // only for liquidator
-    challengeStrategy?: BotStrategyDefinition; // only for challenge
     // price publisher settings
     pricePublisherLoopDelayMs?: number; // only for price publisher
     priceFeedApiUrls?: string[]; // only for price publisher
+    // liquidation strategies for liquidator and challenger
+    liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator
+    challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenge
 }
 
 export interface AgentBotFassetSettingsJson {
