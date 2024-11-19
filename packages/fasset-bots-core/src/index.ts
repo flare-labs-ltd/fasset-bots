@@ -24,5 +24,5 @@ export * from "./underlying-chain/WalletKeys";
 export { VerificationPrivateApiClient } from "./underlying-chain/VerificationPrivateApiClient";
 export { TokenPriceReader } from "./state/TokenPrice";
 export * from "./config/config-file-loader";
-export { encryptText, decryptText, EncryptionMethod } from "../../simple-wallet/src/utils/encryption"
+export { encryptText, decryptText, EncryptionMethod } from "@flarelabs/simple-wallet";
 export { isJSON, promptForPassword } from "./utils/prompt";
