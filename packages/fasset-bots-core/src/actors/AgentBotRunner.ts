@@ -47,7 +47,8 @@ export class AgentBotRunner {
     public serviceAccounts = new Map<string, string>();
 
     private walletMonitors: Map<ChainId, ITransactionMonitor> = new Map();
-    private fundServiceRateLimit = new SimpleThrottler<string>(FUND_MIN_INTERVAL_MS);
+
+    private fundServiceThrottler = new SimpleThrottler<string>(FUND_MIN_INTERVAL_MS);
 
     @CreateRequestContext()
     async run(): Promise<void> {
@@ -66,6 +67,7 @@ export class AgentBotRunner {
         } finally {
             this.running = false;
             await this.stopAllWalletMonitoring();
+            logger.info(`Main agent bot runner loop ended.`)
         }
     }
 
@@ -197,6 +199,7 @@ export class AgentBotRunner {
         const agentBotEntries = Array.from(this.runningAgentBots.entries());
         for (const [address, agentBot] of agentBotEntries) {
             if (!agentBot.running()) {
+                logger.info(`Agent bot for ${address} stopped, removing fom runner.`)
                 this.runningAgentBots.delete(address);
             }
         }
@@ -208,7 +211,7 @@ export class AgentBotRunner {
         if (!settings || !fundingAddress) return;
         const notifier = new AgentNotifier(fundingAddress, this.notifierTransports);
         for (const [name, address] of this.serviceAccounts) {
-            if (!this.fundServiceRateLimit.allow(name)) continue
+            if (!this.fundServiceThrottler.allow(name)) continue;
             await this.fundAccount(fundingAddress, address, settings.minBalanceOnServiceAccount, name, notifier);
         }
     }
@@ -263,33 +266,44 @@ export class AgentBotRunner {
         if (this.walletMonitors.has(chainId)) {
             return;
         }
+        logger.info(`Wallet monitoring starting for ${chainId}...`);
         const monitor = await agentBot.context.wallet.createMonitor();
         this.walletMonitors.set(chainId, monitor);
         await monitor.startMonitoring();
+        logger.info(`Wallet monitoring started for ${monitor.getId()}.`);
     }
 
     async ensureWalletMonitoringRunning() {
+        logger.info(`Starting wallet monitor liveness check.`);
         const sleepFor = 30_000;
         while (!this.readyToStop()) {
-            await sleep(sleepFor);
-            if (this.readyToStop()) return;
-            for (const [_, monitor] of this.walletMonitors) {
-                const isMonitoring = await monitor.isMonitoring();
-                if (!isMonitoring) {
-                    logger.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
-                    console.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
-                    await monitor.startMonitoring();
+            try {
+                await sleep(sleepFor);
+                if (this.readyToStop()) return;
+                for (const [_, monitor] of this.walletMonitors) {
+                    const isMonitoring = monitor.isMonitoring();
+                    if (!isMonitoring) {
+                        logger.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
+                        console.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
+                        await monitor.startMonitoring();
+                    }
                 }
+            } catch (error) {
+                logger.error(`Error ensuring wallet monitoring:`, error);
             }
         }
     }
 
     async stopAllWalletMonitoring(): Promise<void> {
-        for (const [chainId, wallet] of this.walletMonitors) {
+        logger.info("Stopping wallet monitors...");
+        // make a copy and clear monitors (so that ensureWalletMonitoringRunning doesn't restart them)
+        const walletMonitors = new Map(this.walletMonitors);
+        this.walletMonitors.clear();
+        // stop all monitors
+        for (const [chainId, wallet] of walletMonitors) {
             await wallet.stopMonitoring();
             logger.info(`Stopped monitoring wallet for agent ${chainId}.`);
         }
-        // clear monitors
-        this.walletMonitors.clear();
+        logger.info("All wallet monitors stopped.");
     }
 }
