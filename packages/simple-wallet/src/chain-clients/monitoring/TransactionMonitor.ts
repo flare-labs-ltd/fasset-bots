@@ -1,16 +1,15 @@
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { toBN } from "web3-utils";
-import { countTransactionsWithStatuses, fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, transactional, updateMonitoringState } from "../../db/dbutils";
+import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransaction, transactional, updateMonitoringState } from "../../db/dbutils";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOCK_WAIT_DELAY, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger, loggerAsyncStorage } from "../../utils/logger";
-import { convertToTimestamp, createMonitoringId, getCurrentTimestampInSeconds, getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
-import { getConfirmedAfter, getDefaultBlockTimeInSeconds, utxoOnly } from "../utxo/UTXOUtils";
+import { createMonitoringId, getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import { utxoOnly } from "../utxo/UTXOUtils";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { errorMessage } from "../../utils/axios-utils";
 import { ITransactionMonitor } from "../../interfaces/IWalletTransaction";
-import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 
 export interface IMonitoredWallet {
     submitPreparedTransactions(txEnt: TransactionEntity): Promise<void>;
@@ -33,20 +32,15 @@ export class TransactionMonitor implements ITransactionMonitor {
     private createWallet: CreateWalletMethod;
     private monitoringId: string;
     private feeService: BlockchainFeeService | undefined;
-    private numberOfTransactionsPerBlock = 10; // For FAssets we have 10 transactions per block to complete
-    private executionBlockOffset: number;
-    private blockchainAPI: UTXOBlockchainAPI | undefined;
 
-    constructor(chainType: ChainType, rootEm: EntityManager, createWallet: CreateWalletMethod, feeService?: BlockchainFeeService, blockchainAPI?: UTXOBlockchainAPI) {
+    constructor(chainType: ChainType, rootEm: EntityManager, createWallet: CreateWalletMethod, feeService?: BlockchainFeeService) {
         this.chainType = chainType;
         this.rootEm = rootEm;
         this.createWallet = createWallet;
         this.monitoringId = createMonitoringId(`${chainType}-m`);
         if (utxoOnly(this.chainType)) {
             this.feeService = feeService;
-            this.blockchainAPI = blockchainAPI;
         }
-        this.executionBlockOffset = stuckTransactionConstants(this.chainType).executionBlockOffset!;
     }
 
     getId(): string {
@@ -271,21 +265,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         processFunction: (txEnt: TransactionEntity) => Promise<void>
     ): Promise<void> {
         await this.checkIfMonitoringStopped(threadEm);
-        let transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
-
-        // Filter out the transactions which can wait a bit to prevent locking of the wallet by consuming all UTXOs
-        if (utxoOnly(this.chainType) && (statuses.includes(TransactionStatus.TX_CREATED))) {
-            transactionEntities = this.sortTransactionEntities(transactionEntities);
-            const currentBlockHeight = await this.blockchainAPI!.getCurrentBlockHeight();
-
-            const blockBuffer = this.executionBlockOffset / 3;
-            // Process only entities that have currentBlockHeight + (executionBlockOffset + blockBuffer) <= executeUntilBlock if there are more than X transactions
-            const numOfPreparedAndSubmitted = await countTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_PREPARED, TransactionStatus.TX_SUBMITTED]);
-            if (numOfPreparedAndSubmitted > this.numberOfTransactionsPerBlock * getConfirmedAfter(this.chainType) / 2) {
-                transactionEntities = transactionEntities.filter(t => this.calculateTransactionPriority(t, this.chainType, currentBlockHeight) >= blockBuffer);
-            }
-        }
-
+        const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
         for (const txEnt of transactionEntities) {
             await this.checkIfMonitoringStopped(threadEm);
             try {
@@ -303,48 +283,6 @@ export class TransactionMonitor implements ITransactionMonitor {
             this.monitoring = false;    // notify other threads that lock was lost
             throw new StopTransactionMonitor();
         }
-    }
-
-    private sortTransactionEntities(entities: TransactionEntity[]): TransactionEntity[] {
-        return entities.sort((a, b) => {
-            if (a.executeUntilBlock && b.executeUntilBlock) {
-                const blockComparison = a.executeUntilBlock - b.executeUntilBlock;
-                if (blockComparison !== 0) {
-                    return blockComparison;
-                }
-            }
-
-            if (a.executeUntilTimestamp && b.executeUntilTimestamp) {
-                return a.executeUntilTimestamp.sub(b.executeUntilTimestamp).toNumber();
-            }
-
-            return a.id - b.id;
-        });
-    }
-
-    /**
-     * @returns 1 / n where n is number of blocks before executeUntilBlock - executionBlockOffset (if neither are provided it returns 0)
-     */
-    private calculateTransactionPriority(entity: TransactionEntity, chainType: ChainType, currentBlockHeight: number): number {
-        let blockPriority = 0;
-        let timestampPriority = 0;
-
-        if (entity.executeUntilBlock && entity.executeUntilTimestamp) {
-            blockPriority = 1 / (entity.executeUntilBlock - currentBlockHeight - this.executionBlockOffset);
-        }
-
-        let executeUntilTimestamp = entity.executeUntilTimestamp;
-        if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
-            executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
-        }
-
-        if (executeUntilTimestamp) {
-            const now = toBN(getCurrentTimestampInSeconds());
-            const defaultBlockTimeInSeconds = getDefaultBlockTimeInSeconds(chainType);
-            timestampPriority = 1 / (executeUntilTimestamp.sub(now).subn(this.executionBlockOffset * defaultBlockTimeInSeconds).divn(defaultBlockTimeInSeconds).toNumber());
-        }
-
-        return Math.max(blockPriority, timestampPriority);
     }
 
 }
