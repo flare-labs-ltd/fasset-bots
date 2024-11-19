@@ -81,7 +81,9 @@ export class BlockchainFeeService {
                 }
                 blockHeightToFetch++;
             }
-            await sleepMs(this.sleepTimeMs);
+            if (!monitoring()) {
+                await sleepMs(this.sleepTimeMs);
+            }
         }
         logger.info(`${this.monitoringId}: Stopped monitoring fees.`)
     }
