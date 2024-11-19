@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
 import { BotConfigFile, loadContracts, Secrets } from '../config';
-import { artifacts, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
+import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 
 export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
@@ -47,13 +47,15 @@ export class PricePublisherService {
     stopped = false;
 
     static async create(runConfig: BotConfigFile, secrets: Secrets, pricePublisherAddress: string) {
-        assertNotNullCmd(runConfig.priceFeedApiUrls, "Missing priceFeedApiPath");
+        assertNotNullCmd(runConfig.pricePublisherConfig, "Missing pricePublisherConfig");
+        assertCmd(runConfig.dataAccessLayerUrls != null && runConfig.dataAccessLayerUrls.length > 0,
+            "Field dataAccessLayerUrls must be defined and nonempty for price publisher");
         assertNotNullCmd(runConfig.contractsJsonFile, "Contracts file is required for price publisher");
         const contracts = loadContracts(runConfig.contractsJsonFile);
-        const publisherApiKey = secrets.optional("apiKey.price_publisher_api") ?? "";
-        const maxDelayMs = runConfig.pricePublisherLoopDelayMs ?? DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS;
+        const publisherApiKey = secrets.optional("apiKey.data_access_layer") ?? "";
+        const maxDelayMs = runConfig.pricePublisherConfig.loopDelayMs ?? DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS;
         const ftsoV2PriceStore = await FtsoV2PriceStore.at(contracts.FtsoV2PriceStore.address);
-        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.priceFeedApiUrls, publisherApiKey, maxDelayMs);
+        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.dataAccessLayerUrls, publisherApiKey, maxDelayMs);
         return pricePublisherService;
     }
 

@@ -61,6 +61,11 @@ export interface ApiNotifierConfig {
     apiKey: string;
 }
 
+export interface PricePublisherConfig {
+    enabled: boolean;
+    loopDelayMs?: number;
+}
+
 export interface BotConfigFile {
     ormOptions?: OrmConfigOptions; // only for agent bot
     walletOptions?: {
@@ -82,8 +87,7 @@ export interface BotConfigFile {
     // notifier apis
     apiNotifierConfigs?: ApiNotifierConfig[]
     // price publisher settings
-    pricePublisherLoopDelayMs?: number; // only for price publisher
-    priceFeedApiUrls?: string[]; // only for price publisher
+    pricePublisherConfig?: PricePublisherConfig;
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator
     challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenge

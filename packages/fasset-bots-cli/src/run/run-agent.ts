@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { ActivityTimestampEntity, AgentBotRunner, PricePublisherService, TimeKeeperService, TimekeeperTimingConfig } from "@flarelabs/fasset-bots-core";
 import { closeBotConfig, createBotConfig, EM, loadAgentConfigFile, Secrets } from "@flarelabs/fasset-bots-core/config";
-import { authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, isNotNull, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { assertNotNullCmd, authenticatedHttpProvider, CommandLineError, formatFixed, initWeb3, isNotNull, logger, sendWeb3Transaction, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
 import { programWithCommonOptions } from "../utils/program";
 import { toplevelRun } from "../utils/toplevel";
@@ -101,7 +101,8 @@ program.action(async () => {
         timekeeperService.startAll();
         // run price publisher only if price feed api path is set
         let pricePublisherService: PricePublisherService | null = null;
-        if (runConfig.priceFeedApiUrls && pricePublisher) {
+        if (runConfig.pricePublisherConfig?.enabled) {
+            assertNotNullCmd(pricePublisher, "Price publisher address and private key required");
             if (pricePublisher.address !== owner.address) {
                 await fundAccount(owner.address, pricePublisher.address, minNativeBalance, "price publisher");
                 serviceAccounts.set("price publisher", pricePublisher.address);

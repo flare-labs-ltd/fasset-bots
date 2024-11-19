@@ -379,6 +379,21 @@
             },
             "type": "object"
         },
+        "PricePublisherConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "loopDelayMs": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "enabled"
+            ],
+            "type": "object"
+        },
         "StuckTransaction": {
             "additionalProperties": false,
             "properties": {
@@ -450,14 +465,8 @@
         "ormOptions": {
             "$ref": "#/definitions/OrmConfigOptions"
         },
-        "priceFeedApiUrls": {
-            "items": {
-                "type": "string"
-            },
-            "type": "array"
-        },
-        "pricePublisherLoopDelayMs": {
-            "type": "number"
+        "pricePublisherConfig": {
+            "$ref": "#/definitions/PricePublisherConfig"
         },
         "prioritizeAddressUpdater": {
             "type": "boolean"
