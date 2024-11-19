@@ -1,23 +1,5 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
-import { CommandLineError } from "../utils/command-line-errors";
-import { EncryptionMethod } from "@flarelabs/simple-wallet";
-import { logger } from "../utils/logger";
-import { decryptText, encryptText } from "@flarelabs/simple-wallet"
-import { Secrets } from "../config";
-import { IWalletKeys, WalletAddressEntity } from "@flarelabs/simple-wallet";
-
-
-export class MemoryWalletKeys implements IWalletKeys {
-    private keys = new Map<string, string>();
-
-    async getKey(address: string): Promise<string | undefined> {
-        return this.keys.get(address);
-    }
-
-    async addKey(address: string, privateKey: string): Promise<void> {
-        this.keys.set(address, privateKey);
-    }
-}
+import {decryptText, EncryptionMethod, encryptText, IWalletKeys, WalletAddressEntity} from "../../src";
 
 export class DBWalletKeys implements IWalletKeys {
     private privateKeyCache = new Map<string, string>();
@@ -27,12 +9,8 @@ export class DBWalletKeys implements IWalletKeys {
         private password: string,
     ) {}
 
-    static from(em: EntityManager, secrets: Secrets) {
-        return new DBWalletKeys(em, this.encryptionPassword(secrets));
-    }
-
-    static encryptionPassword(secrets: Secrets) {
-        return secrets.requiredEncryptionPassword("wallet.encryption_password");
+    static from(em: EntityManager, password: string) {
+        return new DBWalletKeys(em, password);
     }
 
     async getKey(address: string): Promise<string | undefined> {
@@ -48,9 +26,7 @@ export class DBWalletKeys implements IWalletKeys {
 
     async addKey(address: string, privateKey: string): Promise<void> {
         if (await this.getKey(address)) return;
-        // set cache
         this.privateKeyCache.set(address, privateKey);
-        // persist
         const wa = new WalletAddressEntity();
         wa.address = address;
         wa.encryptedPrivateKey = this.encryptPrivateKey(privateKey);
@@ -65,8 +41,7 @@ export class DBWalletKeys implements IWalletKeys {
         try {
             return decryptText(this.password, encryptedKey);
         } catch (error) {
-            logger.error("Error decrypting database private key - wallet encryption password is most likely incorrect", error);
-            throw new CommandLineError("Error decrypting database private key - wallet encryption password is most likely incorrect");
+            throw new Error("Error decrypting database private key - wallet encryption password is most likely incorrect");
         }
     }
 }

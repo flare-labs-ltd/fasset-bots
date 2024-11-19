@@ -1,28 +1,34 @@
 import {
     AccountSecrets,
-    addConsoleTransportForTests, createNote, createWallet, decryptTestSecrets,
-    loop, promptPassword,
-    resetMonitoringOnForceExit, waitForTxToFinishWithStatus
+    addConsoleTransportForTests,
+    createNote,
+    createWallet,
+    decryptTestSecrets,
+    loop,
+    promptPassword,
+    resetMonitoringOnForceExit,
+    waitForTxToFinishWithStatus
 } from "../test-util/common_utils";
 import {
     BitcoinWalletConfig,
-    BTC,
+    DOGE,
     ITransactionMonitor,
     logger,
     TransactionStatus,
     WalletAddressEntity
 } from "../../src";
-import { toBN } from "../../src/utils/bnutils";
 import config, {initializeMainnetMikroORM, ORM} from "../test-orm/mikro-orm.config";
-import { setMonitoringStatus } from "../test-util/entity_utils";
-import { expect, use } from "chai";
+import {setMonitoringStatus} from "../test-util/entity_utils";
+import {expect, use} from "chai";
+import {toBNExp} from "../../src/utils/bnutils";
 import chaiAsPromised from "chai-as-promised";
 import {DBWalletKeys} from "../test-orm/WalletKeys";
+import {BTC_DOGE_DEC_PLACES} from "../../src/utils/constants";
 
 use(chaiAsPromised);
 
-const BTCMccConnectionInitial = {
-    urls: [process.env.MAINNET_BTC_URL ?? ""],
+const DOGEMccConnectionInitial = {
+    urls: [process.env.MAINNET_DOGE_URL ?? ""],
     inTestnet: false,
 };
 let BTCMccConnection: BitcoinWalletConfig;
@@ -31,13 +37,13 @@ let fundedAddress: string;
 let targetAddress: string;
 
 const enoughConfirmations = 2;
-const amountToSendSatoshi = toBN(10020);
+const amountToSendSatoshi = toBNExp(2, BTC_DOGE_DEC_PLACES);
 
-let wClient: BTC;
+let wClient: DOGE;
 let testOrm: ORM;
 let monitor: ITransactionMonitor;
 
-describe("Bitcoin mainnet wallet tests", () => {
+describe("DOGE mainnet wallet tests", () => {
     let removeConsoleLogging: () => void;
 
     before(async () => {
@@ -46,25 +52,24 @@ describe("Bitcoin mainnet wallet tests", () => {
 
         removeConsoleLogging = addConsoleTransportForTests(logger);
 
-
         testOrm = await initializeMainnetMikroORM({...config, dbName: "simple-wallet-mainnet-test-db"});
         const dbWalletKeys = new DBWalletKeys(testOrm.em, password);
         BTCMccConnection = {
-            ...BTCMccConnectionInitial,
+            ...DOGEMccConnectionInitial,
             em: testOrm.em,
             walletKeys: dbWalletKeys,
-            enoughConfirmations: 2,
+            enoughConfirmations: enoughConfirmations,
         };
-        wClient = BTC.initialize(BTCMccConnection);
+        wClient = DOGE.initialize(BTCMccConnection);
         monitor = await wClient.createMonitor();
         await monitor.startMonitoring();
         resetMonitoringOnForceExit(monitor);
 
-        fundedAddress = testSecrets.BTC.fundedWallet.address;
-        targetAddress = testSecrets.BTC.targetWallet.address;
+        fundedAddress = testSecrets.DOGE.fundedWallet.address;
+        targetAddress = testSecrets.DOGE.targetWallet.address;
 
-        await createWallet(wClient, testSecrets.BTC, "fundedWallet");
-        await createWallet(wClient, testSecrets.BTC, "targetWallet");
+        await createWallet(wClient, testSecrets.DOGE, "fundedWallet");
+        await createWallet(wClient, testSecrets.DOGE, "targetWallet");
     });
 
     after(async () => {
@@ -88,7 +93,7 @@ describe("Bitcoin mainnet wallet tests", () => {
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
 
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note);
-        await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         const sourceBalanceEnd = await wClient.getAccountBalance(fundedAddress);
         const targetBalanceEnd = await wClient.getAccountBalance(targetAddress);
@@ -99,19 +104,19 @@ describe("Bitcoin mainnet wallet tests", () => {
     it("Should submit and replace transaction", async () => {
         const note = createNote();
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note);
-        await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
+        await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(id, blockHeight);
 
-        const [replacedTxEnt,] = await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING, TransactionStatus.TX_REPLACED], id);
-        await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, replacedTxEnt.replaced_by!.id);
+        const [replacedTxEnt,] = await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING, TransactionStatus.TX_REPLACED], id);
+        await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, replacedTxEnt.replaced_by!.id);
     });
 
     it("Should delete account", async () => {
         const sourceBalanceStart = await wClient.getAccountBalance(fundedAddress);
         const id = await wClient.createDeleteAccountTransaction(targetAddress, fundedAddress);
-        await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         const sourceBalanceEnd = await wClient.getAccountBalance(fundedAddress);
         const targetBalanceEnd = await wClient.getAccountBalance(targetAddress);
@@ -119,6 +124,5 @@ describe("Bitcoin mainnet wallet tests", () => {
         expect(sourceBalanceEnd.gt(sourceBalanceStart)).to.be.true;
         expect(targetBalanceEnd.eqn(0)).to.be.true;
     });
-
 });
 

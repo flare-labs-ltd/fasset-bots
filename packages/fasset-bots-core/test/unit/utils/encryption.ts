@@ -1,6 +1,6 @@
 import { assert } from "chai";
 import crypto from "crypto";
-import { decryptText, EncryptionMethod, encryptText } from "../../../src/utils/encryption";
+import { decryptText, EncryptionMethod, encryptText } from "@flarelabs/simple-wallet";
 
 describe("encryption unit tests", () => {
     const plaintext = "this is plain text";

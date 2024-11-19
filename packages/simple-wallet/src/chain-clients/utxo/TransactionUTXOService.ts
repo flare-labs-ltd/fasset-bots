@@ -84,6 +84,8 @@ export class TransactionUTXOService {
         const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType)));
         const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType))); // should not be necessary
 
+        logger.info(`Transaction got RBF UTXOs with id's: ${validRbfUTXOs.map(t => t.id).toString()}`);
+
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
             logger.info(`Account doesn't have enough UTXOs - Skipping selection.
                 Amount: ${txData.amount.toNumber()},
