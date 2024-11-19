@@ -20,7 +20,7 @@ import * as dbutils from "../../src/db/dbutils";
 import {
     correctUTXOInconsistenciesAndFillFromMempool,
     fetchTransactionEntityById,
-    fetchUTXOsByTxId, getTransactionInfoById,
+    fetchUTXOsByTxId, getTransactionInfoById, updateTransactionEntity,
 } from "../../src/db/dbutils";
 import { DriverException } from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
@@ -121,7 +121,7 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Monitoring should be running", async () => {
-        const monitoring = await monitor.isMonitoring();
+        const monitoring = monitor.isMonitoring();
         expect(monitoring).to.be.true;
     });
 
@@ -153,7 +153,6 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should get fee for delete account", async () => {
-        fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
         await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedWallet.address, utxosFromMempool);
         const [transaction] = await wClient.transactionService.preparePaymentTransaction(0, fundedWallet.address, targetAddress, null, undefined);
@@ -327,12 +326,12 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should check monitoring already running and restart it", async () => {
-        expect(await monitor.isMonitoring()).to.be.true;
+        expect(monitor.isMonitoring()).to.be.true;
         await monitor.stopMonitoring();
         await (monitor as TransactionMonitor).startMonitoring();
         expect(monitor.isMonitoring()).to.be.true;
         await monitor.stopMonitoring();
-        expect(await monitor.isMonitoring()).to.be.false;
+        expect(monitor.isMonitoring()).to.be.false;
         await (monitor as TransactionMonitor).startMonitoring();
         await sleepMs(2000);
         expect(monitor.isMonitoring()).to.be.true;

@@ -15,7 +15,7 @@ import * as dbutils from "../../src/db/dbutils";
 import * as utxoutils from "../../src/chain-clients/utxo/UTXOUtils";
 import { expect, use } from "chai";
 import { FeeStatus } from "../../src/chain-clients/utxo/TransactionFeeService";
-import { BTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
+import {BTC_DOGE_DEC_PLACES} from "../../src/utils/constants";
 import { toBNExp } from "../../src/utils/bnutils";
 import { createTransactionEntityBase, createUTXOEntity } from "../test-util/entity_utils";
 import sinon from "sinon";
@@ -52,9 +52,6 @@ describe("UTXO selection algorithm test", () => {
             enoughConfirmations: 1,
         };
         wClient = BTC.initialize(BTCMccConnectionTest);
-        monitor = await wClient.createMonitor();
-        await monitor.startMonitoring();
-        resetMonitoringOnForceExit(monitor);
     });
 
     beforeEach(() => {
@@ -288,7 +285,6 @@ describe("UTXO selection algorithm test", () => {
             createUTXOEntity(0, fundedAddress, "b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, SpentHeightEnum.UNSPENT, minimumUTXOValue.divn(2), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
         ];
         sinon.stub(dbutils, "fetchUnspentUTXOs").resolves(utxos);
-        sinon.stub(wClient.transactionUTXOService, "collectUTXOs" as any).resolves(utxos);
         sinon.stub(utxoutils, "getAccountBalance").resolves(new BN(8000));
 
         sinon.stub(wClient.transactionFeeService, "getCurrentFeeStatus").resolves(FeeStatus.HIGH);

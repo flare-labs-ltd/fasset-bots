@@ -12,7 +12,6 @@ import sinon from "sinon";
 import BN from "bn.js";
 
 let feeService: BlockchainFeeService;
-const chainType = ChainType.testBTC;
 
 
 const BTCMccConnectionTestInitial = {
