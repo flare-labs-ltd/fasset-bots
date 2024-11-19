@@ -40,8 +40,9 @@ export class AgentBotUnderlyingManagement {
         const agentInfo = await this.agent.getAgentInfo();
         const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
         const minimumFreeUnderlyingBalance = toBN(this.agentBotSettings.minimumFreeUnderlyingBalance);
-        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is ${minimumFreeUnderlyingBalance}. Top up is required ${freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)}.`);
-        if (freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)) {
+        const topUpNeeded = freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance);
+        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is ${minimumFreeUnderlyingBalance}. Top up is required ${topUpNeeded}.`);
+        if (topUpNeeded) {
             await this.underlyingTopUp(em, minimumFreeUnderlyingBalance);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${minimumFreeUnderlyingBalance.toString()}.`);
@@ -65,10 +66,16 @@ export class AgentBotUnderlyingManagement {
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+        const canTopUp = await this.checkForLowOwnerUnderlyingBalance();
+        if (!canTopUp) {
+            logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be topped up! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be topped up! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            return false;
+        }
         // check and log the fee
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
-            source: this.agent.underlyingAddress,
-            destination: this.ownerUnderlyingAddress,
+            source: this.ownerUnderlyingAddress,
+            destination: this.agent.underlyingAddress,
             amount: amount,
             isPayment: true
         }));
@@ -77,14 +84,14 @@ export class AgentBotUnderlyingManagement {
         const txDbId = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
             return await this.agent.initiateTopupPayment(amount, this.ownerUnderlyingAddress);
         });
-        await this.createAgentUnderlyingPayment(em, txDbId, AgentUnderlyingPaymentType.TOP_UP);
+        await this.createAgentUnderlyingPayment(em, txDbId, AgentUnderlyingPaymentType.TOP_UP, AgentUnderlyingPaymentState.PAID);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner initiated underlying ${AgentUnderlyingPaymentType.TOP_UP} payment
             to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with transactions database id  ${txDbId}.`);
         await this.checkForLowOwnerUnderlyingBalance();
         return true;
     }
 
-    async checkForLowOwnerUnderlyingBalance() {
+    async checkForLowOwnerUnderlyingBalance(): Promise<boolean> {
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const expectedBalance = this.agentBotSettings.recommendedOwnerUnderlyingBalance;
         const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
@@ -93,9 +100,11 @@ export class AgentBotUnderlyingManagement {
             await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, balanceF);
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
                 ${balanceF} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalanceF}.`);
+            return false;
         } else {
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${balanceF}
                 on underlying address ${this.ownerUnderlyingAddress}.`);
+            return true;
         }
     }
 
@@ -105,25 +114,25 @@ export class AgentBotUnderlyingManagement {
      * @param txHash transaction hash
      * @param type enum for underlying payment type from entity AgentUnderlyingPayment
      */
-    async createAgentUnderlyingPayment(rootEm: EM, txHashOrTxDbId: string | number, type: AgentUnderlyingPaymentType): Promise<void> {
+    async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             rootEm.create(
                 AgentUnderlyingPayment,
                 {
                     agentAddress: this.agent.vaultAddress,
-                    state: AgentUnderlyingPaymentState.PAID,
-                    txHash: typeof txHashOrTxDbId === 'string' ? txHashOrTxDbId : null,
-                    txDbId: typeof txHashOrTxDbId === 'number' ? txHashOrTxDbId : null,
+                    state: paymentState,
+                    txHash: txHash ?? null,
+                    txDbId: txDbId,
                     type: type,
                 } as RequiredEntityData<AgentUnderlyingPayment>,
                 { persist: true }
             );
         });
-        await this.notifier.sendAgentUnderlyingPaymentCreated(txHashOrTxDbId, type);
-        if (typeof txHashOrTxDbId == 'string') {
-            logger.info(`Agent ${this.agent.vaultAddress} send underlying ${type} payment ${txHashOrTxDbId}.`);
+        await this.notifier.sendAgentUnderlyingPaymentCreated(txDbId, type, txHash);
+        if (txHash) {
+            logger.info(`Agent ${this.agent.vaultAddress} send underlying ${type} payment ${txDbId} (${txHash}).`);
         } else {
-            logger.info(`Agent ${this.agent.vaultAddress} initiated underlying ${type} payment with transaction database id ${txHashOrTxDbId}.`);
+            logger.info(`Agent ${this.agent.vaultAddress} initiated underlying ${type} payment with transaction database id ${txDbId}.`);
         }
     }
 

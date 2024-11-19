@@ -48,9 +48,11 @@ tmp.*
 
 # run-config
 packages/fasset-bots-core/run-config/coston-bot-demo.json
+packages/fasset-bots-core/run-config/coston-bot-demo-publisher.json
 
 # config file with various keys and addresses
 secrets.json
+test-data/simple-wallet-secrets.json
 
 # fasset-liquidator specific
 packages/fasset-liquidator/data
@@ -66,3 +68,5 @@ packages/fasset-bots-core/test/special/fast-minting-xrp.ts
 packages/fasset-bots-core/test/special/xrp_test_accounts.ts
 packages/fasset-bots-core/test/special/fast-minting.ts
 packages/fasset-bots-core/test/special/btc_test_accounts.ts
+packages/fasset-bots-core/test/special/fast-minting-doge.ts
+packages/fasset-bots-core/test/special/doge_test_accounts.ts

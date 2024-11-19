@@ -52,7 +52,7 @@ export class AgentBotOwnerValidation {
     ) {}
 
     static async create(secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
-        const secrets = Secrets.load(secretsFile);
+        const secrets = await Secrets.load(secretsFile);
         const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const apiKey = secrets.optional("apiKey.native_rpc");
@@ -67,7 +67,7 @@ export class AgentBotOwnerValidation {
     }
 
     static async fromContext(context: IAssetAgentContext, secretsFile: string, configFileName: string, reporter: Reporter = throwingReporter) {
-        const secrets = Secrets.load(secretsFile);
+        const secrets = await Secrets.load(secretsFile);
         const owner = new OwnerAddressPair(secrets.required("owner.management.address"), secrets.required("owner.native.address"));
         const configFile = loadConfigFile(configFileName);
         const fassets = new Map<string, FAssetInstance>([[context.fAssetSymbol, context.fAsset]]);
@@ -144,7 +144,7 @@ export class AgentBotOwnerValidation {
         this.reporter.log(`Verifying ${fassetSymbol} settings...`);
         const fassetInfo = this.configFile.fAssets[fassetSymbol];
         assertNotNullCmd(fassetInfo, `Invalid FAsset symbol ${fassetSymbol}.`);
-        assertNotNullCmd(fassetInfo.walletUrl, `Missing field fAssets.${fassetSymbol}.walletUrl in the config file.`);
+        assertCmd(fassetInfo.walletUrls != null && fassetInfo.walletUrls.length > 0, `At least one walletUrl in fAssets.${fassetSymbol}.walletUrls is required`);
         //
         const underlyingAddress = this.secrets.optional(`owner.${fassetInfo.chainId}.address`);
         assertCmd(!!underlyingAddress, `Missing field "owner.${fassetInfo.chainId}.address" in secrets file ${this.secrets.filePath}. Did you use "yarn generateSecrets --agent" to generate it?`);
@@ -166,7 +166,10 @@ export class AgentBotOwnerValidation {
 
     async createWalletTokenBalance(fassetSymbol: string) {
         const fassetInfo = this.configFile.fAssets[fassetSymbol];
-        const walletClient = await createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), requireNotNull(fassetInfo.walletUrl), this.orm.em, fassetInfo.stuckTransactionOptions, fassetInfo.feeServiceOptions, fassetInfo.fallbackApis);
+        if (!fassetInfo.walletUrls|| fassetInfo.walletUrls?.length == 0) {
+            throw new Error (`Missing wallet url for ${fassetSymbol}`)
+        }
+        const walletClient = await createWalletClient(this.secrets, ChainId.from(fassetInfo.chainId), fassetInfo.walletUrls, this.orm.em, fassetInfo.stuckTransactionOptions);
         const wallet = new BlockchainWalletHelper(walletClient, new MemoryWalletKeys());
         const fasset = requireNotNull(this.fassets.get(fassetSymbol));
         return new WalletTokenBalance(wallet, await fasset.assetSymbol(), Number(await fasset.decimals()));

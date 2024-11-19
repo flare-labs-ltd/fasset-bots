@@ -18,6 +18,7 @@ struct EcosystemData {
     uint256 maxLiquidatedFAssetUBA;
     uint256 liquidationFactorVaultBips;
     uint256 liquidationFactorPoolBips;
+    // asset manager vars
     uint256 assetMintingGranularityUBA;
     uint256 assetMintingDecimals;
     // ftso prices
@@ -38,6 +39,7 @@ struct DexPairConfig {
 
 struct ArbitrageConfig {
     address flashLender;
+    uint256 maxFlashFee;
     address dex;
     DexPairConfig dexPair1;
     DexPairConfig dexPair2;

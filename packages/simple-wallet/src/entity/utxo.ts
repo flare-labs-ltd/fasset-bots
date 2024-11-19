@@ -43,7 +43,7 @@ export class UTXOEntity {
     transaction?: TransactionEntity;
 
     @Property()
-    confirmed: boolean = false;
+    confirmed = false;
 }
 
 export enum SpentHeightEnum {

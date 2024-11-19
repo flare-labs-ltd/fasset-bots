@@ -97,7 +97,7 @@ describe("Agent bot unit tests", () => {
         const [events, lastBlock] = await agentBot.eventReader.readNewEvents(orm.em, 10);
         expect(events.length).to.eq(0);
     });
-    
+
     it("Should report outdated agents", async () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const latest = await time.latestBlock();
@@ -474,11 +474,13 @@ describe("Agent bot unit tests", () => {
         const invalidUpdateSeconds = toBN((await context.assetManager.getSettings()).agentTimelockedOperationWindowSeconds);
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         // announce updates
-        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", 1100);
+        const newFeeBIPS = toBN(1100);
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", newFeeBIPS);
         const updateSettingFee = new AgentUpdateSetting();
         updateSettingFee.state = AgentUpdateSettingState.WAITING;
         updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.value = String(newFeeBIPS);
         updateSettingFee.validAt = validAtFeeBIPS;
         await orm.em.persist(updateSettingFee).flush();
         // not yet allowed
@@ -489,11 +491,13 @@ describe("Agent bot unit tests", () => {
         await agentBot.handleTimelockedProcesses(orm.em);
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.DONE);
         // announce and try to update an expired update
-        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", 8100);
+        const newPoolTopupTokenPriceFactorBIPS = toBN(8100);
+        const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", newPoolTopupTokenPriceFactorBIPS);
         const updateSettingPoolTopup = new AgentUpdateSetting();
         updateSettingPoolTopup.state = AgentUpdateSettingState.WAITING;
         updateSettingPoolTopup.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingPoolTopup.name = AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR;
+        updateSettingPoolTopup.value = String(newPoolTopupTokenPriceFactorBIPS);
         updateSettingPoolTopup.validAt = validAt2;
         await orm.em.persist(updateSettingPoolTopup).flush();
         // cannot update, update expired
@@ -506,11 +510,13 @@ describe("Agent bot unit tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         const feeBIPS = toBN((await agentBot.agent.getAgentInfo()).feeBIPS);
         //Announce updates
-        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", feeBIPS.muln(10));
+        const newFeeBIPS = feeBIPS.muln(10);
+        const validAtFeeBIPS = await agentBot.agent.announceAgentSettingUpdate("feeBIPS", newFeeBIPS);
         const updateSettingFee = new AgentUpdateSetting();
         updateSettingFee.state = AgentUpdateSettingState.WAITING;
         updateSettingFee.agent = await agentBot.fetchAgentEntity(orm.em);
         updateSettingFee.name = AgentSettingName.FEE;
+        updateSettingFee.value = String(newFeeBIPS);
         updateSettingFee.validAt = validAtFeeBIPS;
         await orm.em.persist(updateSettingFee).flush();
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.WAITING);
@@ -603,6 +609,24 @@ describe("Agent bot unit tests", () => {
         expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
     });
 
+    it("Should cancel underlying withdrawal announcement", async () => {
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
+        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        // announce
+        await agentBot.agent.announceUnderlyingWithdrawal();
+        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
+        agentEnt.underlyingWithdrawalWaitingForCancelation = true;
+        await orm.em.persist(agentEnt).flush();
+        // cancelation not yet allowed
+        await agentBot.handleTimelockedProcesses(orm.em);
+        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
+        // cancelation allowed
+        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
+        await agentBot.handleTimelockedProcesses(orm.em);
+        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
+        expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
+    });
+
     it("Should ignore 'MintingExecuted' when self mint", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
         const lots = 3;
@@ -628,24 +652,6 @@ describe("Agent bot unit tests", () => {
         // check
         const mintings = await orm.em.createQueryBuilder(AgentMinting).where({ agentAddress: agentBot.agent.vaultAddress }).getResultList();
         expect(mintings.length).to.eq(0);
-    });
-
-    it("Should cancel underlying withdrawal announcement", async () => {
-        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
-        // announce
-        await agentBot.agent.announceUnderlyingWithdrawal();
-        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-        agentEnt.underlyingWithdrawalWaitingForCancelation = true;
-        await orm.em.persist(agentEnt).flush();
-        // cancelation not yet allowed
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
-        // cancelation allowed
-        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
-        expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
 
     it("Should not request proofs - cannot prove requests yet", async () => {

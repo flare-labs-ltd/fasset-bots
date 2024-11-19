@@ -24,13 +24,13 @@ describe("testXRP attestation/state connector tests", () => {
     let account: string;
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         account = accounts[0];
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,
-            indexerApiKey(secrets),
+            indexerApiKey(secrets, INDEXER_URL_XRP),
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
@@ -54,7 +54,7 @@ describe("testXRP attestation/state connector tests", () => {
     });
 
     it("Should submit request", async () => {
-        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets));
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets, INDEXER_URL_XRP));
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
@@ -134,12 +134,12 @@ describe("State connector tests - decoding", () => {
     };
 
     before(async () => {
-        const secrets = Secrets.load(TEST_SECRETS);
+        const secrets = await Secrets.load(TEST_SECRETS);
         const accountPrivateKey = secrets.required("user.native.private_key");
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         stateConnectorClient = await createStateConnectorClient(
             INDEXER_URL_XRP,
-            indexerApiKey(secrets),
+            indexerApiKey(secrets, INDEXER_URL_XRP),
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
@@ -149,8 +149,8 @@ describe("State connector tests - decoding", () => {
             ATTESTATION_PROVIDER_URLS,
             STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
             STATE_CONNECTOR_ADDRESS,
-            "",
-            "",
+            [""],
+            [""],
             accounts[0]
         );
     });

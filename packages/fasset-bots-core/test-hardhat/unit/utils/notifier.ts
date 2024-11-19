@@ -278,8 +278,8 @@ describe("Notifier tests", () => {
     });
 
     it("Should send agent setting update expired", async () => {
-        const spySend = spy.on(notifier, "sendAgentCannotUpdateSettingExpired");
-        await notifier.sendAgentCannotUpdateSettingExpired("setting");
+        const spySend = spy.on(notifier, "sendAgentUnableToUpdateSetting");
+        await notifier.sendAgentUnableToUpdateSetting("setting", "update not valid anymore");
         expect(spySend).to.have.been.called.once;
     });
 
@@ -356,7 +356,13 @@ describe("Notifier tests", () => {
 
     it("Should send AgentUnderlyingPayment created", async () => {
         const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentCreated");
-        await notifier.sendAgentUnderlyingPaymentCreated("hash", "type");
+        await notifier.sendAgentUnderlyingPaymentCreated(0, "type", "hash");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send AgentUnderlyingPayment created 2", async () => {
+        const spySend = spy.on(notifier, "sendAgentUnderlyingPaymentCreated");
+        await notifier.sendAgentUnderlyingPaymentCreated(0, "type");
         expect(spySend).to.have.been.called.once;
     });
 

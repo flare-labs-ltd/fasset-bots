@@ -7,10 +7,12 @@ export enum AgentNotificationKey {
     // agent status and settings,
     CCB_STARTED = "CCB",
     LIQUIDATION_STARTED = "LIQUIDATION STARTED",
+    LIQUIDATION_ENDED = "LIQUIDATION ENDED",
     FULL_LIQUIDATION_STARTED = "FULL LIQUIDATION",
     LIQUIDATION_WAS_PERFORMED = "LIQUIDATION WAS PERFORMED",
     AGENT_DESTROYED = "AGENT DESTROYED",
     AGENT_CREATED = "AGENT CREATED",
+    AGENT_CREATED_ERROR = "AGENT CREATION ERROR",
     AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE",
     AGENT_SETTING_UPDATE_FAILED = "AGENT SETTING UPDATE FAILED",
     AGENT_ENTER_AVAILABLE = "AGENT ENTERED AVAILABLE",
@@ -97,8 +99,16 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.danger(AgentNotificationKey.CCB_STARTED, `Agent ${this.address} is in collateral call band since ${timestamp}. Agent is trying to automatically top up vaults.`);
     }
 
+    async agentCreationFailed(error: string) {
+        await this.danger(AgentNotificationKey.AGENT_CREATED_ERROR, `Failed to create agent: ${error}.`);
+    }
+
     async sendLiquidationStartAlert(timestamp: string) {
         await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}. Agent is trying to automatically top up vaults.`);
+    }
+
+    async sendLiquidationEndedAlert(timestamp: string) {
+        await this.info(AgentNotificationKey.LIQUIDATION_ENDED, `Liquidation has ended for agent ${this.address} at ${timestamp}.`);
     }
 
     async sendFullLiquidationAlert(payment1?: string, payment2?: string) {
@@ -410,10 +420,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.POOL_UNDELEGATE, `Agent ${this.address} undelegated all pool collateral for pool ${poolAddress}.`);
     }
 
-    async sendAgentCannotUpdateSettingExpired(setting: string) {
+    async sendAgentUnableToUpdateSetting(setting: string, reason: string) {
         await this.danger(
             AgentNotificationKey.AGENT_SETTING_UPDATE_FAILED,
-            `Agent ${this.address} could not update setting ${setting}, as it is not valid anymore.`
+            `Agent ${this.address} could not update setting ${setting} due to "${reason}".`
         );
     }
 
@@ -428,11 +438,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} transaction with database id ${txDbId}.`);
     }
 
-    async sendAgentUnderlyingPaymentCreated(txHashOrTxDbId: string | number, type: string) {
-        if (typeof txHashOrTxDbId == 'string') {
-            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txHashOrTxDbId}.`);
+    async sendAgentUnderlyingPaymentCreated(txDbId: number, type: string, txHash?: string) {
+        if (txHash) {
+            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} send underlying ${type} transaction ${txDbId} (${txHash}).`);
         } else {
-            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} payment with transaction database id ${txHashOrTxDbId}.`);
+            await this.info(AgentNotificationKey.UNDERLYING_PAYMENT_PAID, `Agent ${this.address} initiated underlying ${type} payment with transaction database id ${txDbId}.`);
         }
     }
 

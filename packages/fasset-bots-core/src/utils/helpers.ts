@@ -56,14 +56,14 @@ export async function sleepUntil(delayMS: number, stopCondition: () => boolean, 
  * Return system time as timestamp (seconds since 1.1.1970).
  */
 export function systemTimestamp() {
-    return Math.round(new Date().getTime() / 1000);
+    return Math.floor(Date.now() / 1000);
 }
 
 /**
  * Return system time as millisecond timestamp (milliseconds since 1.1.1970).
  */
 export function systemTimestampMS() {
-    return new Date().getTime();
+    return Date.now();
 }
 
 /**
@@ -264,6 +264,12 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
     return false;
 }
 
+export function extractRevertMessageFromError(error: any): string | undefined {
+    const message = String(error?.message ?? "");
+    const regex = /execution reverted: (.*?)(?:\n|$)/;
+    return regex.exec(message)?.[1];
+}
+
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {
     if (errorIncluded(error, expectedErrors)) return;
     throw error; // unexpected error
@@ -397,4 +403,24 @@ export function* enumerate<T>(array: T[]): Iterable<[T, number]> {
 
 export function isEnumValue<T extends string>(enumCls: { [key: string]: T }, value: string): value is T {
     return Object.values(enumCls).includes(value as any);
+}
+
+/**
+ * Replaces all occurences of `${VAR}` in strings in the object `obj` with the contents of the environment variable `VAR`.
+ * @param obj the object (NOTE: it will be modified inplace)
+ * @returns inplace modified `obj`
+ */
+export function substituteEnvVars(obj: unknown) {
+    if (typeof obj === "string") {
+        return obj.replace(/\$\{(\w+)\}/, (m, varname) => requireEnv(varname));
+    } else if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) {
+            obj[i] = substituteEnvVars(obj[i]);
+        }
+    } else if (typeof obj === "object" && obj !== null) {
+        for (const [k, v] of Object.entries(obj)) {
+            (obj as any)[k] = substituteEnvVars(v);
+        }
+    }
+    return obj;
 }

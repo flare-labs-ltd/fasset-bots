@@ -30,7 +30,7 @@ export class PoolUserBotCommands {
      * @returns instance of UserBot
      */
     static async create(secretsFile: string, configFileName: string, fAssetSymbol: string, registerCleanup?: CleanupRegistration) {
-        const secrets = Secrets.load(secretsFile);
+        const secrets = await Secrets.load(secretsFile);
         const nativeAddress = secrets.required("user.native.address");
         logger.info(`User ${nativeAddress} started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
@@ -65,7 +65,7 @@ export class PoolUserBotCommands {
 
     async exitPool(poolAddress: string, tokenAmountWei: BNish) {
         const pool = await CollateralPool.at(poolAddress);
-        const res = await pool.exit(tokenAmountWei, TokenExitType.KEEP_RATIO, { from: this.nativeAddress });
+        const res = await pool.exit(tokenAmountWei, TokenExitType.MINIMIZE_FEE_DEBT, { from: this.nativeAddress });
         return requiredEventArgs(res, "Exited");
     }
 

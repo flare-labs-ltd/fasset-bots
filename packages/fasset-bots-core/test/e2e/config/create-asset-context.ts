@@ -28,7 +28,7 @@ describe("Create asset context tests", () => {
     let accounts: string[];
 
     before(async () => {
-        secrets = Secrets.load(TEST_SECRETS);
+        secrets = await Secrets.load(TEST_SECRETS);
         accounts = await initWeb3(COSTON_RPC, getNativeAccounts(secrets), null);
     });
 
@@ -68,7 +68,7 @@ describe("Create asset context tests", () => {
     it("Should create simplified asset context from address updater and not define attestationProvider", async () => {
         actorRunConfig = simpleLoadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER);
         actorRunConfig.attestationProviderUrls = undefined;
-        Object.values(actorRunConfig.fAssets)[0].indexerUrl = undefined;
+        Object.values(actorRunConfig.fAssets)[0].indexerUrls = [];
         const commonConfig = await createBotConfig("common", secrets, actorRunConfig, accounts[0]);
         const context = await createLiquidatorContext(commonConfig, firstValue(actorConfig.fAssets)!);
         expect(context).is.not.null;

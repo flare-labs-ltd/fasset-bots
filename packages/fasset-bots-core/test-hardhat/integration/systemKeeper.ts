@@ -57,7 +57,7 @@ describe("System keeper tests", () => {
         const systemKeeper = await createTestSystemKeeper(systemKeeperAddress, state);
         const spyLiquidation = spy.on(systemKeeper, "checkAllAgentsForLiquidation");
         // mock price changes
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         // check collateral ratio after price changes
         await systemKeeper.runStep();
         expect(spyLiquidation).to.have.been.called.once;
@@ -74,38 +74,38 @@ describe("System keeper tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.CCB);
         // check again to fulfill branch test
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         const status2_again = await getAgentStatus(agentBot);
         assert.equal(status2_again, AgentStatus.CCB);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 7), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status3 = await getAgentStatus(agentBot);
         assert.equal(status3, AgentStatus.LIQUIDATION);
         // check again to fulfill branch test
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         const status3_again = await getAgentStatus(agentBot);
         assert.equal(status3_again, AgentStatus.LIQUIDATION);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 4), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 4), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 4), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 4), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status4 = await getAgentStatus(agentBot);
@@ -127,10 +127,10 @@ describe("System keeper tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status2 = await getAgentStatus(agentBot);
@@ -139,7 +139,7 @@ describe("System keeper tests", () => {
         const settings = await context.assetManager.getSettings();
         await time.increase(settings.ccbTimeSeconds);
         // add trigger to execute
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         const status3 = await getAgentStatus(agentBot);
         assert.equal(status3, AgentStatus.LIQUIDATION);
@@ -161,19 +161,19 @@ describe("System keeper tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.CCB);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(15, 5), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(15, 5), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(15, 5), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(15, 5), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // no changes
         await systemKeeper.runStep();
@@ -195,37 +195,37 @@ describe("System keeper tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 7), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status2 = await getAgentStatus(agentBot);
         assert.equal(status2, AgentStatus.LIQUIDATION);
         // // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 4), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 4), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 4), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 4), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status4 = await getAgentStatus(agentBot);
         assert.equal(status4, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 5), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 5), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 5), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status5 = await getAgentStatus(agentBot);
         assert.equal(status5, AgentStatus.CCB);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 4), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 4), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 4), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 4), 0);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await systemKeeper.runStep();
         // check agent status
         const status7 = await getAgentStatus(agentBot);
@@ -268,7 +268,7 @@ describe("System keeper tests", () => {
         const agentBot = await createTestAgentBot(context, orm, ownerAddress);
         await mockState.getAgentTriggerAdd(agentBot.agent.vaultAddress);
         // mock price changes
-        await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
+        await trackedStateContext.priceStore.finalizePrices();
         // check collateral ratio after price changes
         await systemKeeper.runStep();
         expect(spyLiquidation).to.have.been.called.once;

@@ -1,3 +1,4 @@
+import BN from "bn.js";
 import { time } from "@openzeppelin/test-helpers";
 import { assert, expect, spy, use } from "chai";
 import spies from "chai-spies";
@@ -12,6 +13,7 @@ import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, getAgentStatus } from "../test-utils/helpers";
+import { assetPriceForAgentCr } from "../test-utils/calculations";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -59,7 +61,7 @@ describe("Liquidator tests", () => {
     //     const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
     //     const spyLiquidation = spy.on(liquidator, "checkAllAgentsForLiquidation");
     //     // mock price changes
-    //     await trackedStateContext.ftsoManager.mockFinalizePriceEpoch();
+    //     await trackedStateContext.priceStore.finalizePrices();
     //     // check collateral ratio after price changes
     //     await liquidator.runStep();
     //     expect(spyLiquidation).to.have.been.called.once;
@@ -76,12 +78,12 @@ describe("Liquidator tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 7), 0);
         // FAsset balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await liquidator.runStep();
         // check agent status -> did not change as liquidator has not fassets to liquidate
         const status3 = await getAgentStatus(agentBot);
@@ -106,12 +108,12 @@ describe("Liquidator tests", () => {
         const status1 = await getAgentStatus(agentBot);
         assert.equal(status1, AgentStatus.NORMAL);
         // change prices
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 7), 0);
         // FAsset balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
         // mock price changes and run liquidation trigger
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.finalizePrices();
         await liquidator.runStep();
         // check agent status
         const status3 = await getAgentStatus(agentBot);
@@ -144,8 +146,8 @@ describe("Liquidator tests", () => {
         const minted = await minter.executeMinting(crt, txHash0);
         await agentBot.runStep(orm.em);
         // price change
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 7), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 7), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 7), 0);
         // liquidator "buys" f-assets
         await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
         // FAsset and collateral balance
@@ -185,9 +187,9 @@ describe("Liquidator tests", () => {
         const minted = await minter.executeMinting(crt, txHash0);
         await agentBot.runStep(orm.em);
         // price change
-        await context.assetFtso.setCurrentPrice(toBNExp(2, 6), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(2, 6), 0);
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(2, 6), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(2, 6), 0);
+        await context.priceStore.finalizePrices();
         // liquidator "buys" f-assets
         const poolFees = await agentBot.agent.poolFeeBalance();
         await agentBot.agent.withdrawPoolFees(poolFees, liquidator.address);
@@ -226,9 +228,9 @@ describe("Liquidator tests", () => {
         const minted = await minter.executeMinting(crt, txHash0);
         await agentBot.runStep(orm.em);
         // price change
-        await context.assetFtso.setCurrentPrice(toBNExp(10, 6), 0);
-        await context.assetFtso.setCurrentPriceFromTrustedProviders(toBNExp(10, 6), 0);
-        await context.ftsoManager.mockFinalizePriceEpoch();
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 6), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 6), 0);
+        await context.priceStore.finalizePrices();
         // liquidator "buys" f-assets
         const poolFees = await agentBot.agent.poolFeeBalance();
         await agentBot.agent.withdrawPoolFees(poolFees, liquidator.address);
@@ -344,5 +346,60 @@ describe("Liquidator tests", () => {
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
         expect(Number(fBalanceBefore)).to.be.gt(Number(fBalanceAfter));
         expect(spyLiquidation).to.have.been.called.once;
+    });
+
+    it("should put an agent into ccb liquidation, then liquidate it when able to", async () => {
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[82]);
+        // vaultCollateralToken
+        const collateralType = await agentBot.agent.getVaultCollateral()
+        const minter = await createTestMinter(context, liquidator.address, chain);
+        await liquidator.runStep();
+        // check agent status
+        const status1 = await getAgentStatus(agentBot);
+        assert.equal(status1, AgentStatus.NORMAL);
+        // perform minting
+        const lots = 3000;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await agentBot.runStep(orm.em);
+        const txHash0 = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt, txHash0);
+        await agentBot.runStep(orm.em);
+        // calculate vault collateral price that brings CR to ccbMinCollateralRatioBIPS
+        const { 0: assetFtsoPrice, 2: assetFtsoDecimals } = await context.priceStore.getPrice(context.chainInfo.symbol);
+        const { 2: vaultFtsoDecimals } = await context.priceStore.getPrice("testUSDC");
+        const assetTokenDecimals = await context.fAsset.decimals();
+        const agentInfo = await agentBot.agent.getAgentInfo();
+        const vaultTokenPrice = assetPriceForAgentCr(
+            toBN(collateralType.ccbMinCollateralRatioBIPS).addn(7),
+            toBN(agentInfo.mintedUBA),
+            toBN(agentInfo.totalVaultCollateralWei),
+            assetFtsoPrice,
+            Number(assetFtsoDecimals),
+            Number(assetTokenDecimals),
+            Number(vaultFtsoDecimals),
+            Number(collateralType.decimals),
+        )
+        await context.priceStore.setCurrentPrice("testUSDC", vaultTokenPrice, 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders("testUSDC", vaultTokenPrice, 0);
+        await context.priceStore.finalizePrices();
+        // check that collateral ratios and agent status are set up correctly for the upcomming liquidations
+        const agentInfo2 = await agentBot.agent.getAgentInfo();
+        expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.gte(Number(collateralType.ccbMinCollateralRatioBIPS));
+        expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.lte(Number(collateralType.ccbMinCollateralRatioBIPS) + 10);
+        expect(Number(agentInfo2.status)).equals(AgentStatus.NORMAL);
+        // expect to trigger CCB
+        await liquidator.runStep();
+        const agentInfo3 = await agentBot.agent.getAgentInfo();
+        expect(Number(agentInfo3.status)).equals(AgentStatus.CCB);
+        // liquidate after ccb
+        const settings = await context.assetManager.getSettings();
+        await time.increase(settings.ccbTimeSeconds);
+        await liquidator.runStep();
+        // expect that the agent was pulled out of liquidation
+        await context.assetManager.endLiquidation(agentBot.agent.vaultAddress);
+        const agentInfo4 = await agentBot.agent.getAgentInfo();
+        expect(Number(agentInfo4.status)).to.equal(AgentStatus.NORMAL);
     });
 });

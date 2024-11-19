@@ -5,7 +5,7 @@ import { ILiquidatorContext } from "../fasset-bots/IAssetBotContext";
 import { AgentStatus } from "../fasset/AssetManagerTypes";
 import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
-import { BN_ZERO, Currencies, formatFixed, squashSpace, toBN } from "../utils";
+import { BN_ZERO } from "../utils";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { logger } from "../utils/logger";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -18,7 +18,7 @@ export class Liquidator extends ActorBase {
     static deepCopyWithObjectCreate = true;
 
     notifier: LiquidatorNotifier;
-    liquidationStrategy: LiquidationStrategy;
+    liquidationStrategy: LiquidationStrategy<any>;
 
     constructor(
         public context: ILiquidatorContext,
@@ -71,7 +71,7 @@ export class Liquidator extends ActorBase {
             await this.state.readUnhandledEvents();
             logger.info(`Liquidator ${this.address} finished reading unhandled native events.`);
             // perform liquidations
-            await this.performLiquidations();
+            await this.handleLiquidations();
         } catch (error) {
             const fassetSymbol = this.context.fAssetSymbol;
             console.error(`Error handling events and performing liquidations for ${fassetSymbol} liquidator ${this.address}: ${error}`);
@@ -81,42 +81,26 @@ export class Liquidator extends ActorBase {
         }
     }
 
-    async performLiquidations() {
+    async handleLiquidations() {
         const timestamp = await latestBlockTimestampBN();
-        const liquidatingAgents = Array.from(this.state.agents.values())
-            .filter(agent => this.checkAgentForLiquidation(agent, timestamp));
-        if (liquidatingAgents.length > 0) {
-            const fassetSymbol = this.context.fAssetSymbol;
-            logger.info(`Liquidator ${this.address} performing ${fassetSymbol} liquidation on ${liquidatingAgents.length} agents.`);
-            // sort by decreasing minted amount
-            liquidatingAgents.sort((a, b) => -a.mintedUBA.cmp(b.mintedUBA));
-            for (const agent of liquidatingAgents) {
-                if (agent.mintedUBA.eq(BN_ZERO)) {
-                    continue;
-                }
-                const fbalance = await this.context.fAsset.balanceOf(this.address);
-                if (fbalance.eq(BN_ZERO)) {
-                    logger.info(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
-                    console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
-                    break;
-                }
-                await this.liquidateAgent(agent);
-            }
-        }
+        const agentCandidates = Array.from(this.state.agents.values()).filter(agent => agent.mintedUBA.gt(BN_ZERO));
+        const liquidatingAgents = agentCandidates.filter(agent => this.checkAgentForLiquidation(agent, timestamp));
+        const ccbAgents = agentCandidates.filter(agent => !liquidatingAgents.includes(agent) && agent.candidateForCcbLiquidation(timestamp));
+        await this.liquidationStrategy.performLiquidations([...liquidatingAgents, ...ccbAgents]);
+        const agentsInCcb = agentCandidates.filter(agent => !liquidatingAgents.includes(agent) && agent.candidateForCcbRegister(timestamp));
+        await this.registerCCBs(agentsInCcb);
     }
 
-    async liquidateAgent(agent: TrackedAgentState) {
-        const before = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
-        await this.liquidationStrategy.liquidate(agent);
-        const after = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
-        const diff = toBN(before.mintedUBA).sub(toBN(after.mintedUBA));
-        const cur = await Currencies.fasset(this.context);
-        const message = squashSpace`Liquidator ${this.address} liquidated agent ${agent.vaultAddress} for ${cur.format(diff)}.
-            Minted before: ${cur.format(before.mintedUBA)}, after: ${cur.format(after.mintedUBA)}.
-            Vault CR before: ${formatFixed(toBN(before.vaultCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.vaultCollateralRatioBIPS), 4)}.
-            Pool CR before: ${formatFixed(toBN(before.poolCollateralRatioBIPS), 4)}, after: ${formatFixed(toBN(after.poolCollateralRatioBIPS), 4)}.`;
-        logger.info(message);
-        console.log(message);
+    async registerCCBs(agents: TrackedAgentState[]) {
+        for (const agent of agents) {
+            try {
+                logger.info(`Liquidator ${this.address} registering ${this.context.fAssetSymbol} CCB liquidation of agent ${agent.vaultAddress}.`);
+                await this.context.assetManager.startLiquidation(agent.vaultAddress, { from: this.address });
+            } catch (e) {
+                logger.error(`Liquidator ${this.address} failed to register CCB liquidation of agent ${agent.vaultAddress}: ${e}`);
+                console.error(`Liquidator ${this.address} failed to register CCB liquidation of agent ${agent.vaultAddress}`);
+            }
+        }
     }
 
     /**
@@ -129,8 +113,7 @@ export class Liquidator extends ActorBase {
         }
         const newStatus = agent.possibleLiquidationTransition(timestamp);
         if (newStatus === AgentStatus.LIQUIDATION) {
-            const fassetSymbol = this.context.fAssetSymbol;
-            logger.info(`Liquidator ${this.address} found that ${fassetSymbol} agent ${agent.vaultAddress} has liquidation status.`);
+            logger.info(`Liquidator ${this.address} found that ${this.context.fAssetSymbol} agent ${agent.vaultAddress} has liquidation status.`);
             return true;
         }
         // not in liquidation

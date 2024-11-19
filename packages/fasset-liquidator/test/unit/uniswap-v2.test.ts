@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { isqrt, randBigInt } from '../utils'
+import { isqrt, randBigInt } from '../utils/numeric'
 import * as calc from '../calculations/calculations'
 import { reservesFromPriceAndSlippage, cappedReservesFromPriceAndSlippage, cappedAddedLiquidityFromSlippage } from '../calculations/slippage'
 import { addLiquidity, swap, swapOutput, swapToRatio, swapToPrice, swapAndChangeLiquidityToGetReserves } from './utils/uniswap-v2'

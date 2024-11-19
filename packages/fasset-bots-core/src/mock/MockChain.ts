@@ -3,7 +3,7 @@ import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_FAILED, 
 import { BNish, BN_ZERO, fail, systemTimestamp, toBN } from "../utils/helpers";
 import type { IBlockChainWallet, TransactionOptionsWithFee, SpentReceivedObject } from "../underlying-chain/interfaces/IBlockChainWallet";
 import BN from "bn.js";
-import { TransactionInfo, TransactionStatus } from "@flarelabs/simple-wallet";
+import { ITransactionMonitor, TransactionInfo, TransactionStatus } from "@flarelabs/simple-wallet";
 
 export type MockTransactionOptions = { status?: number };
 export type MockTransactionOptionsWithFee = TransactionOptionsWithFee & { status?: number };
@@ -220,25 +220,47 @@ export class MockChain implements IBlockChain {
     }
 }
 
+export class MockTransactionMonitor implements ITransactionMonitor {
+    static nextId = 1;
+    id = `monitor-${MockTransactionMonitor.nextId}`
+    monitoring = false;
+
+    getId(): string {
+        return this.id;
+    }
+
+    isMonitoring(): boolean {
+        return this.monitoring;
+    }
+
+    async startMonitoring(): Promise<boolean> {
+        this.monitoring = true;
+        return false;
+    }
+
+    async stopMonitoring(): Promise<void> {
+        this.monitoring = false;
+    }
+
+    async runningMonitorId(): Promise<string | null> {
+        return this.monitoring ? this.id : null;
+    }
+}
+
 // UTXO implementation
 export class MockChainWallet implements IBlockChainWallet {
     static deepCopyWithObjectCreate = true;
 
     transactionList: MockChainTransaction[] = []
+
     constructor(public chain: MockChain) {}
 
-    monitoring = false;
-
-    async isMonitoring(): Promise<boolean> {
-        return this.monitoring;
+    monitoringId(): string {
+        return "";
     }
 
-    async startMonitoringTransactionProgress(): Promise<void> {
-        this.monitoring = true;
-    }
-
-    async stopMonitoring(): Promise<void> {
-        this.monitoring = false;
+    async createMonitor(): Promise<ITransactionMonitor> {
+        return new MockTransactionMonitor();
     }
 
     async deleteAccount(from: string, to: string, reference: string | null, options?: TransactionOptionsWithFee | undefined): Promise<number> {
@@ -273,6 +295,10 @@ export class MockChainWallet implements IBlockChainWallet {
         const transaction = this.createTransaction(from, to, value, reference, options);
         this.chain.addTransaction(transaction);
         this.transactionList.push(transaction);
+        return transaction.hash;
+    }
+    async waitForTransactionFinalization(id: number): Promise<string> {
+        const transaction = this.transactionList[id];
         return transaction.hash;
     }
     async addMultiTransaction(spent: SpentReceivedObject, received: SpentReceivedObject, reference: string | null, options?: MockTransactionOptions): Promise<string> {

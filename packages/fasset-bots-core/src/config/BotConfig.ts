@@ -15,9 +15,7 @@ import { StateConnectorClientHelper } from "../underlying-chain/StateConnectorCl
 import { VerificationPrivateApiClient } from "../underlying-chain/VerificationPrivateApiClient";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import {
-    FeeServiceOptions,
     IBlockChainWallet,
-    WalletApi,
 } from "../underlying-chain/interfaces/IBlockChainWallet";
 import { IStateConnectorClient } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerificationApiClient";
@@ -26,7 +24,8 @@ import { agentNotifierThrottlingTimes } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport, ThrottlingNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, ChallengerBotStrategyDefinition, LiquidatorBotStrategyDefinition, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./config-files/BotStrategyConfig";
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
@@ -41,6 +40,7 @@ export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     nativeChainInfo: NativeChainInfo;
     contractRetriever: AssetContractRetriever;
     // liquidation strategies for liquidator and challenger
+    autoUpdateContracts: boolean // used to auto update contract, when ContractChanged event
     liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator (optional)
     challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenger (optional)
 }
@@ -53,7 +53,7 @@ export interface BotFAssetConfig {
     stateConnector?: IStateConnectorClient; // for agent bot, user, challenger and timeKeeper
     verificationClient?: IVerificationApiClient; // only for agent bot and user
     assetManager: IIAssetManagerInstance;
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    priceChangeEmitter: string; // the name of the contract (in Contracts file) that emits price change event
     agentBotSettings?: AgentBotSettings;
 }
 
@@ -98,7 +98,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         const fAssets: Map<string, BotFAssetConfig> = new Map();
         for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
             const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, configFile.agentBotSettings,
-                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions, fassetInfo.feeServiceOptions, fassetInfo.fallbackApis);
+                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
             fAssets.set(symbol, fassetConfig);
         }
         const result: BotConfig = {
@@ -111,6 +111,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
+            autoUpdateContracts: configFile.prioritizeAddressUpdater
         };
         return result;
     } catch (error) {
@@ -161,8 +162,6 @@ export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs:
  * @param attestationProviderUrls list of attestation provider's urls
  * @param submitter address from which the transactions get submitted
  * @param walletOptions
- * @param feeServiceOptions
- * @param fallbackApis
  * @returns instance of BotFAssetConfig
  */
 export async function createBotFAssetConfig(
@@ -176,8 +175,6 @@ export async function createBotFAssetConfig(
     attestationProviderUrls: string[] | undefined,
     submitter: string | undefined,
     walletOptions?: StuckTransaction,
-    feeServiceOptions?: FeeServiceOptions,
-    fallbackApis?: WalletApi[],
 ): Promise<BotFAssetConfig> {
     const assetManager = retriever.getAssetManager(fAssetSymbol);
     const settings = await assetManager.getSettings();
@@ -189,8 +186,8 @@ export async function createBotFAssetConfig(
         priceChangeEmitter: fassetInfo.priceChangeEmitter,
     };
     if (type === "agent" || type === "user") {
-        assertNotNullCmd(fassetInfo.walletUrl, `Missing walletUrl in FAsset type ${fAssetSymbol}`);
-        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrl, walletOptions, feeServiceOptions, fallbackApis);
+        assertCmd(fassetInfo.walletUrls != null && fassetInfo.walletUrls.length > 0, `At least one walletUrl in FAsset type ${fAssetSymbol} is required`);
+        result.wallet = await createBlockchainWalletHelper(secrets, chainId, em!, fassetInfo.walletUrls, walletOptions);
     }
     if (type === "agent") {
         assertNotNullCmd(agentSettings, `Missing agentBotSettings in config`);
@@ -198,14 +195,14 @@ export async function createBotFAssetConfig(
         result.agentBotSettings = createAgentBotSettings(agentSettings, agentSettings.fAssets[fAssetSymbol], result.chainInfo);
     }
     if (type === "agent" || type === "user" || type === "keeper") {
-        assertNotNullCmd(fassetInfo.indexerUrl, "Missing indexerUrl in FAsset type ${fAssetSymbol}");
+        assertCmd(fassetInfo.indexerUrls != null && fassetInfo.indexerUrls.length > 0, "At least one indexer url is required");
         assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
         assertNotNull(submitter);   // if this is missing, it is program error
         const stateConnectorAddress = await retriever.getContractAddress("StateConnector");
-        const apiKey = indexerApiKey(secrets);
-        result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrl, apiKey);
-        result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrl, apiKey);
-        result.stateConnector = await createStateConnectorClient(fassetInfo.indexerUrl, apiKey, attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter);
+        const apiKeys: string[] = indexerApiKey(secrets, fassetInfo.indexerUrls);
+        result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrls, apiKeys);
+        result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrls, apiKeys);
+        result.stateConnector = await createStateConnectorClient(fassetInfo.indexerUrls, apiKeys, attestationProviderUrls, settings.scProofVerifier, stateConnectorAddress, submitter);
     }
     return result;
 }
@@ -220,6 +217,7 @@ export function createChainInfo(chainId: ChainId, fassetInfo: BotFAssetInfo, set
         amgDecimals: Number(settings.assetMintingDecimals),
         requireEOAProof: settings.requireEOAAddressProof,
         minimumAccountBalance: toBNExp(fassetInfo.minimumAccountBalance ?? "0", decimals),
+        useOwnerUnderlyingAddressForPayingFees: fassetInfo.useOwnerUnderlyingAddressForPayingFees ?? false,
     }
 }
 
@@ -245,9 +243,9 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
  * @param indexerUrl indexer's url
  * @returns instance of BlockchainIndexerHelper
  */
-export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrl: string, apiKey: string): BlockchainIndexerHelper {
+export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrls: string[], apiKeys: string[]): BlockchainIndexerHelper {
     requireSupportedChainId(chainId);
-    return new BlockchainIndexerHelper(indexerUrl, chainId, apiKey);
+    return new BlockchainIndexerHelper(indexerUrls, chainId, apiKeys);
 }
 
 /**
@@ -257,21 +255,17 @@ export function createBlockchainIndexerHelper(chainId: ChainId, indexerUrl: stri
  * @param em entity manager (optional)
  * @param walletUrl chain's url
  * @param options
- * @param feeServiceOptions
- * @param fallbackApis
  * @returns instance of BlockchainWalletHelper
  */
 export async function createBlockchainWalletHelper(
     secrets: Secrets,
     chainId: ChainId,
     em: EntityManager,
-    walletUrl: string,
+    walletUrls: string[],
     options?: StuckTransaction,
-    feeServiceOptions?: FeeServiceOptions,
-    fallbackApis?: WalletApi[],
 ): Promise<BlockchainWalletHelper> {
     requireSupportedChainId(chainId);
-    const walletClient = await createWalletClient(secrets, chainId, walletUrl, em, options, feeServiceOptions, fallbackApis);
+    const walletClient = await createWalletClient(secrets, chainId, walletUrls, em, options);
     const walletKeys = DBWalletKeys.from(requireNotNull(em), secrets);
     return new BlockchainWalletHelper(walletClient, walletKeys);
 }
@@ -287,18 +281,18 @@ export async function createBlockchainWalletHelper(
  * @returns instance of StateConnectorClientHelper
  */
 export async function createStateConnectorClient(
-    indexerWebServerUrl: string,
-    indexerApiKey: string,
+    indexerWebServerUrls: string[],
+    indexerApiKeys: string[],
     attestationProviderUrls: string[],
     scProofVerifierAddress: string,
     stateConnectorAddress: string,
     submitter: string
 ): Promise<StateConnectorClientHelper> {
-    return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrl, indexerApiKey, submitter);
+    return await StateConnectorClientHelper.create(attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, indexerWebServerUrls, indexerApiKeys, submitter);
 }
 
-export async function createVerificationApiClient(indexerWebServerUrl: string, indexerApiKey: string): Promise<VerificationPrivateApiClient> {
-    return new VerificationPrivateApiClient(indexerWebServerUrl, indexerApiKey);
+export async function createVerificationApiClient(indexerWebServerUrls: string[], indexerApiKeys: string[]): Promise<VerificationPrivateApiClient> {
+    return new VerificationPrivateApiClient(indexerWebServerUrls, indexerApiKeys);
 }
 
 /**
@@ -312,6 +306,11 @@ export async function closeBotConfig(config: BotConfig) {
 /**
  * Extract indexer api key.
  */
-export function indexerApiKey(secrets: Secrets) {
-    return secrets.required("apiKey.indexer");
+export function indexerApiKey(secrets: Secrets, indexerUrls: string[]): string[] {
+    const apiTokenKey = secrets.requiredOrRequiredArray("apiKey.indexer");
+    if (Array.isArray(apiTokenKey) && apiTokenKey.length != indexerUrls.length) {
+        throw new Error(`Cannot create indexers. The number of URLs and API keys do not match.`);
+    }
+    const apiTokenKeys = Array.isArray(apiTokenKey) ? apiTokenKey : Array(indexerUrls.length).fill(apiTokenKey);
+    return apiTokenKeys;
 }

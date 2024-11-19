@@ -1,17 +1,7 @@
-import { FeeParams, RateLimitOptions, TransactionInfo } from "../../../../simple-wallet/src/index";
+import { FeeParams, ITransactionMonitor, TransactionInfo } from "@flarelabs/simple-wallet";
 import type BN from "bn.js";
 
 type NumberLike = BN | number | string;
-
-export interface FeeServiceOptions {
-    rateLimitOptions?: RateLimitOptions;
-    sleepTimeMs: number;
-    numberOfBlocksInHistory: number;
-}
-
-export interface WalletApi {
-    url: string;
-}
 
 export type UTXO = {
     value: NumberLike;
@@ -26,6 +16,7 @@ export interface TransactionOptionsWithFee {
     // depending on chain, set either maxFee or (gasPrice, gasLimit), but not both
     // if not used, fee/gas limits will be calculated and added automatically by the wallet
     maxFee?: NumberLike;
+    maxPaymentForFeeSource?: NumberLike,
     gasPrice?: NumberLike;
     gasLimit?: NumberLike;
 }
@@ -43,6 +34,7 @@ export interface IBlockChainWallet {
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
+        feeSourceAddress?: string
     ): Promise<number>;
 
     // Add a generic transaction from a set of source addresses to a set of target addresses.
@@ -74,8 +66,7 @@ export interface IBlockChainWallet {
         options?: TransactionOptionsWithFee
     ): Promise<number>;
 
-    // Waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)
-    // Returns transaction hash
+    // Adds transaction and waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)
     addTransactionAndWaitForItsFinalization(
         sourceAddress: string,
         targetAddress: string,
@@ -86,11 +77,15 @@ export interface IBlockChainWallet {
         executeUntilTimestamp?: BN,
     ): Promise<string>;
 
+    // Waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)
+    waitForTransactionFinalization(id: number): Promise<string>;
+
     // Returns info about transaction (txHash, status, replacedById)
     checkTransactionStatus(txDbId: number): Promise<TransactionInfo>;
 
     // Background tasks
-    startMonitoringTransactionProgress(): Promise<void>;
-    stopMonitoring(): Promise<void>;
-    isMonitoring(): Promise<boolean>;
+    createMonitor(): Promise<ITransactionMonitor>;
+
+    //
+    monitoringId(): string;
 }

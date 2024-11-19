@@ -1,5 +1,4 @@
-import { FeeServiceOptions, WalletApi } from "../../underlying-chain/interfaces/IBlockChainWallet";
-import { StuckTransaction } from "../../../../simple-wallet/src/index";
+import type { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./BotStrategyConfig";
 
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
 
@@ -24,19 +23,26 @@ export interface OrmConfigOptions {
     [key: string]: any;
 }
 
+interface StuckTransaction {
+    blockOffset?: number; // How many block to wait for transaction to be validated
+    retries?: number; // How many times should transaction retry to successfully submit
+    feeIncrease?: number; // Factor to increase fee in resubmitting process
+    executionBlockOffset?: number; //
+    enoughConfirmations?: number; // number of confirmations to be declared successful
+}
+
 export interface BotFAssetInfo {
     chainId: string;
     tokenName: string;       // underlying token name
     tokenSymbol: string;     // underlying token symbol
     tokenDecimals: number;   // decimals for both underlying token and fasset
-    walletUrl?: string; // for agent bot and user
-    indexerUrl?: string; // for agent bot, user, challenger and timeKeeper
-    priceChangeEmitter?: string; // the name of the contract (in Contracts file) that emits 'PriceEpochFinalized' event (optional, default is 'FtsoManager')
+    walletUrls?: string[]; // for agent bot and user
+    indexerUrls?: string[]; // for agent bot, user, challenger and timeKeeper
+    priceChangeEmitter: string; // the name of the contract (in Contracts file) that emits price change event
     minimumAccountBalance?: string; // only needed for XRP
     faucet?: string;
-    feeServiceOptions?: FeeServiceOptions;
-    fallbackApis?: WalletApi[];
     stuckTransactionOptions?: StuckTransaction;
+    useOwnerUnderlyingAddressForPayingFees?: boolean
 }
 
 export interface BotNativeChainInfo {
@@ -53,24 +59,6 @@ export interface BotNativeChainInfo {
 export interface ApiNotifierConfig {
     apiUrl: string;
     apiKey: string;
-}
-
-export interface DexLiquidationStrategyConfig {
-    address: string;
-    maxAllowedSlippage: number;
-}
-export interface DexChallengeStrategyConfig {
-    address: string;
-    maxAllowedSlippage: number;
-};
-
-export interface LiquidatorBotStrategyDefinition {
-    className: string;
-    config?: DexLiquidationStrategyConfig;
-}
-export interface ChallengerBotStrategyDefinition {
-    className: string;
-    config?: DexChallengeStrategyConfig;
 }
 
 export interface BotConfigFile {
@@ -93,6 +81,9 @@ export interface BotConfigFile {
     contractsJsonFile?: string;
     // notifier apis
     apiNotifierConfigs?: ApiNotifierConfig[]
+    // price publisher settings
+    pricePublisherLoopDelayMs?: number; // only for price publisher
+    priceFeedApiUrls?: string[]; // only for price publisher
     // liquidation strategies for liquidator and challenger
     liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator
     challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenge

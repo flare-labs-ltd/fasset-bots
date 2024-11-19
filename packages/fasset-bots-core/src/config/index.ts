@@ -1,6 +1,7 @@
 export * from "./BotConfig";
 export * from "./config-file-loader";
 export * from "./config-files/BotConfigFile";
+export * from "./config-files/BotStrategyConfig";
 export * from "./config-files/AgentSettingsConfig";
 export * from "./config-files/SecretsFile";
 export * from "./AgentVaultInitSettings";
@@ -8,4 +9,5 @@ export * from "./contracts";
 export * from "./create-asset-context";
 export * from "./create-wallet-client";
 export * from "./secrets";
+export * from "./orm";
 export { overrideAndCreateOrm } from "../mikro-orm.config";

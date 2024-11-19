@@ -1,6 +1,4 @@
-import { IService } from "../../interfaces/IService";
 import {
-    BTC_DOGE_DEC_PLACES,
     BTC_LOW_FEE_PER_KB,
     BTC_MID_FEE_PER_KB,
     ChainType,
@@ -16,32 +14,31 @@ import {
     UTXO_OVERHEAD_SIZE_SEGWIT,
 } from "../../utils/constants";
 import BN from "bn.js";
-import { ServiceRepository } from "../../ServiceRepository";
-import { BlockchainAPIWrapper } from "../../blockchain-apis/UTXOBlockchainAPIWrapper";
-import { toBNExp } from "../../utils/bnutils";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
-import { BlockchainFeeService } from "../../fee-service/fee-service";
-import { UTXOFeeParams } from "../../interfaces/IWalletTransaction";
-import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getEstimatedNumberOfOutputs, getTransactionDescendants } from "./UTXOUtils";
+import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
-import { errorMessage } from "../../utils/axios-error-utils";
+import { errorMessage } from "../../utils/axios-utils";
 import { updateTransactionEntity } from "../../db/dbutils";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
+import { IUtxoWalletServices } from "./IUtxoWalletServices";
 
 export enum FeeStatus {
     LOW, MEDIUM, HIGH
 }
 
-export class TransactionFeeService implements IService {
-    readonly feeDecileIndex: number;
+export class TransactionFeeService {
+    readonly services: IUtxoWalletServices;
     readonly feeIncrease: number;
     readonly chainType: ChainType;
+    readonly blockchainAPI: UTXOBlockchainAPI;
 
-    constructor(chainType: ChainType, feeDecileIndex: number, feeIncrease: number) {
+    constructor(services: IUtxoWalletServices, chainType: ChainType, feeIncrease: number) {
+        this.services = services;
         this.chainType = chainType;
-        this.feeDecileIndex = feeDecileIndex;
         this.feeIncrease = feeIncrease;
+        this.blockchainAPI = services.blockchainAPI;
     }
 
     /**
@@ -49,19 +46,20 @@ export class TransactionFeeService implements IService {
      */
     async getFeePerKB(): Promise<BN> {
         try {
-            const feeService = ServiceRepository.get(this.chainType, BlockchainFeeService);
-            const mvgAvgFee = await feeService.getLatestFeeStats().movingAverageWeightedFee;
-            if (mvgAvgFee.gtn(0)) {
-                return enforceMinimalAndMaximalFee(this.chainType, mvgAvgFee);
-            } else {
-                return await this.getCurrentFeeRate();
+            const feeService = this.services.feeService;
+            if (feeService) {
+                const movingAverageWeightedFee = feeService.getLatestFeeStats();
+                if (movingAverageWeightedFee?.gtn(0)) {
+                    return enforceMinimalAndMaximalFee(this.chainType, movingAverageWeightedFee);
+                }
             }
         } catch (error) {
-            return await this.getCurrentFeeRate();
+            logger.error(`Cannot obtain fee per kb ${errorMessage(error)}`);
         }
+        return await this.getCurrentFeeRate();
     }
 
-    async getEstimateFee(inputLength: number, outputLength: number = 2, feePerKb?: BN ): Promise<BN> {
+    async getEstimateFee(inputLength: number, outputLength = 2, feePerKb?: BN ): Promise<BN> {
         let feePerKbToUse: BN;
         if (feePerKb) {
             feePerKbToUse = feePerKb;
@@ -76,48 +74,18 @@ export class TransactionFeeService implements IService {
         }
     }
 
-    private async getCurrentFeeRate(nextBlocks: number = 12): Promise<BN> {
+    private async getCurrentFeeRate(): Promise<BN> {
         try {
-            const fee = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getCurrentFeeRate(nextBlocks);
+            const fee = await this.blockchainAPI.getCurrentFeeRate();
             if (fee.toString() === "-1" || fee === 0) {
-                throw new Error(`Cannot obtain fee rate: ${fee.toString()}`);
+                logger.warn(`Cannot obtain valid fee rate ${fee.toString()}`);
+                return getDefaultFeePerKB(this.chainType);
             }
-            const rateInSatoshies = toBNExp(fee, BTC_DOGE_DEC_PLACES);
+            const rateInSatoshies = toBN(fee);
             return enforceMinimalAndMaximalFee(this.chainType, rateInSatoshies.muln(this.feeIncrease));
-        } catch (e) {
-            logger.error(`Cannot obtain fee rate ${errorMessage(e)}`);
-            return getDefaultFeePerKB(this.chainType);
-        }
-    }
-
-    /**
-     * @param {UTXOFeeParams} params - basic data needed to estimate fee
-     * @returns {BN} - current transaction/network fee in satoshis
-     */
-    async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
-        try {
-            const utxos = await ServiceRepository.get(this.chainType, BlockchainAPIWrapper).getUTXOsFromMempool(params.source);
-            const numOfOut = getEstimatedNumberOfOutputs(params.amount, params.note);
-            let est_fee = await this.getEstimateFee(utxos.length, numOfOut);
-
-            if (params.amount == null) {
-                return est_fee;
-            } else {
-                const neededUTXOs: any[] = [];
-                let sum = toBN(0);
-                for (const utxo of utxos) {
-                    neededUTXOs.push(utxo);
-                    sum = sum.add(toBN(utxo.value));
-                    est_fee = await this.getEstimateFee(neededUTXOs.length, numOfOut);
-                    if (sum.gt(params.amount.add(est_fee))) {
-                        break;
-                    }
-                }
-                return est_fee;
-            }
         } catch (error) {
-            logger.error(`Cannot get current transaction fee for params ${params.source}, ${params.destination} and ${params.amount}: ${errorMessage(error)}`);
-            throw error;
+            logger.warn(`Cannot obtain fee rate ${errorMessage(error)}`);
+            return getDefaultFeePerKB(this.chainType);
         }
     }
 
@@ -127,7 +95,7 @@ export class TransactionFeeService implements IService {
         /* istanbul ignore next */
         for (const txEnt of descendants) {
             logger.info(`Transaction ${oldTx.id} has descendant ${txEnt.id}`);
-            await updateTransactionEntity(em, txEnt.id, async (txEnt) => {
+            await updateTransactionEntity(em, txEnt.id, (txEnt) => {
                 txEnt.ancestor = oldTx;
             });
             feeToCover = feeToCover.add(txEnt.fee ?? new BN(0))

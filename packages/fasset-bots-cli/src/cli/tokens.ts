@@ -4,10 +4,11 @@ import "source-map-support/register";
 import { BlockchainWalletHelper, ChainId, DBWalletKeys, VerificationPrivateApiClient } from "@flarelabs/fasset-bots-core";
 import {
     BotConfigFile, BotFAssetInfo, ChainAccount, Secrets, createBlockchainWalletHelper, createBotConfig, createBotOrm, createNativeContext,
+    indexerApiKey,
     loadConfigFile, loadContracts, overrideAndCreateOrm,
 } from "@flarelabs/fasset-bots-core/config";
 import {
-    CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertNotNullCmd, authenticatedHttpProvider, initWeb3, logger,
+    CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertCmd, assertNotNullCmd, authenticatedHttpProvider, initWeb3, logger,
     requireNotNull, requiredAddressBalance, sendWeb3Transaction, toBN
 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";
@@ -33,7 +34,7 @@ program
     .action(async (tokenSymbol: string, from: string, to: string, amount: string, cmdOptions: { reference?: string, baseUnit?: boolean }) => {
         const options: { config: string; secrets: string } = program.opts();
         const config = loadConfigFile(options.config);
-        const secrets = Secrets.load(options.secrets);
+        const secrets = await Secrets.load(options.secrets);
         const token = findToken(config, tokenSymbol);
         const accountFrom = await getAccount(config, secrets, token, from);
         const addressTo = await getAddress(secrets, token, to);
@@ -62,7 +63,8 @@ program
             }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.stuckTransactionOptions, chainInfo.feeServiceOptions, chainInfo.fallbackApis);
+            assertCmd(chainInfo.walletUrls != null && chainInfo.walletUrls.length > 0, `At least one walletUrl for chain ${chainId} is required`);
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, chainInfo.walletUrls, chainInfo.stuckTransactionOptions);
             await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
             const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
@@ -101,7 +103,7 @@ program
     .action(async (tokenSymbol: string, addressOrKey: string, cmdOptions: { baseUnit?: boolean }) => {
         const options: { config: string; secrets: string } = program.opts();
         const config = loadConfigFile(options.config);
-        const secrets = Secrets.load(options.secrets);
+        const secrets = await Secrets.load(options.secrets);
         const token = findToken(config, tokenSymbol);
         const address = await getAddress(secrets, token, addressOrKey);
         if (token.type === "nat") {
@@ -129,7 +131,8 @@ program
             }
             const chainInfo = token.chainInfo;
             const chainId = ChainId.from(chainInfo.chainId);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, requireNotNull(chainInfo.walletUrl), chainInfo.stuckTransactionOptions, chainInfo.feeServiceOptions, chainInfo.fallbackApis);
+            assertCmd(chainInfo.walletUrls != null && chainInfo.walletUrls.length > 0, `At least one walletUrl for chain ${chainId} is required`);
+            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, chainInfo.walletUrls, chainInfo.stuckTransactionOptions);
             const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
             const amount = await balance.balance(address);
             console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));
@@ -253,9 +256,9 @@ async function getAccountFromDBWallet(config: BotConfigFile, secrets: Secrets, a
 async function validateAddressForToken(secrets: Secrets, token: TokenType, address: string) {
     if (token.type === "underlying") {
         const chainId = ChainId.from(token.chainInfo.chainId);
-        assertNotNullCmd(token.chainInfo.indexerUrl, `Missing indexerUrl for chain ${chainId}`);
-        assertNotNullCmd(secrets.data.apiKey.indexer, `Missing indexer api key in secrets`);
-        const verificationClient = new VerificationPrivateApiClient(token.chainInfo.indexerUrl, secrets.data.apiKey.indexer);
+        assertCmd(token.chainInfo.indexerUrls != null && token.chainInfo.indexerUrls.length > 0, `At least one indexerUrl for chain ${chainId} is required`);
+        const apiKeys: string[] = indexerApiKey(secrets, token.chainInfo.indexerUrls);
+        const verificationClient = new VerificationPrivateApiClient(token.chainInfo.indexerUrls, apiKeys);
         const result = await verificationClient.checkAddressValidity(chainId.sourceId, address)
             .catch(e => {
                 logger.error(`Error validating address ${address} on chain ${chainId}`);

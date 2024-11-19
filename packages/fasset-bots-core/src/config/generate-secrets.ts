@@ -34,8 +34,10 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     const secrets: SecretsFile = { apiKey: {} };
     secrets.apiKey.native_rpc = "";
     if (users.includes("agent") || users.includes("user")) {
-        secrets.apiKey.xrp_rpc = "";
-        secrets.apiKey.indexer = "";
+        secrets.apiKey.testXRP_rpc = [];
+        secrets.apiKey.testBTC_rpc = [];
+        secrets.apiKey.testDOGE_rpc = [];
+        secrets.apiKey.indexer = [];
     }
     if (users.includes("agent")) {
         secrets.apiKey.agent_bot = crypto.randomBytes(32).toString("hex");
@@ -62,6 +64,8 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
         secrets.liquidator = generateNativeAccount();
         secrets.systemKeeper = generateNativeAccount();
         secrets.timeKeeper = generateNativeAccount();
+        secrets.pricePublisher = generateNativeAccount();
+        secrets.apiKey.price_publisher_api = ""
     }
     return secrets;
 }
@@ -74,13 +78,13 @@ export function generateUnderlyingAccount(chainName: string): ICreateWalletRespo
 
 function createStubWalletClient(chainId: ChainId): WalletAccount {
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
-        const inTestnet: boolean = ChainId.testBTC ? true : false;
+        const inTestnet: boolean = chainId === ChainId.testBTC ? true : false;
         return new BtcAccountGeneration(inTestnet);
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
-        const inTestnet: boolean = ChainId.testDOGE ? true : false;
+        const inTestnet: boolean = chainId === ChainId.testDOGE ? true : false;
         return new DogeAccountGeneration(inTestnet);
     } else if (chainId === ChainId.XRP || chainId === ChainId.testXRP) {
-        const inTestnet: boolean = ChainId.testXRP ? true : false;
+        const inTestnet: boolean = chainId === ChainId.testXRP ? true : false;
         return new XrpAccountGeneration(inTestnet);
     } else {
         throw new CommandLineError(`Chain name ${chainId} not supported.`);

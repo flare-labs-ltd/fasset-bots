@@ -1,8 +1,9 @@
 import "dotenv/config";
 import "source-map-support/register";
 
-import { SecretsUser, generateSecrets, generateUnderlyingAccount } from "@flarelabs/fasset-bots-core";
-import { createSha256Hash, generateRandomHexString, logger, squashSpace } from "@flarelabs/fasset-bots-core/utils";
+import { decryptText, EncryptionMethod, encryptText, generateSecrets, generateUnderlyingAccount, isJSON, promptForPassword, SecretsUser } from "@flarelabs/fasset-bots-core";
+import { ENCRYPTION_PASSWORD_MIN_LENGTH, validateEncryptionPassword } from "@flarelabs/fasset-bots-core/config";
+import { assertCmd, CommandLineError, createSha256Hash, generateRandomHexString, logger, squashSpace, web3 } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
@@ -24,7 +25,8 @@ program
     .option("--user", "generate secrets for user")
     .option("--agent <managementAddress>", "generate secrets for agent; required argument is agent owner's management (cold) address")
     .option("--other", "generate secrets for other bots (challenger, etc.)")
-    .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean }) => {
+    .option("--merge <filename>", "merge into the result the contest of JSON file <filename>")
+    .action(async (opts: { config?: string; output?: string; overwrite?: boolean; user?: boolean; agent?: string; other?: boolean, merge?: string }) => {
         const users: SecretsUser[] = [];
         if (opts.user) users.push("user");
         if (opts.agent) {
@@ -37,6 +39,9 @@ program
         }
         opts.config = expandConfigPath(opts.config, "bot");
         const secrets = generateSecrets(opts.config, users, opts.agent);
+        if (opts.merge) {
+            recursiveAssign(secrets, JSON.parse(fs.readFileSync(opts.merge).toString()));
+        }
         const json = JSON.stringify(secrets, null, 4);
         if (opts.output) {
             if (fs.existsSync(opts.output) && !opts.overwrite) {
@@ -76,6 +81,62 @@ program
         }
     });
 
+function recursiveAssign(dest: any, src: any) {
+    assertCmd(typeof dest === "object" && dest != null, `Trying to assign to non-object ${dest}`);
+    for (const [key, value] of Object.entries(src)) {
+        if (typeof value === "object" && value != null) {
+            if (!(key in dest)) {
+                dest[key] = {};
+            }
+            recursiveAssign(dest[key], value);
+        } else {
+            dest[key] = value;
+        }
+    }
+}
+
+program
+    .command("encryptSecrets")
+    .description("encrypt content of secrets file")
+    .option("-s, --secrets <secretsFile>", "Secrets file path. If omitted, env var FASSET_BOT_SECRETS or FASSET_USER_SECRETS is used.")
+    .action(async (opts: { secretsPath?: string }) => {
+        const secretsPath = opts.secretsPath ?? process.env.FASSET_BOT_SECRETS ?? process.env.FASSET_USER_SECRETS;
+        if (!secretsPath) {
+            throw new CommandLineError("Missing secrets file path.");
+        }
+        const secretsContent = fs.readFileSync(secretsPath).toString();
+        if (isJSON(secretsContent)) {
+            const secretsPassword = await promptForPassword(`Please enter the password (at least ${ENCRYPTION_PASSWORD_MIN_LENGTH} chars long) used to encrypt secrets file content: `);
+            validateEncryptionPassword(secretsPassword, "password");
+            const encryptedSecretsContent = encryptText(secretsPassword, secretsContent, EncryptionMethod.AES_GCM_SCRYPT_AUTH);
+            fs.writeFileSync(secretsPath, encryptedSecretsContent);
+            console.log("Secrets file was encrypted.")
+        } else {
+            console.log("File is not in valid JSON format.");
+        }
+    });
+
+program
+    .command("decryptSecrets")
+    .description("decrypt content of secrets file")
+    .option("-s, --secrets <secretsFile>", "Secrets file path. If omitted, env var FASSET_BOT_SECRETS or FASSET_USER_SECRETS is used.")
+    .action(async (opts: { secretsPath?: string }) => {
+        const secretsPath = opts.secretsPath ?? process.env.FASSET_BOT_SECRETS ?? process.env.FASSET_USER_SECRETS;
+        if (!secretsPath) {
+            throw new CommandLineError("Missing secrets file path.");
+        }
+        const encryptedSecretsContent = fs.readFileSync(secretsPath).toString();
+        if (isJSON(encryptedSecretsContent)) {
+            console.log("File is already in JSON format.");
+        } else {
+            const secretsPassword = await promptForPassword("Please enter the password used to decrypt secrets file content: ");
+            const decryptedSecretsContent = decryptText(secretsPassword, encryptedSecretsContent);
+            const jsonToSave = JSON.stringify(JSON.parse(decryptedSecretsContent), null, 4);
+            fs.writeFileSync(secretsPath, jsonToSave);
+            console.log("Secrets file was decrypted.")
+        }
+    });
+
 program
     .command("createApiKeyAndHash")
     .description("create api key and its hash")
@@ -99,8 +160,15 @@ program
     .argument("<chainName>", "chain name, e.g. XRP or testXRP")
     .action(async (chainName: string) => {
         const account = generateUnderlyingAccount(chainName);
-        console.log("Address:", account.address);
-        console.log("Private key:", account.privateKey);
+        console.log(JSON.stringify({ address: account.address, private_key: account.privateKey }, null, 4));
+    });
+
+program
+    .command("createNativeAccount")
+    .description("create new address/private key pair on the native chain")
+    .action(async () => {
+        const account = web3.eth.accounts.create();
+        console.log(JSON.stringify({ address: account.address, private_key: account.privateKey }, null, 4));
     });
 
 toplevelRun(async () => {

@@ -13,7 +13,7 @@ export type SecretsFile = {
         encryption_password: string;
     };
     apiKey: {
-        [key: string]: string;
+        [key: string]: string | string[];
     };
     owner?: {
         [key: string]: ChainAccount;
@@ -28,4 +28,5 @@ export type SecretsFile = {
     systemKeeper?: ChainAccount;
     deployer?: ChainAccount;
     database?: DatabaseAccount;
+    pricePublisher?: ChainAccount;
 }

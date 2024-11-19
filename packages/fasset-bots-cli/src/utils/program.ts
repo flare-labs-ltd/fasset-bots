@@ -105,3 +105,14 @@ export function expandConfigPath(config: string, user: UserTypeForOptions) {
 function defaultSecretsPath() {
     return path.resolve(os.homedir(), "fasset/secrets.json");
 }
+
+export function getOneDefaultToAll<T>(map: Map<string,T>, val?: string): T[] {
+    if (val === undefined) {
+        return Array.from(map.values());
+    }
+    const values = map.get(val);
+    if (values === undefined) {
+        throw new Error(`FAsset ${val} not found in config`);
+    }
+    return [values];
+}

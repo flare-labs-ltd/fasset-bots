@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import path from "path";
 import { CommandLineError, assertCmd, logger } from "../utils";
-import { requireNotNull } from "../utils/helpers";
+import { requireNotNull, substituteEnvVars } from "../utils/helpers";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
 import { BotConfigFile, BotConfigFileOverride } from "./config-files/BotConfigFile";
 import { loadContracts } from "./contracts";
@@ -70,7 +70,7 @@ function mergeFAssets(overrideFile: string, configFAssets: Record<string, any>, 
 
 export function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
     try {
-        const json = JsonLoader.loadSimple(fPath);
+        const json = substituteEnvVars(JsonLoader.loadSimple(fPath));
         if ("extends" in (json as any)) {
             return botConfigOverrideLoader.validate(json, fPath);
         } else {
@@ -144,8 +144,8 @@ export function validateAgentConfigFile(config: BotConfigFile): void {
         throw new CommandLineError(`At least one attestation provider url is required`);
     }
     for (const [symbol, fc] of Object.entries(config.fAssets)) {
-        if (fc.walletUrl == null) {
-            throw new CommandLineError(`Missing walletUrl in FAsset type ${symbol}`);
+        if (fc.walletUrls == null || fc.walletUrls.length === 0) {
+            throw new CommandLineError(`At least one walletUrl in FAsset type ${symbol} is required`);
         }
     }
 }

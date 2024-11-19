@@ -1,17 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
 import { AgentService } from "../services/agent.service";
-import { ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentBalance } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
+
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @ApiTags("Pool Collateral")
 @Controller("api/pool")
-//@UseGuards(AuthGuard("api-key"))
 @UseInterceptors(ErrorStatusInterceptor)
-//@ApiSecurity("X-API-KEY")
+@UseGuards(JwtAuthGuard)
 export class PoolController {
     constructor(private readonly agentService: AgentService) {}
 
@@ -34,12 +36,30 @@ export class PoolController {
         return handleApiResponse(this.agentService.buyPoolCollateral(fAssetSymbol, agentVaultAddress, amount));
     }
 
-    @Get("collateral/freeBalance:fAssetSymbol/:agentVaultAddress")
+    @Get("collateral/freePoolBalance/:fAssetSymbol/:agentVaultAddress")
     public async freePoolCollateral(
         @Param("fAssetSymbol") fAssetSymbol: string,
         @Param("agentVaultAddress") agentVaultAddress: string
     ): Promise<ApiResponseWrapper<AgentBalance>> {
         return handleApiResponse(this.agentService.freePoolCollateral(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Get("collateral/poolBalance/:fAssetSymbol/:agentVaultAddress")
+    public async poolTokenBalance(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<AgentBalance>> {
+        return handleApiResponse(this.agentService.poolTokenBalance(fAssetSymbol, agentVaultAddress));
+    }
+
+    @Post("collateral/withdrawPool/:fAssetSymbol/:agentVaultAddress/:amount")
+    @HttpCode(200)
+    public async withdrawPoolCollateral(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("amount") amount: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.withdrawPoolCollateral(fAssetSymbol, agentVaultAddress, amount));
     }
 
     @Post("fee/withdraw/:fAssetSymbol/:agentVaultAddress/:amount")

@@ -22,7 +22,15 @@ export interface PriceEpochFinalized {
   };
 }
 
-export type AllEvents = PriceEpochFinalized;
+export interface PricesPublished {
+  name: "PricesPublished";
+  args: {
+    votingRoundId: BN;
+    0: BN;
+  };
+}
+
+export type AllEvents = PriceEpochFinalized | PricesPublished;
 
 export interface IPriceChangeEmitterInstance extends Truffle.ContractInstance {
   methods: {};
