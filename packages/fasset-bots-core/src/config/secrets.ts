@@ -3,7 +3,7 @@ import { substituteEnvVars } from "../utils/helpers";
 import { CommandLineError } from "../utils/command-line-errors";
 import { SecretsFile } from "./config-files/SecretsFile";
 import { isJSON, promptForPassword } from "../utils/prompt";
-import { decryptText } from "../utils/encryption";
+import {decryptText} from "@flarelabs/simple-wallet";
 
 export const ENCRYPTION_PASSWORD_MIN_LENGTH = 16;
 

@@ -419,19 +419,16 @@ export async function updateMonitoringState(
 }
 
 export async function handleFeeToLow(rootEm: EntityManager, txEnt: TransactionEntity): Promise<void> {
-    let newFee: BN | undefined = undefined;
-    if (txEnt.replaced_by) {
-        newFee = txEnt.fee; //if tx was RBF, field fee holds needed fee to cover
-    }
-
     await updateTransactionEntity(rootEm, txEnt.id, (txEnt) => {
         txEnt.status = TransactionStatus.TX_CREATED;
-        txEnt.utxos.removeAll();
         txEnt.inputs.removeAll();
         txEnt.outputs.removeAll();
         txEnt.raw = "";
         txEnt.transactionHash = "";
-        txEnt.fee = newFee;
+
+        if (!txEnt.rbfReplacementFor) {
+            txEnt.utxos.removeAll();
+        }
     });
 }
 

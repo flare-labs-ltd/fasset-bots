@@ -1,8 +1,8 @@
 import { Command } from "commander";
 import fs from "fs";
-import {EncryptionMethod, encryptText} from "./encryption_utils";
 import {isJSON, promptPassword} from "./common_utils";
 import * as dotenv from 'dotenv';
+import {EncryptionMethod, encryptText} from "../../src";
 dotenv.config();
 
 const program = new Command();
