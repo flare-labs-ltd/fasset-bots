@@ -94,7 +94,7 @@ interface BotConfigFile {
     nativeChainInfo: NativeChainInfo; // Basic information about native chain.
     rpcUrl: string; // Native chain's url.
     alertsUrl?: string; // Url to send notifications to.
-    attestationProviderUrls?: string[]; // List of urls of attestation providers. Only for agent bot, user, challenger and timeKeeper.
+    dataAccessLayerUrls?: string[]; // List of urls of attestation providers. Only for agent bot, user, challenger and timeKeeper.
     // either one must be set
     addressUpdater?: string; // Address of AddressUpdater contract on native chain.
     contractsJsonFile?: string; // File path to json file containing contract addresses on native chain
@@ -180,7 +180,7 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
         "type": "sqlite"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
+    "dataAccessLayerUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
     "liquidationStrategy": {
         "className": "DexLiquidationStrategy",
         "config": {

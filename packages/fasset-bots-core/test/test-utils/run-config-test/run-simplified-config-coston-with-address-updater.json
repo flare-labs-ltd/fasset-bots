@@ -34,7 +34,7 @@
         }
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
+    "dataAccessLayerUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
     ],
     "assetManagerController": "0xA4962A6e8cc413d9BF2Dd3482a62ED2d3AaB0079"

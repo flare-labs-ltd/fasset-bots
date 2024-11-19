@@ -74,7 +74,7 @@ export interface BotConfigFile {
     nativeChainInfo: BotNativeChainInfo;
     agentBotSettings: AgentBotSettingsJson;
     rpcUrl: string;
-    attestationProviderUrls?: string[]; // only for agent bot, challenger and timeKeeper
+    dataAccessLayerUrls?: string[]; // only for agent bot, challenger and timeKeeper
     prioritizeAddressUpdater: boolean;
     // at least one must be set
     assetManagerController?: string;

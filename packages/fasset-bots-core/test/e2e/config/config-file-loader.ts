@@ -59,10 +59,10 @@ describe("config file loader tests", () => {
 
     it("Should not validate config - attestation provider must be defined", async () => {
         const runConfig: BotConfigFile = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        runConfig.attestationProviderUrls = undefined;
+        runConfig.dataAccessLayerUrls = undefined;
         expect(() => validateAgentConfigFile(runConfig))
             .to.throw(`At least one attestation provider url is required`);
-        runConfig.attestationProviderUrls = [];
+        runConfig.dataAccessLayerUrls = [];
         expect(() => validateAgentConfigFile(runConfig))
             .to.throw(`At least one attestation provider url is required`);
     });

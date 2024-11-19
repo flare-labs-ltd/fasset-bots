@@ -81,7 +81,7 @@
         }
     },
     "rpcUrl": "https://coston-api-tracer.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
+    "dataAccessLayerUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
     ],
     "ormOptions": {

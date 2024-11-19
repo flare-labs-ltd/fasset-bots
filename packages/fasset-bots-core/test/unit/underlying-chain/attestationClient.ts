@@ -25,7 +25,7 @@ const finalizationBlocks: number = 6;
 
 async function createAttestationHelper(
     chainId: ChainId,
-    attestationProviderUrls: string[],
+    dataAccessLayerUrls: string[],
     fdcVerificationAddress: string,
     fdcHubAddress: string,
     relayAddress: string,
@@ -36,7 +36,7 @@ async function createAttestationHelper(
     if (!supportedChainId(chainId)) {
         throw new Error(`SourceId ${chainId} not supported.`);
     }
-    const flareDataConnector = await createFlareDataConnectorClient(indexerUrls, indexerApiKeys, attestationProviderUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, owner);
+    const flareDataConnector = await createFlareDataConnectorClient(indexerUrls, indexerApiKeys, dataAccessLayerUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, owner);
     const indexer = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
     return new AttestationHelper(flareDataConnector, indexer, chainId);
 }

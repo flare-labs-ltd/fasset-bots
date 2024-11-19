@@ -98,7 +98,7 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
         const fAssets: Map<string, BotFAssetConfig> = new Map();
         for (const [symbol, fassetInfo] of Object.entries(configFile.fAssets)) {
             const fassetConfig = await createBotFAssetConfig(type, secrets, retriever, symbol, fassetInfo, configFile.agentBotSettings,
-                orm?.em, configFile.attestationProviderUrls, submitter, configFile.walletOptions);
+                orm?.em, configFile.dataAccessLayerUrls, submitter, configFile.walletOptions);
             fAssets.set(symbol, fassetConfig);
         }
         const result: BotConfig = {
@@ -159,7 +159,7 @@ export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs:
  * @param fassetInfo instance of BotFAssetInfo
  * @param agentSettings
  * @param em entity manager
- * @param attestationProviderUrls list of attestation provider's urls
+ * @param dataAccessLayerUrls list of attestation provider's urls
  * @param submitter address from which the transactions get submitted
  * @param walletOptions
  * @returns instance of BotFAssetConfig
@@ -172,7 +172,7 @@ export async function createBotFAssetConfig(
     fassetInfo: BotFAssetInfo,
     agentSettings: AgentBotSettingsJson | undefined,
     em: EM | undefined,
-    attestationProviderUrls: string[] | undefined,
+    dataAccessLayerUrls: string[] | undefined,
     submitter: string | undefined,
     walletOptions?: StuckTransaction,
 ): Promise<BotFAssetConfig> {
@@ -196,14 +196,14 @@ export async function createBotFAssetConfig(
     }
     if (type === "agent" || type === "user" || type === "keeper") {
         assertCmd(fassetInfo.indexerUrls != null && fassetInfo.indexerUrls.length > 0, "At least one indexer url is required");
-        assertCmd(attestationProviderUrls != null && attestationProviderUrls.length > 0, "At least one attestation provider url is required");
+        assertCmd(dataAccessLayerUrls != null && dataAccessLayerUrls.length > 0, "At least one attestation provider url is required");
         assertNotNull(submitter);   // if this is missing, it is program error
         const fdcHubAddress = await retriever.getContractAddress("FdcHub");
         const relayAddress = await retriever.getContractAddress("Relay");
         const apiKeys: string[] = indexerApiKey(secrets, fassetInfo.indexerUrls);
         result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrls, apiKeys);
         result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrls, apiKeys);
-        result.flareDataConnector = await createFlareDataConnectorClient(fassetInfo.indexerUrls, apiKeys, attestationProviderUrls, settings.fdcVerification, fdcHubAddress, relayAddress, submitter);
+        result.flareDataConnector = await createFlareDataConnectorClient(fassetInfo.indexerUrls, apiKeys, dataAccessLayerUrls, settings.fdcVerification, fdcHubAddress, relayAddress, submitter);
     }
     return result;
 }
@@ -275,7 +275,7 @@ export async function createBlockchainWalletHelper(
  * Creates flare data connector client
  * @param indexerWebServerUrl indexer's url
  * @param indexerApiKey
- * @param attestationProviderUrls list of attestation provider's urls
+ * @param dataAccessLayerUrls list of attestation provider's urls
  * @param fdcVerificationAddress FdcVerification's contract address
  * @param fdcHubAddress FdcHub's contract address
  * @param relayAddress Relay's contract address
@@ -285,13 +285,13 @@ export async function createBlockchainWalletHelper(
 export async function createFlareDataConnectorClient(
     indexerWebServerUrls: string[],
     indexerApiKeys: string[],
-    attestationProviderUrls: string[],
+    dataAccessLayerUrls: string[],
     fdcVerificationAddress: string,
     fdcHubAddress: string,
     relayAddress: string,
     submitter: string
 ): Promise<FlareDataConnectorClientHelper> {
-    return await FlareDataConnectorClientHelper.create(attestationProviderUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, indexerWebServerUrls, indexerApiKeys, submitter);
+    return await FlareDataConnectorClientHelper.create(dataAccessLayerUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, indexerWebServerUrls, indexerApiKeys, submitter);
 }
 
 export async function createVerificationApiClient(indexerWebServerUrls: string[], indexerApiKeys: string[]): Promise<VerificationPrivateApiClient> {

@@ -177,13 +177,22 @@
             ],
             "type": "object"
         },
-        "BotStrategyDefinition": {
+        "ChallengerBotStrategyDefinition": {
             "additionalProperties": false,
             "properties": {
                 "className": {
                     "type": "string"
                 },
-                "config": {}
+                "config": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/DefaultChallengeStrategyConfig"
+                        },
+                        {
+                            "$ref": "#/definitions/DexChallengeStrategyConfig"
+                        }
+                    ]
+                }
             },
             "required": [
                 "className"
@@ -197,6 +206,75 @@
                 "sqlite"
             ],
             "type": "string"
+        },
+        "DefaultChallengeStrategyConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "gasPrice": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "DexChallengeStrategyConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "gasPrice": {
+                    "type": "string"
+                },
+                "maxAllowedSlippage": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "address",
+                "maxAllowedSlippage"
+            ],
+            "type": "object"
+        },
+        "DexLiquidationStrategyConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "gasPrice": {
+                    "type": "string"
+                },
+                "maxAllowedSlippage": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "address",
+                "maxAllowedSlippage"
+            ],
+            "type": "object"
+        },
+        "LiquidatorBotStrategyDefinition": {
+            "additionalProperties": false,
+            "properties": {
+                "className": {
+                    "type": "string"
+                },
+                "config": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/DexLiquidationStrategyConfig"
+                        },
+                        {
+                            "$ref": "#/definitions/DefaultChallengeStrategyConfig"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "className"
+            ],
+            "type": "object"
         },
         "OrmConfigOptions": {
             "additionalProperties": {},
@@ -290,17 +368,17 @@
         "assetManagerController": {
             "type": "string"
         },
-        "attestationProviderUrls": {
+        "challengeStrategy": {
+            "$ref": "#/definitions/ChallengerBotStrategyDefinition"
+        },
+        "contractsJsonFile": {
+            "type": "string"
+        },
+        "dataAccessLayerUrls": {
             "items": {
                 "type": "string"
             },
             "type": "array"
-        },
-        "challengeStrategy": {
-            "$ref": "#/definitions/BotStrategyDefinition"
-        },
-        "contractsJsonFile": {
-            "type": "string"
         },
         "fAssets": {
             "additionalProperties": {
@@ -309,7 +387,7 @@
             "type": "object"
         },
         "liquidationStrategy": {
-            "$ref": "#/definitions/BotStrategyDefinition"
+            "$ref": "#/definitions/LiquidatorBotStrategyDefinition"
         },
         "loopDelay": {
             "type": "number"

@@ -53,7 +53,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     definitionStore = new AttestationDefinitionStore();
 
     constructor(
-        public attestationProviderUrls: string[],
+        public dataAccessLayerUrls: string[],
         public fdcVerificationAddress: string,
         public fdcHubAddress: string,
         public relayAddress: string,
@@ -61,7 +61,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         public verifierUrlApiKeys: string[],
         public account: string,
     ) {
-        for (const url of attestationProviderUrls) {
+        for (const url of dataAccessLayerUrls) {
             this.clients.push(axios.create(createAxiosConfig(url)));
         }
         for (const [index, url] of verifierUrls.entries()) {

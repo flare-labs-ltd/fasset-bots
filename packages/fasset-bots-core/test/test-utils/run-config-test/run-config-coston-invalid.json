@@ -9,7 +9,7 @@
         "readLogsChunkSize": 10
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
+    "dataAccessLayerUrls": [
         "https://attestation-coston.aflabs.net/attestation-client"
     ]
 }

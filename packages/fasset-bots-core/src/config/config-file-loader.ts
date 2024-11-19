@@ -140,7 +140,7 @@ export function loadAgentConfigFile(fPath: string, configInfo?: string): BotConf
  */
 export function validateAgentConfigFile(config: BotConfigFile): void {
     validateConfigFile(config);
-    if (config.attestationProviderUrls == null || config.attestationProviderUrls.length === 0) {
+    if (config.dataAccessLayerUrls == null || config.dataAccessLayerUrls.length === 0) {
         throw new CommandLineError(`At least one attestation provider url is required`);
     }
     for (const [symbol, fc] of Object.entries(config.fAssets)) {
