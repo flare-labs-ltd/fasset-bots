@@ -66,6 +66,7 @@ export function createAxiosConfig(url: string, apiKey?: string, timeoutMs?: numb
     if (apiKey) {
         createAxiosConfig.headers ??= {};
         createAxiosConfig.headers["X-API-KEY"] = apiKey;
+        createAxiosConfig.headers["x-apikey"] = apiKey;
     }
     return createAxiosConfig;
 }
