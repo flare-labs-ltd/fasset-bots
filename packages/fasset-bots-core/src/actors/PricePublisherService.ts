@@ -2,34 +2,16 @@ import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
 import { BotConfigFile, loadContracts, Secrets } from '../config';
 import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
+import { FspStatusResult, FtsoFeedResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
 
 export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
 
 const FtsoV2PriceStore = artifacts.require("FtsoV2PriceStore");
 
-export interface FeedResult {
-    readonly votingRoundId: number | string;
-    readonly id: string; // Needs to be 0x-prefixed for abi encoding
-    readonly value: number | string;
-    readonly turnoutBIPS: number | string;
-    readonly decimals: number | string;
-}
-
-export interface FeedResultWithProof {
-    body: FeedResult;
+export interface PublisherFeedResultWithProof {
+    body: FtsoFeedResult;
     merkleProof: string[];
-}
-
-export interface LatestRoundResult {
-    voting_round_id: number | string;
-    start_timestamp: number | string;
-}
-
-export interface FspStatusResult {
-    active: LatestRoundResult;
-    latest_fdc: LatestRoundResult;
-    latest_ftso: LatestRoundResult;
 }
 
 export class PricePublisherService {
@@ -132,7 +114,7 @@ export class PricePublisherService {
         return null;
     }
 
-    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FeedResultWithProof[] | null> {
+    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<PublisherFeedResultWithProof[] | null> {
         const response = await axios.post(`${url}/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}`, {
             feed_ids: feedIds
         }, {
@@ -141,7 +123,7 @@ export class PricePublisherService {
             }
         });
         // get data
-        const feedsData: { body: FeedResult; proof: string[]; }[] = response.data;
+        const feedsData: FtsoFeedResultWithProof[] = response.data;
         // check that voting round is correct
         if (feedsData.some(fd => Number(fd.body.votingRoundId) !== votingRoundId)) {
             return null;
