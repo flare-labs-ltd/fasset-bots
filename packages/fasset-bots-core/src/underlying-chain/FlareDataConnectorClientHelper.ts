@@ -6,7 +6,7 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { IFdcHubInstance, IFdcRequestFeeConfigurationsInstance, IFdcVerificationInstance, IRelayInstance } from "../../typechain-truffle";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
-import { DEFAULT_RETRIES, ZERO_BYTES32, retry, sleep } from "../utils/helpers";
+import { DEFAULT_RETRIES, ZERO_BYTES32, retry, retryCall, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -87,7 +87,8 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     }
 
     async roundFinalized(round: number): Promise<boolean> {
-        return await this.roundFinalizedOnChain(round);
+        const latestRound = await this.latestFinalizedRound();
+        return round <= latestRound;
     }
 
     private async roundFinalizedOnChain(round: number): Promise<boolean> {
@@ -140,8 +141,32 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         };
     }
 
-    async latestRoundOnClient(client: AxiosInstance): Promise<number> {
-        const response = await client.get<FspStatusResult>(`/api/v0/fsp/status`);
+    async latestFinalizedRound(): Promise<number> {
+        const latestRound = await this.latestFinalizedRoundOnDAL();
+        const finalized = await this.roundFinalizedOnChain(latestRound);
+        // since in FDC rounds can be skipped and never finalized, we assume the finalization time for round has
+        // passed when the DAL has info that next round was already finalized
+        return finalized ? latestRound : latestRound - 1;
+    }
+
+    async latestFinalizedRoundOnDAL(): Promise<number> {
+        let latestRound = -1;
+        for (const client of this.dataAccessLayerClients) {
+            try {
+                const clientLatest = await this.latestFinalizedRoundOnClient(client);
+                latestRound = Math.max(latestRound, clientLatest);
+            } catch (error) {
+                logger.error(`Cannot obtain latest round from data access layer client ${client.getUri()}: ${error}`);
+            }
+        }
+        if (latestRound < 0) {
+            throw new Error(`No data access layer clients available for obtaining latest round`);
+        }
+        return latestRound;
+    }
+
+    async latestFinalizedRoundOnClient(client: AxiosInstance): Promise<number> {
+        const response = await retryCall("latestRoundOnClient", () => client.get<FspStatusResult>(`/api/v0/fsp/status`));
         return Number(response.data.latest_fdc.voting_round_id);
     }
 
@@ -189,6 +214,12 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
 
     /* istanbul ignore next */
     async obtainProofFromFlareDataConnectorForClient(client: AxiosInstance, roundId: number, requestBytes: string): Promise<OptionalAttestationProof | null> {
+        // does the client have info about this round yet?
+        const latestRound = await this.latestFinalizedRoundOnClient(client).catch(() => 0);
+        if (latestRound < roundId) {
+            return null;
+        }
+        // get response
         let response: AxiosResponse<VotingRoundResult<ARESBase>>;
         try {
             const request: ProofRequest = { roundId, requestBytes };
@@ -205,13 +236,11 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
             }
             return null; // network error, client probably down - skip it
         }
-        // obtained valid proof
-        const data = response.data;
+        // verify that valid proof was obtained
         const proof: AttestationProof = {
-            data: data.response,
-            merkleProof: data.proof,
+            data: response.data.response,
+            merkleProof: response.data.proof,
         };
-        // round is already finalized on chain, so we can
         const verified = await this.verifyProof(proof);
         /* istanbul ignore next */
         if (!verified) {
