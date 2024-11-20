@@ -141,6 +141,8 @@ export const DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);  // 0,5 DOGE/kB
 export const TEST_DOGE_LOW_FEE_PER_KB = toBN(5000 * 1000);
 export const TEST_DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);
 
+export const RBF_AMOUNT_FACTOR = toBN(4);
+
 //////////////////////
 export const DROPS_PER_XRP = 1000000.0;
 // https://xrpl.org/docs/concepts/transactions/transaction-cost
