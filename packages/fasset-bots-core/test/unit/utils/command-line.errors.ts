@@ -1,5 +1,4 @@
-import { assert, expect } from "chai";
-import { decryptText, encryptText } from "../../../src/utils/encryption";
+import { expect } from "chai";
 import { CommandLineError, requireNotNullCmd } from "../../../src/utils";
 
 describe("command-line-errors unit tests", () => {

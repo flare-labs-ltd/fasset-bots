@@ -124,7 +124,8 @@ describe("Actor tests - coston", () => {
         const challenger = await createTestChallenger(challengerContext, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
         const blockHeight = await context.blockchainIndexer.getBlockHeight();
-        expect(challenger.lastEventUnderlyingBlockHandled).to.be.lte(blockHeight);
+        const finalizationBlocks = 6;
+        expect(challenger.lastEventUnderlyingBlockHandled).to.be.lte(blockHeight + finalizationBlocks);
     });
 
     it("Should create liquidator", async () => {

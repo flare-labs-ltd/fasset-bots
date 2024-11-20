@@ -5,10 +5,11 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 import { AuthController } from "./auth.controller";
 import { JwtService } from "@nestjs/jwt";
 import { AuthService } from "./auth.service";
+import { HeaderApiKeyStrategy } from "./apiAuth.service";
 
 @Module({
     imports: [PassportModule],
-    providers: [JwtStrategy, JwtAuthGuard, JwtService, AuthService],
+    providers: [JwtStrategy, JwtAuthGuard, JwtService, AuthService, HeaderApiKeyStrategy],
     controllers:[AuthController],
     exports: [JwtAuthGuard]
 })

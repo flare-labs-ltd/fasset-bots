@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC3156FlashLender} from "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -22,7 +23,7 @@ import "hardhat/console.sol";
  * Note: f-assets within the contract are not safe from being liquidated by a malicious actor,
  * Note: the supported dexes right now are those interfaced with either IEnosysDexRouter or IBlazeSwapRouter
  */
-contract Liquidator is ILiquidator {
+contract Liquidator is ILiquidator, Ownable {
     using UniswapV2 for address;
 
     enum FlashLoanLock { INACTIVE, INITIATOR_ENTER, RECEIVER_ENTER }
@@ -60,44 +61,23 @@ contract Liquidator is ILiquidator {
         _;
     }
 
-    function runArbitrage(
-        address _agentVault,
-        address _profitTo,
-        uint256 _vaultToFAssetMinDexPriceMul,
-        uint256 _vaultToFAssetMinDexPriceDiv,
-        uint256 _poolToVaultMinDexPriceMul,
-        uint256 _poolToVaultMinDexPriceDiv,
-        address _flashLender,
-        address _dex,
-        address[] memory _vaultToFAssetDexPath,
-        address[] memory _poolToVaultDexPath
+    function withdrawToken(
+        IERC20 token
     )
-        public virtual
+        external
+        onlyOwner
     {
-        if (address(_flashLender) == address(0)) {
-            _flashLender = flashLender;
-        }
-        if (address(_dex) == address(0)) {
-            _dex = dex;
-        }
-        ArbitrageConfig memory config = ArbitrageConfig({
-            flashLender: address(_flashLender),
-            dex: address(_dex),
-            dexPair1: DexPairConfig({
-                path: _vaultToFAssetDexPath,
-                minPriceMul: _vaultToFAssetMinDexPriceMul,
-                minPriceDiv: _vaultToFAssetMinDexPriceDiv
-            }),
-            dexPair2: DexPairConfig({
-                path: _poolToVaultDexPath,
-                minPriceMul: _poolToVaultMinDexPriceMul,
-                minPriceDiv: _poolToVaultMinDexPriceDiv
-            })
-        });
-        _runArbitrage(_agentVault, _profitTo, config);
+        SafeERC20.safeTransfer(token, owner(), token.balanceOf(address(this)));
     }
 
-    function maxSlippageToMinPrices(
+    function withdrawNat()
+        external
+        onlyOwner
+    {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+        function maxSlippageToMinPrices(
         uint256 _maxSlippageBipsDex1,
         uint256 _maxSlippageBipsDex2,
         address _agentVault
@@ -114,6 +94,17 @@ contract Liquidator is ILiquidator {
         return (minPriceMul1, minPriceDiv1, minPriceMul2, minPriceDiv2);
     }
 
+    function runArbitrage(
+        address _agentVault,
+        address _profitTo,
+        ArbitrageConfig calldata _config
+    )
+        external virtual
+        onlyOwner
+    {
+        _runArbitrage(_agentVault, _profitTo, _config);
+    }
+
     function _runArbitrage(
         address _agentVault,
         address _profitTo,
@@ -121,6 +112,13 @@ contract Liquidator is ILiquidator {
     )
         internal
     {
+        // default to contract flash lender and dex
+        if (_config.flashLender == address(0)) {
+            _config.flashLender = flashLender;
+        }
+        if (_config.dex == address(0)) {
+            _config.dex = dex;
+        }
         // we have to start liquidation so that we get correct max f-assets
         // this should be fixed within the asset manager implementation!
         IIAssetManager assetManager = IIAgentVault(_agentVault).assetManager();
@@ -210,6 +208,8 @@ contract Liquidator is ILiquidator {
             address,
             ArbitrageConfig
         ));
+        require(_fee <= _config.maxFlashFee,
+            "Liquidator: Flash lender passed too high fee");
         require(_token == _config.dexPair1.path[0],
             "Liquidator: Flash lender passed invalid token");
         _executeStrategy(_amount, _assetManager, _agentVault, _config);

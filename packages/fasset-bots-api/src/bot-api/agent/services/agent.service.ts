@@ -1,11 +1,11 @@
-import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
+import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentInfoReader, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, createBotOrm, loadAgentConfigFile, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, ZERO_ADDRESS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, Collaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
@@ -16,7 +16,6 @@ import { Alert } from "../../common/entities/AlertDB";
 import { ORM } from "../../../../../fasset-bots-core/src/config/orm";
 import BN from "bn.js";
 import { cachedSecrets } from "../agentServer";
-import { Address } from "cluster";
 
 const IERC20 = artifacts.require("IERC20Metadata");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -171,7 +170,7 @@ export class AgentService {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         const transactionDatabaseId = await cli.withdrawUnderlying(agentVaultAddress, amount, destinationAddress);
         return {
-            transactionDatabaseId: transactionDatabaseId || null,
+            transactionDatabaseId: transactionDatabaseId ?? null,
         };
     }
 
@@ -541,7 +540,7 @@ export class AgentService {
     */
     async getAgentVaults(): Promise<any> {
         const config = loadConfigFile(FASSET_BOT_CONFIG)
-        const allVaults: AllVaults[] = [];
+        const allVaults: VaultInfo[] = [];
         function formatCR(bips: BNish) {
             if (String(bips) === "10000000000") return "<inf>";
             return formatFixed(toBN(bips), 4);
@@ -562,7 +561,6 @@ export class AgentService {
             const prices = [{ symbol: "CFLR", price: priceUSD, decimals: Number(cflrPrice.decimals) }];
 
             const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
-            const vaultsForFasset: VaultInfo[] = [];
             // For each vault calculate needed info
             for (const vault of agentVaults) {
                 await vault.updateSettings.init()
@@ -624,6 +622,10 @@ export class AgentService {
                 }
                 const totalCollateralUSD = formatFixed(totalVaultCollateralUSD.add(totalPoolCollateralUSD), 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
                 const feeShare = Number(info.poolFeeShareBIPS) / MAX_BIPS;
+                const assetManager = cli.context.assetManager;
+                const air = await AgentInfoReader.create(assetManager, vault.vaultAddress);
+                const lotsPoolBacked = toBN(info.totalPoolCollateralNATWei).div(air.poolCollateral.mintingCollateralRequired(air.lotSizeUBA()));
+                const lotsVaultBacked = toBN(info.totalVaultCollateralWei).div(air.vaultCollateral.mintingCollateralRequired(air.lotSizeUBA()));
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
                     vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), Number(await collateralToken.decimals()), { decimals: 3, groupDigits: true, groupSeparator: "," }),
@@ -632,13 +634,16 @@ export class AgentService {
                     collateralToken: info.vaultCollateralToken, health: status,
                     poolCollateralUSD: totalCollateralUSD,
                     mintCount: "0",
-                    poolFee: (feeShare * 100).toString()
+                    poolFee: (feeShare * 100).toString(),
+                    fasset: fasset,
+                    createdAt: Number(vault.createdAt),
+                    lotsPoolBacked: lotsPoolBacked.toString(),
+                    lotsVaultBacked: lotsVaultBacked.toString(),
                 };
-                vaultsForFasset.push(vaultInfo);
+                allVaults.push(vaultInfo);
             }
-            if (vaultsForFasset.length != 0)
-                allVaults.push({fassetSymbol: fasset, vaults: vaultsForFasset});
         }
+        allVaults.sort((a, b) => a.createdAt - b.createdAt);
         return allVaults;
     }
 
@@ -652,5 +657,46 @@ export class AgentService {
         const info = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
         const fassetBR = await TokenBalances.fasset(cli.context);
         return fassetBR.formatValue(info.mintedUBA);
+    }
+
+    async depositCollaterals(fAssetSymbol: string, agentVaultAddress: string, lots: number, multiplier: number): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.depositCollateralForLots(agentVaultAddress, lots.toString(), multiplier);
+    }
+
+    async calculateCollateralsForLots(fAssetSymbol: string, agentVaultAddress: string, lots: number, multiplier: number): Promise<Collaterals[]> {
+        const cli = this.infoBotMap.get(fAssetSymbol) as AgentBotCommands;
+        const { agentBot } = await cli.getAgentBot(agentVaultAddress);
+        const settings = await cli.context.assetManager.getSettings();
+        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const amountUBA = toBN(lots).mul(lotSize);
+        const vaultCollateral = await cli.mintingVaultCollateral(agentBot.agent, amountUBA, Number(multiplier));
+        const poolCollateral = await cli.mintingPoolCollateral(agentBot.agent, amountUBA, Number(multiplier));
+        const vaultCollateralType = await agentBot.agent.getVaultCollateral();
+        const ownerVaultBalance = await this.getVaultBalance(cli, agentVaultAddress);
+        const ownerPoolBalance  = await this.getPoolBalance(cli);
+        /*let message = "To deposit " + lots.toString() + " lots you need " + formatFixed(vaultCollateral, Number(vaultCollateralType.decimals), { decimals: 3, groupDigits: true, groupSeparator: "," });
+        message+= " "+ vaultCollateralType.tokenFtsoSymbol + " (work address has " + ownerVaultBalance + ") and " + formatFixed(poolCollateral, 18, { decimals: 3, groupDigits: true, groupSeparator: "," }) + " " + cli.context.nativeChainInfo.tokenSymbol;
+        message+= " (work address has "+ ownerPoolBalance + " " + cli.context.nativeChainInfo.tokenSymbol + ").";*/
+        const amountVaultNeeded = formatFixed(vaultCollateral, Number(vaultCollateralType.decimals), { decimals: 3, groupDigits: true, groupSeparator: "," });
+        const amountPoolNeeded = formatFixed(poolCollateral, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+        const col: Collaterals [] = [];
+        col.push({symbol: vaultCollateralType.tokenFtsoSymbol, amount: amountVaultNeeded, ownerBalance: ownerVaultBalance});
+        col.push({symbol: cli.context.nativeChainInfo.tokenSymbol, amount: amountPoolNeeded, ownerBalance: ownerPoolBalance})
+        return col;
+    }
+
+    async getVaultBalance(cli: AgentBotCommands, vaultAddress: string): Promise<string> {
+        const balanceReader = await TokenBalances.agentVaultCollateral(cli.context, vaultAddress);
+        const ownerBalance = await balanceReader.balance(cli.owner.workAddress);
+        const balanceFmt = balanceReader.formatValue(ownerBalance);
+        return balanceFmt;
+    }
+
+    async getPoolBalance(cli: AgentBotCommands): Promise<string> {
+        const balanceReader = await TokenBalances.evmNative(cli.context);
+        const ownerBalance = await balanceReader.balance(cli.owner.workAddress);
+        const balanceFmt = formatFixed(ownerBalance, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
+        return balanceFmt;
     }
 }

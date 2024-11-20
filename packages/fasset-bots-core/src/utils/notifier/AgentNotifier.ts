@@ -12,6 +12,7 @@ export enum AgentNotificationKey {
     LIQUIDATION_WAS_PERFORMED = "LIQUIDATION WAS PERFORMED",
     AGENT_DESTROYED = "AGENT DESTROYED",
     AGENT_CREATED = "AGENT CREATED",
+    AGENT_CREATED_ERROR = "AGENT CREATION ERROR",
     AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE",
     AGENT_SETTING_UPDATE_FAILED = "AGENT SETTING UPDATE FAILED",
     AGENT_ENTER_AVAILABLE = "AGENT ENTERED AVAILABLE",
@@ -96,6 +97,10 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendCCBAlert(timestamp: string) {
         await this.danger(AgentNotificationKey.CCB_STARTED, `Agent ${this.address} is in collateral call band since ${timestamp}. Agent is trying to automatically top up vaults.`);
+    }
+
+    async agentCreationFailed(error: string) {
+        await this.danger(AgentNotificationKey.AGENT_CREATED_ERROR, `Failed to create agent: ${error}.`);
     }
 
     async sendLiquidationStartAlert(timestamp: string) {

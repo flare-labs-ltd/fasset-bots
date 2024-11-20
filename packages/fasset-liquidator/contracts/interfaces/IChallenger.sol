@@ -2,48 +2,32 @@
 pragma solidity ^0.8.20;
 
 import {BalanceDecreasingTransaction} from "@flarelabs/fasset/contracts/stateConnector/interfaces/ISCProofVerifier.sol";
+import {ArbitrageConfig} from "../lib/Structs.sol";
+import {ILiquidator} from "./ILiquidator.sol";
 
 
-interface IChallenger {
+interface IChallenger is ILiquidator {
 
     function illegalPaymentChallenge(
         BalanceDecreasingTransaction.Proof calldata _transaction,
         address _agentVault,
-        uint256 _vaultToFAssetMinDexPriceMul,
-        uint256 _vaultToFAssetMinDexPriceDiv,
-        uint256 _poolToVaultMinDexPriceMul,
-        uint256 _poolToVaultMinDexPriceDiv,
-        address _flashLender,
-        address _dex,
-        address[] memory _vaultToFAssetDexPath,
-        address[] memory _poolToVaultDexPath
+        address _profitTo,
+        ArbitrageConfig memory _config
     ) external;
 
     function doublePaymentChallenge(
         BalanceDecreasingTransaction.Proof calldata _payment1,
         BalanceDecreasingTransaction.Proof calldata _payment2,
         address _agentVault,
-        uint256 _vaultToFAssetMinDexPriceMul,
-        uint256 _vaultToFAssetMinDexPriceDiv,
-        uint256 _poolToVaultMinDexPriceMul,
-        uint256 _poolToVaultMinDexPriceDiv,
-        address _flashLender,
-        address _dex,
-        address[] memory _vaultToFAssetDexPath,
-        address[] memory _poolToVaultDexPath
+        address _profitTo,
+        ArbitrageConfig memory _config
     ) external;
 
     function freeBalanceNegativeChallenge(
         BalanceDecreasingTransaction.Proof[] calldata _payments,
         address _agentVault,
-        uint256 _vaultToFAssetMinDexPriceMul,
-        uint256 _vaultToFAssetMinDexPriceDiv,
-        uint256 _poolToVaultMinDexPriceMul,
-        uint256 _poolToVaultMinDexPriceDiv,
-        address _flashLender,
-        address _dex,
-        address[] memory _vaultToFAssetDexPath,
-        address[] memory _poolToVaultDexPath
+        address _profitTo,
+        ArbitrageConfig memory _config
     ) external;
 
 }
