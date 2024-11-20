@@ -15,6 +15,7 @@ import {
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
     DOGE_MIN_ALLOWED_FEE,
     DOGE_TESTNET,
+    RBF_AMOUNT_FACTOR,
     TEST_BTC_DEFAULT_FEE_PER_KB,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
@@ -42,11 +43,15 @@ export function getDefaultBlockTimeInSeconds(chainType: ChainType): number {
     }
 }
 
-export function getMinAmountToSend(chainType: ChainType): BN {
+export function getAmountToSendInCaseOfRbf(amount: BN | null, chainType: ChainType): BN | null{
+    if (amount === null) {
+        return null;
+    }
+    const newAmount = amount.divRound(RBF_AMOUNT_FACTOR);
     if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-        return DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;
+        return newAmount.gte(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND) ? newAmount : DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;
     } else {
-        return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
+        return newAmount.gte(BTC_MIN_ALLOWED_AMOUNT_TO_SEND) ? newAmount : BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
     }
 }
 
