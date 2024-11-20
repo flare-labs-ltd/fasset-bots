@@ -384,7 +384,7 @@ describe("Liquidator tests", () => {
         await context.priceStore.setCurrentPrice("testUSDC", vaultTokenPrice, 0);
         await context.priceStore.setCurrentPriceFromTrustedProviders("testUSDC", vaultTokenPrice, 0);
         await context.priceStore.finalizePrices();
-        // check that collateral ratios and agent status are set up correctly for the upcomming liquidations
+        // check that collateral ratios and agent status are set up correctly for the upcoming liquidations
         const agentInfo2 = await agentBot.agent.getAgentInfo();
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.gte(Number(collateralType.ccbMinCollateralRatioBIPS));
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.lte(Number(collateralType.ccbMinCollateralRatioBIPS) + 10);

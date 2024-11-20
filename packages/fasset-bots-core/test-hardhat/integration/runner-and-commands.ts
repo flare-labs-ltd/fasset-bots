@@ -151,7 +151,7 @@ describe("Toplevel runner and commands integration test", () => {
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay }));
         // agent bot runner
-        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, false);
+        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, false, null);
         // currencies
         const usdc = context0.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc as IERC20MetadataInstance);
@@ -204,7 +204,7 @@ describe("Toplevel runner and commands integration test", () => {
             const agentCommands = createAgentCommands(context);
             const userCommands = await createUserCommands(context);
             // create vault
-            const agent = await agentCommands.createAgentVault(newAgentSettings);
+            const agent = await agentCommands.createAgentVault(newAgentSettings, secrets);
             const agentVault = agent.vaultAddress;
             await agentCommands.depositCollateralForLots(agentVault, "10", "2");
             await agentCommands.enterAvailableList(agentVault);
@@ -234,7 +234,7 @@ describe("Toplevel runner and commands integration test", () => {
         const userCommands = await createUserCommands(context);
         const chain = context.blockchainIndexer.chain;
         // create vault
-        const agent = await agentCommands.createAgentVault(newAgentSettings);
+        const agent = await agentCommands.createAgentVault(newAgentSettings, secrets);
         const agentVault = agent.vaultAddress;
         await agentCommands.depositCollateralForLots(agentVault, "10", "1");
         await agentCommands.enterAvailableList(agentVault);
@@ -249,7 +249,7 @@ describe("Toplevel runner and commands integration test", () => {
         const context = firstValue(contexts)!;
         const agentCommands = createAgentCommands(context);
         // create vault
-        const agent = await agentCommands.createAgentVault(newAgentSettings);
+        const agent = await agentCommands.createAgentVault(newAgentSettings, secrets);
         const agentVault = agent.vaultAddress;
         await agentCommands.depositCollateralForLots(agentVault, "10", "1");
         await agentCommands.enterAvailableList(agentVault);
@@ -263,7 +263,7 @@ describe("Toplevel runner and commands integration test", () => {
         const context = firstValue(contexts)!;
         const agentCommand = createAgentCommands(context);
         // create agent and bot
-        const agent = await agentCommand.createAgentVault(newAgentSettings);
+        const agent = await agentCommand.createAgentVault(newAgentSettings, secrets);
         const agentEntities = await orm.em.find(AgentEntity, { active: true });
         const agentBot = await botRunner.newAgentBot(agentEntities[0]);
         const agentVault = agent.vaultAddress;

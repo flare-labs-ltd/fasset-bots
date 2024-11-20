@@ -9,5 +9,6 @@
     "poolExitCollateralRatio": "2.6",
     "buyFAssetByAgentFactor": "0.99",
     "poolTopupCollateralRatio": "2.2",
-    "poolTopupTokenPriceFactor": "0.8"
+    "poolTopupTokenPriceFactor": "0.8",
+    "handshakeType": 0
 }

@@ -45,7 +45,7 @@ program
             const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
             const validator = await AgentBotOwnerValidation.fromContext(cli.context, options.secrets, options.config);
             await validator.validate([options.fasset]);
-            await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
+            await cli.createAgentVault(loadAgentSettings(agentSettingsPath), secrets);
         } else {
             if (agentSettingsPath != null) {
                 console.error(`File ${agentSettingsPath} does not exist.`);

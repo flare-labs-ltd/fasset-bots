@@ -6,7 +6,7 @@ import chalk from "chalk";
 import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig, getKycClient } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
@@ -21,7 +21,7 @@ import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace, web3DeepNormalize } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, BNish, MAX_BIPS, errorIncluded, isEnumValue, maxBN, requireNotNull, toBN } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, errorIncluded, isEnumValue, maxBN, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -139,7 +139,7 @@ export class AgentBotCommands {
      * Creates instance of Agent.
      * @param agentSettings
      */
-    async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent> {
+    async createAgentVault(agentSettings: AgentSettingsConfig, secrets: Secrets): Promise<Agent> {
         await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix);
         try {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.context);
@@ -152,7 +152,7 @@ export class AgentBotCommands {
             console.log(`Creating agent bot...`);
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
             const agentBot = await AgentBot.create(this.orm.em, this.context, this.agentBotSettings, this.owner, this.ownerUnderlyingAddress,
-                addressValidityProof, agentBotSettings, this.notifiers);
+                addressValidityProof, agentBotSettings, this.notifiers, getKycClient(secrets));
             await this.notifierFor(agentBot.agent.vaultAddress).sendAgentCreated();
             console.log(`Agent bot created.`);
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
@@ -630,6 +630,7 @@ export class AgentBotCommands {
         console.log(`buyFAssetByAgentFactorBIPS: ${settings.buyFAssetByAgentFactorBIPS.toString()}`);
         console.log(`poolTopupCollateralRatioBIPS: ${settings.poolTopupCollateralRatioBIPS.toString()}`);
         console.log(`poolTopupTokenPriceFactorBIPS: ${settings.poolTopupTokenPriceFactorBIPS.toString()}`);
+        console.log(`handshakeType: ${settings.handshakeType.toString()}`);
         return settings;
     }
 

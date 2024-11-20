@@ -22,6 +22,8 @@ import { DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, createTestAgentBot, createTestMint
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState } from "../../../src/entities/common";
 import { AgentBot } from "../../../src/actors/AgentBot";
+import { Secrets } from "../../../src/config/secrets";
+import { TEST_SECRETS } from "../../../test/test-utils/test-bot-config";
 use(chaiAsPromised);
 use(spies);
 
@@ -42,6 +44,7 @@ describe("AgentBot cli commands unit tests", () => {
     let botCliCommands: AgentBotCommands;
     let chain: MockChain;
     let governance: string;
+    let secrets: Secrets;
 
     async function createAgent(contextToUse: TestAssetBotContext = context): Promise<Agent> {
         const agentBot = await createTestAgentBot(contextToUse, botCliCommands.orm, botCliCommands.owner.managementAddress, botCliCommands.ownerUnderlyingAddress);
@@ -55,6 +58,7 @@ describe("AgentBot cli commands unit tests", () => {
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
+        secrets = await Secrets.load(TEST_SECRETS);
         // accounts
         governance = accounts[0];
         ownerAddress = accounts[3];
@@ -432,11 +436,11 @@ describe("AgentBot cli commands unit tests", () => {
         const settings = loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
         settings.poolTokenSuffix = "AB-X5";
         expect(await botCliCommands.context.assetManager.isPoolTokenSuffixReserved(settings.poolTokenSuffix)).equal(false);
-        const agentBot = await botCliCommands.createAgentVault(settings);
+        const agentBot = await botCliCommands.createAgentVault(settings, secrets);
         expect(agentBot).to.not.be.undefined;
         expect(await botCliCommands.context.assetManager.isPoolTokenSuffixReserved(settings.poolTokenSuffix)).equal(true);
         // cannot create vault twice with same token
-        await expect(botCliCommands.createAgentVault(settings))
+        await expect(botCliCommands.createAgentVault(settings, secrets))
             .to.eventually.be.rejectedWith(/Agent vault with collateral pool token suffix ".*" already exists./)
             .and.to.be.instanceOf(CommandLineError);
     });
@@ -454,7 +458,7 @@ describe("AgentBot cli commands unit tests", () => {
             .and.to.be.instanceOf(CommandLineError);
         const settings = loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT);
         settings.poolTokenSuffix = "A-B8C-ZX15";
-        await botCliCommands.createAgentVault(settings);
+        await botCliCommands.createAgentVault(settings, secrets);
         await expect(botCliCommands.validateCollateralPoolTokenSuffix("A-B8C-ZX15"))
             .to.eventually.be.rejectedWith(/Agent vault with collateral pool token suffix ".*" already exists./)
             .and.to.be.instanceOf(CommandLineError);

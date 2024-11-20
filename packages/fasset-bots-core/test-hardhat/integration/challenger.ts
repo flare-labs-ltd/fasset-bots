@@ -18,7 +18,7 @@ import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { fundUnderlying, performRedemptionPayment } from "../../test/test-utils/test-helpers";
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualSCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualFDCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -143,7 +143,7 @@ describe("Challenger tests", () => {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
+            await runWithManualFDCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if redemption is done
             orm.em.clear();
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
@@ -329,7 +329,7 @@ describe("Challenger tests", () => {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
             chain.mine();
-            await runWithManualSCFinalization(context, true, () => agentBot.runStep(orm.em));
+            await runWithManualFDCFinalization(context, true, () => agentBot.runStep(orm.em));
             // check if payment proof available
             orm.em.clear();
             const redemption = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
@@ -397,7 +397,7 @@ describe("Challenger tests", () => {
         chain.mine(chain.finalizationBlocks + 1);
         // mark redemption as paid
         await agentBot.runInTransaction(orm.em, async em => {
-            const rd = await agentBot.redemption.findRedemption(orm.em, { requestId: rdReq.requestId });
+            const rd = await agentBot.redemption.findRedemption(em, { requestId: rdReq.requestId });
             rd.txDbId = txDbId;
             rd.state = AgentRedemptionState.PAID;
         })

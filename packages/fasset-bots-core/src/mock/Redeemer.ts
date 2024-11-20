@@ -89,4 +89,10 @@ export class Redeemer {
         const res = await this.assetManager.redemptionPaymentDefault(web3DeepNormalize(proof), requestId, { from: executor });
         return requiredEventArgs(res, 'RedemptionDefault');
     }
+
+    async executeRejectedPaymentDefault(requestId: BNish, executorAddress: string) {
+        const executor = executorAddress !== ZERO_ADDRESS ? executorAddress : this.address;
+        const res = await this.assetManager.rejectedRedemptionPaymentDefault(requestId, { from: executor });
+        return requiredEventArgs(res, 'RedemptionDefault');
+    }
 }

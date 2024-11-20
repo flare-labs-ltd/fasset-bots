@@ -107,7 +107,7 @@ export class FuzzingCustomer {
                     this.runner.comment(`${this.name}, req=${ticket.requestId}: Received redemption ${Number(amountPaid) / Number(lotSize)}`);
                 } else {
                     this.runner.comment(`${this.name}, req=${ticket.requestId}: Invalid redemption, paid=${formatBN(amountPaid)} expected=${expectedAmount} target=${targetAddress}`);
-                    await this.waitForPaymentTimeout(scope, ticket);    // still have to wait for timeout to be able to get non payment proof from SC
+                    await this.waitForPaymentTimeout(scope, ticket);    // still have to wait for timeout to be able to get non payment proof from FDC
                     if (!redemptionDefault.resolved) {   // do this only if the agent has not already submitted failed payment and defaulted
                         await this.redemptionDefault(scope, ticket);
                     }

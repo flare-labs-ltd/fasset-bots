@@ -175,6 +175,7 @@ describe("Agent bot unit tests", () => {
         rd.paymentReference = "";
         rd.lastUnderlyingBlock = toBN(0);
         rd.lastUnderlyingTimestamp = toBN(0);
+        rd.redeemerAddress = "";
         await orm.em.persistAndFlush(rd);
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.redemption.handleOpenRedemption(orm.em, rd.state, rd);
@@ -221,6 +222,7 @@ describe("Agent bot unit tests", () => {
         rd1.paymentReference = "";
         rd1.lastUnderlyingBlock = toBN(0);
         rd1.lastUnderlyingTimestamp = toBN(0);
+        rd1.redeemerAddress = "";
 
         const rd2 = new AgentRedemption();
         rd2.state = AgentRedemptionState.DONE;
@@ -232,6 +234,7 @@ describe("Agent bot unit tests", () => {
         rd2.paymentReference = "";
         rd2.lastUnderlyingBlock = toBN(0);
         rd2.lastUnderlyingTimestamp = toBN(0);
+        rd2.redeemerAddress = "";
 
         await orm.em.persistAndFlush([rd1, rd2]);
         const started = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.STARTED, 100);
@@ -298,6 +301,7 @@ describe("Agent bot unit tests", () => {
         rd.lastUnderlyingTimestamp = toBN(0);
         rd.proofRequestRound = 1;
         rd.proofRequestData = "";
+        rd.redeemerAddress = "";
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
@@ -318,6 +322,7 @@ describe("Agent bot unit tests", () => {
         rd.lastUnderlyingTimestamp = toBN(0);
         rd.proofRequestRound = 1;
         rd.proofRequestData = "";
+        rd.redeemerAddress = "";
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
@@ -400,6 +405,7 @@ describe("Agent bot unit tests", () => {
         rd.lastUnderlyingTimestamp = toBN(0);
         rd.proofRequestRound = 0;
         rd.proofRequestData = "";
+        rd.redeemerAddress = "";
         await orm.em.persistAndFlush(rd);
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
@@ -715,6 +721,7 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
             txHash: transactionHash1,
+            redeemerAddress:"0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59",
             createdAt: new Date(),
             updatedAt: new Date()
         };
