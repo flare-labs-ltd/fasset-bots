@@ -105,7 +105,7 @@ export async function withRetry<T>(
     while (attempts < retryLimit) {
         try {
             const result = await fn();
-            if (result) {
+            if (result != null) {
                 return result;
             }
             logger.warn(`Failed to complete ${actionDescription} (received null/0 result) on attempt ${attempts + 1}`);
