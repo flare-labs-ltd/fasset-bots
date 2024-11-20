@@ -63,7 +63,7 @@ export class BlockchainFeeService {
             }
 
             let blockHeightToFetch = lastStoredBlockHeight + 1;
-            while (blockHeightToFetch <= currentBlockHeight) {
+            while (monitoring() && blockHeightToFetch <= currentBlockHeight) {
                 const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
                 /* istanbul ignore else */
                 if (feeStats) {
@@ -81,7 +81,9 @@ export class BlockchainFeeService {
                 }
                 blockHeightToFetch++;
             }
-            await sleepMs(this.sleepTimeMs);
+            if (!monitoring()) {
+                await sleepMs(this.sleepTimeMs);
+            }
         }
         logger.info(`${this.monitoringId}: Stopped monitoring fees.`)
     }
