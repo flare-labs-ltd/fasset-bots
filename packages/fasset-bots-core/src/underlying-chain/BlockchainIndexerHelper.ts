@@ -101,13 +101,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
-            return {
-                hash: data.transactionId,
-                inputs: await this.handleInputsOutputs(data, true),
-                outputs: await this.handleInputsOutputs(data, false),
-                reference: data.paymentReference != null ? prefix0x(data.paymentReference) : ZERO_BYTES32,
-                status: this.successStatus(data),
-            };
+            return await this.convertToITransaction(data);
         }
         return null;
     }
