@@ -1,6 +1,6 @@
 import { IBlock, IBlockChain, IBlockId, ITransaction, TxInputOutput, TX_BLOCKED, TX_FAILED, TX_SUCCESS } from "./interfaces/IBlockChain";
 import axios, { AxiosInstance } from "axios";
-import { DEFAULT_RETRIES, prefix0x, retry, sleep, toBN } from "../utils/helpers";
+import { DEFAULT_RETRIES, prefix0x, requireNotNull, retry, sleep, toBN, ZERO_BYTES32 } from "../utils/helpers";
 import { formatArgs } from "../utils/formatting";
 import { logger } from "../utils/logger";
 import { ChainId } from "./ChainId";
@@ -17,6 +17,46 @@ export class BlockChainIndexerHelperError extends Error {
     constructor(message: string) {
         super(message);
     }
+}
+
+export interface ApiWrapper<T> {
+    status: string;
+    data?: T;
+    errorMessage?: string;
+}
+
+export interface ApiPaginated<T> {
+    items: T[];
+    count: number;
+    limit: number;
+    offset: number;
+}
+
+interface IndexerTransaction {
+    id: number;
+    chainType: number;
+    transactionId: string;
+    blockNumber: number;
+    timestamp: number;
+    paymentReference: string | null;
+    response: any;
+    isNativePayment: boolean;
+    transactionType: string;
+}
+
+interface IndexerBlockRange {
+    first: number;
+    last: number;
+    tip: number;
+}
+
+interface IndexerBlock {
+    blockNumber: number;
+    blockHash: string;
+    timestamp: number;
+    transactions: number;
+    confirmed: boolean;
+    numberOfConfirmations: number;
 }
 
 export class BlockchainIndexerHelper implements IBlockChain {
@@ -46,16 +86,15 @@ export class BlockchainIndexerHelper implements IBlockChain {
     async getTransactionFromIndexer(txHash: string): Promise<ITransaction | null> {
         const resp = await tryWithClients(
             this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/transaction/${txHash}`),
+            (client: AxiosInstance) => client.get<ApiWrapper<IndexerTransaction>>(`/api/indexer/transaction/${txHash}`),
             "getTransactionFromIndexer"
         );
         const status = resp.data.status;
         const data = resp.data.data;
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            const info = `Cannot retrieve transaction with hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            const errorMessage = resp.data.errorMessage;
+            const info = `Cannot retrieve transaction with hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
@@ -63,7 +102,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 hash: data.transactionId,
                 inputs: await this.handleInputsOutputs(data, true),
                 outputs: await this.handleInputsOutputs(data, false),
-                reference: prefix0x(data.paymentReference),
+                reference: data.paymentReference != null ? prefix0x(data.paymentReference) : ZERO_BYTES32,
                 status: this.successStatus(data),
             };
         }
@@ -79,16 +118,15 @@ export class BlockchainIndexerHelper implements IBlockChain {
     async getTransactionBlockFromIndexer(txHash: string): Promise<IBlockId | null> {
         const resp = await tryWithClients(
             this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/transaction-block/${txHash}`),
+            (client: AxiosInstance) => client.get<ApiWrapper<IndexerBlock>>(`/api/indexer/transaction-block/${txHash}`),
             "getTransactionBlockFromIndexer"
         );
         const status = resp.data.status;
         const data = resp.data.data;
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            const info = `Cannot retrieve block for transaction hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            const errorMessage = resp.data.errorMessage;
+            const info = `Cannot retrieve block for transaction hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
@@ -114,16 +152,15 @@ export class BlockchainIndexerHelper implements IBlockChain {
     async getBlockFromIndexer(blockHash: string): Promise<IBlock | null> {
         const resp = await tryWithClients(
             this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/block/${blockHash}`),
+            (client: AxiosInstance) => client.get<ApiWrapper<IndexerBlock>>(`/api/indexer/block/${blockHash}`),
             "getBlockFromIndexer"
         );
         const status = resp.data.status;
         const data = resp.data.data;
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            const info = `Cannot retrieve block with hash ${blockHash}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            const errorMessage = resp.data.errorMessage;
+            const info = `Cannot retrieve block with hash ${blockHash}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
@@ -147,16 +184,15 @@ export class BlockchainIndexerHelper implements IBlockChain {
     async getBlockAtFromIndexer(blockNumber: number): Promise<IBlock | null> {
         const resp = await tryWithClients(
             this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/confirmed-block-at/${blockNumber}`),
+            (client: AxiosInstance) => client.get<ApiWrapper<IndexerBlock>>(`/api/indexer/confirmed-block-at/${blockNumber}`),
             "getBlockAtFromIndexer"
         );
         const status = resp.data.status;
         const data = resp.data.data;
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
         /* istanbul ignore if */
         if (status != "OK") {
-            const info = `Cannot retrieve block at ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            const errorMessage = resp.data.errorMessage;
+            const info = `Cannot retrieve block at ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
         } else if (status === "OK" && data) {
@@ -172,29 +208,24 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     async getBlockHeight(): Promise<number> {
-        let blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
-        //temporary "hack" as testBTC indexer returns last seen block on chain and not last confirm as other indexers - will be fixed with fdc
-        if (this.chainId.toString() === ChainId.testBTC.toString() || this.chainId.toString() === ChainId.BTC.toString()) {
-            blockHeight = blockHeight - this.finalizationBlocks;
-        }
+        const blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
         return blockHeight;
     }
 
     async getBlockHeightFromIndexer(): Promise<number> {
         const resp = await tryWithClients(
             this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/block-height`),
+            (client: AxiosInstance) => client.get<ApiWrapper<number>>(`/api/indexer/block-height-indexed`),
             "getBlockHeightFromIndexer"
         );
         const status = resp.data.status;
         const data = resp.data.data;
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
         /* istanbul ignore else */
         if (status === "OK" && data) {
             return data;
         } else {
-            const info = `Cannot retrieve block height: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
+            const errorMessage = resp.data.errorMessage;
+            const info = `Cannot retrieve block height: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
         }
@@ -208,34 +239,10 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsByReferenceFromIndexer(reference: string): Promise<ITransaction[]> {
         const returnResponse = true;
-        const resp = await tryWithClients(
-            this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/transaction?paymentReference=${reference}&returnResponse=${returnResponse}`),
-            "getTransactionsByReferenceFromIndexer"
-        );
-        const status = resp.data.status;
-        const dataArray = resp.data.data;
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
-        const txs: ITransaction[] = [];
-        if (status != "OK") {
-            /* istanbul ignore next */
-            const info = `Cannot retrieve transaction by reference ${reference}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
-            logger.error(`Block chain indexer helper error: ${info}`);
-            /* istanbul ignore next */
-            throw new BlockChainIndexerHelperError(info);
-        } else if (status === "OK" && dataArray.length > 0) {
-            for (const tx of dataArray) {
-                txs.push({
-                    hash: tx.transactionId,
-                    inputs: await this.handleInputsOutputs(tx, true),
-                    outputs: await this.handleInputsOutputs(tx, false),
-                    reference: prefix0x(tx.paymentReference),
-                    status: this.successStatus(tx),
-                });
-            }
-        }
-        return txs;
+        return await this.getTransactionList(`paymentReference=${reference}&returnResponse=${returnResponse}`,
+            tx => this.convertToITransaction(tx),
+            "getTransactionsByReferenceFromIndexer",
+            `Cannot retrieve transaction by reference ${reference}`);
     }
 
     async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[]> {
@@ -246,39 +253,51 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     async getTransactionsWithinBlockRangeFromIndexer(from: number, to: number): Promise<ITransaction[]> {
         const returnResponse = true;
-        const resp = await tryWithClients(
-            this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/transaction?from=${from}&to=${to}&returnResponse=${returnResponse}`),
-            "getTransactionsWithinBlockRangeFromIndexer"
-        );
-        const status = resp.data.status;
-        const dataArray: any[] = resp.data.data;
-        const txs: ITransaction[] = [];
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
-        /* istanbul ignore if */
-        if (status != "OK") {
-            const info = `Cannot retrieve transactions between block ${from} and ${to}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
-            logger.error(`Block chain indexer helper error: ${info}`);
-            throw new BlockChainIndexerHelperError(info);
-        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
-            for (const tx of dataArray) {
-                /* istanbul ignore else */
-                if (tx.transactionType != "EMPTY_BLOCK_INDICATOR") {
-                    txs.push({
-                        hash: tx.transactionId,
-                        inputs: await this.handleInputsOutputs(tx, true),
-                        outputs: await this.handleInputsOutputs(tx, false),
-                        reference: prefix0x(tx.paymentReference),
-                        status: this.successStatus(tx),
-                    });
+        return await this.getTransactionList(`from=${from}&to=${to}&returnResponse=${returnResponse}`,
+            tx => this.convertToITransaction(tx),
+            "getTransactionsWithinBlockRangeFromIndexer",
+            `Cannot retrieve transactions between block ${from} and ${to}`);
+    }
+
+    private async getTransactionList<T>(urlQuery: string, convert: (tx: IndexerTransaction) => T | Promise<T>, methodName: string, errorExplanation: string) {
+        const chunkSize = 100;
+        const txs: T[] = [];
+        for (let offset = 0; ;) {
+            const resp = await tryWithClients(
+                this.clients,
+                (client: AxiosInstance) => client.get<ApiWrapper<ApiPaginated<IndexerTransaction>>>(`/api/indexer/transaction?${urlQuery}&limit=${chunkSize}&offset=${offset}`),
+                methodName
+            );
+            const status = resp.data.status;
+            if (status != "OK") {
+                const info = `${errorExplanation}: ${status}: ${resp.data.errorMessage ?? ""}`;
+                logger.error(`Block chain indexer helper error: ${info}`);
+                throw new BlockChainIndexerHelperError(info);
+            } else if (status === "OK") {
+                const data = requireNotNull(resp.data.data);
+                for (const tx of data.items) {
+                    txs.push(await convert(tx));
+                }
+                offset = data.offset + data.limit;
+                if (offset >= data.count) {
+                    break;
                 }
             }
         }
         return txs;
     }
 
-    private async handleInputsOutputs(data: any, input: boolean): Promise<TxInputOutput[]> {
+    private async convertToITransaction(tx: IndexerTransaction): Promise<ITransaction> {
+        return {
+            hash: tx.transactionId,
+            inputs: await this.handleInputsOutputs(tx, true),
+            outputs: await this.handleInputsOutputs(tx, false),
+            reference: tx.paymentReference != null ? prefix0x(tx.paymentReference) : ZERO_BYTES32,
+            status: this.successStatus(tx),
+        };
+    }
+
+    private async handleInputsOutputs(data: IndexerTransaction, input: boolean): Promise<TxInputOutput[]> {
         const type = data.transactionType;
         const res = data.response;
         switch (this.chainId) {
@@ -297,27 +316,10 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     private async extractTransactionIds(blockNumber: number): Promise<string[]> {
-        const transactionIds: string[] = [];
-        const resp = await tryWithClients(
-            this.clients,
-            (client: AxiosInstance) => client.get(`/api/indexer/transaction?from=${blockNumber}&to=${blockNumber}`),
-            "extractTransactionIds"
-        );
-        const status = resp.data.status;
-        const dataArray = resp.data.data;
-        const errorMessage = resp.data.errorMessage;
-        const errorDetails = resp.data.errorDetails;
-        /* istanbul ignore if */
-        if (status != "OK") {
-            const info = `Cannot retrieve transaction ids from block ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}, ${errorDetails ? errorDetails : ""}`;
-            logger.error(`Block chain indexer helper error: ${info}`);
-            throw new BlockChainIndexerHelperError(info);
-        } else /* istanbul ignore else */ if (status === "OK" && dataArray.length > 0) {
-            dataArray.map((item: any) => {
-                transactionIds.push(item.transactionId);
-            });
-        }
-        return transactionIds;
+        return await this.getTransactionList(`from=${blockNumber}&to=${blockNumber}`,
+            tx => tx.transactionId,
+            "extractTransactionIds",
+            `Cannot retrieve transaction ids from block ${blockNumber}`);
     }
 
     private get isUTXOchain(): boolean {
@@ -348,8 +350,8 @@ export class BlockchainIndexerHelper implements IBlockChain {
         }
     }
 
-    private XRPInputsOutputs(data: any, input: boolean): TxInputOutput[] {
-        const response = data.response.result;
+    private XRPInputsOutputs(data: IndexerTransaction, input: boolean): TxInputOutput[] {
+        const response = data.response;
         if (input) {
             if (data.isNativePayment) {
                 return [[response.Account, toBN(response.Amount as any).add(toBN(response.Fee ? response.Fee : 0))]];
@@ -358,19 +360,19 @@ export class BlockchainIndexerHelper implements IBlockChain {
         } else {
             if (data.isNativePayment && this.successStatus(data) === TX_SUCCESS) {
                 /* istanbul ignore next */
-                const metaData = response.meta || (response as any).metaData;
+                const metaData = response.meta || response.metaData;
                 return [[response.Destination, toBN(metaData.delivered_amount as string)]];
             }
             return [["", toBN(0)]];
         }
     }
 
-    private successStatus(data: any): number {
+    private successStatus(data: IndexerTransaction): number {
         if (this.isUTXOchain) {
             return TX_SUCCESS;
         }
         // https://xrpl.org/transaction-results.html
-        const response = data.response.result;
+        const response = data.response;
         /* istanbul ignore next */
         const metaData = response.meta || (response as any).metaData;
         const result = metaData.TransactionResult;
@@ -400,6 +402,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
         }
         return toBN(Math.round(value * BTC_MDU).toFixed(0));
     }
+
     async waitForUnderlyingTransactionFinalization(txHash: string, maxBlocksToWaitForTx?: number): Promise<ITransaction | null> {
         logger.info(`Block chain indexer helper: waiting for underlying transaction ${txHash} finalization for ${maxBlocksToWaitForTx} blocks`);
         const transaction = await this.waitForUnderlyingTransaction(txHash, maxBlocksToWaitForTx);
