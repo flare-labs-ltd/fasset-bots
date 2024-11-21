@@ -259,7 +259,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     ///////////////////////////////////////////////////////////////////////////////////////
 
     async createMonitor(): Promise<ITransactionMonitor> {
-        return new TransactionMonitor(this.chainType, this.rootEm, this.clone.bind(this), this.feeService, this.blockchainAPI);
+        return new TransactionMonitor(this.chainType, this.rootEm, this.clone.bind(this), this.feeService);
     }
 
     async checkNetworkStatus(): Promise<boolean> {

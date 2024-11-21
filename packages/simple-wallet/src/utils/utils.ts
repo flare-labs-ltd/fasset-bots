@@ -86,7 +86,7 @@ export function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpW
    if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
        executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
    }
-   const timeRestrictionMet = !!executeUntilTimestamp && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
+   const timeRestrictionMet = executeUntilTimestamp && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
 
    if (executeUntilBlock && !executeUntilTimestamp && blockRestrictionMet) {
       return false;
