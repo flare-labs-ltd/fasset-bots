@@ -94,6 +94,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         /* istanbul ignore if */
         if (status != "OK") {
             const errorMessage = resp.data.errorMessage;
+            if (errorMessage === "Transaction not found") {
+                return null;
+            }
             const info = `Cannot retrieve transaction with hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
@@ -126,6 +129,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         /* istanbul ignore if */
         if (status != "OK") {
             const errorMessage = resp.data.errorMessage;
+            if (errorMessage === "Block not found" || errorMessage === "Transaction not found") {
+                return null;
+            }
             const info = `Cannot retrieve block for transaction hash ${txHash}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
@@ -160,6 +166,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         /* istanbul ignore if */
         if (status != "OK") {
             const errorMessage = resp.data.errorMessage;
+            if (errorMessage === "Block not found") {
+                return null;
+            }
             const info = `Cannot retrieve block with hash ${blockHash}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
@@ -192,6 +201,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
         /* istanbul ignore if */
         if (status != "OK") {
             const errorMessage = resp.data.errorMessage;
+            if (errorMessage === "Block not found") {
+                return null;
+            }
             const info = `Cannot retrieve block at ${blockNumber}: ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
@@ -351,12 +363,12 @@ export class BlockchainIndexerHelper implements IBlockChain {
     }
 
     private XRPInputsOutputs(data: IndexerTransaction, input: boolean): TxInputOutput[] {
-        const response = data.response;
+        const response = data.response.result;
         if (input) {
             if (data.isNativePayment) {
-                return [[response.Account, toBN(response.Amount as any).add(toBN(response.Fee ? response.Fee : 0))]];
+                return [[response.Account, toBN(response.Amount).add(toBN(response.Fee || 0))]];
             }
-            return [[response.Account, response.Fee ? toBN(response.Fee) : toBN(0)]];
+            return [[response.Account, toBN(response.Fee || 0)]];
         } else {
             if (data.isNativePayment && this.successStatus(data) === TX_SUCCESS) {
                 /* istanbul ignore next */
@@ -372,9 +384,9 @@ export class BlockchainIndexerHelper implements IBlockChain {
             return TX_SUCCESS;
         }
         // https://xrpl.org/transaction-results.html
-        const response = data.response;
+        const response = data.response.result;
         /* istanbul ignore next */
-        const metaData = response.meta || (response as any).metaData;
+        const metaData = response.meta || response.metaData;
         const result = metaData.TransactionResult;
         if (result === "tesSUCCESS") {
             // https://xrpl.org/tes-success.html

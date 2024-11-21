@@ -228,7 +228,6 @@ describe("testXRP blockchain tests via indexer", () => {
         let overflowBlockNum = await chain.getBlockHeight();
         while (true) {
             const overflowBlock = await chain.getBlockAt(overflowBlockNum);
-            console.log("Overflow block:", overflowBlock);
             if (overflowBlock != null) break;
             --overflowBlockNum;
         }
