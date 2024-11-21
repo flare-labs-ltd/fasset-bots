@@ -77,8 +77,7 @@ export class TransactionFeeService {
     private async getCurrentFeeRate(): Promise<BN> {
         try {
             const fee = await this.blockchainAPI.getCurrentFeeRate();
-            if (fee.toString() === "-1" || fee === 0) {
-                logger.warn(`Cannot obtain valid fee rate ${fee.toString()}`);
+            if (fee === 0) {
                 return getDefaultFeePerKB(this.chainType);
             }
             const rateInSatoshies = toBN(fee);

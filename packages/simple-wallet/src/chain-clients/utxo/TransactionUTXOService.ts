@@ -84,7 +84,9 @@ export class TransactionUTXOService {
         const validUTXOs = allUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType)));
         const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType))); // should not be necessary
 
-        logger.info(`Transaction got RBF UTXOs with id's: ${validRbfUTXOs.map(t => t.id).toString()}`);
+        if (validRbfUTXOs && validRbfUTXOs.length > 0) {
+            logger.info(`Transaction got RBF UTXOs with id's: ${validRbfUTXOs.map(t => t.id).toString()}`);
+        }
 
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
             logger.info(`Account doesn't have enough UTXOs - Skipping selection.
@@ -297,7 +299,7 @@ export class TransactionUTXOService {
         return false;
     }
 
-    private async getTransactionEntityByHash(txHash: string) {
+    private async getTransactionEntityByHash(txHash: string, inMempool: boolean = true) {
         let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
         if (txEnt && txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED) {
             const tr = await this.blockchainAPI.getTransaction(txHash);
@@ -308,9 +310,9 @@ export class TransactionUTXOService {
         }
         if (!txEnt) {
             const tr = await this.blockchainAPI.getTransaction(txHash);
-            logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
             /* istanbul ignore else */
-            if (tr) {
+            if ((tr && inMempool && tr.blockHash && tr.confirmations < this.enoughConfirmations) || (tr && !inMempool)) {
+                logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
                 await transactional(this.rootEm, async (em) => {
                     /* istanbul ignore next */
                     const txEnt = em.create(TransactionEntity, {
@@ -356,7 +358,7 @@ export class TransactionUTXOService {
     async createInputsFromUTXOs(dbUTXOs: UTXOEntity[], txId: number) {
         const inputs: TransactionInputEntity[] = [];
         for (const utxo of dbUTXOs) {
-            const tx = await this.getTransactionEntityByHash(utxo.mintTransactionHash);
+            const tx = await this.getTransactionEntityByHash(utxo.mintTransactionHash, false);
             /* istanbul ignore else */
             if (tx) {
                 inputs.push(transformUTXOEntToTxInputEntity(utxo, tx));

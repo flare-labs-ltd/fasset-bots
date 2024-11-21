@@ -13,10 +13,11 @@ export class BlockchainFeeService {
     blockchainAPI: UTXOBlockchainAPI;
     history: BlockStats[] = [];
     numberOfBlocksInHistory = 11;
-    sleepTimeMs = 5000;
+    sleepTimeMs = 10_000;
     chainType: ChainType;
     useNBlocksToCalculateFee = 5;
     monitoringId: string;
+    setupHistorySleepTimeMs = 1_500;
 
     constructor(blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
         this.chainType = chainType;
@@ -112,6 +113,7 @@ export class BlockchainFeeService {
             } else {
                 logger.error(`Failed to retrieve fee stats for block ${blockHeightToFetch} during history setup.`);
             }
+            await sleepMs(this.setupHistorySleepTimeMs);
         }
         logger.info(`${this.monitoringId}: Setup history completed.`)
     }

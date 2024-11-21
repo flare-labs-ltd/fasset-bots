@@ -4,7 +4,7 @@ import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransactio
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOCK_WAIT_DELAY, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger, loggerAsyncStorage } from "../../utils/logger";
-import { createMonitoringId, getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
+import { createMonitoringId, getRandomInt, sleepMs } from "../../utils/utils";
 import { utxoOnly } from "../utxo/UTXOUtils";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";

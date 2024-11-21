@@ -109,7 +109,7 @@ export async function withRetry<T>(
             if (result != null) {
                 return result;
             }
-            logger.warn(`Failed to complete ${actionDescription} (received null/0 result) on attempt ${attempts + 1}`);
+            logger.warn(`Failed to complete ${actionDescription} (received null result) on attempt ${attempts + 1}`);
         } catch (error) /* istanbul ignore next */ {
             logger.warn(`Error during ${actionDescription} on attempt ${attempts + 1}: ${errorMessage(error)}`);
         }
