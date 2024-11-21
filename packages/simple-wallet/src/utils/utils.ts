@@ -150,5 +150,5 @@ export function fullStackTrace(error: Error, skipDepth: number = 0): string {
    // always skip 1 line for message, 1 for this method
    const extraStackLines = (stackError.stack ?? "").split("\n").slice(skipDepth + 2);
    const filteredStackLines = extraStackLines.filter(l => !originalStack.includes(l));
-   return originalStack + filteredStackLines.join("\n");
+   return [originalStack.trimEnd(), ...filteredStackLines].join("\n");
 }

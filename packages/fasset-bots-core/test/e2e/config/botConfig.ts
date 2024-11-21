@@ -8,7 +8,7 @@ import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createWalletClient, supportedChainId } from "../../../src/config/create-wallet-client";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { initWeb3 } from "../../../src/utils/web3";
-import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
+import { DATA_ACCESS_LAYER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
 import { getNativeAccounts } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
@@ -100,7 +100,7 @@ describe("Bot config tests", () => {
         const flareDataConnector = await createFlareDataConnectorClient(
             indexerTestXRPUrls,
             indexerApiKey(secrets, indexerTestXRPUrls),
-            ATTESTATION_PROVIDER_URLS,
+            DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
@@ -120,7 +120,7 @@ describe("Bot config tests", () => {
             chainInfo,
             runConfig.agentBotSettings,
             botConfig.orm!.em,
-            ATTESTATION_PROVIDER_URLS,
+            DATA_ACCESS_LAYER_URLS,
             OWNER_ADDRESS
         );
         expect(agentBotConfigChain.flareDataConnector).not.be.null;

@@ -12,7 +12,7 @@ import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/I
 import { toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../test-utils/create-test-orm";
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
+import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, OWNER_ADDRESS, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
 import { enableSlowTests, itIf } from "../../test-utils/test-helpers";
 import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
 use(chaiAsPromised);
@@ -59,7 +59,7 @@ describe("Attestation client unit tests", () => {
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         attestationHelper = await createAttestationHelper(
             chainId,
-            ATTESTATION_PROVIDER_URLS,
+            DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,

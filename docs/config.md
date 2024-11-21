@@ -181,7 +181,7 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
         "type": "sqlite"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "dataAccessLayerUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
+    "dataAccessLayerUrls": ["https://da.cflr.testfsp.aflabs.org:4443"],
     "liquidationStrategy": {
         "className": "DexLiquidationStrategy",
         "config": {

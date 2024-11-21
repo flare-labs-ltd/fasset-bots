@@ -17,10 +17,14 @@ export const COSTON_CONFIG_EXTENDS_2 = "./test/test-utils/run-config-test/run-co
 export const COSTON_CONFIG_LOOP_1 = "./test/test-utils/run-config-test/run-config-extend-loop-1.json";
 export const COSTON_CONFIG_INVALID = "./test/test-utils/run-config-test/run-config-coston-invalid.json";
 
-export const INDEXER_URL_XRP: string[] = ["https://testnet-verifier.aflabs.org/verifier/xrp", "https://testnet-verifier.aflabs.org/verifier/xrp"];
-export const ATTESTATION_PROVIDER_URLS: string[] = [
-    "https://attestation-coston.aflabs.net/attestation-client",
-    "https://attestation-coston.aflabs.net/attestation-client",
+export const INDEXER_URL_XRP: string[] = [
+    "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp",
+    "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"
+];
+
+export const DATA_ACCESS_LAYER_URLS: string[] = [
+    "https://da.cflr.testfsp.aflabs.org:4443",
+    "https://da.cflr.testfsp.aflabs.org:4443",
 ];
 
 export const FDC_VERIFICATION_ADDRESS: string = "0x6Bd0DBbDB84F667d5C450E517760375c8Ad8De71";

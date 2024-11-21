@@ -1,4 +1,4 @@
-import { ConfirmedBlockHeightExists, encodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, encodeAttestationName, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import rewire from "rewire";
@@ -9,7 +9,8 @@ import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/Fl
 import { ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../test-utils/TestChainInfo";
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
+import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
+import { keccak256 } from "web3-utils";
 use(chaiAsPromised);
 const rewiredFlareDataConnectorClientHelper = rewire("../../../src/underlying-chain/FlareDataConnectorClientHelper");
 const rewiredFlareDataConnectorClientHelperClass = rewiredFlareDataConnectorClientHelper.__get__("FlareDataConnectorClientHelper");
@@ -32,7 +33,7 @@ describe("testXRP attestation/flare data connector tests", () => {
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
             indexerApiKey(secrets, INDEXER_URL_XRP),
-            ATTESTATION_PROVIDER_URLS,
+            DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
@@ -55,7 +56,7 @@ describe("testXRP attestation/flare data connector tests", () => {
         expect(isRoundFinalized).to.be.false;
     });
 
-    it("Should submit request", async () => {
+    it("Should submit ConfirmedBlockHeightExists request", async () => {
         const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets, INDEXER_URL_XRP));
         const blockHeight = await blockChainIndexerClient.getBlockHeight();
         const queryWindow = 86400;
@@ -66,6 +67,72 @@ describe("testXRP attestation/flare data connector tests", () => {
             requestBody: {
                 blockNumber: String(blockHeight - testChainInfo.xrp.finalizationBlocks),
                 queryWindow: String(queryWindow),
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it.skip("Should submit Payment request", async () => {
+        const request: Payment.Request = {
+            attestationType: Payment.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                transactionId: "782DB5E0DF5AACBC2A87A1DF60B073F12B3A51A6B1D083D5D63B07CD19F8EFA8",
+                inUtxo: "0",
+                utxo: "0"
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it("Should submit ReferencedPaymentNonexistence request", async () => {
+        const request: ReferencedPaymentNonexistence.Request = {
+            attestationType: ReferencedPaymentNonexistence.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                standardPaymentReference: "0x464250526641000100000000000000000000000000000000000000000000b35c",
+                amount: "1000",
+                checkSourceAddresses: false,
+                sourceAddressesRoot: ZERO_BYTES32,
+                destinationAddressHash: keccak256("123"),
+                minimalBlockNumber: "2470000",
+                deadlineBlockNumber: "2470543",
+                deadlineTimestamp: "1732181500",
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it.skip("Should submit BalanceDecreasingTransaction request", async () => {
+        const request: BalanceDecreasingTransaction.Request = {
+            attestationType: BalanceDecreasingTransaction.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                transactionId: "523B3A4AD40C36DF2C03E75DAAFC95C21DF287A6608AEA648B1B764EE53CD57C",
+                sourceAddressIndicator: keccak256("rPThYRTdgpUDmRBiy2BPDb5F4XZgUkEFeS"),
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it("Should submit AddressValidity request", async () => {
+        const request: AddressValidity.Request = {
+            attestationType: AddressValidity.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                addressStr: "rPThYRTdgpUDmRBiy2BPDb5F4XZgUkEFeS"
             },
         };
         const resp = await flareDataConnectorClient.submitRequest(request);
@@ -135,14 +202,14 @@ describe("Flare data connector tests - decoding", () => {
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
             indexerApiKey(secrets, INDEXER_URL_XRP),
-            ATTESTATION_PROVIDER_URLS,
+            DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
             accounts[0]
         );
         rewiredFlareDataConnectorHelper = new rewiredFlareDataConnectorClientHelperClass(
-            ATTESTATION_PROVIDER_URLS,
+            DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             [""],

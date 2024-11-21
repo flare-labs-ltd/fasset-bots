@@ -48,7 +48,7 @@
             "tokenName": "Test DOGE",
             "tokenSymbol": "testDOGE",
             "tokenDecimals": 8,
-            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/doge"],
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/doge"],
             "walletUrls": ["https://blockbook-dogecoin-testnet.flare.network/api/v2"],
             "priceChangeEmitter": "FtsoV2PriceStore"
         }
@@ -82,7 +82,7 @@
     },
     "rpcUrl": "https://coston-api-tracer.flare.network/ext/C/rpc",
     "dataAccessLayerUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
+        "https://da.cflr.testfsp.aflabs.org:4443"
     ],
     "ormOptions": {
         "type": "sqlite",

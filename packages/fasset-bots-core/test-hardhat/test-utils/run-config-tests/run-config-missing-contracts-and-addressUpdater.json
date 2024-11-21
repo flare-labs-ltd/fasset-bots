@@ -42,6 +42,6 @@
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "dataAccessLayerUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
+        "https://da.cflr.testfsp.aflabs.org:4443"
     ]
 }
