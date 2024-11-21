@@ -35,30 +35,26 @@ export function isBigNumber(x: any): x is BN | string {
     return BN.isBN(x) || (typeof x === "string" && /^\d+$/.test(x));
 }
 
-export function formatArgsAsObject(args: any) {
-    if (!args) return null;
-    const result: any = {};
-    for (const [key, value] of Object.entries(args)) {
-        if (Number.isNaN(parseInt(key)) && key != "__length__") {
-            result[key] = formatArg(value);
-        }
-    }
-    return result;
+export function isNumericKey(k: string | number) {
+    return typeof k === "number" || (typeof k === "string" && /^\d+$/.test(k));
 }
 
-export function formatArgs(args: any) {
-    return JSON.stringify(formatArgsAsObject(args));
+export function formatArgs(args: unknown) {
+    return formatArg(args, true);
 }
 
-function formatArg(value: unknown): string {
+function formatArg(value: unknown, skipArrayKeys: boolean = false): string {
     if (isBigNumber(value)) {
         return formatBN(value);
     } else if (Array.isArray(value)) {
-        return `[${value.map((v) => formatArg(v)).join(", ")}]`;
+        const entriesFmt = value.map((v) => formatArg(v)).join(", ");
+        return `[${entriesFmt}]`;
     } else if (typeof value === "object" && value?.constructor === Object) {
-        return `{ ${Object.entries(value)
+        const entriesFmt = Object.entries(value)
+            .filter(([k, v]) => !skipArrayKeys || (!isNumericKey(k) && k !== "__length__"))
             .map(([k, v]) => `${k}: ${formatArg(v)}`)
-            .join(", ")} }`;
+            .join(", ");
+        return `{ ${entriesFmt} }`;
     } else {
         return "" + value;
     }
