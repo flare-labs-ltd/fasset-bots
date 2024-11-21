@@ -44,7 +44,17 @@ export class BlockchainFeeService {
     getLatestMedianTime(): BN | null {
         /* istanbul ignore if */
         if (this.history.length < this.numberOfBlocksInHistory || !this.checkConsecutiveBlocks()) {
-            return null;
+        logger.warn(`Cannot determine latest median time.\n` +
+                `History contains ${this.history.length} blocks:\n` +
+                this.history
+                    .map(
+                        (block, index) =>
+                            `Block ${index + 1}: Height = ${block.blockHeight}, ` +
+                            `AvgFeePerKB = ${block.averageFeePerKB.toString()}, ` +
+                            `BlockTime = ${block.blockTime.toString()}`
+                    )
+                    .join("\n")
+            );
         }
         const blockTimes = this.history.map(block => block.blockTime);
         blockTimes.sort((a, b) => a.sub(b).toNumber());

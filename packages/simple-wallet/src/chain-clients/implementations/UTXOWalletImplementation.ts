@@ -677,7 +677,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             newValue,
             totalFee,
             oldTx.reference,
-            oldTx.maxFee,
+            undefined, // ignore max fee constraint, as amount to pay is way less than in original
             oldTx.executeUntilBlock,
             oldTx.executeUntilTimestamp,
             oldTx,
