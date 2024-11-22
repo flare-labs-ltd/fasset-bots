@@ -295,7 +295,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     private async convertToITransaction(tx: IndexerTransaction): Promise<ITransaction> {
         return {
-            hash: tx.transactionId,
+            hash: this.normalizeTxHash(tx.transactionId),
             inputs: await this.handleInputsOutputs(tx, true),
             outputs: await this.handleInputsOutputs(tx, false),
             reference: tx.paymentReference != null ? prefix0x(tx.paymentReference) : ZERO_BYTES32,
@@ -464,5 +464,12 @@ export class BlockchainIndexerHelper implements IBlockChain {
             default:
                 throw new Error(`SourceId ${this.chainId} not supported.`);
         }
+    }
+
+    normalizeTxHash(txhash: string) {
+        if (this.chainId === ChainId.XRP || this.chainId === ChainId.testXRP) {
+            return txhash.toUpperCase();
+        }
+        return txhash;
     }
 }
