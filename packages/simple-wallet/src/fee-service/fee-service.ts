@@ -44,17 +44,6 @@ export class BlockchainFeeService {
     getLatestMedianTime(): BN | null {
         /* istanbul ignore if */
         if (this.history.length < this.numberOfBlocksInHistory || !this.checkConsecutiveBlocks()) {
-            console.warn(`Cannot determine latest median time.\n` +
-                `History contains ${this.history.length} blocks:\n` +
-                this.history
-                    .map(
-                        (block, index) =>
-                            `Block ${index + 1}: Height = ${block.blockHeight}, ` +
-                            `AvgFeePerKB = ${block.averageFeePerKB.toString()}, ` +
-                            `BlockTime = ${block.blockTime.toString()}`
-                    )
-                    .join("\n")
-            );
         logger.warn(`Cannot determine latest median time.\n` +
                 `History contains ${this.history.length} blocks:\n` +
                 this.history
@@ -70,7 +59,6 @@ export class BlockchainFeeService {
         const blockTimes = this.history.map(block => block.blockTime);
         blockTimes.sort((a, b) => a.sub(b).toNumber());
         const latestMedianTime = blockTimes[Math.floor(blockTimes.length / 2)];
-        console.log("getLatestMedianTime", this.history[this.history.length -1].blockHeight, latestMedianTime.toString())
         return latestMedianTime;
     }
 
