@@ -15,7 +15,7 @@ describe("Dogecoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const DOGEMccConnectionMain = { ...DOGEMccConnectionMainInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: DOGE = new DOGE(null, DOGEMccConnectionMain);
+      const wClient: DOGE = new DOGE(DOGEMccConnectionMain, null, null);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(DOGE_MAINNET);
    });

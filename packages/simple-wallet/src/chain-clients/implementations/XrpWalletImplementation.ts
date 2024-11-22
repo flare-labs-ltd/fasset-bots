@@ -52,7 +52,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    createConfig: RippleWalletConfig;
 
-   constructor(monitoringId: string | null, createConfig: RippleWalletConfig) {
+   constructor(createConfig: RippleWalletConfig, monitoringId: string | null) {
       super(createConfig.inTestnet ?? false);
       this.inTestnet = createConfig.inTestnet ?? false;
 
@@ -72,7 +72,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    clone(monitoringId: string, rootEm: EntityManager) {
       logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
-      return new XrpWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
+      return new XrpWalletImplementation({ ...this.createConfig, em: rootEm }, monitoringId);
    }
 
    getMonitoringId(): string {
