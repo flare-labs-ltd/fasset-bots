@@ -55,6 +55,15 @@ export function getAmountToSendInCaseOfRbf(amount: BN | null, chainType: ChainTy
     }
 }
 
+export function getMinAmountToSend(chainType: ChainType): BN {
+    if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
+        return DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;
+    } else {
+        return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
+    }
+}
+
+
 /* istanbul ignore next */
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
     try {
