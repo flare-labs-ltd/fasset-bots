@@ -45,6 +45,7 @@ import {
     getAccountBalance,
     getAmountToSendInCaseOfRbf,
     getCore,
+    getMinAmountToSend,
     getTransactionDescendants,
 } from "../utxo/UTXOUtils";
 import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
@@ -665,15 +666,14 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
         }
         // send less as in original tx (as time for payment passed) or "delete transaction" amount
-        const newValue: BN | null = getAmountToSendInCaseOfRbf(oldTx.amount ?? null, this.chainType);
-        const targetAddress = oldTx.amount == null ? oldTx.destination : oldTx.source;
+        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType)
         const totalFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)).add(oldTx.fee!); // covering conflicting txs
         logger.info(`Descendants fee ${totalFee.sub(oldTx.fee!).toNumber()}, oldTx fee ${oldTx.fee}, total fee ${totalFee}`);
         const replacementTx = await createInitialTransactionEntity(
             this.rootEm,
             this.chainType,
             oldTx.source,
-            targetAddress,
+            oldTx.destination,
             newValue,
             totalFee,
             oldTx.reference,
