@@ -44,6 +44,17 @@ export class BlockchainFeeService {
     getLatestMedianTime(): BN | null {
         /* istanbul ignore if */
         if (this.history.length < this.numberOfBlocksInHistory || !this.checkConsecutiveBlocks()) {
+            console.warn(`Cannot determine latest median time.\n` +
+                `History contains ${this.history.length} blocks:\n` +
+                this.history
+                    .map(
+                        (block, index) =>
+                            `Block ${index + 1}: Height = ${block.blockHeight}, ` +
+                            `AvgFeePerKB = ${block.averageFeePerKB.toString()}, ` +
+                            `BlockTime = ${block.blockTime.toString()}`
+                    )
+                    .join("\n")
+            );
         logger.warn(`Cannot determine latest median time.\n` +
                 `History contains ${this.history.length} blocks:\n` +
                 this.history
@@ -68,13 +79,17 @@ export class BlockchainFeeService {
             const currentBlockHeight = await this.getCurrentBlockHeightWithRetry();
             /* istanbul ignore next */
             const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
+            console.log("monitorFees", this.monitoringId, currentBlockHeight, lastStoredBlockHeight)
+            console.log("monitorFees", this.monitoringId, this.getLatestMedianTime()?.toString())
             if (!currentBlockHeight || currentBlockHeight <= lastStoredBlockHeight) {
+                console.log("monitorFees-sleep", this.monitoringId)
                 await sleepMs(this.sleepTimeMs);
                 continue;
             }
 
             let blockHeightToFetch = lastStoredBlockHeight + 1;
             while (monitoring() && blockHeightToFetch <= currentBlockHeight) {
+                console.log("monitorFees-in-", this.monitoringId, blockHeightToFetch, currentBlockHeight, blockHeightToFetch <= currentBlockHeight)
                 const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
                 /* istanbul ignore else */
                 if (feeStats) {
