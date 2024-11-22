@@ -12,6 +12,8 @@ export class DogeWalletImplementation extends UTXOWalletImplementation {
 
    clone(monitoringId: string, rootEm: EntityManager): UTXOWalletImplementation {
       logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
-      return new DogeWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
+      const wallet = new DogeWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
+      wallet.feeService = this.feeService;
+      return wallet;
    }
 }

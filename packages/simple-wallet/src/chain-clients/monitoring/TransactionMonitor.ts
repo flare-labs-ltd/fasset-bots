@@ -70,6 +70,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         // start fee monitoring
         if (this.feeService) {
             const feeService = this.feeService;
+            feeService.monitoringId = this.monitoringId;
             await feeService.setupHistory();
             this.startThread(this.rootEm, `fee-service-${this.monitoringId}`, async () => {
                 await feeService.monitorFees(() => this.monitoring);
