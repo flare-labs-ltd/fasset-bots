@@ -3,17 +3,16 @@ import { ChainType } from "../../utils/constants";
 import type { BitcoinWalletConfig } from "../../interfaces/IWalletTransaction";
 import { EntityManager } from "@mikro-orm/core";
 import { logger } from "../../utils/logger";
+import { BlockchainFeeService } from "../../fee-service/fee-service";
 
 export class BtcWalletImplementation extends UTXOWalletImplementation {
-   constructor(monitoringId: string | null, options: BitcoinWalletConfig) {
+   constructor(options: BitcoinWalletConfig, monitoringId: string | null, feeService: BlockchainFeeService | null) {
       const chainType = options.inTestnet ? ChainType.testBTC : ChainType.BTC;
-      super(chainType, monitoringId, options);
+      super(chainType, options, monitoringId, feeService);
    }
 
    clone(monitoringId: string, rootEm: EntityManager): UTXOWalletImplementation {
       logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
-      const wallet = new BtcWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
-      wallet.feeService = this.feeService;
-      return wallet;
+      return new BtcWalletImplementation({ ...this.createConfig, em: rootEm }, monitoringId, this.feeService);
    }
 }
