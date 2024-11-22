@@ -43,6 +43,7 @@ import { EntityManager } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
     getAccountBalance,
+    getAmountToSendInCaseOfRbf,
     getCore,
     getMinAmountToSend,
     getTransactionDescendants,
@@ -664,8 +665,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 return;
             }
         }
-        // send minimal amount (as time for payment passed) or "delete transaction" amount
-        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType);
+        // send less as in original tx (as time for payment passed) or "delete transaction" amount
+        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType)
         const totalFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)).add(oldTx.fee!); // covering conflicting txs
         logger.info(`Descendants fee ${totalFee.sub(oldTx.fee!).toNumber()}, oldTx fee ${oldTx.fee}, total fee ${totalFee}`);
         const replacementTx = await createInitialTransactionEntity(

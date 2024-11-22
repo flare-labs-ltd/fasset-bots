@@ -66,6 +66,7 @@ export function createAxiosConfig(url: string, apiKey?: string, timeoutMs?: numb
     if (apiKey) {
         createAxiosConfig.headers ??= {};
         createAxiosConfig.headers["X-API-KEY"] = apiKey;
+        createAxiosConfig.headers["x-apikey"] = apiKey;
     }
     return createAxiosConfig;
 }
@@ -105,10 +106,10 @@ export async function withRetry<T>(
     while (attempts < retryLimit) {
         try {
             const result = await fn();
-            if (result) {
+            if (result != null) {
                 return result;
             }
-            logger.warn(`Failed to complete ${actionDescription} (received null/0 result) on attempt ${attempts + 1}`);
+            logger.warn(`Failed to complete ${actionDescription} (received null result) on attempt ${attempts + 1}`);
         } catch (error) /* istanbul ignore next */ {
             logger.warn(`Error during ${actionDescription} on attempt ${attempts + 1}: ${errorMessage(error)}`);
         }
