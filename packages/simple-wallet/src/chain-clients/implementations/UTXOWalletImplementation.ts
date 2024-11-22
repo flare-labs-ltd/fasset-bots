@@ -125,6 +125,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         try {
             const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(params.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, params.source, utxosFromMempool);
+            if (params.feeSource) {
+                const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(params.feeSource);
+                await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, params.feeSource, utxosFromMempool);
+            }
             const [transaction] = await this.transactionService.preparePaymentTransaction(
                 0,
                 params.source,
@@ -523,11 +527,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 });
                 logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed status from ${TransactionStatus.TX_SUBMITTED} to ${TransactionStatus.TX_FAILED}.`);
             } else if (txEnt.ancestor) {
-                await correctUTXOInconsistenciesAndFillFromMempool(
-                    this.rootEm,
-                    txEnt.source,
-                    await this.blockchainAPI.getUTXOsFromMempool(txEnt.source),
-                );
                 // recreate transaction
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
                     resetTransactionEntity(txEnt);
@@ -842,8 +841,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEnt.status = TransactionStatus.TX_SUCCESS;
                 });
             }
-            const mempoolUTXO = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
-            await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, mempoolUTXO);
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;
                 txEnt.utxos.removeAll();
