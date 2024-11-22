@@ -70,6 +70,7 @@ export class BlockchainFeeService {
         const blockTimes = this.history.map(block => block.blockTime);
         blockTimes.sort((a, b) => a.sub(b).toNumber());
         const latestMedianTime = blockTimes[Math.floor(blockTimes.length / 2)];
+        console.log("getLatestMedianTime", this.history[this.history.length -1].blockHeight, latestMedianTime.toString())
         return latestMedianTime;
     }
 
@@ -79,17 +80,13 @@ export class BlockchainFeeService {
             const currentBlockHeight = await this.getCurrentBlockHeightWithRetry();
             /* istanbul ignore next */
             const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
-            console.log("monitorFees", this.monitoringId, currentBlockHeight, lastStoredBlockHeight)
-            console.log("monitorFees", this.monitoringId, this.getLatestMedianTime()?.toString())
             if (!currentBlockHeight || currentBlockHeight <= lastStoredBlockHeight) {
-                console.log("monitorFees-sleep", this.monitoringId)
                 await sleepMs(this.sleepTimeMs);
                 continue;
             }
 
             let blockHeightToFetch = lastStoredBlockHeight + 1;
             while (monitoring() && blockHeightToFetch <= currentBlockHeight) {
-                console.log("monitorFees-in-", this.monitoringId, blockHeightToFetch, currentBlockHeight, blockHeightToFetch <= currentBlockHeight)
                 const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
                 /* istanbul ignore else */
                 if (feeStats) {
