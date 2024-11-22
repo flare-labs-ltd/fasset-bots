@@ -6,7 +6,7 @@ import { Secrets, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper, createFlareDataConnectorClient } from "../../../src/config/BotConfig";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/FlareDataConnectorClientHelper";
-import { ZERO_BYTES32 } from "../../../src/utils/helpers";
+import { prefix0x, ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../test-utils/TestChainInfo";
 import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
@@ -80,7 +80,7 @@ describe("testXRP attestation/flare data connector tests", () => {
             sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
-                transactionId: "782DB5E0DF5AACBC2A87A1DF60B073F12B3A51A6B1D083D5D63B07CD19F8EFA8",
+                transactionId: prefix0x("782DB5E0DF5AACBC2A87A1DF60B073F12B3A51A6B1D083D5D63B07CD19F8EFA8"),
                 inUtxo: "0",
                 utxo: "0"
             },
@@ -117,7 +117,7 @@ describe("testXRP attestation/flare data connector tests", () => {
             sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
-                transactionId: "523B3A4AD40C36DF2C03E75DAAFC95C21DF287A6608AEA648B1B764EE53CD57C",
+                transactionId: prefix0x("523B3A4AD40C36DF2C03E75DAAFC95C21DF287A6608AEA648B1B764EE53CD57C"),
                 sourceAddressIndicator: keccak256("rPThYRTdgpUDmRBiy2BPDb5F4XZgUkEFeS"),
             },
         };

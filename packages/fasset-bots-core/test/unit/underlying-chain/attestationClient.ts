@@ -15,6 +15,7 @@ import { createTestOrm } from "../../test-utils/create-test-orm";
 import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, OWNER_ADDRESS, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
 import { enableSlowTests, itIf } from "../../test-utils/test-helpers";
 import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
+import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/FlareDataConnectorClientHelper";
 use(chaiAsPromised);
 
 const chainId = ChainId.testXRP;
@@ -73,6 +74,7 @@ describe("Attestation client unit tests", () => {
     });
 
     it("Should not obtain proofs - no attestation providers", async () => {
+        const latestRound = await (attestationHelper.flareDataConnector as FlareDataConnectorClientHelper).latestFinalizedRound();
         const localAttestationHelper = await createAttestationHelper(
             chainId,
             [],
@@ -83,7 +85,7 @@ describe("Attestation client unit tests", () => {
             indexerUrls,
             indexerApiKey(secrets, indexerUrls)
         );
-        await expect(localAttestationHelper.flareDataConnector.obtainProof(1, "requestData"))
+        await expect(localAttestationHelper.flareDataConnector.obtainProof(latestRound, "requestData"))
             .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)
             .and.be.an.instanceOf(Error);
     });
