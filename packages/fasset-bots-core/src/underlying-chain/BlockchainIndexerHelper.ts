@@ -237,6 +237,25 @@ export class BlockchainIndexerHelper implements IBlockChain {
         }
     }
 
+    async getBlockRangeRaw(): Promise<IndexerBlockRange> {
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get<ApiWrapper<IndexerBlockRange>>(`/api/indexer/block-range`),
+            "getBlockRangeRaw"
+        );
+        const status = resp.data.status;
+        const data = resp.data.data;
+        /* istanbul ignore else */
+        if (status === "OK" && data) {
+            return data;
+        } else {
+            const errorMessage = resp.data.errorMessage;
+            const info = `Cannot retrieve block range: ${status}: ${errorMessage ? errorMessage : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
+        }
+    }
+
     async getTransactionsByReference(reference: string): Promise<ITransaction[] | []> {
         const txs = await retry(this.getTransactionsByReferenceFromIndexer.bind(this), [reference], DEFAULT_RETRIES);
         logger.info(`Block chain indexer helper: retrieved transactions by reference ${reference}: ${formatArgs(txs)}`);
@@ -323,13 +342,14 @@ export class BlockchainIndexerHelper implements IBlockChain {
 
     private async extractTransactionIds(blockNumber: number): Promise<string[]> {
         return await this.getTransactionList(`from=${blockNumber}&to=${blockNumber}`,
-            tx => tx.transactionId,
+            tx => this.normalizeTxHash(tx.transactionId),
             "extractTransactionIds",
             `Cannot retrieve transaction ids from block ${blockNumber}`);
     }
 
     private get isUTXOchain(): boolean {
-        return this.chainId === ChainId.testBTC || this.chainId === ChainId.testDOGE || this.chainId === ChainId.LTC;
+        return this.chainId === ChainId.testBTC || this.chainId === ChainId.testDOGE || this.chainId === ChainId.testLTC
+            || this.chainId === ChainId.BTC || this.chainId === ChainId.DOGE || this.chainId === ChainId.LTC;
     }
 
     private async UTXOInputsOutputs(type: string, data: any, input: boolean): Promise<TxInputOutput[]> {
