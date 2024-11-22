@@ -23,7 +23,7 @@ export enum AttestationNotProved {
     DISPROVED = "DISPROVED",
 }
 
-export type OptionalAttestationProof = AttestationProof | AttestationNotProved;
+export type OptionalAttestationProof<RESPONSE extends ARESBase = ARESBase> = AttestationProof<RESPONSE> | AttestationNotProved;
 
 // All methods build attestation request, submit it to the flare data connector and return the encoded request.
 // We create one requester per chain, so chainId is baked in.

@@ -2,11 +2,11 @@ import {
     ARBase, ARESBase, AddressValidity, AttestationDefinitionStore, BalanceDecreasingTransaction,
     ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence, decodeAttestationName
 } from "@flarenetwork/state-connector-protocol";
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import { IFdcHubInstance, IFdcRequestFeeConfigurationsInstance, IFdcVerificationInstance, IRelayInstance } from "../../typechain-truffle";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { formatArgs } from "../utils/formatting";
-import { DEFAULT_RETRIES, DEFAULT_TIMEOUT, ZERO_BYTES32, requireNotNull, retry, sleep } from "../utils/helpers";
+import { DEFAULT_RETRIES, ZERO_BYTES32, retry, retryCall, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -16,6 +16,8 @@ import {
     FlareDataConnectorClientError, IFlareDataConnectorClient, OptionalAttestationProof
 } from "./interfaces/IFlareDataConnectorClient";
 import { blockTimestamp } from "../utils/web3helpers";
+import { createAxiosConfig, tryWithClients } from "@flarelabs/simple-wallet";
+import { FspStatusResult } from "../utils/data-access-layer-types";
 
 export interface PrepareRequestResult {
     abiEncodedRequest: string;
@@ -26,24 +28,14 @@ export interface ProofRequest {
     requestBytes: string;
 }
 
-export interface ApiWrapper<T> {
-    status: string;
-    data?: T;
-    errorMessage?: string;
-}
-
 export interface VotingRoundResult<RES> {
-    roundId: number;
-    hash: string;
-    requestBytes: string;
-    request: any;
     response: RES;
-    merkleProof: string[];
+    proof: string[];
 }
 
 export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient {
-    clients: AxiosInstance[] = [];
-    verifier: AxiosInstance;
+    dataAccessLayerClients: AxiosInstance[] = [];
+    verifierClients: AxiosInstance[] = [];
     // initialized at initFlareDataConnector()
     relay!: IRelayInstance;
     fdcHub!: IFdcHubInstance;
@@ -52,19 +44,20 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     definitionStore = new AttestationDefinitionStore();
 
     constructor(
-        public attestationProviderUrls: string[],
+        public dataAccessLayerUrls: string[],
         public fdcVerificationAddress: string,
         public fdcHubAddress: string,
         public relayAddress: string,
-        public verifierUrl: string,
-        public verifierUrlApiKey: string,
+        public verifierUrls: string[],
+        public verifierUrlApiKeys: string[],
         public account: string,
     ) {
-        for (const url of attestationProviderUrls) {
-            // set clients
-            this.clients.push(axios.create(this.createAxiosConfig(url, null)));
+        for (const url of dataAccessLayerUrls) {
+            this.dataAccessLayerClients.push(axios.create(createAxiosConfig(url)));
         }
-        this.verifier = axios.create(this.createAxiosConfig(verifierUrl, verifierUrlApiKey));
+        for (const [index, url] of verifierUrls.entries()) {
+            this.verifierClients.push(axios.create(createAxiosConfig(url, verifierUrlApiKeys[index])));
+        }
     }
 
     async initFlareDataConnector(): Promise<void> {
@@ -84,16 +77,21 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         attestationClientAddress: string,
         fdcHubAddress: string,
         relayAddress: string,
-        verifierUrl: string,
-        verifierUrlApiKey: string,
+        verifierUrls: string[],
+        verifierUrlApiKeys: string[],
         account: string
     ): Promise<FlareDataConnectorClientHelper> {
-        const helper = new FlareDataConnectorClientHelper(urls, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrl, verifierUrlApiKey, account);
+        const helper = new FlareDataConnectorClientHelper(urls, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrls, verifierUrlApiKeys, account);
         await helper.initFlareDataConnector();
         return helper;
     }
 
     async roundFinalized(round: number): Promise<boolean> {
+        const latestRound = await this.latestFinalizedRound();
+        return round <= latestRound;
+    }
+
+    private async roundFinalizedOnChain(round: number): Promise<boolean> {
         const merkleRoot = await this.relay.merkleRoots(FDC_PROTOCOL_ID, round);
         return merkleRoot !== ZERO_BYTES32;
     }
@@ -118,13 +116,15 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     /* istanbul ignore next */
     async submitRequestToFlareDataConnector(request: ARBase): Promise<AttestationRequestId> {
         const attestationName = decodeAttestationName(request.attestationType);
-        const response = await this.verifier
-            .post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request)
-            .catch((e: AxiosError) => {
-                const message = `Flare data connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
-                logger.error(message);
-                throw new FlareDataConnectorClientError(message);
-            });
+        const response = await tryWithClients(
+            this.verifierClients,
+            (verifier: AxiosInstance) => verifier.post<PrepareRequestResult>(`/${encodeURIComponent(attestationName)}/prepareRequest`, request),
+            "submitRequestToFlareDataConnector"
+        ).catch((e: AxiosError) => {
+            const message = `Flare data connector error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;
+            logger.error(message);
+            throw new FlareDataConnectorClientError(message);
+        });
         const data = response.data?.abiEncodedRequest;
         if (data == null) {
             logger.error(`Problem in prepare request: ${JSON.stringify(response.data)} for request ${formatArgs(request)}`);
@@ -141,6 +141,35 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         };
     }
 
+    async latestFinalizedRound(): Promise<number> {
+        const latestRound = await this.latestFinalizedRoundOnDAL();
+        const finalized = await this.roundFinalizedOnChain(latestRound);
+        // since in FDC rounds can be skipped and never finalized, we assume the finalization time for round has
+        // passed when the DAL has info that next round was already finalized
+        return finalized ? latestRound : latestRound - 1;
+    }
+
+    async latestFinalizedRoundOnDAL(): Promise<number> {
+        let latestRound = -1;
+        for (const client of this.dataAccessLayerClients) {
+            try {
+                const clientLatest = await this.latestFinalizedRoundOnClient(client);
+                latestRound = Math.max(latestRound, clientLatest);
+            } catch (error) {
+                logger.error(`Cannot obtain latest round from data access layer client ${client.getUri()}: ${error}`);
+            }
+        }
+        if (latestRound < 0) {
+            throw new Error(`No data access layer clients available for obtaining latest round`);
+        }
+        return latestRound;
+    }
+
+    async latestFinalizedRoundOnClient(client: AxiosInstance): Promise<number> {
+        const response = await retryCall("latestRoundOnClient", () => client.get<FspStatusResult>(`/api/v0/fsp/status`));
+        return Number(response.data.latest_fdc.voting_round_id);
+    }
+
     async obtainProof(round: number, requestData: string): Promise<OptionalAttestationProof> {
         const proof = await retry(this.obtainProofFromFlareDataConnector.bind(this), [round, requestData], DEFAULT_RETRIES);
         logger.info(`Flare data connector helper: obtained proof ${formatArgs(proof)}`);
@@ -149,8 +178,15 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
 
     async obtainProofFromFlareDataConnector(roundId: number, requestBytes: string): Promise<OptionalAttestationProof> {
         try {
+            // check if round has been finalized
+            // (it can happen that API returns proof finalized, but it is not finalized in flare data connector yet)
+            const roundFinalizedOnChain = await this.roundFinalizedOnChain(roundId);
+            if (!roundFinalizedOnChain) {
+                return AttestationNotProved.NOT_FINALIZED;
+            }
+            // obtain proof
             let disproved = 0;
-            for (const client of this.clients) {
+            for (const client of this.dataAccessLayerClients) {
                 const proof = await this.obtainProofFromFlareDataConnectorForClient(client, roundId, requestBytes);
                 /* istanbul ignore next */
                 if (proof == null) {
@@ -175,49 +211,45 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
             throw e instanceof FlareDataConnectorClientError ? e : new FlareDataConnectorClientError(String(e));
         }
     }
+
     /* istanbul ignore next */
     async obtainProofFromFlareDataConnectorForClient(client: AxiosInstance, roundId: number, requestBytes: string): Promise<OptionalAttestationProof | null> {
-        // check if round has been finalized
-        // (it can happen that API returns proof finalized, but it is not finalized in flare data connector yet)
-        const roundFinalized = await this.roundFinalized(roundId);
-        if (!roundFinalized) {
-            return AttestationNotProved.NOT_FINALIZED;
+        // does the client have info about this round yet?
+        const latestRound = await this.latestFinalizedRoundOnClient(client).catch(() => 0);
+        if (latestRound < roundId) {
+            return null;
         }
-        // get the response from api
-        const request: ProofRequest = { roundId, requestBytes };
-        let response: AxiosResponse<ApiWrapper<VotingRoundResult<ARESBase>>>;
+        // get response
+        let response: AxiosResponse<VotingRoundResult<ARESBase>>;
         try {
-            response = await client.post<ApiWrapper<VotingRoundResult<ARESBase>>>(`/api/proof/get-specific-proof`, request);
-        } catch (e: any) {
-            /* istanbul ignore next */
-            logger.error(`Flare data connector error: ${e.response?.data?.errorMessage ?? String(e)}`);
-            /* istanbul ignore next */
+            const request: ProofRequest = { roundId, requestBytes };
+            response = await client.post<VotingRoundResult<ARESBase>>(`/api/v0/fdc/get-proof-round-id-bytes`, request);
+        } catch (error) {
+            if (error instanceof AxiosError) {
+                if (error.status === 400) {
+                    logger.error(`Flare data connector request not proved: ${error.response?.data?.error}`);
+                    return AttestationNotProved.DISPROVED;
+                }
+                logger.error(`Flare data connector error (status=${error.status}, message="${error.response?.data?.error}"):`, error);
+            } else {
+                logger.error(`Flare data connector unknown error:`, error);
+            }
             return null; // network error, client probably down - skip it
         }
-        const status = response.data.status;
-        // is the round finalized?
-        if (status === "PENDING") {
-            return AttestationNotProved.NOT_FINALIZED;
-        }
-        // no proof from this client, probably disproved
-        if (status !== "OK") {
-            logger.error(`Flare data connector error: ${response.data.errorMessage}`);
-            return AttestationNotProved.DISPROVED;
-        }
-        // obtained valid proof
-        const data = requireNotNull(response.data.data);
+        // verify that valid proof was obtained
         const proof: AttestationProof = {
-            data: data.response,
-            merkleProof: data.merkleProof,
+            data: response.data.response,
+            merkleProof: response.data.proof,
         };
         const verified = await this.verifyProof(proof);
         /* istanbul ignore next */
         if (!verified) {
-            logger.error(`Flare data connector error: proof does not verify!!`);
-            return null; // client has invalid proofs, skip it
+            logger.error(`Flare data connector error: proof does not verify on ${client.getUri()}! Round=${roundId} request=${requestBytes}.`);
+            return null; // since the round is finalized, the client apparently has invalid proof - skip it
         }
         return proof;
     }
+
     /* istanbul ignore next */
     private async verifyProof(proofData: AttestationProof): Promise<boolean> {
         const normalizedProofData = web3DeepNormalize(proofData);
@@ -236,26 +268,5 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
                 logger.error(`Flare data connector error: invalid attestation type ${proofData.data.attestationType}`);
                 throw new FlareDataConnectorClientError(`Invalid attestation type ${proofData.data.attestationType}`);
         }
-    }
-
-    private createAxiosConfig(url: string, apiKey: string | null): AxiosRequestConfig {
-        const createAxiosConfig: AxiosRequestConfig = {
-            baseURL: url,
-            timeout: DEFAULT_TIMEOUT,
-            headers: {
-                "Content-Type": "application/json",
-            },
-
-            validateStatus: function (status: number) {
-                /* istanbul ignore next */
-                return (status >= 200 && status < 300) || status == 500;
-            },
-        };
-        /* istanbul ignore next */
-        if (apiKey) {
-            createAxiosConfig.headers ??= {};
-            createAxiosConfig.headers["X-API-KEY"] = apiKey;
-        }
-        return createAxiosConfig;
     }
 }

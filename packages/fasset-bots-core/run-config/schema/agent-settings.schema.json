@@ -16,7 +16,7 @@
             "type": "string"
         },
         "handshakeType": {
-            "description": "The handshake type required by the agent. Currently supported values are\n- 0 - no handshake is performed\n- 1 - handhake is performed by external service api (configured further in bot config)",
+            "description": "The handshake type required by the agent. Currently supported values are\n- 0 - no handshake is performed\n- 1 - handshake is performed by external service api (configured further in bot config)",
             "type": "integer"
         },
         "mintingPoolCollateralRatio": {
@@ -75,4 +75,3 @@
     ],
     "type": "object"
 }
-

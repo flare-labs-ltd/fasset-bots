@@ -1,7 +1,17 @@
 import { AddressValidity } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import { AgentVaultInstance, CollateralPoolInstance, CollateralPoolTokenInstance } from "../../typechain-truffle";
-import { AgentAvailable, AgentDestroyed, AllEvents, AvailableAgentExited, IIAssetManagerInstance, SelfClose, UnderlyingWithdrawalAnnounced, UnderlyingWithdrawalCancelled, UnderlyingWithdrawalConfirmed } from "../../typechain-truffle/IIAssetManager";
+import {
+    AgentAvailable,
+    AgentDestroyed,
+    AllEvents,
+    AvailableAgentExited,
+    IIAssetManagerInstance,
+    SelfClose,
+    UnderlyingWithdrawalAnnounced,
+    UnderlyingWithdrawalCancelled,
+    UnderlyingWithdrawalConfirmed,
+} from "../../typechain-truffle/IIAssetManager";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { TokenPriceReader } from "../state/TokenPrice";
@@ -324,6 +334,8 @@ export class Agent {
      * @param paymentAmount amount to be transferred
      * @param paymentReference payment reference
      * @param options instance of TransactionOptionsWithFee
+     * @param untilBlockNumber
+     * @param untilBlockTimestamp
      * @returns transaction hash
      */
     async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
@@ -333,15 +345,28 @@ export class Agent {
 
     /**
      * Initiates underlying payment
-     * @param paymentAddress underlying destination address
+     * @param paymentDestinationAddress
      * @param paymentAmount amount to be transferred
      * @param paymentReference payment reference
+     * @param paymentSourceAddress
      * @param options instance of TransactionOptionsWithFee
+     * @param untilBlockNumber
+     * @param untilBlockTimestamp
+     * @param feeSourceAddress
      * @returns transaction id from local database
      */
-    async initiatePayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<number> {
-        await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
-        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp);
+    async initiatePayment(
+        paymentDestinationAddress: string,
+        paymentAmount: BNish,
+        paymentReference: string | null = null,
+        paymentSourceAddress: string = this.underlyingAddress,
+        options?: TransactionOptionsWithFee,
+        untilBlockNumber?: number,
+        untilBlockTimestamp?: BN,
+        feeSourceAddress?: string,
+    ): Promise<number> {
+        await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress, feeSourceAddress);
+        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp, feeSourceAddress);
     }
 
     /**

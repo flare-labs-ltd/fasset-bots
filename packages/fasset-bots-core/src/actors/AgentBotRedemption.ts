@@ -1,22 +1,25 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
+import { RedemptionDefault, RedemptionPaymentBlocked, RedemptionPaymentFailed, RedemptionPerformed, RedemptionRequested, RedemptionRequestRejected, RedemptionRequestTakenOver } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
-import { AgentRedemption } from "../entities/agent";
-import { AgentRedemptionFinalState, AgentRedemptionState } from "../entities/common";
+import { AgentRedemption, RejectedRedemptionRequest } from "../entities/agent";
+import { AgentRedemptionFinalState, AgentRedemptionState, RejectedRedemptionRequestState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { EventArgs } from "../utils/events/common";
 import { squashSpace } from "../utils/formatting";
-import { assertNotNull, BNish, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
+import { assertNotNull, BN_ZERO, BNish, errorIncluded, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { TransactionStatus } from "@flarelabs/simple-wallet";
+import { maxFeeMultiplier } from "../utils/fasset-helpers";
+import { AddressCheck } from "./AgentBotHandshake";
+import { blockTimestamp, latestBlockTimestamp } from "../utils/web3helpers";
 
 const REDEMPTION_BATCH = 1000;
 
@@ -48,6 +51,7 @@ export class AgentBotRedemption {
                     state: AgentRedemptionState.STARTED,
                     agentAddress: this.agent.vaultAddress,
                     requestId: toBN(request.requestId),
+                    redeemerAddress: request.redeemer,
                     paymentAddress: request.paymentAddress,
                     valueUBA: toBN(request.valueUBA),
                     feeUBA: toBN(request.feeUBA),
@@ -60,6 +64,55 @@ export class AgentBotRedemption {
         });
         await this.notifier.sendRedemptionStarted(request.requestId);
         logger.info(`Agent ${this.agent.vaultAddress} started redemption ${request.requestId}.`);
+    }
+
+    async redemptionRequestRejected(rootEm: EM, args: EventArgs<RedemptionRequestRejected>, blockNumber: number) {
+        const thisAgent = args.agentVault.toLowerCase() === this.agent.vaultAddress.toLowerCase();
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            const rejectedRedemptionRequest = em.create(
+                RejectedRedemptionRequest,
+                {
+                    state: thisAgent ? RejectedRedemptionRequestState.DONE : RejectedRedemptionRequestState.STARTED,
+                    agentAddress: this.agent.vaultAddress,
+                    requestId: toBN(args.requestId),
+                    redeemerAddress: args.redeemer,
+                    paymentAddress: args.paymentAddress,
+                    valueUBA: toBN(args.valueUBA),
+                    rejectionBlockNumber: blockNumber,
+                } as RequiredEntityData<RejectedRedemptionRequest>,
+                { persist: true }
+            );
+            if (thisAgent) {
+                const redemption = await this.findRedemption(em, { requestId: toBN(args.requestId) });
+                redemption.state = AgentRedemptionState.REJECTED;
+                redemption.rejectedRedemptionRequest = rejectedRedemptionRequest;
+            }
+        });
+    }
+
+    async redemptionRequestTakenOver(rootEm: EM, args: EventArgs<RedemptionRequestTakenOver>) {
+        const oldAgent = args.agentVault.toLowerCase() === this.agent.vaultAddress.toLowerCase();
+        const newAgent = args.newAgentVault.toLowerCase() === this.agent.vaultAddress.toLowerCase();
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            const rejectedRedemptionRequest = await this.findRejectedRedemptionRequest(em, { requestId: toBN(args.requestId) });
+            if (rejectedRedemptionRequest == null) {
+                if (oldAgent || newAgent) {
+                    throw new Error(`Rejected redemption request not found for redemption ${args.requestId}`);
+                }
+                return; // just ignore as agent bot was started after the rejection
+            }
+            rejectedRedemptionRequest.valueTakenOverUBA = rejectedRedemptionRequest.valueTakenOverUBA.add(toBN(args.valueTakenOverUBA));
+            if (oldAgent && rejectedRedemptionRequest.valueTakenOverUBA.gte(rejectedRedemptionRequest.valueUBA)) {
+                // we are the agent who rejected the request but whole request was already taken over, mark as done
+                const redemption = await this.findRedemption(em, { requestId: toBN(args.requestId) });
+                redemption.state = AgentRedemptionState.DONE;
+                redemption.finalState = AgentRedemptionFinalState.HANDSHAKE_REJECTED;
+            } else if (newAgent) {
+                // we are the new agent taking over the request, set rejectedRedemptionRequest
+                const redemption = await this.findRedemption(em, { requestId: toBN(args.newRequestId) });
+                redemption.rejectedRedemptionRequest = rejectedRedemptionRequest;
+            }
+        });
     }
 
     async redemptionPerformed(rootEm: EM, args: EventArgs<RedemptionPerformed>) {
@@ -78,8 +131,13 @@ export class AgentBotRedemption {
     }
 
     async redemptionDefault(rootEm: EM, args: EventArgs<RedemptionDefault>) {
-        await this.updateRedemption(rootEm, { requestId: toBN(args.requestId) }, {
-            defaulted: true,
+        await this.bot.runInTransaction(rootEm, async (em) => {
+            const redemption = await this.findRedemption(em, { requestId: toBN(args.requestId) });
+            redemption.defaulted = true;
+            if (redemption.state === AgentRedemptionState.UNPAID || redemption.state === AgentRedemptionState.REJECTED) {
+                redemption.finalState = this.getFinalState(redemption);
+                redemption.state = AgentRedemptionState.DONE;
+            }
         });
         await this.notifier.sendRedemptionDefaulted(args.requestId.toString(), args.redeemer);
     }
@@ -143,10 +201,11 @@ export class AgentBotRedemption {
     }
 
     /**
-     * Returns minting in given state.
-     * If there are too many redemptions, prioritize those in state STARTED.
+     * Returns redemptions in given state.
      * @param rootEm entity manager
-     * * @return list of AgentRedemption's instances
+     * @param state AgentRedemptionState
+     * @param limit max number of redemptions to return
+     * @return list of AgentRedemption's instances
      */
     async redemptionsInState(rootEm: EM, state: AgentRedemptionState, limit: number): Promise<AgentRedemption[]> {
         return await rootEm.createQueryBuilder(AgentRedemption)
@@ -177,6 +236,12 @@ export class AgentBotRedemption {
                 break;
             case AgentRedemptionState.PAYING:
                 // mark payment initiated
+                break;
+            case AgentRedemptionState.REJECTED:
+                // bot rejected redemption - other agents can now take over, if they don't, do nothing and it will be expired after 24h
+                break;
+            case AgentRedemptionState.REJECTING:
+                // bot rejected poolSelfClose redemption or didn't manage to reject in time  - do nothing and it will be expired after 24h
                 break;
             case AgentRedemptionState.UNPAID:
                 // bot didn't manage to pay in time - do nothing and it will be expired after 24h
@@ -216,6 +281,9 @@ export class AgentBotRedemption {
             case AgentRedemptionState.PAID:
             case AgentRedemptionState.REQUESTED_PROOF:
                 return AgentRedemptionFinalState.EXPIRED_PAID;
+            case AgentRedemptionState.REJECTING:
+            case AgentRedemptionState.REJECTED:
+                return AgentRedemptionFinalState.HANDSHAKE_REJECTED;
             case AgentRedemptionState.UNPAID:
             case AgentRedemptionState.STARTED:
             case AgentRedemptionState.REQUESTED_REJECTION_PROOF:
@@ -232,11 +300,11 @@ export class AgentBotRedemption {
     async checkBeforeRedemptionPayment(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
+
         /* istanbul ignore else */
         if (lastBlock && this.stillTimeToPayForRedemption(lastBlock, redemption)) {
-            const validation = await this.context.verificationClient.checkAddressValidity(this.context.chainInfo.chainId.sourceId, redemption.paymentAddress);
-            if (validation.isValid && validation.standardAddress === redemption.paymentAddress) {
-                await this.payForRedemption(rootEm, redemption);
+            if (await this.redeemerAddressValid(redemption.paymentAddress)) {
+                await this.payOrRejectRedemption(rootEm, redemption);
             } else {
                 await this.startRejectRedemption(rootEm, redemption);
             }
@@ -253,15 +321,47 @@ export class AgentBotRedemption {
         }
     }
 
-    async payForRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>) {
+    async payOrRejectRedemption(rootEm: EM, redemption: Readonly<AgentRedemption>) {
+        if (redemption.rejectedRedemptionRequest == null) { // check only if not taken over
+            const settings = await this.agent.getAgentSettings();
+            if (settings.handshakeType.toString() !== "0") {
+                logger.info(`Agent ${this.agent.vaultAddress} is handling redemption ${redemption.requestId} handshake check.`);
+                // check if redeemer address and redeemer underlying address are not sanctioned
+                const addressesOk = await this.bot.handshake.checkSanctionedAddresses([
+                    new AddressCheck(redemption.redeemerAddress, this.context.nativeChainInfo.chainName),
+                    new AddressCheck(redemption.paymentAddress, this.context.chainInfo.chainId.chainName),
+                ]);
+                if (!addressesOk) {
+                    redemption = await this.updateRedemption(rootEm, redemption, {
+                        state: AgentRedemptionState.REJECTING,
+                    });
+                    try {
+                        logger.info(`Agent ${this.agent.vaultAddress} is trying to reject redemption ${redemption.requestId}.`);
+                        await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
+                            await this.context.assetManager.rejectRedemptionRequest(redemption.requestId, { from: this.agent.owner.workAddress });
+                        });
+                        await this.notifier.sendRedemptionRejected(redemption.requestId);
+                        logger.info(`Agent ${this.agent.vaultAddress} rejected redemption ${redemption.requestId}.`);
+                    } catch (error) {
+                        logger.error(`Error trying to reject redemption ${redemption.requestId}:`, error);
+                        await this.notifier.sendRedemptionRejectionFailed(redemption.requestId);
+                    }
+                    return;
+                }
+            }
+        }
+
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId}.`);
-        const paymentAmount = toBN(redemption.valueUBA).sub(toBN(redemption.feeUBA));
+        const redemptionFee = toBN(redemption.feeUBA);
+        const paymentAmount = toBN(redemption.valueUBA).sub(redemptionFee);
         redemption = await this.updateRedemption(rootEm, redemption, {
             state: AgentRedemptionState.PAYING,
         });
         try {
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
-                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, undefined, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp));
+                const feeSourceAddress = this.context.chainInfo.useOwnerUnderlyingAddressForPayingFees ? this.bot.ownerUnderlyingAddress : undefined;
+                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined,
+                    { maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)) }, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), feeSourceAddress);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,
@@ -480,6 +580,67 @@ export class AgentBotRedemption {
         }
     }
 
+    async handleRejectedRedemptionRequests(rootEm: EM, batchSize: number = REDEMPTION_BATCH) {
+        const rejectedRedemptionRequests = await rootEm.createQueryBuilder(RejectedRedemptionRequest)
+            .where({
+                agentAddress: this.agent.vaultAddress,
+                state: RejectedRedemptionRequestState.STARTED
+            })
+            .limit(batchSize)
+            .getResultList();
+        logger.info(`Agent ${this.agent.vaultAddress} is handling ${rejectedRedemptionRequests.length} rejected redemption requests.`);
+        if (rejectedRedemptionRequests.length === 0) return;
+
+        const settings = await this.context.assetManager.getSettings();
+        const agentSettings = await this.agent.getAgentSettings();
+
+        for (const request of rejectedRedemptionRequests) {
+            await this.updateRejectedRedemptionRequest(rootEm, request, { state: RejectedRedemptionRequestState.DONE });
+
+            if (request.valueTakenOverUBA.gte(request.valueUBA)) {
+                continue; // request already taken over
+            }
+
+            const info = await this.agent.getAgentInfo();
+            if (toBN(info.mintedUBA).eq(BN_ZERO)) {
+                continue; // agent has no tickets, so cannot take over
+            }
+
+            const rejectionTimestamp = await blockTimestamp(request.rejectionBlockNumber);
+            const latestTimestamp = await latestBlockTimestamp();
+            if (rejectionTimestamp + toBN(settings.takeOverRedemptionRequestWindowSeconds).toNumber() <= latestTimestamp) {
+                continue; // take over window closed
+            }
+
+            if (agentSettings.handshakeType.toString() !== "0") { // handshake enabled
+                // check if redeemer address and redeemer underlying address are not sanctioned
+                const addressesOk = await this.bot.handshake.checkSanctionedAddresses([
+                    new AddressCheck(request.redeemerAddress, this.context.nativeChainInfo.chainName),
+                    new AddressCheck(request.paymentAddress, this.context.chainInfo.chainId.chainName),
+                ]);
+                if (!addressesOk) {
+                    continue; // addresses are sanctioned - do not take over
+                }
+            }
+
+            try {
+                logger.info(`Agent ${this.agent.vaultAddress} is trying to take over rejected redemption ${request.requestId}.`);
+                await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
+                    await this.context.assetManager.takeOverRedemptionRequest(this.agent.vaultAddress, request.requestId, { from: this.agent.owner.workAddress });
+                });
+                await this.notifier.sendRedemptionTakenOver(request.requestId);
+                logger.info(`Agent ${this.agent.vaultAddress} take over rejected redemption ${request.requestId}.`);
+            } catch (error) {
+                if (errorIncluded(error, ["invalid request id", "not active", "take over redemption request window closed", "no tickets"])) {
+                    logger.info(`Agent ${this.agent.vaultAddress} failed to take over rejected redemption ${request.requestId} as it is no longer available or there were no tickets left.`);
+                } else {
+                    logger.error(`Error trying to take over rejected redemption ${request.requestId}:`, error);
+                    await this.notifier.sendRedemptionTakeoverFailed(request.requestId);
+                }
+            }
+        }
+    }
+
     /**
      * Load and update redemption object in its own transaction.
      */
@@ -501,6 +662,31 @@ export class AgentBotRedemption {
             return await em.findOneOrFail(AgentRedemption, { id: rd.id }, { refresh: true });
         } else {
             return await em.findOneOrFail(AgentRedemption, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true });
+        }
+    }
+
+     /**
+     * Load and update rejected redemption request object in its own transaction.
+     */
+     async updateRejectedRedemptionRequest(rootEm: EM, rd: RedemptionId, modifications: Partial<RejectedRedemptionRequest>): Promise<RejectedRedemptionRequest> {
+        return await this.bot.runInTransaction(rootEm, async (em) => {
+            const redemption = await this.findRejectedRedemptionRequest(em, rd);
+            if (redemption == null) throw new Error(`Rejected redemption request not found for redemption ${rd}`);
+            Object.assign(redemption, modifications);
+            return redemption;
+        });
+}
+
+    /**
+     * Returns rejected redemption request by id or requestId from persistent state.
+     * @param em entity manager
+     * @param instance of AgentRedemption
+     */
+    async findRejectedRedemptionRequest(em: EM, rd: RedemptionId) {
+        if ("id" in rd) {
+            return await em.findOne(RejectedRedemptionRequest, { id: rd.id }, { refresh: true });
+        } else {
+            return await em.findOne(RejectedRedemptionRequest, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true });
         }
     }
 }

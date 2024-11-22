@@ -1,6 +1,9 @@
+import { AsyncLocalStorage } from "async_hooks";
 import { createLogger, format } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import * as Transport from "winston-transport";
+
+export const loggerAsyncStorage = new AsyncLocalStorage<string>();
 
 export type LoggerPaths = { text?: string, json?: string };
 
@@ -30,7 +33,7 @@ export function createCustomizedLogger(paths: LoggerPaths) {
             format: format.combine(
                 format.timestamp(),
                 format.errors({ stack: true }),
-                format.printf(info => `${info.timestamp}  ${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`)
+                format.printf(info => `${info.timestamp}  ${formatThreadId()}${info.level.toUpperCase().padEnd(5)}  ${info.message}${info.stack ? '\n' + info.stack : ''}`)
             ),
             filename: paths.text,
             ...(commonOptions as any),
@@ -39,9 +42,16 @@ export function createCustomizedLogger(paths: LoggerPaths) {
     return createLogger({ transports });
 }
 
+function formatThreadId() {
+    try {
+        const threadName = loggerAsyncStorage.getStore();
+        return threadName ? `[${threadName}]  ` : "";
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 // use different
-const mainFileName = (require.main?.filename ?? "").replace(/\\/g, "/");
-const fnMatch = mainFileName.match(/\/src\/(cli|run)\/([^/]+)\.(cjs|mjs|js|ts)$/);
-const loggerName = fnMatch ? fnMatch[2] : "log";
+const loggerName = "simple-wallet";
 
 export const logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log` });

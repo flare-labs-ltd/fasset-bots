@@ -5,12 +5,21 @@ export const MNEMONIC_STRENGTH = 256;
 
 export const DEFAULT_FEE_INCREASE = 2;
 // monitoring constants
-export const PING_INTERVAL = 10_000; // 10seconds
-export const BUFFER_PING_INTERVAL = 2 * PING_INTERVAL;
-export const RESTART_IN_DUE_TO_ERROR = 2000; // 2s
+export const MONITOR_PING_INTERVAL = 5_000; // 5 seconds
+export const MONITOR_EXPIRATION_INTERVAL = 60_000;
+export const MONITOR_LOCK_WAIT_DELAY = 1000; // 1s
+export const MONITOR_LOOP_SLEEP = 2000; // 2s
 export const RESTART_IN_DUE_NO_RESPONSE = 20000; // 20s
 export const RANDOM_SLEEP_MS_MAX = 500;
 
+export const BTC_PER_SATOSHI = 1 / 100000000;
+
+export const XRP_PENDING_TIMEOUT = 30;// 30s
+export const MEMPOOL_WAITING_TIME = 60;// 1min
+export const MEMPOOL_CHAIN_LENGTH_LIMIT = 25;
+export const MAX_UTXO_TX_SIZE_IN_B = 100_000;
+export const MIN_RELAY_FEE_INCREASE_RBF_IN_B = 2000;
+export const WAIT_TO_APPEAR_IN_XRP = 8; // wait for x ledgers
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 
@@ -74,20 +83,11 @@ export const DOGE_TESTNET = {
 // network configs
 
 export const DEFAULT_RATE_LIMIT_OPTIONS: RateLimitOptions = {
-   maxRPS: 5,
-   maxRequests: 10,
-   timeoutMs: 30000,
+   maxRPS: 100,
+   maxRequests: 1000,
+   timeoutMs: 20000,
    retries: 10,
 };
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_XRP: RateLimitOptions = {
-   ...DEFAULT_RATE_LIMIT_OPTIONS,
-   timeoutMs: 20000,
-};
-
-export const DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE = {
-   timeoutMs: 1000,
-}
 
 // Approximate times between blocks, in milliseconds
 export const BTC_LEDGER_CLOSE_TIME_MS = 600_000; // 10min
@@ -116,16 +116,17 @@ export const UTXO_INPUT_SIZE_SEGWIT = 68.5;
 export const UTXO_OUTPUT_SIZE_SEGWIT = 31;
 export const UTXO_OVERHEAD_SIZE_SEGWIT = 10.5;
 
-// 0.001 BTC aka 100 sats/b https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
-export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);
+// 0.001 BTC per kb aka 100 sats/b https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib/lib/transaction/transaction.js#L83
+export const TEST_BTC_DEFAULT_FEE_PER_KB = toBNExp(0.001, BTC_DOGE_DEC_PLACES);
+export const BTC_DEFAULT_FEE_PER_KB = toBNExp(0.00012, BTC_DOGE_DEC_PLACES); // 12sats/b
 // 1 DOGE //https://github.com/bitpay/bitcore/blob/d09a9a827ea7c921e7f1e556ace37ea834a40422/packages/bitcore-lib-doge/lib/transaction/transaction.js#L87
 export const DOGE_DEFAULT_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
 
-export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.00001000, BTC_DOGE_DEC_PLACES);
+export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
 export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES);
 
-export const BTC_MIN_ALLOWED_FEE = toBN(10000); //10000 sats/kb
-export const BTC_MAX_ALLOWED_FEE = toBN(2000000); //2000000 sats/kb
+export const BTC_MIN_ALLOWED_FEE = toBN(3000); //3000 sats/kb
+export const DOGE_MIN_ALLOWED_FEE = toBNExp(0.5, BTC_DOGE_DEC_PLACES); //0.5 doge/kb
 
 // Derived from https://test.jochen-hoenicke.de/queue/ and https://mempool.space
 export const BTC_LOW_FEE_PER_KB = toBN(10 * 1000); // 10 sat/vB
@@ -140,5 +141,9 @@ export const DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);  // 0,5 DOGE/kB
 export const TEST_DOGE_LOW_FEE_PER_KB = toBN(5000 * 1000);
 export const TEST_DOGE_MID_FEE_PER_KB = toBN(50_000 * 1000);
 
+export const RBF_AMOUNT_FACTOR = toBN(4);
+
 //////////////////////
 export const DROPS_PER_XRP = 1000000.0;
+// https://xrpl.org/docs/concepts/transactions/transaction-cost
+export const XRP_MINIMAL_FEE_DROPS = toBN(12);

@@ -638,7 +638,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint-community/regexpp@npm:^4.5.1, @eslint-community/regexpp@npm:^4.6.1":
+"@eslint-community/regexpp@npm:^4.5.1":
+  version: 4.12.1
+  resolution: "@eslint-community/regexpp@npm:4.12.1"
+  checksum: 0d628680e204bc316d545b4993d3658427ca404ae646ce541fcc65306b8c712c340e5e573e30fb9f85f4855c0c5f6dca9868931f2fcced06417fbe1a0c6cd2d6
+  languageName: node
+  linkType: hard
+
+"@eslint-community/regexpp@npm:^4.6.1":
   version: 4.9.0
   resolution: "@eslint-community/regexpp@npm:4.9.0"
   checksum: 82411f0643ab9bfd271bf12c8c75031266b13595d9371585ee3b0d680d918d4abf37c7e94d0da22e45817c9bbc59b79dfcbd672050dfb00af88fb89c80fd420f
@@ -1283,7 +1290,6 @@ __metadata:
     web3: 1.10.2
   bin:
     agent-bot: dist/src/cli/agent-bot.js
-    api: dist/src/cli/add-fallbacks.js
     fake-price-reader: dist/src/cli/fake-price-reader.js
     key-gen: dist/src/cli/key-gen.js
     test-governance: dist/src/cli/test-governance.js
@@ -1404,9 +1410,10 @@ __metadata:
     "@types/chai": 4.3.6
     "@types/chai-as-promised": 7.1.6
     "@types/elliptic": 6.4.14
-    "@types/mocha": ^10.0.8
+    "@types/eslint__js": 8.42.3
+    "@types/mocha": 10.0.8
     "@types/node": 20.7.0
-    "@types/sinon": ^17.0.3
+    "@types/sinon": 17.0.3
     axios: 1.5.1
     axios-retry: 3.8.0
     bip39: 3.0.4
@@ -1420,14 +1427,15 @@ __metadata:
     dogecoin-bip84: 0.0.5
     dotenv: 16.3.1
     elliptic: 6.5.4
+    read: ^4.0.0
     rewire: 7.0.0
     ripple-address-codec: 4.2.4
     ripple-binary-codec: 1.4.2
     ripple-keypairs: 2.0.0
-    sinon: ^18.0.0
+    sinon: 18.0.0
     source-map-support: 0.5.21
-    typescript: 5.2.2
-    wallet-address-validator: ^0.2.4
+    typescript: 5.6.2
+    wallet-address-validator: 0.2.4
     web3-utils: 1.10.2
     winston: 3.13.1
     winston-daily-rotate-file: 5.0.0
@@ -3499,6 +3507,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/eslint__js@npm:8.42.3":
+  version: 8.42.3
+  resolution: "@types/eslint__js@npm:8.42.3"
+  dependencies:
+    "@types/eslint": "*"
+  checksum: e31f19de642d35a664695d0cab873ce6de19b8a3506755835b91f8a49a8c41099dcace449df49f1a486de6fa6565d21ceb1fa33be6004fc7adef9226e5d256a1
+  languageName: node
+  linkType: hard
+
 "@types/estree@npm:*, @types/estree@npm:^1.0.0":
   version: 1.0.2
   resolution: "@types/estree@npm:1.0.2"
@@ -3573,14 +3590,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/json-schema@npm:*, @types/json-schema@npm:^7.0.12, @types/json-schema@npm:^7.0.8, @types/json-schema@npm:^7.0.9":
+"@types/json-schema@npm:*, @types/json-schema@npm:^7.0.8, @types/json-schema@npm:^7.0.9":
   version: 7.0.13
   resolution: "@types/json-schema@npm:7.0.13"
   checksum: 345df21a678fa72fb389f35f33de77833d09d4a142bb2bcb27c18690efa4cf70fc2876e43843cefb3fbdb9fcb12cd3e970a90936df30f53bbee899865ff605ab
   languageName: node
   linkType: hard
 
-"@types/json-schema@npm:^7.0.7":
+"@types/json-schema@npm:^7.0.12, @types/json-schema@npm:^7.0.7":
   version: 7.0.15
   resolution: "@types/json-schema@npm:7.0.15"
   checksum: 97ed0cb44d4070aecea772b7b2e2ed971e10c81ec87dd4ecc160322ffa55ff330dace1793489540e3e318d90942064bb697cc0f8989391797792d919737b3b98
@@ -3674,7 +3691,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^10.0.8":
+"@types/mocha@npm:10.0.8":
   version: 10.0.8
   resolution: "@types/mocha@npm:10.0.8"
   checksum: d64faa9f1ed249441944a6ae3f01d72c756b54d8bcf8e2edccb09c0d084cec6d8a0cd8b717df517812f045ade20b4b8768e06aa8633bd2485a41ec37f06be710
@@ -3889,9 +3906,9 @@ __metadata:
   linkType: hard
 
 "@types/semver@npm:^7.5.0":
-  version: 7.5.3
-  resolution: "@types/semver@npm:7.5.3"
-  checksum: 349fdd1ab6c213bac5c991bac766bd07b8b12e63762462bb058740dcd2eb09c8193d068bb226f134661275f2022976214c0e727a4e5eb83ec1b131127c980d3e
+  version: 7.5.8
+  resolution: "@types/semver@npm:7.5.8"
+  checksum: ea6f5276f5b84c55921785a3a27a3cd37afee0111dfe2bcb3e03c31819c197c782598f17f0b150a69d453c9584cd14c4c4d7b9a55d2c5e6cacd4d66fdb3b3663
   languageName: node
   linkType: hard
 
@@ -3916,7 +3933,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/sinon@npm:^17.0.3":
+"@types/sinon@npm:17.0.3":
   version: 17.0.3
   resolution: "@types/sinon@npm:17.0.3"
   dependencies:
@@ -10608,10 +10625,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ignore@npm:^5.2.0, ignore@npm:^5.2.4":
+"ignore@npm:^5.2.0":
   version: 5.2.4
   resolution: "ignore@npm:5.2.4"
   checksum: 3d4c309c6006e2621659311783eaea7ebcd41fe4ca1d78c91c473157ad6666a57a2df790fe0d07a12300d9aac2888204d7be8d59f9aaf665b1c7fcdb432517ef
+  languageName: node
+  linkType: hard
+
+"ignore@npm:^5.2.4":
+  version: 5.3.2
+  resolution: "ignore@npm:5.3.2"
+  checksum: 2acfd32a573260ea522ea0bfeff880af426d68f6831f973129e2ba7363f422923cf53aab62f8369cbf4667c7b25b6f8a3761b34ecdb284ea18e87a5262a865be
   languageName: node
   linkType: hard
 
@@ -15685,7 +15709,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sinon@npm:^18.0.0":
+"sinon@npm:18.0.0":
   version: 18.0.0
   resolution: "sinon@npm:18.0.0"
   dependencies:
@@ -16775,11 +16799,11 @@ __metadata:
   linkType: hard
 
 "ts-api-utils@npm:^1.0.1":
-  version: 1.0.3
-  resolution: "ts-api-utils@npm:1.0.3"
+  version: 1.4.0
+  resolution: "ts-api-utils@npm:1.4.0"
   peerDependencies:
     typescript: ">=4.2.0"
-  checksum: 441cc4489d65fd515ae6b0f4eb8690057add6f3b6a63a36073753547fb6ce0c9ea0e0530220a0b282b0eec535f52c4dfc315d35f8a4c9a91c0def0707a714ca6
+  checksum: 477601317dc8a6d961788663ee76984005ed20c70689bd6f807eed2cad258d3731edcc4162d438ce04782ca62a05373ba51e484180fc2a081d8dab2bf693a5af
   languageName: node
   linkType: hard
 
@@ -17226,6 +17250,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:5.6.2":
+  version: 5.6.2
+  resolution: "typescript@npm:5.6.2"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 48777e1dabd9044519f56cd012b0296e3b72bafe12b7e8e34222751d45c67e0eba5387ecdaa6c14a53871a29361127798df6dc8d1d35643a0a47cb0b1c65a33a
+  languageName: node
+  linkType: hard
+
 "typescript@npm:^4.6.3":
   version: 4.9.5
   resolution: "typescript@npm:4.9.5"
@@ -17263,6 +17297,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 0f4da2f15e6f1245e49db15801dbee52f2bbfb267e1c39225afdab5afee1a72839cd86000e65ee9d7e4dfaff12239d28beaf5ee431357fcced15fb08583d72ca
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@5.6.2#~builtin<compat/typescript>":
+  version: 5.6.2
+  resolution: "typescript@patch:typescript@npm%3A5.6.2#~builtin<compat/typescript>::version=5.6.2&hash=29ae49"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: c084ee1ab865f108c787e6233a5f63c126c482c0c8e87ec998ac5288a2ad54b603e1ea8b8b272355823b833eb31b9fabb99e8c6152283e1cb47e3a76bd6faf6c
   languageName: node
   linkType: hard
 
@@ -17636,7 +17680,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wallet-address-validator@npm:^0.2.4":
+"wallet-address-validator@npm:0.2.4":
   version: 0.2.4
   resolution: "wallet-address-validator@npm:0.2.4"
   dependencies:

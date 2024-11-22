@@ -67,8 +67,8 @@ describe("Create asset context tests", () => {
     // with addressUpdater and flareDataConnectorProofVerifierAddress - cannot use only addressUpdater until FdcVerification gets verified in explorer
     it("Should create simplified asset context from address updater and not define attestationProvider", async () => {
         actorRunConfig = simpleLoadConfigFile(COSTON_SIMPLIFIED_RUN_CONFIG_ADDRESS_UPDATER);
-        actorRunConfig.attestationProviderUrls = undefined;
-        Object.values(actorRunConfig.fAssets)[0].indexerUrl = undefined;
+        actorRunConfig.dataAccessLayerUrls = undefined;
+        Object.values(actorRunConfig.fAssets)[0].indexerUrls = [];
         const commonConfig = await createBotConfig("common", secrets, actorRunConfig, accounts[0]);
         const context = await createLiquidatorContext(commonConfig, firstValue(actorConfig.fAssets)!);
         expect(context).is.not.null;

@@ -12,4 +12,4 @@ export * from "./TokenBalance";
 export * from "./Currency";
 export * from "./fasset-helpers";
 export * from "./program-version";
-export * from "./simple-rate-limiter";
+export * from "./simple-throttler";

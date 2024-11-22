@@ -157,7 +157,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay, updateIntervalMs: 10_000 }));
         // agent bot runner
-        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, false);
+        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, false, null);
         // currencies
         const usdc = context0.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc as IERC20MetadataInstance);
@@ -214,7 +214,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         const NAG = 5;
         const agents: Agent[] = [];
         for (let i = 0; i < NAG; i++) {
-            const agent = await agentCommands.createAgentVault(newAgentSettings(i));
+            const agent = await agentCommands.createAgentVault(newAgentSettings(i), secrets);
             const agentVault = agent.vaultAddress;
             await agentCommands.depositToVault(agentVault, usdcCurrency.parse("10000"));
             await agentCommands.buyCollateralPoolTokens(agentVault, natCurrency.parse("3000000"));

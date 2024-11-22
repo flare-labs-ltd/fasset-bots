@@ -6,11 +6,11 @@ import { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAc
 import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
 import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/IWalletTransaction";
 
-
+export * from "./utils/encryption"
 export * from "./entity/transaction";
 export * from "./entity/wallet";
 export * from "./entity/utxo";
-export * from "./entity/monitoring_state";
+export * from "./entity/monitoringState";
 export type * from "./types";
 export type { StuckTransaction } from "./interfaces/IWalletTransaction";
 export { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
@@ -18,52 +18,43 @@ export { DogeAccountGeneration } from "./chain-clients/account-generation/DogeAc
 export { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAccountGeneration";
 export * from "./interfaces/IWalletTransaction";
 export { logger } from "./utils/logger";
+export * from "./utils/axios-utils";
 
-export module WALLET {
+export class XrpAccount extends XrpAccountGeneration {
+    constructor(inTestnet: boolean) {
+        super(inTestnet);
+    }
+}
 
-   export class XrpAccount extends XrpAccountGeneration {
-      constructor(inTestnet: boolean){
-         super(inTestnet);
-      }
-   }
-   export class BtcAccount extends BtcAccountGeneration {
-      constructor(inTestnet: boolean){
-         super(inTestnet);
-      }
-   }
+export class BtcAccount extends BtcAccountGeneration {
+    constructor(inTestnet: boolean) {
+        super(inTestnet);
+    }
+}
 
-   export class DogeAccount extends DogeAccountGeneration {
-      constructor(inTestnet: boolean){
-         super(inTestnet);
-      }
-   }
-   export class XRP extends XrpWalletImplementation {
-      constructor(options: RippleWalletConfig) {
-         super(options);
-      }
-      static async initialize(createConfig: RippleWalletConfig) {
-         const wallet = new XrpWalletImplementation(createConfig);
-         return wallet;
-      }
-   }
+export class DogeAccount extends DogeAccountGeneration {
+    constructor(inTestnet: boolean) {
+        super(inTestnet);
+    }
+}
 
-   export class BTC extends BtcWalletImplementation {
-      constructor(options: BitcoinWalletConfig) {
-         super(options);
-      }
-      static async initialize(createConfig: BitcoinWalletConfig) {
-         const wallet = new BtcWalletImplementation(createConfig);
-         return wallet;
-      }
-   }
+export class XRP extends XrpWalletImplementation {
+    static initialize(createConfig: RippleWalletConfig) {
+        const wallet = new XrpWalletImplementation(createConfig, null);
+        return wallet;
+    }
+}
 
-   export class DOGE extends DogeWalletImplementation {
-      constructor(options: DogecoinWalletConfig) {
-         super(options);
-      }
-      static async initialize(createConfig: DogecoinWalletConfig) {
-         const wallet = new DogeWalletImplementation(createConfig);
-         return wallet;
-      }
-   }
+export class BTC extends BtcWalletImplementation {
+    static initialize(createConfig: BitcoinWalletConfig) {
+        const wallet = new BtcWalletImplementation(createConfig, null, null);
+        return wallet;
+    }
+}
+
+export class DOGE extends DogeWalletImplementation {
+    static initialize(createConfig: DogecoinWalletConfig) {
+        const wallet = new DogeWalletImplementation(createConfig, null, null);
+        return wallet;
+    }
 }

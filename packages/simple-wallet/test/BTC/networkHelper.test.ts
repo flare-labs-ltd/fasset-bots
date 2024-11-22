@@ -1,14 +1,15 @@
 import { expect } from "chai";
-import { WALLET } from "../../src";
 import { BTC_MAINNET, BTC_TESTNET } from "../../src/utils/constants";
 import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
+import { BTC } from "../../src";
+import { TransactionMonitor } from "../../src/chain-clients/monitoring/TransactionMonitor";
 
 describe("Bitcoin network helper tests", () => {
    it("Should switch to mainnet", async () => {
       const BTCMccConnectionMainInitial = {
-         url: process.env.BTC_URL ?? "",
+         urls: [process.env.BTC_URL ?? ""],
          rateLimitOptions: {
             timeoutMs: 15000,
          },
@@ -16,37 +17,40 @@ describe("Bitcoin network helper tests", () => {
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionMain = { ...BTCMccConnectionMainInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = new WALLET.BTC(BTCMccConnectionMain);
+      const wClient: BTC = new BTC(BTCMccConnectionMain, null, null);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_MAINNET);
    });
 
    it("Should switch to testnet", async () => {
       const BTCMccConnectionTestInitial = {
-         url: process.env.BTC_URL ?? "",
+         urls: [process.env.BTC_URL ?? ""],
          inTestnet: true,
 
       };
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
+      const wClient: BTC = BTC.initialize(BTCMccConnectionTest);
       const currentNetwork = getCurrentNetwork(wClient.chainType);
       expect(currentNetwork).to.eql(BTC_TESTNET);
    });
 
    it("Should check monitoring", async () => {
       const BTCMccConnectionTestInitial = {
-         url: process.env.BTC_URL ?? "",
+         urls: [process.env.BTC_URL ?? ""],
          inTestnet: true,
 
       };
       const testOrm = await initializeTestMikroORM();
       const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
       const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
-      const wClient: WALLET.BTC = await WALLET.BTC.initialize(BTCMccConnectionTest);
-      const isMonitoring =  await wClient.isMonitoring();
+      const wClient: BTC = BTC.initialize(BTCMccConnectionTest);
+      const monitor = await wClient.createMonitor();
+      const isMonitoring = monitor.isMonitoring();
+      const liveMonitor = await monitor.runningMonitorId();
       expect(isMonitoring).to.be.false;
+      expect(liveMonitor).to.be.null;
    });
 
 });

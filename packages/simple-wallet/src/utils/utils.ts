@@ -1,7 +1,6 @@
 import {
    ChainType,
-   DEFAULT_FEE_INCREASE,
-   DROPS_PER_XRP,
+   DEFAULT_FEE_INCREASE, DROPS_PER_XRP
 } from "./constants";
 import { StuckTransaction } from "../interfaces/IWalletTransaction";
 import BN from "bn.js";
@@ -9,6 +8,7 @@ import { toBN } from "./bnutils";
 import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
+import crypto from "crypto";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -37,15 +37,6 @@ export function isValidHexString(maybeHexString: string) {
    return /^(0x|0X)?[0-9a-fA-F]*$/i.test(maybeHexString);
 }
 
-export function excludeNullFields<T>(dict: Record<string, T>): Record<string, NonNullable<T>> {
-   const result: Record<string, NonNullable<T>> = {};
-   for (const [key, val] of Object.entries(dict)) {
-      if (val == null) continue;
-      result[key] = val;
-   }
-   return result;
-}
-
 export function stuckTransactionConstants(chainType: ChainType): StuckTransaction {
    switch (chainType) {
       case ChainType.BTC:
@@ -59,7 +50,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 8,//accepted in next x blocks
+            blockOffset: 30,//accepted in next x blocks
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 3,//do not submit if "three blocks" time left
             enoughConfirmations: 10
@@ -67,7 +58,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.XRP:
       case ChainType.testXRP:
          return {
-            blockOffset: 6,
+            blockOffset: 30,// cca 1.5 min
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 2
          };
@@ -84,15 +75,18 @@ export function checkIfFeeTooHigh(fee: BN, maxFee?: BN | null): boolean {
    return false;
 }
 
-export async function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<boolean> {
+export function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpWalletImplementation, currentBlockHeight: number, executeUntilBlock?: number, executeUntilTimestamp?: BN): boolean {
    const blockRestrictionMet = !!executeUntilBlock && (currentBlockHeight + client.executionBlockOffset >= executeUntilBlock);
    // It probably should be following, but due to inconsistent block time on btc, we use currentTime
    //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)
-   const now = toBN(getCurrentTimestampInSeconds());
+   let now = toBN(getCurrentTimestampInSeconds());
+   if (client instanceof UTXOWalletImplementation) {
+      now = client.feeService.getLatestMedianTime() ?? now;
+   }
    if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
        executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
    }
-   const timeRestrictionMet = !!executeUntilTimestamp && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
+   const timeRestrictionMet = executeUntilTimestamp && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
 
    if (executeUntilBlock && !executeUntilTimestamp && blockRestrictionMet) {
       return false;
@@ -133,6 +127,28 @@ export function roundUpXrpToDrops(amount: number): number {
    return Math.ceil(amount * DROPS_PER_XRP) / DROPS_PER_XRP;
 }
 
-export function createMonitoringId(chainType: ChainType): string {
-   return `${chainType}-${Math.random().toString(36).substring(2, 10)}`;
+export function createMonitoringId(prefix: string | ChainType): string {
+   return `${prefix}-${crypto.randomBytes(8).toString("hex")}`;
+}
+
+export function requireDefined<T>(x: T, errorMessage?: string): NonNullable<T> {
+   if (x != null) return x as any;
+   throw new Error(errorMessage ?? "Value is null or undefined");
+}
+
+export function updateErrorWithFullStackTrace(error: unknown, skipDepth: number = 0): Error {
+   if (error instanceof Error) {
+      error.stack = fullStackTrace(error, skipDepth + 1);
+      return error;
+   }
+   return new Error(`Unknown error: ${error}`);
+}
+
+export function fullStackTrace(error: Error, skipDepth: number = 0): string {
+   const originalStack = error.stack ?? "Missing original error stack";
+   const stackError = new Error("just for stack");
+   // always skip 1 line for message, 1 for this method
+   const extraStackLines = (stackError.stack ?? "").split("\n").slice(skipDepth + 2);
+   const filteredStackLines = extraStackLines.filter(l => !originalStack.includes(l));
+   return [originalStack.trimEnd(), ...filteredStackLines].join("\n");
 }

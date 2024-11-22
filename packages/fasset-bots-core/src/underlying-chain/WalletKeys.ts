@@ -1,8 +1,8 @@
 import { EntityManager, FilterQuery } from "@mikro-orm/core";
 import { CommandLineError } from "../utils/command-line-errors";
-import { EncryptionMethod } from "../utils/encryption";
+import { EncryptionMethod } from "@flarelabs/simple-wallet";
 import { logger } from "../utils/logger";
-import { decryptText, encryptText } from "../utils/encryption";
+import { decryptText, encryptText } from "@flarelabs/simple-wallet"
 import { Secrets } from "../config";
 import { IWalletKeys, WalletAddressEntity } from "@flarelabs/simple-wallet";
 

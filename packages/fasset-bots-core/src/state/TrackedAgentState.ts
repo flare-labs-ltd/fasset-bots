@@ -33,6 +33,7 @@ export class TrackedAgentState {
         this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(data.creationData.buyFAssetByAgentFactorBIPS);
         this.agentSettings.poolTopupCollateralRatioBIPS = toBN(data.creationData.poolTopupCollateralRatioBIPS);
         this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(data.creationData.poolTopupTokenPriceFactorBIPS);
+        this.agentSettings.handshakeType = toBN(data.creationData.handshakeType);
     }
 
     // identifying addresses
@@ -63,6 +64,7 @@ export class TrackedAgentState {
         buyFAssetByAgentFactorBIPS: BN_ZERO,
         poolTopupCollateralRatioBIPS: BN_ZERO,
         poolTopupTokenPriceFactorBIPS: BN_ZERO,
+        handshakeType: BN_ZERO
     };
 
     // aggregates
@@ -106,6 +108,7 @@ export class TrackedAgentState {
         this.agentSettings.buyFAssetByAgentFactorBIPS = toBN(agentInfo.buyFAssetByAgentFactorBIPS);
         this.agentSettings.poolTopupCollateralRatioBIPS = toBN(agentInfo.poolTopupCollateralRatioBIPS);
         this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
+        this.agentSettings.handshakeType = toBN(agentInfo.handshakeType);
         logger.info(`Tracked State Agent initialized with info ${formatArgs(agentInfo)}.`);
     }
 
@@ -398,6 +401,7 @@ export class TrackedAgentState {
             buyFAssetByAgentFactorBIPS: this.agentSettings.buyFAssetByAgentFactorBIPS,
             poolTopupCollateralRatioBIPS: this.agentSettings.poolTopupCollateralRatioBIPS,
             poolTopupTokenPriceFactorBIPS: this.agentSettings.poolTopupTokenPriceFactorBIPS,
+            handshakeType: this.agentSettings.handshakeType,
             status: this.status,
             publiclyAvailable: this.publiclyAvailable,
             totalVaultCollateralWei: this.totalVaultCollateralWei,

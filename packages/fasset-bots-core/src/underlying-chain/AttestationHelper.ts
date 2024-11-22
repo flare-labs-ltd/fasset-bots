@@ -1,4 +1,4 @@
-import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MerkleTree, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import { AddressValidity, ARESBase, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MerkleTree, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import Web3 from "web3";
 import { squashSpace } from "../utils";
@@ -15,7 +15,8 @@ export class AttestationHelperError extends Error {
     }
 }
 
-export function attestationProved(result: OptionalAttestationProof | null | undefined): result is AttestationProof {
+export function attestationProved<T extends ARESBase>(result: OptionalAttestationProof<T> | null | undefined): result is AttestationProof<T> {
+    // OptionalAttestationProof is either AttestationProof (object) or unproved status (string)
     return typeof result === "object" && result != null;
 }
 

@@ -14,8 +14,8 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"],
             "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
@@ -41,7 +41,7 @@
         "type": "sqlite"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
+    "dataAccessLayerUrls": [
+        "https://da.cflr.testfsp.aflabs.org:4443"
     ]
 }

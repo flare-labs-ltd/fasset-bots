@@ -48,6 +48,7 @@ const agentCreatedArgs = {
         poolExitCollateralRatioBIPS: toBN(0),
         poolTopupCollateralRatioBIPS: toBN(0),
         poolTopupTokenPriceFactorBIPS: toBN(0),
+        handshakeType: toBN(0),
     }
 } as EventArgs<AgentVaultCreated>;
 

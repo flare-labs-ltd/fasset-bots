@@ -45,7 +45,7 @@ program
             const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
             const validator = await AgentBotOwnerValidation.fromContext(cli.context, options.secrets, options.config);
             await validator.validate([options.fasset]);
-            await cli.createAgentVault(loadAgentSettings(agentSettingsPath));
+            await cli.createAgentVault(loadAgentSettings(agentSettingsPath), secrets);
         } else {
             if (agentSettingsPath != null) {
                 console.error(`File ${agentSettingsPath} does not exist.`);
@@ -449,7 +449,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const data = await cli.getOwnedUnderlyingAccounts(secrets);
+        const data = await cli.getOwnedEncryptedUnderlyingAccounts();
         fs.writeFileSync(exportFile, JSON.stringify(data, null, 4));
     })
 
@@ -464,7 +464,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        cli.selfMint(agentVault, toBN(numberOfLots));
+        await cli.selfMint(agentVault, toBN(numberOfLots));
         console.log(`Agent ${agentVault} self minted ${numberOfLots}.`);
     });
 
@@ -479,7 +479,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        cli.selfMintFromFreeUnderlying(agentVault, toBN(numberOfLots));
+        await cli.selfMintFromFreeUnderlying(agentVault, toBN(numberOfLots));
         console.log(`Agent ${agentVault} minted ${numberOfLots} lots from free underlying.`);
     });
 

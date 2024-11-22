@@ -24,7 +24,7 @@ export class UnprotectedDBWalletKeys implements IWalletKeys {
         // persist
         const wa = new WalletAddressEntity();
         wa.address = address;
-        wa.encryptedPrivateKey = privateKey
+        wa.encryptedPrivateKey = privateKey;
         await this.em.persist(wa).flush();
     }
 }

@@ -7,6 +7,7 @@ export { AgentBotRunner } from "./actors/AgentBotRunner";
 export { TimeKeeper, TimeKeeperQueryWindow, TimekeeperTimingConfig } from "./actors/TimeKeeper";
 export { TimeKeeperService } from "./actors/TimeKeeperService";
 export { UserBotCommands } from "./commands/UserBotCommands";
+export { AgentInfoReader } from "./commands/AgentInfoReader";
 export { PoolUserBotCommands } from "./commands/PoolUserBotCommands";
 export { InfoBotCommands } from "./commands/InfoBotCommands";
 export { generateSecrets, SecretsUser, generateUnderlyingAccount } from "./config/generate-secrets";
@@ -23,5 +24,5 @@ export * from "./underlying-chain/WalletKeys";
 export { VerificationPrivateApiClient } from "./underlying-chain/VerificationPrivateApiClient";
 export { TokenPriceReader } from "./state/TokenPrice";
 export * from "./config/config-file-loader";
-export { encryptText, decryptText, EncryptionMethod } from "./utils/encryption"
+export { encryptText, decryptText, EncryptionMethod } from "@flarelabs/simple-wallet";
 export { isJSON, promptForPassword } from "./utils/prompt";

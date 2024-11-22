@@ -7,10 +7,11 @@ import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHe
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
 import { EvmEvent } from "./events/common";
 import { ContractWithEvents, eventIs } from "./events/truffle";
-import { BNish, TRANSACTION_FEE_FACTOR, requireNotNull, toBN, toNumber } from "./helpers";
+import { BN_ZERO, BNish, TRANSACTION_FEE_FACTOR, requireNotNull, toBN, toNumber } from "./helpers";
 import { logger } from "./logger";
 import { TokenBalances } from "./token-balances";
 import { web3DeepNormalize } from "./web3normalize";
+import { ChainId } from "../underlying-chain/ChainId";
 
 export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     const agentSettings = {} as AgentSettings;
@@ -23,6 +24,7 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     agentSettings.buyFAssetByAgentFactorBIPS = toBN(agentInfo.buyFAssetByAgentFactorBIPS);
     agentSettings.poolTopupCollateralRatioBIPS = toBN(agentInfo.poolTopupCollateralRatioBIPS);
     agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
+    agentSettings.handshakeType = toBN(agentInfo.handshakeType);
     return agentSettings;
 }
 
@@ -59,11 +61,28 @@ export function requiredAddressBalance(amount: BNish, minimumBalance: BN, transa
     return toBN(amount).add(minimumBalance).add(transactionFee.muln(TRANSACTION_FEE_FACTOR));
 }
 
-export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress: string): Promise<void> {
+export async function checkUnderlyingFunds(context: IAssetAgentContext, sourceAddress: string, amount: BNish, destinationAddress: string, feeSourceAddress?: string): Promise<void> {
     const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
     const senderBalance = await balanceReader.balance(sourceAddress);
-    const transactionFee = await context.wallet.getTransactionFee({source: sourceAddress, destination: destinationAddress, amount: toBN(amount), isPayment: true});
+    const transactionFee = await context.wallet.getTransactionFee({source: sourceAddress, destination: destinationAddress, amount: toBN(amount), isPayment: true, feeSource: feeSourceAddress});
     const minAccountBalance = context.chainInfo.minimumAccountBalance;
+
+    if (feeSourceAddress) {
+        const requiredFeeBalance = requiredAddressBalance(transactionFee.muln(TRANSACTION_FEE_FACTOR), minAccountBalance, BN_ZERO)
+        const senderFeeAddressBalance = await balanceReader.balance(feeSourceAddress);
+        if (senderFeeAddressBalance.gt(requiredFeeBalance)) { // check fee source balance
+            const requiredBalance = requiredAddressBalance(amount, minAccountBalance, BN_ZERO);
+            if (!senderBalance.gte(requiredBalance)) { // check source balance
+                const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
+                logger.error(`Cannot perform underlying payment from ${sourceAddress}${destinationInfo}.
+                Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
+                throw new Error(`Not enough funds on underlying address ${sourceAddress}. Available ${balanceReader.format(senderBalance)}. Required ${balanceReader.format(requiredBalance)}.`);
+            } else { // both have enough balance
+                return;
+            }
+        }
+    }
+
     const requiredBalance = requiredAddressBalance(amount, minAccountBalance, transactionFee);
     if (!senderBalance.gte(requiredBalance)) {
         const destinationInfo = destinationAddress ? ` to ${destinationAddress}.` : ".";
@@ -95,4 +114,14 @@ export function isCollateralRatiosChangedEvent(context: IAssetNativeChainContext
 
 export function isContractChangedEvent(context: IAssetNativeChainContext, event: EvmEvent) {
     return eventIs(event, context.assetManager, "ContractChanged");
+}
+
+export function maxFeeMultiplier(chainId: ChainId): number {
+    if (chainId === ChainId.testBTC) {
+        return 2000;
+    } else if (chainId === ChainId.testDOGE) {
+        return 10;
+    } else {
+        return 1;
+    }
 }

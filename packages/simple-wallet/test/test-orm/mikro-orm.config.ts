@@ -21,8 +21,8 @@ const config: CreateOrmOptions = {
     schemaUpdate: "recreate",
     host: "localhost",
     port: 3306,
-    user: "user",
-    password: "user_password",
+    user: "testwallet",
+    password: "testwallet_password",
     type: "mysql"
 };
 
@@ -31,6 +31,13 @@ export async function initializeTestMikroORM(): Promise<MikroORM> {
     await orm.getSchemaGenerator().ensureDatabase();
     await orm.getSchemaGenerator().dropSchema();
     await orm.getSchemaGenerator().createSchema(); // recreate every time when testing
+    return orm;
+}
+
+export async function initializeMainnetMikroORM(config: CreateOrmOptions): Promise<MikroORM> {
+    const orm = await MikroORM.init(config);
+    await orm.getSchemaGenerator().updateSchema();
+    await orm.getSchemaGenerator().ensureDatabase();
     return orm;
 }
 
