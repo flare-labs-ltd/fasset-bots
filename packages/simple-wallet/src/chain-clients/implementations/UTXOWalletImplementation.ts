@@ -84,7 +84,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     monitoringId: string;
     createConfig: BaseWalletConfig;
 
-    constructor(chainType: ChainType, monitoringId: string | null, createConfig: BaseWalletConfig) {
+    constructor(chainType: ChainType, createConfig: BaseWalletConfig, monitoringId: string | null, feeService: BlockchainFeeService | null) {
         super(chainType);
         this.monitoringId = monitoringId ?? createMonitoringId(chainType);
         this.createConfig = createConfig;
@@ -103,7 +103,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.transactionFeeService = new TransactionFeeService(this, this.chainType, this.feeIncrease);
         this.transactionUTXOService = new TransactionUTXOService(this, this.chainType, this.enoughConfirmations);
         this.transactionService = new TransactionService(this, this.chainType, this.maximumNumberOfUTXOs);
-        this.feeService = new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
+        this.feeService = feeService ?? new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
     }
 
     abstract clone(monitoringId: string, rootEm: EntityManager): UTXOWalletImplementation;
