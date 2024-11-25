@@ -25,6 +25,7 @@ import {
     countTransactionsWithStatuses,
     createInitialTransactionEntity,
     createTransactionOutputEntities,
+    failDueToNoTimeToSubmit,
     failTransaction,
     fetchTransactionEntityById,
     getTransactionInfoById,
@@ -43,7 +44,6 @@ import { EntityManager } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
     getAccountBalance,
-    getAmountToSendInCaseOfRbf,
     getCore,
     getMinAmountToSend,
     getTransactionDescendants,
@@ -75,11 +75,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     feeIncrease: number;
     executionBlockOffset: number;
     feeService: BlockchainFeeService;
-
     enoughConfirmations: number;
-
-    maximumNumberOfUTXOs = 20; // TODO cca max number of transactions that still go through blockbook (URI issue)
-    useRBFFactor = 1.4;
 
     monitoringId: string;
     createConfig: BaseWalletConfig;
@@ -102,7 +98,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.blockchainAPI = new UTXOBlockchainAPI(createConfig, this.chainType);
         this.transactionFeeService = new TransactionFeeService(this, this.chainType, this.feeIncrease);
         this.transactionUTXOService = new TransactionUTXOService(this, this.chainType, this.enoughConfirmations);
-        this.transactionService = new TransactionService(this, this.chainType, this.maximumNumberOfUTXOs);
+        this.transactionService = new TransactionService(this, this.chainType);
         this.feeService = feeService ?? new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
     }
 
@@ -276,14 +272,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     ///////////////////////////////////////////////////////////////////////////////////////
     async prepareAndSubmitCreatedTransaction(txEnt: TransactionEntity): Promise<void> {
         const currentBlockNumber = await this.blockchainAPI.getCurrentBlockHeight();
-        const currentTimestamp = getCurrentTimestampInSeconds();
         const shouldSubmit = checkIfShouldStillSubmit(this, currentBlockNumber, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
         if (txEnt.rbfReplacementFor == null && !shouldSubmit) {
-            await failTransaction(
-                this.rootEm,
-                txEnt.id,
-                `prepareAndSubmitCreatedTransaction: Both conditions met for transaction ${txEnt.id}: Current ledger ${currentBlockNumber} >= last transaction ledger ${txEnt.executeUntilBlock} AND Current timestamp ${currentTimestamp} >= execute until timestamp ${txEnt.executeUntilTimestamp?.toString()}`
-            );
+            const medianTime = this.feeService.getLatestMedianTime();
+            await failDueToNoTimeToSubmit(this.rootEm, medianTime, currentBlockNumber, txEnt, "prepareAndSubmitCreatedTransaction");
             return;
         } else if (!txEnt.executeUntilBlock && !txEnt.executeUntilTimestamp) {
             await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
@@ -309,6 +301,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         try {
             const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
             await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
+            if (utxosFromMempool.length === 0) {
+                logger.warn(`Will not prepare transaction ${txEnt.id}. No utxos available.`);
+                await failTransaction(this.rootEm, txEnt.id, "No utxos available.");
+                return;
+            }
 
             if (txEnt.feeSource) {
                 const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.feeSource);
@@ -717,12 +714,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const shouldSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, transaction.executeUntilBlock, transaction.executeUntilTimestamp);
         const txEntity = await fetchTransactionEntityById(this.rootEm, txId);
         if (txEntity.rbfReplacementFor == null && !shouldSubmit) {
-            await failTransaction(
-                this.rootEm,
-                txId,
-                `Transaction ${txId} has no time left to be submitted: currentBlockHeight: ${currentBlockHeight}, executeUntilBlock: ${transaction.executeUntilBlock}, offset ${this.executionBlockOffset}.
-                Current timestamp ${currentTimestamp} >= execute until timestamp ${transaction.executeUntilTimestamp?.toString()}.`
-            );
+            const medianTime = this.feeService.getLatestMedianTime();
+            await failDueToNoTimeToSubmit(this.rootEm, medianTime, currentBlockHeight, txEntity, "submitTransaction");
             return TransactionStatus.TX_FAILED;
             /* istanbul ignore next */
         } else if (!transaction.executeUntilBlock) {
@@ -788,11 +781,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const currentBlockNumber = await this.blockchainAPI.getCurrentBlockHeight();
         const shouldSubmit = checkIfShouldStillSubmit(this, currentBlockNumber, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
         if (!shouldSubmit) {
-            await failTransaction(
-                this.rootEm,
-                txId,
-                `waitForTransactionToAppearInMempool: Current ledger ${currentBlockNumber} >= last transaction ledger ${txEnt.executeUntilBlock}`
-            );
+            const medianTime = this.feeService.getLatestMedianTime();
+            await failDueToNoTimeToSubmit(this.rootEm, medianTime, currentBlockNumber, txEnt, "waitForTransactionToAppearInMempool");
         }
     }
 
