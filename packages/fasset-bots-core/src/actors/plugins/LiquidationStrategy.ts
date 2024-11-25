@@ -27,6 +27,12 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy<DefaultLiqui
 
     public async performLiquidations(agents: TrackedAgentState[]): Promise<void> {
         if (agents.length === 0) return;
+        const fBalance = await this.context.fAsset.balanceOf(this.address);
+        if (fBalance.lt(toBN(this.state.settings.assetMintingGranularityUBA))) {
+            logger.info(`Liquidator ${this.address} has no ${this.context.fAssetSymbol} available for liquidation ${agents.length} agents.`);
+            console.log(`Liquidator ${this.address} has zero ${this.context.fAssetSymbol} balance, cannot liquidate ${agents.length} agents.`);
+            return;
+        }
         logger.info(`Liquidator ${this.address} performing ${this.context.fAssetSymbol} liquidation on ${agents.length} agents.`);
         console.log(`Liquidator ${this.address} performing ${this.context.fAssetSymbol} liquidation on ${agents.length} agents.`);
         // sort by decreasing minted amount then descending by status (higher the status, the more rewards from liquidating)
@@ -34,22 +40,11 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy<DefaultLiqui
         agents.sort((a, b) => a.status - b.status);
         for (const agent of agents) {
             try {
-                await this.performLiquidation(agent);
+                await this.liquidate(agent, fBalance);
             } catch (e) {
                 logger.error(`Liquidator ${this.address} failed to liquidate agent ${agent.vaultAddress}: ${e}`);
                 console.error(`Liquidator ${this.address} failed to liquidate agent ${agent.vaultAddress}`);
             }
-        }
-    }
-
-    async performLiquidation(agent: TrackedAgentState) {
-        const fBalance = await this.context.fAsset.balanceOf(this.address);
-        if (fBalance.gte(toBN(this.state.settings.assetMintingGranularityUBA))) {
-            await this.liquidate(agent, fBalance);
-        } else {
-            const fassetSymbol = this.context.fAssetSymbol;
-            logger.info(`Liquidator ${this.address} has no ${fassetSymbol} available for liqudating agent ${agent.vaultAddress}`);
-            console.log(`Liquidator ${this.address} has zero ${fassetSymbol} balance, cannot liquidate ${agent.vaultAddress}.`);
         }
     }
 
