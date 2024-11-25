@@ -99,47 +99,93 @@
           "type": "address"
         },
         {
-          "internalType": "uint256",
-          "name": "_vaultToFAssetMinDexPriceMul",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_vaultToFAssetMinDexPriceDiv",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_poolToVaultMinDexPriceMul",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_poolToVaultMinDexPriceDiv",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "_flashLender",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_dex",
-          "type": "address"
-        },
-        {
-          "internalType": "address[]",
-          "name": "_vaultToFAssetDexPath",
-          "type": "address[]"
-        },
-        {
-          "internalType": "address[]",
-          "name": "_poolToVaultDexPath",
-          "type": "address[]"
+          "components": [
+            {
+              "internalType": "address",
+              "name": "flashLender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxFlashFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "dex",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address[]",
+                  "name": "path",
+                  "type": "address[]"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minPriceMul",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minPriceDiv",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct DexPairConfig",
+              "name": "dexPair1",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address[]",
+                  "name": "path",
+                  "type": "address[]"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minPriceMul",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minPriceDiv",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct DexPairConfig",
+              "name": "dexPair2",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct ArbitrageConfig",
+          "name": "_config",
+          "type": "tuple"
         }
       ],
       "name": "runArbitrage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "withdrawNat",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "withdrawToken",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

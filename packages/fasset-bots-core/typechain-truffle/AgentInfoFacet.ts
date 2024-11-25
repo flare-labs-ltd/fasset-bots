@@ -79,6 +79,16 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
+  getAgentMinPoolCollateralRatioBIPS(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  getAgentMinVaultCollateralRatioBIPS(
+    _agentVault: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   getAgentVaultCollateralToken(
     _agentVault: string,
     txDetails?: Truffle.TransactionDetails
@@ -169,6 +179,16 @@ export interface AgentInfoFacetInstance extends Truffle.ContractInstance {
       _agentVault: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    getAgentMinPoolCollateralRatioBIPS(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    getAgentMinVaultCollateralRatioBIPS(
+      _agentVault: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     getAgentVaultCollateralToken(
       _agentVault: string,

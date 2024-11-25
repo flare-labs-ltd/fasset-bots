@@ -77,6 +77,11 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
 
   fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  getAgentMinPoolCollateralRatioBIPS(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
   getAgentVaultOwner(
     arg0: string,
     txDetails?: Truffle.TransactionDetails
@@ -108,6 +113,10 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
 
   maxRedemptionFromAgent(
     arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
+
+  minPoolCollateralRatioBIPS(
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
@@ -327,6 +336,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setMinPoolCollateralRatioBIPS: {
+    (
+      _minPoolCollateralRatioBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _minPoolCollateralRatioBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _minPoolCollateralRatioBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _minPoolCollateralRatioBIPS: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setTimelockDuration: {
     (
       _timelockDuration: number | BN | string,
@@ -405,6 +433,11 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
 
     fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+    getAgentMinPoolCollateralRatioBIPS(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
     getAgentVaultOwner(
       arg0: string,
       txDetails?: Truffle.TransactionDetails
@@ -436,6 +469,10 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
 
     maxRedemptionFromAgent(
       arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
+
+    minPoolCollateralRatioBIPS(
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
@@ -654,6 +691,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _maxRedemption: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setMinPoolCollateralRatioBIPS: {
+      (
+        _minPoolCollateralRatioBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _minPoolCollateralRatioBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _minPoolCollateralRatioBIPS: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _minPoolCollateralRatioBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
