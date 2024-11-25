@@ -27,23 +27,23 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy<DefaultLiqui
 
     public async performLiquidations(agents: TrackedAgentState[]): Promise<void> {
         if (agents.length === 0) return;
-        const fBalance = await this.context.fAsset.balanceOf(this.address);
-        if (fBalance.lt(toBN(this.state.settings.assetMintingGranularityUBA))) {
-            logger.info(`Liquidator ${this.address} has no ${this.context.fAssetSymbol} available for liquidation ${agents.length} agents.`);
-            console.log(`Liquidator ${this.address} has zero ${this.context.fAssetSymbol} balance, cannot liquidate ${agents.length} agents.`);
-            return;
-        }
         logger.info(`Liquidator ${this.address} performing ${this.context.fAssetSymbol} liquidation on ${agents.length} agents.`);
-        console.log(`Liquidator ${this.address} performing ${this.context.fAssetSymbol} liquidation on ${agents.length} agents.`);
+        const minLiquidatableFAsset = toBN(this.state.settings.assetMintingGranularityUBA);
         // sort by decreasing minted amount then descending by status (higher the status, the more rewards from liquidating)
         agents.sort((a, b) => -a.mintedUBA.cmp(b.mintedUBA));
         agents.sort((a, b) => a.status - b.status);
         for (const agent of agents) {
+            const fAssetBalance = await this.context.fAsset.balanceOf(this.address);
+            if (fAssetBalance.lt(minLiquidatableFAsset)) {
+                logger.info(`Liquidator ${this.address} has insufficient ${this.context.fAssetSymbol} to liquidate more agents.`);
+                console.log(`Liquidator ${this.address} has insufficient ${this.context.fAssetSymbol} to liquidate more agents.`);
+                break;
+            }
             try {
-                await this.liquidate(agent, fBalance);
+                await this.liquidate(agent, fAssetBalance);
             } catch (e) {
-                logger.error(`Liquidator ${this.address} failed to liquidate agent ${agent.vaultAddress}: ${e}`);
-                console.error(`Liquidator ${this.address} failed to liquidate agent ${agent.vaultAddress}`);
+                logger.error(`Liquidator ${this.address} failed to liquidate ${this.context.fAssetSymbol} agent ${agent.vaultAddress}: ${e}`);
+                console.error(`Liquidator ${this.address} failed to liquidate ${this.context.fAssetSymbol} agent ${agent.vaultAddress}`);
             }
         }
     }
