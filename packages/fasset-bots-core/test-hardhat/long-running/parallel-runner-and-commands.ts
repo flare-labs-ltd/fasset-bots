@@ -10,7 +10,7 @@ import { Currencies, Currency } from "../../src/utils";
 import { Web3ContractEventDecoder } from "../../src/utils/events/Web3ContractEventDecoder";
 import { EvmEvent } from "../../src/utils/events/common";
 import { eventIs } from "../../src/utils/events/truffle";
-import { BN_ZERO, DAYS, enumerate, fail, firstValue, getOrCreateAsync, HOURS, sleep, toBN, toBNExp } from "../../src/utils/helpers";
+import { BN_ZERO, DAYS, fail, firstValue, getOrCreateAsync, HOURS, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
 import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
@@ -249,7 +249,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
             totalDefaulted += res.defaulted;
             totalExpired += res.expired;
             // print agent info
-            for (const [agent, i] of enumerate(agents)) {
+            for (const [i, agent] of agents.entries()) {
                 const info = await agent.getAgentInfo();
                 console.log(`${i}: minted=${xrpCurrency.format(info.mintedUBA)}   Redeeming=${xrpCurrency.format(info.redeemingUBA)}`);
             }
@@ -265,24 +265,34 @@ describe("Toplevel runner and commands integration test - massively parallel ver
             await sleep(1000);
             //
             let totalRedeeming = BN_ZERO;
-            for (const [agent, i] of enumerate(agents)) {
+            for (const [i, agent] of agents.entries()) {
                 const info = await agent.getAgentInfo();
-                console.log(`${i}: WAITING EXPIRATION: minted=${xrpCurrency.format(info.mintedUBA)}   Redeeming=${xrpCurrency.format(info.redeemingUBA)}`);
-                totalRedeeming = totalRedeeming.add(toBN(info.redeemingUBA));
+                const redeemingUBA = toBN(info.redeemingUBA);
+                if (!redeemingUBA.eq(BN_ZERO)) {
+                    console.log(`${i}: WAITING EXPIRATION: minted=${xrpCurrency.format(info.mintedUBA)}   Redeeming=${xrpCurrency.format(info.redeemingUBA)}`);
+                    totalRedeeming = totalRedeeming.add(redeemingUBA);
+                }
             }
-            if (totalRedeeming.eq(BN_ZERO) && skippedTime > 5 * DAYS) break;
+            if (totalRedeeming.eq(BN_ZERO) || skippedTime > 5 * DAYS) break;
         }
         // close
         const lastBlock2 = await web3.eth.getBlockNumber();
         // wait for close process to finish (speed up time to rush through all the timelocks)
         const timeSpeedupTimer = setInterval(() => void time.increase(100), 200);
+        let closedCount = 0;
         try {
             await Promise.allSettled(agents.map(async (agent) => {
-                await agentCommands.closeVault(agent.vaultAddress);
-                await waitForEvent(context.assetManager, lastBlock2, 2000000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agent.vaultAddress);
+                try {
+                    await agentCommands.closeVault(agent.vaultAddress);
+                    await waitForEvent(context.assetManager, lastBlock2, 30_000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agent.vaultAddress);
+                    ++closedCount;
+                } catch (error) {
+                    console.error(`Could not close agent ${agent.vaultAddress}: ${error}`);
+                }
             }));
         } finally {
             clearInterval(timeSpeedupTimer);
+            console.log(`Succesfully closed ${closedCount} of ${agents.length} agents.`)
         }
         console.log(`Redemption totals: successful=${totalSuccessful}, defaulted=${totalDefaulted}, expired=${totalExpired}`);
     });

@@ -25,6 +25,7 @@ export class AgentBotClaims {
         // airdrop distribution rewards
         await this.checkAirdropClaims(ClaimType.VAULT);
         await this.checkAirdropClaims(ClaimType.POOL);
+        await this.checkTransferFeesClaims();
     }
 
     async checkFTSORewards(type: ClaimType) {
@@ -78,6 +79,25 @@ export class AgentBotClaims {
         } catch (error) {
             console.error(`Error handling airdrop distribution for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution for ${type}:`, error);
+        }
+    }
+
+    async checkTransferFeesClaims() {
+        /* istanbul ignore next */
+        if (this.bot.stopRequested()) return;
+        try {
+            logger.info(`Agent ${this.agent.vaultAddress} started checking for transfer fees.`);
+            const { 0: firstUnclaimedEpoch, 1: count } = await this.agent.assetManager.agentUnclaimedTransferFeeEpochs(this.agent.vaultAddress);
+            const maxEpochs = count.ltn(11) ? count : toBN(10);
+            if (toBN(count).gtn(0)) {
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming transferFees for epochs ${String(firstUnclaimedEpoch)} - ${String(firstUnclaimedEpoch.add(maxEpochs).subn(1))}.`);
+                await this.agent.assetManager.claimTransferFees(this.agent.vaultAddress, this.agent.owner.workAddress, maxEpochs, { from: this.agent.owner.workAddress });
+
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished checking for transfer fees.`);
+        } catch (error) {
+            console.error(`Error handling transfer fees for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling transfer fees:`, error);
         }
     }
 }

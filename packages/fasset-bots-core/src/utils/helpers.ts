@@ -405,12 +405,6 @@ export function randomChoice<K>(array: K[]): K | undefined {
     return array[Math.floor(Math.random() * array.length)];
 }
 
-export function* enumerate<T>(array: T[]): Iterable<[T, number]> {
-    for (let i = 0; i < array.length; i++) {
-        yield [array[i], i];
-    }
-}
-
 export function isEnumValue<T extends string>(enumCls: { [key: string]: T }, value: string): value is T {
     return Object.values(enumCls).includes(value as any);
 }

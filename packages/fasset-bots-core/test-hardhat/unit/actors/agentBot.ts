@@ -751,7 +751,7 @@ describe("Agent bot unit tests", () => {
         const spyError = spy.on(agentBot, "stopRequested");
         agentBot.requestStop();
         await agentBot.claims.checkForClaims();
-        expect(spyError).to.be.called.exactly(4);
+        expect(spyError).to.be.called.exactly(5);
     });
 
     // TODO: claims not working until DAL contains claim data

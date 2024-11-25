@@ -221,7 +221,7 @@ describe("Toplevel runner and commands integration test", () => {
             // wait for close process to finish (speed up time to rush through all the timelocks)
             const tm1 = setInterval(() => void time.increase(100), 200);
             try {
-                await waitForEvent(context.assetManager, lastBlock2, 20000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
+                await waitForEvent(context.assetManager, lastBlock2, 20_000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
             } finally {
                 clearInterval(tm1);
             }
