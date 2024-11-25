@@ -42,13 +42,11 @@ import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { EntityManager } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
-    getAccountBalance,
-    getAmountToSendInCaseOfRbf,
-    getCore,
+    getAccountBalance, getCore,
     getMinAmountToSend,
-    getTransactionDescendants,
+    getTransactionDescendants
 } from "../utxo/UTXOUtils";
-import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
+import { CreateWalletOverrides, IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { TransactionService } from "../utxo/TransactionService";
 import { TransactionUTXOService } from "../utxo/TransactionUTXOService";
 import { TransactionFeeService } from "../utxo/TransactionFeeService";
@@ -84,9 +82,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     monitoringId: string;
     createConfig: BaseWalletConfig;
 
-    constructor(chainType: ChainType, createConfig: BaseWalletConfig, monitoringId: string | null, feeService: BlockchainFeeService | null) {
+    constructor(chainType: ChainType, createConfig: BaseWalletConfig, overrides: CreateWalletOverrides) {
         super(chainType);
-        this.monitoringId = monitoringId ?? createMonitoringId(chainType);
+        this.monitoringId = overrides.monitoringId ?? createMonitoringId(chainType);
         this.createConfig = createConfig;
         this.inTestnet = createConfig.inTestnet ?? false;
         const resubmit = stuckTransactionConstants(this.chainType);
@@ -95,7 +93,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
         this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
         this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
-        this.rootEm = createConfig.em;
+        this.rootEm = overrides.walletEm ?? createConfig.em;
         this.walletKeys = createConfig.walletKeys;
         this.enoughConfirmations = createConfig.enoughConfirmations ?? resubmit.enoughConfirmations!;
 
@@ -103,10 +101,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.transactionFeeService = new TransactionFeeService(this, this.chainType, this.feeIncrease);
         this.transactionUTXOService = new TransactionUTXOService(this, this.chainType, this.enoughConfirmations);
         this.transactionService = new TransactionService(this, this.chainType, this.maximumNumberOfUTXOs);
-        this.feeService = feeService ?? new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
+        this.feeService = overrides.feeService ?? new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
     }
 
-    abstract clone(monitoringId: string, rootEm: EntityManager): UTXOWalletImplementation;
+    abstract clone(data: CreateWalletOverrides): UTXOWalletImplementation;
 
     getMonitoringId(): string {
         return this.monitoringId;
