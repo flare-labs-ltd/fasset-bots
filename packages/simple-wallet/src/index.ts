@@ -40,21 +40,21 @@ export class DogeAccount extends DogeAccountGeneration {
 
 export class XRP extends XrpWalletImplementation {
     static initialize(createConfig: RippleWalletConfig) {
-        const wallet = new XrpWalletImplementation(createConfig, null);
+        const wallet = new XrpWalletImplementation(createConfig, {});
         return wallet;
     }
 }
 
 export class BTC extends BtcWalletImplementation {
     static initialize(createConfig: BitcoinWalletConfig) {
-        const wallet = new BtcWalletImplementation(createConfig, null, null);
+        const wallet = new BtcWalletImplementation(createConfig, {});
         return wallet;
     }
 }
 
 export class DOGE extends DogeWalletImplementation {
     static initialize(createConfig: DogecoinWalletConfig) {
-        const wallet = new DogeWalletImplementation(createConfig, null, null);
+        const wallet = new DogeWalletImplementation(createConfig, {});
         return wallet;
     }
 }

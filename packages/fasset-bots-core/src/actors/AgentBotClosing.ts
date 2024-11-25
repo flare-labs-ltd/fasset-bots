@@ -277,7 +277,8 @@ export class AgentBotClosing {
     async logClosingObstructions() {
         const agentInfo = await this.agent.getAgentInfo();
         if (toBN(agentInfo.mintedUBA).gt(BN_ZERO)) {
-            logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still backing FAssets.`);
+            logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still backing ${agentInfo.mintedUBA} UBA FAssets.`);
+            console.log(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still backing FAssets.`);
         }
         if (toBN(agentInfo.redeemingUBA).gt(BN_ZERO) || toBN(agentInfo.poolRedeemingUBA).gt(BN_ZERO)) {
             logger.info(`Cannot destroy agent ${this.agent.vaultAddress}: Agent is still redeeming FAssets.`);
