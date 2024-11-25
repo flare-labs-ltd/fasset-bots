@@ -36,7 +36,7 @@ import { XrpAccountGeneration } from "../account-generation/XrpAccountGeneration
 import { TransactionStatus, TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
 import { XRPBlockchainAPI } from "../../blockchain-apis/XRPBlockchainAPI";
-import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
+import { CreateWalletOverrides, IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { errorMessage } from "../../utils/axios-utils";
 
 export class XrpWalletImplementation extends XrpAccountGeneration implements WriteWalletInterface, IMonitoredWallet {
@@ -52,13 +52,13 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    createConfig: RippleWalletConfig;
 
-   constructor(createConfig: RippleWalletConfig, monitoringId: string | null) {
+   constructor(createConfig: RippleWalletConfig, overrides: CreateWalletOverrides) {
       super(createConfig.inTestnet ?? false);
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
       this.blockchainAPI = new XRPBlockchainAPI(createConfig);
-      this.monitoringId = monitoringId ?? createMonitoringId(this.chainType);
+      this.monitoringId = overrides.monitoringId ?? createMonitoringId(this.chainType);
       this.createConfig = createConfig;
       const resubmit = stuckTransactionConstants(this.chainType);
 
@@ -66,13 +66,13 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
-      this.rootEm = createConfig.em;
+      this.rootEm = overrides.walletEm ?? createConfig.em;
       this.walletKeys = createConfig.walletKeys;
    }
 
-   clone(monitoringId: string, rootEm: EntityManager) {
-      logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
-      return new XrpWalletImplementation({ ...this.createConfig, em: rootEm }, monitoringId);
+   clone(overrides: CreateWalletOverrides) {
+      logger.info(`Forking wallet ${this.monitoringId} to ${overrides.monitoringId}`);
+      return new XrpWalletImplementation(this.createConfig, overrides);
    }
 
    getMonitoringId(): string {
