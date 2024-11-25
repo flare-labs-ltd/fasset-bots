@@ -517,7 +517,7 @@ describe("Agent bot tests", () => {
         await enableHandshake();
         // perform minting
         minter = await createTestMinter(context, minterAddress, chain, "RANDOM_MINTER_UNDERLYING_ADDRESS", BN_ZERO);
-        const hr = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2, ZERO_ADDRESS, "0",false);
+        const hr = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2, ZERO_ADDRESS, "0", false);
         await agentBot.runStep(orm.em);
         // should have an open handshake but no mintings
         orm.em.clear();
@@ -594,6 +594,18 @@ describe("Agent bot tests", () => {
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // update underlying block
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // create another agent and mint some FAssets
+        const agent2 = await createTestAgentAndMakeAvailable(context, accounts[321], "UNDERLYING_ADDRESS_1");
+        // execute minting
+        const crt1 = await minter.reserveCollateral(agent2.vaultAddress, 2);
+        const txHash1 = await minter.performMintingPayment(crt1);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt1, txHash1);
+        // agent buys missing fAssets
+        const transferFeeMillionths = await agentBot.agent.assetManager.transferFeeMillionths();
+        const amount = toBN(fBalance).mul(transferFeeMillionths).divn(1e6);
+        await context.fAsset.transfer(redeemer.address, amount, { from: minter.address });
+
         // request redemption
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
@@ -640,6 +652,17 @@ describe("Agent bot tests", () => {
         await context.fAsset.transfer(redeemer.address, fBalance, { from: minter.address });
         // update underlying block
         await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        // create another agent and mint some FAssets
+        const agent2 = await createTestAgentAndMakeAvailable(context, accounts[321], "UNDERLYING_ADDRESS_1");
+        // execute minting
+        const crt1 = await minter.reserveCollateral(agent2.vaultAddress, 2);
+        const txHash1 = await minter.performMintingPayment(crt1);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter.executeMinting(crt1, txHash1);
+        // agent buys missing fAssets
+        const transferFeeMillionths = await agentBot.agent.assetManager.transferFeeMillionths();
+        const amount = toBN(fBalance).mul(transferFeeMillionths).divn(1e6);
+        await context.fAsset.transfer(redeemer.address, amount, { from: minter.address });
         // request redemption
         const [rdReqs] = await redeemer.requestRedemption(2);
         assert.equal(rdReqs.length, 1);
