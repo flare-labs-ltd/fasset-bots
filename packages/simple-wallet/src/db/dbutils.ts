@@ -260,8 +260,13 @@ export async function countSpendableUTXOs(chainType: ChainType, rootEm: EntityMa
     );
 }
 
+let correctUTXOId = 1;
+
 // it fetches unspent and sent utxos from db that do not match utxos from mempool and marks them as spent
 export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: EntityManager, address: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
+    const logId = correctUTXOId++;
+    const startTm = Date.now();
+    logger.info(`START correctUTXOInconsistenciesAndFillFromMempool: callId=${logId},  address=${address},  #utxos=${mempoolUTXOs?.length}`)
     await transactional(rootEm, async (em) => {
         // find UTXOs in the db that are NOT in the mempool and mark them as spent
         const spentCondition = mempoolUTXOs.map((utxo) => ({
@@ -302,6 +307,8 @@ export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: Entit
         await em.persistAndFlush([...spentUtxos, ...unspentUtxos]);
         // find new UTXOs in the mempool that are not yet in the db
         await storeUTXOs(em, address, mempoolUTXOs);
+    }).finally(() => {
+        logger.info(`END correctUTXOInconsistenciesAndFillFromMempool: callId=${logId},  address=${address},  #utxos=${mempoolUTXOs?.length},  time=${(Date.now() - startTm) / 1000}s`);
     });
 }
 
