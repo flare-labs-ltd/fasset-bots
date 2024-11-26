@@ -2,17 +2,12 @@ import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
 import { BotConfigFile, loadContracts, Secrets } from '../config';
 import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
-import { FspStatusResult, FtsoFeedResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
+import { FspStatusResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
 
 export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
 
 const FtsoV2PriceStore = artifacts.require("FtsoV2PriceStore");
-
-export interface PublisherFeedResultWithProof {
-    body: FtsoFeedResult;
-    merkleProof: string[];
-}
 
 export class PricePublisherService {
 
@@ -114,7 +109,7 @@ export class PricePublisherService {
         return null;
     }
 
-    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<PublisherFeedResultWithProof[] | null> {
+    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FtsoFeedResultWithProof[] | null> {
         const response = await axios.post(`${url}/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}`, {
             feed_ids: feedIds
         }, {
@@ -128,11 +123,9 @@ export class PricePublisherService {
         if (feedsData.some(fd => Number(fd.body.votingRoundId) !== votingRoundId)) {
             return null;
         }
-        // rename data field to body
-        const feedsDataRenamed = feedsData.map(fd => ({ body: fd.body, merkleProof: fd.proof }));
         // sort nodes by order of feedIds array
-        feedsDataRenamed.sort((a, b) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
-        return feedsDataRenamed;
+        feedsData.sort((a, b) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
+        return feedsData;
     }
 
     async getAndPublishFeedData(votingRoundId: number) {
