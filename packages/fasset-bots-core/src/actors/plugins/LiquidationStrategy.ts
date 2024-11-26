@@ -3,7 +3,7 @@ import { LiquidatorInstance } from "../../../typechain-truffle";
 import { ILiquidatorContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
-import { Currencies, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
+import { Currencies, MAX_UINT256, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
 import { artifacts } from "../../utils/web3";
 import type { DefaultLiquidationStrategyConfig, DexLiquidationStrategyConfig } from "../../config/config-files/BotStrategyConfig";
 
@@ -81,6 +81,20 @@ export class DexLiquidationStrategy extends LiquidationStrategy<DexLiquidationSt
     public async liquidate(agent: TrackedAgentState): Promise<void> {
         const liquidator = await Liquidator.at(this.config.address);
         const oraclePrices = await this.dexMinPriceOracle(liquidator, agent);
-        await liquidator.runArbitrage(agent.vaultAddress, this.address, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address });
+        await liquidator.runArbitrage(agent.vaultAddress, this.address, {
+            flashLender: ZERO_ADDRESS,
+            maxFlashFee: MAX_UINT256,
+            dex: ZERO_ADDRESS,
+            dexPair1: {
+                path: [],
+                minPriceMul: oraclePrices[0],
+                minPriceDiv: oraclePrices[1]
+            },
+            dexPair2: {
+                path: [],
+                minPriceMul: oraclePrices[2],
+                minPriceDiv: oraclePrices[3]
+            }
+         }, { from: this.address });
     }
 }
