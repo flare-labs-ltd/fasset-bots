@@ -182,8 +182,7 @@ export class BlockchainFeeService {
         for (let i = 1; i < this.history.length; i++) {
             const currentBlockHeight = this.history[i].blockHeight;
             const previousBlockHeight = this.history[i - 1].blockHeight;
-
-            if (currentBlockHeight !== previousBlockHeight - 1) {
+            if (currentBlockHeight !== previousBlockHeight + 1) {
                 return false;
             }
         }
