@@ -366,7 +366,7 @@ export class AgentBotCommands {
     async cancelCollateralPoolTokenRedemption(agentVault: string): Promise<void> {
         logger.info(`Agent ${agentVault} is trying to cancel collateral pool redemption announcement.`);
         const { agentBot } = await this.getAgentBot(agentVault);
-        await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
+        await agentBot.agent.announcePoolTokenRedemption(BN_ZERO);
         await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
