@@ -127,7 +127,7 @@ describe("Xrp wallet tests", () => {
         const wallet0 = wClient.createWalletFromSeed(seed0, ECDSA.secp256k1);
         const wallet1 = wClient.createWalletFromSeed(seed1, ECDSA.ed25519);
 
-        const wallet = new XrpWalletImplementation(null, XRPMccConnectionTest);
+        const wallet = new XrpWalletImplementation(XRPMccConnectionTest, {});
         const public0 = (wallet as any).getPublicKeyFromPrivateKey(wallet0.privateKey, wallet0.address);
         const public1 = (wallet as any).getPublicKeyFromPrivateKey(wallet1.privateKey, wallet1.address);
         expect(wallet0.publicKey).to.eq(public0);

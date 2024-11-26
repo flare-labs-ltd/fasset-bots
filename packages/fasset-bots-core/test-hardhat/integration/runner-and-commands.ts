@@ -6,7 +6,7 @@ import { ORM } from "../../src/config/orm";
 import { IAssetAgentContext } from "../../src/fasset-bots/IAssetBotContext";
 import { OwnerAddressPair } from "../../src/fasset/Agent";
 import { MockChain } from "../../src/mock/MockChain";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { MockFlareDataConnectorClient } from "../../src/mock/MockFlareDataConnectorClient";
 import { Currencies, Currency } from "../../src/utils";
 import { Web3ContractEventDecoder } from "../../src/utils/events/Web3ContractEventDecoder";
 import { EvmEvent } from "../../src/utils/events/common";
@@ -21,7 +21,8 @@ import { TestAssetBotContext, createTestAssetContext, createTestChain, createTes
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { assert } from "chai";
 
-const StateConnector = artifacts.require("StateConnectorMock");
+const Relay = artifacts.require("RelayMock");
+const FdcHub = artifacts.require("FdcHubMock");
 
 describe("Toplevel runner and commands integration test", () => {
     const loopDelay = 100; // ms
@@ -53,7 +54,8 @@ describe("Toplevel runner and commands integration test", () => {
         poolExitCollateralRatio: "2.6",
         poolTopupCollateralRatio: "2.2",
         poolTopupTokenPriceFactor: "0.8",
-        buyFAssetByAgentFactor: "0.99"
+        buyFAssetByAgentFactor: "0.99",
+        handshakeType: 0,
     };
 
     const testXrpChainInfo: TestChainInfo = {
@@ -131,14 +133,15 @@ describe("Toplevel runner and commands integration test", () => {
         console.log("Creating context...");
         orm = await createTestOrm();
         const contracts = await createTestChainContracts(accounts[0], undefined, { testXrp: testXrpChainInfo, simCoinX: simCoinXChainInfo });
-        const stateConnector = await StateConnector.at(contracts.StateConnector.address);
-        const stateConnectorClient = new MockStateConnectorClient(stateConnector, {}, "auto", submitterAddress);
+        const relay = await Relay.at(contracts.Relay.address);
+        const fdcHub = await FdcHub.at(contracts.FdcHub.address);
+        const flareDataConnectorClient = new MockFlareDataConnectorClient(fdcHub, relay, {}, "auto", submitterAddress);
         // secrets
         secrets = createTestSecrets(testChainInfos.map(ci => ci.chainId), ownerManagementAddress, ownerWorkAddress, ownerUnderlyingAddress);
         // create contexts
         for (const chainInfo of testChainInfos) {
             const chain = await getOrCreateAsync(chains, chainInfo.chainId, () => createTestChain(chainInfo));
-            const context = await createTestAssetContext(accounts[0], chainInfo, { contracts, chain, stateConnectorClient });
+            const context = await createTestAssetContext(accounts[0], chainInfo, { contracts, chain, flareDataConnectorClient });
             contexts.set(context.fAssetSymbol, context);
             agentBotSettingsMap.set(context.fAssetSymbol, agentBotSettings);
         }
@@ -148,7 +151,7 @@ describe("Toplevel runner and commands integration test", () => {
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay }));
         // agent bot runner
-        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, false);
+        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, false, null);
         // currencies
         const usdc = context0.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc as IERC20MetadataInstance);
@@ -201,7 +204,7 @@ describe("Toplevel runner and commands integration test", () => {
             const agentCommands = createAgentCommands(context);
             const userCommands = await createUserCommands(context);
             // create vault
-            const agent = await agentCommands.createAgentVault(newAgentSettings);
+            const agent = await agentCommands.createAgentVault(newAgentSettings, secrets);
             const agentVault = agent.vaultAddress;
             await agentCommands.depositCollateralForLots(agentVault, "10", "2");
             await agentCommands.enterAvailableList(agentVault);
@@ -218,7 +221,7 @@ describe("Toplevel runner and commands integration test", () => {
             // wait for close process to finish (speed up time to rush through all the timelocks)
             const tm1 = setInterval(() => void time.increase(100), 200);
             try {
-                await waitForEvent(context.assetManager, lastBlock2, 20000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
+                await waitForEvent(context.assetManager, lastBlock2, 20_000, (ev) => eventIs(ev, context.assetManager, "AgentDestroyed") && ev.args.agentVault === agentVault);
             } finally {
                 clearInterval(tm1);
             }
@@ -231,7 +234,7 @@ describe("Toplevel runner and commands integration test", () => {
         const userCommands = await createUserCommands(context);
         const chain = context.blockchainIndexer.chain;
         // create vault
-        const agent = await agentCommands.createAgentVault(newAgentSettings);
+        const agent = await agentCommands.createAgentVault(newAgentSettings, secrets);
         const agentVault = agent.vaultAddress;
         await agentCommands.depositCollateralForLots(agentVault, "10", "1");
         await agentCommands.enterAvailableList(agentVault);
@@ -246,12 +249,12 @@ describe("Toplevel runner and commands integration test", () => {
         const context = firstValue(contexts)!;
         const agentCommands = createAgentCommands(context);
         // create vault
-        const agent = await agentCommands.createAgentVault(newAgentSettings);
+        const agent = await agentCommands.createAgentVault(newAgentSettings, secrets);
         const agentVault = agent.vaultAddress;
         await agentCommands.depositCollateralForLots(agentVault, "10", "1");
         await agentCommands.enterAvailableList(agentVault);
         // create agent bot
-        let agentEntities = await orm.em.find(AgentEntity, { active: true });
+        const agentEntities = await orm.em.find(AgentEntity, { active: true });
         assert.equal(agentEntities.length, 1);
         await botRunner.runStep();
     });
@@ -260,8 +263,8 @@ describe("Toplevel runner and commands integration test", () => {
         const context = firstValue(contexts)!;
         const agentCommand = createAgentCommands(context);
         // create agent and bot
-        const agent = await agentCommand.createAgentVault(newAgentSettings);
-        let agentEntities = await orm.em.find(AgentEntity, { active: true });
+        const agent = await agentCommand.createAgentVault(newAgentSettings, secrets);
+        const agentEntities = await orm.em.find(AgentEntity, { active: true });
         const agentBot = await botRunner.newAgentBot(agentEntities[0]);
         const agentVault = agent.vaultAddress;
         const oldSettings = await agent.getAgentSettings();

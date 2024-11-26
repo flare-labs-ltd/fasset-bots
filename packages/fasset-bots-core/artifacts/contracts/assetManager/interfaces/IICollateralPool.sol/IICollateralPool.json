@@ -161,17 +161,56 @@
     {
       "inputs": [
         {
-          "internalType": "contract IFtsoRewardManager",
-          "name": "_ftsoRewardManager",
+          "internalType": "contract IRewardManager",
+          "name": "_rewardManager",
           "type": "address"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint24",
           "name": "_lastRewardEpoch",
-          "type": "uint256"
+          "type": "uint24"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint24",
+                  "name": "rewardEpochId",
+                  "type": "uint24"
+                },
+                {
+                  "internalType": "bytes20",
+                  "name": "beneficiary",
+                  "type": "bytes20"
+                },
+                {
+                  "internalType": "uint120",
+                  "name": "amount",
+                  "type": "uint120"
+                },
+                {
+                  "internalType": "enum RewardsV2Interface.ClaimType",
+                  "name": "claimType",
+                  "type": "uint8"
+                }
+              ],
+              "internalType": "struct RewardsV2Interface.RewardClaim",
+              "name": "body",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct RewardsV2Interface.RewardClaimWithProof[]",
+          "name": "_proofs",
+          "type": "tuple[]"
         }
       ],
-      "name": "claimFtsoRewards",
+      "name": "claimDelegationRewards",
       "outputs": [
         {
           "internalType": "uint256",
@@ -327,6 +366,40 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tokenShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "enum ICollateralPool.TokenExitType",
+          "name": "_exitType",
+          "type": "uint8"
+        }
+      ],
+      "name": "exitTo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_natShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_fassetShare",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -493,6 +566,39 @@
       "inputs": [
         {
           "internalType": "uint256",
+          "name": "_tokenShare",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_redeemToCollateral",
+          "type": "bool"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_redeemerUnderlyingAddress",
+          "type": "string"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_executor",
+          "type": "address"
+        }
+      ],
+      "name": "selfCloseExitTo",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
           "name": "_value",
           "type": "uint256"
         }
@@ -640,8 +746,14 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "withdrawCollateralWhenFAssetTerminated",
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawFees",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -652,9 +764,14 @@
           "internalType": "uint256",
           "name": "_amount",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_recipient",
+          "type": "address"
         }
       ],
-      "name": "withdrawFees",
+      "name": "withdrawFeesTo",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

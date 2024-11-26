@@ -147,6 +147,8 @@ export interface RedemptionDefaultsFacetInstance
             destinationAddressHash: string;
             amount: number | BN | string;
             standardPaymentReference: string;
+            checkSourceAddresses: boolean;
+            sourceAddressesRoot: string;
           };
           responseBody: {
             minimalBlockTimestamp: number | BN | string;
@@ -173,6 +175,8 @@ export interface RedemptionDefaultsFacetInstance
             destinationAddressHash: string;
             amount: number | BN | string;
             standardPaymentReference: string;
+            checkSourceAddresses: boolean;
+            sourceAddressesRoot: string;
           };
           responseBody: {
             minimalBlockTimestamp: number | BN | string;
@@ -199,6 +203,8 @@ export interface RedemptionDefaultsFacetInstance
             destinationAddressHash: string;
             amount: number | BN | string;
             standardPaymentReference: string;
+            checkSourceAddresses: boolean;
+            sourceAddressesRoot: string;
           };
           responseBody: {
             minimalBlockTimestamp: number | BN | string;
@@ -225,6 +231,8 @@ export interface RedemptionDefaultsFacetInstance
             destinationAddressHash: string;
             amount: number | BN | string;
             standardPaymentReference: string;
+            checkSourceAddresses: boolean;
+            sourceAddressesRoot: string;
           };
           responseBody: {
             minimalBlockTimestamp: number | BN | string;
@@ -233,6 +241,25 @@ export interface RedemptionDefaultsFacetInstance
           };
         };
       },
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  rejectedRedemptionPaymentDefault: {
+    (
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _redemptionRequestId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
       _redemptionRequestId: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
@@ -350,6 +377,8 @@ export interface RedemptionDefaultsFacetInstance
               destinationAddressHash: string;
               amount: number | BN | string;
               standardPaymentReference: string;
+              checkSourceAddresses: boolean;
+              sourceAddressesRoot: string;
             };
             responseBody: {
               minimalBlockTimestamp: number | BN | string;
@@ -376,6 +405,8 @@ export interface RedemptionDefaultsFacetInstance
               destinationAddressHash: string;
               amount: number | BN | string;
               standardPaymentReference: string;
+              checkSourceAddresses: boolean;
+              sourceAddressesRoot: string;
             };
             responseBody: {
               minimalBlockTimestamp: number | BN | string;
@@ -402,6 +433,8 @@ export interface RedemptionDefaultsFacetInstance
               destinationAddressHash: string;
               amount: number | BN | string;
               standardPaymentReference: string;
+              checkSourceAddresses: boolean;
+              sourceAddressesRoot: string;
             };
             responseBody: {
               minimalBlockTimestamp: number | BN | string;
@@ -428,6 +461,8 @@ export interface RedemptionDefaultsFacetInstance
               destinationAddressHash: string;
               amount: number | BN | string;
               standardPaymentReference: string;
+              checkSourceAddresses: boolean;
+              sourceAddressesRoot: string;
             };
             responseBody: {
               minimalBlockTimestamp: number | BN | string;
@@ -436,6 +471,25 @@ export interface RedemptionDefaultsFacetInstance
             };
           };
         },
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    rejectedRedemptionPaymentDefault: {
+      (
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _redemptionRequestId: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
         _redemptionRequestId: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;

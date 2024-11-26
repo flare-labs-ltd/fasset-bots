@@ -17,6 +17,7 @@ export interface AgentVaultInitSettings {
     buyFAssetByAgentFactorBIPS: BN;
     poolTopupCollateralRatioBIPS: BN;
     poolTopupTokenPriceFactorBIPS: BN;
+    handshakeType: BN;
 }
 
 export const agentSettingsLoader: IJsonLoader<AgentSettingsConfig> =
@@ -59,6 +60,7 @@ export async function createAgentVaultInitSettings(
         buyFAssetByAgentFactorBIPS: toBIPS(agentSettings.buyFAssetByAgentFactor),
         poolTopupCollateralRatioBIPS: toBIPS(agentSettings.poolTopupCollateralRatio),
         poolTopupTokenPriceFactorBIPS: toBIPS(agentSettings.poolTopupTokenPriceFactor),
+        handshakeType: toBN(agentSettings.handshakeType),
     };
     return agentBotSettings;
 }

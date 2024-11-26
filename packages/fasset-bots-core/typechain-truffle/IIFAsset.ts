@@ -115,6 +115,20 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
 
   decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
+  getReceivedAmount(
+    _from: string,
+    _to: string,
+    _sentAmount: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
+  getSendAmount(
+    _from: string,
+    _to: string,
+    _receivedAmount: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN }>;
+
   mint: {
     (
       _owner: string,
@@ -239,6 +253,56 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  transferExactDest: {
+    (
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+    sendTransaction(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  transferExactDestFrom: {
+    (
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+    sendTransaction(
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _from: string,
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   transferFrom: {
     (
       from: string,
@@ -262,6 +326,29 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
       from: string,
       to: string,
       amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  transferInternally: {
+    (
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _to: string,
+      _amount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _to: string,
+      _amount: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -343,6 +430,20 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
     ): Promise<string>;
 
     decimals(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    getReceivedAmount(
+      _from: string,
+      _to: string,
+      _sentAmount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+
+    getSendAmount(
+      _from: string,
+      _to: string,
+      _receivedAmount: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
 
     mint: {
       (
@@ -469,6 +570,56 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    transferExactDest: {
+      (
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<boolean>;
+      sendTransaction(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    transferExactDestFrom: {
+      (
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<boolean>;
+      sendTransaction(
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _from: string,
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     transferFrom: {
       (
         from: string,
@@ -492,6 +643,29 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
         from: string,
         to: string,
         amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    transferInternally: {
+      (
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _to: string,
+        _amount: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _to: string,
+        _amount: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

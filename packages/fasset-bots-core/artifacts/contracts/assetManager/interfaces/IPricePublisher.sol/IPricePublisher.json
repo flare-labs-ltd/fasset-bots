@@ -72,7 +72,7 @@
           "components": [
             {
               "internalType": "bytes32[]",
-              "name": "merkleProof",
+              "name": "proof",
               "type": "bytes32[]"
             },
             {

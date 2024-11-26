@@ -104,6 +104,7 @@ poolExitCollateralRatioBIPS: 26000
 buyFAssetByAgentFactorBIPS: 9000
 poolTopupCollateralRatioBIPS: 22000
 poolTopupTokenPriceFactorBIPS: 8000
+handshakeType: 0
 ```
 
 2. Update settings **poolFeeShareBIPS** to _4100 BIPS_ for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_. This action will announce setting update.

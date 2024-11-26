@@ -19,7 +19,7 @@ export async function createAgentBotContext(botConfig: AgentBotConfig | UserBotC
         chainInfo: chainConfig.chainInfo,
         blockchainIndexer: chainConfig.blockchainIndexerClient,
         wallet: chainConfig.wallet,
-        attestationProvider: new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
+        attestationProvider: new AttestationHelper(chainConfig.flareDataConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId),
         verificationClient: chainConfig.verificationClient,
     };
 }
@@ -29,7 +29,7 @@ export async function createAgentBotContext(botConfig: AgentBotConfig | UserBotC
  */
 export async function createTimekeeperContext(botConfig: KeeperBotConfig, chainConfig: BotFAssetConfigWithIndexer): Promise<ITimekeeperContext> {
     const nativeContext = await createNativeContext(botConfig, chainConfig);
-    const attestationProvider = new AttestationHelper(chainConfig.stateConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId);
+    const attestationProvider = new AttestationHelper(chainConfig.flareDataConnector, chainConfig.blockchainIndexerClient, chainConfig.chainInfo.chainId);
     return {
         ...nativeContext,
         nativeChainInfo: botConfig.nativeChainInfo,

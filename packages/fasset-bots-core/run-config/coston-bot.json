@@ -17,7 +17,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/xrp"],
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
             "walletUrls": ["https://s.altnet.rippletest.net:51234"],
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
@@ -28,7 +28,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/xrp"],
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
             "walletUrls": ["https://s.altnet.rippletest.net:51234"],
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
@@ -39,7 +39,7 @@
             "tokenName": "Test BTC",
             "tokenSymbol": "testBTC",
             "tokenDecimals": 8,
-            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/btc"],
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/btc"],
             "walletUrls": ["https://blockbook-bitcoin-testnet.flare.network/api/v2"],
             "priceChangeEmitter": "FtsoV2PriceStore"
         },
@@ -48,7 +48,7 @@
             "tokenName": "Test DOGE",
             "tokenSymbol": "testDOGE",
             "tokenDecimals": 8,
-            "indexerUrls": ["https://testnet-verifier.aflabs.org/verifier/doge"],
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/doge"],
             "walletUrls": ["https://blockbook-dogecoin-testnet.flare.network/api/v2"],
             "priceChangeEmitter": "FtsoV2PriceStore"
         }
@@ -81,8 +81,8 @@
         }
     },
     "rpcUrl": "https://coston-api-tracer.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
+    "dataAccessLayerUrls": [
+        "https://da.cflr.testfsp.aflabs.org:4443"
     ],
     "ormOptions": {
         "type": "sqlite",
@@ -103,6 +103,6 @@
         "className": "DefaultChallengeStrategy",
         "config": {
             "gasPrice": "21000"
-        }
     }
+}
 }

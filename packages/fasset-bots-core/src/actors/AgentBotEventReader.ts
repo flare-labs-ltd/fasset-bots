@@ -48,16 +48,37 @@ export class AgentBotEventReader {
         const lastBlock = Math.min(readAgentEnt.currentEventBlock + maximumBlocks, lastFinalizedBlock);
         const events: EvmEvent[] = [];
         const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
+        const encodedRedemptionRequestRejectedEvent = web3.eth.abi.encodeEventSignature("RedemptionRequestRejected(address,address,uint64,string,uint256)");
+        const encodedRedemptionRequestTakenOverEvent = web3.eth.abi.encodeEventSignature("RedemptionRequestTakenOver(address,address,uint64,uint256,address,uint64)");
 
         for (let lastBlockRead = readAgentEnt.currentEventBlock; lastBlockRead <= lastBlock; lastBlockRead += nci.readLogsChunkSize) {
             if (this.bot.stopRequested()) break;
-            // asset manager events
-            const logsAssetManager = await web3.eth.getPastLogs({
+
+            // redemption request rejected events
+            const logsRejection = await web3.eth.getPastLogs({
+                address: this.context.assetManager.address,
+                fromBlock: lastBlockRead,
+                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
+                topics: [encodedRedemptionRequestRejectedEvent],
+            });
+            events.push(...this.eventDecoder.decodeEvents(logsRejection));
+
+            // redemption request taken over events
+            const logsTakeOver = await web3.eth.getPastLogs({
+                address: this.context.assetManager.address,
+                fromBlock: lastBlockRead,
+                toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
+                topics: [encodedRedemptionRequestTakenOverEvent],
+            });
+            events.push(...this.eventDecoder.decodeEvents(logsTakeOver));
+
+            // agent vault asset manager events - remove rejected and taken over events
+            const logsAssetManager = (await web3.eth.getPastLogs({
                 address: this.context.assetManager.address,
                 fromBlock: lastBlockRead,
                 toBlock: Math.min(lastBlockRead + nci.readLogsChunkSize - 1, lastBlock),
                 topics: [null, encodedVaultAddress],
-            });
+            })).filter((log) => log.topics[0] !== encodedRedemptionRequestRejectedEvent && log.topics[0] !== encodedRedemptionRequestTakenOverEvent);
             events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
 
             if (!this.needsToCheckPrices) { // check if CollateralRatiosChanged happened
@@ -181,13 +202,11 @@ export class AgentBotEventReader {
     }
     /* istanbul ignore next */
     async getEventFromEntity(event: Event): Promise<EvmEvent | undefined> {
-        const encodedVaultAddress = web3.eth.abi.encodeParameter("address", this.agentVaultAddress);
         const events = [];
         const logsAssetManager = await web3.eth.getPastLogs({
             address: this.context.assetManager.address,
             fromBlock: event.blockNumber,
             toBlock: event.blockNumber,
-            topics: [null, encodedVaultAddress],
         });
         events.push(...this.eventDecoder.decodeEvents(logsAssetManager));
         for (const _event of events) {

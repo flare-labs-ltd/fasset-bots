@@ -16,12 +16,14 @@ import { IVerificationApiClient } from "../underlying-chain/interfaces/IVerifica
 import { CommandLineError, assertNotNullCmd } from "../utils/command-line-errors";
 import { proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { formatArgs } from "../utils/formatting";
-import { BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, ZERO_ADDRESS, requireNotNull, sumBN, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
+import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBotCommands } from "./InfoBotCommands";
+import { latestBlock } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
+import { eventIs } from "../utils/events/truffle";
 
 export const CollateralPool = artifacts.require("CollateralPool");
 
@@ -154,13 +156,41 @@ export class UserBotCommands {
      * @param executorAddress
      * @param executorFeeNatWei
      */
-    async reserveCollateral(agentVault: string, lots: BNish, executorAddress: string, executorFeeNatWei?: BNish): Promise<BN> {
+    async reserveCollateral(agentVault: string, lots: BNish, executorAddress: string, executorFeeNatWei?: BNish): Promise<BN | null> {
         logger.info(`User ${this.nativeAddress} started minting with agent ${agentVault}.`);
         const minter = new Minter(this.context, this.nativeAddress, this.underlyingAddress, this.context.wallet);
         console.log("Reserving collateral...");
         logger.info(`User ${this.nativeAddress} is reserving collateral with agent ${agentVault} and ${lots} lots.`);
-        const crt = await minter.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
-        logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
+        const info = await this.context.assetManager.getAgentInfo(agentVault);
+        let crt;
+        if (toBN(info.handshakeType).eq(BN_ZERO)) {
+            crt = await minter.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
+            logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
+        } else {
+            const fromBlock = await web3.eth.getBlockNumber();
+            const hs = await minter.reserveCollateralHandshake(agentVault, lots, executorAddress, executorFeeNatWei);
+            logger.info(`User ${this.nativeAddress} reserved collateral (started handshake request) ${formatArgs(hs)} with agent ${agentVault} and ${lots} lots.`);
+            console.log("Handshake started...");
+            const settings = await this.context.assetManager.getSettings();
+            logger.info(`User ${this.nativeAddress} waiting for agent ${agentVault} approval or rejection before cancelling the request.`);
+            // wait for approval or rejection for `cancelCollateralReservationAfterSeconds + 10 seconds`
+            const event = await minter.waitForEvent(this.context.assetManager, fromBlock, toBN(settings.cancelCollateralReservationAfterSeconds).addn(10).muln(1000).toNumber(),
+                (ev) => eventIs(ev, this.context.assetManager, "CollateralReserved") && ev.args.collateralReservationId.eq(hs.collateralReservationId) ||
+                    eventIs(ev, this.context.assetManager, "CollateralReservationRejected") && ev.args.collateralReservationId.eq(hs.collateralReservationId));
+            if (event == null) {
+                logger.info(`User ${this.nativeAddress} timed out waiting for agent ${agentVault} approval or rejection, cancelling the request.`);
+                await minter.cancelCollateralReservation(hs.collateralReservationId);
+                console.log("Handshake cancelled.");
+                return null;
+            } else if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
+                console.log("Handshake approved.");
+                crt = event.args;
+            } else {
+                logger.info(`User ${this.nativeAddress} received rejection for collateral reservation ${hs.collateralReservationId} from agent ${agentVault}.`);
+                console.log("Handshake rejected.");
+                return null;
+            }
+        }
         console.log(`Paying on the underlying chain for reservation ${crt.collateralReservationId} to address ${crt.paymentAddress}...`);
         logger.info(`User ${this.nativeAddress} is paying on underlying chain for reservation ${crt.collateralReservationId} to agent's ${agentVault} address ${crt.paymentAddress}.`);
         const txHash = await minter.performMintingPayment(crt);
@@ -187,6 +217,10 @@ export class UserBotCommands {
      */
     async mint(agentVault: string, lots: BNish, noWait: boolean, executorAddress: string = ZERO_ADDRESS, executorFeeNatWei?: BNish): Promise<void> {
         const requestId = await this.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
+        if (requestId == null) {
+            logger.info(`User ${this.nativeAddress} minting was cancelled or rejected by agent ${agentVault}.`);
+            return;
+        }
         if (noWait) {
             console.log(`The minting started and must be executed later by running "user-bot mintExecute ${requestId}".`);
             /* istanbul ignore next */
@@ -265,7 +299,7 @@ export class UserBotCommands {
         console.log(`User ${this.nativeAddress} is checking for existence of the proof of underlying payment transaction ${state.transactionHash}...`);
         const proof = await minter.obtainPaymentProof(state.proofRequest.round, state.proofRequest.data);
         if (!attestationProved(proof)) {
-            throw new CommandLineError(`State connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
+            throw new CommandLineError(`Flare data connector proof for transaction ${state.transactionHash} is not available yet.`, ERR_CANNOT_EXECUTE_YET);
         }
         console.log(`Executing payment...`);
         logger.info(`User ${this.nativeAddress} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${state.transactionHash} for reservation ${state.requestId}.`);

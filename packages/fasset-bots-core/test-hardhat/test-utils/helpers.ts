@@ -29,7 +29,8 @@ import { fundUnderlying } from "../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
 import { TestAssetBotContext, createTestAssetContext } from "./create-test-asset-context";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
+import { MockFlareDataConnectorClient } from "../../src/mock/MockFlareDataConnectorClient";
+import { MockKycClient } from "../../src/mock/MockKycClient";
 
 const FakeERC20 = artifacts.require("FakeERC20");
 const IERC20 = artifacts.require("IERC20");
@@ -67,7 +68,7 @@ export async function createTestAgentBot(
     const agentVaultSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentVaultSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const agentBotSettings = requireNotNull(testAgentBotSettings[context.fAssetSymbol]);
-    const agentBot = await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, agentVaultSettings, notifiers);
+    const agentBot = await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, agentVaultSettings, notifiers, new MockKycClient());
     agentBot.timekeeper = { latestProof: undefined };
     return agentBot;
 }
@@ -141,7 +142,7 @@ export function createTestAgentBotRunner(
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
     const testAgentBotSettingsMap = new Map(Object.entries(testAgentBotSettings));
-    return new AgentBotRunner(secrets, contexts, testAgentBotSettingsMap, orm, loopDelay, notifiers, testTimekeeperService, false);
+    return new AgentBotRunner(secrets, contexts, testAgentBotSettingsMap, orm, loopDelay, notifiers, testTimekeeperService, false, null);
 }
 
 export async function createTestMinter(context: IAssetAgentContext, minterAddress: string, chain: MockChain, underlyingAddress: string = minterUnderlyingAddress, amount: BN = depositUnderlying): Promise<Minter> {
@@ -257,17 +258,18 @@ export async function fromAgentInfoToInitialAgentData(agent: Agent): Promise<Ini
             poolExitCollateralRatioBIPS: toBN(agentInfo.poolExitCollateralRatioBIPS),
             poolTopupCollateralRatioBIPS: toBN(agentInfo.poolTopupCollateralRatioBIPS),
             poolTopupTokenPriceFactorBIPS: toBN(agentInfo.poolTopupTokenPriceFactorBIPS),
+            handshakeType: toBN(agentInfo.handshakeType),
         }
     };
     return initialAgentData;
 }
 
-export async function runWithManualSCFinalization(context: IAssetAgentContext, finalizeAfter: boolean, method: () => Promise<void>) {
-    const scClient = checkedCast(context.attestationProvider.stateConnector, MockStateConnectorClient);
-    scClient.finalizationType = "manual";
+export async function runWithManualFDCFinalization(context: IAssetAgentContext, finalizeAfter: boolean, method: () => Promise<void>) {
+    const fdcClient = checkedCast(context.attestationProvider.flareDataConnector, MockFlareDataConnectorClient);
+    fdcClient.finalizationType = "manual";
     await method();
     if (finalizeAfter) {
-        await scClient.finalizeRound();
+        await fdcClient.finalizeRound();
     }
-    scClient.finalizationType = "auto";
+    fdcClient.finalizationType = "auto";
 }

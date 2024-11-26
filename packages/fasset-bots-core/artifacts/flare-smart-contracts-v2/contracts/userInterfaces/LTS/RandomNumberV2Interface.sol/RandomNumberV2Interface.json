@@ -1,0 +1,63 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "RandomNumberV2Interface",
+  "sourceName": "flare-smart-contracts-v2/contracts/userInterfaces/LTS/RandomNumberV2Interface.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "getRandomNumber",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_randomNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isSecureRandom",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_randomTimestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_votingRoundId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRandomNumberHistorical",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_randomNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isSecureRandom",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_randomTimestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

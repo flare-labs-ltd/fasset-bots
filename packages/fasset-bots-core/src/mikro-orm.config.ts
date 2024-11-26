@@ -2,13 +2,13 @@ import { Options } from "@mikro-orm/core";
 import { AbstractSqlDriver } from "@mikro-orm/knex";
 import { DatabaseAccount } from "./config/config-files/SecretsFile";
 import { CreateOrmOptions, ORM, createOrm } from "./config/orm";
-import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event, PricePublisherState } from "./entities/agent";
+import { AgentEntity, AgentHandshake, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event, PricePublisherState, RejectedRedemptionRequest } from "./entities/agent";
 import { MonitoringStateEntity, TransactionEntity, UTXOEntity, WalletAddressEntity } from "@flarelabs/simple-wallet";
 import { ActivityTimestampEntity } from "./entities/activityTimestamp";
 
 /* istanbul ignore next */
 const options: Options<AbstractSqlDriver> = {
-    entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity, MonitoringStateEntity, ActivityTimestampEntity, PricePublisherState],
+    entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting, UTXOEntity, TransactionEntity, MonitoringStateEntity, ActivityTimestampEntity, PricePublisherState, AgentHandshake, RejectedRedemptionRequest],
     dbName: "fasset-bots.db",
     debug: false,
 };

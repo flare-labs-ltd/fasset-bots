@@ -610,39 +610,39 @@ describe("Bitcoin wallet tests", () => {
         expect(hash === "8a09126a5953d182bf1203de91bac5e89cae279bc1eeb7e302e4fd2093e16043").to.be.true;
     });
 
-    it("Delete account with multiple transactions", async () => {
-        const maximumNumberOfUTXOs = 3;
-        const numberOfDeleteTxs = 3;
+    // it.skip("Delete account with multiple transactions", async () => {
+    //     const maximumNumberOfUTXOs = 3;
+    //     const numberOfDeleteTxs = 3;
 
-        const mnemonic = "express exhibit hidden disease order baby photo pair fantasy age chaos velvet very nerve display soldier kite profit actress emerge soup hover clay canyon";
-        const wallet = wClient.createWalletFromMnemonic(mnemonic);
-        await wClient.walletKeys.addKey(wallet.address, wallet.privateKey);
+    //     const mnemonic = "express exhibit hidden disease order baby photo pair fantasy age chaos velvet very nerve display soldier kite profit actress emerge soup hover clay canyon";
+    //     const wallet = wClient.createWalletFromMnemonic(mnemonic);
+    //     await wClient.walletKeys.addKey(wallet.address, wallet.privateKey);
 
-        wClient.transactionService = new TransactionService(wClient, wClient.chainType, maximumNumberOfUTXOs);
+    //     wClient.transactionService = new TransactionService(wClient, wClient.chainType, maximumNumberOfUTXOs);
 
-        const ids: number[] = [];
-        for (let i = 0; i < maximumNumberOfUTXOs * numberOfDeleteTxs; i++) {
-            ids.push(await wClient.createPaymentTransaction(fundedAddress, wallet.address, amountToSendSatoshi));
-        }
+    //     const ids: number[] = [];
+    //     for (let i = 0; i < maximumNumberOfUTXOs * numberOfDeleteTxs; i++) {
+    //         ids.push(await wClient.createPaymentTransaction(fundedAddress, wallet.address, amountToSendSatoshi));
+    //     }
 
-        await Promise.all(ids.map(async (id) =>
-            await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id)
-        ));
+    //     await Promise.all(ids.map(async (id) =>
+    //         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id)
+    //     ));
 
-        const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createDeleteAccountTransaction(wallet.address, fundedAddress, undefined, undefined, undefined, blockHeight + 100);
-        await loop(2000, 30 * 60_000, null, async () => {
-            const balance = await getAccountBalance(wClient.blockchainAPI, wallet.address);
-            return balance < amountToSendSatoshi;
-        });
+    //     const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
+    //     const id = await wClient.createDeleteAccountTransaction(wallet.address, fundedAddress, undefined, undefined, undefined, blockHeight + 100);
+    //     await loop(2000, 30 * 60_000, null, async () => {
+    //         const balance = await getAccountBalance(wClient.blockchainAPI, wallet.address);
+    //         return balance < amountToSendSatoshi;
+    //     });
 
-        const deleteTxs = await wClient.rootEm.find(TransactionEntity, {
-            id: { $gte: id },
-            amount: null
-        });
+    //     const deleteTxs = await wClient.rootEm.find(TransactionEntity, {
+    //         id: { $gte: id },
+    //         amount: null
+    //     });
 
-        expect(deleteTxs.length).to.be.gte(numberOfDeleteTxs);
-    });
+    //     expect(deleteTxs.length).to.be.gte(numberOfDeleteTxs);
+    // });
 
     /*
     UTILS

@@ -6,7 +6,7 @@ import { AgentUnderlyingPayment } from "../entities/agent";
 import { AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { squashSpace } from "../utils/formatting";
 import { assertNotNull, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -116,7 +116,7 @@ export class AgentBotUnderlyingManagement {
      */
     async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
-            rootEm.create(
+            em.create(
                 AgentUnderlyingPayment,
                 {
                     agentAddress: this.agent.vaultAddress,

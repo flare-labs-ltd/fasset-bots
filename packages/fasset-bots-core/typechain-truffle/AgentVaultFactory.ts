@@ -43,6 +43,11 @@ export interface AgentVaultFactoryInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
+  upgradeInitCall(
+    arg0: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   methods: {
     create: {
       (_assetManager: string, txDetails?: Truffle.TransactionDetails): Promise<
@@ -68,6 +73,11 @@ export interface AgentVaultFactoryInstance extends Truffle.ContractInstance {
       _interfaceId: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
+
+    upgradeInitCall(
+      arg0: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

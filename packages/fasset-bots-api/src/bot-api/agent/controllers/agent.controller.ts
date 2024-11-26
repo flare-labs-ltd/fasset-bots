@@ -7,7 +7,7 @@ import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, Ag
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
-import { AgentSettingsConfigDTO } from "../../common/AgentettingsConfigDTO";
+import { AgentSettingsConfigDTO } from "../../common/AgentSettingsConfigDTO";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -217,7 +217,8 @@ export class AgentController {
                             agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: { type: 'string', example: '0' },
                             agentSettingUpdateValidAtPoolExitCrBIPS: { type: 'string', example: '0' },
                             agentSettingUpdateValidAtPoolTopupCrBIPS: { type: 'string', example: '0' },
-                            agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: { type: 'string', example: '0' }
+                            agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: { type: 'string', example: '0' },
+                            agentSettingUpdateValidAtHandshakeType: { type: 'string', example: '0' }
                         }
                     }
                 }
@@ -282,6 +283,7 @@ export class AgentController {
                         poolExitCollateralRatioBIPS: { type: 'string', example: '26000' },
                         poolTopupCollateralRatioBIPS: { type: 'string', example: '22000' },
                         poolTopupTokenPriceFactorBIPS: { type: 'string', example: '8000' },
+                        handshakeType: { type: 'string', example: 0 },
                         poolSuffix: { type: 'string', example: 'POOLSUFFIXNAME'}
                     }
                 }

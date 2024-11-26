@@ -12,7 +12,7 @@ import { testChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { TestAssetBotContext, TestAssetTrackedStateContext, createTestAssetContext, getTestAssetTrackedStateContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, getAgentStatus } from "../test-utils/helpers";
+import { createCRAndPerformMintingAndRunSteps, createTestAgentAndMakeAvailable, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, getAgentStatus } from "../test-utils/helpers";
 import { assetPriceForAgentCr } from "../test-utils/calculations";
 use(spies);
 
@@ -238,6 +238,24 @@ describe("Liquidator tests", () => {
         // FAsset and collateral balance
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
         const cBalanceBefore = await vaultCollateralToken.balanceOf(liquidatorAddress);
+        // claim transfer fees and withdraw pool fees (to liquidator address). Liquidator address will have fBalance the same as number of minted fAssets and will liquidate everything
+        const info = await agentBot.agent.getAgentInfo();
+        if (!toBN(info.mintedUBA).eq(fBalanceBefore)) {
+            let balanceAfter: BN = toBN(0);
+            // get epoch duration
+            const settings = await agentBot.agent.assetManager.transferFeeSettings();
+            const epochDuration = settings.epochDuration;
+            while (balanceAfter < toBN(info.mintedUBA)) {
+                const transferFeeEpoch = await agentBot.agent.assetManager.currentTransferFeeEpoch();
+                // move to next epoch
+                await time.increase(epochDuration);
+                // agent claims fee to redeemer address
+                const args = await agentBot.agent.claimTransferFees(liquidatorAddress, transferFeeEpoch);
+                await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, liquidatorAddress);
+                balanceAfter = await context.fAsset.balanceOf(liquidatorAddress);
+            }
+        }
+        const fBalanceBefore1 = await state.context.fAsset.balanceOf(liquidatorAddress);
         // liquidate agent
         await liquidator.runStep();
         // check agent status
@@ -246,8 +264,67 @@ describe("Liquidator tests", () => {
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
         const cBalanceAfter = await vaultCollateralToken.balanceOf(liquidatorAddress);
         // check FAsset and cr balance
-        const info = await agentBot.agent.getAgentInfo();
-        expect(String(info.mintedUBA)).eq("0");
+        const info1 = await agentBot.agent.getAgentInfo();
+        expect(String(info1.mintedUBA)).eq("0");
+        expect(String(fBalanceBefore1)).not.eq("0");
+        expect(String(fBalanceAfter)).eq("0");
+        expect(cBalanceAfter.gt(cBalanceBefore)).to.be.true;
+    });
+
+    it("Should liquidate agent due to price change - liquidate everything (buy missing fAssets)", async () => {
+        const liquidator = await createTestLiquidator(trackedStateContext, liquidatorAddress, state);
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, accounts[81]);
+        // vaultCollateralToken
+        const vaultCollateralToken = await IERC20.at((await agentBot.agent.getVaultCollateral()).token);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await liquidator.runStep();
+        // check agent status
+        const status1 = await getAgentStatus(agentBot);
+        assert.equal(status1, AgentStatus.NORMAL);
+        // perform minting
+        const lots = 3000;
+        const crt = await minter.reserveCollateral(agentBot.agent.vaultAddress, lots);
+        await agentBot.runStep(orm.em);
+        const txHash0 = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        const minted = await minter.executeMinting(crt, txHash0);
+        await agentBot.runStep(orm.em);
+        // price change
+        await context.priceStore.setCurrentPrice(context.chainInfo.symbol, toBNExp(10, 6), 0);
+        await context.priceStore.setCurrentPriceFromTrustedProviders(context.chainInfo.symbol, toBNExp(10, 6), 0);
+        await context.priceStore.finalizePrices();
+        // liquidator "buys" f-assets
+        const poolFees = await agentBot.agent.poolFeeBalance();
+        await agentBot.agent.withdrawPoolFees(poolFees, liquidator.address);
+        await context.fAsset.transfer(liquidator.address, minted.mintedAmountUBA, { from: minter.address });
+        // FAsset and collateral balance
+        const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const cBalanceBefore = await vaultCollateralToken.balanceOf(liquidatorAddress);
+        // create new agent
+        const agent2 = await createTestAgentAndMakeAvailable(context, accounts[321], "UNDERLYING_ADDRESS_1");
+        // execute minting
+        const minter2 = await createTestMinter(context, minterAddress, chain);
+        const crt1 = await minter2.reserveCollateral(agent2.vaultAddress, 2);
+        const txHash1 = await minter2.performMintingPayment(crt1);
+        chain.mine(chain.finalizationBlocks + 1);
+        await minter2.executeMinting(crt1, txHash1);
+        // liquidator buys missing fAssets
+        // liquidator address will have fBalance the same as number of minted fAssets and will be able to liquidate everything
+        const mintedFAssets = (await agentBot.agent.getAgentInfo()).mintedUBA;
+        const missingFAssets = toBN(mintedFAssets).sub(fBalanceBefore)
+        const transferFeeMillionths = await agentBot.agent.assetManager.transferFeeMillionths();
+        const amount = toBN(missingFAssets).muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
+        await context.fAsset.transfer(liquidator.address, amount, { from: minter.address });
+        // liquidate agent
+        await liquidator.runStep();
+        // check agent status
+        await agentBot.runStep(orm.em);
+        // FAsset and collateral balance
+        const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
+        const cBalanceAfter = await vaultCollateralToken.balanceOf(liquidatorAddress);
+        // check FAsset and cr balance
+        const info1 = await agentBot.agent.getAgentInfo();
+        expect(String(info1.mintedUBA)).eq("0");
         expect(String(fBalanceBefore)).not.eq("0");
         expect(String(fBalanceAfter)).eq("0");
         expect(cBalanceAfter.gt(cBalanceBefore)).to.be.true;
@@ -283,6 +360,24 @@ describe("Liquidator tests", () => {
         const fBalanceBefore = await state.context.fAsset.balanceOf(liquidatorAddress);
         const cBalanceBefore = await vaultCollateralToken.balanceOf(liquidatorAddress);
         const wnBalanceBefore = await context.wNat.balanceOf(liquidatorAddress);
+        // claim transfer fees and withdraw pool fees (to liquidator address). Liquidator address will have fBalance the same as number of minted fAssets and will liquidate everything
+        const info1 = await agentBot.agent.getAgentInfo();
+        if (!toBN(info1.mintedUBA).eq(fBalanceBefore)) {
+            let balanceAfter: BN = toBN(0);
+            while (balanceAfter < toBN(info1.mintedUBA)) {
+                const transferFeeEpoch = await agentBot.agent.assetManager.currentTransferFeeEpoch();
+                // get epoch duration
+                const settings = await agentBot.agent.assetManager.transferFeeSettings();
+                const epochDuration = settings.epochDuration;
+                // move to next epoch
+                await time.increase(epochDuration);
+                // agent claims fee to redeemer address
+                const args = await agentBot.agent.claimTransferFees(liquidatorAddress, transferFeeEpoch);
+                await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, liquidatorAddress);
+                balanceAfter = await context.fAsset.balanceOf(liquidatorAddress);
+            }
+        }
+        const fBalanceBefore1 = await state.context.fAsset.balanceOf(liquidatorAddress);
         // liquidate agent
         await liquidator.runStep();
         // check agent status
@@ -295,13 +390,13 @@ describe("Liquidator tests", () => {
         const info = await agentBot.agent.getAgentInfo();
         const settings = await context.assetManager.getSettings();
         expect(String(info.mintedUBA)).eq("0");
-        expect(String(fBalanceBefore)).not.eq("0");
+        expect(String(fBalanceBefore1)).not.eq("0");
         expect(String(fBalanceAfter)).eq("0");
         expect(cBalanceAfter.eq(cBalanceBefore)).to.be.true;
         // all liquidator payment should be in pool collateral
         const price = state.prices.get({ collateralClass: CollateralClass.POOL, token: context.wNat.address });
         const received = wnBalanceAfter.sub(wnBalanceBefore);
-        const shouldReceive = price.convertUBAToTokenWei(fBalanceBefore)
+        const shouldReceive = price.convertUBAToTokenWei(fBalanceBefore1)
             .mul(toBN(settings.liquidationCollateralFactorBIPS[0])).divn(MAX_BIPS);
         expect(String(received)).eq(String(shouldReceive));
     });
@@ -384,7 +479,7 @@ describe("Liquidator tests", () => {
         await context.priceStore.setCurrentPrice("testUSDC", vaultTokenPrice, 0);
         await context.priceStore.setCurrentPriceFromTrustedProviders("testUSDC", vaultTokenPrice, 0);
         await context.priceStore.finalizePrices();
-        // check that collateral ratios and agent status are set up correctly for the upcomming liquidations
+        // check that collateral ratios and agent status are set up correctly for the upcoming liquidations
         const agentInfo2 = await agentBot.agent.getAgentInfo();
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.gte(Number(collateralType.ccbMinCollateralRatioBIPS));
         expect(Number(agentInfo2.vaultCollateralRatioBIPS)).to.be.lte(Number(collateralType.ccbMinCollateralRatioBIPS) + 10);

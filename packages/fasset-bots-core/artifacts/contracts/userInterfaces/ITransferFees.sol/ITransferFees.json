@@ -1,0 +1,403 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ITransferFees",
+  "sourceName": "contracts/userInterfaces/ITransferFees.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "nextTransferFeeMillionths",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "scheduledAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferFeeChangeScheduled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "agentVault",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "agentClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "poolClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "remainingUnclaimedEpochs",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferFeesClaimed",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxEpochsToClaim",
+          "type": "uint256"
+        }
+      ],
+      "name": "agentTransferFeeShare",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_feeShareUBA",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "agentTransferFeeShareForEpoch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        }
+      ],
+      "name": "agentUnclaimedTransferFeeEpochs",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_first",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_count",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_maxEpochsToClaim",
+          "type": "uint256"
+        }
+      ],
+      "name": "claimTransferFees",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_agentClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_poolClaimedUBA",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_remainingUnclaimedEpochs",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentTransferFeeEpoch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "fassetTransferFeePaid",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "firstClaimableTransferFeeEpoch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "_agentVaults",
+          "type": "address[]"
+        }
+      ],
+      "name": "initAgentsMintingHistory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_scheduledAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTransferFeeMillionths",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_agentVault",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFeeCalculationDataForAgent",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "totalFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "cumulativeMinted",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalCumulativeMinted",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimable",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ITransferFees.TransferFeeCalculationDataForAgent",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_epoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFeeEpochData",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "startTs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "endTs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "claimedFees",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimable",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "expired",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ITransferFees.TransferFeeEpochData",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "transferFeeMillionths",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "transferFeeSettings",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "transferFeeMillionths",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "firstEpochStartTs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "epochDuration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maxUnexpiredEpochs",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "firstClaimableEpoch",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITransferFees.TransferFeeSettings",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

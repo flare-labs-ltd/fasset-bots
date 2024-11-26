@@ -3,6 +3,14 @@ export const ADDRESS_LENGTH = 42;
 export const BYTES32_LENGTH = 66;
 
 // enums
+
+export enum AgentHandshakeState {
+    STARTED = "started",
+    APPROVED = "approved",
+    REJECTED = "rejected",
+    CANCELLED = "cancelled",
+}
+
 export enum AgentMintingState {
     DONE = "done",
     STARTED = "started",
@@ -13,6 +21,8 @@ export enum AgentMintingState {
 export enum AgentRedemptionState {
     DONE = "done",
     STARTED = "started",
+    REJECTING = "rejecting",
+    REJECTED = "rejected",
     PAYING = "paying",
     PAID = "paid",
     UNPAID = "unpaid",
@@ -28,6 +38,7 @@ export enum AgentRedemptionFinalState {
     EXPIRED_PAYING = "expired_paying",
     EXPIRED_PAID = "expired_paid",
     EXPIRED_UNPAID = "expired_unpaid",
+    HANDSHAKE_REJECTED = "handshake_rejected",
 }
 
 export enum AgentUnderlyingPaymentState {
@@ -55,5 +66,11 @@ export enum AgentSettingName {
     BUY_FASSET_FACTOR = "buyFAssetByAgentFactorBIPS",
     POOL_EXIT_CR = "poolExitCollateralRatioBIPS",
     POOL_TOP_UP_CR = "poolTopupCollateralRatioBIPS",
-    POOL_TOP_UP_TOKEN_PRICE_FACTOR = "poolTopupTokenPriceFactorBIPS"
+    POOL_TOP_UP_TOKEN_PRICE_FACTOR = "poolTopupTokenPriceFactorBIPS",
+    HAND_SHAKE_TYPE = "handshakeType"
+}
+
+export enum RejectedRedemptionRequestState {
+    DONE = "done",
+    STARTED = "started"
 }

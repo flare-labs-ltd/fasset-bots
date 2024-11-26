@@ -157,6 +157,11 @@ export class TrackedState {
             this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA).add(toBN(event.args.poolFeeUBA)));
             logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
             (await this.getAgentTriggerAdd(event.args.agentVault)).handleMintingExecuted(event.args);
+        } else if (eventIs(event, this.context.assetManager, "SelfMint")) {
+            logger.info(`Tracked State received event 'SelfMint' with data ${formatArgs(event.args)}.`);
+            this.fAssetSupply = this.fAssetSupply.add(toBN(event.args.mintedAmountUBA).add(toBN(event.args.poolFeeUBA)));
+            logger.info(`Tracked State set fAssetSupply ${this.fAssetSupply.toString()}`);
+            (await this.getAgentTriggerAdd(event.args.agentVault)).handleSelfMint(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
             logger.info(`Tracked State received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
             this.fAssetSupply = this.fAssetSupply.sub(toBN(event.args.valueUBA));
@@ -210,7 +215,7 @@ export class TrackedState {
             (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.NORMAL);
         } else if (eventIs(event, this.context.assetManager, "AgentDestroyAnnounced")) {
             logger.info(`Tracked State received event 'AgentDestroyAnnounced' with data ${formatArgs(event.args)}.`);
-            (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.DESTROYING, event.args.timestamp);
+            (await this.getAgentTriggerAdd(event.args.agentVault)).handleStatusChange(AgentStatus.DESTROYING);
         } else if (eventIs(event, this.context.assetManager, "AgentAvailable")) {
             logger.info(`Tracked State received event 'AgentAvailable' with data ${formatArgs(event.args)}.`);
             (await this.getAgentTriggerAdd(event.args.agentVault)).handleAgentAvailable(event.args);
@@ -357,6 +362,7 @@ export class TrackedState {
                 poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,
                 poolTopupCollateralRatioBIPS: agentInfo.poolTopupCollateralRatioBIPS,
                 poolTopupTokenPriceFactorBIPS: agentInfo.poolTopupTokenPriceFactorBIPS,
+                handshakeType: agentInfo.handshakeType,
             }
         });
         agent.initialize(agentInfo);

@@ -15,6 +15,7 @@ import {
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
     DOGE_MIN_ALLOWED_FEE,
     DOGE_TESTNET,
+    RBF_AMOUNT_FACTOR,
     TEST_BTC_DEFAULT_FEE_PER_KB,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
@@ -49,6 +50,7 @@ export function getMinAmountToSend(chainType: ChainType): BN {
         return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
     }
 }
+
 
 /* istanbul ignore next */
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {

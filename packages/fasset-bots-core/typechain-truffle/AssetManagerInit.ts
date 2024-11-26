@@ -142,7 +142,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         poolTokenSuffix: string;
         whitelist: string;
         agentOwnerRegistry: string;
-        scProofVerifier: string;
+        fdcVerification: string;
         burnAddress: string;
         priceReader: string;
         assetDecimals: number | BN | string;
@@ -188,6 +188,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         diamondCutMinTimelockSeconds: number | BN | string;
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
+        cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectRedemptionRequestWindowSeconds: number | BN | string;
+        takeOverRedemptionRequestWindowSeconds: number | BN | string;
+        rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+          | number
+          | BN
+          | string;
+        rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -215,7 +223,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         poolTokenSuffix: string;
         whitelist: string;
         agentOwnerRegistry: string;
-        scProofVerifier: string;
+        fdcVerification: string;
         burnAddress: string;
         priceReader: string;
         assetDecimals: number | BN | string;
@@ -261,6 +269,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         diamondCutMinTimelockSeconds: number | BN | string;
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
+        cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectRedemptionRequestWindowSeconds: number | BN | string;
+        takeOverRedemptionRequestWindowSeconds: number | BN | string;
+        rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+          | number
+          | BN
+          | string;
+        rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -288,7 +304,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         poolTokenSuffix: string;
         whitelist: string;
         agentOwnerRegistry: string;
-        scProofVerifier: string;
+        fdcVerification: string;
         burnAddress: string;
         priceReader: string;
         assetDecimals: number | BN | string;
@@ -334,6 +350,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         diamondCutMinTimelockSeconds: number | BN | string;
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
+        cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectRedemptionRequestWindowSeconds: number | BN | string;
+        takeOverRedemptionRequestWindowSeconds: number | BN | string;
+        rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+          | number
+          | BN
+          | string;
+        rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -361,7 +385,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         poolTokenSuffix: string;
         whitelist: string;
         agentOwnerRegistry: string;
-        scProofVerifier: string;
+        fdcVerification: string;
         burnAddress: string;
         priceReader: string;
         assetDecimals: number | BN | string;
@@ -407,6 +431,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         diamondCutMinTimelockSeconds: number | BN | string;
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
+        cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectRedemptionRequestWindowSeconds: number | BN | string;
+        takeOverRedemptionRequestWindowSeconds: number | BN | string;
+        rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+          | number
+          | BN
+          | string;
+        rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
       },
       _initialCollateralTypes: {
         collateralClass: number | BN | string;
@@ -517,7 +549,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           poolTokenSuffix: string;
           whitelist: string;
           agentOwnerRegistry: string;
-          scProofVerifier: string;
+          fdcVerification: string;
           burnAddress: string;
           priceReader: string;
           assetDecimals: number | BN | string;
@@ -563,6 +595,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           diamondCutMinTimelockSeconds: number | BN | string;
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
+          cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectRedemptionRequestWindowSeconds: number | BN | string;
+          takeOverRedemptionRequestWindowSeconds: number | BN | string;
+          rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+            | number
+            | BN
+            | string;
+          rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;
@@ -590,7 +630,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           poolTokenSuffix: string;
           whitelist: string;
           agentOwnerRegistry: string;
-          scProofVerifier: string;
+          fdcVerification: string;
           burnAddress: string;
           priceReader: string;
           assetDecimals: number | BN | string;
@@ -636,6 +676,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           diamondCutMinTimelockSeconds: number | BN | string;
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
+          cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectRedemptionRequestWindowSeconds: number | BN | string;
+          takeOverRedemptionRequestWindowSeconds: number | BN | string;
+          rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+            | number
+            | BN
+            | string;
+          rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;
@@ -663,7 +711,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           poolTokenSuffix: string;
           whitelist: string;
           agentOwnerRegistry: string;
-          scProofVerifier: string;
+          fdcVerification: string;
           burnAddress: string;
           priceReader: string;
           assetDecimals: number | BN | string;
@@ -709,6 +757,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           diamondCutMinTimelockSeconds: number | BN | string;
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
+          cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectRedemptionRequestWindowSeconds: number | BN | string;
+          takeOverRedemptionRequestWindowSeconds: number | BN | string;
+          rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+            | number
+            | BN
+            | string;
+          rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;
@@ -736,7 +792,7 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           poolTokenSuffix: string;
           whitelist: string;
           agentOwnerRegistry: string;
-          scProofVerifier: string;
+          fdcVerification: string;
           burnAddress: string;
           priceReader: string;
           assetDecimals: number | BN | string;
@@ -782,6 +838,14 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           diamondCutMinTimelockSeconds: number | BN | string;
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
+          cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectRedemptionRequestWindowSeconds: number | BN | string;
+          takeOverRedemptionRequestWindowSeconds: number | BN | string;
+          rejectedRedemptionDefaultFactorVaultCollateralBIPS:
+            | number
+            | BN
+            | string;
+          rejectedRedemptionDefaultFactorPoolBIPS: number | BN | string;
         },
         _initialCollateralTypes: {
           collateralClass: number | BN | string;

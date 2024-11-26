@@ -17,6 +17,16 @@ export interface CollateralPoolTokenContract
   ): Promise<CollateralPoolTokenInstance>;
 }
 
+export interface AdminChanged {
+  name: "AdminChanged";
+  args: {
+    previousAdmin: string;
+    newAdmin: string;
+    0: string;
+    1: string;
+  };
+}
+
 export interface Approval {
   name: "Approval";
   args: {
@@ -26,6 +36,14 @@ export interface Approval {
     0: string;
     1: string;
     2: BN;
+  };
+}
+
+export interface BeaconUpgraded {
+  name: "BeaconUpgraded";
+  args: {
+    beacon: string;
+    0: string;
   };
 }
 
@@ -41,7 +59,15 @@ export interface Transfer {
   };
 }
 
-export type AllEvents = Approval | Transfer;
+export interface Upgraded {
+  name: "Upgraded";
+  args: {
+    implementation: string;
+    0: string;
+  };
+}
+
+export type AllEvents = AdminChanged | Approval | BeaconUpgraded | Transfer | Upgraded;
 
 export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
   allowance(
@@ -183,6 +209,8 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   increaseAllowance: {
     (
       spender: string,
@@ -268,6 +296,8 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   supportsInterface(
     _interfaceId: string,
     txDetails?: Truffle.TransactionDetails
@@ -336,6 +366,48 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
     _account: string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
+
+  upgradeTo: {
+    (
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeToAndCall: {
+    (
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
 
   methods: {
     allowance(
@@ -477,6 +549,8 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     increaseAllowance: {
       (
         spender: string,
@@ -562,6 +636,8 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     supportsInterface(
       _interfaceId: string,
       txDetails?: Truffle.TransactionDetails
@@ -630,6 +706,48 @@ export interface CollateralPoolTokenInstance extends Truffle.ContractInstance {
       _account: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    upgradeTo: {
+      (
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeToAndCall: {
+      (
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

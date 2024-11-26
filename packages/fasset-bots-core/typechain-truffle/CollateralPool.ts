@@ -20,6 +20,24 @@ export interface CollateralPoolContract
   ): Promise<CollateralPoolInstance>;
 }
 
+export interface AdminChanged {
+  name: "AdminChanged";
+  args: {
+    previousAdmin: string;
+    newAdmin: string;
+    0: string;
+    1: string;
+  };
+}
+
+export interface BeaconUpgraded {
+  name: "BeaconUpgraded";
+  args: {
+    beacon: string;
+    0: string;
+  };
+}
+
 export interface Entered {
   name: "Entered";
   args: {
@@ -66,7 +84,21 @@ export interface IncompleteSelfCloseExit {
   };
 }
 
-export type AllEvents = Entered | Exited | IncompleteSelfCloseExit;
+export interface Upgraded {
+  name: "Upgraded";
+  args: {
+    implementation: string;
+    0: string;
+  };
+}
+
+export type AllEvents =
+  | AdminChanged
+  | BeaconUpgraded
+  | Entered
+  | Exited
+  | IncompleteSelfCloseExit
+  | Upgraded;
 
 export interface CollateralPoolInstance extends Truffle.ContractInstance {
   MIN_NAT_BALANCE_AFTER_EXIT(
@@ -106,25 +138,61 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  claimFtsoRewards: {
+  claimDelegationRewards: {
     (
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
     sendTransaction(
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _ftsoRewardManager: string,
+      _rewardManager: string,
       _lastRewardEpoch: number | BN | string,
+      _proofs: {
+        merkleProof: string[];
+        body: {
+          rewardEpochId: number | BN | string;
+          beneficiary: string;
+          amount: number | BN | string;
+          claimType: number | BN | string;
+        };
+      }[],
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -252,6 +320,33 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   exitCollateralRatioBIPS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
+  exitTo: {
+    (
+      _tokenShare: number | BN | string,
+      _recipient: string,
+      _exitType: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _tokenShare: number | BN | string,
+      _recipient: string,
+      _exitType: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN }>;
+    sendTransaction(
+      _tokenShare: number | BN | string,
+      _recipient: string,
+      _exitType: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _tokenShare: number | BN | string,
+      _recipient: string,
+      _exitType: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   fAssetFeeDebtOf(
@@ -287,6 +382,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     _tokenAmountWei: number | BN | string,
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
+
+  implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   initialize: {
     (
@@ -393,6 +490,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   poolToken(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   revokeDelegationAt: {
     (
       _who: string,
@@ -441,6 +540,41 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     estimateGas(
       _tokenShare: number | BN | string,
       _redeemToCollateral: boolean,
+      _redeemerUnderlyingAddress: string,
+      _executor: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  selfCloseExitTo: {
+    (
+      _tokenShare: number | BN | string,
+      _redeemToCollateral: boolean,
+      _recipient: string,
+      _redeemerUnderlyingAddress: string,
+      _executor: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _tokenShare: number | BN | string,
+      _redeemToCollateral: boolean,
+      _recipient: string,
+      _redeemerUnderlyingAddress: string,
+      _executor: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _tokenShare: number | BN | string,
+      _redeemToCollateral: boolean,
+      _recipient: string,
+      _redeemerUnderlyingAddress: string,
+      _executor: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _tokenShare: number | BN | string,
+      _redeemToCollateral: boolean,
+      _recipient: string,
       _redeemerUnderlyingAddress: string,
       _executor: string,
       txDetails?: Truffle.TransactionDetails
@@ -559,6 +693,48 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
+  upgradeTo: {
+    (
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  upgradeToAndCall: {
+    (
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      newImplementation: string,
+      data: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   upgradeWNatContract: {
     (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -584,15 +760,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
   wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-  withdrawCollateralWhenFAssetTerminated: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
   withdrawFees: {
     (
       _fAssets: number | BN | string,
@@ -608,6 +775,29 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _fAssets: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  withdrawFeesTo: {
+    (
+      _fAssets: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _fAssets: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _fAssets: number | BN | string,
+      _recipient: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _fAssets: number | BN | string,
+      _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -650,25 +840,61 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    claimFtsoRewards: {
+    claimDelegationRewards: {
       (
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<BN>;
       sendTransaction(
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _ftsoRewardManager: string,
+        _rewardManager: string,
         _lastRewardEpoch: number | BN | string,
+        _proofs: {
+          merkleProof: string[];
+          body: {
+            rewardEpochId: number | BN | string;
+            beneficiary: string;
+            amount: number | BN | string;
+            claimType: number | BN | string;
+          };
+        }[],
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -798,6 +1024,33 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    exitTo: {
+      (
+        _tokenShare: number | BN | string,
+        _recipient: string,
+        _exitType: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _tokenShare: number | BN | string,
+        _recipient: string,
+        _exitType: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<{ 0: BN; 1: BN }>;
+      sendTransaction(
+        _tokenShare: number | BN | string,
+        _recipient: string,
+        _exitType: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _tokenShare: number | BN | string,
+        _recipient: string,
+        _exitType: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     fAssetFeeDebtOf(
@@ -833,6 +1086,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       _tokenAmountWei: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
+
+    implementation(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     initialize: {
       (
@@ -939,6 +1194,8 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
     poolToken(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+    proxiableUUID(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     revokeDelegationAt: {
       (
         _who: string,
@@ -987,6 +1244,41 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       estimateGas(
         _tokenShare: number | BN | string,
         _redeemToCollateral: boolean,
+        _redeemerUnderlyingAddress: string,
+        _executor: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    selfCloseExitTo: {
+      (
+        _tokenShare: number | BN | string,
+        _redeemToCollateral: boolean,
+        _recipient: string,
+        _redeemerUnderlyingAddress: string,
+        _executor: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _tokenShare: number | BN | string,
+        _redeemToCollateral: boolean,
+        _recipient: string,
+        _redeemerUnderlyingAddress: string,
+        _executor: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _tokenShare: number | BN | string,
+        _redeemToCollateral: boolean,
+        _recipient: string,
+        _redeemerUnderlyingAddress: string,
+        _executor: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _tokenShare: number | BN | string,
+        _redeemToCollateral: boolean,
+        _recipient: string,
         _redeemerUnderlyingAddress: string,
         _executor: string,
         txDetails?: Truffle.TransactionDetails
@@ -1107,6 +1399,48 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
+    upgradeTo: {
+      (
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    upgradeToAndCall: {
+      (
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        newImplementation: string,
+        data: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     upgradeWNatContract: {
       (_newWNat: string, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -1132,15 +1466,6 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
 
     wNat(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
-    withdrawCollateralWhenFAssetTerminated: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-    };
-
     withdrawFees: {
       (
         _fAssets: number | BN | string,
@@ -1156,6 +1481,29 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _fAssets: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    withdrawFeesTo: {
+      (
+        _fAssets: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _fAssets: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _fAssets: number | BN | string,
+        _recipient: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _fAssets: number | BN | string,
+        _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

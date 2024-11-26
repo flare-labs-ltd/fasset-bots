@@ -2,19 +2,19 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
 import { Secrets, indexerApiKey } from "../../../src/config";
-import { createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createStateConnectorClient } from "../../../src/config/BotConfig";
+import { createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createFlareDataConnectorClient } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
 import { createWalletClient, supportedChainId } from "../../../src/config/create-wallet-client";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { initWeb3 } from "../../../src/utils/web3";
-import { ATTESTATION_PROVIDER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
+import { DATA_ACCESS_LAYER_URLS, COSTON_CONTRACTS_MISSING_SC, COSTON_RPC, COSTON_RUN_CONFIG_CONTRACTS, COSTON_SIMPLIFIED_RUN_CONFIG_CONTRACTS, OWNER_ADDRESS, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
 import { getNativeAccounts } from "../../test-utils/test-helpers";
 use(chaiAsPromised);
 
-const indexerTestBTCUrls = ["https://attestation-coston.aflabs.net/verifier/btc/"];
-const indexerTestDOGEUrls = ["https://attestation-coston.aflabs.net/verifier/doge/"];
-const indexerTestXRPUrls = ["https://attestation-coston.aflabs.net/verifier/xrp"];
+const indexerTestBTCUrls = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/btc/"];
+const indexerTestDOGEUrls = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/doge/"];
+const indexerTestXRPUrls = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"];
 const walletTestBTCUrls = ["https://api.bitcore.io/api/BTC/testnet/"];
 const walletTestDOGEUrls = ["https://api.bitcore.io/api/DOGE/testnet/"];
 const walletBTCUrls = ["https://api.bitcore.io/api/BTC/mainnet/"];
@@ -96,16 +96,17 @@ describe("Bot config tests", () => {
         .and.be.an.instanceOf(Error);
     });
 
-    it("Should create state connector helper", async () => {
-        const stateConnector = await createStateConnectorClient(
+    it("Should create flare data connector helper", async () => {
+        const flareDataConnector = await createFlareDataConnectorClient(
             indexerTestXRPUrls,
             indexerApiKey(secrets, indexerTestXRPUrls),
-            ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
+            DATA_ACCESS_LAYER_URLS,
+            FDC_VERIFICATION_ADDRESS,
+            FDC_HUB_ADDRESS,
+            RELAY_ADDRESS,
             OWNER_ADDRESS
         );
-        expect(stateConnector.account).to.eq(OWNER_ADDRESS);
+        expect(flareDataConnector.account).to.eq(OWNER_ADDRESS);
     });
 
     it("Should create agent bot config chain", async () => {
@@ -119,10 +120,10 @@ describe("Bot config tests", () => {
             chainInfo,
             runConfig.agentBotSettings,
             botConfig.orm!.em,
-            ATTESTATION_PROVIDER_URLS,
+            DATA_ACCESS_LAYER_URLS,
             OWNER_ADDRESS
         );
-        expect(agentBotConfigChain.stateConnector).not.be.null;
+        expect(agentBotConfigChain.flareDataConnector).not.be.null;
     });
 
     it("Should return supported source id", () => {
@@ -144,11 +145,11 @@ describe("Bot config tests", () => {
             .and.be.an.instanceOf(Error);
     });
 
-    it("Should not create config missing StateConnector contract", async () => {
+    it("Should not create config missing FdcHub contract", async () => {
         runConfig = loadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         runConfig.contractsJsonFile = COSTON_CONTRACTS_MISSING_SC;
         await expect(createBotConfig("keeper", secrets, runConfig, accounts[0]))
-            .to.eventually.be.rejectedWith("Cannot find address for contract StateConnector")
+            .to.eventually.be.rejectedWith("Cannot find address for contract FdcHub")
             .and.be.an.instanceOf(Error);
         // should be fine for common
         await createBotConfig("common", secrets, runConfig, accounts[0]);

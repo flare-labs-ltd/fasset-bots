@@ -13,10 +13,11 @@ export class BlockchainFeeService {
     blockchainAPI: UTXOBlockchainAPI;
     history: BlockStats[] = [];
     numberOfBlocksInHistory = 11;
-    sleepTimeMs = 5000;
+    sleepTimeMs = 10_000;
     chainType: ChainType;
     useNBlocksToCalculateFee = 5;
     monitoringId: string;
+    setupHistorySleepTimeMs = 1_500;
 
     constructor(blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
         this.chainType = chainType;
@@ -43,7 +44,9 @@ export class BlockchainFeeService {
     getLatestMedianTime(): BN | null {
         /* istanbul ignore if */
         if (this.history.length < this.numberOfBlocksInHistory || !this.checkConsecutiveBlocks()) {
-            return null;
+        logger.warn(`Cannot determine latest median time.\n` +
+                this.logBlockHistory()
+            );
         }
         const blockTimes = this.history.map(block => block.blockTime);
         blockTimes.sort((a, b) => a.sub(b).toNumber());
@@ -90,16 +93,28 @@ export class BlockchainFeeService {
 
     async setupHistory(): Promise<void> {
         if (this.history.length === this.numberOfBlocksInHistory) {
+            logger.info(`${this.monitoringId}: History already up-to-date.`);
             return;
         }
         logger.info(`${this.monitoringId}: Setup history started.`)
         const currentBlockHeight = await this.getCurrentBlockHeightWithRetry();
         /* istanbul ignore next */
         if (currentBlockHeight === 0) {
+            logger.warn(`${this.monitoringId}: Current block height is 0. Aborting history setup.`);
             return;
         }
         let blockHeightToFetch = currentBlockHeight;
         while (this.history.length < this.numberOfBlocksInHistory) {
+            const blockAlreadyInHistory = this.history.find(
+                block => block.blockHeight === blockHeightToFetch
+            ) !== undefined;
+
+            if (blockAlreadyInHistory) {
+                logger.warn(`${this.monitoringId}: Block ${blockHeightToFetch} already in history.`);
+                blockHeightToFetch--;
+                continue;
+            }
+
             const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
             /* istanbul ignore else */
             if (feeStats) {
@@ -112,6 +127,10 @@ export class BlockchainFeeService {
             } else {
                 logger.error(`Failed to retrieve fee stats for block ${blockHeightToFetch} during history setup.`);
             }
+            await sleepMs(this.setupHistorySleepTimeMs);
+        }
+        if (!this.checkConsecutiveBlocks()) {
+            logger.warn(`Block history contains non-consecutive blocks.` + this.logBlockHistory());
         }
         logger.info(`${this.monitoringId}: Setup history completed.`)
     }
@@ -159,15 +178,27 @@ export class BlockchainFeeService {
         );
     }
 
-    private checkConsecutiveBlocks(): boolean {
+    private checkConsecutiveBlocks(): boolean { // blocks are in descending order
         for (let i = 1; i < this.history.length; i++) {
             const currentBlockHeight = this.history[i].blockHeight;
             const previousBlockHeight = this.history[i - 1].blockHeight;
 
-            if (currentBlockHeight !== previousBlockHeight + 1) {
+            if (currentBlockHeight !== previousBlockHeight - 1) {
                 return false;
             }
         }
         return true;
+    }
+
+    private logBlockHistory() {
+        return `History contains ${this.history.length} blocks:\n` +
+            this.history
+                .map(
+                    (block, index) =>
+                        `Block ${index + 1}: Height = ${block.blockHeight}, ` +
+                        `AvgFeePerKB = ${block.averageFeePerKB.toString()}, ` +
+                        `BlockTime = ${block.blockTime.toString()}`
+                )
+                .join("\n");
     }
 }

@@ -79,20 +79,27 @@ export function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpW
    const blockRestrictionMet = !!executeUntilBlock && (currentBlockHeight + client.executionBlockOffset >= executeUntilBlock);
    // It probably should be following, but due to inconsistent block time on btc, we use currentTime
    //const timeRestriction = executeUntilTimestamp && currentBlockHeight.timestamp - executeUntilTimestamp > client.executionBlockOffset * getDefaultBlockTime(client.chainType)
-   let now = toBN(getCurrentTimestampInSeconds());
+   let now: BN  = toBN(getCurrentTimestampInSeconds());
    if (client instanceof UTXOWalletImplementation) {
-      now = client.feeService.getLatestMedianTime() ?? now;
+      const medianTime = client.feeService.getLatestMedianTime();
+      if (medianTime) {
+         now = medianTime;
+     } else {
+         return blockRestrictionMet ? false : true; // check only block restriction if median cannot be determined
+     }
    }
    if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
        executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
    }
-   const timeRestrictionMet = !!executeUntilTimestamp && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
+   const timeRestrictionMet = executeUntilTimestamp && now && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
 
    if (executeUntilBlock && !executeUntilTimestamp && blockRestrictionMet) {
       return false;
    } else if (!executeUntilBlock && executeUntilTimestamp && timeRestrictionMet) {
       return false;
-   } else if (blockRestrictionMet && timeRestrictionMet) {
+   } else if (executeUntilBlock && executeUntilTimestamp && blockRestrictionMet && !now) {
+      return false;
+   }   else if (blockRestrictionMet && timeRestrictionMet) {
       return false;
    }
    return true;
@@ -150,5 +157,5 @@ export function fullStackTrace(error: Error, skipDepth: number = 0): string {
    // always skip 1 line for message, 1 for this method
    const extraStackLines = (stackError.stack ?? "").split("\n").slice(skipDepth + 2);
    const filteredStackLines = extraStackLines.filter(l => !originalStack.includes(l));
-   return originalStack + filteredStackLines.join("\n");
+   return [originalStack.trimEnd(), ...filteredStackLines].join("\n");
 }

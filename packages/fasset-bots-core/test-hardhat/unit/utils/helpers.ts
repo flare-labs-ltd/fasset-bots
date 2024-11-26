@@ -143,8 +143,7 @@ describe("Helpers unit tests", () => {
     });
 
     it("Should use retry", async () => {
-        const retNum: number | null = null;
-        await expect(helperMethods.retry(fetchData, [], 3, retNum!)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
+        await expect(helperMethods.retry(fetchData, [], 3)).to.eventually.be.rejected.and.be.an.instanceOf(Error);
     });
 
     it("Should prevent reentrancy", async () => {

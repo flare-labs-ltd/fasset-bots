@@ -1,0 +1,180 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "RewardsV2Interface",
+  "sourceName": "flare-smart-contracts-v2/contracts/userInterfaces/LTS/RewardsV2Interface.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "active",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_rewardOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "address payable",
+          "name": "_recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint24",
+          "name": "_rewardEpochId",
+          "type": "uint24"
+        },
+        {
+          "internalType": "bool",
+          "name": "_wrap",
+          "type": "bool"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "merkleProof",
+              "type": "bytes32[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint24",
+                  "name": "rewardEpochId",
+                  "type": "uint24"
+                },
+                {
+                  "internalType": "bytes20",
+                  "name": "beneficiary",
+                  "type": "bytes20"
+                },
+                {
+                  "internalType": "uint120",
+                  "name": "amount",
+                  "type": "uint120"
+                },
+                {
+                  "internalType": "enum RewardsV2Interface.ClaimType",
+                  "name": "claimType",
+                  "type": "uint8"
+                }
+              ],
+              "internalType": "struct RewardsV2Interface.RewardClaim",
+              "name": "body",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct RewardsV2Interface.RewardClaimWithProof[]",
+          "name": "_proofs",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "claim",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_rewardAmountWei",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_rewardOwner",
+          "type": "address"
+        }
+      ],
+      "name": "getNextClaimableRewardEpochId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getRewardEpochIdsWithClaimableRewards",
+      "outputs": [
+        {
+          "internalType": "uint24",
+          "name": "_startEpochId",
+          "type": "uint24"
+        },
+        {
+          "internalType": "uint24",
+          "name": "_endEpochId",
+          "type": "uint24"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_rewardOwner",
+          "type": "address"
+        }
+      ],
+      "name": "getStateOfRewards",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint24",
+              "name": "rewardEpochId",
+              "type": "uint24"
+            },
+            {
+              "internalType": "bytes20",
+              "name": "beneficiary",
+              "type": "bytes20"
+            },
+            {
+              "internalType": "uint120",
+              "name": "amount",
+              "type": "uint120"
+            },
+            {
+              "internalType": "enum RewardsV2Interface.ClaimType",
+              "name": "claimType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bool",
+              "name": "initialised",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct RewardsV2Interface.RewardState[][]",
+          "name": "_rewardStates",
+          "type": "tuple[][]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -14,15 +14,7 @@ export interface IRedemptionTimeExtensionContract
   ): Promise<IRedemptionTimeExtensionInstance>;
 }
 
-export interface RedemptionPaymentExtensionSecondsChanged {
-  name: "RedemptionPaymentExtensionSecondsChanged";
-  args: {
-    value: BN;
-    0: BN;
-  };
-}
-
-export type AllEvents = RedemptionPaymentExtensionSecondsChanged;
+export type AllEvents = never;
 
 export interface IRedemptionTimeExtensionInstance
   extends Truffle.ContractInstance {

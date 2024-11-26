@@ -14,8 +14,6 @@ import {UniswapV2} from "./lib/UniswapV2.sol";
 import {Ecosystem} from "./lib/Ecosystem.sol";
 import {Optimum} from "./lib/Optimum.sol";
 
-import "hardhat/console.sol";
-
 
 /**
  * It is recommended for each person to deploy their own ownable

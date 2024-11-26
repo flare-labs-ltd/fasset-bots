@@ -44,6 +44,14 @@ export interface GovernedProductionModeEntered {
   };
 }
 
+export interface ManagerChanged {
+  name: "ManagerChanged";
+  args: {
+    manager: string;
+    0: string;
+  };
+}
+
 export interface TimelockedGovernanceCallCanceled {
   name: "TimelockedGovernanceCallCanceled";
   args: {
@@ -80,6 +88,7 @@ export type AllEvents =
   | GovernanceCallTimelocked
   | GovernanceInitialised
   | GovernedProductionModeEntered
+  | ManagerChanged
   | TimelockedGovernanceCallCanceled
   | TimelockedGovernanceCallExecuted
   | Whitelisted
@@ -197,6 +206,8 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
+  manager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   revokeAddress: {
@@ -231,6 +242,24 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _allowAll: boolean,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setManager: {
+    (_manager: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _manager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _manager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _manager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -363,6 +392,8 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
+    manager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     revokeAddress: {
@@ -397,6 +428,24 @@ export interface WhitelistInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _allowAll: boolean,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setManager: {
+      (_manager: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _manager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _manager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _manager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

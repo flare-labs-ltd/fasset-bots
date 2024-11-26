@@ -38,7 +38,7 @@ describe("Fee service tests BTC", () => {
         };
         client = BTC.initialize(BTCMccConnectionTest);
         feeService = client.feeService;
-        feeService.sleepTimeMs = 200;
+        feeService.sleepTimeMs = 2000;
 
         await feeService.setupHistory();
     });
