@@ -372,25 +372,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "_transferAmount",
-          "type": "uint256"
-        }
-      ],
-      "name": "transferFeeAmount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "address",
           "name": "from",
           "type": "address"

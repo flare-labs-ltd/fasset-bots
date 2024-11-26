@@ -497,11 +497,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  transferFeeAmount(
-    _transferAmount: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
   transferFrom: {
     (
       _from: string,
@@ -1014,11 +1009,6 @@ export interface FAssetInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    transferFeeAmount(
-      _transferAmount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
 
     transferFrom: {
       (

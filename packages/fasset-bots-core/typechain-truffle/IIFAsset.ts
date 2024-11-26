@@ -303,11 +303,6 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  transferFeeAmount(
-    _transferAmount: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
   transferFrom: {
     (
       from: string,
@@ -624,11 +619,6 @@ export interface IIFAssetInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    transferFeeAmount(
-      _transferAmount: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
 
     transferFrom: {
       (

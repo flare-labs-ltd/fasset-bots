@@ -189,7 +189,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
   publishPrices: {
     (
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -202,7 +202,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -215,7 +215,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -228,7 +228,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -492,7 +492,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
     publishPrices: {
       (
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;
@@ -505,7 +505,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;
@@ -518,7 +518,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;
@@ -531,7 +531,7 @@ export interface FtsoV2PriceStoreInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;

@@ -77,6 +77,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
 
   fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  fassetTransferFeePaid: {
+    (
+      _fee: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _fee: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _fee: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _fee: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   getAgentMinPoolCollateralRatioBIPS(
     arg0: string,
     txDetails?: Truffle.TransactionDetails
@@ -374,6 +393,8 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  transferFeeMillionths(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   updateCollateral: {
     (
       arg0: string,
@@ -432,6 +453,25 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     fAsset(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     fasset(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    fassetTransferFeePaid: {
+      (
+        _fee: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _fee: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _fee: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _fee: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
 
     getAgentMinPoolCollateralRatioBIPS(
       arg0: string,
@@ -732,6 +772,8 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
+
+    transferFeeMillionths(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
     updateCollateral: {
       (
