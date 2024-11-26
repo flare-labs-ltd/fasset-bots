@@ -20,6 +20,7 @@ export const MEMPOOL_CHAIN_LENGTH_LIMIT = 25;
 export const MAX_UTXO_TX_SIZE_IN_B = 100_000;
 export const MIN_RELAY_FEE_INCREASE_RBF_IN_B = 2000;
 export const WAIT_TO_APPEAR_IN_XRP = 8; // wait for x ledgers
+export const MAX_NUM_OF_INPUT_UTXOS = 333;
 ///////////////////////////////////////////////////////////////////////////
 // chain specs
 

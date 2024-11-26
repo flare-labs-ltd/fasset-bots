@@ -2,11 +2,12 @@ import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import {
     createInitialTransactionEntity,
+    failTransaction,
     fetchUnspentUTXOs,
     setAccountIsDeleting,
 } from "../../db/dbutils";
 import { EntityManager } from "@mikro-orm/core";
-import { ChainType, MIN_RELAY_FEE_INCREASE_RBF_IN_B } from "../../utils/constants";
+import { ChainType, MAX_NUM_OF_INPUT_UTXOS, MIN_RELAY_FEE_INCREASE_RBF_IN_B } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { UTXOEntity } from "../../entity/utxo";
 import { Transaction } from "bitcore-lib";
@@ -27,15 +28,13 @@ export class TransactionService {
     private readonly transactionFeeService: TransactionFeeService;
     private readonly rootEm: EntityManager;
     private readonly utxoService: TransactionUTXOService;
-    private readonly maximumNumberOfUTXOs: number;
 
-    constructor(services: IUtxoWalletServices, chainType: ChainType, maximumNumberOfUTXOs: number) {
+    constructor(services: IUtxoWalletServices, chainType: ChainType) {
         this.services = services;
         this.chainType = chainType;
         this.transactionFeeService = services.transactionFeeService;
         this.rootEm = services.rootEm;
         this.utxoService = services.transactionUTXOService;
-        this.maximumNumberOfUTXOs = maximumNumberOfUTXOs;
     }
 
     async createPaymentTransaction(
@@ -52,7 +51,8 @@ export class TransactionService {
         maxPaymentForFeeSource?: BN,
     ): Promise<number> {
         /* istanbul ignore next */
-        logger.info(`Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()} and reference ${note}, with limits ${executeUntilBlock} and ${executeUntilTimestamp?.toString()}; and feeSource ${feeSource}`);
+        logger.info(
+            `Received request to create transaction from ${source} to ${destination} with amount ${amountInSatoshi?.toString()}${note ? ` and reference ${note}` : ""}${executeUntilBlock ? `, with block limit ${executeUntilBlock}` : ""}${executeUntilTimestamp ? `, with time limit ${executeUntilTimestamp.toString()}` : ""}${maxFee ? `, maxFee ${maxFee}` : ""}${feeSource ? `, feeSource '${feeSource}'` : ""}${maxPaymentForFeeSource ? `, maxPaymentForFeeSource ${maxPaymentForFeeSource}` : ""}`);
         const ent = await createInitialTransactionEntity(
             this.rootEm,
             chainType,
@@ -81,7 +81,9 @@ export class TransactionService {
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
     ): Promise<number> {
-        logger.info(`Received request to delete account from ${source} to ${destination} with reference ${note}`);
+        logger.info(
+            `Received request to delete account from ${source} to ${destination} ${note ? ` and reference ${note}` : ""}${executeUntilBlock ? `, with block limit ${executeUntilBlock}` : ""}${executeUntilTimestamp ? `, with time limit ${executeUntilTimestamp.toString()}` : ""}`
+        );
         await setAccountIsDeleting(this.rootEm, source);
         const ent = await createInitialTransactionEntity(
             this.rootEm,
@@ -161,9 +163,9 @@ export class TransactionService {
             utxos = await fetchUnspentUTXOs(this.rootEm, source);
 
             // In case that account has large number of UTXOs the "delete account transactions" is created as a sequence of smaller transactions
-            const useMultipleTransactions = utxos.length > this.maximumNumberOfUTXOs;
+            const useMultipleTransactions = utxos.length > MAX_NUM_OF_INPUT_UTXOS;
             if (useMultipleTransactions) {
-                utxos = utxos.slice(0, this.maximumNumberOfUTXOs);
+                utxos = utxos.slice(0, MAX_NUM_OF_INPUT_UTXOS);
             }
 
             // Fee should be reduced for 1 one output, this is because the transaction above is calculated using change, because bitcore otherwise uses everything as fee
@@ -175,7 +177,6 @@ export class TransactionService {
                     `Will not prepare transaction ${txDbId}, for ${source}. Amount ${feeInSatoshi.toString()}`,
                 );
             }
-
             if (useMultipleTransactions) {
                 amountInSatoshi = utxos.reduce((acc: BN, t: UTXOEntity) => acc.add(t.value), new BN(0)).sub(feeInSatoshi);
                 txData.amount = amountInSatoshi;
@@ -184,7 +185,6 @@ export class TransactionService {
                 amountInSatoshi = balance.sub(feeInSatoshi);
                 txData.amount = amountInSatoshi;
             }
-
         } else {
             utxos = await this.utxoService.fetchUTXOs(txData, txForReplacement?.utxos.getItems());
         }

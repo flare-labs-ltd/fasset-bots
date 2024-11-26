@@ -364,6 +364,14 @@ export async function handleNoTimeToSubmitLeft(
     );
 }
 
+export async function failDueToNoTimeToSubmit(rootEm: EntityManager, medianTime: BN | null, currentBlockNumber: number, txEnt: TransactionEntity, fnText: string){
+    await failTransaction(
+        rootEm,
+        txEnt.id,
+        `${fnText}: No time to submit ${txEnt.id}: Current block ${currentBlockNumber} >= last block ${txEnt.executeUntilBlock}${medianTime ? ` AND median block time ${medianTime.toString()} >= execute until ${txEnt.executeUntilTimestamp?.toString()}` : ''}`
+    );
+}
+
 export async function failTransaction(rootEm: EntityManager, txId: number, reason: string, error?: Error): Promise<void> {
     await updateTransactionEntity(rootEm, txId, (txEnt) => {
         txEnt.status = TransactionStatus.TX_FAILED;
