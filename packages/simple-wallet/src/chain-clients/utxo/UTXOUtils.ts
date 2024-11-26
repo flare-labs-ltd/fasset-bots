@@ -43,18 +43,6 @@ export function getDefaultBlockTimeInSeconds(chainType: ChainType): number {
     }
 }
 
-export function getAmountToSendInCaseOfRbf(amount: BN | null, chainType: ChainType): BN | null{
-    if (amount === null) {
-        return null;
-    }
-    const newAmount = amount.divRound(RBF_AMOUNT_FACTOR);
-    if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-        return newAmount.gte(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND) ? newAmount : DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;
-    } else {
-        return newAmount.gte(BTC_MIN_ALLOWED_AMOUNT_TO_SEND) ? newAmount : BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
-    }
-}
-
 export function getMinAmountToSend(chainType: ChainType): BN {
     if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
         return DOGE_MIN_ALLOWED_AMOUNT_TO_SEND;

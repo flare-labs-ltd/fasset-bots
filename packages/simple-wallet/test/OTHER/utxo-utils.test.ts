@@ -12,14 +12,6 @@ describe("UTXO utils tests", () => {
         expect(utxoUtils.getDefaultBlockTimeInSeconds(ChainType.testBTC)).gt(0);
     });
 
-    it("Should minimal amount to send", () => {
-        expect(utxoUtils.getAmountToSendInCaseOfRbf(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND, ChainType.DOGE)!.eq(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
-        expect(utxoUtils.getAmountToSendInCaseOfRbf(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND, ChainType.testDOGE)!.eq(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
-        expect(utxoUtils.getAmountToSendInCaseOfRbf(BTC_MIN_ALLOWED_AMOUNT_TO_SEND, ChainType.BTC)!.eq(BTC_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
-        expect(utxoUtils.getAmountToSendInCaseOfRbf(BTC_MIN_ALLOWED_AMOUNT_TO_SEND, ChainType.testBTC)!.eq(BTC_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
-        expect(utxoUtils.getAmountToSendInCaseOfRbf(null, ChainType.testBTC)).to.be.null;
-    });
-
     it("Should get dust amount", () => {
         expect(utxoUtils.getDustAmount(ChainType.DOGE).eq(DOGE_DUST_AMOUNT)).to.be.true;
         expect(utxoUtils.getDustAmount(ChainType.testDOGE).eq(DOGE_DUST_AMOUNT)).to.be.true;
