@@ -11,12 +11,10 @@ USER node
 
 RUN mkdir -p log
 
-COPY --chown=node ./package.json .
-COPY --chown=node ./yarn.lock .
+COPY --chown=node . .
 
 RUN yarn install
 
-COPY --chown=node . .
 
 RUN yarn
 
