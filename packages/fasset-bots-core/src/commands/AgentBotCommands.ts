@@ -145,11 +145,14 @@ export class AgentBotCommands {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
+            await this.notifierFor("Owner").agentCreationValidationUnderlying();
             const [addressValidityProof, _] = await Promise.all([
                 AgentBot.initializeUnderlyingAddress(this.context, this.owner, this.ownerUnderlyingAddress, underlyingAddress),
                 proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
             ]);
+            await this.notifierFor("Owner").agentCreationValidationUnderlyingComplete();
             console.log(`Creating agent bot...`);
+            await this.notifierFor("Owner").agentCreating();
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
             const agentBot = await AgentBot.create(this.orm.em, this.context, this.agentBotSettings, this.owner, this.ownerUnderlyingAddress,
                 addressValidityProof, agentBotSettings, this.notifiers, getKycClient(secrets));
@@ -785,6 +788,7 @@ export class AgentBotCommands {
      */
     async selfMint(agentVault: string, numberOfLots: BN): Promise<void> {
         logger.info(`Agent ${agentVault} is trying self mint ${numberOfLots} lots.`);
+        await this.notifierFor(agentVault).sendSelfMintStarted(numberOfLots.toString());
         const { agentBot } = await this.getAgentBot(agentVault);
         const freeCollateralLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
         if (freeCollateralLots.lt(numberOfLots)) {
@@ -795,17 +799,20 @@ export class AgentBotCommands {
         // amount to pay
         const toPayUBA = await this.getAmountToPayUBAForSelfMint(agent, numberOfLots);
         // send transaction
+        await this.notifierFor(agentVault).sendSelfMintPerformingPayment(numberOfLots.toString());
         const transactionHash = await agent.performPayment(agent.underlyingAddress, toPayUBA, PaymentReference.selfMint(agentVault), this.ownerUnderlyingAddress)
         console.log(`Transaction was accepted ${transactionHash}. Waiting for its finalization ...`);
         logger.info(`Agent ${agentVault} is waiting for transaction ${transactionHash} finalization ...`);
         await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(transactionHash);
         console.log(`Waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agent.underlyingAddress} ...`);
         logger.info(`Agent ${agentVault} is waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agent.underlyingAddress}.`);
+        await this.notifierFor(agentVault).sendSelfMintProvingPayment(numberOfLots.toString());
         const proof = await agentBot.context.attestationProvider.provePayment(transactionHash, this.ownerUnderlyingAddress, agent.underlyingAddress);
         console.log(`Executing payment...`);
         logger.info(`Agent ${agentVault} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
         const res = await this.context.assetManager.selfMint(proof, agentVault, numberOfLots, { from: agent.owner.workAddress });
         requiredEventArgs(res, 'SelfMint');
+        await this.notifierFor(agentVault).sendSelfMintExecuted(numberOfLots.toString());
         console.log("Done");
         logger.info(`Agent ${agentVault} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
     }
@@ -817,6 +824,7 @@ export class AgentBotCommands {
      */
     async selfMintFromFreeUnderlying(agentVault: string, numberOfLots: BN): Promise<void> {
         logger.info(`Agent ${agentVault} is trying mint from free underlying ${numberOfLots} lots.`);
+        await this.notifierFor(agentVault).sendSelfMintUnderlyingStarted(numberOfLots.toString());
         const { agentBot } = await this.getAgentBot(agentVault);
         const freeCollateralLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
         if (freeCollateralLots.lt(numberOfLots)) {
@@ -833,6 +841,7 @@ export class AgentBotCommands {
         const res = await this.context.assetManager.mintFromFreeUnderlying(agentVault, numberOfLots, { from: agent.owner.workAddress });
         requiredEventArgs(res, 'SelfMint');
         console.log("Done");
+        await this.notifierFor(agentVault).sendSelfMintUnderlyingExecuted(numberOfLots.toString());
         logger.info(`Agent ${agentVault} executed minting from free underlying.`);
     }
 

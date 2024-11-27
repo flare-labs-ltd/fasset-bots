@@ -314,7 +314,7 @@ export function indexerApiKey(secrets: Secrets, indexerUrls: string[]): string[]
     const apiTokenKey = secrets.requiredOrRequiredArray("apiKey.indexer");
     if (Array.isArray(apiTokenKey) && apiTokenKey.length != indexerUrls.length) {
         throw new Error(`Cannot create indexers. The number of URLs and API keys do not match.`);
-}
+    }
     const apiTokenKeys = Array.isArray(apiTokenKey) ? apiTokenKey : Array(indexerUrls.length).fill(apiTokenKey);
     return apiTokenKeys;
 }

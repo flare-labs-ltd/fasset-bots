@@ -96,6 +96,7 @@ export interface VaultInfo {
     fasset: string;
     lotsPoolBacked: string;
     lotsVaultBacked: string;
+    handshakeType: number;
 }
 
 export interface AllVaults {
