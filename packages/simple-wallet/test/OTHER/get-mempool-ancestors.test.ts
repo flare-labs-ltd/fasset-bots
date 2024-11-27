@@ -1,13 +1,13 @@
-import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
-import { ChainType } from "../../src/utils/constants";
-import { EntityManager } from "@mikro-orm/core";
-import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { createTransactionEntity } from "../test-util/entity_utils";
-import { TransactionEntity, TransactionStatus } from "../../src";
-import { TransactionInputEntity } from "../../src/entity/transactionInput";
-import { expect } from "chai";
-import { MockBlockchainAPI } from "../test-util/common_utils";
-import { IUtxoWalletServices } from "../../src/chain-clients/utxo/IUtxoWalletServices";
+import config, {initializeTestMikroORMWithConfig} from "../test-orm/mikro-orm.config";
+import {ChainType} from "../../src/utils/constants";
+import {EntityManager} from "@mikro-orm/core";
+import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
+import {createTransactionEntity} from "../test-util/entity_utils";
+import {TransactionEntity, TransactionStatus} from "../../src";
+import {TransactionInputEntity} from "../../src/entity/transactionInput";
+import {expect} from "chai";
+import {MockBlockchainAPI} from "../test-util/common_utils";
+import {IUtxoWalletServices} from "../../src/chain-clients/utxo/IUtxoWalletServices";
 
 
 describe("getNumberOfMempoolAncestors", () => {
@@ -21,7 +21,7 @@ describe("getNumberOfMempoolAncestors", () => {
     }
 
     before(async () => {
-        const conf = { ...config };
+        const conf = { ...config, debug: true };
         conf.dbName = "get-transaction-descendants-test-db";
         em = (await initializeTestMikroORMWithConfig(conf)).em;
         services.rootEm = em;

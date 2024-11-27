@@ -16,7 +16,7 @@ import {
 import BN from "bn.js";
 import { logger } from "../../utils/logger";
 import { toBN } from "web3-utils";
-import { enforceMinimalAndMaximalFee, getDefaultFeePerKB } from "./UTXOUtils";
+import { enforceMinimalAndMaximalFee, getDefaultFeePerKB, getTransactionDescendants } from "./UTXOUtils";
 import { EntityManager } from "@mikro-orm/core";
 import { TransactionEntity } from "../../entity/transaction";
 import { errorMessage } from "../../utils/axios-utils";
@@ -89,8 +89,7 @@ export class TransactionFeeService {
     }
 
     async calculateTotalFeeOfDescendants(em: EntityManager, oldTx: TransactionEntity): Promise<BN> {
-        // TODO
-        const descendants: TransactionEntity[] = []; // await getTransactionDescendants(em, oldTx.transactionHash!, oldTx.source);
+        const descendants = await getTransactionDescendants(em, oldTx.id);
         let feeToCover: BN = toBN(0);
         /* istanbul ignore next */
         for (const txEnt of descendants) {

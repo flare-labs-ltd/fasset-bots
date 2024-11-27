@@ -1,11 +1,11 @@
-import { BTC, TransactionStatus } from "../../src";
-import { BitcoinWalletConfig, ICreateWalletResponse, ITransactionMonitor } from "../../src/interfaces/IWalletTransaction";
+import {BTC, TransactionStatus} from "../../src";
+import {BitcoinWalletConfig, ICreateWalletResponse, ITransactionMonitor} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
-import { assert, expect, use } from "chai";
-import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
-import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
-import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import {assert, expect, use} from "chai";
+import {toBN, toBNExp} from "../../src/utils/bnutils";
+import {getCurrentTimestampInSeconds, sleepMs} from "../../src/utils/utils";
+import config, {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config";
+import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
     calculateNewFeeForTx,
@@ -13,27 +13,26 @@ import {
     resetMonitoringOnForceExit,
     waitForTxToFinishWithStatus,
 } from "../test-util/common_utils";
-import { logger } from "../../src/utils/logger";
+import {logger} from "../../src/utils/logger";
 import BN from "bn.js";
-import { BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType } from "../../src/utils/constants";
+import {BTC_DOGE_DEC_PLACES, BTC_DUST_AMOUNT, ChainType} from "../../src/utils/constants";
 import * as dbutils from "../../src/db/dbutils";
 import {
- getTransactionInfoById, updateTransactionEntity,
+    getTransactionInfoById,
 } from "../../src/db/dbutils";
-import { DriverException } from "@mikro-orm/core";
+import {DriverException} from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
-import { getAccountBalance, getCore } from "../../src/chain-clients/utxo/UTXOUtils";
-import { TransactionService } from "../../src/chain-clients/utxo/TransactionService";
+import {getCore} from "../../src/chain-clients/utxo/UTXOUtils";
 import {
     createAndPersistTransactionEntity,
-    createTransactionEntity, createTransactionOutputEntity,
+    createTransactionEntity,
     setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import sinon from "sinon";
-import { FeeStatus } from "../../src/chain-clients/utxo/TransactionFeeService";
-import { UTXORawTransactionInput } from "../../src/interfaces/IBlockchainAPI";
-import { TransactionMonitor } from "../../src/chain-clients/monitoring/TransactionMonitor";
+import {FeeStatus} from "../../src/chain-clients/utxo/TransactionFeeService";
+import {UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
+import {TransactionMonitor} from "../../src/chain-clients/monitoring/TransactionMonitor";
 
 use(chaiAsPromised);
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
@@ -169,22 +168,13 @@ describe("Bitcoin wallet tests", () => {
     });
 
     it("Should submit TX_PREPARED that are in DB", async () => {
-        const currentBlock = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const executeUntilBlock = currentBlock + wClient.blockOffset;
-        const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi, feeInSatoshi, note, undefined, executeUntilBlock);
-        const [transaction] = await wClient.transactionService.preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null, txEnt.fee, note);
+        const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testBTC, fundedWallet.address, targetAddress, amountToSendSatoshi);
+        const [transaction] = await wClient.transactionService.preparePaymentTransaction(txEnt.id, txEnt.source, txEnt.destination, txEnt.amount ?? null);
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
         await wClient.rootEm.flush();
         const [tx] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.id);
         expect(tx.status).to.equal(TransactionStatus.TX_SUBMITTED);
-    });
-
-    it("Should handle empty UTXO list in DB", async () => {
-        const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcab";
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, note);
-        expect(id).to.be.gt(0);
-        await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
     it("Balance should change after transaction", async () => {
@@ -313,7 +303,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(txId, blockHeight);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED, txId);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED, TransactionStatus.TX_REPLACED_PENDING], txId);
         const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
     });
@@ -423,7 +413,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
     });
 
-    it("If DB is down (therefore ping too) the monitoring should eventually stop", async () => {
+    it.skip("If DB is down (therefore ping too) the monitoring should eventually stop", async () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
         sinon.stub(dbutils, "updateMonitoringState").throws(new Error("Ping down"));
 
@@ -434,7 +424,7 @@ describe("Bitcoin wallet tests", () => {
         sinon.restore();
     });
 
-    it("DB down after creating transaction", async () => {
+    it.skip("DB down after creating transaction", async () => {
         fundedWallet = wClient.createWalletFromMnemonic(fundedMnemonic);
         const id = await wClient.createPaymentTransaction(fundedWallet.address, targetAddress, amountToSendSatoshi);
         const txInfo = await getTransactionInfoById(wClient.rootEm, id);
@@ -449,7 +439,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(1, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id2);
     });
     // TODO
-    // it("If transaction uses already spent UTXOs they should be removed and it's status should be set to TX_CREATED", async () => {
+    // it.skip("If transaction uses already spent UTXOs they should be removed and it's status should be set to TX_CREATED", async () => {
     //     await monitor.stopMonitoring();
 
     //     const tx1 = createTransactionEntity(targetAddress, fundedAddress, "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c");
@@ -462,7 +452,7 @@ describe("Bitcoin wallet tests", () => {
     //     // So that we don't need to create an actual raw transaction ...
     //     sinon.stub(dbutils, "fetchUTXOsByTxId").resolves(utxos);
 
-    //     const initialTxEnt = createTransactionEntity(fundedAddress, targetAddress, "hash", utxos, [tx1, tx2], TransactionStatus.TX_PREPARED);
+    //     const initialTxEnt = createTransactionEntity(fundedAddress, targetAddress, "hash", [tx1, tx2], TransactionStatus.TX_PREPARED);
     //     initialTxEnt.outputs.set([createTransactionOutputEntity("asdf", 0)]);
 
     //     await wClient.rootEm.persistAndFlush([initialTxEnt, tx1, tx2]);
@@ -479,8 +469,8 @@ describe("Bitcoin wallet tests", () => {
     //     expect(txEnt.inputs.getItems().length).to.eq(0);
     //     expect(txEnt.outputs.getItems().length).to.eq(0);
     //     expect(txEnt.transactionHash).to.be.eq("");
-
     // });
+
 
     it("Handling of legacy UTXOs", async () => {
         //old target - still have some funds

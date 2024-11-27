@@ -69,7 +69,6 @@ export async function waitForTxToFinishWithStatus(sleepInterval: number, timeLim
     let tx = await fetchTransactionEntityById(rootEm, txId);
     await loop(sleepInterval * 1000, timeLimit * 1000, tx,async () => {
         try {
-            rootEm.clear();
             tx = await fetchTransactionEntityById(rootEm, txId);
             return checkStatus(tx, Array.isArray(status) ? status :[status]);
         } catch (error) {
@@ -95,7 +94,6 @@ export async function waitForTxToBeReplacedWithStatus(sleepInterval: number, tim
     let replacedTx: TransactionEntity | TransactionInfo | null = null;
 
     await loop(sleepInterval * 1000, timeLimit * 1000, txInfo, async () => {
-        wClient.rootEm.clear();
         txInfo = await wClient.getTransactionInfo(txId);
         if (txInfo.replacedByDdId)
             replacedTx = await fetchTransactionEntityById(wClient.rootEm, txInfo.replacedByDdId);
@@ -319,15 +317,16 @@ export interface AccountSecrets {
     BTC: {
         fundedWallet: Wallet;
         targetWallet: Wallet;
-    },
+    };
     DOGE: {
         fundedWallet: Wallet;
         targetWallet: Wallet;
-    },
+    };
     XRP: {
+        api_key: string;
         fundedWallet: Wallet;
         targetWallet: Wallet;
-    }
+    };
 }
 
 export interface Wallet {

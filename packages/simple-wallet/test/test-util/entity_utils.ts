@@ -12,6 +12,7 @@ import { toBN } from "web3-utils";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { transactional, updateMonitoringState } from "../../src/db/dbutils";
 import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
+import {MempoolUTXO} from "../../src/interfaces/IBlockchainAPI";
 
 export function createTransactionEntity(source: string, destination: string, txHash: string, inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
     const txEnt = new TransactionEntity();
@@ -26,6 +27,18 @@ export function createTransactionEntity(source: string, destination: string, txH
     return txEnt;
 }
 
+export function createTransactionEntityWithInputsAndOutputs(source: string, destination: string, txHash: string, inputs?: TransactionInputEntity[], outputs?: TransactionOutputEntity[]): TransactionEntity {
+    const txEnt = new TransactionEntity();
+    txEnt.chainType = ChainType.testBTC;
+    txEnt.status = TransactionStatus.TX_SUCCESS;
+    txEnt.source = source;
+    txEnt.transactionHash = txHash;
+    txEnt.destination = destination;
+    txEnt.inputs.set(inputs ?? []);
+    txEnt.outputs.set(outputs ?? []);
+    return txEnt;
+}
+
 export function createTransactionEntityBase(id: number, source: string, destination: string, fee: BN) {
     const txEnt = new TransactionEntity();
     txEnt.id = id;
@@ -34,6 +47,17 @@ export function createTransactionEntityBase(id: number, source: string, destinat
     txEnt.fee = fee;
     return txEnt;
 }
+
+export function createUTXO(mintTransactionHash: string, position: 0, value: BN, script: string, confirmed?: boolean): MempoolUTXO {
+    return {
+        mintTxid: mintTransactionHash,
+        mintIndex: position,
+        value: value,
+        script: script,
+        confirmed: confirmed ?? true
+    }
+}
+
 
 export function createTransactionInputEntity(transactionHash: string, vout: number) {
     const inputEnt = new TransactionInputEntity();
@@ -105,7 +129,6 @@ export async function createAndSignXRPTransactionWithStatus(wClient: XRP, source
     await wClient.rootEm.flush();
     return txEnt;
 }
-
 
 export async function updateWalletInDB(rootEm: EntityManager, address: string, modify: (walletEnt: WalletAddressEntity) => Promise<void>) {
     await transactional(rootEm, async (em) => {

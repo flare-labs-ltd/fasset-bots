@@ -43,6 +43,7 @@ import {
     checkUTXONetworkStatus,
     getAccountBalance, getCore,
     getMinAmountToSend,
+    getTransactionDescendants,
 } from "../utxo/UTXOUtils";
 import { CreateWalletOverrides, IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { TransactionService } from "../utxo/TransactionService";
@@ -527,8 +528,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             // If transaction's hash has changed - set all descendants to be reset
             if (newHash) {
                 logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
-                // TODO
-                const descendants: TransactionEntity[] = [];//await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
+
+                const descendants = await getTransactionDescendants(this.rootEm, txEnt.id);
                 await transactional(this.rootEm, async (em) => {
                     for (const descendant of descendants) {
                         descendant.ancestor = txEnt;
