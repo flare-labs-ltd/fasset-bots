@@ -13,6 +13,9 @@ export enum AgentNotificationKey {
     AGENT_DESTROYED = "AGENT DESTROYED",
     AGENT_CREATED = "AGENT CREATED",
     AGENT_CREATED_ERROR = "AGENT CREATION ERROR",
+    AGENT_CREATION_VALIDATION = "AGENT CREATION UNDERLYING ADDRESS VALIDATION",
+    AGENT_CREATION_VALIDATION_COMPLETE = "AGENT UNDERLYING ADDRESS VALIDATION COMPLETE",
+    CREATING_AGENT = "CREATING AGENT",
     AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE",
     AGENT_SETTING_UPDATE_FAILED = "AGENT SETTING UPDATE FAILED",
     AGENT_ENTER_AVAILABLE = "AGENT ENTERED AVAILABLE",
@@ -114,6 +117,18 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async agentCreationFailed(error: string) {
         await this.danger(AgentNotificationKey.AGENT_CREATED_ERROR, `Failed to create agent: ${error}.`);
+    }
+
+    async agentCreationValidationUnderlying() {
+        await this.info(AgentNotificationKey.AGENT_CREATION_VALIDATION, `Validating underlying address for new agent vault. This will take a few minutes.`);
+    }
+
+    async agentCreationValidationUnderlyingComplete() {
+        await this.info(AgentNotificationKey.AGENT_CREATION_VALIDATION, `Succesfully validated underlying address for new agent vault.`);
+    }
+
+    async agentCreating() {
+        await this.info(AgentNotificationKey.CREATING_AGENT, `Creating new agent vault.`);
     }
 
     async sendLiquidationStartAlert(timestamp: string) {

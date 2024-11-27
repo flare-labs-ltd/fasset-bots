@@ -145,11 +145,14 @@ export class AgentBotCommands {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
+            await this.notifierFor("Owner").agentCreationValidationUnderlying();
             const [addressValidityProof, _] = await Promise.all([
                 AgentBot.initializeUnderlyingAddress(this.context, this.owner, this.ownerUnderlyingAddress, underlyingAddress),
                 proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
             ]);
+            await this.notifierFor("Owner").agentCreationValidationUnderlyingComplete();
             console.log(`Creating agent bot...`);
+            await this.notifierFor("Owner").agentCreating();
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
             const agentBot = await AgentBot.create(this.orm.em, this.context, this.agentBotSettings, this.owner, this.ownerUnderlyingAddress,
                 addressValidityProof, agentBotSettings, this.notifiers, getKycClient(secrets));
