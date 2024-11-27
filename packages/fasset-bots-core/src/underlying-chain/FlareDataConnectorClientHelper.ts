@@ -24,7 +24,7 @@ export interface PrepareRequestResult {
 }
 
 export interface ProofRequest {
-    roundId: number;
+    votingRoundId: number;
     requestBytes: string;
 }
 
@@ -222,7 +222,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         // get response
         let response: AxiosResponse<VotingRoundResult<ARESBase>>;
         try {
-            const request: ProofRequest = { roundId, requestBytes };
+            const request: ProofRequest = { votingRoundId: roundId, requestBytes: requestBytes };
             response = await client.post<VotingRoundResult<ARESBase>>(`/api/v0/fdc/get-proof-round-id-bytes`, request);
         } catch (error) {
             if (error instanceof AxiosError) {
