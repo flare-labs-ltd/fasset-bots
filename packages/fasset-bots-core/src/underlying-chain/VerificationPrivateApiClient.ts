@@ -27,9 +27,10 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
     }
 
     async checkAddressValidity(chainId: string, addressStr: string): Promise<AddressValidity.ResponseBody> {
-        const request: AddressValidity.RequestNoMic = {
+        const request: AddressValidity.Request = {
             attestationType: AddressValidity.TYPE,
             sourceId: chainId,
+            messageIntegrityCode: "0x0000000000000000000000000000000000000000000000000000000000000000",
             requestBody: { addressStr },
         };
         const response = await this.prepareResponse<AddressValidity.Response>(request);
