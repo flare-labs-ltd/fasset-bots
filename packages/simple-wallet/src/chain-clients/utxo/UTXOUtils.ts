@@ -15,7 +15,6 @@ import {
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
     DOGE_MIN_ALLOWED_FEE,
     DOGE_TESTNET,
-    RBF_AMOUNT_FACTOR,
     TEST_BTC_DEFAULT_FEE_PER_KB,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
@@ -24,12 +23,10 @@ import BN from "bn.js";
 import { toBN } from "../../utils/bnutils";
 import * as bitcore from "bitcore-lib";
 import dogecore from "bitcore-lib-doge";
-import { TransactionEntity } from "../../entity/transaction";
-import { EntityManager } from "@mikro-orm/core";
 import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplementation";
-import { UTXOEntity } from "../../entity/utxo";
 import { errorMessage } from "../../utils/axios-utils";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
+import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
 
 /*
  * COMMON UTILS
@@ -86,18 +83,18 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
     return 2; // destination and change
 }
 
-export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
-    const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
-    const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
-    let sub: TransactionEntity[] = descendants;
-    for (const descendant of descendants) {
-        /* istanbul ignore next */
-        if (descendant.transactionHash) {
-            sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));
-        }
-    }
-    return sub;
-}
+// export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
+//     const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
+//     const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
+//     let sub: TransactionEntity[] = descendants;
+//     for (const descendant of descendants) {
+//         /* istanbul ignore next */
+//         if (descendant.transactionHash) {
+//             sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));
+//         }
+//     }
+//     return sub;
+// }
 
 export async function getAccountBalance(blockchainAPI: UTXOBlockchainAPI, account: string): Promise<BN> {
     try {
@@ -118,8 +115,8 @@ export function getOutputSize(chainType: ChainType) {
     }
 }
 
-export function isEnoughUTXOs(utxos: UTXOEntity[], amount: BN, fee?: BN): boolean {
-    const disposableAmount = utxos.reduce((acc: BN, utxo: UTXOEntity) => acc.add(utxo.value), new BN(0));
+export function isEnoughUTXOs(utxos: MempoolUTXO[], amount: BN, fee?: BN): boolean {
+    const disposableAmount = utxos.reduce((acc: BN, utxo: MempoolUTXO) => acc.add(utxo.value), new BN(0));
     return disposableAmount
         .sub(fee ?? new BN(0))
         .sub(amount)
