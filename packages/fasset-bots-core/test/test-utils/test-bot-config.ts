@@ -22,6 +22,10 @@ export const INDEXER_URL_XRP: string[] = [
     "https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"
 ];
 
+export const INDEXER_URL_BTC: string[] = [
+    "https://testnet-verifier-fdc-test.aflabs.org/verifier/btc"
+];
+
 export const DATA_ACCESS_LAYER_URLS: string[] = [
     "https://da.cflr.testfsp.aflabs.org:4443",
     "https://da.cflr.testfsp.aflabs.org:4443",
