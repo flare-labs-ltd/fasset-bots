@@ -32,6 +32,12 @@ export enum AgentNotificationKey {
     MINTING_DEFAULT_STARTED = "MINTING DEFAULT STARTED",
     MINTING_DEFAULT_SUCCESS = "MINTING DEFAULT SUCCESS",
     MINTING_DEFAULT_FAILED = "MINTING DEFAULT FAILED",
+    SELF_MINT_STARTED = "SELF MINT STARTED",
+    SELF_MINT_PERFORM_PAYMENT = "PERFORMING SELF MINT PAYMENT",
+    SELF_MINT_PROVE_PAYMENT = "PROVING SELF MINT PAYMENT",
+    SELF_MINT_EXECUTED = "EXECUTED SELF MINT",
+    SELF_MINT_UNDERLYING_STARTED = "SELF MINT FROM UNDERLYING STARTED",
+    SELF_MINT_UNDERLYING_EXECUTED = "EXECUTED SELF MINT FROM UNDERLYING",
     // redemption
     REDEMPTION_CORNER_CASE = "REDEMPTION",
     REDEMPTION_FAILED = "REDEMPTION FAILED",
@@ -515,5 +521,29 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendFailedFundingServiceAccount(name: string, account: string) {
         await this.danger(AgentNotificationKey.AGENT_FAILED_FUNDING_SERVICE_ACCOUNT, `Agent owner has failed funding service account ${name} (${account})`);
+    }
+
+    async sendSelfMintStarted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_STARTED, `Owner started self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintPerformingPayment(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_PERFORM_PAYMENT, `Performing underlying payment for self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintProvingPayment(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_PROVE_PAYMENT, `Proving underlying payment for self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintExecuted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_EXECUTED, `Executed self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintUnderlyingStarted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_STARTED, `Started self mint from underlying of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintUnderlyingExecuted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_EXECUTED, `Executed self mint from underlying of ${lots} on vault ${this.address}.`);
     }
 }

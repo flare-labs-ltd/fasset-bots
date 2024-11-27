@@ -642,6 +642,7 @@ export class AgentService {
                     createdAt: Number(vault.createdAt),
                     lotsPoolBacked: lotsPoolBacked.toString(),
                     lotsVaultBacked: lotsVaultBacked.toString(),
+                    handshakeType: Number(info.handshakeType),
                 };
                 allVaults.push(vaultInfo);
             }
@@ -701,5 +702,15 @@ export class AgentService {
         const ownerBalance = await balanceReader.balance(cli.owner.workAddress);
         const balanceFmt = formatFixed(ownerBalance, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
         return balanceFmt;
+    }
+
+    async selfMint(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.selfMint(agentVaultAddress, toBN(lots));
+    }
+
+    async selfMintFromFreeUnderlying(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.selfMintFromFreeUnderlying(agentVaultAddress, toBN(lots));
     }
 }
