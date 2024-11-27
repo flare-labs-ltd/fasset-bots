@@ -549,7 +549,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             if (newHash) {
                 logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
 
-                const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
+                const descendants = await getTransactionDescendants(this.rootEm, txEnt.id);
                 await transactional(this.rootEm, async (em) => {
                     for (const descendant of descendants) {
                         descendant.ancestor = txEnt;

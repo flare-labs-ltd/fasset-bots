@@ -19,7 +19,7 @@ import { FeeStatus } from "./TransactionFeeService";
 import { toBN, toBNExp } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
 import { getDustAmount, isEnoughUTXOs } from "./UTXOUtils";
-import { UTXORawTransaction, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
+import {MempoolUTXO, UTXORawTransaction, UTXOVinResponse} from "../../interfaces/IBlockchainAPI";
 import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
 import { IUtxoWalletServices } from "./IUtxoWalletServices";
 

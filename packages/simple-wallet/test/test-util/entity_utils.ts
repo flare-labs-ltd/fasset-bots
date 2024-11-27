@@ -14,28 +14,39 @@ import { toBN } from "web3-utils";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { transactional, updateMonitoringState } from "../../src/db/dbutils";
 import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
+import {MempoolUTXO} from "../../src/interfaces/IBlockchainAPI";
 
-export function createTransactionEntity(source: string, destination: string, txHash: string, utxos?: UTXOEntity[], inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
+export function createTransactionEntity(source: string, destination: string, txHash: string, inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
     const txEnt = new TransactionEntity();
     txEnt.chainType = ChainType.testBTC;
     txEnt.status = status ?? TransactionStatus.TX_SUCCESS;
     txEnt.source = source;
     txEnt.transactionHash = txHash;
     txEnt.destination = destination;
-    txEnt.utxos.set(utxos ?? []);
     if (inputs) {
         txEnt.inputs.set(inputs.map(t => createTransactionInputEntity(t.transactionHash!, 0)));
     }
     return txEnt;
 }
 
-export function createTransactionEntityBase(id: number, source: string, destination: string, fee: BN, utxos: UTXOEntity[]) {
+export function createTransactionEntityWithInputsAndOutputs(source: string, destination: string, txHash: string, inputs?: TransactionInputEntity[], outputs?: TransactionOutputEntity[]): TransactionEntity {
+    const txEnt = new TransactionEntity();
+    txEnt.chainType = ChainType.testBTC;
+    txEnt.status = TransactionStatus.TX_SUCCESS;
+    txEnt.source = source;
+    txEnt.transactionHash = txHash;
+    txEnt.destination = destination;
+    txEnt.inputs.set(inputs ?? []);
+    txEnt.outputs.set(outputs ?? []);
+    return txEnt;
+}
+
+export function createTransactionEntityBase(id: number, source: string, destination: string, fee: BN) {
     const txEnt = new TransactionEntity();
     txEnt.id = id;
     txEnt.source = source;
     txEnt.destination = destination;
     txEnt.fee = fee;
-    txEnt.utxos.set(utxos);
     return txEnt;
 }
 
@@ -50,6 +61,16 @@ export function createUTXOEntity(id: number, source: string, mintTransactionHash
     utxoEnt.value = value;
     utxoEnt.confirmed = confirmed ?? true;
     return utxoEnt;
+}
+
+export function createUTXO(mintTransactionHash: string, position: 0, value: BN, script: string, confirmed?: boolean): MempoolUTXO {
+    return {
+        mintTxid: mintTransactionHash,
+        mintIndex: position,
+        value: value,
+        script: script,
+        confirmed: confirmed ?? true
+    }
 }
 
 export async function createAndPersistUTXOEntity(
@@ -145,11 +166,6 @@ export async function createAndSignXRPTransactionWithStatus(wClient: XRP, source
 
     await wClient.rootEm.flush();
     return txEnt;
-}
-
-export async function clearUTXOs(rootEm: EntityManager) {
-    await rootEm.nativeDelete(UTXOEntity, {});
-    await rootEm.flush();
 }
 
 export async function updateWalletInDB(rootEm: EntityManager, address: string, modify: (walletEnt: WalletAddressEntity) => Promise<void>) {

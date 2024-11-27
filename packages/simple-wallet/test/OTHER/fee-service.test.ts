@@ -85,19 +85,15 @@ describe("Fee service tests BTC", () => {
     });
 
     it("If fetching fee stats fails it should be retried until number of tries passes the limit", async () => {
-        const stub = sinon.stub(feeService, "getFeeStatsFromIndexer");
+        const stub = sinon.stub(feeService.blockchainAPI, "getCurrentFeeRate");
         stub.onCall(0).throws(new Error("API not available"));
         stub.onCall(1).throws(new Error("API not available"));
-        stub.onCall(2).returns(Promise.resolve({
-            blockHeight: 123,
-            averageFeePerKB: new BN(1000),
-            blockTime: new BN(600),
-        }));
+        stub.onCall(2).returns(Promise.resolve(1000));
 
         const feeStats = await feeService.getFeeStatsFromIndexer(123);
         expect(feeStats).to.not.be.null;
         expect(feeStats!.averageFeePerKB.eq(new BN(1000))).to.be.true;
-        expect(feeStats!.blockTime.eq(new BN(600))).to.be.true;
+        expect(feeStats!.blockTime.gtn(0)).to.be.true;
 
         sinon.restore();
     });

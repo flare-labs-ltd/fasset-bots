@@ -228,6 +228,12 @@ export class TransactionService {
         this.transactionChecks(txDbId, txDataForAmount, utxosForAmount);
 
         const baseTransaction = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxosForAmount, true, note);
+
+        // If fee is lower than dust ignore the fee source
+        if (!toBN(baseTransaction.getFee()).gt(getDustAmount(this.chainType))) {
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement);
+        }
+
         const txDataForFee = {
             source: feeSource,
             destination: destination,
