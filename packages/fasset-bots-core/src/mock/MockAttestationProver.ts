@@ -1,8 +1,7 @@
-import { constants } from "@openzeppelin/test-helpers";
 import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import Web3 from "web3";
 import { TX_FAILED, TxInputOutput } from "../underlying-chain/interfaces/IBlockChain";
-import { BN_ZERO } from "../utils/helpers";
+import { BN_ZERO, ZERO_BYTES32 } from "../utils/helpers";
 import { MockChain, MockChainTransaction } from "./MockChain";
 import BN from "bn.js";
 
@@ -46,7 +45,7 @@ export class MockAttestationProver {
             sourceAddressHash: sourceAddressHash,
             receivingAddressHash: receivingAddressHash,
             intendedReceivingAddressHash: receivingAddressHash,
-            standardPaymentReference: transaction.reference ?? constants.ZERO_BYTES32,
+            standardPaymentReference: transaction.reference ?? ZERO_BYTES32,
             spentAmount: String(spent),
             intendedSpentAmount: String(spent),
             receivedAmount: String(received),
@@ -67,7 +66,7 @@ export class MockAttestationProver {
             blockTimestamp: String(block.timestamp),
             sourceAddressHash: sourceAddressHash,
             spentAmount: String(spent),
-            standardPaymentReference: transaction.reference ?? constants.ZERO_BYTES32,
+            standardPaymentReference: transaction.reference ?? ZERO_BYTES32,
         };
     }
 

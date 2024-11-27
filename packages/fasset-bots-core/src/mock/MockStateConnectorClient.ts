@@ -2,13 +2,12 @@ import {
     ARBase, ARESBase, AddressValidity, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MIC_SALT,
     MerkleTree, Payment, ReferencedPaymentNonexistence, decodeAttestationName
 } from "@flarenetwork/state-connector-protocol";
-import { constants } from "@openzeppelin/test-helpers";
 import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
 import { ChainId } from "../underlying-chain/ChainId";
 import { AttestationNotProved, AttestationRequestId, IStateConnectorClient, OptionalAttestationProof, StateConnectorClientError } from "../underlying-chain/interfaces/IStateConnectorClient";
 import { findRequiredEvent } from "../utils/events/truffle";
-import { filterStackTrace, sleep, toBN, toNumber } from "../utils/helpers";
+import { filterStackTrace, sleep, toBN, toNumber, ZERO_BYTES32 } from "../utils/helpers";
 import { MockAlwaysFailsAttestationProver } from "./MockAlwaysFailsAttestationProver";
 import { MockAttestationProver, MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
@@ -149,7 +148,7 @@ export class MockStateConnectorClient implements IStateConnectorClient {
         // build merkle tree
         const hashes = Object.values(proofs).map(proof => proof.hash);
         const tree = new MerkleTree(hashes);
-        await this.stateConnector.setMerkleRoot(round, tree.root ?? constants.ZERO_BYTES32);
+        await this.stateConnector.setMerkleRoot(round, tree.root ?? ZERO_BYTES32);
         // add new finalized round
         this.finalizedRounds.push({ proofs, tree });
     }
