@@ -24,7 +24,7 @@ export interface PrepareRequestResult {
 }
 
 export interface ProofRequest {
-    roundId: number;
+    votingRoundId: number;
     requestBytes: string;
 }
 
@@ -107,9 +107,10 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     }
 
     async submitRequest(request: ARBase): Promise<AttestationRequestId> {
-        logger.info(`Submitting flare data connector request: ${JSON.stringify(request)}`);
+        const requestInfo = `${decodeAttestationName(request.attestationType)} on ${decodeAttestationName(request.sourceId)}`;
+        logger.info(`Submitting flare data connector request (${requestInfo}): ${JSON.stringify(request)}`);
         const attReq = await retry(this.submitRequestToFlareDataConnector.bind(this), [request], DEFAULT_RETRIES);
-        logger.info(`Flare data connector helper: retrieved attestation request ${formatArgs(attReq)}`);
+        logger.info(`Flare data connector helper (${requestInfo}): retrieved attestation request ${formatArgs(attReq)}`);
         return attReq;
     }
 
@@ -222,7 +223,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         // get response
         let response: AxiosResponse<VotingRoundResult<ARESBase>>;
         try {
-            const request: ProofRequest = { roundId, requestBytes };
+            const request: ProofRequest = { votingRoundId: roundId, requestBytes: requestBytes };
             response = await client.post<VotingRoundResult<ARESBase>>(`/api/v0/fdc/get-proof-round-id-bytes`, request);
         } catch (error) {
             if (error instanceof AxiosError) {
