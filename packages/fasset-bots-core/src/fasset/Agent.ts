@@ -478,9 +478,9 @@ export class Agent {
         const poolClaimedFee = args.poolClaimedUBA;
         // agent withdraws transfer fee from the pool
         const transferFeeMillionths = await this.assetManager.transferFeeMillionths();
-        // send more than pool claimed fee to cover transfer fee
+        // send more than pool claimed to cover transfer fee
         // assuming that agent has enough pool fees (from minting, ...)
-        const withdrawAmount = poolClaimedFee.muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
+        const withdrawAmount = poolClaimedFee.muln(1e6).div(toBN(1e6).sub(transferFeeMillionths)).addn(1);
         await this.withdrawPoolFees(withdrawAmount, recipient);
         return args;
     }

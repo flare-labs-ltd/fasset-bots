@@ -251,7 +251,9 @@ describe("Liquidator tests", () => {
                 await time.increase(epochDuration);
                 // agent claims fee to redeemer address
                 const args = await agentBot.agent.claimTransferFees(liquidatorAddress, transferFeeEpoch);
-                await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, liquidatorAddress);
+                if (args.poolClaimedUBA.gt(toBN(0))) {
+                    await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, liquidatorAddress);
+                }
                 balanceAfter = await context.fAsset.balanceOf(liquidatorAddress);
             }
         }
@@ -313,7 +315,7 @@ describe("Liquidator tests", () => {
         const mintedFAssets = (await agentBot.agent.getAgentInfo()).mintedUBA;
         const missingFAssets = toBN(mintedFAssets).sub(fBalanceBefore)
         const transferFeeMillionths = await agentBot.agent.assetManager.transferFeeMillionths();
-        const amount = toBN(missingFAssets).muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
+        const amount = toBN(missingFAssets).muln(1e6).div(toBN(1e6).sub(transferFeeMillionths)).addn(1);
         await context.fAsset.transfer(liquidator.address, amount, { from: minter.address });
         // liquidate agent
         await liquidator.runStep();
@@ -373,7 +375,9 @@ describe("Liquidator tests", () => {
                 await time.increase(epochDuration);
                 // agent claims fee to redeemer address
                 const args = await agentBot.agent.claimTransferFees(liquidatorAddress, transferFeeEpoch);
-                await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, liquidatorAddress);
+                if (args.poolClaimedUBA.gt(toBN(0))) {
+                    await agentBot.agent.withdrawPoolFees(args.poolClaimedUBA, liquidatorAddress);
+                }
                 balanceAfter = await context.fAsset.balanceOf(liquidatorAddress);
             }
         }
