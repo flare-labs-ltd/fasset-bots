@@ -370,10 +370,20 @@ export class TransactionUTXOService {
 
     async filteredAndSortedMempoolUTXOs(source: string): Promise<MempoolUTXO[]> {
         const mempoolUTXOs = await this.blockchainAPI.getUTXOsFromMempool(source);
+        logger.info("mempoolUTXOs: %o", mempoolUTXOs.map(utxo => ({
+            ...utxo,
+            value: utxo.value.toString()
+        })));
+
         const pendingInputs = await this.findTransactionInputsBySourceAndStatuses(source);
+        logger.info("pending inputs: %o", pendingInputs);
         const filteredMempoolUTXOs = mempoolUTXOs.filter(
             utxo => !pendingInputs.has(`${utxo.mintIndex}:${utxo.mintIndex}`)
         );
+        logger.info("filteredMempoolUTXOs: %o", filteredMempoolUTXOs.map(utxo => ({
+            ...utxo,
+            value: utxo.value.toString()
+        })));
         // sort by confirmed and then by value (descending)
         const sortedMempoolUTXOs = filteredMempoolUTXOs.sort((a, b) => {
             if (a.confirmed !== b.confirmed) {
