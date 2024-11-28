@@ -6,20 +6,22 @@ import {
     logger,
     TransactionStatus,
 } from "../../src";
-import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
-import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
-import { addConsoleTransportForTests, loop, waitForTxToFinishWithStatus } from "../test-util/common_utils";
-import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
+import config, {initializeTestMikroORMWithConfig} from "../test-orm/mikro-orm.config";
+import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
+import {addConsoleTransportForTests, loop, waitForTxToFinishWithStatus} from "../test-util/common_utils";
+import {UTXOWalletImplementation} from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 import sinon from "sinon";
-import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import {fetchTransactionEntityById, updateTransactionEntity} from "../../src/db/dbutils";
 import {
     createAndPersistTransactionEntity,
     createUTXO,
     setMonitoringStatus
 } from "../test-util/entity_utils";
-import { toBN } from "web3-utils";
+import {toBN} from "web3-utils";
 import BN from "bn.js";
 import * as bitcore from "bitcore-lib";
+import {expect} from "chai";
+import {UTXORawTransaction} from "../../src/interfaces/IBlockchainAPI";
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -43,8 +45,6 @@ let feeWallet: ICreateWalletResponse;
 
 describe("UTXOWalletImplementation unit tests", () => {
     let removeConsoleLogging: () => void;
-    let getBlockHeightStub: sinon.SinonStub;
-    const startBlockHeight = 100;
 
     before(async () => {
         removeConsoleLogging = addConsoleTransportForTests(logger);
@@ -68,7 +68,6 @@ describe("UTXOWalletImplementation unit tests", () => {
         await wClient.walletKeys.addKey(feeWallet.address, feeWallet.privateKey);
 
         sinon.stub(wClient.transactionUTXOService, "getNumberOfMempoolAncestors").resolves(0);
-        sinon.stub(wClient.blockchainAPI, "getUTXOsFromMempool").resolves([]);
         sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
         sinon.stub(wClient, "signAndSubmitProcess").callsFake(async (txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string) =>
             await updateTransactionEntity(wClient.rootEm, txId, (txEntToUpdate) => {
@@ -90,20 +89,6 @@ describe("UTXOWalletImplementation unit tests", () => {
         await monitor.startMonitoring();
     });
 
-    beforeEach(() => {
-        getBlockHeightStub = sinon.stub(wClient.blockchainAPI, "getCurrentBlockHeight").callsFake(async () => {
-            const elapsedSeconds = (Date.now() - startTime) / 1000;
-            return startBlockHeight + Math.floor(elapsedSeconds / 5);
-        });
-
-        const startTime = Date.now();
-    });
-
-    afterEach(() => {
-        getBlockHeightStub.restore();
-    });
-
-
     after(async () => {
         await monitor.stopMonitoring();
         try {
@@ -119,29 +104,37 @@ describe("UTXOWalletImplementation unit tests", () => {
 
     it("Should successfully create transaction with fee < maxFee", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
+        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 2);
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
     it("Transaction with too high fee should eventually fail", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
+        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 2);
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with fee too high for fee wallet and main wallet should eventually fail", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
+        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 2, undefined, feeWalletAddress, toBN(100));
         await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with fee too high for fee wallet should be tried with main wallet", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
+        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 2, undefined, feeWalletAddress, toBN(100));
         const [txEnt,] = await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+
+        const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
+        expect(tr.inputs.map(t => t.script !== "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e").length).to.be.eq(0); // funded wallet script (fee wallet has a different one)
     });
 
     it("RBF transaction should be successfully created even if fee > maxFee", async () => {
+        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 2);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
         txEnt.rbfReplacementFor = await createAndPersistTransactionEntity(wClient.rootEm, wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi.muln(2));

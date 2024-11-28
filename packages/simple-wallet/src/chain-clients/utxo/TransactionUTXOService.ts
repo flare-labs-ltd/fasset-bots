@@ -354,7 +354,7 @@ export class TransactionUTXOService {
         }
     }
 
-    private async findTransactionInputsBySourceAndStatuses(source: string): Promise<Set<String>> {
+    private async findTransactionInputsBySourceAndStatuses(source: string): Promise<Set<string>> {
         const pendingTransactionEntities: TransactionEntity[] = await findTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PENDING, TransactionStatus.TX_REPLACED_PENDING], source);
         const pendingInputSet = new Set<string>();
         for (const txEnt of pendingTransactionEntities) {
@@ -396,7 +396,7 @@ export class TransactionUTXOService {
                 mintTxid: input.prevTxId,
                 mintIndex: input.outputIndex,
                 value: toBN(input.output.satoshis),
-                confirmed: false,
+                confirmed: true,
                 script: await this.blockchainAPI.getUTXOScript(input.prevTxId, input.outputIndex)
             };
             mempoolRbfUTXOs.push(mempoolRbfUTXO);

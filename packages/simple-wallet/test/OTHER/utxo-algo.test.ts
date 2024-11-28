@@ -144,9 +144,9 @@ describe("UTXO selection algorithm test", () => {
 
     it("When doing RBF original UTXOs should be returned also", async () => {
         sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").resolves([
-            // createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(1004000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-            // createUTXO("b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, toBN(1100200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-            // createUTXO("52cf7492f717363cef1befcb7b4972adb053b65f2ec1763ac95c1e6312868dc6", 0, toBN(1100200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(1004000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, toBN(1100200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("52cf7492f717363cef1befcb7b4972adb053b65f2ec1763ac95c1e6312868dc6", 0, toBN(1100200000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
         ]);
         sinon.stub(wClient.transactionFeeService, "getCurrentFeeStatus").resolves(FeeStatus.HIGH);
 
@@ -167,10 +167,10 @@ describe("UTXO selection algorithm test", () => {
 
     it("When doing RBF only confirmed UTXOs can be used", async () => {
         sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").resolves([
-            // createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(12000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-            // createUTXO("b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-            // createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(100000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", false),
-            // createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1500000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", false)
+            createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(12000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(100000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", false),
+            createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1500000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", false)
         ]);
         sinon.stub(wClient.transactionFeeService, "getCurrentFeeStatus").resolves(FeeStatus.HIGH);
 
@@ -298,7 +298,6 @@ describe("UTXO selection algorithm test", () => {
         expect(trUTXOs.filter(t => t.value.lte(minimumUTXOValue)).length).to.be.eq(0);
     });
 });
-
 
 const utxoList = [
     createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(10020), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),

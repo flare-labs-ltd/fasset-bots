@@ -9,10 +9,12 @@ import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db
 import winston, { Logger } from "winston";
 import { logger } from "../../src/utils/logger";
 import { toBN } from "../../src/utils/bnutils";
-import { isORMError } from "../../src/utils/axios-utils";
+import { isORMError, tryWithClients } from "../../src/utils/axios-utils";
 import {
     AccountBalanceResponse,
     MempoolUTXO,
+    UTXOAddressResponse,
+    UTXORawTransaction,
     UTXORawTransactionInput,
     UTXOTransactionResponse,
 } from "../../src/interfaces/IBlockchainAPI";
@@ -22,6 +24,8 @@ import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import {read} from "read";
 import fs from "fs";
+import { expect } from "chai";
+import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 
 export const PASSWORD_MIN_LENGTH = 16;
 
@@ -333,4 +337,25 @@ export interface Wallet {
     address: string;
     mnemonic: string;
     private_key: string;
+}
+
+
+export async function bothWalletAddresses(wClient: UTXOWalletImplementation, address1: string, address2: string, rawTx: string): Promise<{address1Included: boolean[], address2Included: boolean[]}> {
+    const tr = JSON.parse(rawTx) as UTXORawTransaction;
+    const address1Included = await Promise.all(tr.inputs.map(t => checkIfAddressHasTransaction(wClient, address1, t.prevTxId)));
+    const address2Included = await Promise.all(tr.inputs.map(t => checkIfAddressHasTransaction(wClient, address2, t.prevTxId)));
+    return {address1Included,  address2Included}
+}
+
+export async function checkIfAddressHasTransaction(wClient: UTXOWalletImplementation, address: string, txHash: string): Promise<boolean> {
+    return tryWithClients(wClient.blockchainAPI.clients, async (client: AxiosInstance) => {
+        const firstResp = await client.get<UTXOAddressResponse>(`/address/${address}?`);
+        for (let i = 0; i < firstResp.data.totalPages; i++) {
+            const resp = await client.get<UTXOAddressResponse>(`/address/${address}?`);
+            if (resp.data.txids.includes(txHash)) {
+                return true;
+            }
+        }
+        return false;
+    }, "");
 }

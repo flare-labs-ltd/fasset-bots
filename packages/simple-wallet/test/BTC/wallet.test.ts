@@ -1,4 +1,4 @@
-import {BTC, TransactionStatus} from "../../src";
+import {BTC, TransactionStatus, tryWithClients} from "../../src";
 import {BitcoinWalletConfig, ICreateWalletResponse, ITransactionMonitor} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import {assert, expect, use} from "chai";
@@ -8,6 +8,7 @@ import config, {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config"
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
+    bothWalletAddresses,
     calculateNewFeeForTx,
     loop,
     resetMonitoringOnForceExit,
@@ -32,8 +33,9 @@ import {
 } from "../test-util/entity_utils";
 import sinon from "sinon";
 import {FeeStatus} from "../../src/chain-clients/utxo/TransactionFeeService";
-import {UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
+import {UTXOAddressResponse, UTXORawTransaction, UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
 import {TransactionMonitor} from "../../src/chain-clients/monitoring/TransactionMonitor";
+import {AxiosInstance} from "axios";
 
 use(chaiAsPromised);
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
@@ -252,7 +254,7 @@ describe("Bitcoin wallet tests", () => {
         const N = 2;
         await sleepMs(2000);
         await monitor.stopMonitoring();
-        const isMonitoring = await monitor.isMonitoring();
+        const isMonitoring = monitor.isMonitoring();
         expect(isMonitoring).to.be.false;
 
         const initialTxIds = [];
@@ -339,12 +341,16 @@ describe("Bitcoin wallet tests", () => {
         await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
 
         // Refill the fee wallet, so that it doesn't get empty
-        const fundTxId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSendSatoshi);
+        const fundTxId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSendSatoshi, feeInSatoshi);
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, fundTxId);
 
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, feeSourceAddress);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, undefined, feeSourceAddress);
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
+        const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
+        const { address1Included, address2Included }  = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, txEnt.raw!);
+        expect(address1Included).to.include(true);
+        expect(address2Included).to.include(true);
     });
 
     it("Should submit and replace transaction with 2 wallets", async () => {
@@ -368,7 +374,15 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED, txId);
 
         const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
+        const { address1Included,  address2Included } = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, txEnt.raw!);
+        expect(address1Included).to.include(true);
+        expect(address2Included).to.include(true);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
+
+        const replacementTxEnt = await fetchTransactionEntityById(wClient.rootEm, txEnt.replaced_by!.id);
+        const { address1Included: address1Included1,  address2Included: address2Included1} = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, replacementTxEnt.raw!);
+        expect(address1Included1).to.include(true);
+        expect(address2Included1).to.include(true);
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
@@ -586,4 +600,5 @@ describe("Bitcoin wallet tests", () => {
             await waitForTxToFinishWithStatus(2, 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         }
     });
+
 });

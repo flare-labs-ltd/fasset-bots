@@ -24,7 +24,6 @@ const targetAddress = "tb1q9szxd7rnvkkspxp0sl8mha5jk38q9t3rlc2wjx";
 
 let wClient: BTC;
 let testOrm: ORM;
-let monitor: ITransactionMonitor;
 
 describe("Unit test for paying fees from additional wallet", () => {
 
@@ -39,9 +38,6 @@ describe("Unit test for paying fees from additional wallet", () => {
             enoughConfirmations: 1,
         };
         wClient = BTC.initialize(BTCMccConnectionTest);
-        monitor = await wClient.createMonitor();
-        await monitor.startMonitoring();
-        resetMonitoringOnForceExit(monitor);
     });
 
     beforeEach(() => {
@@ -67,7 +63,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 2000;
-        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const [tr] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
 
         expect(tr.getFee()).to.be.eq(fee);
     });
@@ -87,8 +83,11 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const fee = 2000;
         const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
 
-+        expect(tr.getFee()).to.be.eq(fee);
+
+        expect(ogUTXOs.map(t => t.mintTxid)).to.have.members(utxos.map(t => t.mintTxid));
+        expect(tr.getFee()).to.be.eq(fee);
     });
 
     it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned", async () => {
@@ -110,16 +109,16 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         // It should output 1500 (the amount), 2000 (fee remainder), 900 (remainder of amount)
         expect(tr.outputs.length).to.be.eq(3);
-        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 2000, 900]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.all.members([1500, 2000, 900]);
         expect(tr.getFee()).to.be.eq(fee);
     });
 
-    it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust", async () => {
+    it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust 1", async () => {
         sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
-                    createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1400), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(2000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(2400), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
                 ]);
             } else {
                 return Promise.resolve([
@@ -133,11 +132,11 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         // It should output 1500 (the amount) and 1400 = 4400 (sum of inputs) - 1500 (fee) - 1500 (the amount)
         expect(tr.outputs.length).to.be.eq(2);
-        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1400]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.all.members([1500, 1400]);
         expect(tr.getFee()).to.be.eq(fee);
     });
 
-    it("If 'fee' wallet has enough funds fee should be covered from it, fee should be covered from it if it's > dust", async () => {
+    it("If 'fee' wallet has enough funds fee should be covered from it, fee should be covered from it if it's greater than dust 2", async () => {
         sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([

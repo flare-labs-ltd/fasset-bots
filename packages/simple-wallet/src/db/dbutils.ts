@@ -12,7 +12,6 @@ import { ChainType } from "../utils/constants";
 import { logger } from "../utils/logger";
 import { getCurrentTimestampInSeconds, updateErrorWithFullStackTrace } from "../utils/utils";
 import Output = Transaction.Output;
-import { getDustAmount } from "../chain-clients/utxo/UTXOUtils";
 import { errorMessage } from "../utils/axios-utils";
 import { MonitoringStateEntity } from "../entity/monitoringState";
 
@@ -215,7 +214,7 @@ export async function handleNoTimeToSubmitLeft(
     );
 }
 
-export async function failDueToNoTimeToSubmit(rootEm: EntityManager, medianTime: BN | null, currentBlockNumber: number, txEnt: TransactionEntity, fnText: string){
+export async function failDueToNoTimeToSubmit(rootEm: EntityManager, medianTime: BN | null, currentBlockNumber: number, txEnt: TransactionEntity, fnText: string){
     await failTransaction(
         rootEm,
         txEnt.id,
