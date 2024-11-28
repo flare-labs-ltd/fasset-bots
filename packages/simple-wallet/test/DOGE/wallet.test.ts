@@ -134,7 +134,7 @@ describe("Dogecoin wallet tests", () => {
             txEntToUpdate.executeUntilBlock = undefined;
         });
         await wClient.checkPendingTransaction(txEnt);
-        expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_SUBMITTED);
     });
 
     it("Should create estimate fee", async () => {

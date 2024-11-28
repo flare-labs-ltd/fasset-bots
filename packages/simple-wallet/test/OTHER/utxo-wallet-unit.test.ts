@@ -101,7 +101,7 @@ describe("UTXOWalletImplementation unit tests", () => {
         removeConsoleLogging();
         sinon.restore();
     });
-
+    // TODO-test (all of them)
     it("Should successfully create transaction with fee < maxFee", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
         const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();

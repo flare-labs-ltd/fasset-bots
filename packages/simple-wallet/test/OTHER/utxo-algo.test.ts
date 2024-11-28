@@ -157,12 +157,24 @@ describe("UTXO selection algorithm test", () => {
         ];
 
         const originalTxEnt = createTransactionEntityBase(0, fundedAddress, targetAddress, toBNExp(1, BTC_DOGE_DEC_PLACES));
+        originalTxEnt.raw = JSON.stringify({
+            inputs: originalUTXOs.map(t => ({
+                prevTxId: t.mintTxid,
+                outputIndex: t.mintIndex,
+                sequenceNumber: 0,
+                script: t.script,
+                scriptString: t.script,
+                output: {
+                    satoshis: t.value,
+                    script: t.script
+                },
+            })),
+        });
 
         const [, newUTXOs] = await wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(2002000), undefined, undefined, originalTxEnt);
 
-        const utxoSet = new Set(newUTXOs);
-        expect(originalUTXOs.filter(t => utxoSet.has(t)).length).to.be.eq(originalUTXOs.length);
-        expect(utxoSet.size).to.be.gt(originalUTXOs.length);
+        expect(newUTXOs.map(t => t.mintTxid)).to.include.all.members(originalUTXOs.map(t => t.mintTxid));
+        expect(newUTXOs.length).to.be.gt(originalUTXOs.length);
     });
 
     it("When doing RBF only confirmed UTXOs can be used", async () => {
@@ -180,11 +192,24 @@ describe("UTXO selection algorithm test", () => {
         ];
 
         const originalTxEnt = createTransactionEntityBase(0, fundedAddress, targetAddress, toBNExp(1, BTC_DOGE_DEC_PLACES));
+        originalTxEnt.raw = JSON.stringify({
+            inputs: originalUTXOs.map(t => ({
+                prevTxId: t.mintTxid,
+                outputIndex: t.mintIndex,
+                sequenceNumber: 0,
+                script: t.script,
+                scriptString: t.script,
+                output: {
+                    satoshis: t.value,
+                    script: t.script
+                },
+            })),
+        });
+
         const [, newUTXOs] = await wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(42000), undefined, undefined, originalTxEnt);
 
-        const utxoSet = new Set(newUTXOs);
-        expect(originalUTXOs.filter(t => utxoSet.has(t)).length).to.be.eq(originalUTXOs.length);
-        expect(utxoSet.size).to.be.gt(originalUTXOs.length);
+        expect(newUTXOs.map(t => t.mintTxid)).to.include.all.members(originalUTXOs.map(t => t.mintTxid));
+        expect(newUTXOs.length).to.be.gt(originalUTXOs.length);
         expect(newUTXOs.filter(t => t.confirmed).length).to.be.eq(newUTXOs.length);
     });
 
@@ -202,14 +227,8 @@ describe("UTXO selection algorithm test", () => {
         expect(tr.getFee()).to.be.eq(feeInSatoshi.toNumber());
     });
 
-    it("If the remaining part is less than dust it should be used as additional fee when fee status is", async () => {
-        sinon.stub(wClient.transactionUTXOService, "fetchUTXOs").resolves([
-            createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-            createUTXO("b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", 0, toBN(2000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-            createUTXO("52cf7492f717363cef1befcb7b4972adb053b65f2ec1763ac95c1e6312868dc6", 0, toBN(5000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-        ]);
-
-        sinon.stub(wClient.transactionUTXOService, "fetchUTXOs").resolves([
+    it("If the remaining part is less than dust it should be used as additional fee when fee status is", async () => { // TODO-test
+        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").resolves([
             {mintTxid: "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", mintIndex: 0, value: toBN(1000), script: "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", confirmed: true},
             {mintTxid: "b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", mintIndex: 0, value: toBN(2000), script: "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", confirmed: true},
             {mintTxid: "52cf7492f717363cef1befcb7b4972adb053b65f2ec1763ac95c1e6312868dc6", mintIndex: 0, value: toBN(5000), script: "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", confirmed: true}

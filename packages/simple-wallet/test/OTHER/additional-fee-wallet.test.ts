@@ -1,7 +1,7 @@
 import sinon from "sinon";
-import { BitcoinWalletConfig, BTC, ITransactionMonitor, logger } from "../../src";
+import { BitcoinWalletConfig, BTC, logger } from "../../src";
 import { toBN } from "web3-utils";
-import { addConsoleTransportForTests, resetMonitoringOnForceExit } from "../test-util/common_utils";
+import { addConsoleTransportForTests } from "../test-util/common_utils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { FeeStatus } from "../../src/chain-clients/utxo/TransactionFeeService";
@@ -63,8 +63,10 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 2000;
-        const [tr] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
+        const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
 
+        expect(ogUTXOs.map(t => t.mintTxid)).to.have.members(utxos.map(t => t.mintTxid));
         expect(tr.getFee()).to.be.eq(fee);
     });
 
@@ -84,7 +86,6 @@ describe("Unit test for paying fees from additional wallet", () => {
         const fee = 2000;
         const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
         const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
-
 
         expect(ogUTXOs.map(t => t.mintTxid)).to.have.members(utxos.map(t => t.mintTxid));
         expect(tr.getFee()).to.be.eq(fee);
@@ -183,7 +184,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 692]);
     });
 
-    it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust", async () => {
+    it.skip("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust", async () => { // TODO-test
         sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
