@@ -5,7 +5,7 @@ import {
     BTC_LEDGER_CLOSE_TIME_MS,
     BTC_MAINNET,
     BTC_MIN_ALLOWED_AMOUNT_TO_SEND,
-    BTC_MIN_ALLOWED_FEE,
+    BTC_MIN_ALLOWED_FEE_PER_KB,
     BTC_TESTNET,
     ChainType,
     DOGE_DEFAULT_FEE_PER_KB,
@@ -13,7 +13,7 @@ import {
     DOGE_LEDGER_CLOSE_TIME_MS,
     DOGE_MAINNET,
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
-    DOGE_MIN_ALLOWED_FEE,
+    DOGE_MIN_ALLOWED_FEE_PER_KB,
     DOGE_TESTNET,
     TEST_BTC_DEFAULT_FEE_PER_KB,
     UTXO_OUTPUT_SIZE,
@@ -191,14 +191,14 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
 
 export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
     if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
-        const minFee = DOGE_MIN_ALLOWED_FEE;
+        const minFee = DOGE_MIN_ALLOWED_FEE_PER_KB;
         if (feePerKB.lt(minFee)) {
             return minFee;
         } else {
             return feePerKB;
         }
     } else {
-        const minFee = BTC_MIN_ALLOWED_FEE;
+        const minFee = BTC_MIN_ALLOWED_FEE_PER_KB;
         if (feePerKB.lt(minFee)) {
             return minFee;
         } else {

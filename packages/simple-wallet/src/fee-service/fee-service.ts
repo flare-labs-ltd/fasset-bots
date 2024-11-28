@@ -15,7 +15,7 @@ export class BlockchainFeeService {
     numberOfBlocksInHistory = 11;
     sleepTimeMs = 10_000;
     chainType: ChainType;
-    useNBlocksToCalculateFee = 5;
+    useNBlocksToCalculateFee = 3;
     monitoringId: string;
 
     constructor(blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
