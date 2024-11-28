@@ -44,14 +44,16 @@ export class BlockchainFeeService {
     getLatestMedianTime(): BN | null {
         /* istanbul ignore if */
         if (this.history.length < this.numberOfBlocksInHistory || !this.checkConsecutiveBlocks()) {
-        logger.warn(`Cannot determine latest median time.\n` +
-                this.logBlockHistory()
-            );
+            logger.warn(`Cannot determine latest median time.\n${this.logBlockHistory()}`);
         }
         const blockTimes = this.history.map(block => block.blockTime);
         blockTimes.sort((a, b) => a.sub(b).toNumber());
         const latestMedianTime = blockTimes[Math.floor(blockTimes.length / 2)];
         return latestMedianTime;
+    }
+
+    hasEnoughHistory(): boolean {
+        return this.history.length >= this.numberOfBlocksInHistory;
     }
 
     async monitorFees(monitoring: () => boolean): Promise<void> {
@@ -60,38 +62,37 @@ export class BlockchainFeeService {
             const currentBlockHeight = await this.getCurrentBlockHeightWithRetry();
             /* istanbul ignore next */
             const lastStoredBlockHeight = this.history[this.history.length - 1]?.blockHeight;
-            if (!currentBlockHeight || currentBlockHeight <= lastStoredBlockHeight) {
-                await sleepMs(this.sleepTimeMs);
-                continue;
-            }
-
-            let blockHeightToFetch = lastStoredBlockHeight + 1;
-            while (monitoring() && blockHeightToFetch <= currentBlockHeight) {
-                const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
-                /* istanbul ignore else */
-                if (feeStats) {
-                    /* istanbul ignore else */
-                    if (this.history.length >= this.numberOfBlocksInHistory) {
-                        this.history.shift(); // remove oldest block
-                    }
-                    this.history.push({
-                        blockHeight: blockHeightToFetch,
-                        averageFeePerKB: feeStats.averageFeePerKB,
-                        blockTime: feeStats.blockTime,
-                    });
-                } else {
-                    logger.error(`Missing block ${blockHeightToFetch}`);
-                }
-                blockHeightToFetch++;
-            }
-            if (!monitoring()) {
+            await this.obtainNewFees(monitoring, lastStoredBlockHeight, currentBlockHeight);
+            if (monitoring()) {
                 await sleepMs(this.sleepTimeMs);
             }
         }
         logger.info(`${this.monitoringId}: Stopped monitoring fees.`)
     }
 
-    async setupHistory(): Promise<void> {
+    async obtainNewFees(monitoring: () => boolean, lastStoredBlockHeight: number, currentBlockHeight: number) {
+        let blockHeightToFetch = lastStoredBlockHeight + 1;
+        while (monitoring() && blockHeightToFetch <= currentBlockHeight) {
+            const feeStats = await this.getFeeStatsFromIndexer(blockHeightToFetch);
+            /* istanbul ignore else */
+            if (feeStats) {
+                /* istanbul ignore else */
+                if (this.history.length >= this.numberOfBlocksInHistory) {
+                    this.history.shift(); // remove oldest block
+                }
+                this.history.push({
+                    blockHeight: blockHeightToFetch,
+                    averageFeePerKB: feeStats.averageFeePerKB,
+                    blockTime: feeStats.blockTime,
+                });
+            } else {
+                logger.error(`Missing block ${blockHeightToFetch}`);
+            }
+            blockHeightToFetch++;
+        }
+    }
+
+    async setupHistory(monitoring: () => boolean): Promise<void> {
         if (this.history.length === this.numberOfBlocksInHistory) {
             logger.info(`${this.monitoringId}: History already up-to-date.`);
             return;
@@ -104,10 +105,8 @@ export class BlockchainFeeService {
             return;
         }
         let blockHeightToFetch = currentBlockHeight;
-        while (this.history.length < this.numberOfBlocksInHistory) {
-            const blockAlreadyInHistory = this.history.find(
-                block => block.blockHeight === blockHeightToFetch
-            ) !== undefined;
+        while (monitoring() && !this.hasEnoughHistory()) {
+            const blockAlreadyInHistory = this.history.find(block => block.blockHeight === blockHeightToFetch) !== undefined;
 
             if (blockAlreadyInHistory) {
                 logger.warn(`${this.monitoringId}: Block ${blockHeightToFetch} already in history.`);
@@ -127,7 +126,10 @@ export class BlockchainFeeService {
             } else {
                 logger.error(`Failed to retrieve fee stats for block ${blockHeightToFetch} during history setup.`);
             }
-            await sleepMs(this.setupHistorySleepTimeMs);
+
+            if (monitoring()) {
+                await sleepMs(this.setupHistorySleepTimeMs);
+            }
         }
         if (!this.checkConsecutiveBlocks()) {
             logger.warn(`Block history contains non-consecutive blocks.` + this.logBlockHistory());

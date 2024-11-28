@@ -74,13 +74,17 @@ export class TransactionMonitor implements ITransactionMonitor {
         const feeService = this.feeService;
         if (feeService) {
             feeService.monitoringId = this.monitoringId;
-            await feeService.setupHistory();
             this.startThread(this.rootEm, `fee-service-${this.monitoringId}`, async () => {
+                await feeService.setupHistory(() => this.monitoring);
                 await feeService.monitorFees(() => this.monitoring);
             });
         }
         // start main loop
         this.startThread(this.rootEm, `monitoring-${this.monitoringId}`, async (threadEm) => {
+            const waitStart = Date.now();
+            while (!(feeService?.hasEnoughHistory() || Date.now() - waitStart > 60_000)) {
+                await sleepMs(500);    // wait for setupHistory to be complete (or fail)
+            }
             const wallet = this.createWallet({ monitoringId: this.monitoringId, walletEm: threadEm, feeService: feeService });
             await this.monitoringMainLoop(threadEm, wallet);
         });

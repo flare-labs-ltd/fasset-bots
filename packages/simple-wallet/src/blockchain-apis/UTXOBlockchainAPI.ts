@@ -52,8 +52,8 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
     }
 
     async getCurrentFeeRate(blockNumber?: number): Promise<number> { // in satoshies
+        const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
         return tryWithClients(this.clients, async (client: AxiosInstance) => {
-            const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
             const res = await client.get<FeeStatsResponse>(`/feestats/${blockToCheck}`);
             const fee = res.data.averageFeePerKb;
             return fee;

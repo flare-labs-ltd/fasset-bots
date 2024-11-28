@@ -40,7 +40,7 @@ describe("Fee service tests BTC", () => {
         feeService = client.feeService;
         feeService.sleepTimeMs = 2000;
 
-        await feeService.setupHistory();
+        await feeService.setupHistory(() => true);
     });
 
     after(async () => {
