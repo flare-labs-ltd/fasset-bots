@@ -17,7 +17,6 @@ export class BlockchainFeeService {
     chainType: ChainType;
     useNBlocksToCalculateFee = 5;
     monitoringId: string;
-    setupHistorySleepTimeMs = 1_500;
 
     constructor(blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
         this.chainType = chainType;
@@ -127,7 +126,6 @@ export class BlockchainFeeService {
             } else {
                 logger.error(`Failed to retrieve fee stats for block ${blockHeightToFetch} during history setup.`);
             }
-            await sleepMs(this.setupHistorySleepTimeMs);
         }
         if (!this.checkConsecutiveBlocks()) {
             logger.warn(`Block history contains non-consecutive blocks.` + this.logBlockHistory());
