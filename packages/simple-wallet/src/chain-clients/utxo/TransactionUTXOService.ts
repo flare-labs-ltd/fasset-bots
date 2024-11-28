@@ -370,20 +370,35 @@ export class TransactionUTXOService {
 
     async filteredAndSortedMempoolUTXOs(source: string): Promise<MempoolUTXO[]> {
         const mempoolUTXOs = await this.blockchainAPI.getUTXOsFromMempool(source);
-        logger.info("mempoolUTXOs: %o", mempoolUTXOs.map(utxo => ({
-            ...utxo,
-            value: utxo.value.toString()
-        })));
-
+        logger.info(`mempoolUTXOs ${mempoolUTXOs.length} blocks:\n` +
+            mempoolUTXOs
+                .map(
+                    (utxo, index) =>
+                        `UTXO ${index + 1}: ${utxo.mintTxid}, ` +
+                        `${utxo.mintIndex}, ` +
+                        `${utxo.value.toString()}`
+                )
+                .join("\n"));
         const pendingInputs = await this.findTransactionInputsBySourceAndStatuses(source);
-        logger.info("pending inputs: %o", pendingInputs);
+        logger.info(`pendingInputs ${pendingInputs.size} blocks:\n` +
+            Array.from(pendingInputs)
+            .map(
+                (utxo, index) =>
+                    `UTXO ${index + 1}: ${utxo}`
+            )
+            .join("\n"));
         const filteredMempoolUTXOs = mempoolUTXOs.filter(
             utxo => !pendingInputs.has(`${utxo.mintIndex}:${utxo.mintIndex}`)
         );
-        logger.info("filteredMempoolUTXOs: %o", filteredMempoolUTXOs.map(utxo => ({
-            ...utxo,
-            value: utxo.value.toString()
-        })));
+        logger.info(`filteredMempoolUTXOs ${filteredMempoolUTXOs.length} blocks:\n` +
+            filteredMempoolUTXOs
+                .map(
+                    (utxo, index) =>
+                        `UTXO ${index + 1}: ${utxo.mintTxid}, ` +
+                        `${utxo.mintIndex}, ` +
+                        `${utxo.value.toString()}`
+                )
+                .join("\n"));
         // sort by confirmed and then by value (descending)
         const sortedMempoolUTXOs = filteredMempoolUTXOs.sort((a, b) => {
             if (a.confirmed !== b.confirmed) {
