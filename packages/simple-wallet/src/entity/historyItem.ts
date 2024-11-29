@@ -19,4 +19,10 @@ export class HistoryItem {
 
     @Property({ type: BNType, nullable: true })
     timestamp: BN | null = null;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt?: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt?: Date = new Date();
 }
