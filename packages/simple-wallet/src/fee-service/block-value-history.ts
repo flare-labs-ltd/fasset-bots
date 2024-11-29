@@ -4,6 +4,7 @@ import { transactional } from "../db/dbutils";
 import { HistoryItem } from "../entity/historyItem";
 import { logger } from "../utils/logger";
 import { requireDefined } from "../utils/utils";
+import { errorMessage } from "../utils/axios-utils";
 
 export const MAX_DB_HISTORY_BLOCKS = 1000;
 export const DB_PRUNE_TIME = 3600 * 1000; // 1 hour
@@ -79,7 +80,7 @@ export class BlockValueHistory {
             if (value == null) return;
             await this.add(rootEm, blockHeight, value);
         } catch (error) {
-            console.error(`Error obtaining history value "${this.dbKey}" for chain ${this.chainType} and block height ${blockHeight}:`, error);
+            logger.error(`Error obtaining history value "${this.dbKey}" for chain ${this.chainType} and block height ${blockHeight}: ${errorMessage(error)}`);
         }
     }
 

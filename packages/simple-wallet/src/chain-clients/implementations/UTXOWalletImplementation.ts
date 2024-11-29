@@ -767,7 +767,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.error(`Transaction ${txId} submission failed with Axios error (${errorDescription}): ${errorMessage(error)}`);
 
         if (errorDescription.includes("too-long-mempool-chain")) {
-            logger.error(`Transaction ${txId} has too-long-mempool-chain`, error);
+            logger.error(`Transaction ${txId} has too-long-mempool-chain`);
             return TransactionStatus.TX_PREPARED;
         } else if (errorDescription.includes("insufficient fee")) {
             logger.error(`Transaction ${txId} submission failed because of 'insufficient fee'`);
