@@ -370,35 +370,10 @@ export class TransactionUTXOService {
 
     async filteredAndSortedMempoolUTXOs(source: string): Promise<MempoolUTXO[]> {
         const mempoolUTXOs = await this.blockchainAPI.getUTXOsFromMempool(source);
-        logger.info(`mempoolUTXOs ${mempoolUTXOs.length} blocks:\n` +
-            mempoolUTXOs
-                .map(
-                    (utxo, index) =>
-                        `UTXO ${index + 1}: ${utxo.transactionHash}, ` +
-                        `${utxo.position}, ` +
-                        `${utxo.value.toString()}`
-                )
-                .join("\n"));
         const pendingInputs = await this.findTransactionInputsBySourceAndStatuses(source);
-        logger.info(`pendingInputs ${pendingInputs.size} blocks:\n` +
-            Array.from(pendingInputs)
-            .map(
-                (utxo, index) =>
-                    `UTXO ${index + 1}: ${utxo}`
-            )
-            .join("\n"));
         const filteredMempoolUTXOs = mempoolUTXOs.filter(
             utxo => !pendingInputs.has(`${utxo.transactionHash}:${utxo.position}`)
         );
-        logger.info(`filteredMempoolUTXOs ${filteredMempoolUTXOs.length} blocks:\n` +
-            filteredMempoolUTXOs
-                .map(
-                    (utxo, index) =>
-                        `UTXO ${index + 1}: ${utxo.transactionHash}, ` +
-                        `${utxo.position}, ` +
-                        `${utxo.value.toString()}`
-                )
-                .join("\n"));
         // sort by confirmed and then by value (descending)
         const sortedMempoolUTXOs = filteredMempoolUTXOs.sort((a, b) => {
             if (a.confirmed !== b.confirmed) {
