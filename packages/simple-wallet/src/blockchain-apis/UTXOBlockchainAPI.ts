@@ -60,11 +60,19 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
         }, "getAccountBalance"));
     }
 
+    lastGetCurrentBlockHeightTs = 0;
+    lastGetCurrentBlockHeightResult = 0;
+
     async getCurrentBlockHeight(): Promise<number> {
-        return await this.logRequest(`getCurrentBlockHeight()`, tryWithClients(this.clients, async (client: AxiosInstance) => {
+        if (Date.now() - this.lastGetCurrentBlockHeightTs < 1000) {
+            return this.lastGetCurrentBlockHeightResult;
+        }
+        this.lastGetCurrentBlockHeightResult = await this.logRequest(`getCurrentBlockHeight()`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOBlockHeightResponse>(``);
             return res.data.blockbook.bestHeight;
         }, "getCurrentBlockHeight"));
+        this.lastGetCurrentBlockHeightTs = Date.now();
+        return this.lastGetCurrentBlockHeightResult;
     }
 
     async getCurrentFeeRate(blockNumber?: number): Promise<number> { // in satoshies
