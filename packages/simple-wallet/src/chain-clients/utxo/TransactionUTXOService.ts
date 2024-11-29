@@ -388,7 +388,7 @@ export class TransactionUTXOService {
             )
             .join("\n"));
         const filteredMempoolUTXOs = mempoolUTXOs.filter(
-            utxo => !pendingInputs.has(`${utxo.mintIndex}:${utxo.mintIndex}`)
+            utxo => !pendingInputs.has(`${utxo.mintTxid}:${utxo.mintIndex}`)
         );
         logger.info(`filteredMempoolUTXOs ${filteredMempoolUTXOs.length} blocks:\n` +
             filteredMempoolUTXOs
