@@ -85,7 +85,7 @@ export class TransactionUTXOService {
         const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType))); // should not be necessary
 
         if (validRbfUTXOs && validRbfUTXOs.length > 0) {
-            logger.info(`Transaction got RBF UTXOs: ${validRbfUTXOs.map(t => {t.mintTxid.toString(), t.mintIndex.toString()})}`);
+            logger.info(`Transaction got RBF UTXOs: ${validRbfUTXOs.map(t => {t.transactionHash.toString(), t.position.toString()})}`);
         }
 
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
@@ -152,10 +152,10 @@ export class TransactionUTXOService {
 
         let positiveValueReached = rbfUTXOsValueLeft.gt(getDustAmount(this.chainType)) && rbfUTXOs.length > 0;
         for (const utxo of utxos) {
-            const numAncestors = await this.getNumberOfMempoolAncestors(utxo.mintTxid);
+            const numAncestors = await this.getNumberOfMempoolAncestors(utxo.transactionHash);
             if (numAncestors + 1 >= MEMPOOL_CHAIN_LENGTH_LIMIT) {
                 logger.info(
-                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${MEMPOOL_CHAIN_LENGTH_LIMIT} for UTXO with hash ${utxo.mintIndex}`
+                    `Number of UTXO mempool ancestors ${numAncestors} is >= than limit of ${MEMPOOL_CHAIN_LENGTH_LIMIT} for UTXO with hash ${utxo.transactionHash} and position ${utxo.position}`
                 );
                 continue; //skip this utxo
             }
@@ -308,7 +308,7 @@ export class TransactionUTXOService {
     async handleMissingUTXOScripts(utxos: MempoolUTXO[]): Promise<MempoolUTXO[]> {
         for (const utxo of utxos) {
             if (!utxo.script) {
-                const script = await this.blockchainAPI.getUTXOScript(utxo.mintTxid, utxo.mintIndex);
+                const script = await this.blockchainAPI.getUTXOScript(utxo.transactionHash, utxo.position);
                 utxo.script = script
             }
         }
@@ -318,12 +318,12 @@ export class TransactionUTXOService {
     async createInputsFromUTXOs(dbUTXOs: MempoolUTXO[], txId: number) {
         const inputs: TransactionInputEntity[] = [];
         for (const utxo of dbUTXOs) {
-            const tx = await this.getTransactionEntityByHash(utxo.mintTxid, false);
+            const tx = await this.getTransactionEntityByHash(utxo.transactionHash, false);
             /* istanbul ignore else */
             if (tx) {
                 inputs.push(transformUTXOToTxInputEntity(utxo, tx));
             } else {
-                logger.warn(`Transaction ${txId}: Transaction (utxo) with hash ${utxo.mintTxid} could not be found on api`);
+                logger.warn(`Transaction ${txId}: Transaction (utxo) with hash ${utxo.transactionHash} and ${utxo.position} could not be found on api`);
             }
         }
         await this.rootEm.persistAndFlush(inputs);
@@ -374,8 +374,8 @@ export class TransactionUTXOService {
             mempoolUTXOs
                 .map(
                     (utxo, index) =>
-                        `UTXO ${index + 1}: ${utxo.mintTxid}, ` +
-                        `${utxo.mintIndex}, ` +
+                        `UTXO ${index + 1}: ${utxo.transactionHash}, ` +
+                        `${utxo.position}, ` +
                         `${utxo.value.toString()}`
                 )
                 .join("\n"));
@@ -388,14 +388,14 @@ export class TransactionUTXOService {
             )
             .join("\n"));
         const filteredMempoolUTXOs = mempoolUTXOs.filter(
-            utxo => !pendingInputs.has(`${utxo.mintTxid}:${utxo.mintIndex}`)
+            utxo => !pendingInputs.has(`${utxo.transactionHash}:${utxo.position}`)
         );
         logger.info(`filteredMempoolUTXOs ${filteredMempoolUTXOs.length} blocks:\n` +
             filteredMempoolUTXOs
                 .map(
                     (utxo, index) =>
-                        `UTXO ${index + 1}: ${utxo.mintTxid}, ` +
-                        `${utxo.mintIndex}, ` +
+                        `UTXO ${index + 1}: ${utxo.transactionHash}, ` +
+                        `${utxo.position}, ` +
                         `${utxo.value.toString()}`
                 )
                 .join("\n"));
@@ -415,8 +415,8 @@ export class TransactionUTXOService {
         const mempoolRbfUTXOs: MempoolUTXO[] = [];
         for (const input of inputs) {
             const mempoolRbfUTXO: MempoolUTXO = {
-                mintTxid: input.prevTxId,
-                mintIndex: input.outputIndex,
+                transactionHash: input.prevTxId,
+                position: input.outputIndex,
                 value: toBN(input.output.satoshis),
                 confirmed: false,
                 script: await this.blockchainAPI.getUTXOScript(input.prevTxId, input.outputIndex)

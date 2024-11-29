@@ -328,8 +328,8 @@ export class TransactionService {
     ): Promise<Transaction> {
         const updatedUtxos = await this.utxoService.handleMissingUTXOScripts(utxos);
         const txUTXOs = updatedUtxos.map((utxo) => ({
-            txid: utxo.mintTxid,
-            outputIndex: utxo.mintIndex,
+            txid: utxo.transactionHash,
+            outputIndex: utxo.position,
             scriptPubKey: utxo.script,
             satoshis: utxo.value.toNumber(),
         }) as UTXO);

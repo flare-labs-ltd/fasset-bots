@@ -33,7 +33,7 @@ import {
 } from "../test-util/entity_utils";
 import sinon from "sinon";
 import {FeeStatus} from "../../src/chain-clients/utxo/TransactionFeeService";
-import {UTXOAddressResponse, UTXORawTransaction, UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
+import {MempoolUTXO, UTXOAddressResponse, UTXORawTransaction, UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
 import {TransactionMonitor} from "../../src/chain-clients/monitoring/TransactionMonitor";
 import {AxiosInstance} from "axios";
 
@@ -480,7 +480,7 @@ describe("Bitcoin wallet tests", () => {
         });
     });
 
-    it("Handling of legacy UTXOs", async () => {
+    it("Handling of legacy UTXOs", async () => { // TODO-test
         //old target - still have some funds
         //a: mwLGdsLWvvGFapcFsx8mwxBUHfsmTecXe2
         //pk: cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY
@@ -492,17 +492,17 @@ describe("Bitcoin wallet tests", () => {
         sinon.stub(wClient.transactionFeeService, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
         sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
 
-        const utxosFromMempool = [
+        const utxosFromMempool: MempoolUTXO[] = [
             {
-                mintTxid: "7501baa23ca6c474982a0be74dabde9571dde76f51ac915901bf1143064925c0",
-                mintIndex: 0,
+                transactionHash: "7501baa23ca6c474982a0be74dabde9571dde76f51ac915901bf1143064925c0",
+                position: 0,
                 value: toBN("70000"),
                 script: "",
                 confirmed: true,
             },
             {
-                mintTxid: "96524f2c23b0324f2f23314187d2f61a9cfb0245c4299cb34125228493dc219c",
-                mintIndex: 0,
+                transactionHash: "96524f2c23b0324f2f23314187d2f61a9cfb0245c4299cb34125228493dc219c",
+                position: 0,
                 value: toBN("70000"),
                 script: "",
                 confirmed: true,

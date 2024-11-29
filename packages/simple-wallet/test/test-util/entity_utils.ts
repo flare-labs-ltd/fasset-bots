@@ -50,8 +50,8 @@ export function createTransactionEntityBase(id: number, source: string, destinat
 
 export function createUTXO(mintTransactionHash: string, position: 0, value: BN, script: string, confirmed?: boolean): MempoolUTXO {
     return {
-        mintTxid: mintTransactionHash,
-        mintIndex: position,
+        transactionHash: mintTransactionHash,
+        position: position,
         value: value,
         script: script,
         confirmed: confirmed ?? true

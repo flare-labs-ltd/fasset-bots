@@ -117,7 +117,7 @@ function transformOutputToTxOutputEntity(vout: number, output: Output, transacti
 
 export function transformUTXOToTxInputEntity(utxo: MempoolUTXO, transaction: TransactionEntity): TransactionInputEntity {
     /* istanbul ignore next */
-    return createTransactionInputEntity(transaction, utxo.mintTxid, utxo.value, utxo.mintIndex, utxo.script ?? "");
+    return createTransactionInputEntity(transaction, utxo.transactionHash, utxo.value, utxo.position, utxo.script ?? "");
 }
 
 export function createTransactionOutputEntity(

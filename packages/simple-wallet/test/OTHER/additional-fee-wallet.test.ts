@@ -66,7 +66,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
         const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
 
-        expect(ogUTXOs.map(t => t.mintTxid)).to.have.members(utxos.map(t => t.mintTxid));
+        expect(ogUTXOs.map(t => t.transactionHash)).to.have.members(utxos.map(t => t.transactionHash));
         expect(tr.getFee()).to.be.eq(fee);
     });
 
@@ -87,7 +87,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
         const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
 
-        expect(ogUTXOs.map(t => t.mintTxid)).to.have.members(utxos.map(t => t.mintTxid));
+        expect(ogUTXOs.map(t => t.transactionHash)).to.have.members(utxos.map(t => t.transactionHash));
         expect(tr.getFee()).to.be.eq(fee);
     });
 
