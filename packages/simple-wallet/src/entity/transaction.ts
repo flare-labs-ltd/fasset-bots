@@ -4,7 +4,6 @@ import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
 import {TransactionOutputEntity} from "./transactionOutput";
 import {TransactionInputEntity} from "./transactionInput";
-import { UTXOEntity } from "./utxo";
 
 @Entity({ tableName: "transaction" })
 export class TransactionEntity {
@@ -88,9 +87,6 @@ export class TransactionEntity {
 
     @OneToMany(() => TransactionOutputEntity, output => output.transaction, {orphanRemoval: true})
     outputs = new Collection<TransactionOutputEntity>(this);
-
-    @OneToMany(() => UTXOEntity, utxo => utxo.transaction, { orphanRemoval: true })
-    utxos = new Collection<UTXOEntity>(this);
 
     @ManyToOne(() => TransactionEntity, { nullable: true })
     ancestor?: TransactionEntity | null;

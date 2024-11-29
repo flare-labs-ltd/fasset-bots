@@ -15,7 +15,7 @@ export const RANDOM_SLEEP_MS_MAX = 500;
 export const BTC_PER_SATOSHI = 1 / 100000000;
 
 export const XRP_PENDING_TIMEOUT = 30;// 30s
-export const MEMPOOL_WAITING_TIME = 60;// 1min
+export const MEMPOOL_WAITING_TIME = 15;// 15s
 export const MEMPOOL_CHAIN_LENGTH_LIMIT = 25;
 export const MAX_UTXO_TX_SIZE_IN_B = 100_000;
 export const MIN_RELAY_FEE_INCREASE_RBF_IN_B = 2000;
@@ -126,8 +126,8 @@ export const DOGE_DEFAULT_FEE_PER_KB = toBNExp(1, BTC_DOGE_DEC_PLACES);
 export const BTC_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
 export const DOGE_MIN_ALLOWED_AMOUNT_TO_SEND = toBNExp(0.02, BTC_DOGE_DEC_PLACES);
 
-export const BTC_MIN_ALLOWED_FEE = toBN(3000); //3000 sats/kb
-export const DOGE_MIN_ALLOWED_FEE = toBNExp(0.5, BTC_DOGE_DEC_PLACES); //0.5 doge/kb
+export const BTC_MIN_ALLOWED_FEE_PER_KB = toBN(3000); //3000 sats/kb
+export const DOGE_MIN_ALLOWED_FEE_PER_KB = toBNExp(0.5, BTC_DOGE_DEC_PLACES); //0.5 doge/kb
 
 // Derived from https://test.jochen-hoenicke.de/queue/ and https://mempool.space
 export const BTC_LOW_FEE_PER_KB = toBN(10 * 1000); // 10 sat/vB

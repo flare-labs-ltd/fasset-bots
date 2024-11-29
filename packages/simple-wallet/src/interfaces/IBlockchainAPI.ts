@@ -23,8 +23,8 @@ export interface IBlockchainAPI {
 }
 
 export interface MempoolUTXO {
-    mintTxid: string,
-    mintIndex: number,
+    transactionHash: string,
+    position: number,
     value: BN,
     confirmed: boolean,
     script: string,
