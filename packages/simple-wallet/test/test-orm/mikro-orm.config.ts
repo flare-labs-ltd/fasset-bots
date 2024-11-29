@@ -3,7 +3,8 @@ import { AbstractSqlDriver } from "@mikro-orm/sqlite";
 import { TransactionEntity } from "../../src/entity/transaction";
 import { WalletAddressEntity } from "../../src/entity/wallet";
 import { SchemaUpdate } from "../../src/interfaces/IWalletTransaction";
-import { MonitoringStateEntity } from "../../src";
+import { MonitoringStateEntity } from "../../src/entity/monitoringState";
+import { HistoryItem } from "../../src/entity/historyItem";
 
 export type ORM = MikroORM;
 
@@ -12,8 +13,9 @@ export type CreateOrmOptions = Options<AbstractSqlDriver> & {
     dbName?: string;
     type: string;
 };
+
 const config: CreateOrmOptions = {
-    entities: [TransactionEntity, WalletAddressEntity, MonitoringStateEntity],
+    entities: [TransactionEntity, WalletAddressEntity, MonitoringStateEntity, HistoryItem],
     debug: false,
     allowGlobalContext: true,
     dbName: "simple-wallet-test-db",

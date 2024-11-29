@@ -8,11 +8,8 @@ import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { addConsoleTransportForTests, MockBlockchainAPI } from "../test-util/common_utils";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
-import sinon from "sinon";
-import BN from "bn.js";
 
 let feeService: BlockchainFeeService;
-
 
 const BTCMccConnectionTestInitial = {
     urls: [process.env.BTC_URL ?? ""],
@@ -38,9 +35,21 @@ describe("Fee service tests BTC", () => {
         };
         client = BTC.initialize(BTCMccConnectionTest);
         feeService = client.feeService;
-        feeService.sleepTimeMs = 2000;
+        feeService.sleepTimeMs = 200;
+        feeService.setupHistorySleepTimeMs = 200;
 
-        await feeService.setupHistory();
+        // setup fee service
+        console.log("Starting fee service setup...");
+        let monitoring = true;
+        void feeService.monitorFees(testOrm.em.fork(), () => monitoring);
+        while (feeService.initialSetup) {
+            await sleepMs(100);
+        }
+        monitoring = false;
+        console.log("Finished fee service setup");
+        while (feeService.running) {
+            await sleepMs(100);
+        }
     });
 
     after(async () => {
@@ -57,24 +66,10 @@ describe("Fee service tests BTC", () => {
         expect(feeStats.gten(0)).to.be.true;
     });
 
-    it("Should get fee stats", async () => {
-        const blockHeight = 2870843;
-        const feeStats = await feeService.getFeeStatsFromIndexer(blockHeight);
-        expect(feeStats!.averageFeePerKB.gtn(0)).to.be.true;
-    });
-
-    it("Fee stats for block without information/non existent block should be null", async () => {
-        const blockHeight = await feeService.getCurrentBlockHeight() + 10;
-        const feeStats = await feeService.getFeeStatsFromIndexer(blockHeight);
-        const feeStatsWithRetires = await feeService.getFeeStatsFromIndexer(blockHeight);
-        expect(feeStats).to.be.null;
-        expect(feeStatsWithRetires).to.be.null;
-    });
-
     it("Should get fee and median time", async () => {
         client.blockchainAPI = new MockBlockchainAPI();
         let monitoringFees = true;
-        void feeService.monitorFees(() => monitoringFees);
+        void feeService.monitorFees(testOrm.em.fork(), () => monitoringFees);
         await sleepMs(5000);
         const chainType = ChainType.testBTC;
         const transactionFeeService = new TransactionFeeService(client, chainType, 1)
@@ -82,20 +77,8 @@ describe("Fee service tests BTC", () => {
         const medianTime = feeService.getLatestMedianTime();
         expect(medianTime?.gtn(0)).to.be.true;
         monitoringFees = false;
+        while (feeService.running) {
+            await sleepMs(100);
+        }
     });
-
-    it("If fetching fee stats fails it should be retried until number of tries passes the limit", async () => {
-        const stub = sinon.stub(feeService.blockchainAPI, "getCurrentFeeRate");
-        stub.onCall(0).throws(new Error("API not available"));
-        stub.onCall(1).throws(new Error("API not available"));
-        stub.onCall(2).returns(Promise.resolve(1000));
-
-        const feeStats = await feeService.getFeeStatsFromIndexer(123);
-        expect(feeStats).to.not.be.null;
-        expect(feeStats!.averageFeePerKB.eq(new BN(1000))).to.be.true;
-        expect(feeStats!.blockTime.gtn(0)).to.be.true;
-
-        sinon.restore();
-    });
-
 });
