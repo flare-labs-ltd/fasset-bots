@@ -10,8 +10,7 @@ import {
     waitForTxToFinishWithStatus
 } from "../test-util/common_utils";
 import {
-    BitcoinWalletConfig,
-    DOGE,
+    DOGE, DogecoinWalletConfig,
     ITransactionMonitor,
     logger,
     TransactionStatus,
@@ -31,7 +30,7 @@ const DOGEMccConnectionInitial = {
     urls: [process.env.MAINNET_DOGE_URL ?? ""],
     inTestnet: false,
 };
-let BTCMccConnection: BitcoinWalletConfig;
+let DOGEMccConnection: DogecoinWalletConfig;
 
 let fundedAddress: string;
 let targetAddress: string;
@@ -54,13 +53,13 @@ describe("DOGE mainnet wallet tests", () => {
 
         testOrm = await initializeMainnetMikroORM({...config, dbName: "simple-wallet-mainnet-test-db"});
         const dbWalletKeys = new DBWalletKeys(testOrm.em, password);
-        BTCMccConnection = {
+        DOGEMccConnection = {
             ...DOGEMccConnectionInitial,
             em: testOrm.em,
             walletKeys: dbWalletKeys,
             enoughConfirmations: enoughConfirmations,
         };
-        wClient = DOGE.initialize(BTCMccConnection);
+        wClient = DOGE.initialize(DOGEMccConnection);
         monitor = await wClient.createMonitor();
         await monitor.startMonitoring();
         resetMonitoringOnForceExit(monitor);
@@ -87,7 +86,7 @@ describe("DOGE mainnet wallet tests", () => {
         wClient.rootEm.clear();
     });
 
-    it("Should successfully created and submit transaction", async () => {
+    it("Should successfully create and submit transaction", async () => {
         const note = createNote();
         const sourceBalanceStart = await wClient.getAccountBalance(fundedAddress);
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
@@ -103,7 +102,8 @@ describe("DOGE mainnet wallet tests", () => {
 
     it("Should submit and replace transaction", async () => {
         const note = createNote();
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note);
+        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined, startBlockHeight + enoughConfirmations + 1);
         await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();

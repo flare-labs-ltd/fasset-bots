@@ -476,7 +476,7 @@ describe("AgentBot cli commands unit tests", () => {
     it("Should run command 'cancelCollateralPoolTokensAnnouncement'", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
-        await botCliCommands.cancelCollateralPoolTokensAnnouncement(agent.vaultAddress);
+        await botCliCommands.cancelCollateralPoolTokenRedemption(agent.vaultAddress);
         expect(spyConsole).to.be.called.exactly(0);
     });
 

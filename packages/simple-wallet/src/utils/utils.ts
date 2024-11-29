@@ -43,7 +43,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testBTC:
          return {
             blockOffset: 6,//accepted in next x blocks
-            feeIncrease: DEFAULT_FEE_INCREASE,
+            feeIncrease: 1,//DEFAULT_FEE_INCREASE,
             executionBlockOffset: 1,//do not submit if "one block" time left
             enoughConfirmations: 2
          };
@@ -51,7 +51,7 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.testDOGE:
          return {
             blockOffset: 30,//accepted in next x blocks
-            feeIncrease: DEFAULT_FEE_INCREASE,
+            feeIncrease: 1,//DEFAULT_FEE_INCREASE,
             executionBlockOffset: 3,//do not submit if "three blocks" time left
             enoughConfirmations: 10
          };
@@ -157,5 +157,5 @@ export function fullStackTrace(error: Error, skipDepth: number = 0): string {
    // always skip 1 line for message, 1 for this method
    const extraStackLines = (stackError.stack ?? "").split("\n").slice(skipDepth + 2);
    const filteredStackLines = extraStackLines.filter(l => !originalStack.includes(l));
-   return [originalStack.trimEnd(), ...filteredStackLines].join("\n");
+   return originalStack.trimEnd() + "\n" + filteredStackLines.join("\n");
 }

@@ -408,7 +408,7 @@ describe("Tracked state tests", () => {
         chain.mine(chain.finalizationBlocks + 1);
         await minter2.executeMinting(crt1, txHash1);
         // agent buys missing fAssets
-        const amount = toBN(transferFee).muln(1e6).div(toBN(1e6).sub(transferFeeMillionths));
+        const amount = toBN(transferFee).muln(1e6).div(toBN(1e6).sub(transferFeeMillionths)).addn(1);
         await context.fAsset.transfer(redeemerAddress, amount, { from: minter.address });
 
         const [rdReqs] = await redeemer.requestRedemption(lots);

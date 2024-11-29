@@ -4,16 +4,14 @@ import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { TransactionInputEntity } from "../entity/transactionInput";
 import { TransactionOutputEntity } from "../entity/transactionOutput";
-import { SpentHeightEnum, UTXOEntity } from "../entity/utxo";
 import { WalletAddressEntity } from "../entity/wallet";
-import { MempoolUTXO, UTXORawTransaction, UTXORawTransactionInput, UTXORawTransactionOutput } from "../interfaces/IBlockchainAPI";
+import { MempoolUTXO, UTXORawTransactionOutput } from "../interfaces/IBlockchainAPI";
 import { TransactionInfo } from "../interfaces/IWalletTransaction";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
 import { logger } from "../utils/logger";
 import { getCurrentTimestampInSeconds, updateErrorWithFullStackTrace } from "../utils/utils";
 import Output = Transaction.Output;
-import { getDustAmount } from "../chain-clients/utxo/UTXOUtils";
 import { errorMessage } from "../utils/axios-utils";
 import { MonitoringStateEntity } from "../entity/monitoringState";
 
@@ -67,7 +65,7 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { id }, {
         refresh: true,
-        populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
+        populate: ["replaced_by", "rbfReplacementFor", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
     });
 }
 
@@ -80,7 +78,7 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
         },
         {
             refresh: true,
-            populate: ["replaced_by", "rbfReplacementFor", "utxos", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
+            populate: ["replaced_by", "rbfReplacementFor", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
             orderBy: { id: "ASC" },
         }
     );
@@ -88,7 +86,6 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
 
 export function resetTransactionEntity(txEnt: TransactionEntity) {
     txEnt.status = TransactionStatus.TX_CREATED;
-    txEnt.utxos.removeAll();
     txEnt.inputs.removeAll();
     txEnt.outputs.removeAll();
     txEnt.raw = "";
@@ -118,9 +115,9 @@ function transformOutputToTxOutputEntity(vout: number, output: Output, transacti
     );
 }
 
-export function transformUTXOEntToTxInputEntity(utxo: UTXOEntity, transaction: TransactionEntity): TransactionInputEntity {
+export function transformUTXOToTxInputEntity(utxo: MempoolUTXO, transaction: TransactionEntity): TransactionInputEntity {
     /* istanbul ignore next */
-    return createTransactionInputEntity(transaction, utxo.mintTransactionHash, utxo.value, utxo.position, utxo.script ?? "");
+    return createTransactionInputEntity(transaction, utxo.transactionHash, utxo.value, utxo.position, utxo.script ?? "");
 }
 
 export function createTransactionOutputEntity(
@@ -155,157 +152,6 @@ export function createTransactionInputEntity(
     return entity;
 }
 
-// utxo operations
-export async function createUTXOEntity(
-    em: EntityManager,
-    source: string,
-    txHash: string,
-    position: number,
-    value: BN,
-    script: string,
-    spentTxHash: string | null = /* istanbul ignore next */ null,
-    confirmed: boolean
-): Promise<void> {
-    const entity = em.create(UTXOEntity, {
-        source: source,
-        mintTransactionHash: txHash,
-        spentHeight: SpentHeightEnum.UNSPENT,
-        position: position,
-        value: value,
-        script: script,
-        spentTransactionHash: spentTxHash,
-        confirmed: confirmed,
-    } as RequiredEntityData<UTXOEntity>, );
-    em.persist(entity);
-}
-
-export async function fetchUTXOEntity(rootEm: EntityManager, mintTxHash: string, position: number): Promise<UTXOEntity> {
-    return await rootEm.findOneOrFail(
-        UTXOEntity,
-        {
-            mintTransactionHash: mintTxHash,
-            position: position,
-        } as FilterQuery<UTXOEntity>,
-        { refresh: true }
-    );
-}
-
-export async function updateUTXOEntity(rootEm: EntityManager, txHash: string, position: number, modify: (utxoEnt: UTXOEntity) => void): Promise<void> {
-    await transactional(rootEm, async (em) => {
-        const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, txHash, position);
-        modify(utxoEnt);
-        await em.persistAndFlush(utxoEnt);
-    });
-}
-
-export async function fetchUnspentUTXOs(rootEm: EntityManager, source: string, rbfUTXOs?: UTXOEntity[]): Promise<UTXOEntity[]> {
-    const res = await rootEm.find(
-        UTXOEntity,
-        {
-            source: source,
-            spentHeight: SpentHeightEnum.UNSPENT,
-        } as FilterQuery<UTXOEntity>,
-        { refresh: true, orderBy: { confirmed: "desc", value: "desc" } }
-    );
-
-    const alreadyUsed = rbfUTXOs ?? [];
-    const utxos = alreadyUsed.length > 0 ? res.filter((t) => t.confirmed) : res;
-    return [...alreadyUsed, ...utxos]; // order is important for needed utxos later
-}
-
-export async function fetchUTXOsByTxId(rootEm: EntityManager, txId: number): Promise<UTXOEntity[]> {
-    return await transactional(rootEm, async (em) => {
-        const txEnt = await em.findOne(TransactionEntity, { id: txId });
-        if (!txEnt || !txEnt.raw) {
-            logger.error(`Transaction entity or raw data not found for transaction ${txId}`);
-            return [];
-        }
-        let inputs: UTXORawTransactionInput[] = [];
-        try {
-            const tr = JSON.parse(txEnt.raw) as UTXORawTransaction;
-            inputs = tr.inputs;
-        } catch (error) {
-            logger.error(`Failed to parse transaction raw data for transaction ${txId}: ${errorMessage(error)}`);
-            return [];
-        }
-        const utxos = await em.find(UTXOEntity, {
-            $or: inputs.map((input) => ({
-                mint_transaction_hash: input.prevTxId,
-                position: input.outputIndex,
-            })),
-        });
-        return utxos;
-    });
-}
-
-export async function storeUTXOs(em: EntityManager, source: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
-    for (const utxo of mempoolUTXOs) {
-        try {
-            const utxoEnt: UTXOEntity = await fetchUTXOEntity(em, utxo.mintTxid, utxo.mintIndex);
-            utxoEnt.confirmed = utxo.confirmed;
-        } catch (error) {
-            await createUTXOEntity(em, source, utxo.mintTxid, utxo.mintIndex, toBN(utxo.value), utxo.script, null, utxo.confirmed);
-        }
-    }
-}
-
-export async function countSpendableUTXOs(chainType: ChainType, rootEm: EntityManager, source: string): Promise<number> {
-    return rootEm.count(
-        UTXOEntity,
-        {
-            source: source,
-            spentHeight: SpentHeightEnum.UNSPENT,
-            value: {$gt: toBN(getDustAmount(chainType))},
-        } as FilterQuery<UTXOEntity>
-    );
-}
-
-// it fetches unspent and sent utxos from db that do not match utxos from mempool and marks them as spent
-export async function correctUTXOInconsistenciesAndFillFromMempool(rootEm: EntityManager, address: string, mempoolUTXOs: MempoolUTXO[]): Promise<void> {
-    await transactional(rootEm, async (em) => {
-        // find UTXOs in the db that are NOT in the mempool and mark them as spent
-        const spentCondition = mempoolUTXOs.map((utxo) => ({
-            $not: {
-                mintTransactionHash: { $like: utxo.mintTxid },
-                position: utxo.mintIndex,
-            },
-        }));
-        const spentUtxos = (await em.find(UTXOEntity, {
-            source: address,
-            spentHeight: { $in: [SpentHeightEnum.UNSPENT, SpentHeightEnum.SENT] },
-            $and: spentCondition,
-        })) as UTXOEntity[];
-
-        spentUtxos.forEach((utxoEnt) => {
-            utxoEnt.spentHeight = SpentHeightEnum.SPENT;
-        });
-        if (spentUtxos.length > 0) {
-            logger.info(`Marked ${spentUtxos.length} UTXOs as spent`);
-        }
-        // find UTXOs that ARE in the mempool and mark them as unspent
-        const unspentCondition = mempoolUTXOs.map((utxo) => ({
-            mintTransactionHash: { $like: utxo.mintTxid },
-            position: utxo.mintIndex,
-        }));
-        const unspentUtxos = (await em.find(UTXOEntity, {
-            source: address,
-            spentHeight: { $eq: SpentHeightEnum.SPENT },
-            $or: unspentCondition,
-        })) as UTXOEntity[];
-        unspentUtxos.forEach((utxo) => {
-            utxo.spentHeight = SpentHeightEnum.UNSPENT;
-        });
-        /* istanbul ignore next */
-        if (unspentUtxos.length > 0) {
-            logger.info(`Marked ${unspentUtxos.length} UTXOs as unspent`);
-        }
-        await em.persistAndFlush([...spentUtxos, ...unspentUtxos]);
-        // find new UTXOs in the mempool that are not yet in the db
-        await storeUTXOs(em, address, mempoolUTXOs);
-    });
-}
-
-
 // replaced transaction
 export async function getReplacedTransactionById(rootEm: EntityManager, dbId: number): Promise<TransactionEntity> {
     let txEnt = await fetchTransactionEntityById(rootEm, dbId);
@@ -331,6 +177,10 @@ export async function getTransactionInfoById(rootEm: EntityManager, dbId: number
         replacedByHash: txEntReplaced?.transactionHash ?? null,
         replacedByStatus: txEntReplaced?.status ?? null,
     };
+}
+
+export async function findTransactionsWithStatuses(rootEm: EntityManager, chainType: ChainType, statuses: TransactionStatus[], source: string): Promise<TransactionEntity[]> {
+    return await rootEm.find(TransactionEntity, { status: {$in: statuses}, chainType, source });
 }
 
 export async function countTransactionsWithStatuses(rootEm: EntityManager, chainType: ChainType, statuses: TransactionStatus[], source?: string): Promise<number> {
@@ -364,7 +214,7 @@ export async function handleNoTimeToSubmitLeft(
     );
 }
 
-export async function failDueToNoTimeToSubmit(rootEm: EntityManager, medianTime: BN | null, currentBlockNumber: number, txEnt: TransactionEntity, fnText: string){
+export async function failDueToNoTimeToSubmit(rootEm: EntityManager, medianTime: BN | null, currentBlockNumber: number, txEnt: TransactionEntity, fnText: string){
     await failTransaction(
         rootEm,
         txEnt.id,
@@ -433,10 +283,6 @@ export async function handleFeeToLow(rootEm: EntityManager, txEnt: TransactionEn
         txEnt.outputs.removeAll();
         txEnt.raw = "";
         txEnt.transactionHash = "";
-
-        if (!txEnt.rbfReplacementFor) {
-            txEnt.utxos.removeAll();
-        }
     });
 }
 

@@ -20,10 +20,7 @@ import {
 
 import BN, { max } from "bn.js";
 import {
-    checkIfIsDeleting,
-    correctUTXOInconsistenciesAndFillFromMempool, countDeleteTransactionsWithStatuses, countSpendableUTXOs,
-    countTransactionsWithStatuses,
-    createInitialTransactionEntity,
+    checkIfIsDeleting, createInitialTransactionEntity,
     createTransactionOutputEntities,
     failDueToNoTimeToSubmit,
     failTransaction,
@@ -33,19 +30,18 @@ import {
     handleMissingPrivateKey,
     resetTransactionEntity,
     transactional,
-    updateTransactionEntity,
+    updateTransactionEntity
 } from "../../db/dbutils";
 import { logger } from "../../utils/logger";
 import { UTXOAccountGeneration } from "../account-generation/UTXOAccountGeneration";
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
-import { SpentHeightEnum } from "../../entity/utxo";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { EntityManager } from "@mikro-orm/core";
 import {
     checkUTXONetworkStatus,
     getAccountBalance, getCore,
     getMinAmountToSend,
-    getTransactionDescendants
+    getTransactionDescendants,
 } from "../utxo/UTXOUtils";
 import { CreateWalletOverrides, IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { TransactionService } from "../utxo/TransactionService";
@@ -118,12 +114,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
 
         try {
-            const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(params.source);
-            await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, params.source, utxosFromMempool);
-            if (params.feeSource) {
-                const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(params.feeSource);
-                await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, params.feeSource, utxosFromMempool);
-            }
             const [transaction] = await this.transactionService.preparePaymentTransaction(
                 0,
                 params.source,
@@ -282,33 +272,28 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             });
         }
         // If the transaction is for deleting account we should check that all transactions going from it finish
-        if (txEnt.amount === null) {
-            const balanceResp = await this.blockchainAPI.getAccountBalance(txEnt.source);
-            const numTxs = await countTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
-            const numDeleteTxs = await countDeleteTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
+        // TODO
+        // if (txEnt.amount === null) {
+        //     const balanceResp = await this.blockchainAPI.getAccountBalance(txEnt.source);
+        //     const numTxs = await countTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
+        //     const numDeleteTxs = await countDeleteTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
 
-            if (numTxs - numDeleteTxs > 0) { // > 1 since it already has 1 tx which is delete acc tx
-                logger.info(`Account ${txEnt.source} can't be deleted because it has unfinished transactions.`);
-                return;
-            }
-            if (balanceResp && balanceResp.unconfirmedTxs > 0 || balanceResp?.unconfirmedBalance != 0) {
-                logger.info(`Account ${txEnt.source} can't be deleted because it has unfinished transactions.`);
-                return;
-            }
-        }
+        //     if (numTxs - numDeleteTxs > 0) { // > 1 since it already has 1 tx which is delete acc tx
+        //         logger.info(`Account ${txEnt.source} can't be deleted because it has unfinished transactions.`);
+        //         return;
+        //     }
+        //     if (balanceResp && balanceResp.unconfirmedTxs > 0 || balanceResp?.unconfirmedBalance != 0) {
+        //         logger.info(`Account ${txEnt.source} can't be deleted because it has unfinished transactions.`);
+        //         return;
+        //     }
+        // }
         logger.info(`Preparing transaction ${txEnt.id}`);
         try {
             const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
-            await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.source, utxosFromMempool);
             if (utxosFromMempool.length === 0) {
                 logger.warn(`Will not prepare transaction ${txEnt.id}. No utxos available.`);
                 await failTransaction(this.rootEm, txEnt.id, "No utxos available.");
                 return;
-            }
-
-            if (txEnt.feeSource) {
-                const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.feeSource);
-                await correctUTXOInconsistenciesAndFillFromMempool(this.rootEm, txEnt.feeSource, utxosFromMempool);
             }
 
             // rbfReplacementFor is used since the RBF needs to use at least one of the UTXOs spent by the original transaction
@@ -379,7 +364,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.status = TransactionStatus.TX_PREPARED;
                     txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
                     txEntToUpdate.fee = toBN(transaction.getFee()); // set the new fee if the original one was null/wrong
-                    txEntToUpdate.utxos.set(dbUTXOs);
                     txEntToUpdate.inputs.add(inputs);
                     txEntToUpdate.outputs.add(outputs);
                 });
@@ -403,7 +387,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     if (axiosError.response?.data.error.includes("not found")) {
                         await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
                             txEnt.status = TransactionStatus.TX_CREATED;
-                            txEnt.utxos.removeAll();
                             txEnt.inputs.removeAll();
                             txEnt.outputs.removeAll();
                             txEnt.raw = "";
@@ -412,7 +395,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);//TODO can this even happen?
                         if (txEnt.rbfReplacementFor) {
                             await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => {
-                                txEnt.utxos.removeAll();
                                 txEnt.inputs.removeAll();
                                 txEnt.outputs.removeAll();
                             });
@@ -442,12 +424,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
 
                 // If account has too many UTXOs for one big delete account transaction we sequentially remove the remainder of UTXOs
-                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && txEnt.amount == null && txResp.confirmations > this.enoughConfirmations / 3) {
-                    const numOfSpendableUTXOs = await countSpendableUTXOs(this.chainType, this.rootEm, txEnt.source);
-                    if (numOfSpendableUTXOs > 0) {
-                        await this.transactionService.createDeleteAccountTransaction(this.chainType, txEnt.source, txEnt.destination);
-                    }
-                }
+                // TODO
+                // if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && txEnt.amount == null && txResp.confirmations > this.enoughConfirmations / 3) {
+                //     const numOfSpendableUTXOs = await countSpendableUTXOs(this.chainType, this.rootEm, txEnt.source);
+                //     if (numOfSpendableUTXOs > 0) {
+                //         await this.transactionService.createDeleteAccountTransaction(this.chainType, txEnt.source, txEnt.destination);
+                //     }
+                // }
             }
             if (txResp.blockHash && txResp.confirmations >= this.enoughConfirmations) {
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
@@ -455,11 +438,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
                     txEntToUpdate.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
                 });
-
-                /* istanbul ignore next */
-                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt)) {
-                    await this.transactionUTXOService.updateTransactionInputSpentStatus(txEnt.id, SpentHeightEnum.SPENT);
-                }
                 logger.info(`Transaction ${txEnt.id} (${txEnt.transactionHash}) was accepted`);
                 return;
             } else {
@@ -549,7 +527,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             if (newHash) {
                 logger.info(`checkSubmittedTransaction transaction ${txEnt.id} changed hash from ${txEnt.transactionHash} to ${newHash}`);
 
-                const descendants = await getTransactionDescendants(this.rootEm, txEnt.transactionHash!, txEnt.source);
+                const descendants = await getTransactionDescendants(this.rootEm, txEnt.id);
                 await transactional(this.rootEm, async (em) => {
                     for (const descendant of descendants) {
                         descendant.ancestor = txEnt;
@@ -618,10 +596,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 await failTransaction(this.rootEm, txId, `Cannot sign transaction ${txId}: ${errorMessage(error)}`, error as Error);
                 return;
             }
-        }
-        /* istanbul ignore next */
-        if (await this.transactionUTXOService.checkIfTxUsesAlreadySpentUTXOs(txId)) {
-            return;
         }
         // submit
         const txStatus = await this.submitTransaction(signed.txBlob, txId);
@@ -729,11 +703,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEnt.submittedInBlock = submittedBlockHeight;
                     txEnt.reachedStatusPendingInTimestamp = toBN(currentTimestamp);
                 });
-                await this.transactionUTXOService.updateTransactionInputSpentStatus(txId, SpentHeightEnum.SENT);
                 return TransactionStatus.TX_PENDING;
             } else {
                 await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed ${resp.status}`, new Error(String(resp.data)));
-                await this.transactionUTXOService.updateTransactionInputSpentStatus(txId, SpentHeightEnum.UNSPENT);
                 return TransactionStatus.TX_FAILED;
             }
         } catch (error) {
@@ -746,7 +718,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 return this.transactionAPISubmissionErrorHandler(txId, error as AxiosError<AxiosTransactionSubmissionError>);
             } else {
                 await failTransaction(this.rootEm, txId, `Transaction ${txId} submission failed ${errorMessage(error)}`, error as Error);
-                await this.transactionUTXOService.updateTransactionInputSpentStatus(txId, SpentHeightEnum.UNSPENT);
                 return TransactionStatus.TX_FAILED;
             }
         }
@@ -832,7 +803,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;
-                txEnt.utxos.removeAll();
                 txEnt.inputs.removeAll();
                 txEnt.outputs.removeAll();
                 txEnt.raw = "";

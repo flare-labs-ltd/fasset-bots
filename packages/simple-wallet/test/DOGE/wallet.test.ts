@@ -15,7 +15,7 @@ import {
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
 import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
-import { correctUTXOInconsistenciesAndFillFromMempool, fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
+import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { setMonitoringStatus } from "../test-util/entity_utils";
 use(chaiAsPromised);
 
@@ -90,9 +90,6 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
-        const utxosFromMempool = await wClient.blockchainAPI.getUTXOsFromMempool(fundedAddress);
-        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, fundedAddress, utxosFromMempool);
-
         await expect(wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT, feeInSatoshi)).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
@@ -118,9 +115,6 @@ describe("Dogecoin wallet tests", () => {
         const txId = await wClient.createPaymentTransaction(targetAddress, fundedAddress, toSend);
         expect(txId).to.be.greaterThan(0);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, txId);
-        const blockchainApi = wClient.blockchainAPI;
-        const utxosFromMempool = await blockchainApi.getUTXOsFromMempool(txEnt.source);
-        await correctUTXOInconsistenciesAndFillFromMempool(wClient.rootEm, txEnt.source, utxosFromMempool);
 
         const [transaction] = await wClient.transactionService.preparePaymentTransaction(
             txEnt.id,
@@ -140,7 +134,7 @@ describe("Dogecoin wallet tests", () => {
             txEntToUpdate.executeUntilBlock = undefined;
         });
         await wClient.checkPendingTransaction(txEnt);
-        expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
+        expect(txEnt.status).to.eq(TransactionStatus.TX_SUBMITTED);
     });
 
     it("Should create estimate fee", async () => {

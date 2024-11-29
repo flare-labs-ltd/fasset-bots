@@ -52,8 +52,8 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
     }
 
     async getCurrentFeeRate(blockNumber?: number): Promise<number> { // in satoshies
+        const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
         return tryWithClients(this.clients, async (client: AxiosInstance) => {
-            const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
             const res = await client.get<FeeStatsResponse>(`/feestats/${blockToCheck}`);
             const fee = res.data.averageFeePerKb;
             return fee;
@@ -86,8 +86,8 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
         return tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOResponse[]>(`/utxo/${address}`);
             return res.data.map((utxo: UTXOResponse): MempoolUTXO => ({
-                mintTxid: utxo.txid,
-                mintIndex: utxo.vout,
+                transactionHash: utxo.txid,
+                position: utxo.vout,
                 value: toBN(utxo.value),
                 script: "",
                 confirmed: utxo.confirmations >= (stuckTransactionConstants(this.chainType).enoughConfirmations ?? /* istanbul ignore next */ getConfirmedAfter(this.chainType)),
