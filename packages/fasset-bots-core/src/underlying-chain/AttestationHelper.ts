@@ -1,9 +1,8 @@
-import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
+import { AddressValidity, ARESBase, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MerkleTree, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import Web3 from "web3";
 import { squashSpace } from "../utils";
 import { prefix0x, requireNotNull, toHex, ZERO_BYTES32 } from "../utils/helpers";
-import { prefix0x, toHex, ZERO_BYTES32 } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { web3 } from "../utils/web3";
 import { ChainId } from "./ChainId";

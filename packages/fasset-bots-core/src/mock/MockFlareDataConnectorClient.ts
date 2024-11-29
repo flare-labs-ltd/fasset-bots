@@ -2,8 +2,6 @@ import {
     ARBase, ARESBase, AddressValidity, AttestationDefinitionStore, BalanceDecreasingTransaction, ConfirmedBlockHeightExists,
     MIC_SALT, MerkleTree, Payment, ReferencedPaymentNonexistence, decodeAttestationName
 } from "@flarenetwork/state-connector-protocol";
-import { StateConnectorMockInstance, Truffle } from "../../typechain-truffle";
-import { AttestationRequest } from "../../typechain-truffle/IStateConnector";
 import { FdcHubMockInstance, RelayMockInstance, Truffle } from "../../typechain-truffle";
 import { AttestationRequest } from "../../typechain-truffle/IFdcHub";
 import { ChainId } from "../underlying-chain/ChainId";
@@ -13,7 +11,6 @@ import {
 } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { findRequiredEvent } from "../utils/events/truffle";
 import { ZERO_BYTES32, filterStackTrace, sleep, toBN, toNumber } from "../utils/helpers";
-import { filterStackTrace, sleep, toBN, toNumber, ZERO_BYTES32 } from "../utils/helpers";
 import { MockAlwaysFailsAttestationProver } from "./MockAlwaysFailsAttestationProver";
 import { MockAttestationProver, MockAttestationProverError } from "./MockAttestationProver";
 import { MockChain } from "./MockChain";
