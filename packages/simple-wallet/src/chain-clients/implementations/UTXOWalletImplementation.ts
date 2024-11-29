@@ -20,8 +20,7 @@ import {
 
 import BN, { max } from "bn.js";
 import {
-    checkIfIsDeleting,
-    createInitialTransactionEntity,
+    checkIfIsDeleting, createInitialTransactionEntity,
     createTransactionOutputEntities,
     failDueToNoTimeToSubmit,
     failTransaction,
@@ -31,7 +30,7 @@ import {
     handleMissingPrivateKey,
     resetTransactionEntity,
     transactional,
-    updateTransactionEntity,
+    updateTransactionEntity
 } from "../../db/dbutils";
 import { logger } from "../../utils/logger";
 import { UTXOAccountGeneration } from "../account-generation/UTXOAccountGeneration";

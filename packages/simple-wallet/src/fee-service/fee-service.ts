@@ -39,7 +39,8 @@ export class BlockchainFeeService {
         let totalWeight = 0;
         for (let index = 1; index <= this.calculateFeeBlocks; index++) {
             const blockHeight = this.currentBlockHeight - this.calculateFeeBlocks + index;
-            const fee = this.feeHistory.data.get(blockHeight) ?? defaultFee;
+            const historyFee = this.feeHistory.data.get(blockHeight);
+            const fee = historyFee != null && !historyFee.eqn(0) ? historyFee : defaultFee;
             const weight = index;
             weightedFeeSum = weightedFeeSum.add(fee.muln(weight));
             totalWeight += weight;
