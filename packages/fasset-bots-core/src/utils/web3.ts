@@ -74,7 +74,7 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
 let currentProvider: provider;
 
 /**
- * Send generic transaction (equivalent to `web3.eth.sendTransaction`, but with proper finalization). Useful for transfering native tokens.
+ * Send generic transaction (equivalent to `web3.eth.sendTransaction`, but with proper finalization). Useful for transferring native tokens.
  */
 export async function sendWeb3Transaction(transactionConfig: TransactionConfig, settings?: ContractSettings) {
     return await executeMethodSend(settings ?? contractSettings, transactionConfig);

@@ -43,7 +43,7 @@ contract UniswapV2PairMock is IUniswapV2Pair, ERC20, ReentrancyGuard {
             liquidity = Babylonian.sqrt(amount0 * amount1) - MINIMUM_LIQUIDITY;
             _mint(address(0x000000000000000000000000000000000000dEaD), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
         } else {
-            // this line can cause loss of funds if the caller contract does not adjust or check the transfered amounts
+            // this line can cause loss of funds if the caller contract does not adjust or check the transferred amounts
             // so the below amounts inside `min` are equal
             liquidity = Math.min((amount0 * _totalSupply) / _reserve0, (amount1 * _totalSupply) / _reserve1);
         }
