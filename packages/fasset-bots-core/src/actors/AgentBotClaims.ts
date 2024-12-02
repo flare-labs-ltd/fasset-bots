@@ -25,6 +25,7 @@ export class AgentBotClaims {
         // airdrop distribution rewards
         await this.checkAirdropClaims(ClaimType.VAULT);
         await this.checkAirdropClaims(ClaimType.POOL);
+        await this.checkTransferFeesClaims();
     }
 
     async checkFTSORewards(type: ClaimType) {
@@ -32,21 +33,22 @@ export class AgentBotClaims {
         if (this.bot.stopRequested()) return;
         try {
             logger.info(`Agent ${this.agent.vaultAddress} started checking for FTSO rewards.`);
-            const IFtsoRewardManager = artifacts.require("IFtsoRewardManager");
-            const ftsoRewardManagerAddress = await this.context.addressUpdater.getContractAddress("FtsoRewardManager");
-            const ftsoRewardManager = await IFtsoRewardManager.at(ftsoRewardManagerAddress);
+            const IRewardManager = artifacts.require("IRewardManager");
+            const rewardManagerAddress = await this.context.addressUpdater.getContractAddress("RewardManager");
+            const rewardManager = await IRewardManager.at(rewardManagerAddress);
             const addressToClaim = type === ClaimType.VAULT ? this.agent.vaultAddress : this.agent.collateralPool.address;
-            const notClaimedRewards: BN[] = await ftsoRewardManager.getEpochsWithUnclaimedRewards(addressToClaim);
-            if (notClaimedRewards.length > 0) {
-                const unClaimedEpoch = notClaimedRewards[notClaimedRewards.length - 1];
-                logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch}`);
-                if (type === ClaimType.VAULT) {
-                    await this.agent.agentVault.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, addressToClaim, { from: this.agent.owner.workAddress });
-                } else {
-                    await this.agent.collateralPool.claimFtsoRewards(ftsoRewardManager.address, unClaimedEpoch, { from: this.agent.owner.workAddress });
-                }
-            }
-            logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
+            throw new Error("Not implemented yet");
+            // const notClaimedRewards: BN[] = await rewardManager.getEpochsWithUnclaimedRewards(addressToClaim);
+            // if (notClaimedRewards.length > 0) {
+            //     const unClaimedEpoch = notClaimedRewards[notClaimedRewards.length - 1];
+            //     logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch}`);
+            //     if (type === ClaimType.VAULT) {
+            //         await this.agent.agentVault.claimFtsoRewards(rewardManager.address, unClaimedEpoch, addressToClaim, { from: this.agent.owner.workAddress });
+            //     } else {
+            //         await this.agent.collateralPool.claimFtsoRewards(rewardManager.address, unClaimedEpoch, { from: this.agent.owner.workAddress });
+            //     }
+            // }
+            // logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
         } catch (error) {
             console.error(`Error handling FTSO rewards for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling FTSO rewards for ${type}:`, error);
@@ -77,6 +79,25 @@ export class AgentBotClaims {
         } catch (error) {
             console.error(`Error handling airdrop distribution for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
             logger.error(`Agent ${this.agent.vaultAddress} run into error while handling airdrop distribution for ${type}:`, error);
+        }
+    }
+
+    async checkTransferFeesClaims() {
+        /* istanbul ignore next */
+        if (this.bot.stopRequested()) return;
+        try {
+            logger.info(`Agent ${this.agent.vaultAddress} started checking for transfer fees.`);
+            const { 0: firstUnclaimedEpoch, 1: count } = await this.agent.assetManager.agentUnclaimedTransferFeeEpochs(this.agent.vaultAddress);
+            const maxEpochs = count.ltn(11) ? count : toBN(10);
+            if (toBN(count).gtn(0)) {
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming transferFees for epochs ${String(firstUnclaimedEpoch)} - ${String(firstUnclaimedEpoch.add(maxEpochs).subn(1))}.`);
+                await this.agent.assetManager.claimTransferFees(this.agent.vaultAddress, this.agent.owner.workAddress, maxEpochs, { from: this.agent.owner.workAddress });
+
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished checking for transfer fees.`);
+        } catch (error) {
+            console.error(`Error handling transfer fees for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling transfer fees:`, error);
         }
     }
 }

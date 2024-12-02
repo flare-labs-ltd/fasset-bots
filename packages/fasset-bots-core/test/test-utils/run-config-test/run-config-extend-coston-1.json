@@ -1,5 +1,5 @@
 {
     "$schema": "../../../run-config/schema/bot-config-override.schema.json",
     "extends": "coston-bot.json",
-    "assetManagerController": "0x82Ddf05b6e530260866E619a59d41D358412C466"
+    "assetManagerController": "0xA4962A6e8cc413d9BF2Dd3482a62ED2d3AaB0079"
 }

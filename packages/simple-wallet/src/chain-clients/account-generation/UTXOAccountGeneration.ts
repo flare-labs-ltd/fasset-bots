@@ -35,28 +35,32 @@ export class UTXOAccountGeneration implements WalletAccountGenerationInterface {
       let account;
       if (this.chainType == ChainType.testDOGE || this.chainType == ChainType.DOGE) {
          account = account0.getAddress(0, false, 44); // first receiving address
-         // const change = account0.getAddress(0, true, 44); // first change address
-         // console.log("xpub: ", account0.getAccountPublicKey())
-         // console.log("first change address:", change)
-         // console.log("first change address private key:", account0.getPrivateKey(0, true, 44))
+         /*
+            const change = account0.getAddress(0, true, 44);  first change address
+            console.log("xpub: ", account0.getAccountPublicKey())
+            console.log("first change address:", change)
+            console.log("first change address private key:", account0.getPrivateKey(0, true, 44))
+         */
       } else if (this.chainType == ChainType.testBTC || this.chainType == ChainType.BTC) {
          account = account0.getAddress(0, false);
-         // const change = account0.getAddress(0, true); // first change address
-         // console.log("xpub: ", account0.getAccountPublicKey())
-         // console.log("first change address:", change)
-         // console.log("first change address private key:", account0.getPrivateKey(0, true))
+         /*
+            const change = account0.getAddress(0, true);    first change address
+            console.log("xpub: ", account0.getAccountPublicKey())
+            console.log("first change address:", change)
+            console.log("first change address private key:", account0.getPrivateKey(0, true))
+         */
       } else {
          logger.error(`Invalid chainType ${this.chainType}`);
          throw new Error(`Invalid chainType ${this.chainType}`);
       }
       return {
-         address: account as string,
+         address: account,
          mnemonic: mnemonic,
          privateKey: account0.getPrivateKey(0),
       };
    }
 
-   private getBip84(): typeof bip84btc {
+   private getBip84(): typeof bip84btc | typeof bip84doge {
       if (this.chainType === ChainType.DOGE || this.chainType === ChainType.testDOGE) {
          return bip84doge;
       } else {

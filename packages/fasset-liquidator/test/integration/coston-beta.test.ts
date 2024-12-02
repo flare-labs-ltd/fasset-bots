@@ -6,7 +6,7 @@
 
 import "dotenv/config"
 import { expect } from 'chai'
-import { abs } from "../utils"
+import { abs } from "../utils/numeric"
 import { swap } from "./utils/uniswap-v2/wrappers"
 import { DexFtsoPriceSyncer } from "./utils/uniswap-v2/dex-price-syncer"
 import { FASSET_MAX_BIPS, PRICE_PRECISION } from "../constants"

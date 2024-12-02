@@ -1,9 +1,9 @@
-import { Cascade, Collection, Entity, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
 import { BN_ZERO } from "../utils/helpers";
-import { ADDRESS_LENGTH, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH } from "./common";
+import { ADDRESS_LENGTH, AgentHandshakeState, AgentMintingState, AgentRedemptionFinalState, AgentRedemptionState, AgentSettingName, AgentUnderlyingPaymentState, AgentUnderlyingPaymentType, AgentUpdateSettingState, BYTES32_LENGTH, RejectedRedemptionRequestState } from "./common";
 
 @Entity({ tableName: "agent" })
 export class AgentEntity {
@@ -138,6 +138,41 @@ export class AgentEntity {
     updatedAt: Date = new Date();
 }
 
+// For agent, handshake has to be tracked to accept or reject minting requests and to react to unpaid mintings.
+@Entity()
+@Unique({ properties: ["agentAddress", "requestId"] })
+export class AgentHandshake {
+    @PrimaryKey({ autoincrement: true })
+    id!: number;
+
+    @Property()
+    state!: AgentHandshakeState;
+
+    @Property({ length: ADDRESS_LENGTH })
+    agentAddress!: string;
+
+    @Property({ type: BNType })
+    requestId!: BN;
+
+    @Property({ type: BNType })
+    valueUBA!: BN;
+
+    @Property({ type: BNType })
+    feeUBA!: BN;
+
+    @Property({ length: ADDRESS_LENGTH })
+    minterAddress!: string;
+
+    @Property()
+    minterUnderlyingAddresses!: string[];
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
+}
+
 // For agent, minting only has to be tracked to react to unpaid mintings or mintings which were
 // paid but the proof wasn't presented.
 @Entity()
@@ -176,6 +211,9 @@ export class AgentMinting {
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
 
+    @OneToOne(() => AgentHandshake, { nullable: true })
+    handshake?: AgentHandshake | null;
+
     // 'REQUEST_PAYMENT_PROOF' and 'REQUEST_NON_PAYMENT_PROOF' state data
     // when in state REQUEST_PAYMENT_PROOF, it stores roundId and data to later obtain the proof
 
@@ -211,6 +249,9 @@ export class AgentRedemption {
     @Property({ type: BNType })
     requestId!: BN;
 
+    @Property({ length: ADDRESS_LENGTH })
+    redeemerAddress!: string;
+
     @Property({ length: BYTES32_LENGTH })
     paymentAddress!: string;
 
@@ -228,6 +269,10 @@ export class AgentRedemption {
 
     @Property({ length: BYTES32_LENGTH })
     paymentReference!: string;
+
+    // value is set when agent rejects redemption request or takes over rejected redemption request
+    @ManyToOne(() => RejectedRedemptionRequest, { nullable: true })
+    rejectedRedemptionRequest?: RejectedRedemptionRequest | null;
 
     // 'PAID' state data
 
@@ -342,6 +387,9 @@ export class AgentUpdateSetting {
     id!: number;
 
     @Property()
+    value!: string; // only for logging purposes
+
+    @Property()
     state!: AgentUpdateSettingState;
 
     @Property()
@@ -360,17 +408,40 @@ export class AgentUpdateSetting {
     updatedAt: Date = new Date();
 }
 
-@Entity({ tableName: 'price-publisher-state' })
-export class PricePublisherState {
+// Track of rejected redemption requests, so that agent can take it over.
+@Entity()
+@Unique({ properties: ["agentAddress", "requestId"] })
+export class RejectedRedemptionRequest {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property({ type: 'varchar' })
-    name!: string;
+    @Property()
+    state!: RejectedRedemptionRequestState;
+
+    @Property({ length: ADDRESS_LENGTH })
+    agentAddress!: string;
+
+    @Property({ type: BNType })
+    requestId!: BN;
+
+    @Property({ length: ADDRESS_LENGTH })
+    redeemerAddress!: string;
+
+    @Property({ length: BYTES32_LENGTH })
+    paymentAddress!: string;
+
+    @Property({ type: BNType })
+    valueUBA!: BN;
 
     @Property()
-    valueNumber: number = 0;
+    rejectionBlockNumber!: number;
 
-    @Property()
-    timestamp: number = 0;
+    @Property({ type: BNType, default: '0' })
+    valueTakenOverUBA!: BN;
+
+    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    createdAt: Date = new Date();
+
+    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date = new Date();
 }

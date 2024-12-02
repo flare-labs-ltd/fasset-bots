@@ -1,175 +1,139 @@
-import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
-import {
-    DEFAULT_RATE_LIMIT_OPTIONS, DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE,
-    DOGE_DEFAULT_FEE_PER_KB,
-} from "../utils/constants";
-import axios, {AxiosInstance, AxiosRequestConfig} from "axios";
-import {excludeNullFields, sleepMs} from "../utils/utils";
-import {BlockStats, FeeServiceConfig} from "../interfaces/IWalletTransaction";
-import {toBN} from "../utils/bnutils";
+import { EntityManager } from "@mikro-orm/core";
 import BN from "bn.js";
-import {logger} from "../utils/logger";
+import { UTXOBlockchainAPI } from "../blockchain-apis/UTXOBlockchainAPI";
+import { getDefaultFeePerKB } from "../chain-clients/utxo/UTXOUtils";
+import { errorMessage } from "../utils/axios-utils";
+import { toBN } from "../utils/bnutils";
+import { ChainType } from "../utils/constants";
+import { logger } from "../utils/logger";
+import { sleepMs } from "../utils/utils";
+import { BlockValueHistory } from "./block-value-history";
 
-import { IService } from "../interfaces/IService";
-import { errorMessage } from "../utils/axios-error-utils";
+export class BlockchainFeeService {
+    blockchainAPI: UTXOBlockchainAPI;
+    chainType: ChainType;
+    monitoringId: string;
+    feeHistory: BlockValueHistory;
+    timestampHistory: BlockValueHistory;
+    currentBlockHeight: number = -1;
+    initialSetup: boolean = true;
+    running: boolean = false;
 
-const FEE_DECILES_COUNT = 11;
-export interface FeeStats {
-    averageFeePerKB: BN,
-    decilesFeePerKB: BN[],
-    movingAverageWeightedFee: BN
-}
-export class BlockchainFeeService implements IService {
-    client: AxiosInstance;
-    monitoring: boolean = false;
-    history: BlockStats[] = [];
-    numberOfBlocksInHistory;
-    sleepTimeMs;
+    readonly calculateFeeBlocks = 3;
+    readonly medianTimestampBlocks = 11;
 
-    constructor(config: FeeServiceConfig) {
-        const createAxiosConfig: AxiosRequestConfig = {
-            headers: excludeNullFields({
-                "Content-Type": "application/json",
-            }),
-            timeout: config.rateLimitOptions?.timeoutMs ?? DEFAULT_RATE_LIMIT_OPTIONS_FEE_SERVICE.timeoutMs,
-            baseURL: config.indexerUrl,
-        };
+    sleepTimeMs = 10_000;
+    setupHistorySleepTimeMs = 1_500;
 
-        const client = axios.create(createAxiosConfig);
-        this.client = axiosRateLimit(client, {
-            ...DEFAULT_RATE_LIMIT_OPTIONS,
-            ...config.rateLimitOptions,
-        });
-        this.numberOfBlocksInHistory = config.numberOfBlocksInHistory;
-        this.sleepTimeMs = config.sleepTimeMs;
+    constructor(blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
+        this.chainType = chainType;
+        this.blockchainAPI = blockchainAPI;
+        this.monitoringId = monitoringId;
+        this.feeHistory = new BlockValueHistory(chainType, "averageFeePerKB", this.calculateFeeBlocks * 2);
+        this.timestampHistory = new BlockValueHistory(chainType, "timestamp", this.medianTimestampBlocks * 2);
     }
 
-    getLatestFeeStats(): FeeStats {
-        const totalBlocks = this.history.length;
-
-        if (totalBlocks === 0) {
-            return {
-                averageFeePerKB: toBN(0),
-                decilesFeePerKB: [],
-                movingAverageWeightedFee: toBN(0),
-            };
-        }
-
+    getLatestFeeStats(): BN {
+        const defaultFee = getDefaultFeePerKB(this.chainType);
         let weightedFeeSum = toBN(0);
         let totalWeight = 0;
-        this.history.forEach((block, index) => {
-            const weight = totalBlocks - index;
-            weightedFeeSum = weightedFeeSum.add(block.averageFeePerKB.muln(weight));
+        for (let index = 1; index <= this.calculateFeeBlocks; index++) {
+            const blockHeight = this.currentBlockHeight - this.calculateFeeBlocks + index;
+            const historyFee = this.feeHistory.data.get(blockHeight);
+            const fee = historyFee != null && !historyFee.eqn(0) ? historyFee : defaultFee;
+            const weight = index;
+            weightedFeeSum = weightedFeeSum.add(fee.muln(weight));
             totalWeight += weight;
-        });
-        const movingAverageWeightedFee = weightedFeeSum.divn(totalWeight);
-        const latestBlockIndex = totalBlocks - 1;
-        const currentHistory = this.history[latestBlockIndex];
-
-        return {
-            averageFeePerKB: currentHistory?.averageFeePerKB ?? toBN(0),
-            decilesFeePerKB: currentHistory?.decilesFeePerKB ?? [],
-            movingAverageWeightedFee: movingAverageWeightedFee,
-        };
-    }
-
-    async startMonitoringFees(): Promise<void> {
-        logger.info("Started monitoring fees");
-        this.monitoring = true;
-        await this.setupHistory();
-        while (this.monitoring) {
-            const blockHeight = await this.getCurrentBlockHeight();
-            if (!blockHeight || blockHeight == this.history[this.history.length - 1]?.blockHeight) {
-                await sleepMs(this.sleepTimeMs);
-                continue;
-            }
-            const feeStats = await this.getFeeStatsFromIndexer(blockHeight);
-            const blockTime = await this.getBlockTime(blockHeight);
-            if (feeStats.decilesFeePerKB.length == FEE_DECILES_COUNT && feeStats.averageFeePerKB.gtn(0) && blockTime > 0) {
-                if (this.history.length >= this.numberOfBlocksInHistory) {
-                    this.history.shift(); //remove first (oldest) block
-                }
-                this.history.push({
-                    blockHeight: blockHeight,
-                    blockTime: blockTime,
-                    timeSincePreviousBlock: blockTime - this.history[this.history.length - 1]?.blockTime || 0,
-                    averageFeePerKB: feeStats.averageFeePerKB,
-                    decilesFeePerKB: feeStats.decilesFeePerKB,
-                })
-            }
-            await sleepMs(this.sleepTimeMs);
         }
-        logger.info("Stopped monitoring fees");
+        const movingAverageWeightedFee = weightedFeeSum.divn(totalWeight);
+        return movingAverageWeightedFee;
     }
 
-    async setupHistory() {
-        const currentBlockHeight = await this.getCurrentBlockHeight();
-        if (currentBlockHeight == 0) {
+    getLatestMedianTime(): BN | null {
+        this.checkEnoughTimestampHistory();
+        const blocks = this.timestampHistory.sortedData().slice(-this.medianTimestampBlocks);
+        const latestMedianTime = blocks[Math.floor(blocks.length / 2)].value;
+        return latestMedianTime;
+    }
+
+    checkEnoughTimestampHistory() {
+        /* istanbul ignore if */
+        if (!this.hasEnoughTimestampHistory()) {
+            logger.warn(`Cannot determine latest median time.\n${this.timestampHistory.logHistory()}`);
+        }
+    }
+
+    hasEnoughTimestampHistory(): boolean {
+        return this.currentBlockHeight > 0 && this.timestampHistory.consecutiveLength(this.currentBlockHeight) >= this.medianTimestampBlocks;
+    }
+
+    async monitorFees(rootEm: EntityManager, monitoring: () => boolean): Promise<void> {
+        if (this.running) {
+            logger.info(`Fee service for ${this.monitoringId} already running.`)
             return;
         }
-        const feeStatsPromises = [];
-        const blockTimePromises = [];
-        for (let i = 0; i < this.numberOfBlocksInHistory; i++) {
-            feeStatsPromises.push(this.getFeeStatsFromIndexer(currentBlockHeight - i));
-            blockTimePromises.push(this.getBlockTime(currentBlockHeight - i));
+        if (this.initialSetup) {
+            logger.info(`Starting initial setup for fee service ${this.monitoringId}.`)
         }
-        const feeStatsResults = await Promise.all(feeStatsPromises);
-        const blockTimeResults = await Promise.all(blockTimePromises);
-
-        for (let i = 0; i < this.numberOfBlocksInHistory; i++) {
-            const avgFeePerKB = feeStatsResults[i].averageFeePerKB;
-            this.history[this.numberOfBlocksInHistory - 1 - i] = {
-                blockHeight: currentBlockHeight - i,
-                blockTime: blockTimeResults[i],
-                timeSincePreviousBlock: 0,
-                averageFeePerKB: avgFeePerKB.eqn(0) ? DOGE_DEFAULT_FEE_PER_KB : avgFeePerKB,
-                decilesFeePerKB: feeStatsResults[i].decilesFeePerKB,
-            };
-        }
-        for (let i = 1; i < this.numberOfBlocksInHistory; i++) {
-            if (this.history[i] && this.history[i - 1]) {
-                this.history[i].timeSincePreviousBlock = this.history[i].blockTime - this.history[i - 1].blockTime;
+        try {
+            this.running = true;
+            logger.info(`${this.monitoringId}: Started monitoring fees and timestamps.`);
+            await this.timestampHistory.loadFromDb(rootEm);
+            await this.feeHistory.loadFromDb(rootEm);
+            while (monitoring()) {
+                await this.obtainFeesAndTimestamps(rootEm, monitoring);
             }
+            logger.info(`${this.monitoringId}: Stopped monitoring fees and timestamps.`);
+        } catch (error) {
+            // should never happen
+            logger.error(`${this.monitoringId}: Unexpected error monitoring fees and timestamps, stopped.`);
+        } finally {
+            this.running = false;
         }
     }
 
-    stopMonitoring() {
-        this.monitoring = false;
+    async obtainFeesAndTimestamps(rootEm: EntityManager, monitoring: () => boolean) {
+        const currentBlockHeight = await this.getCurrentBlockHeight();
+        if (currentBlockHeight) {
+            for (let blockHeight = currentBlockHeight - this.medianTimestampBlocks + 1; blockHeight <= currentBlockHeight; blockHeight++) {
+                if (!monitoring()) break;
+                await this.timestampHistory.loadBlockFromService(rootEm, blockHeight, async (bh) => await this.getBlockTimeAt(bh));
+            }
+            this.currentBlockHeight = currentBlockHeight;
+            if (this.initialSetup) {
+                this.checkEnoughTimestampHistory();
+                logger.info(`Timestamp history setup complete for fee service ${this.monitoringId}.`);
+            }
+            for (let blockHeight = currentBlockHeight - this.calculateFeeBlocks + 1; blockHeight <= currentBlockHeight; blockHeight++) {
+                if (!monitoring()) break;
+                await this.feeHistory.loadBlockFromService(rootEm, blockHeight, async (bh) => await this.getFeeRateAt(bh));
+            }
+            if (this.initialSetup) {
+                logger.info(`Fee history setup complete for fee service ${this.monitoringId}.`);
+                this.initialSetup = false;
+            }
+        }
+        if (monitoring()) {
+            await sleepMs(this.initialSetup ? this.setupHistorySleepTimeMs : this.sleepTimeMs);
+        }
+    }
+
+    private async getBlockTimeAt(blockHeight: number) {
+        return await this.blockchainAPI.getBlockTimeAt(blockHeight);
+    }
+
+    private async getFeeRateAt(blockHeight: number) {
+        const currentFeeRate = await this.blockchainAPI.getCurrentFeeRate(blockHeight);
+        return toBN(currentFeeRate);
     }
 
     async getCurrentBlockHeight() {
         try {
-            const response = await this.client.get(``);
-            return response.data?.blockbook?.bestHeight ?? 0;
-        } catch (error) {
+            const blockHeight = await this.blockchainAPI.getCurrentBlockHeight()
+            return blockHeight;
+        } catch (error) /* istanbul ignore next */ {
             logger.error(`Fee service failed to fetch block height ${errorMessage(error)}`);
-            return 0;
-        }
-    }
-
-    async getFeeStatsFromIndexer(blockHeight: number) {
-        try {
-            const response = await this.client.get(`/feestats/${blockHeight}`);
-            const fees = response.data.decilesFeePerKb.filter((t: number) => t >= 0).map((t: number) => toBN(t));
-
-            return {
-                blockHeight: blockHeight,
-                averageFeePerKB: toBN(response.data.averageFeePerKb ?? 0),
-                decilesFeePerKB: fees.every((t: BN) => t.isZero()) ? [] : fees,
-            };
-        } catch (error) {
-            logger.error(`Error fetching fee stats from indexer for block ${blockHeight}: ${errorMessage(error)}`);
-            return {blockHeight: blockHeight, averageFeePerKB: toBN(0), decilesFeePerKB: []};
-        }
-    }
-
-    async getBlockTime(blockHeight: number) {
-        try {
-            const response = await this.client.get(`/block/${blockHeight}`);
-            return response.data?.time ?? null;
-        } catch (error) {
-            logger.error(`Error fetching block time for block ${blockHeight}: ${errorMessage(error)}`);
-            return 0;
+            return null;
         }
     }
 }

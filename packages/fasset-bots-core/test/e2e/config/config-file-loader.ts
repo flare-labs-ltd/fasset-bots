@@ -25,18 +25,18 @@ describe("config file loader tests", () => {
     it("Should load config file with extends", async () => {
         const configFile = loadConfigFile(COSTON_CONFIG_EXTENDS_1);
         expect(configFile.contractsJsonFile).eq(resolveInFassetBotsCore("fasset-deployment/coston.json"));
-        expect(configFile.assetManagerController).eq("0x82Ddf05b6e530260866E619a59d41D358412C466");
+        expect(configFile.assetManagerController).eq("0xA4962A6e8cc413d9BF2Dd3482a62ED2d3AaB0079");
         expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
     });
 
     it("Should load config file with extends - 2 level", async () => {
         const configFile = loadConfigFile(COSTON_CONFIG_EXTENDS_2);
         expect(configFile.contractsJsonFile).eq(resolveInFassetBotsCore("fasset-deployment/coston.json"));
-        expect(configFile.assetManagerController).eq("0x82Ddf05b6e530260866E619a59d41D358412C466");
+        expect(configFile.assetManagerController).eq("0xA4962A6e8cc413d9BF2Dd3482a62ED2d3AaB0079");
         expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
-        expect(configFile.fAssets.FTestXRP.walletUrl).eq("https://my.wallet.xyz");
+        expect(configFile.fAssets.FTestXRP.walletUrls![0]).eq("https://my.wallet.xyz");
         expect(configFile.fAssets.Fnothing).eq(undefined);  // cannot override unknown fasset
-        expect(configFile.ormOptions?.dbName).eq("fasset-bots-coston.82Ddf05b.db")
+        expect(configFile.ormOptions?.dbName).eq("fasset-bots-coston.A4962A6e.db")
     });
 
     it("Should not load config file - schema validation", async () => {
@@ -59,10 +59,10 @@ describe("config file loader tests", () => {
 
     it("Should not validate config - attestation provider must be defined", async () => {
         const runConfig: BotConfigFile = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
-        runConfig.attestationProviderUrls = undefined;
+        runConfig.dataAccessLayerUrls = undefined;
         expect(() => validateAgentConfigFile(runConfig))
             .to.throw(`At least one attestation provider url is required`);
-        runConfig.attestationProviderUrls = [];
+        runConfig.dataAccessLayerUrls = [];
         expect(() => validateAgentConfigFile(runConfig))
             .to.throw(`At least one attestation provider url is required`);
     });
@@ -70,8 +70,11 @@ describe("config file loader tests", () => {
     it("Should not validate config - walletUrl must be defined", async () => {
         const runConfig: BotConfigFile = simpleLoadConfigFile(COSTON_RUN_CONFIG_CONTRACTS);
         const [symbol, fasset] = Object.entries(runConfig.fAssets)[0];
-        fasset.walletUrl = undefined;
+        fasset.walletUrls = undefined;
         expect(() => validateAgentConfigFile(runConfig))
-            .to.throw(`Missing walletUrl in FAsset type ${symbol}`);
+            .to.throw(`At least one walletUrl in FAsset type ${symbol} is required`);
+        fasset.walletUrls = [];
+        expect(() => validateAgentConfigFile(runConfig))
+            .to.throw(`At least one walletUrl in FAsset type ${symbol} is required`);
     });
 });

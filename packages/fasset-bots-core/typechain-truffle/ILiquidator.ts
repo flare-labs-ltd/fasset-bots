@@ -61,53 +61,105 @@ export interface ILiquidatorInstance extends Truffle.ContractInstance {
     (
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  withdrawNat: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
+  withdrawToken: {
+    (token: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(token: string, txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(
+      token: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      token: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -159,53 +211,108 @@ export interface ILiquidatorInstance extends Truffle.ContractInstance {
       (
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    withdrawNat: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
+    withdrawToken: {
+      (token: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        token: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        token: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

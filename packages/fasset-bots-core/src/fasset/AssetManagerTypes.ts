@@ -22,7 +22,8 @@ export type AgentSetting =
     | "buyFAssetByAgentFactorBIPS"
     | "poolExitCollateralRatioBIPS"
     | "poolTopupCollateralRatioBIPS"
-    | "poolTopupTokenPriceFactorBIPS";
+    | "poolTopupTokenPriceFactorBIPS"
+    | "handshakeType";
 
 export enum TokenExitType {
     MAXIMIZE_FEE_WITHDRAWAL,

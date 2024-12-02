@@ -108,7 +108,7 @@ describe("Actor tests - coston", () => {
         contexts.set(context.chainInfo.symbol, context);
         const settings: Map<string, AgentBotSettings> = new Map();
         settings.set(context.chainInfo.symbol, chainConfigAgent.agentBotSettings);
-        const agentBotRunner = new AgentBotRunner(secrets, contexts, settings, orm, 5, testNotifierTransports, testTimekeeperService);
+        const agentBotRunner = new AgentBotRunner(secrets, contexts, settings, orm, 5, testNotifierTransports, testTimekeeperService, false, null);
         expect(agentBotRunner.loopDelay).to.eq(5);
         expect(agentBotRunner.contexts.get(context.chainInfo.symbol)).to.not.be.null;
     });
@@ -124,7 +124,8 @@ describe("Actor tests - coston", () => {
         const challenger = await createTestChallenger(challengerContext, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
         const blockHeight = await context.blockchainIndexer.getBlockHeight();
-        expect(challenger.lastEventUnderlyingBlockHandled).to.be.lte(blockHeight);
+        const finalizationBlocks = 6;
+        expect(challenger.lastEventUnderlyingBlockHandled).to.be.lte(blockHeight + finalizationBlocks);
     });
 
     it("Should create liquidator", async () => {

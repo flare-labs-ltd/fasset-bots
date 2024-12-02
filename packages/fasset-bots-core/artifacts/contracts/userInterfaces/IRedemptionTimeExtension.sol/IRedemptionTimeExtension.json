@@ -4,19 +4,6 @@
   "sourceName": "contracts/userInterfaces/IRedemptionTimeExtension.sol",
   "abi": [
     {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "RedemptionPaymentExtensionSecondsChanged",
-      "type": "event"
-    },
-    {
       "inputs": [],
       "name": "redemptionPaymentExtensionSeconds",
       "outputs": [

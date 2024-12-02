@@ -183,6 +183,8 @@ export interface ERC20MockInstance extends Truffle.ContractInstance {
 
   symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+
   totalSupply(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   transfer: {
@@ -395,6 +397,8 @@ export interface ERC20MockInstance extends Truffle.ContractInstance {
     name(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
     symbol(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+    terminated(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     totalSupply(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 

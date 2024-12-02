@@ -63,6 +63,15 @@ export type AllEvents =
 export interface IRelayInstance extends Truffle.ContractInstance {
   feeCollectionAddress(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
+  getRandomNumber(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: boolean; 2: BN }>;
+
+  getRandomNumberHistorical(
+    _votingRoundId: number | BN | string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: boolean; 2: BN }>;
+
   getVotingRoundId(
     _timestamp: number | BN | string,
     txDetails?: Truffle.TransactionDetails
@@ -217,6 +226,15 @@ export interface IRelayInstance extends Truffle.ContractInstance {
     feeCollectionAddress(
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
+
+    getRandomNumber(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: boolean; 2: BN }>;
+
+    getRandomNumberHistorical(
+      _votingRoundId: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: boolean; 2: BN }>;
 
     getVotingRoundId(
       _timestamp: number | BN | string,

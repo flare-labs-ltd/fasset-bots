@@ -6,7 +6,7 @@ import { AgentUnderlyingPayment } from "../entities/agent";
 import { AgentUnderlyingPaymentState, AgentUnderlyingPaymentType } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { squashSpace } from "../utils/formatting";
 import { assertNotNull, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -40,8 +40,9 @@ export class AgentBotUnderlyingManagement {
         const agentInfo = await this.agent.getAgentInfo();
         const freeUnderlyingBalance = toBN(agentInfo.freeUnderlyingBalanceUBA);
         const minimumFreeUnderlyingBalance = toBN(this.agentBotSettings.minimumFreeUnderlyingBalance);
-        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is ${minimumFreeUnderlyingBalance}. Top up is required ${freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)}.`);
-        if (freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance)) {
+        const topUpNeeded = freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance);
+        logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is ${minimumFreeUnderlyingBalance}. Top up is required ${topUpNeeded}.`);
+        if (topUpNeeded) {
             await this.underlyingTopUp(em, minimumFreeUnderlyingBalance);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${minimumFreeUnderlyingBalance.toString()}.`);
@@ -65,10 +66,16 @@ export class AgentBotUnderlyingManagement {
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+        const canTopUp = await this.checkForLowOwnerUnderlyingBalance();
+        if (!canTopUp) {
+            logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be topped up! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be topped up! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            return false;
+        }
         // check and log the fee
         const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
-            source: this.agent.underlyingAddress,
-            destination: this.ownerUnderlyingAddress,
+            source: this.ownerUnderlyingAddress,
+            destination: this.agent.underlyingAddress,
             amount: amount,
             isPayment: true
         }));
@@ -84,7 +91,7 @@ export class AgentBotUnderlyingManagement {
         return true;
     }
 
-    async checkForLowOwnerUnderlyingBalance() {
+    async checkForLowOwnerUnderlyingBalance(): Promise<boolean> {
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const expectedBalance = this.agentBotSettings.recommendedOwnerUnderlyingBalance;
         const balanceF = await this.tokens.underlying.format(ownerUnderlyingBalance);
@@ -93,9 +100,11 @@ export class AgentBotUnderlyingManagement {
             await this.notifier.sendLowBalanceOnUnderlyingOwnersAddress(this.ownerUnderlyingAddress, balanceF);
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has low balance
                 ${balanceF} on underlying address ${this.ownerUnderlyingAddress}. Expected to have at least ${expectedBalanceF}.`);
+            return false;
         } else {
             logger.info(squashSpace`Agent's ${this.agent.vaultAddress} owner ${this.agent.owner.managementAddress} has ${balanceF}
                 on underlying address ${this.ownerUnderlyingAddress}.`);
+            return true;
         }
     }
 
@@ -107,7 +116,7 @@ export class AgentBotUnderlyingManagement {
      */
     async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
-            rootEm.create(
+            em.create(
                 AgentUnderlyingPayment,
                 {
                     agentAddress: this.agent.vaultAddress,

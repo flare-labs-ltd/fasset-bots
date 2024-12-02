@@ -53,6 +53,11 @@ export interface FakePriceReaderInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
+  getPriceFromTrustedProvidersWithQuality(
+    _symbol: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
+
   provider(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   setDecimals: {
@@ -148,6 +153,11 @@ export interface FakePriceReaderInstance extends Truffle.ContractInstance {
       _symbol: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    getPriceFromTrustedProvidersWithQuality(
+      _symbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
 
     provider(txDetails?: Truffle.TransactionDetails): Promise<string>;
 

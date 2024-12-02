@@ -31,7 +31,7 @@ export interface TimekeeperTimingConfig {
     maxUnderlyingTimestampAgeS: number;
 
     /**
-     * To prevent many bots submitting time concurrently (immediately after SC round finalization),
+     * To prevent many bots submitting time concurrently (immediately after FDC round finalization),
      * delay execution time by a random number of milliseconds, up to this amount.
      */
     maxUpdateTimeDelayMs: number;
@@ -165,7 +165,7 @@ export class TimeKeeperUpdate {
             throw new Error("Timekeeper: confirmedBlockHeightExists: not proved");
         }
         // wait for round finalization
-        while (!(await this.context.attestationProvider.stateConnector.roundFinalized(request.round))) {
+        while (!(await this.context.attestationProvider.flareDataConnector.roundFinalized(request.round))) {
             await cancelableSleep(this.timing.loopDelayMs, cancelUpdate);
         }
         // sometimes proof is not immediately available, so retry a few times too avoid errors

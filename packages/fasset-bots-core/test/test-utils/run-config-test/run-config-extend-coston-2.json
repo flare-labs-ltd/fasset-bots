@@ -3,10 +3,10 @@
     "extends": "./run-config-extend-coston-1.json",
     "fAssets": {
         "FTestXRP": {
-            "walletUrl": "https://my.wallet.xyz"
+            "walletUrls": ["https://my.wallet.xyz"]
         },
         "Fnothing": {
-            "walletUrl": "https://my.wallet.xyz"
+            "walletUrls": ["https://my.wallet.xyz"]
         }
     }
 }

@@ -6,6 +6,7 @@ export interface AgentRegistrationSubmission {
     agent_name: string;
     description: string;
     icon_url: string;
+    tou_url?: string;   // terms of use
     user_address?: string;
 }
 

@@ -23,6 +23,26 @@ chmod 600 secrets.json
 ```
 Note: Fund `owner.native.address` with selected vault collateral and native collateral. In case of using `testXRP` or `XRP` activate underlying account `owner.underlying_address` by depositing 10 `testXRP` or `XRP`.
 
+## How to encrypt secrets file for agent?
+
+1. Run following command, which will encrypt the content of `secrets.json`.
+
+```console
+yarn key-gen encryptSecrets
+```
+
+2. When prompted for a password, enter the password that will be used to encrypt or decrypt the secrets file. **NOTE: Store the password safely and ensure you remember it.**
+
+3. Every time `yarn run-agent` starts, a prompt to decrypt secrets in memory will appear. **NOTE: Be cautious of unexpected server restarts, as the password to decrypt secrets will be required again.**
+
+## How to decrypt secrets file for agent?
+
+1. Run following command, which will decrypt the content of `secrets.json`.
+
+```console
+yarn key-gen decryptSecrets
+```
+
 ## How to create agent and make it available? (Only available agents can be minted against to.)
 
 1. Create agent. The output is native address of created agent.
@@ -84,6 +104,7 @@ poolExitCollateralRatioBIPS: 26000
 buyFAssetByAgentFactorBIPS: 9000
 poolTopupCollateralRatioBIPS: 22000
 poolTopupTokenPriceFactorBIPS: 8000
+handshakeType: 0
 ```
 
 2. Update settings **poolFeeShareBIPS** to _4100 BIPS_ for agent _0x5bc0886D3117507C779BD8c6240eb1C396385223_. This action will announce setting update.

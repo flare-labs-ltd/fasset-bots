@@ -79,7 +79,8 @@ Example:
     "poolExitCollateralRatioConstant": 1.3,
     "buyFAssetByAgentFactorBIPS": 9000,
     "poolTopupCollateralRatioConstant": 1.1,
-    "poolTopupTokenPriceFactorBIPS": 8000
+    "poolTopupTokenPriceFactorBIPS": 8000,
+    "handshakeType": 0
 }
 ```
 
@@ -94,9 +95,7 @@ interface BotConfigFile {
     nativeChainInfo: NativeChainInfo; // Basic information about native chain.
     rpcUrl: string; // Native chain's url.
     alertsUrl?: string; // Url to send notifications to.
-    attestationProviderUrls?: string[]; // List of urls of attestation providers. Only for agent bot, user, challenger and timeKeeper.
-    stateConnectorAddress?: string; // Address of StateConnector contract on native chain. Only for agent bot, user, challenger and timeKeeper.
-    stateConnectorProofVerifierAddress?: string; // Address of SCProofVerifier contract on native chain. Only for agent bot, user, challenger and timeKeeper.
+    dataAccessLayerUrls?: string[]; // List of urls of attestation providers. Only for agent bot, user, challenger and timeKeeper.
     // either one must be set
     addressUpdater?: string; // Address of AddressUpdater contract on native chain.
     contractsJsonFile?: string; // File path to json file containing contract addresses on native chain
@@ -132,8 +131,8 @@ interface BotFAssetInfo {
     chainId: string;
     name: string;
     symbol: string; // Underlying chain's ftso symbol.
-    walletUrl?: string; // Underlying chain's url. Only for agent bot and user.
-    indexerUrl?: string; // Underlying chain's indexer url. Only for agent bot, user, challenger and timeKeeper
+    walletUrls?: string;[] // Underlying chain's url. Only for agent bot and user.
+    indexerUrls?: string[]; // Underlying chain's indexer url. Only for agent bot, user, challenger and timeKeeper
     // either one must be set.
     assetManager?: string; // AssetManager contract address on native chain.
     fAssetSymbol?: string; // Symbol for the fasset.
@@ -171,8 +170,8 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234"
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"]
         }
     },
     "ormOptions": {
@@ -182,7 +181,7 @@ Can be found [here](../packages/fasset-bots-core/run-config/coston-bot.json).
         "type": "sqlite"
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": ["https://attestation-coston.aflabs.net/attestation-client"],
+    "dataAccessLayerUrls": ["https://da.cflr.testfsp.aflabs.org:4443"],
     "liquidationStrategy": {
         "className": "DexLiquidationStrategy",
         "config": {

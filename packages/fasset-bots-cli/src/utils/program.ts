@@ -1,6 +1,5 @@
 import { loadConfigFile } from "@flarelabs/fasset-bots-core/config";
 import { programVersion, resolveInFassetBotsCore, stripIndent } from "@flarelabs/fasset-bots-core/utils";
-import type { BotConfig, BotFAssetConfig } from "@flarelabs/fasset-bots-core/config";
 import { Command } from "commander";
 import fs from "fs";
 import os from "os";

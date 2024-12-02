@@ -1,36 +1,13 @@
 import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
 import { BotConfigFile, loadContracts, Secrets } from '../config';
-import { artifacts, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
+import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
+import { FspStatusResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
 
 export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
 
 const FtsoV2PriceStore = artifacts.require("FtsoV2PriceStore");
-
-export interface FeedResult {
-    readonly votingRoundId: number | string;
-    readonly id: string; // Needs to be 0x-prefixed for abi encoding
-    readonly value: number | string;
-    readonly turnoutBIPS: number | string;
-    readonly decimals: number | string;
-}
-
-export interface FeedResultWithProof {
-    body: FeedResult;
-    merkleProof: string[];
-}
-
-export interface LatestRoundResult {
-    voting_round_id: number | string;
-    start_timestamp: number | string;
-}
-
-export interface FspStatusResult {
-    active: LatestRoundResult;
-    latest_fdc: LatestRoundResult;
-    latest_ftso: LatestRoundResult;
-}
 
 export class PricePublisherService {
 
@@ -47,13 +24,15 @@ export class PricePublisherService {
     stopped = false;
 
     static async create(runConfig: BotConfigFile, secrets: Secrets, pricePublisherAddress: string) {
-        assertNotNullCmd(runConfig.priceFeedApiUrls, "Missing priceFeedApiPath");
+        assertNotNullCmd(runConfig.pricePublisherConfig, "Missing pricePublisherConfig");
+        assertCmd(runConfig.dataAccessLayerUrls != null && runConfig.dataAccessLayerUrls.length > 0,
+            "Field dataAccessLayerUrls must be defined and nonempty for price publisher");
         assertNotNullCmd(runConfig.contractsJsonFile, "Contracts file is required for price publisher");
         const contracts = loadContracts(runConfig.contractsJsonFile);
-        const publisherApiKey = secrets.optional("apiKey.price_publisher_api") ?? "";
-        const maxDelayMs = runConfig.pricePublisherLoopDelayMs ?? DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS;
+        const publisherApiKey = secrets.optional("apiKey.data_access_layer") ?? "";
+        const maxDelayMs = runConfig.pricePublisherConfig.loopDelayMs ?? DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS;
         const ftsoV2PriceStore = await FtsoV2PriceStore.at(contracts.FtsoV2PriceStore.address);
-        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.priceFeedApiUrls, publisherApiKey, maxDelayMs);
+        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.dataAccessLayerUrls, publisherApiKey, maxDelayMs);
         return pricePublisherService;
     }
 
@@ -80,10 +59,10 @@ export class PricePublisherService {
                 if (lastAvailableRoundId > lastPublishedRoundId) {
                     await this.getAndPublishFeedData(lastAvailableRoundId);
                 }
-                await sleep(this.loopDelayMs);
             } catch (error) {
                 logger.error(`Error in publishing prices: ${error}`);
             }
+            await sleep(this.loopDelayMs);
         }
         this.stopped = true;
         logger.info(`Price publishing service stopped.`);
@@ -130,7 +109,7 @@ export class PricePublisherService {
         return null;
     }
 
-    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FeedResultWithProof[] | null> {
+    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FtsoFeedResultWithProof[] | null> {
         const response = await axios.post(`${url}/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}`, {
             feed_ids: feedIds
         }, {
@@ -139,19 +118,19 @@ export class PricePublisherService {
             }
         });
         // get data
-        const feedsData: { data: FeedResult; proof: string[]; }[] = response.data;
+        const feedsData: FtsoFeedResultWithProof[] = response.data;
         // check that voting round is correct
-        if (feedsData.some(fd => Number(fd.data.votingRoundId) !== votingRoundId)) {
+        if (feedsData.some(fd => Number(fd.body.votingRoundId) !== votingRoundId)) {
             return null;
         }
-        // rename data field to body
-        const feedsDataRenamed = feedsData.map(fd => ({ body: fd.data, merkleProof: fd.proof }));
         // sort nodes by order of feedIds array
-        feedsDataRenamed.sort((a, b) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
-        return feedsDataRenamed;
+        feedsData.sort((a, b) => feedIds.indexOf(a.body.id) - feedIds.indexOf(b.body.id));
+        return feedsData;
     }
 
     async getAndPublishFeedData(votingRoundId: number) {
+        const sleepTime = Math.floor(Math.random() * 2000); // wait small random time, so that there are fewer reverts due to already published prices
+        await sleep(sleepTime);
         logger.info(`Publishing prices for ${votingRoundId}`);
         const feedIds = await this.ftsoV2PriceStore.getFeedIds();
         const feedsData = await this.getFeedData(votingRoundId, feedIds);

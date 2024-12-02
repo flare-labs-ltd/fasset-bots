@@ -1,6 +1,6 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { Secrets, createStateConnectorClient, indexerApiKey, supportedChainId } from "../../../src/config";
+import { Secrets, createFlareDataConnectorClient, indexerApiKey, supportedChainId } from "../../../src/config";
 import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
@@ -8,36 +8,38 @@ import { BlockchainIndexerHelper } from "../../../src/underlying-chain/Blockchai
 import { BlockchainWalletHelper } from "../../../src/underlying-chain/BlockchainWalletHelper";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { DBWalletKeys } from "../../../src/underlying-chain/WalletKeys";
-import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved } from "../../../src/underlying-chain/interfaces/IFlareDataConnectorClient";
 import { toBN } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { createTestOrm } from "../../test-utils/create-test-orm";
-import { ATTESTATION_PROVIDER_URLS, COSTON_RPC, OWNER_ADDRESS, STATE_CONNECTOR_ADDRESS, STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS, TEST_SECRETS } from "../../test-utils/test-bot-config";
+import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, OWNER_ADDRESS, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS } from "../../test-utils/test-bot-config";
 import { enableSlowTests, itIf } from "../../test-utils/test-helpers";
 import { fundedAddressXRP, fundedPrivateKeyXRP, targetAddressXRP } from "./blockchainWalletHelper";
+import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/FlareDataConnectorClientHelper";
 use(chaiAsPromised);
 
 const chainId = ChainId.testXRP;
-const indexerUrl: string = "https://attestation-coston.aflabs.net/verifier/xrp";
-const walletUrl: string = "https://s.altnet.rippletest.net:51234";
+const indexerUrls: string[] = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"];
+const walletUrls: string[] = ["https://s.altnet.rippletest.net:51234"];
 const ref = "0xac11111111110001000000000000000000000000000000000000000000000001";
 const finalizationBlocks: number = 6;
 
 async function createAttestationHelper(
     chainId: ChainId,
-    attestationProviderUrls: string[],
-    scProofVerifierAddress: string,
-    stateConnectorAddress: string,
+    dataAccessLayerUrls: string[],
+    fdcVerificationAddress: string,
+    fdcHubAddress: string,
+    relayAddress: string,
     owner: string,
-    indexerUrl: string,
-    indexerApiKey: string,
+    indexerUrls: string[],
+    indexerApiKeys: string[],
 ): Promise<AttestationHelper> {
     if (!supportedChainId(chainId)) {
         throw new Error(`SourceId ${chainId} not supported.`);
     }
-    const stateConnector = await createStateConnectorClient(indexerUrl, indexerApiKey, attestationProviderUrls, scProofVerifierAddress, stateConnectorAddress, owner);
-    const indexer = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey);
-    return new AttestationHelper(stateConnector, indexer, chainId);
+    const flareDataConnector = await createFlareDataConnectorClient(indexerUrls, indexerApiKeys, dataAccessLayerUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, owner);
+    const indexer = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
+    return new AttestationHelper(flareDataConnector, indexer, chainId);
 }
 
 
@@ -58,29 +60,32 @@ describe("Attestation client unit tests", () => {
         const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
         attestationHelper = await createAttestationHelper(
             chainId,
-            ATTESTATION_PROVIDER_URLS,
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
+            DATA_ACCESS_LAYER_URLS,
+            FDC_VERIFICATION_ADDRESS,
+            FDC_HUB_ADDRESS,
+            RELAY_ADDRESS,
             accounts[0],
-            indexerUrl,
-            indexerApiKey(secrets)
+            indexerUrls,
+            indexerApiKey(secrets, indexerUrls)
         );
         dbWallet = DBWalletKeys.from(orm.em, secrets);
-        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrl);
-        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrl, indexerApiKey(secrets));
+        walletHelper = await createBlockchainWalletHelper(secrets, chainId, orm.em, walletUrls);
+        blockChainIndexerClient = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKey(secrets, indexerUrls));
     });
 
     it("Should not obtain proofs - no attestation providers", async () => {
+        const latestRound = await (attestationHelper.flareDataConnector as FlareDataConnectorClientHelper).latestFinalizedRound();
         const localAttestationHelper = await createAttestationHelper(
             chainId,
             [],
-            STATE_CONNECTOR_PROOF_VERIFIER_ADDRESS,
-            STATE_CONNECTOR_ADDRESS,
+            FDC_VERIFICATION_ADDRESS,
+            FDC_HUB_ADDRESS,
+            RELAY_ADDRESS,
             OWNER_ADDRESS,
-            indexerUrl,
-            indexerApiKey(secrets)
+            indexerUrls,
+            indexerApiKey(secrets, indexerUrls)
         );
-        await expect(localAttestationHelper.stateConnector.obtainProof(1, "requestData"))
+        await expect(localAttestationHelper.flareDataConnector.obtainProof(latestRound, "requestData"))
             .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)
             .and.be.an.instanceOf(Error);
     });
@@ -90,7 +95,7 @@ describe("Attestation client unit tests", () => {
         const windowSeconds = 100;
         const requestBlock = await attestationHelper.requestConfirmedBlockHeightExistsProof(windowSeconds);
         // obtain to soon
-        const res1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round, requestBlock!.data);
+        const res1 = await attestationHelper.flareDataConnector.obtainProof(requestBlock!.round, requestBlock!.data);
         expect(res1).to.be.equal(AttestationNotProved.NOT_FINALIZED);
         // request payment
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
@@ -117,22 +122,22 @@ describe("Attestation client unit tests", () => {
         );
 
         // wait for round finalizations
-        await attestationHelper.stateConnector.waitForRoundFinalization(requestBlock!.round);
-        await attestationHelper.stateConnector.waitForRoundFinalization(requestPayment!.round);
-        await attestationHelper.stateConnector.waitForRoundFinalization(requestDecreasing!.round);
-        await attestationHelper.stateConnector.waitForRoundFinalization(requestNonPayment!.round);
+        await attestationHelper.flareDataConnector.waitForRoundFinalization(requestBlock!.round);
+        await attestationHelper.flareDataConnector.waitForRoundFinalization(requestPayment!.round);
+        await attestationHelper.flareDataConnector.waitForRoundFinalization(requestDecreasing!.round);
+        await attestationHelper.flareDataConnector.waitForRoundFinalization(requestNonPayment!.round);
 
         // obtain proofs
-        const proofBlock = await attestationHelper.stateConnector.obtainProof(requestBlock!.round, requestBlock!.data);
-        const proofPayment = await attestationHelper.stateConnector.obtainProof(requestPayment!.round, requestPayment!.data);
-        const proofDecreasing = await attestationHelper.stateConnector.obtainProof(requestDecreasing!.round, requestDecreasing!.data);
-        const proofNonPayment = await attestationHelper.stateConnector.obtainProof(requestNonPayment!.round, requestNonPayment!.data);
+        const proofBlock = await attestationHelper.flareDataConnector.obtainProof(requestBlock!.round, requestBlock!.data);
+        const proofPayment = await attestationHelper.flareDataConnector.obtainProof(requestPayment!.round, requestPayment!.data);
+        const proofDecreasing = await attestationHelper.flareDataConnector.obtainProof(requestDecreasing!.round, requestDecreasing!.data);
+        const proofNonPayment = await attestationHelper.flareDataConnector.obtainProof(requestNonPayment!.round, requestNonPayment!.data);
         expect(proofBlock).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
         expect(proofPayment).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
         expect(proofDecreasing).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
         expect(proofNonPayment).to.not.be.equal(AttestationNotProved.NOT_FINALIZED);
 
-        const proofBlock1 = await attestationHelper.stateConnector.obtainProof(requestBlock!.round - 2, requestBlock!.data);
+        const proofBlock1 = await attestationHelper.flareDataConnector.obtainProof(requestBlock!.round - 2, requestBlock!.data);
         expect(proofBlock1).to.be.equal(AttestationNotProved.DISPROVED);
     });
 });

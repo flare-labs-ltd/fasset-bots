@@ -74,14 +74,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
@@ -126,14 +134,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
@@ -178,14 +194,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
@@ -230,14 +254,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -267,14 +299,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       }[],
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
@@ -299,14 +339,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       }[],
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
@@ -331,14 +379,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       }[],
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
@@ -363,14 +419,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       }[],
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -398,14 +462,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
@@ -430,14 +502,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
@@ -462,14 +542,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
@@ -494,14 +582,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
         };
       },
       _agentVault: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _profitTo: string,
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -563,53 +659,81 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
     (
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _agentVault: string,
       _profitTo: string,
-      _vaultToFAssetMinDexPriceMul: number | BN | string,
-      _vaultToFAssetMinDexPriceDiv: number | BN | string,
-      _poolToVaultMinDexPriceMul: number | BN | string,
-      _poolToVaultMinDexPriceDiv: number | BN | string,
-      _flashLender: string,
-      _dex: string,
-      _vaultToFAssetDexPath: string[],
-      _poolToVaultDexPath: string[],
+      _config: {
+        flashLender: string;
+        maxFlashFee: number | BN | string;
+        dex: string;
+        dexPair1: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+        dexPair2: {
+          path: string[];
+          minPriceMul: number | BN | string;
+          minPriceDiv: number | BN | string;
+        };
+      },
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -632,7 +756,7 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
-  withderawNat: {
+  withdrawNat: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -702,14 +826,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
@@ -754,14 +886,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
@@ -806,14 +946,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
@@ -858,14 +1006,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -895,14 +1051,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         }[],
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
@@ -927,14 +1091,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         }[],
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
@@ -959,14 +1131,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         }[],
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
@@ -991,14 +1171,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         }[],
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -1026,14 +1214,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
@@ -1058,14 +1254,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
@@ -1090,14 +1294,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
@@ -1122,14 +1334,22 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
           };
         },
         _agentVault: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _profitTo: string,
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -1191,53 +1411,81 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
       (
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _agentVault: string,
         _profitTo: string,
-        _vaultToFAssetMinDexPriceMul: number | BN | string,
-        _vaultToFAssetMinDexPriceDiv: number | BN | string,
-        _poolToVaultMinDexPriceMul: number | BN | string,
-        _poolToVaultMinDexPriceDiv: number | BN | string,
-        _flashLender: string,
-        _dex: string,
-        _vaultToFAssetDexPath: string[],
-        _poolToVaultDexPath: string[],
+        _config: {
+          flashLender: string;
+          maxFlashFee: number | BN | string;
+          dex: string;
+          dexPair1: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+          dexPair2: {
+            path: string[];
+            minPriceMul: number | BN | string;
+            minPriceDiv: number | BN | string;
+          };
+        },
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -1260,7 +1508,7 @@ export interface ChallengerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
-    withderawNat: {
+    withdrawNat: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;

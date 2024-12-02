@@ -9,10 +9,11 @@ import { IAssetAgentContext, IAssetNativeChainContext, IERC20Events } from "../.
 import { CollateralClass, CollateralType } from "../../src/fasset/AssetManagerTypes";
 import { ChainInfo } from "../../src/fasset/ChainInfo";
 import { MockChain, MockChainWallet } from "../../src/mock/MockChain";
+import { MockFlareDataConnectorClient } from "../../src/mock/MockFlareDataConnectorClient";
 import { MockIndexer } from "../../src/mock/MockIndexer";
-import { MockStateConnectorClient } from "../../src/mock/MockStateConnectorClient";
 import { MockVerificationApiClient } from "../../src/mock/MockVerificationApiClient";
 import { AttestationHelper } from "../../src/underlying-chain/AttestationHelper";
+import { FDC_PROTOCOL_ID } from "../../src/underlying-chain/interfaces/IFlareDataConnectorClient";
 import { ContractWithEvents } from "../../src/utils/events/truffle";
 import { BNish, DAYS, HOURS, MAX_BIPS, MINUTES, Modify, requireNotNull, toBIPS, toBNExp, WEEKS, ZERO_ADDRESS } from "../../src/utils/helpers";
 import { artifacts } from "../../src/utils/web3";
@@ -20,15 +21,16 @@ import { web3DeepNormalize } from "../../src/utils/web3normalize";
 import { testChainInfo, TestChainInfo, testNativeChainInfo } from "../../test/test-utils/TestChainInfo";
 import { AssetManagerControllerInstance, FakeERC20Instance, FtsoV2PriceStoreMockInstance } from "../../typechain-truffle";
 import { FaultyWallet } from "./FaultyWallet";
-import { AssetManagerInitSettings, newAssetManager, waitForTimelock } from "./new-asset-manager";
+import { AssetManagerInitSettings, newAssetManager, newAssetManagerController, waitForTimelock } from "./new-asset-manager";
 
 const AgentVault = artifacts.require("AgentVault");
 const AgentVaultFactory = artifacts.require("AgentVaultFactory");
-const SCProofVerifier = artifacts.require("SCProofVerifier");
+const FdcVerification = artifacts.require("FdcVerificationMock");
 const AssetManagerController = artifacts.require("AssetManagerController");
 const AddressUpdater = artifacts.require("AddressUpdater");
 const WNat = artifacts.require("WNat");
-const StateConnector = artifacts.require("StateConnectorMock");
+const Relay = artifacts.require("RelayMock");
+const FdcHub = artifacts.require("FdcHubMock");
 const GovernanceSettings = artifacts.require("GovernanceSettings");
 const VPContract = artifacts.require("VPContract");
 const CollateralPool = artifacts.require("CollateralPool");
@@ -82,8 +84,9 @@ export async function createTestChainContracts(governance: string, updateExecuto
     if (updateExecutor) {
         await governanceSettings.setExecutors([governance, updateExecutor], { from: governance });
     }
-    // create state connector
-    const stateConnector = await StateConnector.new();
+    // create flare data connector
+    const relay = await Relay.new();
+    const fdcHub = await FdcHub.new();
     // create agent vault factory
     const agentVaultImplementation = await AgentVault.new(ZERO_ADDRESS);
     const agentVaultFactory = await AgentVaultFactory.new(agentVaultImplementation.address);
@@ -94,11 +97,7 @@ export async function createTestChainContracts(governance: string, updateExecuto
     const collateralPoolTokenImplementation = await CollateralPoolToken.new(ZERO_ADDRESS, "", "");
     const collateralPoolTokenFactory = await CollateralPoolTokenFactory.new(collateralPoolTokenImplementation.address);
     // create attestation client
-    const scProofVerifier = await SCProofVerifier.new(stateConnector.address);
-    // create asset manager controller
-    const addressUpdater = await AddressUpdater.new(governance); // don't switch to production
-    const assetManagerController = await AssetManagerController.new(governanceSettings.address, governance, addressUpdater.address);
-    await assetManagerController.switchToProductionMode({ from: governance });
+    const fdcVerification = await FdcVerification.new(relay.address, FDC_PROTOCOL_ID);
     // create WNat token
     const wNat = await WNat.new(governance, "Wrapped Native", "WNAT");
     const vpContract = await VPContract.new(wNat.address, false);
@@ -108,18 +107,29 @@ export async function createTestChainContracts(governance: string, updateExecuto
     const testUSDC = await FakeERC20.new(governanceSettings.address, governance, "Test USDCoin", "testUSDC", 6);
     const testUSDT = await FakeERC20.new(governanceSettings.address, governance, "Test Tether", "testUSDT", 6);
     const testETH = await FakeERC20.new(governanceSettings.address, governance, "Test Ethereum", "testETH", 18);
+    // create address updater
+    const addressUpdater = await AddressUpdater.new(governance); // don't switch to production
+    // create asset manager controller
+    const assetManagerController = await newAssetManagerController(governanceSettings.address, governance, addressUpdater.address)
+    await assetManagerController.switchToProductionMode({ from: governance });
     // create ftsov2 price store
     const priceStore = await createMockFtsoV2PriceStore(governanceSettings.address, governance, addressUpdater.address, supportedChains);
     // create allow-all agent owner registry
     const agentOwnerRegistry = await AgentOwnerRegistry.new(governanceSettings.address, governance, true);
     await agentOwnerRegistry.setAllowAll(true, { from: governance });
+    // add some contracts to address updater
+    await addressUpdater.addOrUpdateContractNamesAndAddresses(
+        ["GovernanceSettings", "AddressUpdater", "FdcHub", "Relay", "WNat"],
+        [governanceSettings.address, addressUpdater.address, fdcHub.address, relay.address, wNat.address],
+        { from: governance });
     // set contracts
     const contracts: ChainContracts = {
         GovernanceSettings: newContract("GovernanceSettings", "GovernanceSettings.sol", governanceSettings.address),
         AddressUpdater: newContract("AddressUpdater", "AddressUpdater.sol", addressUpdater.address),
-        StateConnector: newContract("StateConnector", "StateConnectorMock.sol", stateConnector.address),
+        Relay: newContract("Relay", "Relay.sol", relay.address),
+        FdcHub: newContract("FdcHub", "FdcHubMock.sol", fdcHub.address),
         WNat: newContract("WNat", "WNat.sol", wNat.address),
-        SCProofVerifier: newContract("SCProofVerifier", "SCProofVerifier.sol", scProofVerifier.address),
+        FdcVerification: newContract("FdcVerification", "FdcVerification.sol", fdcVerification.address),
         AgentVaultFactory: newContract("AgentVaultFactory", "AgentVaultFactory.sol", agentVaultFactory.address),
         AssetManagerController: newContract("AssetManagerController", "AssetManagerController.sol", assetManagerController.address),
         CollateralPoolFactory: newContract("CollateralPoolFactory", "CollateralPoolFactory.sol", collateralPoolFactory.address),
@@ -129,7 +139,6 @@ export async function createTestChainContracts(governance: string, updateExecuto
         TestUSDC: newContract("TestUSDC", "FakeERC20.sol", testUSDC.address),
         TestUSDT: newContract("TestUSDT", "FakeERC20.sol", testUSDT.address),
         TestETH: newContract("TestETH", "FakeERC20.sol", testETH.address),
-        Relay: newContract("Relay", "Relay.sol", ZERO_ADDRESS),
         FtsoV2PriceStore: newContract("FtsoV2PriceStore", "FtsoV2PriceStore.sol", priceStore.address),
     };
     return contracts;
@@ -152,7 +161,7 @@ export async function createMockFtsoV2PriceStore(governanceSettingsAddress: stri
         symbolArr.push(ci.symbol);
         decimalsArr.push(5);
     }
-    await priceStore.updateSettings(feedIdArr, symbolArr, decimalsArr, { from: initialGovernance });
+    await priceStore.updateSettings(feedIdArr, symbolArr, decimalsArr, 100, { from: initialGovernance });
     // init prices
     async function setInitPrice(symbol: string, price: number | string) {
         const decimals = requireNotNull(decimalsArr[symbolArr.indexOf(symbol)]);
@@ -186,8 +195,8 @@ type CreateTestAssetContextOptions = {
     assetManagerControllerAddress?: string;
     useFaultyWallet?: boolean;
     chain?: MockChain;
-    stateConnectorClient?: MockStateConnectorClient;
-    stateConnectorSubmitterAccount?: string;
+    flareDataConnectorClient?: MockFlareDataConnectorClient;
+    flareDataConnectorSubmitterAccount?: string;
 };
 
 export async function createTestAssetContext(
@@ -197,7 +206,8 @@ export async function createTestAssetContext(
 ): Promise<TestAssetBotContext> {
     const contracts = options.contracts ?? await createTestChainContracts(governance, options.updateExecutor);
     // contract wrappers
-    const stateConnector = await StateConnector.at(contracts.StateConnector.address);
+    const relay = await Relay.at(contracts.Relay.address);
+    const fdcHub = await FdcHub.at(contracts.FdcHub.address);
     const assetManagerController = await AssetManagerController.at(contracts.AssetManagerController.address);
     const wNat = await WNat.at(contracts.WNat.address);
     const addressUpdater = await AddressUpdater.at(contracts.AddressUpdater.address);
@@ -213,11 +223,11 @@ export async function createTestAssetContext(
     const priceStore = await FtsoV2PriceStoreMock.at(contracts.FtsoV2PriceStore.address);
     // create mock chain attestation provider
     const chain = options.chain ?? await createTestChain(chainInfo);
-    const stateConnectorClient = options.stateConnectorClient
-        ?? new MockStateConnectorClient(stateConnector, {}, "auto", options.stateConnectorSubmitterAccount, options.useAlwaysFailsProver ?? false);
-    stateConnectorClient.addChain(chainInfo.chainId, chain);
+    const flareDataConnectorClient = options.flareDataConnectorClient
+        ?? new MockFlareDataConnectorClient(fdcHub, relay, {}, "auto", options.flareDataConnectorSubmitterAccount, options.useAlwaysFailsProver ?? false);
+    flareDataConnectorClient.addChain(chainInfo.chainId, chain);
     const verificationClient = new MockVerificationApiClient();
-    const attestationProvider = new AttestationHelper(stateConnectorClient, chain, chainInfo.chainId);
+    const attestationProvider = new AttestationHelper(flareDataConnectorClient, chain, chainInfo.chainId);
     const wallet = options.useFaultyWallet ? new FaultyWallet() : new MockChainWallet(chain);
     // collaterals
     const collaterals = createTestCollaterals(contracts, chainInfo, stablecoins);
@@ -231,7 +241,7 @@ export async function createTestAssetContext(
     const [assetManager, fAsset] = await newAssetManager(governance, options.assetManagerControllerAddress ?? assetManagerController,
         fAssetName, fAssetSymbol, chainInfo.name, chainInfo.symbol, chainInfo.decimals, web3DeepNormalize(settings), collaterals);
     // indexer
-    const blockchainIndexer = new MockIndexer("", chainInfo.chainId, chain);
+    const blockchainIndexer = new MockIndexer([""], chainInfo.chainId, chain);
     // return context
     return {
         fAssetSymbol,
@@ -310,7 +320,7 @@ function createTestAssetManagerSettings(
     chainInfo: TestChainInfo,
     requireEOAAddressProof?: boolean
 ): AssetManagerInitSettings {
-    if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.SCProofVerifier) {
+    if (!contracts.AssetManagerController || !contracts.AgentVaultFactory || !contracts.FdcVerification) {
         throw new Error("Missing contracts");
     }
     return {
@@ -319,7 +329,7 @@ function createTestAssetManagerSettings(
         agentVaultFactory: contracts.AgentVaultFactory.address,
         collateralPoolFactory: contracts.CollateralPoolFactory.address,
         collateralPoolTokenFactory: contracts.CollateralPoolTokenFactory.address,
-        scProofVerifier: contracts.SCProofVerifier.address,
+        fdcVerification: contracts.FdcVerification.address,
         priceReader: contracts.PriceReader.address,
         whitelist: contracts.AssetManagerWhitelist?.address ?? ZERO_ADDRESS,
         agentOwnerRegistry: contracts.AgentOwnerRegistry.address ?? ZERO_ADDRESS,
@@ -369,6 +379,15 @@ function createTestAssetManagerSettings(
         maxEmergencyPauseDurationSeconds: bnToString(parameters.maxEmergencyPauseDurationSeconds),
         emergencyPauseDurationResetAfterSeconds: bnToString(parameters.emergencyPauseDurationResetAfterSeconds),
         redemptionPaymentExtensionSeconds: bnToString(15),
+        cancelCollateralReservationAfterSeconds: 30,
+        rejectRedemptionRequestWindowSeconds: 120,
+        takeOverRedemptionRequestWindowSeconds: 120,
+        rejectedRedemptionDefaultFactorVaultCollateralBIPS: toBIPS(1.05),
+        rejectedRedemptionDefaultFactorPoolBIPS: toBIPS(0.05),
+        transferFeeMillionths: 200,
+        transferFeeClaimFirstEpochStartTs: Math.floor(new Date("2024-09-01").getTime() / 1000),
+        transferFeeClaimEpochDurationSeconds: 1 * WEEKS,
+        transferFeeClaimMaxUnexpiredEpochs: 12,
     };
 }
 

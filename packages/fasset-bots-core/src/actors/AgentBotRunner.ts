@@ -1,17 +1,19 @@
 import { CreateRequestContext } from "@mikro-orm/core";
 import BN from "bn.js";
-import { AgentBotConfig, AgentBotSettings, Secrets } from "../config";
+import { AgentBotConfig, AgentBotSettings, getKycClient, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
 import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
-import { EVMNativeTokenBalance, sendWeb3Transaction, SimpleRateLimiter, squashSpace, web3 } from "../utils";
+import { EVMNativeTokenBalance, sendWeb3Transaction, SimpleThrottler, squashSpace } from "../utils";
 import { firstValue, getOrCreate, requireNotNull, sleep } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
-import { IBlockChainWallet } from "../underlying-chain/interfaces/IBlockChainWallet";
+import { ITransactionMonitor } from "@flarelabs/simple-wallet";
+import { ChainId } from "../underlying-chain/ChainId";
+import { KycClient } from "./plugins/KycStrategy";
 
 export const FUND_MIN_INTERVAL_MS = 60 * 3 * 1000; // 3 minutes
 
@@ -30,9 +32,12 @@ export class AgentBotRunner {
         public loopDelay: number,
         public notifierTransports: NotifierTransport[],
         public timekeeperService: ITimeKeeperService,
+        public autoUpdateContracts: boolean,
+        public kycClient: KycClient | null
     ) {}
 
     public stopRequested = false;
+    public restartRequested = false;
     public running = false;
 
     public runningAgentBots = new Map<string, AgentBot>();
@@ -43,12 +48,14 @@ export class AgentBotRunner {
 
     public serviceAccounts = new Map<string, string>();
 
-    private simpleWalletBackgroundTasks: Map<string, IBlockChainWallet> = new Map();
-    private fundServiceRateLimit = new SimpleRateLimiter<string>(FUND_MIN_INTERVAL_MS);
+    private walletMonitors: Map<ChainId, ITransactionMonitor> = new Map();
+
+    private fundServiceThrottler = new SimpleThrottler<string>(FUND_MIN_INTERVAL_MS);
 
     @CreateRequestContext()
     async run(): Promise<void> {
         this.stopRequested = false;
+        this.restartRequested = false
         this.running = true;
         try {
             /* istanbul ignore next */
@@ -62,6 +69,7 @@ export class AgentBotRunner {
         } finally {
             this.running = false;
             await this.stopAllWalletMonitoring();
+            logger.info(`Main agent bot runner loop ended.`)
         }
     }
 
@@ -71,15 +79,19 @@ export class AgentBotRunner {
     }
 
     readyToStop() {
-        return this.stop() && this.runningAgentBots.size === 0;
+        return this.stopOrRestartRequested() && this.runningAgentBots.size === 0;
     }
 
-    stop(): boolean {
-        return this.stopRequested;
+    stopOrRestartRequested(): boolean {
+        return this.stopRequested || this.restartRequested;
     }
 
     requestStop(): void {
         this.stopRequested = true;
+    }
+
+    requestRestart(): void {
+        this.restartRequested = true;
     }
 
     /**
@@ -104,10 +116,10 @@ export class AgentBotRunner {
      */
     async runStepParallel(): Promise<void> {
         this.removeStoppedAgentBots();
-        if (!this.stop()) {
+        if (!this.stopOrRestartRequested()) {
             await this.addNewAgentBots();
         }
-        const sleepMS = this.stop() ? 100 : this.loopDelay;
+        const sleepMS = this.stopOrRestartRequested() ? 100 : this.loopDelay;
         await sleep(sleepMS);
     }
 
@@ -118,7 +130,7 @@ export class AgentBotRunner {
     async runStepSerial(): Promise<void> {
         const agentEntities = await this.activeAgents();
         for (const agentEntity of agentEntities) {
-            if (this.stop()) break;
+            if (this.stopOrRestartRequested()) break;
             try {
                 const agentBot = await this.newAgentBot(agentEntity);
                 if (agentBot == null) continue;
@@ -172,14 +184,14 @@ export class AgentBotRunner {
         }
         const agentBotSettings = requireNotNull(this.settings.get(agentEntity.fassetSymbol));    // cannot be missing - see create()
         const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
-        const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEntity, ownerUnderlyingAddress, this.notifierTransports);
+        const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEntity, ownerUnderlyingAddress, this.notifierTransports, this.kycClient);
         agentBot.runner = this;
         agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
         agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
         agentBot.locks = this.locks;
         agentBot.loopDelay = this.loopDelay;
         // add wallet to the background loop
-        this.addSimpleWalletToLoop(agentBot);
+        await this.addSimpleWalletToLoop(agentBot);
         // run initial topup etc.
         await agentBot.runBotInitialOperations(this.orm.em);
         return agentBot;
@@ -189,6 +201,7 @@ export class AgentBotRunner {
         const agentBotEntries = Array.from(this.runningAgentBots.entries());
         for (const [address, agentBot] of agentBotEntries) {
             if (!agentBot.running()) {
+                logger.info(`Agent bot for ${address} stopped, removing fom runner.`)
                 this.runningAgentBots.delete(address);
             }
         }
@@ -200,7 +213,7 @@ export class AgentBotRunner {
         if (!settings || !fundingAddress) return;
         const notifier = new AgentNotifier(fundingAddress, this.notifierTransports);
         for (const [name, address] of this.serviceAccounts) {
-            if (!this.fundServiceRateLimit.allow(name)) continue
+            if (!this.fundServiceThrottler.allow(name)) continue;
             await this.fundAccount(fundingAddress, address, settings.minBalanceOnServiceAccount, name, notifier);
         }
     }
@@ -246,49 +259,54 @@ export class AgentBotRunner {
             logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol}
                 on chain ${assetContext.chainInfo.chainId} with asset manager ${assetContext.assetManager.address}`);
         }
+        const kycClient = getKycClient(secrets);
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService);
+        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, botConfig.autoUpdateContracts, kycClient);
     }
 
-    addSimpleWalletToLoop(agentBot: AgentBot): void {
-        const vaultAddress = agentBot.agent.vaultAddress;
-        if (this.simpleWalletBackgroundTasks.get(vaultAddress)) {
+    async addSimpleWalletToLoop(agentBot: AgentBot) {
+        const chainId = agentBot.context.chainInfo.chainId;
+        if (this.walletMonitors.has(chainId)) {
             return;
         }
-        const newWallet = agentBot.context.wallet
-        this.simpleWalletBackgroundTasks.set(vaultAddress, newWallet);
-        void newWallet.startMonitoringTransactionProgress().catch((error) => {
-            logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-            console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-        });
+        logger.info(`Wallet monitoring starting for ${chainId}...`);
+        const monitor = await agentBot.context.wallet.createMonitor();
+        this.walletMonitors.set(chainId, monitor);
+        await monitor.startMonitoring();
+        logger.info(`Wallet monitoring started for ${monitor.getId()}.`);
     }
 
     async ensureWalletMonitoringRunning() {
+        logger.info(`Starting wallet monitor liveness check.`);
         const sleepFor = 30_000;
         while (!this.readyToStop()) {
-            await sleep(sleepFor);
-            if (this.readyToStop()) return;
-            for (const [_, wallet] of this.simpleWalletBackgroundTasks) {
-                const isMonitoring = await wallet.isMonitoring();
-                /* istanbul ignore next */
-                if (!isMonitoring) {
-                    logger.info(`Wallet monitoring restarted.`);
-                    console.info(`Wallet monitoring restarted.`);
-                    void wallet.startMonitoringTransactionProgress().catch((error) => {
-                        logger.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                        console.error(`Background task to monitor wallet ended unexpectedly:`, error);
-                    });
+            try {
+                await sleep(sleepFor);
+                if (this.readyToStop()) return;
+                for (const [_, monitor] of this.walletMonitors) {
+                    const isMonitoring = monitor.isMonitoring();
+                    if (!isMonitoring) {
+                        logger.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
+                        console.info(`Wallet monitoring restarted for ${monitor.getId()}.`);
+                        await monitor.startMonitoring();
+                    }
                 }
+            } catch (error) {
+                logger.error(`Error ensuring wallet monitoring:`, error);
             }
         }
     }
 
     async stopAllWalletMonitoring(): Promise<void> {
-        for (const [vaultAddress, wallet] of this.simpleWalletBackgroundTasks) {
+        logger.info("Stopping wallet monitors...");
+        // make a copy and clear monitors (so that ensureWalletMonitoringRunning doesn't restart them)
+        const walletMonitors = new Map(this.walletMonitors);
+        this.walletMonitors.clear();
+        // stop all monitors
+        for (const [chainId, wallet] of walletMonitors) {
             await wallet.stopMonitoring();
-            logger.info(`Stopped monitoring wallet for agent ${vaultAddress}.`);
+            logger.info(`Stopped monitoring wallet for agent ${chainId}.`);
         }
-        //clear simpleWalletBackgroundTasks
-        this.simpleWalletBackgroundTasks.clear();
+        logger.info("All wallet monitors stopped.");
     }
 }

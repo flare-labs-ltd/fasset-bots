@@ -68,7 +68,12 @@ describe("Liquidator", () => {
         // liquidate agent
         console.log(chalk.cyan("liquidating agent..."))
         await waitFinalize(provider, signer, liquidator.connect(signer).runArbitrage(
-            AGENT_ADDRESS, signer, 0, 1, 0, 1, ZeroAddress, ZeroAddress, [], []
+            AGENT_ADDRESS, signer,
+            {
+                flashLender: ZeroAddress, dex: ZeroAddress,
+                dexPair1: { minPriceMul: 0, minPriceDiv: 1, path: [] },
+                dexPair2: { minPriceMul: 0, minPriceDiv: 1, path: [] }
+            }
         ))
         // check that agent was fully liquidated and put out of liquidation
         const { status: statusAfter, mintedUBA: mintedUbaAfter } = await contracts.assetManager.getAgentInfo(AGENT_ADDRESS)

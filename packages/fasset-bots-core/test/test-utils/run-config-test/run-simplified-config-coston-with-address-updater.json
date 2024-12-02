@@ -14,7 +14,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
             "priceChangeEmitter": "FtsoManager"
         }
     },
@@ -34,8 +34,8 @@
         }
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
+    "dataAccessLayerUrls": [
+        "https://da.cflr.testfsp.aflabs.org:4443"
     ],
-    "assetManagerController": "0xe9AE92e02355Fad189422b0F376eDcf0465B435b"
+    "assetManagerController": "0xA4962A6e8cc413d9BF2Dd3482a62ED2d3AaB0079"
 }

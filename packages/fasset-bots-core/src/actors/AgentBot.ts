@@ -13,11 +13,11 @@ import { PaymentReference } from "../fasset/PaymentReference";
 import { attestationProved } from "../underlying-chain/AttestationHelper";
 import { ChainId } from "../underlying-chain/ChainId";
 import { TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion, SimpleRateLimiter } from "../utils";
+import { CommandLineError, TokenBalances, checkUnderlyingFunds, programVersion, SimpleThrottler } from "../utils";
 import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
-import { formatArgs, squashSpace } from "../utils/formatting";
+import { formatArgs, formatTimestamp, squashSpace } from "../utils/formatting";
 import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, sleepUntil, toBN } from "../utils/helpers";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -36,6 +36,8 @@ import { AgentBotUnderlyingManagement } from "./AgentBotUnderlyingManagement";
 import { AgentBotUnderlyingWithdrawal } from "./AgentBotUnderlyingWithdrawal";
 import { AgentBotUpdateSettings } from "./AgentBotUpdateSettings";
 import { AgentTokenBalances } from "./AgentTokenBalances";
+import { AgentBotHandshake } from "./AgentBotHandshake";
+import { KycClient } from "./plugins/KycStrategy";
 
 const PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS = 2 * MINUTES * 1000;
 
@@ -45,6 +47,8 @@ const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 
 export interface IRunner {
     stopRequested: boolean;
+    restartRequested: boolean;
+    autoUpdateContracts: boolean;
 }
 
 export interface ITimeKeeper {
@@ -98,11 +102,13 @@ export class AgentBot {
         public notifier: AgentNotifier,
         public owner: OwnerAddressPair,
         public ownerUnderlyingAddress: string,
+        public kycClient: KycClient | null
     ) {}
 
     context = this.agent.context;
     tokens = new AgentTokenBalances(this.context, this.agent.vaultAddress);
     eventReader = new AgentBotEventReader(this, this.context, this.notifier, this.agent.vaultAddress);
+    handshake = new AgentBotHandshake(this, this.agent, this.notifier, this.kycClient);
     minting = new AgentBotMinting(this, this.agent, this.notifier);
     redemption = new AgentBotRedemption(this, this.agent, this.notifier);
     underlyingManagement = new AgentBotUnderlyingManagement(this, this.agent, this.agentBotSettings, this.notifier, this.ownerUnderlyingAddress, this.tokens);
@@ -123,8 +129,9 @@ export class AgentBot {
     // internal
     private _running: boolean = false;
     private _stopRequested: boolean = false;
+    private _restartRequested: boolean = false;
 
-    private pingResponseRateLimiter = new SimpleRateLimiter<string>(PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS);
+    private pingResponseRateLimiter = new SimpleThrottler<string>(PING_RESPONSE_MIN_INTERVAL_PER_SENDER_MS);
 
     static async createUnderlyingAddress(context: IAssetAgentContext) {
         return await context.wallet.createAccount();
@@ -161,7 +168,8 @@ export class AgentBot {
         ownerUnderlyingAddress: string,
         addressValidityProof: AddressValidity.Proof,
         agentSettingsConfig: AgentVaultInitSettings,
-        notifierTransports: NotifierTransport[]
+        notifierTransports: NotifierTransport[],
+        kycClient: KycClient | null
     ): Promise<AgentBot> {
         logger.info(`Starting to create agent for owner ${owner.managementAddress} with settings ${JSON.stringify(agentSettingsConfig)}.`);
         // ensure that work address is defined
@@ -188,7 +196,7 @@ export class AgentBot {
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
 
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress, kycClient);
     }
 
     /**
@@ -221,7 +229,8 @@ export class AgentBot {
         agentBotSettings: AgentBotSettings,
         agentEntity: AgentEntity,
         ownerUnderlyingAddress: string,
-        notifierTransports: NotifierTransport[]
+        notifierTransports: NotifierTransport[],
+        kycClient: KycClient | null = null
     ): Promise<AgentBot> {
         logger.info(`Starting to recreate agent ${agentEntity.vaultAddress} from DB for owner ${agentEntity.ownerAddress}.`);
         const agentVault = await AgentVault.at(agentEntity.vaultAddress);
@@ -241,7 +250,7 @@ export class AgentBot {
         logger.info(squashSpace`Agent ${agent.vaultAddress} was restored from DB by owner ${agent.owner},
             underlying address ${agent.underlyingAddress} and collateral pool address ${agent.collateralPool.address}.`);
         const notifier = new AgentNotifier(agent.vaultAddress, notifierTransports);
-        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress);
+        return new AgentBot(agent, agentBotSettings, notifier, owner, ownerUnderlyingAddress, kycClient);
     }
 
     static underlyingAddress(secrets: Secrets, chainId: ChainId) {
@@ -274,20 +283,28 @@ export class AgentBot {
         }
     }
 
-    requestStop() {
+    requestStop(): void {
         this._stopRequested = true;
     }
 
-    stopRequested() {
+    stopRequested(): boolean {
         return (this.runner?.stopRequested ?? false) || this._stopRequested;
     }
 
-    running() {
+    restartRequested(): boolean {
+        return (this.runner?.restartRequested ?? false) || this._restartRequested;
+    }
+
+    stopOrRestartRequested(): boolean {
+        return this.stopRequested() || this.restartRequested();
+    }
+
+    running(): boolean {
         return this._running;
     }
 
     requestSubmitterAddress() {
-        return this.context.attestationProvider.stateConnector.account ?? this.owner.workAddress;
+        return this.context.attestationProvider.flareDataConnector.account ?? this.owner.workAddress;
     }
 
     /**
@@ -324,6 +341,12 @@ export class AgentBot {
             threads.push(this.startThread(rootEm, `redemptions-expired-${botId}`, true, async (threadEm) => {
                 await this.redemption.handleExpiredRedemptions(threadEm);
             }));
+            threads.push(this.startThread(rootEm, `rejected-redemption-requests-${botId}`, true, async (threadEm) => {
+                await this.redemption.handleRejectedRedemptionRequests(threadEm);
+            }));
+            threads.push(this.startThread(rootEm, `handshakes-${botId}`, true, async (threadEm) => {
+                await this.handshake.handleOpenHandshakes(threadEm);
+            }));
             threads.push(this.startThread(rootEm, `mintings-${botId}`, true, async (threadEm) => {
                 await this.minting.handleOpenMintings(threadEm);
             }));
@@ -347,7 +370,7 @@ export class AgentBot {
     /**
      * Start the read and optionally run it in a loop.
      * @param rootEm the entity manager, will be forked for thread
-     * @param loop if true, the thread loops until `stopRequested()` is true
+     * @param loop if true, the thread loops until `stopOrRestartRequested()` is true
      * @param method the thread method (if loop is true, it will be run repeatedly)
      * @returns promise that resolves when thread exits
      */
@@ -355,7 +378,7 @@ export class AgentBot {
         await loggerAsyncStorage.run(name, async () => {
             logger.info(`Thread started ${name}.`);
             const threadEm = rootEm.fork();
-            while (!this.stopRequested()) {
+            while (!this.stopOrRestartRequested()) {
                 try {
                     await method(threadEm);
                 } catch (error) {
@@ -364,7 +387,7 @@ export class AgentBot {
                 if (!loop) break;
                 // wait a bit so that idle threads do not burn too much time
                 logger.info(`Finished handling, sleeping ${this.loopDelay / 1000}s`);
-                await sleepUntil(this.loopDelay, () => this.stopRequested());
+                await sleepUntil(this.loopDelay, () => this.stopOrRestartRequested());
             }
             logger.info(`Thread ended ${name}.`);
         })
@@ -377,6 +400,8 @@ export class AgentBot {
     async runStep(rootEm: EM): Promise<void> {
         await this.handleEvents(rootEm);
         await this.redemption.handleOpenRedemptions(rootEm);
+        await this.redemption.handleRejectedRedemptionRequests(rootEm);
+        await this.handshake.handleOpenHandshakes(rootEm);
         await this.minting.handleOpenMintings(rootEm);
         await this.handleTimelockedProcesses(rootEm);
         await this.underlyingManagement.handleOpenUnderlyingPayments(rootEm);
@@ -390,9 +415,28 @@ export class AgentBot {
     }
 
     async handleEvent(em: EM, event: EvmEvent): Promise<void> {
-        // only events for this agent should be handled (this should already be the case due to filter in readNewEvents, but just to be sure)
-        if (event.args.agentVault && event.args.agentVault.toLowerCase() !== this.agent.vaultAddress.toLowerCase()) return;
-        if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
+
+        // handle all events for RedemptionRequestRejected and RedemptionRequestTakenOver
+        if (eventIs(event, this.context.assetManager, "RedemptionRequestRejected")) {
+            await this.redemption.redemptionRequestRejected(em, event.args, event.blockNumber);
+            return;
+        } else if (eventIs(event, this.context.assetManager, "RedemptionRequestTakenOver")) {
+            await this.redemption.redemptionRequestTakenOver(em, event.args);
+            return;
+        }
+        // all other events are events for this agent (this should already be the case due to filter in readNewEvents, but just to be sure)
+        const agentVault = (event.args as any).agentVault;
+        if (agentVault && agentVault.toLowerCase() !== this.agent.vaultAddress.toLowerCase()) return;
+        if (eventIs(event, this.context.assetManager, "HandshakeRequired")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'HandshakeRequired' with data ${formatArgs(event.args)}.`);
+            await this.handshake.handshakeRequired(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CollateralReservationCancelled")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationCancelled' with data ${formatArgs(event.args)}.`);
+            await this.handshake.mintingCancelled(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CollateralReservationRejected")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReservationRejected' with data ${formatArgs(event.args)}.`);
+            await this.handshake.mintingRejected(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "CollateralReserved")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'CollateralReserved' with data ${formatArgs(event.args)}.`);
             await this.minting.mintingStarted(em, event.args);
         } else if (eventIs(event, this.context.assetManager, "CollateralReservationDeleted")) {
@@ -401,6 +445,9 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "MintingExecuted")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(event.args)}.`);
             await this.minting.mintingExecuted(em, event.args);
+        } else if (eventIs(event, this.context.assetManager, "SelfMint")) {
+            logger.info(`Agent ${this.agent.vaultAddress} received event 'SelfMint' with data ${formatArgs(event.args)}.`);
+            await this.minting.selfMintingExecuted(event.args);
         } else if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
             await this.redemption.redemptionStarted(em, event.args);
@@ -422,14 +469,14 @@ export class AgentBot {
         } else if (eventIs(event, this.context.assetManager, "AgentInCCB")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'AgentInCCB' with data ${formatArgs(event.args)}.`);
             await this.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
-            await this.notifier.sendCCBAlert(event.args.timestamp);
+            await this.notifier.sendCCBAlert(`${formatTimestamp(event.args.timestamp)} (${event.args.timestamp})`);
         } else if (eventIs(event, this.context.assetManager, "LiquidationStarted")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationStarted' with data ${formatArgs(event.args)}.`);
             await this.collateralManagement.checkAgentForCollateralRatiosAndTopUp();
-            await this.notifier.sendLiquidationStartAlert(event.args.timestamp);
+            await this.notifier.sendLiquidationStartAlert(`${formatTimestamp(event.args.timestamp)} (${event.args.timestamp})`);
         } else if (eventIs(event, this.context.assetManager, "LiquidationEnded")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationEnded' with data ${formatArgs(event.args)}.`);
-            await this.notifier.sendLiquidationEndedAlert(event.args.timestamp);
+            await this.notifier.sendLiquidationEndedAlert();
         } else if (eventIs(event, this.context.assetManager, "LiquidationPerformed")) {
             logger.info(`Agent ${this.agent.vaultAddress} received event 'LiquidationPerformed' with data ${formatArgs(event.args)}.`);
             await this.notifier.sendLiquidationWasPerformed(await this.tokens.fAsset.format(event.args.valueUBA));
@@ -453,7 +500,7 @@ export class AgentBot {
      */
     async handleDailyTasks(rootEm: EM): Promise<void> {
         try {
-            if (this.stopRequested()) return;
+            if (this.stopOrRestartRequested()) return;
             const readAgentEnt = await this.fetchAgentEntity(rootEm)
             const timestamp = await latestBlockTimestampBN();
             if (timestamp.sub(readAgentEnt.dailyTasksTimestamp).ltn(PERFORM_DAILY_TASKS_EVERY)) return;
@@ -478,7 +525,7 @@ export class AgentBot {
      * @param rootEm entity manager
      */
     async handleTimelockedProcesses(rootEm: EM): Promise<void> {
-        if (this.stopRequested()) return;
+        if (this.stopOrRestartRequested()) return;
         logger.info(`Agent ${this.agent.vaultAddress} started handling 'handleTimelockedProcesses'.`);
         await this.collateralWithdrawal.handleWaitForCollateralWithdrawal(rootEm);
         await this.collateralWithdrawal.handleWaitForPoolTokenRedemption(rootEm);
@@ -494,7 +541,7 @@ export class AgentBot {
      * @param agentEnt agent entity
      */
     async handleWaitAgentExitAvailable(rootEm: EM) {
-        if (this.stopRequested()) return;
+        if (this.stopOrRestartRequested()) return;
         try {
             const readAgentEnt = await this.fetchAgentEntity(rootEm);
             const latestTimestamp = await latestBlockTimestampBN();
@@ -617,7 +664,7 @@ export class AgentBot {
 
     async enoughTimePassedToObtainProof(request: { proofRequestRound?: number, proofRequestData?: string }) {
         assertNotNull(request.proofRequestRound);
-        return await this.context.attestationProvider.stateConnector.roundFinalized(request.proofRequestRound + 1);
+        return await this.context.attestationProvider.flareDataConnector.roundFinalized(request.proofRequestRound + 1);
     }
 
     /**
@@ -627,7 +674,7 @@ export class AgentBot {
      */
     async updateAgentEntity(rootEm: EM, modify: (agentEnt: AgentEntity) => Promise<void>): Promise<void> {
         await this.runInTransaction(rootEm, async (em) => {
-            const agentEnt: AgentEntity = await this.fetchAgentEntity(rootEm);
+            const agentEnt: AgentEntity = await this.fetchAgentEntity(em);
             await modify(agentEnt);
         });
     }

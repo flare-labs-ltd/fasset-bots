@@ -156,6 +156,7 @@ export interface RedemptionConfirmationsFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -188,6 +189,7 @@ export interface RedemptionConfirmationsFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -220,6 +222,7 @@ export interface RedemptionConfirmationsFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -252,6 +255,7 @@ export interface RedemptionConfirmationsFacetInstance
             blockNumber: number | BN | string;
             blockTimestamp: number | BN | string;
             sourceAddressHash: string;
+            sourceAddressesRoot: string;
             receivingAddressHash: string;
             intendedReceivingAddressHash: string;
             spentAmount: number | BN | string;
@@ -288,6 +292,7 @@ export interface RedemptionConfirmationsFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -320,6 +325,7 @@ export interface RedemptionConfirmationsFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -352,6 +358,7 @@ export interface RedemptionConfirmationsFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;
@@ -384,6 +391,7 @@ export interface RedemptionConfirmationsFacetInstance
               blockNumber: number | BN | string;
               blockTimestamp: number | BN | string;
               sourceAddressHash: string;
+              sourceAddressesRoot: string;
               receivingAddressHash: string;
               intendedReceivingAddressHash: string;
               spentAmount: number | BN | string;

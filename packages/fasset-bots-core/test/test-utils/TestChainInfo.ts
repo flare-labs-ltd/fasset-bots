@@ -31,7 +31,7 @@ export const testNativeChainInfo: NativeChainInfo = {
     readLogsChunkSize: 10,
 };
 
-export type TestChainType = "eth" | "btc" | "xrp";
+export type TestChainType = "eth" | "btc" | "xrp" | "doge";
 
 export const testChainInfo: Record<TestChainType, TestChainInfo> = {
     eth: {
@@ -60,6 +60,20 @@ export const testChainInfo: Record<TestChainType, TestChainInfo> = {
         finalizationBlocks: 6,
         underlyingBlocksForPayment: 8,
         lotSize: 2,
+        requireEOAProof: false,
+    },
+    doge: {
+        chainId: ChainId.testBTC,
+        name: "DOGECoin",
+        symbol: "DOGE",
+        decimals: 8,
+        amgDecimals: 8,
+        minimumAccountBalance: BN_ZERO,
+        startPrice: 0.6,
+        blockTime: 60,
+        finalizationBlocks: 50,
+        underlyingBlocksForPayment: 60,
+        lotSize: 20,
         requireEOAProof: false,
     },
     xrp: {

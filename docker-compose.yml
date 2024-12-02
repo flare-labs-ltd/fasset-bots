@@ -1,0 +1,61 @@
+x-common-settings: &common-settings
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment:
+    DB_HOST: mysql
+    DB_USER: ${FASSET_DB_USER}
+    DB_PASSWORD: ${FASSET_DB_PASSWORD}
+    DB_NAME: fasset_bots
+    DB_PORT: 3306
+  volumes:
+    - app_data:/usr/src/app
+    - log_data:/usr/src/app/log
+  stdin_open: true
+  tty: true
+  depends_on:
+    mysql:
+      condition: service_healthy
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${FASSET_DB_PASSWORD}
+      MYSQL_DATABASE: fasset_bots
+      MYSQL_USER: ${FASSET_DB_USER}
+      MYSQL_PASSWORD: ${FASSET_DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$FASSET_DB_PASSWORD || exit 1"]
+      timeout: 20s
+      retries: 10
+
+  setup:
+    <<: *common-settings
+    container_name: setup
+    profiles:
+      - setup
+      - run-agent
+    command: ["/bin/sh"]
+    ports:
+      - "3000:3000"
+
+
+  run-agent:
+    <<: *common-settings
+    container_name: run-agent
+    profiles:
+      - run-agent
+    command: ["yarn", "run-agent"]
+    ports:
+      - "3001:3000"
+
+volumes:
+  mysql_data:
+  app_data:
+  log_data:

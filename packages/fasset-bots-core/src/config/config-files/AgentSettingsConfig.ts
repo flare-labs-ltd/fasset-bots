@@ -1,3 +1,6 @@
+// Mapped to integer in JSON schema.
+type integer = number;
+
 export interface AgentSettingsConfig {
     /**
      * Token suffix for the new collateral pool's token.
@@ -60,6 +63,13 @@ export interface AgentSettingsConfig {
      * @pattern ^\d+(\.\d+)?%?$
      */
     poolTopupTokenPriceFactor: string;
+
+    /**
+     * The handshake type required by the agent. Currently supported values are
+     * - 0 - no handshake is performed
+     * - 1 - handshake is performed by external service api (configured further in bot config)
+     */
+    handshakeType: integer;
 }
 
 export type Schema_AgentSettingsConfig = AgentSettingsConfig & { $schema?: string; };

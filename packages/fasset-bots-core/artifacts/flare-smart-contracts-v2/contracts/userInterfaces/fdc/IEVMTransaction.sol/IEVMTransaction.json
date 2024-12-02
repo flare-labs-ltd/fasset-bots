@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IEVMTransaction",
+  "sourceName": "flare-smart-contracts-v2/contracts/userInterfaces/fdc/IEVMTransaction.sol",
+  "abi": [],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

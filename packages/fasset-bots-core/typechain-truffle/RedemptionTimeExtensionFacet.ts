@@ -14,108 +14,20 @@ export interface RedemptionTimeExtensionFacetContract
   ): Promise<RedemptionTimeExtensionFacetInstance>;
 }
 
-export interface GovernanceCallTimelocked {
-  name: "GovernanceCallTimelocked";
+export interface SettingChanged {
+  name: "SettingChanged";
   args: {
-    encodedCall: string;
-    encodedCallHash: string;
-    allowedAfterTimestamp: BN;
-    0: string;
-    1: string;
-    2: BN;
-  };
-}
-
-export interface GovernanceInitialised {
-  name: "GovernanceInitialised";
-  args: {
-    initialGovernance: string;
-    0: string;
-  };
-}
-
-export interface GovernedProductionModeEntered {
-  name: "GovernedProductionModeEntered";
-  args: {
-    governanceSettings: string;
-    0: string;
-  };
-}
-
-export interface RedemptionPaymentExtensionSecondsChanged {
-  name: "RedemptionPaymentExtensionSecondsChanged";
-  args: {
+    name: string;
     value: BN;
-    0: BN;
-  };
-}
-
-export interface TimelockedGovernanceCallCanceled {
-  name: "TimelockedGovernanceCallCanceled";
-  args: {
-    encodedCallHash: string;
     0: string;
+    1: BN;
   };
 }
 
-export interface TimelockedGovernanceCallExecuted {
-  name: "TimelockedGovernanceCallExecuted";
-  args: {
-    encodedCallHash: string;
-    0: string;
-  };
-}
-
-export type AllEvents =
-  | GovernanceCallTimelocked
-  | GovernanceInitialised
-  | GovernedProductionModeEntered
-  | RedemptionPaymentExtensionSecondsChanged
-  | TimelockedGovernanceCallCanceled
-  | TimelockedGovernanceCallExecuted;
+export type AllEvents = SettingChanged;
 
 export interface RedemptionTimeExtensionFacetInstance
   extends Truffle.ContractInstance {
-  cancelGovernanceCall: {
-    (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _encodedCall: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _encodedCall: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _encodedCall: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  executeGovernanceCall: {
-    (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(
-      _encodedCall: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _encodedCall: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _encodedCall: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-  governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
   initRedemptionTimeExtensionFacet: {
     (
       _redemptionPaymentExtensionSeconds: number | BN | string,
@@ -134,36 +46,6 @@ export interface RedemptionTimeExtensionFacetInstance
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
-
-  initialise: {
-    (
-      _governanceSettings: string,
-      _initialGovernance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _governanceSettings: string,
-      _initialGovernance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _governanceSettings: string,
-      _initialGovernance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _governanceSettings: string,
-      _initialGovernance: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  isExecutor(
-    _address: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<boolean>;
-
-  productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   redemptionPaymentExtensionSeconds(
     txDetails?: Truffle.TransactionDetails
@@ -188,56 +70,7 @@ export interface RedemptionTimeExtensionFacetInstance
     ): Promise<number>;
   };
 
-  switchToProductionMode: {
-    (txDetails?: Truffle.TransactionDetails): Promise<
-      Truffle.TransactionResponse<AllEvents>
-    >;
-    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
-  };
-
   methods: {
-    cancelGovernanceCall: {
-      (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _encodedCall: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _encodedCall: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _encodedCall: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    executeGovernanceCall: {
-      (_encodedCall: string, txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(
-        _encodedCall: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _encodedCall: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _encodedCall: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    governance(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
-    governanceSettings(txDetails?: Truffle.TransactionDetails): Promise<string>;
-
     initRedemptionTimeExtensionFacet: {
       (
         _redemptionPaymentExtensionSeconds: number | BN | string,
@@ -256,36 +89,6 @@ export interface RedemptionTimeExtensionFacetInstance
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
-
-    initialise: {
-      (
-        _governanceSettings: string,
-        _initialGovernance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _governanceSettings: string,
-        _initialGovernance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _governanceSettings: string,
-        _initialGovernance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _governanceSettings: string,
-        _initialGovernance: string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    isExecutor(
-      _address: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<boolean>;
-
-    productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     redemptionPaymentExtensionSeconds(
       txDetails?: Truffle.TransactionDetails
@@ -308,15 +111,6 @@ export interface RedemptionTimeExtensionFacetInstance
         _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
-    };
-
-    switchToProductionMode: {
-      (txDetails?: Truffle.TransactionDetails): Promise<
-        Truffle.TransactionResponse<AllEvents>
-      >;
-      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
-      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
-      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
   };
 

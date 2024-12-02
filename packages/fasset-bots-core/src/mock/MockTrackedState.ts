@@ -43,6 +43,7 @@ export class MockTrackedState extends TrackedState {
                 poolExitCollateralRatioBIPS: agentInfo.poolExitCollateralRatioBIPS,
                 poolTopupCollateralRatioBIPS: agentInfo.poolTopupCollateralRatioBIPS,
                 poolTopupTokenPriceFactorBIPS: agentInfo.poolTopupTokenPriceFactorBIPS,
+                handshakeType: agentInfo.handshakeType,
             }
         });
         agent.initialize(agentInfo);

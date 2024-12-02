@@ -200,7 +200,7 @@ const connectConfig = {
 };
 
 // WALLET object used to connect to Bitcoin node
-const wClient = new WALLET.BTC(connectConfig);
+const wClient = new BTC(connectConfig);
 
 // Create a wallet
 const newAccount = wClient();

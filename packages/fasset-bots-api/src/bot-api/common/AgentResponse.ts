@@ -32,6 +32,7 @@ export interface AgentSettings {
     buyFAssetByAgentFactorBIPS: string;
     poolTopupCollateralRatioBIPS: string;
     poolTopupTokenPriceFactorBIPS: string;
+    handshakeType: string;
 }
 
 export interface AgentData {
@@ -57,6 +58,23 @@ export interface AllCollaterals {
     }[]
 }
 
+export interface AllBalances {
+    symbol: string;
+    balance: string;
+    wrapped?: string;
+}
+
+export interface UnderlyingAddress {
+    asset: string;
+    address: string;
+}
+
+export interface Collaterals {
+    symbol: string;
+    amount: string;
+    ownerBalance: string;
+}
+
 export interface VaultInfo {
     address: string;
     updating: boolean;
@@ -73,7 +91,12 @@ export interface VaultInfo {
     health: string;
     poolCollateralUSD: string,
     mintCount: string,
-    poolFee: string
+    poolFee: string,
+    createdAt: number;
+    fasset: string;
+    lotsPoolBacked: string;
+    lotsVaultBacked: string;
+    handshakeType: number;
 }
 
 export interface AllVaults {
@@ -102,6 +125,7 @@ export interface AgentVaultStatus {
     agentSettingUpdateValidAtPoolExitCrBIPS: string;
     agentSettingUpdateValidAtPoolTopupCrBIPS: string;
     agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: string;
+    agentSettingUpdateValidAtHandshakeType: string;
 }
 
 type BNsToStrings<T> = {

@@ -153,6 +153,13 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
+  getPriceFromTrustedProvidersWithQuality(
+    _symbol: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
+
+  getSymbols(txDetails?: Truffle.TransactionDetails): Promise<string[]>;
+
   getTrustedProviders(
     txDetails?: Truffle.TransactionDetails
   ): Promise<string[]>;
@@ -193,12 +200,14 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<BN>;
 
+  maxSpreadBIPS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
   productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   publishPrices: {
     (
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -211,7 +220,7 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -224,7 +233,7 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
     ): Promise<void>;
     sendTransaction(
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -237,7 +246,7 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _proofs: {
-        merkleProof: string[];
+        proof: string[];
         body: {
           votingRoundId: number | BN | string;
           id: string;
@@ -441,24 +450,28 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
       _feedIds: string[],
       _symbols: string[],
       _trustedDecimals: (number | BN | string)[],
+      _maxSpreadBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
       _feedIds: string[],
       _symbols: string[],
       _trustedDecimals: (number | BN | string)[],
+      _maxSpreadBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
       _feedIds: string[],
       _symbols: string[],
       _trustedDecimals: (number | BN | string)[],
+      _maxSpreadBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
       _feedIds: string[],
       _symbols: string[],
       _trustedDecimals: (number | BN | string)[],
+      _maxSpreadBIPS: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -542,6 +555,13 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
+    getPriceFromTrustedProvidersWithQuality(
+      _symbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
+
+    getSymbols(txDetails?: Truffle.TransactionDetails): Promise<string[]>;
+
     getTrustedProviders(
       txDetails?: Truffle.TransactionDetails
     ): Promise<string[]>;
@@ -582,12 +602,14 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<BN>;
 
+    maxSpreadBIPS(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
     productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     publishPrices: {
       (
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;
@@ -600,7 +622,7 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;
@@ -613,7 +635,7 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
       ): Promise<void>;
       sendTransaction(
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;
@@ -626,7 +648,7 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _proofs: {
-          merkleProof: string[];
+          proof: string[];
           body: {
             votingRoundId: number | BN | string;
             id: string;
@@ -830,24 +852,28 @@ export interface FtsoV2PriceStoreMockInstance extends Truffle.ContractInstance {
         _feedIds: string[],
         _symbols: string[],
         _trustedDecimals: (number | BN | string)[],
+        _maxSpreadBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
         _feedIds: string[],
         _symbols: string[],
         _trustedDecimals: (number | BN | string)[],
+        _maxSpreadBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
         _feedIds: string[],
         _symbols: string[],
         _trustedDecimals: (number | BN | string)[],
+        _maxSpreadBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
         _feedIds: string[],
         _symbols: string[],
         _trustedDecimals: (number | BN | string)[],
+        _maxSpreadBIPS: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

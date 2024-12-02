@@ -12,6 +12,10 @@ export enum AgentNotificationKey {
     LIQUIDATION_WAS_PERFORMED = "LIQUIDATION WAS PERFORMED",
     AGENT_DESTROYED = "AGENT DESTROYED",
     AGENT_CREATED = "AGENT CREATED",
+    AGENT_CREATED_ERROR = "AGENT CREATION ERROR",
+    AGENT_CREATION_VALIDATION = "AGENT CREATION UNDERLYING ADDRESS VALIDATION",
+    AGENT_CREATION_VALIDATION_COMPLETE = "AGENT UNDERLYING ADDRESS VALIDATION COMPLETE",
+    CREATING_AGENT = "CREATING AGENT",
     AGENT_SETTING_UPDATE = "AGENT SETTING UPDATE",
     AGENT_SETTING_UPDATE_FAILED = "AGENT SETTING UPDATE FAILED",
     AGENT_ENTER_AVAILABLE = "AGENT ENTERED AVAILABLE",
@@ -25,9 +29,18 @@ export enum AgentNotificationKey {
     MINTING_EXECUTED = "MINTING EXECUTED",
     MINTING_DELETED = "MINTING DELETED",
     MINTING_STARTED = "MINTING STARTED",
+    MINTING_HANDSHAKE_REQUESTED = "MINTING HANDSHAKE REQUESTED",
+    MINTING_REJECTED = "MINTING REJECTED",
+    MINTING_CANCELLED = "MINTING CANCELLED",
     MINTING_DEFAULT_STARTED = "MINTING DEFAULT STARTED",
     MINTING_DEFAULT_SUCCESS = "MINTING DEFAULT SUCCESS",
     MINTING_DEFAULT_FAILED = "MINTING DEFAULT FAILED",
+    SELF_MINT_STARTED = "SELF MINT STARTED",
+    SELF_MINT_PERFORM_PAYMENT = "PERFORMING SELF MINT PAYMENT",
+    SELF_MINT_PROVE_PAYMENT = "PROVING SELF MINT PAYMENT",
+    SELF_MINT_EXECUTED = "EXECUTED SELF MINT",
+    SELF_MINT_UNDERLYING_STARTED = "SELF MINT FROM UNDERLYING STARTED",
+    SELF_MINT_UNDERLYING_EXECUTED = "EXECUTED SELF MINT FROM UNDERLYING",
     // redemption
     REDEMPTION_CORNER_CASE = "REDEMPTION",
     REDEMPTION_FAILED = "REDEMPTION FAILED",
@@ -38,6 +51,10 @@ export enum AgentNotificationKey {
     REDEMPTION_NO_ADDRESS_VALIDITY_PROOF_OBTAINED = "NO ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION",
     REDEMPTION_CONFLICTING_ADDRESS_VALIDITY_PROOF_OBTAINED = "CONFLICTING ADDRESS VALIDITY PROOF OBTAINED FOR REDEMPTION",
     REDEMPTION_STARTED = "REDEMPTION STARTED",
+    REDEMPTION_REJECTED = "REDEMPTION REJECTED",
+    REDEMPTION_REJECTION_FAILED = "REDEMPTION REJECTION FAILED",
+    REDEMPTION_TAKEN_OVER = "REDEMPTION TAKEN OVER",
+    REDEMPTION_TAKEOVER_FAILED = "REDEMPTION TAKEOVER FAILED",
     REDEMPTION_PAID = "REDEMPTION PAID",
     REDEMPTION_PAYMENT_FAILED = "REDEMPTION PAYMENT FAILED",
     REDEMPTION_PAYMENT_PROOF = "REDEMPTION PAYMENT PROOF REQUESTED",
@@ -98,12 +115,28 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.danger(AgentNotificationKey.CCB_STARTED, `Agent ${this.address} is in collateral call band since ${timestamp}. Agent is trying to automatically top up vaults.`);
     }
 
+    async agentCreationFailed(error: string) {
+        await this.danger(AgentNotificationKey.AGENT_CREATED_ERROR, `Failed to create agent: ${error}.`);
+    }
+
+    async agentCreationValidationUnderlying() {
+        await this.info(AgentNotificationKey.AGENT_CREATION_VALIDATION, `Validating underlying address for new agent vault. This will take a few minutes.`);
+    }
+
+    async agentCreationValidationUnderlyingComplete() {
+        await this.info(AgentNotificationKey.AGENT_CREATION_VALIDATION, `Succesfully validated underlying address for new agent vault.`);
+    }
+
+    async agentCreating() {
+        await this.info(AgentNotificationKey.CREATING_AGENT, `Creating new agent vault.`);
+    }
+
     async sendLiquidationStartAlert(timestamp: string) {
         await this.critical(AgentNotificationKey.LIQUIDATION_STARTED, `Liquidation has started for agent ${this.address} at ${timestamp}. Agent is trying to automatically top up vaults.`);
     }
 
-    async sendLiquidationEndedAlert(timestamp: string) {
-        await this.info(AgentNotificationKey.LIQUIDATION_ENDED, `Liquidation has ended for agent ${this.address} at ${timestamp}.`);
+    async sendLiquidationEndedAlert() {
+        await this.info(AgentNotificationKey.LIQUIDATION_ENDED, `Liquidation has ended for agent ${this.address}.`);
     }
 
     async sendFullLiquidationAlert(payment1?: string, payment2?: string) {
@@ -350,6 +383,18 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.info(AgentNotificationKey.WITHDRAW_UNDERLYING, `Agent ${this.address} withdrew underlying with transaction ${txHash} and payment reference ${paymentReference}.`);
     }
 
+    async sendHandshakeRequested(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_HANDSHAKE_REQUESTED, `Minting ${requestId} handshake requested for ${this.address}.`);
+    }
+
+    async sendMintingRejected(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_REJECTED, `Minting ${requestId} rejected for ${this.address}.`);
+    }
+
+    async sendMintingCancelled(requestId: BNish) {
+        await this.info(AgentNotificationKey.MINTING_CANCELLED, `Minting ${requestId} cancelled for ${this.address}.`);
+    }
+
     async sendMintingExecuted(requestId: BNish) {
         await this.info(AgentNotificationKey.MINTING_EXECUTED, `Minting ${requestId} executed for ${this.address}.`);
     }
@@ -393,6 +438,22 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendRedemptionStarted(requestId: BNish) {
         await this.info(AgentNotificationKey.REDEMPTION_STARTED, `Redemption ${requestId} started for ${this.address}.`);
+    }
+
+    async sendRedemptionRejected(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_REJECTED, `Redemption ${requestId} rejected for ${this.address}.`);
+    }
+
+    async sendRedemptionRejectionFailed(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_REJECTION_FAILED, `Redemption ${requestId} rejection failed for ${this.address}.`);
+    }
+
+    async sendRedemptionTakenOver(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_TAKEN_OVER, `Redemption ${requestId} taken over for ${this.address}.`);
+    }
+
+    async sendRedemptionTakeoverFailed(requestId: BNish) {
+        await this.info(AgentNotificationKey.REDEMPTION_TAKEOVER_FAILED, `Redemption ${requestId} takeover failed for ${this.address}.`);
     }
 
     async sendRedemptionPaid(requestId: BNish) {
@@ -475,5 +536,29 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendFailedFundingServiceAccount(name: string, account: string) {
         await this.danger(AgentNotificationKey.AGENT_FAILED_FUNDING_SERVICE_ACCOUNT, `Agent owner has failed funding service account ${name} (${account})`);
+    }
+
+    async sendSelfMintStarted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_STARTED, `Owner started self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintPerformingPayment(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_PERFORM_PAYMENT, `Performing underlying payment for self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintProvingPayment(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_PROVE_PAYMENT, `Proving underlying payment for self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintExecuted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_EXECUTED, `Executed self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintUnderlyingStarted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_STARTED, `Started self mint from underlying of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintUnderlyingExecuted(lots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_UNDERLYING_EXECUTED, `Executed self mint from underlying of ${lots} on vault ${this.address}.`);
     }
 }

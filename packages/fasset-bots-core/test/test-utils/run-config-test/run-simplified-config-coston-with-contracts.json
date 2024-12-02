@@ -15,7 +15,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
             "priceChangeEmitter": "FtsoV2PriceStore"
         },
         "FSimCoinX": {
@@ -23,7 +23,7 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://attestation-coston.aflabs.net/verifier/xrp",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
             "priceChangeEmitter": "FakePriceReader"
         }
     },
@@ -47,7 +47,7 @@
         }
     },
     "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
+    "dataAccessLayerUrls": [
+        "https://da.cflr.testfsp.aflabs.org:4443"
     ]
 }

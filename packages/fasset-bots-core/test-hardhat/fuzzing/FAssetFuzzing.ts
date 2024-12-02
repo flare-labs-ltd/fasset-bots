@@ -250,6 +250,7 @@ describe("Fuzzing tests", () => {
             buyFAssetByAgentFactorBIPS: toBIPS(0.9),
             poolTopupCollateralRatioBIPS: toBN(randomInt(Number(poolCollateral.minCollateralRatioBIPS), Number(mintingPoolCollateralRatioBIPS))),
             poolTopupTokenPriceFactorBIPS: toBIPS(0.8),
+            handshakeType: toBN(0),
         };
     }
 

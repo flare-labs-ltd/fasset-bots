@@ -1,14 +1,14 @@
 import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
 import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
-import { CollateralReservationDeleted, CollateralReserved, MintingExecuted } from "../../typechain-truffle/IIAssetManager";
+import { CollateralReservationDeleted, CollateralReserved, MintingExecuted, SelfMint } from "../../typechain-truffle/IIAssetManager";
 import { EM } from "../config/orm";
 import { AgentMinting } from "../entities/agent";
-import { AgentMintingState } from "../entities/common";
+import { AgentHandshakeState, AgentMintingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { ITransaction, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
-import { AttestationNotProved } from "../underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { EventArgs } from "../utils/events/common";
 import { BN_ZERO, MAX_BIPS, assertNotNull, errorIncluded, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
@@ -31,12 +31,16 @@ export class AgentBotMinting {
     context = this.agent.context;
 
     /**
-     * Stores received collateral reservation as minting in persistent state.
+     * Stores received collateral reservation as minting in persistent state and update handshake state to APPROVED (if exists).
      * @param rootEm entity manager
      * @param request event's CollateralReserved arguments
      */
     async mintingStarted(rootEm: EM, request: EventArgs<CollateralReserved>): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
+            const handshake = await this.bot.handshake.findHandshake(em, { requestId: request.collateralReservationId });
+            if (handshake != null) {
+                handshake.state = AgentHandshakeState.APPROVED;
+            }
             em.create(
                 AgentMinting,
                 {
@@ -50,6 +54,7 @@ export class AgentBotMinting {
                     lastUnderlyingBlock: toBN(request.lastUnderlyingBlock),
                     lastUnderlyingTimestamp: toBN(request.lastUnderlyingTimestamp),
                     paymentReference: request.paymentReference,
+                    handshake: handshake
                 } as RequiredEntityData<AgentMinting>,
                 { persist: true }
             );
@@ -59,14 +64,18 @@ export class AgentBotMinting {
     }
 
     async mintingExecuted(rootEm: EM, args: EventArgs<MintingExecuted>): Promise<void> {
-        if (!args.collateralReservationId.isZero()) {
-            logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(args)}.`);
-            let minting = await this.findMinting(rootEm, { requestId: args.collateralReservationId });
-            minting = await this.updateMinting(rootEm, minting, {
-                state: AgentMintingState.DONE,
-            });
-            await this.notifier.sendMintingExecuted(minting.requestId);
-            logger.info(`Agent ${this.agent.vaultAddress} closed (executed) minting ${minting.requestId}.`);
+        logger.info(`Agent ${this.agent.vaultAddress} received event 'MintingExecuted' with data ${formatArgs(args)}.`);
+        let minting = await this.findMinting(rootEm, { requestId: args.collateralReservationId });
+        minting = await this.updateMinting(rootEm, minting, {
+            state: AgentMintingState.DONE,
+        });
+        await this.notifier.sendMintingExecuted(minting.requestId);
+        logger.info(`Agent ${this.agent.vaultAddress} closed (executed) minting ${minting.requestId}.`)
+    }
+
+    async selfMintingExecuted(args: EventArgs<SelfMint>): Promise<void> {
+        if (args.mintFromFreeUnderlying) {
+            logger.info(`Agent ${this.agent.vaultAddress} executed self-minting from free underlying.`);
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} executed self-minting.`);
         }
@@ -269,7 +278,8 @@ export class AgentBotMinting {
             const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
                 return await this.context.attestationProvider.requestReferencedPaymentNonexistenceProof(
                     minting.agentUnderlyingAddress, minting.paymentReference, toBN(minting.valueUBA).add(toBN(minting.feeUBA)),
-                    Number(minting.firstUnderlyingBlock), Number(minting.lastUnderlyingBlock), Number(minting.lastUnderlyingTimestamp));
+                    Number(minting.firstUnderlyingBlock), Number(minting.lastUnderlyingBlock), Number(minting.lastUnderlyingTimestamp),
+                    minting.handshake?.minterUnderlyingAddresses);
             });
             minting = await this.updateMinting(rootEm, minting, {
                 state: AgentMintingState.REQUEST_NON_PAYMENT_PROOF,

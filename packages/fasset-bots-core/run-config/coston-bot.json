@@ -1,6 +1,6 @@
 {
     "$schema": "./schema/bot-config.schema.json",
-    "loopDelay": 2500,
+    "loopDelay": 1000,
     "contractsJsonFile": "../fasset-deployment/coston.json",
     "prioritizeAddressUpdater": false,
     "nativeChainInfo": {
@@ -17,8 +17,8 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"],
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FtsoV2PriceStore"
@@ -28,8 +28,8 @@
             "tokenName": "Test XRP",
             "tokenSymbol": "testXRP",
             "tokenDecimals": 6,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/xrp",
-            "walletUrl": "https://s.altnet.rippletest.net:51234",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"],
+            "walletUrls": ["https://s.altnet.rippletest.net:51234"],
             "minimumAccountBalance": "10",
             "faucet": "https://faucet.tequ.dev/",
             "priceChangeEmitter": "FakePriceReader"
@@ -39,8 +39,17 @@
             "tokenName": "Test BTC",
             "tokenSymbol": "testBTC",
             "tokenDecimals": 8,
-            "indexerUrl": "https://testnet-verifier.aflabs.org/verifier/btc",
-            "walletUrl": "https://blockbook-bitcoin-testnet.flare.network/api/v2",
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/btc"],
+            "walletUrls": ["https://blockbook-bitcoin-testnet.flare.network/api/v2"],
+            "priceChangeEmitter": "FtsoV2PriceStore"
+        },
+        "FTestDOGE": {
+            "chainId": "testDOGE",
+            "tokenName": "Test DOGE",
+            "tokenSymbol": "testDOGE",
+            "tokenDecimals": 8,
+            "indexerUrls": ["https://testnet-verifier-fdc-test.aflabs.org/verifier/doge"],
+            "walletUrls": ["https://blockbook-dogecoin-testnet.flare.network/api/v2"],
             "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
@@ -64,12 +73,16 @@
             "FTestBTC": {
                 "recommendedOwnerBalance": "2",
                 "minimumFreeUnderlyingBalance": "0.5"
+            },
+            "FTestDOGE": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "20"
             }
         }
     },
     "rpcUrl": "https://coston-api-tracer.flare.network/ext/C/rpc",
-    "attestationProviderUrls": [
-        "https://attestation-coston.aflabs.net/attestation-client"
+    "dataAccessLayerUrls": [
+        "https://da.cflr.testfsp.aflabs.org:4443"
     ],
     "ormOptions": {
         "type": "sqlite",
@@ -81,9 +94,15 @@
         }
     },
     "liquidationStrategy": {
-        "className": "DefaultLiquidationStrategy"
+        "className": "DefaultLiquidationStrategy",
+        "config": {
+            "gasPrice": "21000"
+        }
     },
     "challengeStrategy": {
-        "className": "DefaultChallengeStrategy"
+        "className": "DefaultChallengeStrategy",
+        "config": {
+            "gasPrice": "21000"
     }
+}
 }
