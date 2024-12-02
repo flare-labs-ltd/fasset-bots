@@ -22,7 +22,6 @@ import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/w
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBotCommands } from "./InfoBotCommands";
-import { latestBlock } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 import { eventIs } from "../utils/events/truffle";
 
 export const CollateralPool = artifacts.require("CollateralPool");
@@ -165,7 +164,7 @@ export class UserBotCommands {
         let crt;
         if (toBN(info.handshakeType).eq(BN_ZERO)) {
             crt = await minter.reserveCollateral(agentVault, lots, executorAddress, executorFeeNatWei);
-        logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
+            logger.info(`User ${this.nativeAddress} reserved collateral ${formatArgs(crt)} with agent ${agentVault} and ${lots} lots.`);
         } else {
             const fromBlock = await web3.eth.getBlockNumber();
             const hs = await minter.reserveCollateralHandshake(agentVault, lots, executorAddress, executorFeeNatWei);
