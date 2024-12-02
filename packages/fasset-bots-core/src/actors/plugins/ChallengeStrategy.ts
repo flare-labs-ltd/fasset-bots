@@ -4,11 +4,11 @@ import type { ChallengerInstance } from "../../../typechain-truffle";
 import { ActorBaseKind } from "../../fasset-bots/ActorBase";
 import { IChallengerContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
-import { ZERO_ADDRESS } from "../../utils";
+import { MAX_UINT256, ZERO_ADDRESS } from "../../utils";
 import { EventScope } from "../../utils/events/ScopedEvents";
 import { artifacts } from "../../utils/web3";
 import { TrackedState } from "../../state/TrackedState";
-import { DexChallengeStrategyConfig, DefaultLiquidationStrategyConfig } from "../../config";
+import { DexChallengeStrategyConfig, DefaultLiquidationStrategyConfig, DexLiquidationStrategyConfig } from "../../config";
 
 const Challenger = artifacts.require("Challenger");
 
@@ -68,8 +68,8 @@ export class DexChallengeStrategy extends ChallengeStrategy<DexChallengeStrategy
 
     public async illegalTransactionChallenge(scope: EventScope, agent: TrackedAgentState, proof: BalanceDecreasingTransaction.Proof) {
         const challenger = await Challenger.at(this.config.address);
-        const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
-        await challenger.illegalPaymentChallenge(proof, agent.vaultAddress, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address, gasPrice: this.config?.gasPrice })
+        const arbitrageConfig = await this.arbitrageConfig(challenger, agent);
+        await challenger.illegalPaymentChallenge(proof, agent.vaultAddress, this.address, arbitrageConfig, { from: this.address, gasPrice: this.config?.gasPrice })
             .catch((e) => scope.exitOnExpectedError(e,
                 ["chlg: already liquidating", "chlg: transaction confirmed", "matching redemption active", "matching ongoing announced pmt"],
                 ActorBaseKind.CHALLENGER, this.address));
@@ -78,17 +78,36 @@ export class DexChallengeStrategy extends ChallengeStrategy<DexChallengeStrategy
     public async doublePaymentChallenge(scope: EventScope, agent: TrackedAgentState, proof1: BalanceDecreasingTransaction.Proof, proof2: BalanceDecreasingTransaction.Proof) {
         // due to async nature of challenging there may be some false challenges which will be rejected
         const challenger = await Challenger.at(this.config.address);
-        const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
-        await challenger.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address, gasPrice: this.config?.gasPrice })
+        const arbitrageConfig = await this.arbitrageConfig(challenger, agent);
+        await challenger.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, this.address, arbitrageConfig, { from: this.address, gasPrice: this.config?.gasPrice })
             .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"], ActorBaseKind.CHALLENGER, this.address));
     }
 
     public async freeBalanceNegativeChallenge(scope: EventScope, agent: TrackedAgentState, proofs: BalanceDecreasingTransaction.Proof[]) {
         // due to async nature of challenging there may be some false challenges which will be rejected
         const challenger = await Challenger.at(this.config.address);
-        const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
-        await challenger.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, ...oraclePrices, ZERO_ADDRESS, ZERO_ADDRESS, [], [], { from: this.address, gasPrice: this.config?.gasPrice })
+        const arbitrageConfig = await this.arbitrageConfig(challenger, agent);
+        await challenger.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, this.address, arbitrageConfig, { from: this.address, gasPrice: this.config?.gasPrice })
             .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"],
                 ActorBaseKind.CHALLENGER, this.address));
+    }
+
+    private async arbitrageConfig(challenger: ChallengerInstance, agent: TrackedAgentState): Promise<any> {
+        const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
+        return {
+            flashLender: ZERO_ADDRESS,
+            maxFlashFee: MAX_UINT256,
+            dex: ZERO_ADDRESS,
+            dexPair1: {
+                path: [],
+                minPriceMul: oraclePrices[0],
+                minPriceDiv: oraclePrices[1]
+            },
+            dexPair2: {
+                path: [],
+                minPriceMul: oraclePrices[2],
+                minPriceDiv: oraclePrices[3]
+            }
+         }
     }
 }

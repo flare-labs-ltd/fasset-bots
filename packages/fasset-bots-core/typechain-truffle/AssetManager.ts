@@ -122,6 +122,7 @@ export interface AgentVaultCreated {
       poolExitCollateralRatioBIPS: BN;
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
+      handshakeType: BN;
     };
     0: string;
     1: string;
@@ -139,6 +140,7 @@ export interface AgentVaultCreated {
       poolExitCollateralRatioBIPS: BN;
       poolTopupCollateralRatioBIPS: BN;
       poolTopupTokenPriceFactorBIPS: BN;
+      handshakeType: BN;
     };
   };
 }
@@ -177,6 +179,18 @@ export interface CollateralRatiosChanged {
   };
 }
 
+export interface CollateralReservationCancelled {
+  name: "CollateralReservationCancelled";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    0: string;
+    1: string;
+    2: BN;
+  };
+}
+
 export interface CollateralReservationDeleted {
   name: "CollateralReservationDeleted";
   args: {
@@ -188,6 +202,18 @@ export interface CollateralReservationDeleted {
     1: string;
     2: BN;
     3: BN;
+  };
+}
+
+export interface CollateralReservationRejected {
+  name: "CollateralReservationRejected";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    0: string;
+    1: string;
+    2: BN;
   };
 }
 
@@ -340,6 +366,24 @@ export interface FullLiquidationStarted {
   };
 }
 
+export interface HandshakeRequired {
+  name: "HandshakeRequired";
+  args: {
+    agentVault: string;
+    minter: string;
+    collateralReservationId: BN;
+    minterUnderlyingAddresses: string[];
+    valueUBA: BN;
+    feeUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: string[];
+    4: BN;
+    5: BN;
+  };
+}
+
 export interface IllegalPaymentConfirmed {
   name: "IllegalPaymentConfirmed";
   args: {
@@ -364,9 +408,13 @@ export interface LiquidationPerformed {
     agentVault: string;
     liquidator: string;
     valueUBA: BN;
+    paidVaultCollateralWei: BN;
+    paidPoolCollateralWei: BN;
     0: string;
     1: string;
     2: BN;
+    3: BN;
+    4: BN;
   };
 }
 
@@ -532,6 +580,40 @@ export interface RedemptionRequestIncomplete {
   };
 }
 
+export interface RedemptionRequestRejected {
+  name: "RedemptionRequestRejected";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    requestId: BN;
+    paymentAddress: string;
+    valueUBA: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: string;
+    4: BN;
+  };
+}
+
+export interface RedemptionRequestTakenOver {
+  name: "RedemptionRequestTakenOver";
+  args: {
+    agentVault: string;
+    redeemer: string;
+    requestId: BN;
+    valueTakenOverUBA: BN;
+    newAgentVault: string;
+    newRequestId: BN;
+    0: string;
+    1: string;
+    2: BN;
+    3: BN;
+    4: string;
+    5: BN;
+  };
+}
+
 export interface RedemptionRequested {
   name: "RedemptionRequested";
   args: {
@@ -603,6 +685,22 @@ export interface SelfClose {
     valueUBA: BN;
     0: string;
     1: BN;
+  };
+}
+
+export interface SelfMint {
+  name: "SelfMint";
+  args: {
+    agentVault: string;
+    mintFromFreeUnderlying: boolean;
+    mintedAmountUBA: BN;
+    depositedAmountUBA: BN;
+    poolFeeUBA: BN;
+    0: string;
+    1: boolean;
+    2: BN;
+    3: BN;
+    4: BN;
   };
 }
 
@@ -720,7 +818,9 @@ export type AllEvents =
   | AvailableAgentExitAnnounced
   | AvailableAgentExited
   | CollateralRatiosChanged
+  | CollateralReservationCancelled
   | CollateralReservationDeleted
+  | CollateralReservationRejected
   | CollateralReserved
   | CollateralTypeAdded
   | CollateralTypeDeprecated
@@ -732,6 +832,7 @@ export type AllEvents =
   | EmergencyPauseCanceled
   | EmergencyPauseTriggered
   | FullLiquidationStarted
+  | HandshakeRequired
   | IllegalPaymentConfirmed
   | LiquidationEnded
   | LiquidationPerformed
@@ -746,11 +847,14 @@ export type AllEvents =
   | RedemptionPerformed
   | RedemptionRejected
   | RedemptionRequestIncomplete
+  | RedemptionRequestRejected
+  | RedemptionRequestTakenOver
   | RedemptionRequested
   | RedemptionTicketCreated
   | RedemptionTicketDeleted
   | RedemptionTicketUpdated
   | SelfClose
+  | SelfMint
   | SettingArrayChanged
   | SettingChanged
   | UnderlyingBalanceChanged

@@ -27,9 +27,10 @@ program
     .argument("name", "owner's name")
     .argument("description", "owner's description")
     .argument("[iconUrl]", "owner's icon url")
-    .action(async (address: string, name: string, description: string, iconUrl?: string) => {
+    .argument("[touUrl]", "terms of use url")
+    .action(async (address: string, name: string, description: string, iconUrl?: string, touUrl?: string) => {
         const options: { config: string; secrets: string } = program.opts();
-        await whitelistAndDescribeAgent(options.secrets, options.config, address, name, description, iconUrl ?? "");
+        await whitelistAndDescribeAgent(options.secrets, options.config, address, name, description, iconUrl ?? "", touUrl ?? "");
     });
 
 program
@@ -110,12 +111,12 @@ toplevelRun(async () => {
     await program.parseAsync();
 });
 
-async function whitelistAndDescribeAgent(secretsFile: string, configFileName: string, managementAddress: string, name: string, description: string, iconUrl: string) {
+async function whitelistAndDescribeAgent(secretsFile: string, configFileName: string, managementAddress: string, name: string, description: string, iconUrl: string, touUrl: string) {
     const [secrets, config] = await initEnvironment(secretsFile, configFileName);
     const contracts = loadContracts(requireNotNull(config.contractsJsonFile));
     const deployerAddress = secrets.required("deployer.address");
     const agentOwnerRegistry = await AgentOwnerRegistry.at(contracts.AgentOwnerRegistry.address);
-    await agentOwnerRegistry.whitelistAndDescribeAgent(managementAddress, name, description, iconUrl, { from: deployerAddress });
+    await agentOwnerRegistry.whitelistAndDescribeAgent(managementAddress, name, description, iconUrl, touUrl, { from: deployerAddress });
 }
 
 async function isAgentWhitelisted(secretsFile: string, configFileName: string, ownerAddress: string): Promise<boolean> {
@@ -138,7 +139,7 @@ async function mintOrTransferFakeTokens(secretsFile: string, configFileName: str
     try {
         await token.mintAmount(recipientAddress, amountBN, { from: deployerAddress });
     } catch (error) {
-        console.log("Cannot mint, transfering from deployer address...");
+        console.log("Cannot mint, transferring from deployer address...");
         await token.transfer(recipientAddress, amountBN, { from: deployerAddress });
     }
 }
@@ -208,7 +209,7 @@ async function finalizeAgentClosedBetaRegistration(secrets: string, config: stri
     const unfinalizedAgents = await registrationApi.awaitingFinalization();
     for (const agent of unfinalizedAgents) {
         try {
-            await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url);
+            await whitelistAndDescribeAgent(secrets, config, agent.management_address, agent.agent_name, agent.description, agent.icon_url, agent.tou_url ?? "");
             await registrationApi.finalizeRegistration(agent.management_address);
             console.log(`Agent ${agent.agent_name} closed-beta registration finalized`);
         } catch (e) {

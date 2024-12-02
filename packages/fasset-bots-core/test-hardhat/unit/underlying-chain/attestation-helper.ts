@@ -1,7 +1,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { MockChain } from "../../../src/mock/MockChain";
-import { AttestationNotProved, StateConnectorClientError } from "../../../src/underlying-chain/interfaces/IStateConnectorClient";
+import { AttestationNotProved, FlareDataConnectorClientError } from "../../../src/underlying-chain/interfaces/IFlareDataConnectorClient";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { ZERO_BYTES32, checkedCast, toBN } from "../../../src/utils/helpers";
 import { web3 } from "../../../src/utils/web3";
@@ -135,8 +135,8 @@ describe("Attestation client unit tests", () => {
             const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             chain.mine(chain.finalizationBlocks + 1);
             await expect(context.attestationProvider.provePayment(transaction, underlying1, underlying2))
-                .to.eventually.be.rejectedWith(`StateConnectorClient: cannot submit request`)
-                .and.be.an.instanceOf(StateConnectorClientError);
+                .to.eventually.be.rejectedWith(`FlareDataConnectorClient: cannot submit request`)
+                .and.be.an.instanceOf(FlareDataConnectorClientError);
         });
 
         it("Should not prove balance decreasing transaction", async () => {
@@ -144,22 +144,22 @@ describe("Attestation client unit tests", () => {
             const transaction = await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, 1, null);
             chain.mine(chain.finalizationBlocks + 1);
             await expect(context.attestationProvider.proveBalanceDecreasingTransaction(transaction, underlying1))
-                .to.eventually.be.rejectedWith(`StateConnectorClient: cannot submit request`)
-                .and.be.an.instanceOf(StateConnectorClientError);
+                .to.eventually.be.rejectedWith(`FlareDataConnectorClient: cannot submit request`)
+                .and.be.an.instanceOf(FlareDataConnectorClientError);
         });
 
         it("Should not prove confirmed block height existence", async () => {
             chain.mine(chain.finalizationBlocks + 1);
             await expect(context.attestationProvider.proveConfirmedBlockHeightExists(await attestationWindowSeconds(context.assetManager)))
-                .to.eventually.be.rejectedWith(`StateConnectorClient: cannot submit request`)
-                .and.be.an.instanceOf(StateConnectorClientError);
+                .to.eventually.be.rejectedWith(`FlareDataConnectorClient: cannot submit request`)
+                .and.be.an.instanceOf(FlareDataConnectorClientError);
         });
 
         it("Should not prove referenced payment nonexistence", async () => {
             chain.mine(2 * chain.finalizationBlocks);
             await expect(context.attestationProvider.proveReferencedPaymentNonexistence(underlying2, ZERO_BYTES32, toBN(1), 1, 1, 1))
-                .to.eventually.be.rejectedWith(`StateConnectorClient: cannot submit request`)
-                .and.be.an.instanceOf(StateConnectorClientError);
+                .to.eventually.be.rejectedWith(`FlareDataConnectorClient: cannot submit request`)
+                .and.be.an.instanceOf(FlareDataConnectorClientError);
         });
     })
 });

@@ -14,10 +14,12 @@ export interface ChainContracts {
     // flare smart contract
     GovernanceSettings: Contract;
     AddressUpdater: Contract;
-    StateConnector: Contract;
     WNat: Contract;
+    Relay: Contract;
+    FdcHub: Contract;
+    FdcVerification: Contract;
     // fasset
-    SCProofVerifier: Contract;
+    FtsoV2PriceStore: Contract;
     AgentVaultFactory: Contract;
     AssetManagerController: Contract;
     AssetManagerWhitelist?: Contract;
@@ -25,8 +27,6 @@ export interface ChainContracts {
     CollateralPoolTokenFactory: Contract;
     PriceReader: Contract;
     AgentOwnerRegistry: Contract;
-    Relay: Contract;
-    FtsoV2PriceStore: Contract;
     // others (asset managers & fassets & everything from flare-smart-contract)
     [key: string]: Contract | undefined;
 }

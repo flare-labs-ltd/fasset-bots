@@ -1,0 +1,139 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "FdcHubMock",
+  "sourceName": "contracts/fdc/mock/FdcHubMock.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "AttestationRequest",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint24",
+          "name": "rewardEpochId",
+          "type": "uint24"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "attestationType",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "source",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint24",
+              "name": "inflationShare",
+              "type": "uint24"
+            },
+            {
+              "internalType": "uint8",
+              "name": "minRequestsThreshold",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint224",
+              "name": "mode",
+              "type": "uint224"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct IFdcInflationConfigurations.FdcConfiguration[]",
+          "name": "fdcConfigurations",
+          "type": "tuple[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "InflationRewardsOffered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "requestsOffsetSeconds",
+          "type": "uint8"
+        }
+      ],
+      "name": "RequestsOffsetSet",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "fdcRequestFeeConfigurations",
+      "outputs": [
+        {
+          "internalType": "contract IFdcRequestFeeConfigurations",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "requestAttestation",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "requestsOffsetSeconds",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5060405161001d9061005f565b604051809103906000f080158015610039573d6000803e3d6000fd5b50600080546001600160a01b0319166001600160a01b039290921691909117905561006c565b6101148061024283390190565b6101c78061007b6000396000f3fe6080604052600436106100345760003560e01c8063116ea702146100395780636238f3541461007657806394d019f11461008b575b600080fd5b34801561004557600080fd5b50600054610059906001600160a01b031681565b6040516001600160a01b0390911681526020015b60405180910390f35b6100896100843660046100e6565b6100a7565b005b34801561009757600080fd5b506040516000815260200161006d565b7f251377668af6553101c9bb094ba89c0c536783e005e203625e6cd57345918cc98282346040516100da93929190610158565b60405180910390a15050565b600080602083850312156100f957600080fd5b823567ffffffffffffffff8082111561011157600080fd5b818501915085601f83011261012557600080fd5b81358181111561013457600080fd5b86602082850101111561014657600080fd5b60209290920196919550909350505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212208ba4024271626c5303b22776439cee3dbfa02de7f8bf85a4f4da681a7f2a644c64736f6c63430008170033608060405234801561001057600080fd5b5060f58061001f6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c80630a0f247614602d575b600080fd5b604060383660046052565b600092915050565b60405190815260200160405180910390f35b60008060208385031215606457600080fd5b823567ffffffffffffffff80821115607b57600080fd5b818501915085601f830112608e57600080fd5b813581811115609c57600080fd5b86602082850101111560ad57600080fd5b6020929092019691955090935050505056fea26469706673582212201b8baa67e8a7d4dc2de52516579340e66fc6bf32bd82f65c2117dca5d64dad5464736f6c63430008170033",
+  "deployedBytecode": "0x6080604052600436106100345760003560e01c8063116ea702146100395780636238f3541461007657806394d019f11461008b575b600080fd5b34801561004557600080fd5b50600054610059906001600160a01b031681565b6040516001600160a01b0390911681526020015b60405180910390f35b6100896100843660046100e6565b6100a7565b005b34801561009757600080fd5b506040516000815260200161006d565b7f251377668af6553101c9bb094ba89c0c536783e005e203625e6cd57345918cc98282346040516100da93929190610158565b60405180910390a15050565b600080602083850312156100f957600080fd5b823567ffffffffffffffff8082111561011157600080fd5b818501915085601f83011261012557600080fd5b81358181111561013457600080fd5b86602082850101111561014657600080fd5b60209290920196919550909350505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212208ba4024271626c5303b22776439cee3dbfa02de7f8bf85a4f4da681a7f2a644c64736f6c63430008170033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

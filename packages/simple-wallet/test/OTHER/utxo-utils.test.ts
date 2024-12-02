@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { BTC_DEFAULT_FEE_PER_KB, BTC_DUST_AMOUNT, BTC_MIN_ALLOWED_AMOUNT_TO_SEND, BTC_MIN_ALLOWED_FEE, ChainType, DOGE_DEFAULT_FEE_PER_KB, DOGE_DUST_AMOUNT, DOGE_MIN_ALLOWED_AMOUNT_TO_SEND, UTXO_OUTPUT_SIZE, UTXO_OUTPUT_SIZE_SEGWIT } from "../../src/utils/constants";
+import { BTC_DEFAULT_FEE_PER_KB, BTC_DUST_AMOUNT, BTC_MIN_ALLOWED_FEE_PER_KB, ChainType, DOGE_DEFAULT_FEE_PER_KB, DOGE_DUST_AMOUNT, DOGE_MIN_ALLOWED_AMOUNT_TO_SEND, TEST_BTC_DEFAULT_FEE_PER_KB, UTXO_OUTPUT_SIZE, UTXO_OUTPUT_SIZE_SEGWIT } from "../../src/utils/constants";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import { toBN } from "web3-utils";
 
@@ -10,13 +10,6 @@ describe("UTXO utils tests", () => {
         expect(utxoUtils.getDefaultBlockTimeInSeconds(ChainType.testDOGE)).gt(0);
         expect(utxoUtils.getDefaultBlockTimeInSeconds(ChainType.BTC)).gt(0);
         expect(utxoUtils.getDefaultBlockTimeInSeconds(ChainType.testBTC)).gt(0);
-    });
-
-    it("Should minimal amount to send", () => {
-        expect(utxoUtils.getMinAmountToSend(ChainType.DOGE).eq(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
-        expect(utxoUtils.getMinAmountToSend(ChainType.testDOGE).eq(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
-        expect(utxoUtils.getMinAmountToSend(ChainType.BTC).eq(BTC_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
-        expect(utxoUtils.getMinAmountToSend(ChainType.testBTC).eq(BTC_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
     });
 
     it("Should get dust amount", () => {
@@ -58,7 +51,7 @@ describe("UTXO utils tests", () => {
         expect(utxoUtils.getDefaultFeePerKB(ChainType.DOGE).eq(DOGE_DEFAULT_FEE_PER_KB)).to.be.true;
         expect(utxoUtils.getDefaultFeePerKB(ChainType.testDOGE).eq(DOGE_DEFAULT_FEE_PER_KB)).to.be.true;
         expect(utxoUtils.getDefaultFeePerKB(ChainType.BTC).eq(BTC_DEFAULT_FEE_PER_KB)).to.be.true;
-        expect(utxoUtils.getDefaultFeePerKB(ChainType.testBTC).eq(BTC_DEFAULT_FEE_PER_KB)).to.be.true;
+        expect(utxoUtils.getDefaultFeePerKB(ChainType.testBTC).eq(TEST_BTC_DEFAULT_FEE_PER_KB)).to.be.true;
         const fn = () => {
             return utxoUtils.getDefaultFeePerKB(ChainType.testXRP);
         };
@@ -66,7 +59,7 @@ describe("UTXO utils tests", () => {
     });
 
     it("Should enforce fee", () => {
-        expect(utxoUtils.enforceMinimalAndMaximalFee(ChainType.BTC, BTC_MIN_ALLOWED_FEE.subn(1)).eq(BTC_MIN_ALLOWED_FEE)).to.be.true;
+        expect(utxoUtils.enforceMinimalAndMaximalFee(ChainType.BTC, BTC_MIN_ALLOWED_FEE_PER_KB.subn(1)).eq(BTC_MIN_ALLOWED_FEE_PER_KB)).to.be.true;
         expect(utxoUtils.enforceMinimalAndMaximalFee(ChainType.DOGE, DOGE_DEFAULT_FEE_PER_KB).eq(DOGE_DEFAULT_FEE_PER_KB)).to.be.true;
     });
 });

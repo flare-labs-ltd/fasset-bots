@@ -21,10 +21,12 @@ export interface AgentDataChanged {
     name: string;
     description: string;
     iconUrl: string;
+    termsOfUseUrl: string;
     0: string;
     1: string;
     2: string;
     3: string;
+    4: string;
   };
 }
 
@@ -78,6 +80,11 @@ export interface IAgentOwnerRegistryInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
+  getAgentTermsOfUseUrl(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   getManagementAddress(
     _workAddress: string,
     txDetails?: Truffle.TransactionDetails
@@ -105,6 +112,11 @@ export interface IAgentOwnerRegistryInstance extends Truffle.ContractInstance {
     ): Promise<string>;
 
     getAgentName(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
+    getAgentTermsOfUseUrl(
       _managementAddress: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;

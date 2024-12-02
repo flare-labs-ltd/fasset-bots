@@ -1,0 +1,458 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "RelayMock",
+  "sourceName": "contracts/fdc/mock/RelayMock.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint8",
+          "name": "protocolId",
+          "type": "uint8"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint32",
+          "name": "votingRoundId",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "isSecureRandom",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "merkleRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ProtocolMessageRelayed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint24",
+          "name": "rewardEpochId",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "startVotingRoundId",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint16",
+          "name": "threshold",
+          "type": "uint16"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "seed",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address[]",
+          "name": "voters",
+          "type": "address[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint16[]",
+          "name": "weights",
+          "type": "uint16[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "signingPolicyBytes",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "name": "SigningPolicyInitialized",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "rewardEpochId",
+          "type": "uint256"
+        }
+      ],
+      "name": "SigningPolicyRelayed",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "feeCollectionAddress",
+      "outputs": [
+        {
+          "internalType": "address payable",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getRandomNumber",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_randomNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isSecureRandom",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_randomTimestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_votingRoundId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRandomNumberHistorical",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_randomNumber",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isSecureRandom",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_randomTimestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "getVotingRoundId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_votingRoundId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "_relayMessage",
+          "type": "bytes"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "descriptionHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint8",
+                  "name": "protocolId",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "feeInWei",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IRelay.FeeConfig[]",
+              "name": "newFeeConfigs",
+              "type": "tuple[]"
+            }
+          ],
+          "internalType": "struct IRelay.RelayGovernanceConfig",
+          "name": "_config",
+          "type": "tuple"
+        }
+      ],
+      "name": "governanceFeeSetup",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_protocolId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_votingRoundId",
+          "type": "uint256"
+        }
+      ],
+      "name": "isFinalized",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastInitializedRewardEpochData",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "_lastInitializedRewardEpoch",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "_startingVotingRoundIdForLastInitializedRewardEpoch",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_protocolId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_votingRoundId",
+          "type": "uint256"
+        }
+      ],
+      "name": "merkleRoots",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_merkleRoot",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_protocolId",
+          "type": "uint256"
+        }
+      ],
+      "name": "protocolFeeInWei",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "relay",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "_protocolId",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint32",
+          "name": "_votingRoundId",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_merkleRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "setMerkleRoot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_rewardEpochId",
+          "type": "uint256"
+        }
+      ],
+      "name": "startingVotingRoundIds",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_startingVotingRoundId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_rewardEpochId",
+          "type": "uint256"
+        }
+      ],
+      "name": "toSigningPolicyHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_signingPolicyHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_protocolId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_votingRoundId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_leaf",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "_proof",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "verify",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "_relayMessage",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_messageHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "verifyCustomSignature",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_rewardEpochId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b506105c1806100206000396000f3fe6080604052600436106100e85760003560e01c80638af0c3071161008a578063a87f143811610059578063a87f143814610246578063ab97db37146100ed578063b59589d114610286578063dbdff2c1146102a257600080fd5b80638af0c307146101e157806391e7d42f146100ed57806398349c68146102025780639932185e1461022257600080fd5b806339436b00116100c657806339436b00146101705780637297c0a2146100ed578063808506aa146101a65780638275ae58146101bf57600080fd5b80630c85bf07146100ed578063317ad33c14610121578063377c50d414610154575b600080fd5b3480156100f957600080fd5b5061010e61010836600461031c565b50600090565b6040519081526020015b60405180910390f35b34801561012d57600080fd5b5061014461013c366004610335565b600092915050565b6040519015158152602001610118565b34801561016057600080fd5b5060405160008152602001610118565b34801561017c57600080fd5b5061010e61018b366004610335565b60009182526020828152604080842092845291905290205490565b6101446101b4366004610357565b600095945050505050565b3480156101cb57600080fd5b506101df6101da366004610430565b505050565b005b3480156101ed57600080fd5b50604080516000808252602082015201610118565b34801561020e57600080fd5b506101df61021d3660046104a0565b6102b8565b34801561022e57600080fd5b5061010e61023d3660046104f0565b60009392505050565b34801561025257600080fd5b5061026b61026136600461031c565b5060009081908190565b60408051938452911515602084015290820152606001610118565b34801561029257600080fd5b506060604051610118919061053c565b3480156102ae57600080fd5b506000808061026b565b60ff831660008181526020818152604080832063ffffffff871680855290835281842086905581519384529183018590529092917f4b781cfef3123d9257ab69e6e8ea36ad75a346d63c5ecf8a46931a0eef48bb9e910160405180910390a3505050565b60006020828403121561032e57600080fd5b5035919050565b6000806040838503121561034857600080fd5b50508035926020909101359150565b60008060008060006080868803121561036f57600080fd5b853594506020860135935060408601359250606086013567ffffffffffffffff8082111561039c57600080fd5b818801915088601f8301126103b057600080fd5b8135818111156103bf57600080fd5b8960208260051b85010111156103d457600080fd5b9699959850939650602001949392505050565b60008083601f8401126103f957600080fd5b50813567ffffffffffffffff81111561041157600080fd5b60208301915083602082850101111561042957600080fd5b9250929050565b60008060006040848603121561044557600080fd5b833567ffffffffffffffff8082111561045d57600080fd5b610469878388016103e7565b9095509350602086013591508082111561048257600080fd5b5084016060818703121561049557600080fd5b809150509250925092565b6000806000606084860312156104b557600080fd5b833560ff811681146104c657600080fd5b9250602084013563ffffffff811681146104df57600080fd5b929592945050506040919091013590565b60008060006040848603121561050557600080fd5b833567ffffffffffffffff81111561051c57600080fd5b610528868287016103e7565b909790965060209590950135949350505050565b60006020808352835180602085015260005b8181101561056a5785810183015185820160400152820161054e565b506000604082860101526040601f19601f830116850101925050509291505056fea2646970667358221220ea0ddd3a6a2ac59bb8adecb7200b967ff45fcbe6af1363eb233c1e46dcbb9cb264736f6c63430008170033",
+  "deployedBytecode": "0x6080604052600436106100e85760003560e01c80638af0c3071161008a578063a87f143811610059578063a87f143814610246578063ab97db37146100ed578063b59589d114610286578063dbdff2c1146102a257600080fd5b80638af0c307146101e157806391e7d42f146100ed57806398349c68146102025780639932185e1461022257600080fd5b806339436b00116100c657806339436b00146101705780637297c0a2146100ed578063808506aa146101a65780638275ae58146101bf57600080fd5b80630c85bf07146100ed578063317ad33c14610121578063377c50d414610154575b600080fd5b3480156100f957600080fd5b5061010e61010836600461031c565b50600090565b6040519081526020015b60405180910390f35b34801561012d57600080fd5b5061014461013c366004610335565b600092915050565b6040519015158152602001610118565b34801561016057600080fd5b5060405160008152602001610118565b34801561017c57600080fd5b5061010e61018b366004610335565b60009182526020828152604080842092845291905290205490565b6101446101b4366004610357565b600095945050505050565b3480156101cb57600080fd5b506101df6101da366004610430565b505050565b005b3480156101ed57600080fd5b50604080516000808252602082015201610118565b34801561020e57600080fd5b506101df61021d3660046104a0565b6102b8565b34801561022e57600080fd5b5061010e61023d3660046104f0565b60009392505050565b34801561025257600080fd5b5061026b61026136600461031c565b5060009081908190565b60408051938452911515602084015290820152606001610118565b34801561029257600080fd5b506060604051610118919061053c565b3480156102ae57600080fd5b506000808061026b565b60ff831660008181526020818152604080832063ffffffff871680855290835281842086905581519384529183018590529092917f4b781cfef3123d9257ab69e6e8ea36ad75a346d63c5ecf8a46931a0eef48bb9e910160405180910390a3505050565b60006020828403121561032e57600080fd5b5035919050565b6000806040838503121561034857600080fd5b50508035926020909101359150565b60008060008060006080868803121561036f57600080fd5b853594506020860135935060408601359250606086013567ffffffffffffffff8082111561039c57600080fd5b818801915088601f8301126103b057600080fd5b8135818111156103bf57600080fd5b8960208260051b85010111156103d457600080fd5b9699959850939650602001949392505050565b60008083601f8401126103f957600080fd5b50813567ffffffffffffffff81111561041157600080fd5b60208301915083602082850101111561042957600080fd5b9250929050565b60008060006040848603121561044557600080fd5b833567ffffffffffffffff8082111561045d57600080fd5b610469878388016103e7565b9095509350602086013591508082111561048257600080fd5b5084016060818703121561049557600080fd5b809150509250925092565b6000806000606084860312156104b557600080fd5b833560ff811681146104c657600080fd5b9250602084013563ffffffff811681146104df57600080fd5b929592945050506040919091013590565b60008060006040848603121561050557600080fd5b833567ffffffffffffffff81111561051c57600080fd5b610528868287016103e7565b909790965060209590950135949350505050565b60006020808352835180602085015260005b8181101561056a5785810183015185820160400152820161054e565b506000604082860101526040601f19601f830116850101925050509291505056fea2646970667358221220ea0ddd3a6a2ac59bb8adecb7200b967ff45fcbe6af1363eb233c1e46dcbb9cb264736f6c63430008170033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

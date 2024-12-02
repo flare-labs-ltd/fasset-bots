@@ -14,11 +14,13 @@ import { toBN, toNumber } from "../utils/bnutils";
 import { getConfirmedAfter } from "../chain-clients/utxo/UTXOUtils";
 import { createAxiosInstance, tryWithClients } from "../utils/axios-utils";
 import { stuckTransactionConstants } from "../utils/utils";
+import { logger } from "../utils/logger";
 
 
 export class UTXOBlockchainAPI implements IBlockchainAPI {
     clients: AxiosInstance[] = [];
     chainType: ChainType;
+    requestCount = 0;
 
     constructor(createConfig: WalletServiceConfigBase, chainType: ChainType) {
         for (const [index, url] of createConfig.urls.entries()) {
@@ -27,8 +29,22 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
         this.chainType = chainType;
     }
 
+    async logRequest<T>(description: string, promise: Promise<T>): Promise<T> {
+        let failed = false;
+        const start = Date.now();
+        try {
+            return await promise;
+        } catch (error) {
+            failed = true;
+            throw error;
+        } finally {
+            const elapsed = Date.now() - start
+            logger.info(`Blockbook request ${++this.requestCount} took ${elapsed}ms ${failed ? " (ERROR)" : ""}: ${description}`);
+        }
+    }
+
     async getAccountBalance(account: string): Promise<AccountBalanceResponse> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        return await this.logRequest(`getAccountBalance(${account})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOAddressResponse>(`/address/${account}`);
             const totalBalance = res.data.balance;
             const unconfirmedBalance = res.data.unconfirmedBalance;
@@ -41,70 +57,78 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
                 unconfirmedBalance: toNumber(uncBalance),
                 unconfirmedTxs: toNumber(unconfirmedTxs),
             } as AccountBalanceResponse;
-        }, "getAccountBalance");
+        }, "getAccountBalance"));
     }
 
+    lastGetCurrentBlockHeightTs = 0;
+    lastGetCurrentBlockHeightResult = 0;
+
     async getCurrentBlockHeight(): Promise<number> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        if (Date.now() - this.lastGetCurrentBlockHeightTs < 1000) {
+            return this.lastGetCurrentBlockHeightResult;
+        }
+        this.lastGetCurrentBlockHeightResult = await this.logRequest(`getCurrentBlockHeight()`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOBlockHeightResponse>(``);
             return res.data.blockbook.bestHeight;
-        }, "getCurrentBlockHeight");
+        }, "getCurrentBlockHeight"));
+        this.lastGetCurrentBlockHeightTs = Date.now();
+        return this.lastGetCurrentBlockHeightResult;
     }
 
     async getCurrentFeeRate(blockNumber?: number): Promise<number> { // in satoshies
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
-            const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
+        const blockToCheck = blockNumber ?? await this.getCurrentBlockHeight();
+        return await this.logRequest(`getCurrentFeeRate(${blockNumber})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<FeeStatsResponse>(`/feestats/${blockToCheck}`);
             const fee = res.data.averageFeePerKb;
             return fee;
-        }, "getCurrentFeeRate");
+        }, "getCurrentFeeRate"));
     }
 
     async getBlockTimeAt(blockNumber: number): Promise<BN> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        return await this.logRequest(`getBlockTimeAt(${blockNumber})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOBlockResponse>(`/block/${blockNumber}`);
             return toBN(res.data.time);
-        }, "getBlockTimeAt");
+        }, "getBlockTimeAt"));
     }
 
     async getTransaction(txHash: string): Promise<UTXOTransactionResponse> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        return await this.logRequest(`getTransaction(${txHash})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOTransactionResponse>(`/tx/${txHash}`);
             return res.data;
-        }, "getTransaction");
+        }, "getTransaction"));
     }
 
     async getUTXOScript(txHash: string, vout: number): Promise<string> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        return await this.logRequest(`getUTXOScript(${txHash}, ${vout})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOTransactionResponse>(`/tx/${txHash}`);
             /* istanbul ignore next: ignore for the ?? */
             return res.data.vout[vout]?.hex ?? "";
-        }, "getUTXOScript");
+        }, "getUTXOScript"));
     }
 
     async getUTXOsFromMempool(address: string): Promise<MempoolUTXO[]> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        return await this.logRequest(`getUTXOsFromMempool(${address})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOResponse[]>(`/utxo/${address}`);
             return res.data.map((utxo: UTXOResponse): MempoolUTXO => ({
-                mintTxid: utxo.txid,
-                mintIndex: utxo.vout,
+                transactionHash: utxo.txid,
+                position: utxo.vout,
                 value: toBN(utxo.value),
                 script: "",
                 confirmed: utxo.confirmations >= (stuckTransactionConstants(this.chainType).enoughConfirmations ?? /* istanbul ignore next */ getConfirmedAfter(this.chainType)),
             }));
-        }, "getUTXOsFromMempool");
+        }, "getUTXOsFromMempool"));
     }
 
     async sendTransaction(tx: string): Promise<AxiosResponse> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        return await this.logRequest(`sendTransaction(...)`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             return await client.post('/sendtx/', tx, {
                 headers: { 'Content-Type': 'text/plain' }
             });
-        }, "sendTransaction");
+        }, "sendTransaction"));
     }
 
     async findTransactionHashWithInputs(address: string, inputs: UTXORawTransactionInput[], submittedInBlock: number): Promise<string> {
-        return tryWithClients(this.clients, async (client: AxiosInstance) => {
+        return await this.logRequest(`findTransactionHashWithInputs(${address}, #${inputs?.length}, ${submittedInBlock})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const params = new URLSearchParams({
                 from: String(submittedInBlock - this.getNumberOfBlocksForSearch()),
                 to: String(submittedInBlock + this.getNumberOfBlocksForSearch()),
@@ -126,7 +150,7 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
             }
 
             return "";
-        }, "findTransactionHashWithInputs");
+        }, "findTransactionHashWithInputs"));
     }
 
     private getNumberOfBlocksForSearch(): number {

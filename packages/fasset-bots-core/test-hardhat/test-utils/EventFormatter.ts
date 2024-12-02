@@ -43,7 +43,7 @@ export class EventFormatter {
 
     formatArgs(event: BaseEvent) {
         const result: any = {};
-        for (const [key, value] of Object.entries(event.args)) {
+        for (const [key, value] of Object.entries(event.args as any)) {
             result[key] = this.formatArg(value);
         }
         return result;

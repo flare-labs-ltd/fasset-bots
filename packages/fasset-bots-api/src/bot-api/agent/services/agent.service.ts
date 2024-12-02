@@ -8,7 +8,7 @@ import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/No
 import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, Collaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
-import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
+import { AgentSettingsDTO, Alerts } from "../../common/AgentSettingsDTO";
 import { allTemplate } from "../../common/VaultTemplates";
 import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
 import { EntityManager } from "@mikro-orm/core";
@@ -56,7 +56,7 @@ export class AgentService {
 
     async createAgent(fAssetSymbol: string, agentSettings: AgentSettingsConfig): Promise<AgentCreateResponse | null> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        const agent = await cli.createAgentVault(agentSettings);
+        const agent = await cli.createAgentVault(agentSettings, this.secrets);
         if (agent) {
             return {
                 vaultAddress: agent.vaultAddress,
@@ -100,7 +100,8 @@ export class AgentService {
 
     async withdrawPoolFees(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.withdrawPoolFees(agentVaultAddress, amount);
+        const currency = await Currencies.fasset(cli.context);
+        await cli.withdrawPoolFees(agentVaultAddress, currency.parse(amount));
     }
 
     async poolFeesBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
@@ -203,6 +204,7 @@ export class AgentService {
         result.buyFAssetByAgentFactorBIPS = settings.buyFAssetByAgentFactorBIPS.toString();
         result.poolTopupCollateralRatioBIPS = settings.poolTopupCollateralRatioBIPS.toString();
         result.poolTopupTokenPriceFactorBIPS = settings.poolTopupTokenPriceFactorBIPS.toString();
+        result.handshakeType = settings.handshakeType.toString();
         return result;
     }
 
@@ -283,7 +285,8 @@ export class AgentService {
                 agentSettingUpdateValidAtBuyFAssetByAgentFactorBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.BUY_FASSET_FACTOR),
                 agentSettingUpdateValidAtPoolExitCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_EXIT_CR),
                 agentSettingUpdateValidAtPoolTopupCrBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_TOP_UP_CR),
-                agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)
+                agentSettingUpdateValidAtPoolTopupTokenPriceFactorBIPS: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR),
+                agentSettingUpdateValidAtHandshakeType: this.getUpdateSettingValidAtTimestamp(agent, AgentSettingName.HAND_SHAKE_TYPE)
             })
         }
         return agentInfos
@@ -326,13 +329,12 @@ export class AgentService {
 
     async saveAlert(notification: PostAlert): Promise<void> {
         // Currently delete alerts that are older than 5 days
-        /*
         if(notification.title == "MINTING STARTED" || notification.title == "MINTING EXECUTED" || notification.title == "REDEMPTION STARTED" ||
             notification.title == "REDEMPTION PAID" || notification.title == "REDEMPTION PAYMENT PROOF REQUESTED" || notification.title == "REDEMPTION WAS PERFORMED"){
+            await this.deleteExpiredAlerts();
             return;
         }
-        */
-        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000), Date.now());
+        const alert = new Alert(notification.bot_type,notification.address, notification.level, notification.title, notification.description, Date.now()+ (4 * 24 * 60 * 60 * 1000), Date.now());
         await this.deleteExpiredAlerts();
         await this.em.persistAndFlush(alert);
     }
@@ -345,16 +347,15 @@ export class AgentService {
         await this.em.flush();
       }
 
-    async getAlerts(): Promise<any[]> {
-        const alertRepository = this.em.getRepository(Alert);
-        const alerts = (await alertRepository.findAll()) as Alert[];
-        const postAlerts: any[] = alerts.map((alert: Alert) => {
-            return {
-              alert: JSON.parse(alert.alert as any),
-              date: alert.date
-            };
-        });
-        return postAlerts;
+    async getAlerts(limit: number, offset: number, types: string[] | null): Promise<Alerts> {
+        //const alertRepository = this.em.getRepository(Alert);
+        const where = types ? { level: { $in: types } } : {};
+        const [alerts, total] = await this.em.findAndCount(Alert, where, {
+            limit,
+            offset,
+            orderBy: { id: 'DESC' },
+          });
+        return { alerts: alerts, count: total };
     }
 
     async getAgentWorkAddress(): Promise<string> {
@@ -568,7 +569,8 @@ export class AgentService {
                 if (toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.FEE)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_FEE_SHARE)).gt(BN_ZERO) ||
                 toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_VAULT_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.MINTING_POOL_CR)).gt(BN_ZERO) ||
                 toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.BUY_FASSET_FACTOR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_EXIT_CR)).gt(BN_ZERO) ||
-                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)).gt(BN_ZERO)) {
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_CR)).gt(BN_ZERO) || toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR)).gt(BN_ZERO) ||
+                toBN(this.getUpdateSettingValidAtTimestamp(vault, AgentSettingName.HAND_SHAKE_TYPE)).gt(BN_ZERO)) {
                     updating = true;
                 }
                 const info = await this.getAgentVaultInfoFull(vault.vaultAddress, cli);
@@ -639,6 +641,7 @@ export class AgentService {
                     createdAt: Number(vault.createdAt),
                     lotsPoolBacked: lotsPoolBacked.toString(),
                     lotsVaultBacked: lotsVaultBacked.toString(),
+                    handshakeType: Number(info.handshakeType),
                 };
                 allVaults.push(vaultInfo);
             }
@@ -698,5 +701,15 @@ export class AgentService {
         const ownerBalance = await balanceReader.balance(cli.owner.workAddress);
         const balanceFmt = formatFixed(ownerBalance, 18, { decimals: 3, groupDigits: true, groupSeparator: "," });
         return balanceFmt;
+    }
+
+    async selfMint(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.selfMint(agentVaultAddress, toBN(lots));
+    }
+
+    async selfMintFromFreeUnderlying(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        await cli.selfMintFromFreeUnderlying(agentVaultAddress, toBN(lots));
     }
 }

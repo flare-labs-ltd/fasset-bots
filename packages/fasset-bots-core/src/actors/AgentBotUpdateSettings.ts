@@ -5,7 +5,7 @@ import { AgentEntity, AgentUpdateSetting } from "../entities/agent";
 import { AgentSettingName, AgentUpdateSettingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
 import { latestBlockTimestampBN } from "../utils";
-import { extractRevertMessageFromError, toBN } from "../utils/helpers";
+import { isTransactionRevert, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentBot } from "./AgentBot";
@@ -140,9 +140,10 @@ export class AgentBotUpdateSettings {
                 });
                 await this.notifier.sendAgentSettingsUpdate(updateSetting.name);
                 return true;
-            } catch (error) {
-                const reason = extractRevertMessageFromError(error);
-                if (reason) {
+            } catch (error: any) {
+                const isReverted = isTransactionRevert(error);
+                if (isReverted) {
+                    const reason = error?.message ?? "";
                     await this.notifier.sendAgentUnableToUpdateSetting(updateSetting.name, reason);
                     logger.error(`Agent ${this.agent.vaultAddress} cannot update agent setting ${updateSetting.name}=${updateSetting.value} due to error:`, error);
                     console.log(`Agent ${this.agent.vaultAddress} cannot update agent setting ${updateSetting.name}=${updateSetting.value} due to contract revert: ${reason}`);

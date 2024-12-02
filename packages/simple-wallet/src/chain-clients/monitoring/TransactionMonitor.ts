@@ -4,8 +4,7 @@ import { fetchMonitoringState, fetchTransactionEntities, retryDatabaseTransactio
 import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import { ChainType, MONITOR_EXPIRATION_INTERVAL, MONITOR_LOCK_WAIT_DELAY, MONITOR_LOOP_SLEEP, MONITOR_PING_INTERVAL, RANDOM_SLEEP_MS_MAX, RESTART_IN_DUE_NO_RESPONSE } from "../../utils/constants";
 import { logger, loggerAsyncStorage } from "../../utils/logger";
-import { createMonitoringId, getRandomInt, sleepMs, stuckTransactionConstants } from "../../utils/utils";
-import { utxoOnly } from "../utxo/UTXOUtils";
+import { createMonitoringId, getRandomInt, sleepMs } from "../../utils/utils";
 import { BlockchainFeeService } from "../../fee-service/fee-service";
 import { MonitoringStateEntity } from "../../entity/monitoringState";
 import { errorMessage } from "../../utils/axios-utils";
@@ -20,7 +19,13 @@ export interface IMonitoredWallet {
     resubmitSubmissionFailedTransactions?(txEnt: TransactionEntity): Promise<void>;
 }
 
-export type CreateWalletMethod = (monitorId: string, walletEm: EntityManager) => IMonitoredWallet;
+export interface CreateWalletOverrides {
+    monitoringId?: string;
+    walletEm?: EntityManager;
+    feeService?: BlockchainFeeService;
+}
+
+export type CreateWalletMethod = (overrides: CreateWalletOverrides) => IMonitoredWallet;
 
 class StopTransactionMonitor extends Error {}
 
@@ -38,9 +43,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         this.rootEm = rootEm;
         this.createWallet = createWallet;
         this.monitoringId = createMonitoringId(`${chainType}-m`);
-        if (utxoOnly(this.chainType)) {
-            this.feeService = feeService;
-        }
+        this.feeService = feeService;
     }
 
     getId(): string {
@@ -68,16 +71,22 @@ export class TransactionMonitor implements ITransactionMonitor {
             await this.updatePingLoop(em);
         });
         // start fee monitoring
-        if (this.feeService) {
-            const feeService = this.feeService;
-            await feeService.setupHistory();
-            this.startThread(this.rootEm, `fee-service-${this.monitoringId}`, async () => {
-                await feeService.monitorFees(() => this.monitoring);
+        const feeService = this.feeService;
+        if (feeService) {
+            feeService.monitoringId = this.monitoringId;
+            feeService.initialSetup = true;
+            this.startThread(this.rootEm, `fee-service-${this.monitoringId}`, async (threadEm) => {
+                await feeService.monitorFees(threadEm, () => this.monitoring);
             });
         }
         // start main loop
         this.startThread(this.rootEm, `monitoring-${this.monitoringId}`, async (threadEm) => {
-            await this.monitoringMainLoop(threadEm);
+            const waitStart = Date.now();
+            while (!(feeService?.hasEnoughTimestampHistory() || Date.now() - waitStart > 60_000)) {
+                await sleepMs(500);    // wait for setupHistory to be complete (or fail)
+            }
+            const wallet = this.createWallet({ monitoringId: this.monitoringId, walletEm: threadEm, feeService: feeService });
+            await this.monitoringMainLoop(threadEm, wallet);
         });
         return true;
     }
@@ -233,8 +242,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         }
     }
 
-    private async monitoringMainLoop(threadEm: EntityManager) {
-        const wallet = this.createWallet(this.monitoringId, threadEm);
+    private async monitoringMainLoop(threadEm: EntityManager, wallet: IMonitoredWallet) {
         while (this.monitoring) {
             try {
                 const networkUp = await wallet.checkNetworkStatus();

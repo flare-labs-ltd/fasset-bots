@@ -8,7 +8,7 @@ import { web3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
+import { assertWeb3DeepEqual, createCRAndPerformMinting, createTestAgent, createTestAgentAndMakeAvailable, createTestMinter, mintAndDepositVaultCollateralToOwner } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 use(spies);
 
@@ -164,10 +164,13 @@ describe("Agent unit tests", () => {
         await minter.executeMinting(crt, txHash);
         // transfer FAssets
         const fBalance = await context.fAsset.balanceOf(minter.address);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fBalance.mul(transferFeeMillionths).divn(1e6);
         await context.fAsset.transfer(ownerAddress, fBalance, { from: minter.address });
+        assertWeb3DeepEqual(await context.fAsset.balanceOf(context.assetManager.address), transferFee);
         await agent.selfClose(fBalance.divn(2));
         const fBalanceAfter = await context.fAsset.balanceOf(ownerAddress);
-        expect(fBalanceAfter.toString()).to.eq(fBalance.divn(2).toString());
+        expect(fBalanceAfter.toString()).to.eq(fBalance.divn(2).sub(transferFee).toString());
     });
 
     it("Should exit available", async () => {
@@ -189,9 +192,11 @@ describe("Agent unit tests", () => {
         // withdraw pool fees
         const fPoolBalance = await agent.poolFeeBalance();
         await agent.withdrawPoolFees(fPoolBalance);
+        const transferFeeMillionths = await context.assetManager.transferFeeMillionths();
+        const transferFee = fPoolBalance.mul(transferFeeMillionths).divn(1e6);
         const fPoolBalanceAfterWithdraw = await agent.poolFeeBalance();
         const ownerFassets = await context.fAsset.balanceOf(agent.owner.workAddress);
-        expect(ownerFassets.eq(fPoolBalance)).to.be.true;
+        expect(ownerFassets.eq(fPoolBalance.sub(transferFee))).to.be.true;
         expect(fPoolBalanceAfterWithdraw.eqn(0)).to.be.true;
     });
 });

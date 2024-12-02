@@ -46,7 +46,6 @@ describe("Bitcoin mainnet wallet tests", () => {
 
         removeConsoleLogging = addConsoleTransportForTests(logger);
 
-
         testOrm = await initializeMainnetMikroORM({...config, dbName: "simple-wallet-mainnet-test-db"});
         const dbWalletKeys = new DBWalletKeys(testOrm.em, password);
         BTCMccConnection = {
@@ -82,7 +81,7 @@ describe("Bitcoin mainnet wallet tests", () => {
         wClient.rootEm.clear();
     });
 
-    it("Should successfully created and submit transaction", async () => {
+    it("Should successfully create and submit transaction", async () => {
         const note = createNote();
         const sourceBalanceStart = await wClient.getAccountBalance(fundedAddress);
         const targetBalanceStart = await wClient.getAccountBalance(targetAddress);
@@ -98,7 +97,8 @@ describe("Bitcoin mainnet wallet tests", () => {
 
     it("Should submit and replace transaction", async () => {
         const note = createNote();
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note);
+        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined, startBlockHeight + enoughConfirmations + 1);
         await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();

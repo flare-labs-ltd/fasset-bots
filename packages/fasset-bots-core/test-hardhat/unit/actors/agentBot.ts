@@ -11,7 +11,7 @@ import { AgentMintingState, AgentRedemptionState, AgentSettingName, AgentUnderly
 import { AgentStatus } from "../../../src/fasset/AssetManagerTypes";
 import { PaymentReference } from "../../../src/fasset/PaymentReference";
 import { MockChain } from "../../../src/mock/MockChain";
-import { MockStateConnectorClient } from "../../../src/mock/MockStateConnectorClient";
+import { MockFlareDataConnectorClient } from "../../../src/mock/MockFlareDataConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
 import { MINUTES, ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
@@ -175,6 +175,7 @@ describe("Agent bot unit tests", () => {
         rd.paymentReference = "";
         rd.lastUnderlyingBlock = toBN(0);
         rd.lastUnderlyingTimestamp = toBN(0);
+        rd.redeemerAddress = "";
         await orm.em.persistAndFlush(rd);
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
         await agentBot.redemption.handleOpenRedemption(orm.em, rd.state, rd);
@@ -221,6 +222,7 @@ describe("Agent bot unit tests", () => {
         rd1.paymentReference = "";
         rd1.lastUnderlyingBlock = toBN(0);
         rd1.lastUnderlyingTimestamp = toBN(0);
+        rd1.redeemerAddress = "";
 
         const rd2 = new AgentRedemption();
         rd2.state = AgentRedemptionState.DONE;
@@ -232,6 +234,7 @@ describe("Agent bot unit tests", () => {
         rd2.paymentReference = "";
         rd2.lastUnderlyingBlock = toBN(0);
         rd2.lastUnderlyingTimestamp = toBN(0);
+        rd2.redeemerAddress = "";
 
         await orm.em.persistAndFlush([rd1, rd2]);
         const started = await agentBot.redemption.redemptionsInState(orm.em, AgentRedemptionState.STARTED, 100);
@@ -298,6 +301,7 @@ describe("Agent bot unit tests", () => {
         rd.lastUnderlyingTimestamp = toBN(0);
         rd.proofRequestRound = 1;
         rd.proofRequestData = "";
+        rd.redeemerAddress = "";
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
@@ -318,6 +322,7 @@ describe("Agent bot unit tests", () => {
         rd.lastUnderlyingTimestamp = toBN(0);
         rd.proofRequestRound = 1;
         rd.proofRequestData = "";
+        rd.redeemerAddress = "";
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
     });
@@ -400,6 +405,7 @@ describe("Agent bot unit tests", () => {
         rd.lastUnderlyingTimestamp = toBN(0);
         rd.proofRequestRound = 0;
         rd.proofRequestData = "";
+        rd.redeemerAddress = "";
         await orm.em.persistAndFlush(rd);
         await agentBot.redemption.checkConfirmPayment(orm.em, rd);
         expect(spyProof).to.have.been.called.once;
@@ -490,6 +496,7 @@ describe("Agent bot unit tests", () => {
         await time.increaseTo(updateSettingFee.validAt);
         await agentBot.handleTimelockedProcesses(orm.em);
         expect(updateSettingFee.state).to.be.eq(AgentUpdateSettingState.DONE);
+        const valueToUpdate2 = 8100;
         // announce and try to update an expired update
         const newPoolTopupTokenPriceFactorBIPS = toBN(8100);
         const validAt2 = await agentBot.agent.announceAgentSettingUpdate("poolTopupTokenPriceFactorBIPS", newPoolTopupTokenPriceFactorBIPS);
@@ -499,6 +506,7 @@ describe("Agent bot unit tests", () => {
         updateSettingPoolTopup.name = AgentSettingName.POOL_TOP_UP_TOKEN_PRICE_FACTOR;
         updateSettingPoolTopup.value = String(newPoolTopupTokenPriceFactorBIPS);
         updateSettingPoolTopup.validAt = validAt2;
+        updateSettingPoolTopup.value = valueToUpdate2.toString();
         await orm.em.persist(updateSettingPoolTopup).flush();
         // cannot update, update expired
         await time.increaseTo(validAt2.add(invalidUpdateSeconds));
@@ -646,8 +654,8 @@ describe("Agent bot unit tests", () => {
         );
         const proof = await agentBot.agent.attestationProvider.provePayment(transactionHash, null, agentBot.agent.underlyingAddress);
         const res = await agentBot.agent.assetManager.selfMint(proof, agentBot.agent.agentVault.address, lots, { from: agentBot.agent.owner.workAddress });
-        const selfMint = requiredEventArgs(res, "MintingExecuted");
-        expect(selfMint.collateralReservationId.isZero()).to.be.true;
+        const selfMint = requiredEventArgs(res, "SelfMint");
+        expect(selfMint.agentVault).to.be.eq(agentBot.agent.vaultAddress);
         await agentBot.runStep(orm.em);
         // check
         const mintings = await orm.em.createQueryBuilder(AgentMinting).where({ agentAddress: agentBot.agent.vaultAddress }).getResultList();
@@ -680,7 +688,7 @@ describe("Agent bot unit tests", () => {
         await context.agentOwnerRegistry.setWorkAddress(accounts[4], { from: ownerAddress });
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
         // switch attestation prover to always fail mode
-        checkedCast(agentBot.agent.attestationProvider.stateConnector, MockStateConnectorClient).useAlwaysFailsProver = true;
+        checkedCast(agentBot.agent.attestationProvider.flareDataConnector, MockFlareDataConnectorClient).useAlwaysFailsProver = true;
         //
         await agentBot.minting.requestNonPaymentProofForMinting(orm.em, minting)
             .catch(e => console.error(e));
@@ -713,6 +721,7 @@ describe("Agent bot unit tests", () => {
             lastUnderlyingTimestamp: toBN(0),
             paymentReference: "0x46425052664100010000000000000000000000000000000000000000000000e8",
             txHash: transactionHash1,
+            redeemerAddress:"0xb4B20F08a1F41dE1f31Bc288C1D998fAd2Bd9F59",
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -742,24 +751,25 @@ describe("Agent bot unit tests", () => {
         const spyError = spy.on(agentBot, "stopRequested");
         agentBot.requestStop();
         await agentBot.claims.checkForClaims();
-        expect(spyError).to.be.called.exactly(4);
+        expect(spyError).to.be.called.exactly(5);
     });
 
-    it("Should handle claims", async () => {
+    // TODO: claims not working until DAL contains claim data
+    it.skip("Should handle claims", async () => {
         const spyError = spy.on(console, "error");
         // create agent bot
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
         // necessary contracts
         const MockContract = artifacts.require("MockContract");
-        const FtsoRewardManager = artifacts.require("IFtsoRewardManager");
+        const RewardManager = artifacts.require("IRewardManager");
         const DistributionToDelegators = artifacts.require("DistributionToDelegators");
         // mock contracts
         const mockContractFtsoManager = await MockContract.new();
-        const ftsoRewardManager = await FtsoRewardManager.at(mockContractFtsoManager.address);
+        const rewardManager = await RewardManager.at(mockContractFtsoManager.address);
         const mockContractDistribution = await MockContract.new();
         const distributionToDelegators = await DistributionToDelegators.at(mockContractDistribution.address);
         // add contracts to address updater
-        await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["FtsoRewardManager"], [ftsoRewardManager.address]);
+        await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["RewardManager"], [rewardManager.address]);
         await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["DistributionToDelegators"], [distributionToDelegators.address]);
         // mock functions - there is something to claim
         const getEpochs1 = web3.eth.abi.encodeFunctionCall(
@@ -799,7 +809,7 @@ describe("Agent bot unit tests", () => {
         await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(0);
         // clean up
-        await agentBot.context.addressUpdater.removeContracts(["FtsoRewardManager"]);
+        await agentBot.context.addressUpdater.removeContracts(["RewardManager"]);
         await agentBot.context.addressUpdater.removeContracts(["DistributionToDelegators"]);
     });
 

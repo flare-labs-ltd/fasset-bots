@@ -11,17 +11,19 @@ import { ORM } from "../../../src/config/orm";
 import { Minter } from "../../../src/mock/Minter";
 import { MockChain } from "../../../src/mock/MockChain";
 import { Redeemer } from "../../../src/mock/Redeemer";
-import { ZERO_ADDRESS, checkedCast, toBN, toBNExp } from "../../../src/utils/helpers";
+import { ZERO_ADDRESS, assertNotNull, checkedCast, sleep, toBN, toBNExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestamp } from "../../../src/utils/web3helpers";
 import { testChainInfo } from "../../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../../test/test-utils/create-test-orm";
 import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
-import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
+import { createTestAgentBotAndMakeAvailable, createTestMinter, createTestRedeemer, DEFAULT_AGENT_SETTINGS_PATH_HARDHAT, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
 import { fundUnderlying } from "../../../test/test-utils/test-helpers";
 import { AgentRedemptionState } from "../../../src/entities/common";
-import { proveAndUpdateUnderlyingBlock, TokenBalances } from "../../../src/utils";
+import { loggerAsyncStorage, proveAndUpdateUnderlyingBlock, TokenBalances } from "../../../src/utils";
+import { testNotifierTransports } from "../../../test/test-utils/testNotifierTransports";
+import { createAgentVaultInitSettings, loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 use(chaiAsPromised);
 use(spies);
 
@@ -154,6 +156,83 @@ describe("UserBot cli commands unit tests", () => {
         const agentInfoAfterRedeem2 = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoAfterRedeem2.freePoolCollateralNATWei)));
         expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem2.freeVaultCollateralWei)));
+    });
+
+    it("Should mint and redeem with handshake enabled", async () => {
+        const options = await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+        options.handshakeType = toBN(1);
+        agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, true, testNotifierTransports, options);
+        const deposit = toBNExp(1_000_000, 6);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
+        const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        const threadEm = orm.em.fork();
+        let runAgentBot = true; // to make handshake - approve collateral reservation
+        void loggerAsyncStorage.run("agentBot", async () => {
+            while (runAgentBot) {
+                try {
+                    await agentBot.runStep(threadEm);
+                } catch (error) {
+                    console.error(`Unexpected error in agent bot thread loop:`, error);
+                }
+                console.info(`Finished agent bot run step tasks, sleeping 1s`);
+                await sleep(1000);
+            }
+        });
+        await userBot.mint(agentBot.agent.vaultAddress, 5, false);
+        runAgentBot = false;
+        const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
+        await userBot.redeem(1, ZERO_ADDRESS);
+        const agentInfoAfterRedeem = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoAfterRedeem.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem.freeVaultCollateralWei)));
+        await userBot.redeem(10, ZERO_ADDRESS);
+        const agentInfoAfterRedeem2 = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).lt(toBN(agentInfoAfterRedeem2.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).lt(toBN(agentInfoAfterRedeem2.freeVaultCollateralWei)));
+    });
+
+    it("Should reserve collateral and be rejected by the agent if underlying address is sanctioned", async () => {
+        minter = await createTestMinter(context, minterAddress, chain, "SANCTIONED_UNDERLYING");
+        userBot.underlyingAddress = "SANCTIONED_UNDERLYING";
+        const options = await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+        options.handshakeType = toBN(1);
+        agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, true, testNotifierTransports, options);
+        const deposit = toBNExp(1_000_000, 6);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
+        const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        const threadEm = orm.em.fork();
+        let runAgentBot = true; // to make handshake - approve collateral reservation
+        void loggerAsyncStorage.run("agentBot", async () => {
+            while (runAgentBot) {
+                try {
+                    await agentBot.runStep(threadEm);
+                } catch (error) {
+                    console.error(`Unexpected error in agent bot thread loop:`, error);
+                }
+                console.info(`Finished agent bot run step tasks, sleeping 1s`);
+                await sleep(1000);
+            }
+        });
+        await userBot.mint(agentBot.agent.vaultAddress, 5, false);
+        runAgentBot = false;
+        const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).eq(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).eq(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
+    });
+
+    it("Should reserve collateral and then cancel it if agent does not respond in time", async () => {
+        const options = await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
+        options.handshakeType = toBN(1);
+        agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, true, testNotifierTransports, options);
+        const deposit = toBNExp(1_000_000, 6);
+        await fundUnderlying(context, userBot.underlyingAddress, deposit);
+        const agentInfoBeforeMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        await userBot.mint(agentBot.agent.vaultAddress, 5, false);
+        const agentInfoAfterMint = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
+        expect(toBN(agentInfoAfterMint.freePoolCollateralNATWei).eq(toBN(agentInfoBeforeMint.freePoolCollateralNATWei)));
+        expect(toBN(agentInfoAfterMint.freeVaultCollateralWei).eq(toBN(agentInfoBeforeMint.freeVaultCollateralWei)));
     });
 
     it("Should mint and redeem and wait for redemption to be resolved", async () => {
@@ -369,6 +448,7 @@ describe("UserBot cli commands unit tests", () => {
         const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, ZERO_ADDRESS, undefined);
+        assertNotNull(resId);
         const userBalanceAfter = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoAfter = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfter.freePoolCollateralNATWei).lt(toBN(agentInfoBefore.freePoolCollateralNATWei)));
@@ -387,6 +467,7 @@ describe("UserBot cli commands unit tests", () => {
         const userBalanceBefore = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoBefore = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         const resId = await userBot.reserveCollateral(agentBot.agent.vaultAddress, 5, executor, fee);
+        assertNotNull(resId);
         const userBalanceAfter = await context.blockchainIndexer.chain.getBalance(userBot.underlyingAddress);
         const agentInfoAfter = await context.assetManager.getAgentInfo(agentBot.agent.vaultAddress);
         expect(toBN(agentInfoAfter.freePoolCollateralNATWei).lt(toBN(agentInfoBefore.freePoolCollateralNATWei)));

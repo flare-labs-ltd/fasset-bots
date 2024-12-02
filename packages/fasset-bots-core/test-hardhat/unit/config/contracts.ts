@@ -7,6 +7,6 @@ describe("Contracts config tests", () => {
     it("Should load contracts", async () => {
         const contracts = loadContracts(filename);
         expect(contracts.WNat.name).to.eq("WNat");
-        expect(contracts.StateConnector.name).to.eq("StateConnector");
+        expect(contracts.FdcHub.name).to.eq("FdcHub");
     });
 });

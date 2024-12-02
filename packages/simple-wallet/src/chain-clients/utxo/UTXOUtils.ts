@@ -1,11 +1,11 @@
-import { logger } from "../../utils/logger";
+import {logger} from "../../utils/logger";
 import {
     BTC_DEFAULT_FEE_PER_KB,
     BTC_DUST_AMOUNT,
     BTC_LEDGER_CLOSE_TIME_MS,
     BTC_MAINNET,
     BTC_MIN_ALLOWED_AMOUNT_TO_SEND,
-    BTC_MIN_ALLOWED_FEE,
+    BTC_MIN_ALLOWED_FEE_PER_KB,
     BTC_TESTNET,
     ChainType,
     DOGE_DEFAULT_FEE_PER_KB,
@@ -13,22 +13,24 @@ import {
     DOGE_LEDGER_CLOSE_TIME_MS,
     DOGE_MAINNET,
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
-    DOGE_MIN_ALLOWED_FEE,
+    DOGE_MIN_ALLOWED_FEE_PER_KB,
     DOGE_TESTNET,
     TEST_BTC_DEFAULT_FEE_PER_KB,
     UTXO_OUTPUT_SIZE,
     UTXO_OUTPUT_SIZE_SEGWIT,
 } from "../../utils/constants";
 import BN from "bn.js";
-import { toBN } from "../../utils/bnutils";
+import {toBN} from "../../utils/bnutils";
 import * as bitcore from "bitcore-lib";
 import dogecore from "bitcore-lib-doge";
-import { TransactionEntity } from "../../entity/transaction";
-import { EntityManager } from "@mikro-orm/core";
-import { UTXOWalletImplementation } from "../implementations/UTXOWalletImplementation";
-import { UTXOEntity } from "../../entity/utxo";
-import { errorMessage } from "../../utils/axios-utils";
-import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
+import {TransactionEntity} from "../../entity/transaction";
+import {EntityManager} from "@mikro-orm/core";
+import {UTXOWalletImplementation} from "../implementations/UTXOWalletImplementation";
+import {errorMessage} from "../../utils/axios-utils";
+import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
+import {TransactionInputEntity} from "../../entity/transactionInput";
+import {fetchTransactionEntityById} from "../../db/dbutils";
+import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
 
 /*
  * COMMON UTILS
@@ -49,6 +51,7 @@ export function getMinAmountToSend(chainType: ChainType): BN {
         return BTC_MIN_ALLOWED_AMOUNT_TO_SEND;
     }
 }
+
 
 /* istanbul ignore next */
 export async function checkUTXONetworkStatus(client: UTXOWalletImplementation): Promise<boolean> {
@@ -84,17 +87,36 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
     return 2; // destination and change
 }
 
-export async function getTransactionDescendants(em: EntityManager, txHash: string, address: string): Promise<TransactionEntity[]> {
-    const utxos = await em.find(UTXOEntity, { mintTransactionHash: txHash, source: address });
-    const descendants = await em.find(TransactionEntity, { utxos: { $in: utxos } }, { populate: ["utxos"] });
-    let sub: TransactionEntity[] = descendants;
+export async function getTransactionDescendants(em: EntityManager, txId: number): Promise<TransactionEntity[]> {
+    const txEnt = await fetchTransactionEntityById(em, txId);
+    if (txEnt.outputs.length === 0) {
+        return [];
+    }
+
+    const condition = txEnt.outputs.map(output => ({
+        transactionHash: output.transactionHash,
+        vout: output.vout
+    }));
+
+    const inputs = (await em.find(TransactionInputEntity, {
+        $or: condition
+    })) as TransactionInputEntity[];
+
+    const descendants = await em.find(TransactionEntity, {
+        inputs: {
+            $in: inputs
+        }
+    });
+
+    let res: TransactionEntity[] = descendants;
     for (const descendant of descendants) {
         /* istanbul ignore next */
         if (descendant.transactionHash) {
-            sub = sub.concat(await getTransactionDescendants(em, descendant.transactionHash, address));
+            res = res.concat(await getTransactionDescendants(em, descendant.id));
         }
     }
-    return sub;
+
+    return res;
 }
 
 export async function getAccountBalance(blockchainAPI: UTXOBlockchainAPI, account: string): Promise<BN> {
@@ -102,7 +124,7 @@ export async function getAccountBalance(blockchainAPI: UTXOBlockchainAPI, accoun
         const accountBalance = await blockchainAPI.getAccountBalance(account);
         const mainAccountBalance = toBN(accountBalance.balance);
         return mainAccountBalance;
-    } catch (error) /* istanbul ignore next */  {
+    } catch (error) /* istanbul ignore next */ {
         logger.error(`Cannot get account balance for ${account}: ${errorMessage(error)}`);
         throw error;
     }
@@ -116,8 +138,8 @@ export function getOutputSize(chainType: ChainType) {
     }
 }
 
-export function isEnoughUTXOs(utxos: UTXOEntity[], amount: BN, fee?: BN): boolean {
-    const disposableAmount = utxos.reduce((acc: BN, utxo: UTXOEntity) => acc.add(utxo.value), new BN(0));
+export function isEnoughUTXOs(utxos: MempoolUTXO[], amount: BN, fee?: BN): boolean {
+    const disposableAmount = utxos.reduce((acc: BN, utxo: MempoolUTXO) => acc.add(utxo.value), new BN(0));
     return disposableAmount
         .sub(fee ?? new BN(0))
         .sub(amount)
@@ -169,19 +191,17 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
 
 export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
     if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
-        const minFee = DOGE_MIN_ALLOWED_FEE;
+        const minFee = DOGE_MIN_ALLOWED_FEE_PER_KB;
         if (feePerKB.lt(minFee)) {
             return minFee;
-        }
-        else {
+        } else {
             return feePerKB;
         }
     } else {
-        const minFee = BTC_MIN_ALLOWED_FEE;
+        const minFee = BTC_MIN_ALLOWED_FEE_PER_KB;
         if (feePerKB.lt(minFee)) {
             return minFee;
-        }
-        else {
+        } else {
             return feePerKB;
         }
     }

@@ -64,14 +64,21 @@ export async function receiveBlockAndTransaction(
     indexerApiKeys: string[],
 ): Promise<{ blockNumber: number; blockHash: string; txHash: string | null } | null> {
     const blockChainHelper = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
-    const resp = (await blockChainIndexerClient.clients[0].get(`/api/indexer/block-range`)).data;
-    if (resp.status === "OK") {
-        const blockNumber = resp.data.last;
+    const range = await blockChainIndexerClient.getBlockRangeRaw();
+    // in case that last block has no transactions, make a loop
+    for (let blockNumber = range.last; blockNumber >= range.last - 10; blockNumber--) {
         const block = await blockChainHelper.getBlockAt(blockNumber);
-        const blockHash = block!.hash;
+        if (!block) {
+            console.log(`No block at ${blockNumber}, retrying...`);
+            continue;
+        }
+        const blockHash = block.hash;
         let txHash = null;
-        if (block!.transactions.length > 0) {
-            txHash = block!.transactions[0];
+        if (block.transactions.length > 0) {
+            txHash = block.transactions[0];
+        } else {
+            console.log(`Block ${blockNumber} has no transaction, retrying...`);
+            continue;
         }
         return {
             blockNumber,
@@ -159,7 +166,7 @@ export function enableSlowTests() {
     return process.env.ENABLE_SLOW_TESTS === 'true';
 }
 
-export async function fundUnderlying(context: TestAssetBotContext, underlyingAddress:string, amount: BN) {
+export async function fundUnderlying(context: TestAssetBotContext, underlyingAddress: string, amount: BN) {
     if (!(context.blockchainIndexer.chain instanceof MockChain)) fail("only for mock chains");
     const balanceReader = await TokenBalances.fassetUnderlyingToken(context);
     const senderBalance = await balanceReader.balance(underlyingAddress);

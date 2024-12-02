@@ -1,13 +1,13 @@
-import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
-import { ChainType } from "../../src/utils/constants";
-import { EntityManager } from "@mikro-orm/core";
-import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { createTransactionEntity } from "../test-util/entity_utils";
-import { TransactionEntity, TransactionStatus, UTXOEntity } from "../../src";
-import { TransactionInputEntity } from "../../src/entity/transactionInput";
-import { expect } from "chai";
-import { MockBlockchainAPI } from "../test-util/common_utils";
-import { IUtxoWalletServices } from "../../src/chain-clients/utxo/IUtxoWalletServices";
+import config, {initializeTestMikroORMWithConfig} from "../test-orm/mikro-orm.config";
+import {ChainType} from "../../src/utils/constants";
+import {EntityManager} from "@mikro-orm/core";
+import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
+import {createTransactionEntity} from "../test-util/entity_utils";
+import {TransactionEntity, TransactionStatus} from "../../src";
+import {TransactionInputEntity} from "../../src/entity/transactionInput";
+import {expect} from "chai";
+import {MockBlockchainAPI} from "../test-util/common_utils";
+import {IUtxoWalletServices} from "../../src/chain-clients/utxo/IUtxoWalletServices";
 
 
 describe("getNumberOfMempoolAncestors", () => {
@@ -21,7 +21,7 @@ describe("getNumberOfMempoolAncestors", () => {
     }
 
     before(async () => {
-        const conf = { ...config };
+        const conf = { ...config, debug: true };
         conf.dbName = "get-transaction-descendants-test-db";
         em = (await initializeTestMikroORMWithConfig(conf)).em;
         services.rootEm = em;
@@ -30,14 +30,13 @@ describe("getNumberOfMempoolAncestors", () => {
     });
 
     beforeEach(async () => {
-        await em.nativeDelete(UTXOEntity, {});
         await em.nativeDelete(TransactionInputEntity, {});
         await em.nativeDelete(TransactionEntity, {});
     });
 
     it("Transaction with one direct ancestor", async () => {
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
-        const tx2 = createTransactionEntity("address1", "address3", "txHash2", [], [tx1], TransactionStatus.TX_CREATED);
+        const tx2 = createTransactionEntity("address1", "address3", "txHash2", [tx1], TransactionStatus.TX_CREATED);
 
         await em.persistAndFlush([tx1, tx2]);
 
@@ -53,7 +52,7 @@ describe("getNumberOfMempoolAncestors", () => {
          */
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
         const tx2 = createTransactionEntity("address1", "address3", "txHash2");
-        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [], [tx1, tx2], TransactionStatus.TX_CREATED);
+        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [tx1, tx2], TransactionStatus.TX_CREATED);
 
         await em.persistAndFlush([tx1, tx2, tx3]);
 
@@ -70,8 +69,8 @@ describe("getNumberOfMempoolAncestors", () => {
          */
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
         const tx2 = createTransactionEntity("address1", "address3", "txHash2");
-        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [], [tx1, tx2], TransactionStatus.TX_CREATED);
-        const tx4 = createTransactionEntity("address1", "address3", "txHash4", [], [tx3], TransactionStatus.TX_CREATED);
+        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [tx1, tx2], TransactionStatus.TX_CREATED);
+        const tx4 = createTransactionEntity("address1", "address3", "txHash4", [tx3], TransactionStatus.TX_CREATED);
 
         await em.persistAndFlush([tx1, tx2, tx3, tx4]);
 
@@ -86,9 +85,9 @@ describe("getNumberOfMempoolAncestors", () => {
         tx1 (SUCCESS) -> tx2 (CREATED) -> tx3 (CREATED) -> tx4 (CREATED)
          */
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
-        const tx2 = createTransactionEntity("address1", "address3", "txHash2", [], [tx1], TransactionStatus.TX_CREATED);
-        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [], [tx2], TransactionStatus.TX_CREATED);
-        const tx4 = createTransactionEntity("address1", "address3", "txHash4", [], [tx3], TransactionStatus.TX_CREATED);
+        const tx2 = createTransactionEntity("address1", "address3", "txHash2", [tx1], TransactionStatus.TX_CREATED);
+        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [tx2], TransactionStatus.TX_CREATED);
+        const tx4 = createTransactionEntity("address1", "address3", "txHash4", [tx3], TransactionStatus.TX_CREATED);
 
         await em.persistAndFlush([tx1, tx2, tx3, tx4]);
 
@@ -103,10 +102,10 @@ describe("getNumberOfMempoolAncestors", () => {
         tx1 (SUCCESS) -> tx2 (CREATED) -> tx3 (CREATED) -> tx4 (CREATED) -> tx5 (CREATED)
          */
         const tx1 = createTransactionEntity("address1", "address2", "txHash1");
-        const tx2 = createTransactionEntity("address1", "address3", "txHash2", [], [tx1], TransactionStatus.TX_CREATED);
-        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [], [tx2], TransactionStatus.TX_CREATED);
-        const tx4 = createTransactionEntity("address1", "address3", "txHash4", [], [tx3], TransactionStatus.TX_CREATED);
-        const tx5 = createTransactionEntity("address1", "address3", "txHash5", [], [tx4], TransactionStatus.TX_CREATED);
+        const tx2 = createTransactionEntity("address1", "address3", "txHash2", [tx1], TransactionStatus.TX_CREATED);
+        const tx3 = createTransactionEntity("address1", "address3", "txHash3", [tx2], TransactionStatus.TX_CREATED);
+        const tx4 = createTransactionEntity("address1", "address3", "txHash4", [tx3], TransactionStatus.TX_CREATED);
+        const tx5 = createTransactionEntity("address1", "address3", "txHash5", [tx4], TransactionStatus.TX_CREATED);
 
         await em.persistAndFlush([tx1, tx2, tx3, tx4, tx5]);
 
@@ -132,12 +131,12 @@ describe("getNumberOfMempoolAncestors", () => {
         const tx3 = createTransactionEntity("address1", "address3", "txHash3");
         const tx4 = createTransactionEntity("address1", "address3", "txHash4");
 
-        const tx5 = createTransactionEntity("address1", "address3", "txHash5", [], [tx1, tx2], TransactionStatus.TX_CREATED);
-        const tx6 = createTransactionEntity("address1", "address3", "txHash6", [], [tx3], TransactionStatus.TX_CREATED);
-        const tx7 = createTransactionEntity("address1", "address3", "txHash7", [], [tx5], TransactionStatus.TX_CREATED);
-        const tx8 = createTransactionEntity("address1", "address4", "txHash8", [], [tx4, tx6], TransactionStatus.TX_CREATED);
+        const tx5 = createTransactionEntity("address1", "address3", "txHash5", [tx1, tx2], TransactionStatus.TX_CREATED);
+        const tx6 = createTransactionEntity("address1", "address3", "txHash6", [tx3], TransactionStatus.TX_CREATED);
+        const tx7 = createTransactionEntity("address1", "address3", "txHash7", [tx5], TransactionStatus.TX_CREATED);
+        const tx8 = createTransactionEntity("address1", "address4", "txHash8", [tx4, tx6], TransactionStatus.TX_CREATED);
 
-        const tx9 = createTransactionEntity("address1", "address4", "txHash9", [], [tx7, tx8], TransactionStatus.TX_CREATED);
+        const tx9 = createTransactionEntity("address1", "address4", "txHash9", [tx7, tx8], TransactionStatus.TX_CREATED);
 
         await em.persistAndFlush([tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8, tx9]);
 

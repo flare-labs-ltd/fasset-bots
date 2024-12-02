@@ -29,6 +29,7 @@ const agentCreated: InitialAgentData = {
         poolExitCollateralRatioBIPS: toBN(28600),
         poolTopupCollateralRatioBIPS: toBN(24200),
         poolTopupTokenPriceFactorBIPS: toBN(8000),
+        handshakeType: toBN(0),
     }
 };
 

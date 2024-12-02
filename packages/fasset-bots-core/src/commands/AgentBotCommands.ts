@@ -6,7 +6,7 @@ import chalk from "chalk";
 import { InfoBotCommands } from "..";
 import { AgentBot } from "../actors/AgentBot";
 import { AgentVaultInitSettings, createAgentVaultInitSettings } from "../config/AgentVaultInitSettings";
-import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig } from "../config/BotConfig";
+import { AgentBotConfig, AgentBotSettings, closeBotConfig, createBotConfig, getKycClient } from "../config/BotConfig";
 import { loadAgentConfigFile } from "../config/config-file-loader";
 import { AgentSettingsConfig, Schema_AgentSettingsConfig } from "../config/config-files/AgentSettingsConfig";
 import { createAgentBotContext } from "../config/create-asset-context";
@@ -18,10 +18,10 @@ import { IAssetAgentContext } from "../fasset-bots/IAssetBotContext";
 import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
-import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace } from "../utils";
+import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace, web3DeepNormalize } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
 import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
-import { BN_ZERO, MAX_BIPS, errorIncluded, maxBN, requireNotNull, toBN, isEnumValue } from "../utils/helpers";
+import { BN_ZERO, MAX_BIPS, errorIncluded, isEnumValue, maxBN, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -29,6 +29,8 @@ import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
 import { WalletAddressEntity } from "@flarelabs/simple-wallet";
+import { requiredEventArgs } from "../utils/events/truffle";
+import { PaymentReference } from "../fasset/PaymentReference";
 
 const CollateralPool = artifacts.require("CollateralPool");
 const IERC20 = artifacts.require("IERC20Metadata");
@@ -129,6 +131,7 @@ export class AgentBotCommands {
             poolTopupCollateralRatio: "2.1",
             poolTopupTokenPriceFactor: "0.9",
             buyFAssetByAgentFactor: "0.99",
+            handshakeType: 0,
         };
     }
 
@@ -136,20 +139,23 @@ export class AgentBotCommands {
      * Creates instance of Agent.
      * @param agentSettings
      */
-    async createAgentVault(agentSettings: AgentSettingsConfig): Promise<Agent> {
+    async createAgentVault(agentSettings: AgentSettingsConfig, secrets: Secrets): Promise<Agent> {
         await this.validateCollateralPoolTokenSuffix(agentSettings.poolTokenSuffix);
         try {
             const underlyingAddress = await AgentBot.createUnderlyingAddress(this.context);
             console.log(`Validating new underlying address ${underlyingAddress}...`);
             console.log(`Owner ${this.owner} validating new underlying address ${underlyingAddress}.`);
+            await this.notifierFor("Owner").agentCreationValidationUnderlying();
             const [addressValidityProof, _] = await Promise.all([
                 AgentBot.initializeUnderlyingAddress(this.context, this.owner, this.ownerUnderlyingAddress, underlyingAddress),
                 proveAndUpdateUnderlyingBlock(this.context.attestationProvider, this.context.assetManager, this.owner.workAddress),
             ]);
+            await this.notifierFor("Owner").agentCreationValidationUnderlyingComplete();
             console.log(`Creating agent bot...`);
+            await this.notifierFor("Owner").agentCreating();
             const agentBotSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(this.context, agentSettings);
             const agentBot = await AgentBot.create(this.orm.em, this.context, this.agentBotSettings, this.owner, this.ownerUnderlyingAddress,
-                addressValidityProof, agentBotSettings, this.notifiers);
+                addressValidityProof, agentBotSettings, this.notifiers, getKycClient(secrets));
             await this.notifierFor(agentBot.agent.vaultAddress).sendAgentCreated();
             console.log(`Agent bot created.`);
             console.log(`Owner ${this.owner} created new agent vault at ${agentBot.agent.agentVault.address}.`);
@@ -363,15 +369,16 @@ export class AgentBotCommands {
      * Cancels agent's pool token redemption announcement.
      * @param agentVault agent's vault address
      */
-    async cancelCollateralPoolTokensAnnouncement(agentVault: string): Promise<void> {
+    async cancelCollateralPoolTokenRedemption(agentVault: string): Promise<void> {
         logger.info(`Agent ${agentVault} is trying to cancel collateral pool redemption announcement.`);
         const { agentBot } = await this.getAgentBot(agentVault);
-        await agentBot.agent.announceVaultCollateralWithdrawal(BN_ZERO);
+        await agentBot.agent.announcePoolTokenRedemption(BN_ZERO);
         await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtTimestamp = BN_ZERO;
             agentEnt.poolTokenRedemptionWithdrawalAllowedAtAmount = "";
         });
         logger.info(`Agent ${agentVault} cancelled pool token redemption announcement.`);
+        console.log(`Agent ${agentVault} cancelled pool token redemption announcement.`);
     }
 
     /**
@@ -475,7 +482,7 @@ export class AgentBotCommands {
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalConfirmTransactionId = txDbId;
             });
-            await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAYING);
+            await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID);
             logger.info(`Agent ${agentVault} initiated transaction with database id ${txDbId}.`)
             console.log(`Agent ${agentVault} initiated transaction with database id ${txDbId}. Please ensure 'run-agent' is running for the transaction to be processed further.`)
             return txDbId;
@@ -582,8 +589,8 @@ export class AgentBotCommands {
                     underlyingAddress,
                     encryptedPrivateKey: account.encryptedPrivateKey
                 })
-            }
         }
+    }
         return ret
     }
 
@@ -627,6 +634,7 @@ export class AgentBotCommands {
         console.log(`buyFAssetByAgentFactorBIPS: ${settings.buyFAssetByAgentFactorBIPS.toString()}`);
         console.log(`poolTopupCollateralRatioBIPS: ${settings.poolTopupCollateralRatioBIPS.toString()}`);
         console.log(`poolTopupTokenPriceFactorBIPS: ${settings.poolTopupTokenPriceFactorBIPS.toString()}`);
+        console.log(`handshakeType: ${settings.handshakeType.toString()}`);
         return settings;
     }
 
@@ -772,5 +780,83 @@ export class AgentBotCommands {
         if (await this.context.assetManager.isPoolTokenSuffixReserved(suffix)) {
             throw new CommandLineError(`Agent vault with collateral pool token suffix "${suffix}" already exists.`);
         }
+    }
+
+    /**
+     * Self mint
+     * @param agentVault agent's vault address
+     * @param numberOfLots
+     */
+    async selfMint(agentVault: string, numberOfLots: BN): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying self mint ${numberOfLots} lots.`);
+        await this.notifierFor(agentVault).sendSelfMintStarted(numberOfLots.toString());
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const freeCollateralLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        if (freeCollateralLots.lt(numberOfLots)) {
+            logger.error(`Cannot self mint. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots. But it was asked for ${numberOfLots}.`);
+            throw new CommandLineError(`Cannot self mint. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots.`);
+        }
+        const agent = agentBot.agent;
+        // amount to pay
+        const toPayUBA = await this.getAmountToPayUBAForSelfMint(agent, numberOfLots);
+        // send transaction
+        await this.notifierFor(agentVault).sendSelfMintPerformingPayment(numberOfLots.toString());
+        const transactionHash = await agent.performPayment(agent.underlyingAddress, toPayUBA, PaymentReference.selfMint(agentVault), this.ownerUnderlyingAddress)
+        console.log(`Transaction was accepted ${transactionHash}. Waiting for its finalization ...`);
+        logger.info(`Agent ${agentVault} is waiting for transaction ${transactionHash} finalization ...`);
+        await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(transactionHash);
+        console.log(`Waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agent.underlyingAddress} ...`);
+        logger.info(`Agent ${agentVault} is waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agent.underlyingAddress}.`);
+        await this.notifierFor(agentVault).sendSelfMintProvingPayment(numberOfLots.toString());
+        const proof = await agentBot.context.attestationProvider.provePayment(transactionHash, this.ownerUnderlyingAddress, agent.underlyingAddress);
+        console.log(`Executing payment...`);
+        logger.info(`Agent ${agentVault} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
+        const res = await this.context.assetManager.selfMint(proof, agentVault, numberOfLots, { from: agent.owner.workAddress });
+        requiredEventArgs(res, 'SelfMint');
+        await this.notifierFor(agentVault).sendSelfMintExecuted(numberOfLots.toString());
+        console.log("Done");
+        logger.info(`Agent ${agentVault} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
+    }
+
+    /**
+     * self mint from free underlying
+     * @param agentVault agent's vault address
+     * @param numberOfLots
+     */
+    async selfMintFromFreeUnderlying(agentVault: string, numberOfLots: BN): Promise<void> {
+        logger.info(`Agent ${agentVault} is trying mint from free underlying ${numberOfLots} lots.`);
+        await this.notifierFor(agentVault).sendSelfMintUnderlyingStarted(numberOfLots.toString());
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const freeCollateralLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
+        if (freeCollateralLots.lt(numberOfLots)) {
+            logger.error(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots. But it was asked for ${numberOfLots}.`);
+            throw new CommandLineError(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots.`);
+        }
+        const agent = agentBot.agent;
+        const toPayUBA = await this.getAmountToPayUBAForSelfMint(agent, numberOfLots);
+        const freeUnderlying = toBN((await agent.getAgentInfo()).freeUnderlyingBalanceUBA);
+        if (freeUnderlying.lt(toPayUBA)) {
+            logger.error(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeUnderlying.toString()} underlying in UBA. But it was asked for ${toPayUBA}.`);
+            throw new CommandLineError(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeUnderlying.toString()} underlying in UBA, but its need ${toPayUBA}.`);
+        }
+        const res = await this.context.assetManager.mintFromFreeUnderlying(agentVault, numberOfLots, { from: agent.owner.workAddress });
+        requiredEventArgs(res, 'SelfMint');
+        console.log("Done");
+        await this.notifierFor(agentVault).sendSelfMintUnderlyingExecuted(numberOfLots.toString());
+        logger.info(`Agent ${agentVault} executed minting from free underlying.`);
+    }
+
+    private async getAmountToPayUBAForSelfMint(agent: Agent, numberOfLots: BN) {
+        const agentSettings = await agent.getAgentSettings();
+        // amount to mint
+        const lotSize = toBN(await this.infoBot().getLotSizeBN());
+        const amountUBA = numberOfLots.mul(lotSize);
+        // pool fee
+        const feeBIPS = toBN(agentSettings.feeBIPS);
+        const poolFeeShareBIPS = toBN(agentSettings.poolFeeShareBIPS);
+        const poolFeeUBA = amountUBA.mul(feeBIPS).divn(MAX_BIPS).mul(poolFeeShareBIPS).divn(MAX_BIPS);
+        // amount to pay
+        const toPayUBA = amountUBA.add(poolFeeUBA);
+        return toPayUBA;
     }
 }

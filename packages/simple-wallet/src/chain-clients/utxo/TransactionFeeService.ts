@@ -77,8 +77,7 @@ export class TransactionFeeService {
     private async getCurrentFeeRate(): Promise<BN> {
         try {
             const fee = await this.blockchainAPI.getCurrentFeeRate();
-            if (fee.toString() === "-1" || fee === 0) {
-                logger.warn(`Cannot obtain valid fee rate ${fee.toString()}`);
+            if (fee === 0) {
                 return getDefaultFeePerKB(this.chainType);
             }
             const rateInSatoshies = toBN(fee);
@@ -90,7 +89,7 @@ export class TransactionFeeService {
     }
 
     async calculateTotalFeeOfDescendants(em: EntityManager, oldTx: TransactionEntity): Promise<BN> {
-        const descendants = await getTransactionDescendants(em, oldTx.transactionHash!, oldTx.source);
+        const descendants = await getTransactionDescendants(em, oldTx.id);
         let feeToCover: BN = toBN(0);
         /* istanbul ignore next */
         for (const txEnt of descendants) {

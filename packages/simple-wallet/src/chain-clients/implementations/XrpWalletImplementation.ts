@@ -36,7 +36,7 @@ import { XrpAccountGeneration } from "../account-generation/XrpAccountGeneration
 import { TransactionStatus, TransactionEntity } from "../../entity/transaction";
 import { EntityManager } from "@mikro-orm/core";
 import { XRPBlockchainAPI } from "../../blockchain-apis/XRPBlockchainAPI";
-import { IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
+import { CreateWalletOverrides, IMonitoredWallet, TransactionMonitor } from "../monitoring/TransactionMonitor";
 import { errorMessage } from "../../utils/axios-utils";
 
 export class XrpWalletImplementation extends XrpAccountGeneration implements WriteWalletInterface, IMonitoredWallet {
@@ -52,13 +52,13 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    createConfig: RippleWalletConfig;
 
-   constructor(monitoringId: string | null, createConfig: RippleWalletConfig) {
+   constructor(createConfig: RippleWalletConfig, overrides: CreateWalletOverrides) {
       super(createConfig.inTestnet ?? false);
       this.inTestnet = createConfig.inTestnet ?? false;
 
       this.chainType = this.inTestnet ? ChainType.testXRP : ChainType.XRP;
       this.blockchainAPI = new XRPBlockchainAPI(createConfig);
-      this.monitoringId = monitoringId ?? createMonitoringId(this.chainType);
+      this.monitoringId = overrides.monitoringId ?? createMonitoringId(this.chainType);
       this.createConfig = createConfig;
       const resubmit = stuckTransactionConstants(this.chainType);
 
@@ -66,13 +66,13 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
       this.feeIncrease = createConfig.stuckTransactionOptions?.feeIncrease ?? resubmit.feeIncrease!;
       this.executionBlockOffset = createConfig.stuckTransactionOptions?.executionBlockOffset ?? resubmit.executionBlockOffset!;
-      this.rootEm = createConfig.em;
+      this.rootEm = overrides.walletEm ?? createConfig.em;
       this.walletKeys = createConfig.walletKeys;
    }
 
-   clone(monitoringId: string, rootEm: EntityManager) {
-      logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
-      return new XrpWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
+   clone(overrides: CreateWalletOverrides) {
+      logger.info(`Forking wallet ${this.monitoringId} to ${overrides.monitoringId}`);
+      return new XrpWalletImplementation(this.createConfig, overrides);
    }
 
    getMonitoringId(): string {
@@ -139,10 +139,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       executeUntilTimestamp?: BN
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops?.toString()} and reference ${note}`);
-      if (await checkIfIsDeleting(this.rootEm, source)) {
-         logger.error(`Cannot receive requests. ${source} is deleting`);
-         throw new Error(`Cannot receive requests. ${source} is deleting`);
-      }
       const privateKey = await this.walletKeys.getKey(source);
       if (!privateKey) {
          logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
@@ -545,7 +541,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             await updateTransactionEntity(this.rootEm, txDbId, (txEnt) => {
                txEnt.status = TransactionStatus.TX_SUBMITTED;
                txEnt.submittedInBlock = res.data.result.validated_ledger_index;
-               txEnt.serverSubmitResponse = JSON.stringify(res.data.result);
             });
             logger.info(`Transaction ${txDbId} was submitted`);
             return TransactionStatus.TX_SUBMITTED;

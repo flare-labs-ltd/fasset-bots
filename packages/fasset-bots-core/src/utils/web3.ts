@@ -57,8 +57,7 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
     const defaultAccountAddress = typeof defaultAccount === "number" ? accounts[defaultAccount] : defaultAccount;
     web3.eth.defaultAccount = defaultAccountAddress;
     contractSettings.defaultAccount = defaultAccountAddress;
-    // for real network, wait 2 extra blocks after nonce increase and use filesystem locks
-    contractSettings.waitFor = { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000, extra: { blocks: 2, timeMS: 10_000 } };
+    contractSettings.waitFor = { what: "nonceIncrease", pollMS: 500, timeoutMS: 30_000 };
     contractSettings.addressLocks = new FilesystemAddressLocks({
         lockDir: process.env.FASSET_ADDRESS_LOCKS_DIR ?? path.resolve(os.tmpdir(), "fasset/locks"),
         waitTimeoutMS: 180_000,
@@ -75,7 +74,7 @@ export async function initWeb3(provider: provider, walletKeys: string[] | "netwo
 let currentProvider: provider;
 
 /**
- * Send generic transaction (equivalent to `web3.eth.sendTransaction`, but with proper finalization). Useful for transfering native tokens.
+ * Send generic transaction (equivalent to `web3.eth.sendTransaction`, but with proper finalization). Useful for transferring native tokens.
  */
 export async function sendWeb3Transaction(transactionConfig: TransactionConfig, settings?: ContractSettings) {
     return await executeMethodSend(settings ?? contractSettings, transactionConfig);

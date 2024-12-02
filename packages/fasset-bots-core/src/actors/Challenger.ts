@@ -232,7 +232,7 @@ export class Challenger extends ActorBase {
         // console.log(`Challenger ${this.address} is checking agent ${agent.vaultAddress} for double payments ${transaction.hash}.`);
         if (!PaymentReference.isValid(transaction.reference)) return; // handled by illegal payment challenge
         const existingHash = this.transactionForPaymentReference.get(transaction.reference);
-        if (existingHash && existingHash != transaction.hash) {
+        if (existingHash && existingHash.toLowerCase() !== transaction.hash?.toLowerCase()) {
             this.runner.startThread((scope) => this.doublePaymentChallenge(scope, transaction.hash, existingHash, agent));
         } else {
             this.transactionForPaymentReference.set(transaction.reference, transaction.hash);

@@ -31,6 +31,7 @@ export const MAX_UINT256 = toBN(1).shln(256).subn(1);
 
 export const DEFAULT_TIMEOUT = 15000;
 export const DEFAULT_RETRIES = 3;
+export const DEFAULT_RETRY_DELAY_MS = 2000;
 
 export const TRANSACTION_FEE_FACTOR = 1.4;
 
@@ -264,10 +265,14 @@ export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
     return false;
 }
 
-export function extractRevertMessageFromError(error: any): string | undefined {
+export function isTransactionRevert(error: any): boolean {
+    return typeof error?.message === "string" && /\breverted\b/i.test(error.message);
+}
+
+export function cleanupRevertMessage(error: any): string {
     const message = String(error?.message ?? "");
-    const regex = /execution reverted: (.*?)(?:\n|$)/;
-    return regex.exec(message)?.[1];
+    const regex = /(?:execution reverted:|reverted with reason string) +(.*?)(?:\n|$)/;
+    return regex.exec(message)?.[1] ?? message;
 }
 
 export function expectErrors(error: any, expectedErrors: ErrorFilter[]): undefined {
@@ -298,24 +303,29 @@ export function exp10(n: BNish) {
 export async function retry<T extends (...arg0: any[]) => any>(
     fn: T,
     args: Parameters<T>,
-    maxTry: number,
-    currRetry: number = 0
+    maxRetries = DEFAULT_RETRIES,
+    retryDelayMs = DEFAULT_RETRY_DELAY_MS
 ): Promise<Awaited<ReturnType<T>>> {
-    const delay = 2000;
-    try {
-        const result = await fn(...args);
-        return result;
-    } catch (e) {
-        logger.info(`Retry ${currRetry} failed for function ${fn.name}.`);
-        if (currRetry >= maxTry) {
-            console.log(`All ${maxTry} retry attempts exhausted`);
-            logger.error(`All ${maxTry} retry attempts exhausted for function ${fn.name}`, e);
-            throw e;
+    return await retryCall(fn.name, () => fn(...args), maxRetries, retryDelayMs);
+}
+
+/**
+ * Retries a function n number of times before giving up
+ */
+export async function retryCall<R>(name: string, call: () => Promise<R>, maxRetries = DEFAULT_RETRIES, retryDelayMs = DEFAULT_RETRY_DELAY_MS): Promise<R> {
+    for (let retry = 1; /* stopping condition in catch */; retry++) {
+        try {
+            const result = await call();
+            return result;
+        } catch (error) {
+            if (retry === maxRetries) {
+                console.log(`All ${maxRetries} retry attempts exhausted for function ${name}: ${error}`);
+                logger.error(`All ${maxRetries} retry attempts exhausted for function ${name}`, error);
+                throw error;
+            }
+            logger.info(`Retry ${retry} failed for function ${name}. Retrying after delay of ${retry * retryDelayMs} ms.`);
+            await sleep(retry * retryDelayMs);
         }
-        currRetry++;
-        logger.info(`Retrying ${fn.name} ${currRetry} times after delaying  ${currRetry * delay} ms.`);
-        await sleep(currRetry * delay);
-        return retry(fn, args, maxTry, currRetry);
     }
 }
 
@@ -393,12 +403,6 @@ export function firstValue<K, V>(map: Map<K, V>): V | undefined {
 export function randomChoice<K>(array: K[]): K | undefined {
     if (array.length === 0) return undefined;
     return array[Math.floor(Math.random() * array.length)];
-}
-
-export function* enumerate<T>(array: T[]): Iterable<[T, number]> {
-    for (let i = 0; i < array.length; i++) {
-        yield [array[i], i];
-    }
 }
 
 export function isEnumValue<T extends string>(enumCls: { [key: string]: T }, value: string): value is T {

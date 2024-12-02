@@ -1,7 +1,7 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosInstance } from "axios";
 import { ARBase, AddressValidity, decodeAttestationName } from "@flarenetwork/state-connector-protocol";
 import { formatArgs } from "../utils/formatting";
-import { DEFAULT_TIMEOUT } from "../utils/helpers";
+import { ZERO_BYTES32 } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { IVerificationApiClient } from "./interfaces/IVerificationApiClient";
 import { createAxiosConfig, tryWithClients } from "@flarelabs/simple-wallet";
@@ -27,9 +27,10 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
     }
 
     async checkAddressValidity(chainId: string, addressStr: string): Promise<AddressValidity.ResponseBody> {
-        const request: AddressValidity.RequestNoMic = {
+        const request: AddressValidity.Request = {
             attestationType: AddressValidity.TYPE,
             sourceId: chainId,
+            messageIntegrityCode: ZERO_BYTES32,
             requestBody: { addressStr },
         };
         const response = await this.prepareResponse<AddressValidity.Response>(request);
@@ -45,8 +46,7 @@ export class VerificationPrivateApiClient implements IVerificationApiClient {
         /* istanbul ignore next */
         const response = await tryWithClients(
             this.verifiers,
-            (verifier: AxiosInstance) => verifier
-            .post<PreparedResponseRes<T>>(`/${encodeURIComponent(attestationName)}/prepareResponse`, request),
+            (verifier: AxiosInstance) => verifier.post<PreparedResponseRes<T>>(`/${encodeURIComponent(attestationName)}/prepareResponse`, request),
             "prepareResponse"
         ).catch((e: AxiosError) => {
             const message = `Verification API error: cannot submit request ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`;

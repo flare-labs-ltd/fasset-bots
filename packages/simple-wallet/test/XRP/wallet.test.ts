@@ -30,6 +30,7 @@ import {
 import { ECDSA } from "../../src/chain-clients/account-generation/XrpAccountGeneration";
 import sinon from "sinon";
 import { XrpWalletImplementation } from "../../src/chain-clients/implementations/XrpWalletImplementation";
+import {SubmitTransactionRequest} from "../../src/blockchain-apis/XRPBlockchainAPI";
 
 use(chaiAsPromised);
 
@@ -127,7 +128,7 @@ describe("Xrp wallet tests", () => {
         const wallet0 = wClient.createWalletFromSeed(seed0, ECDSA.secp256k1);
         const wallet1 = wClient.createWalletFromSeed(seed1, ECDSA.ed25519);
 
-        const wallet = new XrpWalletImplementation(null, XRPMccConnectionTest);
+        const wallet = new XrpWalletImplementation(XRPMccConnectionTest, {});
         const public0 = (wallet as any).getPublicKeyFromPrivateKey(wallet0.privateKey, wallet0.address);
         const public1 = (wallet as any).getPublicKeyFromPrivateKey(wallet1.privateKey, wallet1.address);
         expect(wallet0.publicKey).to.eq(public0);
@@ -372,7 +373,8 @@ describe("Xrp wallet tests", () => {
     });
 
     it("If blockchain submission API fails transaction's status should be set to TX_PENDING and resent", async () => {
-        sinon.stub(wClient.blockchainAPI, "submitTransaction").throws(new Error("API down"));
+        sinon.stub(wClient.blockchainAPI, "submitTransaction").callsFake((params: SubmitTransactionRequest) => {throw new Error("Api Down")});
+        await sleepMs(100);
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst);
         const [txEnt, ] = await waitForTxToFinishWithStatus(0.01, 60, wClient.rootEm, TransactionStatus.TX_PENDING, id);
         expect(txEnt.status).to.eq(TransactionStatus.TX_PENDING);

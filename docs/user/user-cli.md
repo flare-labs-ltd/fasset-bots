@@ -99,7 +99,7 @@ After making requests and burning the fassets, the script ends. It may take an h
 
 ### Redemption default
 
-If the agent doesn't pay in time, the user must trigger redemption default to get paid in agent's collateral (equivalent amount plus some bonus). The time for calling default is from an hour or two after redemption started (depends on the underlying network - less for XRP, more for BTC) until 24 hours after minting (when the state connector proofs are no longer available).
+If the agent doesn't pay in time, the user must trigger redemption default to get paid in agent's collateral (equivalent amount plus some bonus). The time for calling default is from an hour or two after redemption started (depends on the underlying network - less for XRP, more for BTC) until 24 hours after minting (when the flare data connector proofs are no longer available).
 
 First, the user should query the statuses of open redemptions with command
 

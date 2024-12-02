@@ -1,19 +1,19 @@
 // same as Truffle.AnyEvent
 export interface EventSelector {
     name: string;
-    args: any;
+    args: unknown;
 }
 
 export interface BaseEvent {
     address: string;
     event: string;
-    args: any;
+    args: unknown;
 }
 
 export interface EvmEvent {
     address: string;
     event: string;
-    args: any;
+    args: unknown;
     blockHash: string;
     blockNumber: number;
     logIndex: number;

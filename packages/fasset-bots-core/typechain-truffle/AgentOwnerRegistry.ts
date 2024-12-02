@@ -24,10 +24,12 @@ export interface AgentDataChanged {
     name: string;
     description: string;
     iconUrl: string;
+    termsOfUseUrl: string;
     0: string;
     1: string;
     2: string;
     3: string;
+    4: string;
   };
 }
 
@@ -55,6 +57,14 @@ export interface GovernedProductionModeEntered {
   name: "GovernedProductionModeEntered";
   args: {
     governanceSettings: string;
+    0: string;
+  };
+}
+
+export interface ManagerChanged {
+  name: "ManagerChanged";
+  args: {
+    manager: string;
     0: string;
   };
 }
@@ -108,6 +118,7 @@ export type AllEvents =
   | GovernanceCallTimelocked
   | GovernanceInitialised
   | GovernedProductionModeEntered
+  | ManagerChanged
   | TimelockedGovernanceCallCanceled
   | TimelockedGovernanceCallExecuted
   | Whitelisted
@@ -204,6 +215,11 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<string>;
 
+  getAgentTermsOfUseUrl(
+    _managementAddress: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
   getManagementAddress(
     _workAddress: string,
     txDetails?: Truffle.TransactionDetails
@@ -251,6 +267,8 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
+  manager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
   productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   revokeAddress: {
@@ -271,6 +289,98 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setAgentDescription: {
+    (
+      _managementAddress: string,
+      _description: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _managementAddress: string,
+      _description: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _managementAddress: string,
+      _description: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _managementAddress: string,
+      _description: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setAgentIconUrl: {
+    (
+      _managementAddress: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _managementAddress: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _managementAddress: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _managementAddress: string,
+      _iconUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setAgentName: {
+    (
+      _managementAddress: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _managementAddress: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _managementAddress: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _managementAddress: string,
+      _name: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setAgentTermsOfUseUrl: {
+    (
+      _managementAddress: string,
+      _touUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _managementAddress: string,
+      _touUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _managementAddress: string,
+      _touUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _managementAddress: string,
+      _touUrl: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setAllowAll: {
     (_allowAll: boolean, txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
@@ -285,6 +395,24 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
     ): Promise<string>;
     estimateGas(
       _allowAll: boolean,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  setManager: {
+    (_manager: string, txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(
+      _manager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _manager: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _manager: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -330,6 +458,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       _name: string,
       _description: string,
       _iconUrl: string,
+      _touUrl: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
@@ -337,6 +466,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       _name: string,
       _description: string,
       _iconUrl: string,
+      _touUrl: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
@@ -344,6 +474,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       _name: string,
       _description: string,
       _iconUrl: string,
+      _touUrl: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
@@ -351,6 +482,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       _name: string,
       _description: string,
       _iconUrl: string,
+      _touUrl: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
@@ -445,6 +577,11 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
 
+    getAgentTermsOfUseUrl(
+      _managementAddress: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+
     getManagementAddress(
       _workAddress: string,
       txDetails?: Truffle.TransactionDetails
@@ -492,6 +629,8 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<boolean>;
 
+    manager(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
     productionMode(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     revokeAddress: {
@@ -512,6 +651,98 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    setAgentDescription: {
+      (
+        _managementAddress: string,
+        _description: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _managementAddress: string,
+        _description: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _managementAddress: string,
+        _description: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _managementAddress: string,
+        _description: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setAgentIconUrl: {
+      (
+        _managementAddress: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _managementAddress: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _managementAddress: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _managementAddress: string,
+        _iconUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setAgentName: {
+      (
+        _managementAddress: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _managementAddress: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _managementAddress: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _managementAddress: string,
+        _name: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setAgentTermsOfUseUrl: {
+      (
+        _managementAddress: string,
+        _touUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _managementAddress: string,
+        _touUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _managementAddress: string,
+        _touUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _managementAddress: string,
+        _touUrl: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     setAllowAll: {
       (_allowAll: boolean, txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
@@ -526,6 +757,24 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
       ): Promise<string>;
       estimateGas(
         _allowAll: boolean,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setManager: {
+      (_manager: string, txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(
+        _manager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _manager: string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _manager: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
@@ -571,6 +820,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
         _name: string,
         _description: string,
         _iconUrl: string,
+        _touUrl: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
@@ -578,6 +828,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
         _name: string,
         _description: string,
         _iconUrl: string,
+        _touUrl: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
@@ -585,6 +836,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
         _name: string,
         _description: string,
         _iconUrl: string,
+        _touUrl: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
@@ -592,6 +844,7 @@ export interface AgentOwnerRegistryInstance extends Truffle.ContractInstance {
         _name: string,
         _description: string,
         _iconUrl: string,
+        _touUrl: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

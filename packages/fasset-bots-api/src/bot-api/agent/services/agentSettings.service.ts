@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AgentSettingsConfigDTO } from '../../common/AgentettingsConfigDTO';
+import { AgentSettingsConfigDTO } from '../../common/AgentSettingsConfigDTO';
 import { AgentSettingsConfig } from '@flarelabs/fasset-bots-core/config';
 
 @Injectable()
@@ -15,7 +15,8 @@ export class AgentSettingsService {
             poolExitCollateralRatio,
             buyFAssetByAgentFactor,
             poolTopupCollateralRatio,
-            poolTopupTokenPriceFactor
+            poolTopupTokenPriceFactor,
+            handshakeType
         } = dto;
         return {
             poolTokenSuffix,
@@ -27,7 +28,8 @@ export class AgentSettingsService {
             poolExitCollateralRatio,
             buyFAssetByAgentFactor,
             poolTopupCollateralRatio,
-            poolTopupTokenPriceFactor
+            poolTopupTokenPriceFactor,
+            handshakeType
         };
     }
 }

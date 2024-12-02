@@ -24,6 +24,7 @@ export function getAgentSettings(agentInfo: AgentInfo): AgentSettings {
     agentSettings.buyFAssetByAgentFactorBIPS = toBN(agentInfo.buyFAssetByAgentFactorBIPS);
     agentSettings.poolTopupCollateralRatioBIPS = toBN(agentInfo.poolTopupCollateralRatioBIPS);
     agentSettings.poolTopupTokenPriceFactorBIPS = toBN(agentInfo.poolTopupTokenPriceFactorBIPS);
+    agentSettings.handshakeType = toBN(agentInfo.handshakeType);
     return agentSettings;
 }
 

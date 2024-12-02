@@ -5,7 +5,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { DEFAULT_RATE_LIMIT_OPTIONS } from "../utils/constants";
 import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { AxiosError } from "axios";
-import { fullStackTrace, sleepMs } from "./utils";
+import { fullStackTrace, sleepMs, updateErrorWithFullStackTrace } from "./utils";
 
 export async function tryWithClients<T>(clients: AxiosInstance[], operation: (client: AxiosInstance) => Promise<T>, method: string) {
     for (const [index] of clients.entries()) {
@@ -17,7 +17,7 @@ export async function tryWithClients<T>(clients: AxiosInstance[], operation: (cl
             logger.warn(`Client with index ${index}, url ${failedUrl} and method ${method} failed with: ${errorMessage(error)}`);
             const lastClient = clients.length - 1;
             if (index === lastClient) {
-                throw error;
+                throw updateErrorWithFullStackTrace(error);
             }
         }
     }
@@ -66,6 +66,7 @@ export function createAxiosConfig(url: string, apiKey?: string, timeoutMs?: numb
     if (apiKey) {
         createAxiosConfig.headers ??= {};
         createAxiosConfig.headers["X-API-KEY"] = apiKey;
+        createAxiosConfig.headers["x-apikey"] = apiKey;
     }
     return createAxiosConfig;
 }
@@ -105,10 +106,10 @@ export async function withRetry<T>(
     while (attempts < retryLimit) {
         try {
             const result = await fn();
-            if (result) {
+            if (result != null) {
                 return result;
             }
-            logger.warn(`Failed to complete ${actionDescription} (received null/0 result) on attempt ${attempts + 1}`);
+            logger.warn(`Failed to complete ${actionDescription} (received null result) on attempt ${attempts + 1}`);
         } catch (error) /* istanbul ignore next */ {
             logger.warn(`Error during ${actionDescription} on attempt ${attempts + 1}: ${errorMessage(error)}`);
         }

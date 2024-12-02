@@ -137,7 +137,7 @@ const UTXOResponseData = {
 describe("testXRP blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testXRP;
-    const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/xrp"];
+    const indexerUrls: string[] = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/xrp"];
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockchainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -228,7 +228,6 @@ describe("testXRP blockchain tests via indexer", () => {
         let overflowBlockNum = await chain.getBlockHeight();
         while (true) {
             const overflowBlock = await chain.getBlockAt(overflowBlockNum);
-            console.log("Overflow block:", overflowBlock);
             if (overflowBlock != null) break;
             --overflowBlockNum;
         }
@@ -326,7 +325,7 @@ describe("testXRP blockchain tests via indexer", () => {
     });
 
     it("Should wait for underlying transaction finalization 2", async () => {
-        const retrievedTransaction = await blockchainIndexerClient.waitForUnderlyingTransactionFinalization("txHash", 0);
+        const retrievedTransaction = await blockchainIndexerClient.waitForUnderlyingTransactionFinalization("0000000000000000000000000000000000000000000000000000000000000000", 0);
         expect(retrievedTransaction).to.be.null;
     });
 
@@ -363,7 +362,7 @@ describe("testXRP blockchain tests via indexer", () => {
 describe("testDOGE blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testDOGE;
-    const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/doge/"];
+    const indexerUrls: string[] = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/doge/"];
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;
@@ -417,7 +416,7 @@ describe("testDOGE blockchain tests via indexer", () => {
 describe("testBTC blockchain tests via indexer", () => {
     let secrets: Secrets;
     const chainId: ChainId = ChainId.testBTC;
-    const indexerUrls: string[] = ["https://attestation-coston.aflabs.net/verifier/btc/"];
+    const indexerUrls: string[] = ["https://testnet-verifier-fdc-test.aflabs.org/verifier/btc/"];
     let rewiredBlockChainIndexerClient: typeof rewiredBlockchainIndexerHelperClass;
     let blockChainIndexerClient: BlockchainIndexerHelper;
     let blockId: number;

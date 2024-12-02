@@ -1,17 +1,17 @@
 import { UTXOWalletImplementation } from "./UTXOWalletImplementation";
 import { ChainType } from "../../utils/constants";
 import type { DogecoinWalletConfig } from "../../interfaces/IWalletTransaction";
-import { EntityManager } from "@mikro-orm/core";
 import { logger } from "../../utils/logger";
+import { CreateWalletOverrides } from "../monitoring/TransactionMonitor";
 
 export class DogeWalletImplementation extends UTXOWalletImplementation {
-   constructor(monitoringId: string | null, options: DogecoinWalletConfig) {
+   constructor(options: DogecoinWalletConfig, overrides: CreateWalletOverrides) {
       const chainType = options.inTestnet ? ChainType.testDOGE : ChainType.DOGE;
-      super(chainType, monitoringId, options);
+      super(chainType, options, overrides);
    }
 
-   clone(monitoringId: string, rootEm: EntityManager): UTXOWalletImplementation {
-      logger.info(`Forking wallet ${this.monitoringId} to ${monitoringId}`);
-      return new DogeWalletImplementation(monitoringId, { ...this.createConfig, em: rootEm });
+   clone(overrides: CreateWalletOverrides): UTXOWalletImplementation {
+      logger.info(`Forking wallet ${this.monitoringId} to ${overrides.monitoringId}`);
+      return new DogeWalletImplementation(this.createConfig, overrides);
    }
 }

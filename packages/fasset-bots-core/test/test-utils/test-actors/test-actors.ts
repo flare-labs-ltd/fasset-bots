@@ -45,7 +45,7 @@ export async function createTestAgentBot(
     const settings = loadAgentSettings(defaultAgentConfigPath);
     settings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
     const newVaultSettings: AgentVaultInitSettings = await createAgentVaultInitSettings(context, settings);
-    return await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, newVaultSettings, notifiers);
+    return await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, newVaultSettings, notifiers, null);
 }
 
 export async function createTestChallenger(context: IChallengerContext, address: string, state: TrackedState): Promise<Challenger> {
