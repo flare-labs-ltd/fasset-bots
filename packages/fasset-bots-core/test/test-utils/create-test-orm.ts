@@ -2,12 +2,12 @@ import { HistoryItem, MonitoringStateEntity, TransactionEntity, WalletAddressEnt
 import { copyFile } from "fs/promises";
 import { ActivityTimestampEntity } from "../../src";
 import { CreateOrmOptions, ORM } from "../../src/config/orm";
-import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event, PricePublisherState } from "../../src/entities/agent";
+import { AgentEntity, AgentMinting, AgentRedemption, AgentUnderlyingPayment, AgentUpdateSetting, Event } from "../../src/entities/agent";
 import { overrideAndCreateOrm } from "../../src/mikro-orm.config";
 
 const testOptions: CreateOrmOptions = {
     entities: [WalletAddressEntity, AgentEntity, AgentMinting, AgentRedemption, Event, AgentUnderlyingPayment, AgentUpdateSetting,
-        TransactionEntity, MonitoringStateEntity, HistoryItem, ActivityTimestampEntity, PricePublisherState],
+        TransactionEntity, MonitoringStateEntity, HistoryItem, ActivityTimestampEntity],
     type: "sqlite",
     dbName: "fasset-bots-test.db",
     debug: false,
