@@ -90,9 +90,9 @@ export class MockAttestationProver {
         return { transaction, block };
     }
 
-    referencedPaymentNonexistence(destinationAddressHash: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number): ReferencedPaymentNonexistence.ResponseBody {
+    referencedPaymentNonexistence(destinationAddressHash: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number, checkSourceAddresses: boolean, sourceAddressesRoot?: string): ReferencedPaymentNonexistence.ResponseBody {
         // if payment is found, return null
-        const [found, lowerBoundaryBlockNumber, overflowBlock] = this.findReferencedPayment(destinationAddressHash, paymentReference, amount, startBlock, endBlock, endTimestamp);
+        const [found, lowerBoundaryBlockNumber, overflowBlock] = this.findReferencedPayment(destinationAddressHash, paymentReference, amount, startBlock, endBlock, endTimestamp, checkSourceAddresses, sourceAddressesRoot);
         if (found) {
             throw new MockAttestationProverError(`AttestationProver.referencedPaymentNonexistence: transaction found with reference ${paymentReference}`);
         }
@@ -110,7 +110,7 @@ export class MockAttestationProver {
         };
     }
 
-    private findReferencedPayment(destinationAddressHash: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number): [boolean, number, number] {
+    private findReferencedPayment(destinationAddressHash: string, paymentReference: string, amount: BN, startBlock: number, endBlock: number, endTimestamp: number, checkSourceAddresses: boolean, sourceAddressesRoot?: string): [boolean, number, number] {
         for (let bn = startBlock; bn < this.chain.blocks.length; bn++) {
             const block = this.chain.blocks[bn];
             if (bn > endBlock && block.timestamp > endTimestamp) {
@@ -119,7 +119,8 @@ export class MockAttestationProver {
             for (const transaction of block.transactions) {
                 const found = transaction.reference === paymentReference
                     && totalReceivedValue(transaction, destinationAddressHash).gte(amount)
-                    && transaction.status !== TX_FAILED;
+                    && transaction.status !== TX_FAILED
+                    && (!checkSourceAddresses || sourceAddressesRoot === AttestationHelper.merkleRootOfAddresses(transaction.inputs.map(input => input[0])));
                 if (found) {
                     return [true, startBlock, bn];
                 }

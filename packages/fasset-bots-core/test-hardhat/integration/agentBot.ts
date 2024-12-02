@@ -629,6 +629,70 @@ describe("Agent bot tests", () => {
         await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
     });
 
+    it("Should not perform minting - minter pays from wrong underlying address - handshake enabled", async () => {
+        await enableHandshake();
+        const hr = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2);
+        await agentBot.handleEvents(orm.em);
+        // should have an open handshake but no mintings
+        orm.em.clear();
+        let mintings = await agentBot.minting.openMintings(orm.em, false);
+        assert.equal(mintings.length, 0);
+        const handshakes = await agentBot.handshake.openHandshakes(orm.em, false);
+        assert.equal(handshakes.length, 1);
+        assert.equal(handshakes[0].requestId.toString(), hr.collateralReservationId.toString());
+        const handshake = handshakes[0];
+        assert.equal(handshake.state, AgentHandshakeState.STARTED);
+        const blockNumberBeforeHandshake = await web3.eth.getBlockNumber();
+        // update handshake status and create minting request
+        await agentBot.handshake.handleOpenHandshakes(orm.em);
+        await agentBot.runStep(orm.em);
+        // the handshake status should now be 'APPROVED'
+        orm.em.clear();
+        const openHandshakesAfter = await agentBot.handshake.openHandshakes(orm.em, false);
+        assert.equal(openHandshakesAfter.length, 0);
+        const handshakeAfter = await agentBot.handshake.findHandshake(orm.em, { requestId: handshake.requestId });
+        assert.equal(handshakeAfter!.state, AgentHandshakeState.APPROVED);
+        // agent should have an open minting
+        const mintingsAfter = await agentBot.minting.openMintings(orm.em, false);
+        assert.equal(mintingsAfter.length, 1);
+        const minting = mintingsAfter[0];
+        assert.equal(minting.state, AgentMintingState.STARTED);
+        const allEvents = await readEventsFrom(context.assetManager, blockNumberBeforeHandshake);
+        const events = filterEventList(allEvents, context.assetManager, "CollateralReserved");
+        assert.equal(events.length, 1);
+        const crt = events[0].args;
+
+        // pay for minting from wrong underlying address
+        const minter2 = await createTestMinter(context, minterAddress, chain, "RANDOM_MINTER_UNDERLYING_ADDRESS");
+        assert.notEqual(minter.underlyingAddress, minter2.underlyingAddress);
+        await minter2.performMintingPayment(crt);
+
+        chain.mine(chain.finalizationBlocks + 1);
+        // skip time so the payment will expire on underlying chain
+        chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
+        chain.mine(Number(crt.lastUnderlyingBlock));
+        // get time proof
+        await updateAgentBotUnderlyingBlockProof(context, agentBot);
+        // handle again
+        await agentBot.minting.handleOpenMintings(orm.em);
+        orm.em.clear();
+        // should have one open minting with state 'requestedPaymentProof'
+        mintings = await agentBot.minting.openMintings(orm.em, false);
+        assert.equal(mintings.length, 1);
+        const mintingRequestedNonPaymentProof = mintings[0];
+        assert.equal(mintingRequestedNonPaymentProof.state, AgentMintingState.REQUEST_NON_PAYMENT_PROOF);
+
+        // check if minting is done
+        await agentBot.minting.handleOpenMintings(orm.em);
+        orm.em.clear();
+        const mintingDone = await agentBot.minting.findMinting(orm.em, { requestId: crt.collateralReservationId });
+        assert.equal(mintingDone.state, AgentMintingState.DONE);
+        // check that executing minting after calling mintingPaymentDefault will revert
+        const txHash = await minter.performMintingPayment(crt);
+        chain.mine(chain.finalizationBlocks + 1);
+        await expectRevert(minter.executeMinting(crt, txHash), "invalid crt id");
+    });
+
     it("Should perform unstick minting - minter pays and time expires in indexer - handshake enabled", async () => {
         await enableHandshake();
         const hr = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2);
@@ -732,7 +796,7 @@ describe("Agent bot tests", () => {
         assert.equal(openMintings2.length, 0);
     });
 
-    it("Should perform minting and redemption with handshake enabled", async () => {
+    it("Should perform minting and redemption - handshake enabled", async () => {
         await enableHandshake();
         // perform minting
         const hs = await minter.reserveCollateralHandshake(agentBot.agent.vaultAddress, 2);
