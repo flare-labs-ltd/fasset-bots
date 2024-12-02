@@ -14,7 +14,9 @@ export { generateSecrets, SecretsUser, generateUnderlyingAccount } from "./confi
 export { validateEncryptionPassword } from "./config/secrets";
 export { ActorBaseKind } from "./fasset-bots/ActorBase";
 export { ChainId } from "./underlying-chain/ChainId";
-export * from "./entities";
+export { ActivityTimestampEntity } from "./entities/activityTimestamp";
+export { AgentEntity } from "./entities/agent";
+export { AgentSettingName, AgentUpdateSettingState } from "./entities/common";
 export { ApiNotifierTransport } from "./utils/notifier/NotifierTransports";
 export { PricePublisherService } from "./actors/PricePublisherService";
 export { BlockchainWalletHelper } from "./underlying-chain/BlockchainWalletHelper";
