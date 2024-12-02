@@ -7,7 +7,10 @@ import { XrpAccountGeneration } from "./chain-clients/account-generation/XrpAcco
 import type { BitcoinWalletConfig, DogecoinWalletConfig, RippleWalletConfig } from "./interfaces/IWalletTransaction";
 
 export * from "./utils/encryption"
-export * from "./entity";
+export * from "./entity/transaction";
+export * from "./entity/wallet";
+export * from "./entity/monitoringState";
+export * from "./entity/historyItem";
 export type * from "./types";
 export type { StuckTransaction } from "./interfaces/IWalletTransaction";
 export { BtcAccountGeneration } from "./chain-clients/account-generation/BtcAccountGeneration";
