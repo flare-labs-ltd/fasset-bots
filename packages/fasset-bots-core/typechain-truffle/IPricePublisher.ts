@@ -26,6 +26,8 @@ export interface IPricePublisherInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: string[]; 1: BN[] }>;
 
+  getSymbols(txDetails?: Truffle.TransactionDetails): Promise<string[]>;
+
   getTrustedProviders(
     txDetails?: Truffle.TransactionDetails
   ): Promise<string[]>;
@@ -135,6 +137,8 @@ export interface IPricePublisherInstance extends Truffle.ContractInstance {
     getFeedIdsWithDecimals(
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: string[]; 1: BN[] }>;
+
+    getSymbols(txDetails?: Truffle.TransactionDetails): Promise<string[]>;
 
     getTrustedProviders(
       txDetails?: Truffle.TransactionDetails

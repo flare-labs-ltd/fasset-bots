@@ -9,6 +9,25 @@
         {
           "indexed": true,
           "internalType": "address",
+          "name": "donator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amountNatWei",
+          "type": "uint256"
+        }
+      ],
+      "name": "Donated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
           "name": "tokenHolder",
           "type": "address"
         },

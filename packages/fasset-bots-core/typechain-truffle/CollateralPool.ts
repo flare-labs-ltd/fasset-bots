@@ -38,6 +38,16 @@ export interface BeaconUpgraded {
   };
 }
 
+export interface Donated {
+  name: "Donated";
+  args: {
+    donator: string;
+    amountNatWei: BN;
+    0: string;
+    1: BN;
+  };
+}
+
 export interface Entered {
   name: "Entered";
   args: {
@@ -95,6 +105,7 @@ export interface Upgraded {
 export type AllEvents =
   | AdminChanged
   | BeaconUpgraded
+  | Donated
   | Entered
   | Exited
   | IncompleteSelfCloseExit
@@ -270,6 +281,15 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
       _recipient: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
+  };
+
+  donateNat: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
   enter: {
@@ -972,6 +992,15 @@ export interface CollateralPoolInstance extends Truffle.ContractInstance {
         _recipient: string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
+    };
+
+    donateNat: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
     enter: {
