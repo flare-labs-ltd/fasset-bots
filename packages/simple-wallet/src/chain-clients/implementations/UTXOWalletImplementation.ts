@@ -218,10 +218,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN
     ): Promise<number> {
-        if (await checkIfIsDeleting(this.rootEm, source)) {
-            logger.error(`Cannot receive requests. ${source} is deleting`);
-            throw new Error(`Cannot receive requests. ${source} is deleting`);
-        }
         const privateKey = await this.walletKeys.getKey(source);
         if (!privateKey) {
             logger.error(`Cannot prepare transaction ${source}. Missing private key.`);
@@ -271,22 +267,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.executeUntilBlock = currentBlockNumber + this.blockOffset;
             });
         }
-        // If the transaction is for deleting account we should check that all transactions going from it finish
-        // TODO
-        // if (txEnt.amount === null) {
-        //     const balanceResp = await this.blockchainAPI.getAccountBalance(txEnt.source);
-        //     const numTxs = await countTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
-        //     const numDeleteTxs = await countDeleteTransactionsWithStatuses(this.rootEm, this.chainType, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_PREPARED, TransactionStatus.TX_CREATED], txEnt.source);
-
-        //     if (numTxs - numDeleteTxs > 0) { // > 1 since it already has 1 tx which is delete acc tx
-        //         logger.info(`Account ${txEnt.source} can't be deleted because it has unfinished transactions.`);
-        //         return;
-        //     }
-        //     if (balanceResp && balanceResp.unconfirmedTxs > 0 || balanceResp?.unconfirmedBalance != 0) {
-        //         logger.info(`Account ${txEnt.source} can't be deleted because it has unfinished transactions.`);
-        //         return;
-        //     }
-        // }
         logger.info(`Preparing transaction ${txEnt.id}`);
         try {
             const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
@@ -392,7 +372,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                             txEnt.raw = "";
                             txEnt.transactionHash = "";
                         });
-                        logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);//TODO can this even happen?
+                        logger.info(`Transaction ${txEnt.id} changed status to created due to invalid utxo.`);// Can this even happen?
                         if (txEnt.rbfReplacementFor) {
                             await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => {
                                 txEnt.inputs.removeAll();
@@ -424,13 +404,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
 
                 // If account has too many UTXOs for one big delete account transaction we sequentially remove the remainder of UTXOs
-                // TODO
-                // if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && txEnt.amount == null && txResp.confirmations > this.enoughConfirmations / 3) {
-                //     const numOfSpendableUTXOs = await countSpendableUTXOs(this.chainType, this.rootEm, txEnt.source);
-                //     if (numOfSpendableUTXOs > 0) {
-                //         await this.transactionService.createDeleteAccountTransaction(this.chainType, txEnt.source, txEnt.destination);
-                //     }
-                // }
+                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && txEnt.amount == null) {
+                    const UTXOsLeft = await this.transactionUTXOService.filteredAndSortedMempoolUTXOs(txEnt.source)
+                    if (UTXOsLeft.length > 0) {
+                        await this.transactionService.createDeleteAccountTransaction(this.chainType, txEnt.source, txEnt.destination);
+                    }
+                }
             }
             if (txResp.blockHash && txResp.confirmations >= this.enoughConfirmations) {
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
@@ -767,7 +746,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         logger.error(`Transaction ${txId} submission failed with Axios error (${errorDescription}): ${errorMessage(error)}`);
 
         if (errorDescription.includes("too-long-mempool-chain")) {
-            logger.error(`Transaction ${txId} has too-long-mempool-chain`, error);
+            logger.error(`Transaction ${txId} has too-long-mempool-chain`);
             return TransactionStatus.TX_PREPARED;
         } else if (errorDescription.includes("insufficient fee")) {
             logger.error(`Transaction ${txId} submission failed because of 'insufficient fee'`);

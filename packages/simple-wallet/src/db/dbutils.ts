@@ -183,14 +183,6 @@ export async function findTransactionsWithStatuses(rootEm: EntityManager, chainT
     return await rootEm.find(TransactionEntity, { status: {$in: statuses}, chainType, source });
 }
 
-export async function countTransactionsWithStatuses(rootEm: EntityManager, chainType: ChainType, statuses: TransactionStatus[], source?: string): Promise<number> {
-    return await rootEm.count(TransactionEntity, source ? { status: {$in: statuses}, chainType, source } : { status: {$in: statuses}, chainType });
-}
-
-export async function countDeleteTransactionsWithStatuses(rootEm: EntityManager, chainType: ChainType, statuses: TransactionStatus[], source?: string) {
-    return await rootEm.count(TransactionEntity, source ? { status: {$in: statuses}, amount: null, chainType, source } : { status: {$in: statuses}, chainType, amount: null });
-}
-
 //others
 export async function handleMissingPrivateKey(rootEm: EntityManager, txId: number, failedInFunction: string): Promise<void> {
     await failTransaction(rootEm, txId, `${failedInFunction}: Cannot prepare transaction ${txId}. Missing private key.`);
