@@ -243,6 +243,7 @@ export class TransactionMonitor implements ITransactionMonitor {
     }
 
     private async monitoringMainLoop(threadEm: EntityManager, wallet: IMonitoredWallet) {
+        let count = 0;
         while (this.monitoring) {
             try {
                 const networkUp = await wallet.checkNetworkStatus();
@@ -257,12 +258,18 @@ export class TransactionMonitor implements ITransactionMonitor {
                 }
                 await this.processTransactions(threadEm, [TransactionStatus.TX_PENDING], wallet.checkPendingTransaction.bind(wallet));
                 await this.processTransactions(threadEm, [TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction.bind(wallet));
-                await this.processTransactions(threadEm, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction.bind(wallet));
+                // only check submitted transactions every 10 loops
+                if (count % 10 === 0) {
+                    await this.processTransactions(threadEm, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction.bind(wallet));
+                }
             } catch (error) {
                 if (error instanceof StopTransactionMonitor) break;
                 logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${MONITOR_LOOP_SLEEP}: ${errorMessage(error)}`);
             }
-            await sleepMs(MONITOR_LOOP_SLEEP);
+            if (this.monitoring) {
+                await sleepMs(MONITOR_LOOP_SLEEP);
+            }
+            count++;
         }
         logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
     }
