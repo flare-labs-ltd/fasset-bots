@@ -1,13 +1,25 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 
-@Entity({ tableName: "alert" })
+@Entity({ tableName: "alertFull" })
 export class Alert {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
     @Property()
-    alert!: PostAlert;
+    bot_type!: string;
+
+    @Property()
+    address!: string;
+
+    @Property()
+    level!: string;
+
+    @Property()
+    title!: string;
+
+    @Property()
+    description!: string;
 
     @Property()
     expiration!: number;
@@ -15,8 +27,12 @@ export class Alert {
     @Property({ nullable: true })
     date: number | null;
 
-    constructor(notification: PostAlert, expiration: number, date: number) {
-        this.alert = notification;
+    constructor(bot_type: string, address: string, level: string, title: string, description: string, expiration: number, date: number) {
+        this.bot_type = bot_type;
+        this.address = address;
+        this.level = level;
+        this.title = title;
+        this.description = description;
         this.expiration = expiration;
         this.date = date;
     }
