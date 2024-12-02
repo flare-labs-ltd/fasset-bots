@@ -325,7 +325,7 @@ describe("testXRP blockchain tests via indexer", () => {
     });
 
     it("Should wait for underlying transaction finalization 2", async () => {
-        const retrievedTransaction = await blockchainIndexerClient.waitForUnderlyingTransactionFinalization("txHash", 0);
+        const retrievedTransaction = await blockchainIndexerClient.waitForUnderlyingTransactionFinalization("0000000000000000000000000000000000000000000000000000000000000000", 0);
         expect(retrievedTransaction).to.be.null;
     });
 
