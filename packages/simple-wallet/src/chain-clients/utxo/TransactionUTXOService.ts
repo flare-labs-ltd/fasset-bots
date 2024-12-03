@@ -393,7 +393,7 @@ export class TransactionUTXOService {
                 transactionHash: input.prevTxId,
                 position: input.outputIndex,
                 value: toBN(input.output.satoshis),
-                confirmed: false,
+                confirmed: true,
                 script: await this.blockchainAPI.getUTXOScript(input.prevTxId, input.outputIndex)
             };
             mempoolRbfUTXOs.push(mempoolRbfUTXO);

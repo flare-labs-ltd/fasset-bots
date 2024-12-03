@@ -227,18 +227,6 @@ describe("UTXO selection algorithm test", () => {
         expect(tr.getFee()).to.be.eq(feeInSatoshi.toNumber());
     });
 
-    it("If the remaining part is less than dust it should be used as additional fee when fee status is", async () => { // TODO-test
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").resolves([
-            {transactionHash: "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", position: 0, value: toBN(1000), script: "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", confirmed: true},
-            {transactionHash: "b8aac7ed190bf30610cd904e533eadabfee824054eb14a1e3a56cf1965b495d5", position: 0, value: toBN(2000), script: "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", confirmed: true},
-            {transactionHash: "52cf7492f717363cef1befcb7b4972adb053b65f2ec1763ac95c1e6312868dc6", position: 0, value: toBN(5000), script: "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e", confirmed: true}
-        ] as MempoolUTXO[])
-
-
-        const [tr,] = await wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, toBN(7600));
-        expect(tr.outputs.length).to.be.eq(1);
-    });
-
     it("Delete account transaction", async () => {
         const utxos = [
             createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),

@@ -70,7 +70,7 @@ describe("getTransactionDescendants", () => {
         expect(descendants).to.include.members([tx2, tx3]);
     });
 
-    it("should handle transactions with multiple inputs", async () => {
+    it("Should handle transactions with multiple inputs", async () => {
         /*
         tx1: output1 -> tx2 [input1] output2
                                                 -> tx3 [input2, input3]

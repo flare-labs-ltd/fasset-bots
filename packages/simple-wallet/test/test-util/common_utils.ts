@@ -1,15 +1,14 @@
-import { BaseWalletConfig, ITransactionMonitor, TransactionInfo, type WriteWalletInterface } from "../../src/interfaces/IWalletTransaction";
-import { TransactionEntity, TransactionStatus } from "../../src/entity/transaction";
+import { BaseWalletConfig, ITransactionMonitor, TransactionInfo } from "../../src";
+import { TransactionEntity, TransactionStatus } from "../../src";
 import { sleepMs } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
 import { EntityManager } from "@mikro-orm/core";
 import {BTC, decryptText, DOGE, XRP} from "../../src";
-import BN from "bn.js";
 import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
 import winston, { Logger } from "winston";
-import { logger } from "../../src/utils/logger";
+import { logger } from "../../src";
 import { toBN } from "../../src/utils/bnutils";
-import { isORMError, tryWithClients } from "../../src/utils/axios-utils";
+import { isORMError, tryWithClients } from "../../src";
 import {
     AccountBalanceResponse,
     MempoolUTXO,
@@ -18,13 +17,10 @@ import {
     UTXORawTransactionInput,
     UTXOTransactionResponse,
 } from "../../src/interfaces/IBlockchainAPI";
-import { Transaction } from "bitcore-lib";
-import * as bitcore from "bitcore-lib";
 import { UTXOBlockchainAPI } from "../../src/blockchain-apis/UTXOBlockchainAPI";
 import { AxiosInstance, AxiosResponse } from "axios";
 import {read} from "read";
 import fs from "fs";
-import { expect } from "chai";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 
 export const PASSWORD_MIN_LENGTH = 16;
@@ -41,7 +37,7 @@ export function checkStatus(tx: TransactionInfo | TransactionEntity, allowedEndS
             return false;
         }
     } else {
-        const calculatedNotAllowedEndStatuses = END_STATUSES.filter(t => !allowedEndStatuses.includes(t));
+        const calculatedNotAllowedEndStatuses = [TransactionStatus.TX_REPLACED, TransactionStatus.TX_FAILED, TransactionStatus.TX_SUBMISSION_FAILED, TransactionStatus.TX_SUCCESS].filter(t => !allowedEndStatuses.includes(t));
         return checkStatus(tx, allowedEndStatuses, calculatedNotAllowedEndStatuses);
     }
 }
@@ -161,18 +157,6 @@ export function resetMonitoringOnForceExit<T extends ITransactionMonitor>(wClien
         });
     });
 }
-
-export async function calculateNewFeeForTx(txId: number, feePerKb: BN, core: typeof bitcore, rootEm: EntityManager): Promise<[BN | undefined, number | undefined]> {
-    const txEnt = await fetchTransactionEntityById(rootEm, txId);
-    const tr: Transaction = new core.Transaction(JSON.parse(txEnt.raw!));
-    return [txEnt.fee, tr.feePerKb(feePerKb.toNumber()).getFee()];
-}
-
-export const END_STATUSES = [TransactionStatus.TX_REPLACED, TransactionStatus.TX_FAILED, TransactionStatus.TX_SUBMISSION_FAILED, TransactionStatus.TX_SUCCESS];
-export const TEST_WALLET_XRP = {
-    address: "rpZ1bX5RqATDiB7iskGLmspKLrPbg5X3y8"
-}
-
 
 export class MockBlockchainAPI extends UTXOBlockchainAPI {
     constructor() {

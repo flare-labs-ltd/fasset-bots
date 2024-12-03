@@ -112,12 +112,14 @@ export async function createAndPersistTransactionEntity(
 }
 
 export async function createAndSignXRPTransactionWithStatus(wClient: XRP, source: string, target: string, amount: BN, note: string, fee: BN, status: TransactionStatus) {
+    const blockHeight = await wClient.getLatestValidatedLedgerIndex();
     const transaction = await wClient.preparePaymentTransaction(
         source,
         target,
         amount,
         fee,
         note,
+        blockHeight + 40
     );
 
     const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, ChainType.testXRP, source, target, amount, fee, note, undefined, transaction.LastLedgerSequence);

@@ -317,7 +317,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEnt.reference,
                     rbfReplacementFor
                 );
-                logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxFee})`);
+                logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxPaymentForFeeSource})`);
                 payingFeesFromFeeSource = false;
             } else if (txEnt.feeSource && feeToHighForFeeSource && feeToHighForMainSource && rbfReplacementFor) {
                 // If transaction is rbf and amount to pay from fee source is too high for both - set it to the max of both
