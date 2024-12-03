@@ -91,11 +91,11 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
         }, "getBlockTimeAt"));
     }
 
-    async getTransaction(txHash: string): Promise<UTXOTransactionResponse> {
+    async getTransaction(txHash: string, logWithStackTrace?: boolean): Promise<UTXOTransactionResponse> {
         return await this.logRequest(`getTransaction(${txHash})`, tryWithClients(this.clients, async (client: AxiosInstance) => {
             const res = await client.get<UTXOTransactionResponse>(`/tx/${txHash}`);
             return res.data;
-        }, "getTransaction"));
+        }, "getTransaction", logWithStackTrace ?? true));
     }
 
     async getUTXOScript(txHash: string, vout: number): Promise<string> {

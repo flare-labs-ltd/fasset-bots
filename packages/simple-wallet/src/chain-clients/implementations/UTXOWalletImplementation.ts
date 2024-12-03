@@ -398,7 +398,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 });
                 return;
             }
-            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash);
+            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash, txEnt.replaced_by || txEnt.rbfReplacementFor ? false : true);
             // success
             if (txResp.blockHash && txResp.confirmations) {
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
@@ -438,9 +438,17 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 }
                 if (axios.isAxiosError(error)) {
                     const axiosError = error as AxiosError<AxiosTransactionSubmissionError>;
-                    logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with: ${JSON.stringify(error.response?.data, null, 2)}`);
                     if (String(axiosError.response?.data.error).includes("not found")) {
                         notFound = true;
+                        if (txEnt.status === TransactionStatus.TX_REPLACED_PENDING) {
+                            logger.info(`Submitted transaction ${txEnt.id} (${txEnt.transactionHash}) is pending replacement by ${txEnt.replaced_by?.id} (${txEnt.replaced_by?.transactionHash}).`)
+                        } else if (txEnt.status === TransactionStatus.TX_SUCCESS && txEnt.rbfReplacementFor) {
+                            logger.info(`Submitted transaction replacement ${txEnt.id} (${txEnt.transactionHash}) is pending confirmations by the original ${txEnt.rbfReplacementFor?.id} (${txEnt.rbfReplacementFor?.transactionHash}).`)
+                        } else {
+                            logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with: ${JSON.stringify(error.response?.data, null, 2)}`);
+                        }
+                    } else {
+                        logger.error(`checkSubmittedTransaction for transaction ${txEnt.id} failed with: ${JSON.stringify(error.response?.data, null, 2)}`);
                     }
                 } else {
                     logger.error(`checkSubmittedTransaction ${txEnt.id} (${txEnt.transactionHash}) cannot be fetched from node: ${String(error)}`);
