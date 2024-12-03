@@ -428,3 +428,10 @@ export function substituteEnvVars(obj: unknown) {
     }
     return obj;
 }
+
+/**
+ * Same as Web3.utils.keccak256 (or Web3.utils.sha3), but does not return null for empty string or zero-length bytes.
+ */
+export function keccak256(data: string) {
+    return (Web3.utils as any).sha3Raw(data);
+}

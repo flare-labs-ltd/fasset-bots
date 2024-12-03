@@ -1,10 +1,8 @@
 import { AddressValidity, ARESBase, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, MerkleTree, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
-import Web3 from "web3";
 import { squashSpace } from "../utils";
-import { prefix0x, requireNotNull, toHex, ZERO_BYTES32 } from "../utils/helpers";
+import { keccak256, prefix0x, requireNotNull, toHex, ZERO_BYTES32 } from "../utils/helpers";
 import { logger } from "../utils/logger";
-import { web3 } from "../utils/web3";
 import { ChainId } from "./ChainId";
 import { IBlockChain, TxInputOutput } from "./interfaces/IBlockChain";
 import { AttestationNotProved, AttestationProof, AttestationRequestId, IFlareDataConnectorClient, OptionalAttestationProof } from "./interfaces/IFlareDataConnectorClient";
@@ -87,7 +85,7 @@ export class AttestationHelper {
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
                 transactionId: prefix0x(transactionHash),
-                sourceAddressIndicator: web3.utils.keccak256(sourceAddress),
+                sourceAddressIndicator: keccak256(sourceAddress),
             },
         };
         return await this.flareDataConnector.submitRequest(request);
@@ -121,7 +119,7 @@ export class AttestationHelper {
                 minimalBlockNumber: String(startBlock),
                 deadlineBlockNumber: String(endBlock),
                 deadlineTimestamp: String(endTimestamp),
-                destinationAddressHash: web3.utils.keccak256(destinationAddress),
+                destinationAddressHash: keccak256(destinationAddress),
                 amount: toHex(amount),
                 standardPaymentReference: paymentReference,
                 checkSourceAddresses: sourceAddresses != null,
@@ -132,7 +130,7 @@ export class AttestationHelper {
     }
 
     static merkleRootOfAddresses(addresses: string[]) {
-        const addressDoubleHashes = addresses.map(address => Web3.utils.soliditySha3Raw(Web3.utils.soliditySha3Raw(address)));
+        const addressDoubleHashes = addresses.map(address => keccak256(keccak256(address)));
         addressDoubleHashes.sort();
         const tree = new MerkleTree(addressDoubleHashes);
         return requireNotNull(tree.root);
