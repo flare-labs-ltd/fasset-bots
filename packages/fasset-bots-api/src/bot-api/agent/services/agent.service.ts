@@ -106,8 +106,10 @@ export class AgentService {
 
     async poolFeesBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        const balance = await cli.poolFeesBalance(agentVaultAddress);
-        return { balance };
+        const { agentBot } = await cli.getAgentBot(agentVaultAddress);
+        const balance = await agentBot.agent.poolFeeBalance();
+        const balanceF = await agentBot.tokens.fAsset.formatValue(balance);
+        return { balance: balanceF };
     }
 
     async withdrawPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
