@@ -275,6 +275,8 @@ export async function handleFeeToLow(rootEm: EntityManager, txEnt: TransactionEn
         txEnt.outputs.removeAll();
         txEnt.raw = "";
         txEnt.transactionHash = "";
+        txEnt.fee = undefined;
+        txEnt.size = undefined;
     });
 }
 

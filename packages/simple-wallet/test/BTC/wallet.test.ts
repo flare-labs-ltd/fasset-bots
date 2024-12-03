@@ -27,15 +27,13 @@ import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import {getCore} from "../../src/chain-clients/utxo/UTXOUtils";
 import {
     createAndPersistTransactionEntity,
-    createTransactionEntity,
     setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import sinon from "sinon";
 import {FeeStatus} from "../../src/chain-clients/utxo/TransactionFeeService";
-import {MempoolUTXO, UTXOAddressResponse, UTXORawTransaction, UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
+import {MempoolUTXO, UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
 import {TransactionMonitor} from "../../src/chain-clients/monitoring/TransactionMonitor";
-import {AxiosInstance} from "axios";
 
 use(chaiAsPromised);
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
