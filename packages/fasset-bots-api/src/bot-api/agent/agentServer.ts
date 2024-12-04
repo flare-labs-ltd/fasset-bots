@@ -30,7 +30,7 @@ export async function runAgentServer() {
     const rootPath = process.env.ROOT_PATH || '';
     app.setGlobalPrefix(rootPath);
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup("api-doc", app, document);
+    SwaggerModule.setup(rootPath + "api-doc", app, document);
 
     const port = 1234;
     await app.listen(port);
