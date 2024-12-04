@@ -260,7 +260,7 @@ export class TrackedState {
         for (const collateral of this.collaterals.list) {
             const contract = await tokenContract(collateral.token);
             if (eventIs(event, contract, "Transfer")) {
-                logger.info(`Tracked State received event 'Transfer' with data ${formatArgs(event.args)}.`);
+                logger.info(`Tracked State received event 'Transfer' from token ${contract.address} with data ${formatArgs(event.args)}.`);
                 this.agents.get(event.args.from)?.withdrawVaultCollateral(contract.address, toBN(event.args.value));
                 this.agents.get(event.args.to)?.depositVaultCollateral(contract.address, toBN(event.args.value));
                 this.agentsByPool.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));

@@ -264,11 +264,13 @@ export class TrackedAgentState {
 
     // agent state changing
     depositVaultCollateral(token: string, value: BN): void {
+        if (this.totalVaultCollateralWei[token] == null) return; // in case of wnat transfer at agent vault destroy
         this.totalVaultCollateralWei[token] = this.totalVaultCollateralWei[token] ? this.totalVaultCollateralWei[token].add(value) : value;
         logger.info(`Tracked State Agent handled vault collateral deposited: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
 
     withdrawVaultCollateral(token: string, value: BN): void {
+        if (this.totalVaultCollateralWei[token] == null) return; // in case of wnat transfer at agent vault destroy
         this.totalVaultCollateralWei[token] = this.totalVaultCollateralWei[token].sub(value);
         logger.info(`Tracked State Agent handled vault collateral withdrawal: ${formatArgs(this.getTrackedStateAgentSettings())}.`);
     }
