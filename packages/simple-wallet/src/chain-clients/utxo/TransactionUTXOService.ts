@@ -295,7 +295,8 @@ export class TransactionUTXOService {
             logger.info(`Transaction with hash ${txHash} not in db, fetching it from api`);
             const tr = await this.blockchainAPI.getTransaction(txHash);
             /* istanbul ignore else */
-            if ((tr && inMempool && tr.blockHash && tr.confirmations < this.enoughConfirmations) || (tr && !inMempool)) {
+            // if ((tr && inMempool && tr.blockHash && tr.confirmations < this.enoughConfirmations) || (tr && !inMempool)) {
+            if (tr) {
                 logger.info(`Transaction with hash ${txHash} fetched from API will be saved to DB`);
                 await transactional(this.rootEm, async (em) => {
                     /* istanbul ignore next */
@@ -323,6 +324,8 @@ export class TransactionUTXOService {
     }
 
     async handleMissingUTXOScripts(utxos: MempoolUTXO[], source: string): Promise<MempoolUTXO[]> {
+        logger.info(`Handling missing UTXO scripts for ${source}`);
+        let count = 0;
         for (const utxo of utxos) {
             if (!utxo.script) {
                 if (!this.utxoScriptMap.has(source)) {
@@ -334,12 +337,15 @@ export class TransactionUTXOService {
                     addressScriptMap.set(`${utxo.transactionHash}:${utxo.position}`, script);
                 }
                 utxo.script = addressScriptMap.get(`${utxo.transactionHash}:${utxo.position}`)!;
+                count++;
             }
         }
+        logger.info(`Fixed ${count} missing UTXO scripts for ${source}`);
         return utxos;
     }
 
     async createInputsFromUTXOs(dbUTXOs: MempoolUTXO[], txId: number) {
+        logger.info(`Creating inputs from UTXOs for transaction ${txId}`);
         const inputs: TransactionInputEntity[] = [];
         for (const utxo of dbUTXOs) {
             const tx = await this.getTransactionEntityByHash(utxo.transactionHash, false);
@@ -432,7 +438,6 @@ export class TransactionUTXOService {
             return;
         }
 
-        logger.info(`Removing UTXO scripts used by transactions that were accepted to blockchain`);
         const addresses = this.utxoScriptMap.keys();
         for (const address of addresses) {
             await this.removeOldUTXOScriptsForAddress(address);
@@ -442,6 +447,7 @@ export class TransactionUTXOService {
     }
 
     private async removeOldUTXOScriptsForAddress(source: string) {
+        logger.info(`Removing UTXO scripts used by transactions that were accepted to blockchain for address ${source}`);
         const lowerTimeBound = this.timestampTracker - 24 * 60 * 60 * 1000;
         const transactions = await this.rootEm.find(TransactionEntity, {
             status: TransactionStatus.TX_SUCCESS,
