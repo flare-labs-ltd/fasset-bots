@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { sleepMs } from "../../src/utils/utils";
 import { TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import {ChainType} from "../../src/utils/constants";
-import {BitcoinWalletConfig, BTC, createAxiosInstance, logger} from "../../src";
+import {BitcoinWalletConfig, BTC, logger} from "../../src";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { addConsoleTransportForTests, MockBlockchainAPI } from "../test-util/common_utils";

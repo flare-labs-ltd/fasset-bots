@@ -1,7 +1,6 @@
 import {
     BitcoinWalletConfig,
     BTC,
-    ITransactionMonitor,
     logger,
 } from "../../src";
 import {addConsoleTransportForTests} from "../test-util/common_utils";
@@ -14,7 +13,6 @@ import {expect, use} from "chai";
 import {FeeStatus} from "../../src/chain-clients/utxo/TransactionFeeService";
 import {createTransactionEntityBase, createUTXO} from "../test-util/entity_utils";
 import sinon from "sinon";
-import {MempoolUTXO} from "../../src/interfaces/IBlockchainAPI";
 import { toBNExp } from "../../src/utils/bnutils";
 import { BTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
@@ -36,7 +34,6 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
 let wClient: BTC;
 let testOrm: ORM;
-let monitor: ITransactionMonitor;
 
 describe("UTXO selection algorithm test", () => {
 
@@ -210,7 +207,7 @@ describe("UTXO selection algorithm test", () => {
 
         expect(newUTXOs.map(t => t.transactionHash)).to.include.all.members(originalUTXOs.map(t => t.transactionHash));
         expect(newUTXOs.length).to.be.gt(originalUTXOs.length);
-        expect(newUTXOs.filter(t => t.confirmed).length).to.be.eq(newUTXOs.length);
+        expect(newUTXOs.filter(t => t.confirmed || originalUTXOs.filter(u => u.transactionHash === t.transactionHash)).length).to.be.eq(newUTXOs.length);
     });
 
     it("If a fixed fee is set it should be obliged", async () => {

@@ -375,7 +375,8 @@ describe("Xrp wallet tests", () => {
     it("If blockchain submission API fails transaction's status should be set to TX_PENDING and resent", async () => {
         sinon.stub(XRPBlockchainAPI.prototype, "submitTransaction").callsFake((params: SubmitTransactionRequest) => {throw new Error("Api Down")});
         await sleepMs(100);
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst);
+        const blockHeight = await wClient.getLatestValidatedLedgerIndex();
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, undefined, undefined, undefined, blockHeight + 20);
         const [txEnt, ] = await waitForTxToFinishWithStatus(0.01, 100, wClient.rootEm, TransactionStatus.TX_PENDING, id);
         expect(txEnt.status).to.eq(TransactionStatus.TX_PENDING);
         sinon.restore();

@@ -108,7 +108,10 @@ export function addConsoleTransportForTests (logger: Logger) {
     const consoleTransport = new winston.transports.Console({
         format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.simple()
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+            winston.format.printf(({ timestamp, level, message }) => {
+                return `[${timestamp}] ${level}: ${message}`;
+            })
         ),
     });
 
