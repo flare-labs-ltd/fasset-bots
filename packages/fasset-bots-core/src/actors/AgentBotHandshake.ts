@@ -136,10 +136,16 @@ export class AgentBotHandshake {
                 await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     await this.context.assetManager.approveCollateralReservation(handshake.requestId, { from: this.agent.owner.workAddress });
                 });
+                await this.updateHandshake(rootEm, handshakeId, {
+                    state: AgentHandshakeState.APPROVED
+                });
             } else {
                 logger.info(`Agent ${this.agent.vaultAddress} is rejecting collateral reservation ${handshake.requestId}.`);
                 await this.bot.locks.nativeChainLock(this.bot.owner.workAddress).lockAndRun(async () => {
                     await this.context.assetManager.rejectCollateralReservation(handshake.requestId, { from: this.agent.owner.workAddress });
+                });
+                await this.updateHandshake(rootEm, handshakeId, {
+                    state: AgentHandshakeState.REJECTED
                 });
             }
             logger.info(`Agent ${this.agent.vaultAddress} executed handshake for collateral reservation ${handshake.requestId}.`);

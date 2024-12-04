@@ -9,7 +9,7 @@ import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/Fl
 import { prefix0x, ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
 import { testChainInfo } from "../../test-utils/TestChainInfo";
-import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS, INDEXER_URL_BTC } from "../../test-utils/test-bot-config";
+import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS, INDEXER_URL_BTC, INDEXER_URL_DOGE } from "../../test-utils/test-bot-config";
 import { keccak256 } from "web3-utils";
 use(chaiAsPromised);
 const rewiredFlareDataConnectorClientHelper = rewire("../../../src/underlying-chain/FlareDataConnectorClientHelper");
@@ -239,6 +239,112 @@ describe("testBTC attestation/flare data connector tests", () => {
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
                 addressStr: "tb1ql8yj58ga4xwq34uuux8nxel6m5dtchml3m7sg4"
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+});
+
+describe("testDOGE attestation/flare data connector tests", () => {
+    const chainId = ChainId.testDOGE;
+    let secrets: Secrets;
+    let account: string;
+
+    before(async () => {
+        secrets = await Secrets.load(TEST_SECRETS);
+        const accountPrivateKey = secrets.required("user.native.private_key");
+        const accounts = await initWeb3(COSTON_RPC, [accountPrivateKey], null);
+        account = accounts[0];
+        flareDataConnectorClient = await createFlareDataConnectorClient(
+            INDEXER_URL_DOGE,
+            indexerApiKey(secrets, INDEXER_URL_DOGE),
+            DATA_ACCESS_LAYER_URLS,
+            FDC_VERIFICATION_ADDRESS,
+            FDC_HUB_ADDRESS,
+            RELAY_ADDRESS,
+            account
+        );
+    });
+
+    it("Should submit ConfirmedBlockHeightExists request", async () => {
+        const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_DOGE, indexerApiKey(secrets, INDEXER_URL_DOGE));
+        const blockHeight = await blockChainIndexerClient.getBlockHeight();
+        const queryWindow = 86400;
+        const request: ConfirmedBlockHeightExists.Request = {
+            attestationType: ConfirmedBlockHeightExists.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                blockNumber: String(blockHeight - testChainInfo.doge.finalizationBlocks),
+                queryWindow: String(queryWindow),
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it.skip("Should submit Payment request", async () => {
+        const request: Payment.Request = {
+            attestationType: Payment.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                transactionId: prefix0x("3b3ad6c157e0e8f58cc4f43982765391d290181808a0f34ff4a03fb44867c7a1"),
+                inUtxo: "0",
+                utxo: "0"
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it("Should submit ReferencedPaymentNonexistence request", async () => {
+        const request: ReferencedPaymentNonexistence.Request = {
+            attestationType: ReferencedPaymentNonexistence.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                standardPaymentReference: "0x464250526641000100000000000000000000000000000000000000000000b35c",
+                amount: "1000",
+                checkSourceAddresses: false,
+                sourceAddressesRoot: ZERO_BYTES32,
+                destinationAddressHash: keccak256("123"),
+                minimalBlockNumber: "6727041",
+                deadlineBlockNumber: "6727141",
+                deadlineTimestamp: "1732873336",
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it.skip("Should submit BalanceDecreasingTransaction request", async () => {
+        const request: BalanceDecreasingTransaction.Request = {
+            attestationType: BalanceDecreasingTransaction.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                transactionId: prefix0x("3b3ad6c157e0e8f58cc4f43982765391d290181808a0f34ff4a03fb44867c7a1"),
+                sourceAddressIndicator: keccak256("njwuugVW6x6PkoBmciJN9djhZh2hmnvSer"),
+            },
+        };
+        const resp = await flareDataConnectorClient.submitRequest(request);
+        expect(resp!.round).to.be.greaterThan(0);
+        expect(resp!.data).is.not.null;
+    });
+
+    it("Should submit AddressValidity request", async () => {
+        const request: AddressValidity.Request = {
+            attestationType: AddressValidity.TYPE,
+            sourceId: chainId.sourceId,
+            messageIntegrityCode: ZERO_BYTES32,
+            requestBody: {
+                addressStr: "ncqQNzwU9mPvp9dPvaP2AxEyuuKDbzbWHF"
             },
         };
         const resp = await flareDataConnectorClient.submitRequest(request);

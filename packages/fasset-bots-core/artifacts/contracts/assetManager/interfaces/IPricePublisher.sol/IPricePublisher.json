@@ -55,6 +55,19 @@
     },
     {
       "inputs": [],
+      "name": "getSymbols",
+      "outputs": [
+        {
+          "internalType": "string[]",
+          "name": "_symbols",
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "getTrustedProviders",
       "outputs": [
         {

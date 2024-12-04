@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Body, Controller, Get, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, UseGuards, UseInterceptors } from "@nestjs/common";
 import { AgentService } from "../services/agent.service";
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentVaultStatus, AllBalances, AllCollaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals } from "../../common/AgentResponse";
 import { AgentSettingsConfig } from "@flarelabs/fasset-bots-core/config";
-import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 import { AgentSettingsService } from "../services/agentSettings.service";
 import { AgentSettingsConfigDTO } from "../../common/AgentSettingsConfigDTO";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
-import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
+import { AgentSettingsDTO, Alerts, PostAlert } from "../../common/AgentSettingsDTO";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AuthGuard } from "@nestjs/passport";
 
@@ -355,9 +354,20 @@ export class AgentController {
             }
         }
     })
+    @ApiQuery({
+        name: 'types',
+        required: false,
+        type: String,
+      })
     public async getNotifications(
-    ): Promise<ApiResponseWrapper<PostAlert[]>> {
-        return handleApiResponse(this.agentService.getAlerts());
+        @Query('limit') limit: number = 10,
+        @Query('offset') offset: number = 0,
+        @Query('types') types?: string
+    ): Promise<ApiResponseWrapper<Alerts>> {
+        const parsedLimit = Number(limit);
+        const parsedOffset = Number(offset);
+        const typeArray = types ? types.split(',') : null;
+        return handleApiResponse(this.agentService.getAlerts(parsedLimit, parsedOffset, typeArray));
     }
 
     @UseGuards(JwtAuthGuard)

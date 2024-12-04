@@ -25,6 +25,11 @@ export interface IPriceReaderInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
+  getPriceFromTrustedProvidersWithQuality(
+    _symbol: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
+
   methods: {
     getPrice(
       _symbol: string,
@@ -35,6 +40,11 @@ export interface IPriceReaderInstance extends Truffle.ContractInstance {
       _symbol: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    getPriceFromTrustedProvidersWithQuality(
+      _symbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

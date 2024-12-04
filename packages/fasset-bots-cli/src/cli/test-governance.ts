@@ -139,7 +139,7 @@ async function mintOrTransferFakeTokens(secretsFile: string, configFileName: str
     try {
         await token.mintAmount(recipientAddress, amountBN, { from: deployerAddress });
     } catch (error) {
-        console.log("Cannot mint, transfering from deployer address...");
+        console.log("Cannot mint, transferring from deployer address...");
         await token.transfer(recipientAddress, amountBN, { from: deployerAddress });
     }
 }

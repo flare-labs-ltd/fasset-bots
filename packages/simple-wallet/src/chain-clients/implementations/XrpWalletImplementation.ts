@@ -139,10 +139,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       executeUntilTimestamp?: BN
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops?.toString()} and reference ${note}`);
-      if (await checkIfIsDeleting(this.rootEm, source)) {
-         logger.error(`Cannot receive requests. ${source} is deleting`);
-         throw new Error(`Cannot receive requests. ${source} is deleting`);
-      }
       const privateKey = await this.walletKeys.getKey(source);
       if (!privateKey) {
          logger.error(`Cannot prepare transaction ${source}. Missing private key.`)

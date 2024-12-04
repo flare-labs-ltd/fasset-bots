@@ -6,7 +6,7 @@ import { EM } from "../config/orm";
 import { AgentMinting } from "../entities/agent";
 import { AgentHandshakeState, AgentMintingState } from "../entities/common";
 import { Agent } from "../fasset/Agent";
-import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
+import { AttestationHelper, AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { ITransaction, TX_SUCCESS } from "../underlying-chain/interfaces/IBlockChain";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { EventArgs } from "../utils/events/common";
@@ -217,9 +217,11 @@ export class AgentBotMinting {
         const targetAmount = tx.outputs
             .filter(([dst, amount]) => dst === minting.agentUnderlyingAddress)
             .reduce((x, [dst, amount]) => x.add(toBN(amount)), BN_ZERO);
+        const checkSourceAddresses = minting.handshake != null;
         return tx.status === TX_SUCCESS
             && targetAmount.gte(minting.valueUBA.add(minting.feeUBA))
-            && tx.reference?.toLowerCase() === minting.paymentReference?.toLowerCase();
+            && tx.reference?.toLowerCase() === minting.paymentReference?.toLowerCase()
+            && (!checkSourceAddresses || AttestationHelper.merkleRootOfAddresses(tx.inputs.map(input => input[0])) === AttestationHelper.merkleRootOfAddresses(minting.handshake?.minterUnderlyingAddresses));
     }
 
     /**

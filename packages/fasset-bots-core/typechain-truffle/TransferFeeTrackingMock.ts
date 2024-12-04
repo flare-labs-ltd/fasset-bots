@@ -115,6 +115,33 @@ export interface TransferFeeTrackingMockInstance
     ): Promise<number>;
   };
 
+  reinitialize: {
+    (
+      _firstEpochStartTs: number | BN | string,
+      _epochDuration: number | BN | string,
+      _maxUnexpiredEpochs: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _firstEpochStartTs: number | BN | string,
+      _epochDuration: number | BN | string,
+      _maxUnexpiredEpochs: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _firstEpochStartTs: number | BN | string,
+      _epochDuration: number | BN | string,
+      _maxUnexpiredEpochs: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _firstEpochStartTs: number | BN | string,
+      _epochDuration: number | BN | string,
+      _maxUnexpiredEpochs: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   totalMinted(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
   transferFeeCalculationDataForAgent(
@@ -264,6 +291,33 @@ export interface TransferFeeTrackingMockInstance
       estimateGas(
         _agentVault: string,
         _amountAMG: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    reinitialize: {
+      (
+        _firstEpochStartTs: number | BN | string,
+        _epochDuration: number | BN | string,
+        _maxUnexpiredEpochs: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _firstEpochStartTs: number | BN | string,
+        _epochDuration: number | BN | string,
+        _maxUnexpiredEpochs: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _firstEpochStartTs: number | BN | string,
+        _epochDuration: number | BN | string,
+        _maxUnexpiredEpochs: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _firstEpochStartTs: number | BN | string,
+        _epochDuration: number | BN | string,
+        _maxUnexpiredEpochs: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };

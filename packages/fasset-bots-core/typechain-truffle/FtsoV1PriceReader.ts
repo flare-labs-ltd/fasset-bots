@@ -33,6 +33,11 @@ export interface FtsoV1PriceReaderInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: BN }>;
 
+  getPriceFromTrustedProvidersWithQuality(
+    _symbol: string,
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
+
   supportsInterface(
     _interfaceId: string,
     txDetails?: Truffle.TransactionDetails
@@ -75,6 +80,11 @@ export interface FtsoV1PriceReaderInstance extends Truffle.ContractInstance {
       _symbol: string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: BN }>;
+
+    getPriceFromTrustedProvidersWithQuality(
+      _symbol: string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: BN; 3: BN }>;
 
     supportsInterface(
       _interfaceId: string,

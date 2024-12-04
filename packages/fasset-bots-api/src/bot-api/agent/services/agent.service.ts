@@ -8,7 +8,7 @@ import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/No
 import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, Collaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
-import { AgentSettingsDTO } from "../../common/AgentSettingsDTO";
+import { AgentSettingsDTO, Alerts } from "../../common/AgentSettingsDTO";
 import { allTemplate } from "../../common/VaultTemplates";
 import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
 import { EntityManager } from "@mikro-orm/core";
@@ -100,13 +100,16 @@ export class AgentService {
 
     async withdrawPoolFees(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        await cli.withdrawPoolFees(agentVaultAddress, amount);
+        const currency = await Currencies.fasset(cli.context);
+        await cli.withdrawPoolFees(agentVaultAddress, currency.parse(amount));
     }
 
     async poolFeesBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        const balance = await cli.poolFeesBalance(agentVaultAddress);
-        return { balance };
+        const { agentBot } = await cli.getAgentBot(agentVaultAddress);
+        const balance = await agentBot.agent.poolFeeBalance();
+        const balanceF = await agentBot.tokens.fAsset.formatValue(balance);
+        return { balance: balanceF };
     }
 
     async withdrawPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
@@ -328,13 +331,12 @@ export class AgentService {
 
     async saveAlert(notification: PostAlert): Promise<void> {
         // Currently delete alerts that are older than 5 days
-        /*
         if(notification.title == "MINTING STARTED" || notification.title == "MINTING EXECUTED" || notification.title == "REDEMPTION STARTED" ||
             notification.title == "REDEMPTION PAID" || notification.title == "REDEMPTION PAYMENT PROOF REQUESTED" || notification.title == "REDEMPTION WAS PERFORMED"){
+            await this.deleteExpiredAlerts();
             return;
         }
-        */
-        const alert = new Alert(notification, Date.now()+ (5 * 24 * 60 * 60 * 1000), Date.now());
+        const alert = new Alert(notification.bot_type,notification.address, notification.level, notification.title, notification.description, Date.now()+ (4 * 24 * 60 * 60 * 1000), Date.now());
         await this.deleteExpiredAlerts();
         await this.em.persistAndFlush(alert);
     }
@@ -347,16 +349,15 @@ export class AgentService {
         await this.em.flush();
       }
 
-    async getAlerts(): Promise<any[]> {
-        const alertRepository = this.em.getRepository(Alert);
-        const alerts = (await alertRepository.findAll()) as Alert[];
-        const postAlerts: any[] = alerts.map((alert: Alert) => {
-            return {
-              alert: JSON.parse(alert.alert as any),
-              date: alert.date
-            };
-        });
-        return postAlerts;
+    async getAlerts(limit: number, offset: number, types: string[] | null): Promise<Alerts> {
+        //const alertRepository = this.em.getRepository(Alert);
+        const where = types ? { level: { $in: types } } : {};
+        const [alerts, total] = await this.em.findAndCount(Alert, where, {
+            limit,
+            offset,
+            orderBy: { id: 'DESC' },
+          });
+        return { alerts: alerts, count: total };
     }
 
     async getAgentWorkAddress(): Promise<string> {

@@ -42,23 +42,23 @@ export function stuckTransactionConstants(chainType: ChainType): StuckTransactio
       case ChainType.BTC:
       case ChainType.testBTC:
          return {
-            blockOffset: 6,//accepted in next x blocks
+            blockOffset: 12,//accepted in next x blocks
             feeIncrease: 1,//DEFAULT_FEE_INCREASE,
             executionBlockOffset: 1,//do not submit if "one block" time left
-            enoughConfirmations: 2
+            enoughConfirmations: 6
          };
       case ChainType.DOGE:
       case ChainType.testDOGE:
          return {
-            blockOffset: 30,//accepted in next x blocks
+            blockOffset: 40,//accepted in next x blocks
             feeIncrease: 1,//DEFAULT_FEE_INCREASE,
             executionBlockOffset: 3,//do not submit if "three blocks" time left
-            enoughConfirmations: 10
+            enoughConfirmations: 60
          };
       case ChainType.XRP:
       case ChainType.testXRP:
          return {
-            blockOffset: 30,// cca 1.5 min
+            blockOffset: 200,// cca 1.5 min
             feeIncrease: DEFAULT_FEE_INCREASE,
             executionBlockOffset: 2
          };
