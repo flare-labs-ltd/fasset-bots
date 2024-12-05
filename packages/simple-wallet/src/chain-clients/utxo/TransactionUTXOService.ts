@@ -8,7 +8,7 @@ import BN from "bn.js";
 import {TransactionEntity, TransactionStatus} from "../../entity/transaction";
 import {BTC_DOGE_DEC_PLACES, ChainType, MEMPOOL_CHAIN_LENGTH_LIMIT} from "../../utils/constants";
 import {logger} from "../../utils/logger";
-import {EntityManager, Loaded, RequiredEntityData, t} from "@mikro-orm/core";
+import {EntityManager, Loaded, RequiredEntityData} from "@mikro-orm/core";
 import {FeeStatus} from "./TransactionFeeService";
 import {toBN, toBNExp} from "../../utils/bnutils";
 import {TransactionInputEntity} from "../../entity/transactionInput";
