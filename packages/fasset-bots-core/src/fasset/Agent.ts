@@ -343,7 +343,7 @@ export class Agent {
     }
 
     /**
-     * Initiates underlying payment
+     * Initiates underlying payment. Used by redemption, free underlying withdrawal and top up payments.
      * @param paymentDestinationAddress
      * @param paymentAmount amount to be transferred
      * @param paymentReference payment reference
@@ -364,7 +364,7 @@ export class Agent {
         untilBlockTimestamp?: BN,
         feeSourceAddress?: string,
     ): Promise<number> {
-        await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress, feeSourceAddress);
+        // No check for underlying payment as checks were already performed during redemption, withdrawal and top up initiation. Other transfers are using function performPayment.
         return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp, feeSourceAddress);
     }
 
