@@ -749,7 +749,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             return TransactionStatus.TX_FAILED;
         }
 
-        const errorDescription = error.response.data.error;
+        const errorDescription = error.response.data.error.toLowerCase();
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         logger.error(`Transaction ${txId} submission failed with Axios error (${errorDescription}): ${errorMessage(error)}`);
 
@@ -768,21 +768,21 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             logger.error(`Transaction ${txId} submission failed because of 'min relay fee not met'`);
             await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
-        } else if (errorDescription.includes("Fee exceeds maximum configured by user")) {
+        } else if (errorDescription.includes("fee exceeds maximum configured by user")) {
             logger.error(`Transaction ${txId} submission failed because of 'Fee exceeds maximum configured by user'`);
             await handleFeeToLow(this.rootEm, txEnt);
             return TransactionStatus.TX_CREATED;
-        } else if (errorDescription.includes("Transaction already in block chain")) {
+        } else if (errorDescription.includes("transaction already in block chain")) {
             logger.error(`Transaction ${txId} submission failed because of 'Transaction already in block chain'`);
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.status = TransactionStatus.TX_SUCCESS;
                 txEnt.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
             });
             return TransactionStatus.TX_SUCCESS;
-        } else if (errorDescription.includes("bad-txns-in")) {
+        } else if (errorDescription.includes("bad-txns-in") || errorDescription.includes("missing inputs")) {
             const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
             // presumably original was accepted
-            if (errorDescription.includes("bad-txns-inputs-missingorspent") && txEnt.rbfReplacementFor) {
+            if ((errorDescription.includes("bad-txns-inputs-missingorspent") || errorDescription.includes("missing inputs")) && txEnt.rbfReplacementFor) {
                 logger.info(`Transaction ${txId} is rejected. Transaction ${txEnt.rbfReplacementFor.id} was accepted.`);
                 await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => {
                     txEnt.status = TransactionStatus.TX_SUCCESS;
