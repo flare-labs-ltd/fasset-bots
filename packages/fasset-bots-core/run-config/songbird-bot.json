@@ -1,0 +1,59 @@
+{
+    "$schema": "./schema/bot-config.schema.json",
+    "loopDelay": 1000,
+    "contractsJsonFile": "../fasset-deployment/songbird.json",
+    "prioritizeAddressUpdater": true,
+    "nativeChainInfo": {
+        "chainName": "Songbird",
+        "tokenSymbol": "SGB",
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 30,
+        "recommendedOwnerBalance": "10"
+    },
+    "fAssets": {
+        "FXRP": {
+            "chainId": "XRP",
+            "tokenName": "XRP",
+            "tokenSymbol": "XRP",
+            "tokenDecimals": 6,
+            "indexerUrls": ["https://fdc-verifier.aflabs.org/verifier/xrp"],
+            "walletUrls": ["https://api.flare.network/xrpl"],
+            "minimumAccountBalance": "1",
+            "priceChangeEmitter": "FtsoV2PriceStore"
+        }
+    },
+    "agentBotSettings": {
+        "parallel": false,
+        "liquidationPreventionFactor": "1.2",
+        "vaultCollateralReserveFactor": "0.1",
+        "poolCollateralReserveFactor": "0.1",
+        "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901","0x459BC23f08f0091A15cc3871c325463DeA609905"],
+        "minBalanceOnServiceAccount": "2",
+        "minBalanceOnWorkAccount": "200",
+        "fAssets": {
+            "FXRP": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "0.01"
+            }
+        }
+    },
+    "rpcUrl": "https://songbird-api-tracer.flare.network/ext/C/rpc",
+    "dataAccessLayerUrls": [
+        "https://sgb-data-availability.flare.network/api"
+    ],
+    "ormOptions": {
+        "type": "mysql"
+    },
+    "liquidationStrategy": {
+        "className": "DefaultLiquidationStrategy",
+        "config": {
+            "gasPrice": "21000"
+        }
+    },
+    "challengeStrategy": {
+        "className": "DefaultChallengeStrategy",
+        "config": {
+            "gasPrice": "21000"
+    }
+}
+}
