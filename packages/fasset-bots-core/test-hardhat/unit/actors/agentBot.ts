@@ -754,8 +754,7 @@ describe("Agent bot unit tests", () => {
         expect(spyError).to.be.called.exactly(5);
     });
 
-    // TODO: claims not working until DAL contains claim data
-    it.skip("Should handle claims", async () => {
+    it("Should handle claims", async () => {
         const spyError = spy.on(console, "error");
         // create agent bot
         const agentBot = await createTestAgentBot(context, orm, ownerAddress, ownerUnderlyingAddress, false);
@@ -764,50 +763,93 @@ describe("Agent bot unit tests", () => {
         const RewardManager = artifacts.require("IRewardManager");
         const DistributionToDelegators = artifacts.require("DistributionToDelegators");
         // mock contracts
-        const mockContractFtsoManager = await MockContract.new();
-        const rewardManager = await RewardManager.at(mockContractFtsoManager.address);
+        const mockContractRewardManager = await MockContract.new();
+        const rewardManager = await RewardManager.at(mockContractRewardManager.address);
         const mockContractDistribution = await MockContract.new();
         const distributionToDelegators = await DistributionToDelegators.at(mockContractDistribution.address);
         // add contracts to address updater
         await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["RewardManager"], [rewardManager.address]);
         await agentBot.context.addressUpdater.addOrUpdateContractNamesAndAddresses(["DistributionToDelegators"], [distributionToDelegators.address]);
-        // mock functions - there is something to claim
-        const getEpochs1 = web3.eth.abi.encodeFunctionCall(
-            { type: "function", name: "getEpochsWithUnclaimedRewards", inputs: [{ name: "_beneficiary", type: "address" }] },
+
+        const getStateOfRewardsVault = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getStateOfRewards", inputs: [{ name: "_rewardOwner", type: "address" }] },
+            [agentBot.agent.vaultAddress]
+        );
+        const getStateOfRewardsPool = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getStateOfRewards", inputs: [{ name: "_rewardOwner", type: "address" }] },
             [agentBot.agent.collateralPool.address]
         );
-        const epochs1 = web3.eth.abi.encodeParameter("uint256[]", [150]);
-        await mockContractFtsoManager.givenMethodReturn(getEpochs1, epochs1);
-        const getMonth1 = web3.eth.abi.encodeFunctionCall({ type: "function", name: "getClaimableMonths", inputs: [] }, []);
-        const month = web3.eth.abi.encodeParameters(["uint256", "uint256"], [0, 1]);
-        await mockContractDistribution.givenMethodReturn(getMonth1, month);
-        const getAmountToClaim1 = web3.eth.abi.encodeFunctionCall(
-            {
-                type: "function",
-                name: "getClaimableAmountOf",
-                inputs: [
-                    { name: "_account", type: "address" },
-                    { name: "_month", type: "uint256" },
-                ],
-            },
-            [agentBot.agent.collateralPool.address, month]
+        // mock functions - there is something to claim
+        const stateOfRewardsVault = web3.eth.abi.encodeParameter(
+            "tuple(uint24,bytes20,uint120,uint8,bool)[][]",
+            [[[1,accounts[2],123456,2,true], [1,accounts[3],654321,2,true]],[[2,accounts[1],123456,2,false], [2,accounts[3],654321,2,true]]]);
+        const stateOfRewardsPool = web3.eth.abi.encodeParameter(
+            "tuple(uint24,bytes20,uint120,uint8,bool)[][]",
+            [[[3,accounts[2],123456,2,true], [3,accounts[3],654321,2,true]],[[4,accounts[1],123456,2,true], [4,accounts[3],654321,2,true]]]);
+        await mockContractRewardManager.givenCalldataReturn(getStateOfRewardsVault, stateOfRewardsVault);
+        await mockContractRewardManager.givenCalldataReturn(getStateOfRewardsPool, stateOfRewardsPool);
+        const getClaimableMonths = web3.eth.abi.encodeFunctionCall({ type: "function", name: "getClaimableMonths", inputs: [] }, []);
+        const claimableMonths = web3.eth.abi.encodeParameters(["uint256", "uint256"], [0, 1]);
+        await mockContractDistribution.givenCalldataReturn(getClaimableMonths, claimableMonths);
+        const getClaimableAmountOfVault0 = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getClaimableAmountOf", inputs: [{ name: "_account", type: "address" }, { name: "_month", type: "uint256" }] },
+            [agentBot.agent.vaultAddress, "0"]
         );
-        const amountToClaim1 = web3.eth.abi.encodeParameter("uint256", 15000);
-        await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim1);
+        const getClaimableAmountOfVault1 = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getClaimableAmountOf", inputs: [{ name: "_account", type: "address" }, { name: "_month", type: "uint256" }] },
+            [agentBot.agent.vaultAddress, "1"]
+        );
+        const getClaimableAmountOfPool0 = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getClaimableAmountOf", inputs: [{ name: "_account", type: "address" }, { name: "_month", type: "uint256" }] },
+            [agentBot.agent.collateralPool.address, "0"]
+        );
+        const getClaimableAmountOfPool1 = web3.eth.abi.encodeFunctionCall(
+            { type: "function", name: "getClaimableAmountOf", inputs: [{ name: "_account", type: "address" }, { name: "_month", type: "uint256" }] },
+            [agentBot.agent.collateralPool.address, "1"]
+        );
+        const claimableAmountVault0 = web3.eth.abi.encodeParameter("uint256", 15000);
+        const claimableAmountVault1 = web3.eth.abi.encodeParameter("uint256", 16000);
+        const claimableAmountPool0 = web3.eth.abi.encodeParameter("uint256", 17000);
+        const claimableAmountPool1 = web3.eth.abi.encodeParameter("uint256", 18000);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfVault0, claimableAmountVault0);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfVault1, claimableAmountVault1);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfPool0, claimableAmountPool0);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfPool1, claimableAmountPool1);
         // check
         await agentBot.claims.checkForClaims();
         // mock functions - there is nothing to claim
-        const getEpochs2 = web3.eth.abi.encodeFunctionCall(
-            { type: "function", name: "getEpochsWithUnclaimedRewards", inputs: [{ name: "_beneficiary", type: "address" }] },
-            [agentBot.agent.collateralPool.address]
-        );
-        const empty = web3.eth.abi.encodeParameter("uint256[]", []);
-        await mockContractFtsoManager.givenMethodReturn(getEpochs2, empty);
-        const amountToClaim0 = web3.eth.abi.encodeParameter("uint256", 0);
-        await mockContractDistribution.givenMethodReturn(getAmountToClaim1, amountToClaim0);
+        const stateOfRewardsVault2 = web3.eth.abi.encodeParameter(
+            "tuple(uint24,bytes20,uint120,uint8,bool)[][]",
+            [[[2,accounts[1],123456,2,false], [2,accounts[3],654321,2,true]]]);
+        const stateOfRewardsPool2 = web3.eth.abi.encodeParameter(
+            "tuple(uint24,bytes20,uint120,uint8,bool)[][]",
+            []);
+        await mockContractRewardManager.givenCalldataReturn(getStateOfRewardsVault, stateOfRewardsVault2);
+        await mockContractRewardManager.givenCalldataReturn(getStateOfRewardsPool, stateOfRewardsPool2);
+        const claimableAmount0 = web3.eth.abi.encodeParameter("uint256", 0);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfVault0, claimableAmount0);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfVault1, claimableAmount0);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfPool0, claimableAmount0);
+        await mockContractDistribution.givenCalldataReturn(getClaimableAmountOfPool1, claimableAmount0);
         // check
         await agentBot.claims.checkForClaims();
         expect(spyError).to.be.called.exactly(0);
+        const claimRewardManager = web3.eth.abi.encodeFunctionSignature(
+            { type: "function", name: "claim", inputs: [{ name: "_rewardOwner", type: "address" }, { name: "_recipient", type: "address" }, { name: "_rewardEpochId", type: "uint24" }, { name: "_wrap", type: "bool" },
+                { components: [
+                    { name: "merkleProof", type: "bytes32[]" },
+                    { components: [ { name: "rewardEpochId", type: "uint24" }, { name: "beneficiary", type: "bytes20" }, { name: "amount", type: "uint120" },  { name: "claimType", type: "uint8" } ], name: "body", type: "tuple" } ],
+                    name: "_proofs", type: "tuple[]"
+                }
+            ] }
+        );
+        const claimDistributionToDelegators = web3.eth.abi.encodeFunctionSignature(
+            { type: "function", name: "claim", inputs: [{ name: "_rewardOwner", type: "address" }, { name: "_recipient", type: "address" }, { name: "_month", type: "uint256" }, { name: "_wrap", type: "bool" }] }
+        );
+        const invocationCountRewardManager = await mockContractRewardManager.invocationCountForMethod.call(claimRewardManager);
+        const invocationCountDistribution = await mockContractDistribution.invocationCountForMethod.call(claimDistributionToDelegators);
+        assert.equal(invocationCountRewardManager.toNumber(), 2);
+        assert.equal(invocationCountDistribution.toNumber(), 2);
         // clean up
         await agentBot.context.addressUpdater.removeContracts(["RewardManager"]);
         await agentBot.context.addressUpdater.removeContracts(["DistributionToDelegators"]);
