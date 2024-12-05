@@ -1,23 +1,20 @@
 import BN from "bn.js";
-import { logger } from "../../utils/logger";
-import {
-    createInitialTransactionEntity,
-    setAccountIsDeleting,
-} from "../../db/dbutils";
-import { EntityManager } from "@mikro-orm/core";
-import { ChainType, MAX_NUM_OF_INPUT_UTXOS, MIN_RELAY_FEE_INCREASE_RBF_IN_B } from "../../utils/constants";
-import { TransactionEntity } from "../../entity/transaction";
-import { Transaction } from "bitcore-lib";
-import { getAccountBalance, getCore, getDustAmount, getOutputSize } from "./UTXOUtils";
-import { unPrefix0x } from "../../utils/utils";
-import { toBN, toNumber } from "../../utils/bnutils";
-import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
-import { TransactionFeeService } from "./TransactionFeeService";
-import { LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError } from "../../utils/axios-utils";
-import { UTXO } from "../../interfaces/IWalletTransaction";
-import { IUtxoWalletServices } from "./IUtxoWalletServices";
+import {logger} from "../../utils/logger";
+import {createInitialTransactionEntity, setAccountIsDeleting,} from "../../db/dbutils";
+import {EntityManager} from "@mikro-orm/core";
+import {ChainType, MAX_NUM_OF_INPUT_UTXOS, MIN_RELAY_FEE_INCREASE_RBF_IN_B} from "../../utils/constants";
+import {TransactionEntity} from "../../entity/transaction";
+import {Transaction} from "bitcore-lib";
+import {getAccountBalance, getCore, getDustAmount, getOutputSize} from "./UTXOUtils";
+import {unPrefix0x} from "../../utils/utils";
+import {toBN, toNumber} from "../../utils/bnutils";
+import {TransactionData, TransactionUTXOService} from "./TransactionUTXOService";
+import {TransactionFeeService} from "./TransactionFeeService";
+import {LessThanDustAmountError, NegativeFeeError, NotEnoughUTXOsError} from "../../utils/axios-utils";
+import {UTXO} from "../../interfaces/IWalletTransaction";
+import {IUtxoWalletServices} from "./IUtxoWalletServices";
+import {MempoolUTXO} from "../../interfaces/IBlockchainAPI";
 import UnspentOutput = Transaction.UnspentOutput;
-import { MempoolUTXO } from "../../interfaces/IBlockchainAPI";
 
 export class TransactionService {
 
@@ -326,7 +323,7 @@ export class TransactionService {
         useChange: boolean,
         note?: string,
     ): Promise<Transaction> {
-        const updatedUtxos = await this.utxoService.handleMissingUTXOScripts(utxos);
+        const updatedUtxos = await this.utxoService.handleMissingUTXOScripts(utxos, source);
         const txUTXOs = updatedUtxos.map((utxo) => ({
             txid: utxo.transactionHash,
             outputIndex: utxo.position,

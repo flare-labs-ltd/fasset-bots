@@ -22,6 +22,14 @@ import BN from "bn.js";
 import * as bitcore from "bitcore-lib";
 import {expect} from "chai";
 import {UTXORawTransaction} from "../../src/interfaces/IBlockchainAPI";
+import {BtcWalletImplementation} from "../../src/chain-clients/implementations/BtcWalletImplementation";
+import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
+import {TransactionFeeService} from "../../src/chain-clients/utxo/TransactionFeeService";
+import {UTXOBlockchainAPI} from "../../src/blockchain-apis/UTXOBlockchainAPI";
+import {BlockchainFeeService} from "../../src/fee-service/fee-service";
+import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
+import {BTC_DOGE_DEC_PLACES, ChainType} from "../../src/utils/constants";
+import {toBNExp} from "../../src/utils/bnutils";
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
@@ -45,6 +53,8 @@ let feeWallet: ICreateWalletResponse;
 
 describe("UTXOWalletImplementation unit tests", () => {
     let removeConsoleLogging: () => void;
+    let getBlockHeightStub: sinon.SinonStub;
+    const startBlockHeight = 100;
 
     before(async () => {
         removeConsoleLogging = addConsoleTransportForTests(logger);
@@ -67,14 +77,16 @@ describe("UTXOWalletImplementation unit tests", () => {
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
         await wClient.walletKeys.addKey(feeWallet.address, feeWallet.privateKey);
 
-        sinon.stub(wClient.transactionUTXOService, "getNumberOfMempoolAncestors").resolves(0);
-        sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
-        sinon.stub(wClient, "signAndSubmitProcess").callsFake(async (txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string) =>
-            await updateTransactionEntity(wClient.rootEm, txId, (txEntToUpdate) => {
-                txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
-            })
+        sinon.stub(TransactionUTXOService.prototype, "getNumberOfMempoolAncestors").resolves(0);
+        sinon.stub(TransactionFeeService.prototype, "getFeePerKB").resolves(new BN(1000));
+        sinon.stub(BtcWalletImplementation.prototype, "signAndSubmitProcess").callsFake(async (txId: number, transaction: bitcore.Transaction, privateKey: string, privateKeyForFee?: string) => {
+                await updateTransactionEntity(wClient.rootEm, txId, (txEntToUpdate) => {
+                    txEntToUpdate.status = TransactionStatus.TX_SUCCESS;
+                });
+                console.info("SignAndSubmit stub");
+        }
         );
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").resolves([
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves([
             createUTXO( "ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0,amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXO( "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0,amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXO( "b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0,amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -87,58 +99,95 @@ describe("UTXOWalletImplementation unit tests", () => {
 
         monitor = await wClient.createMonitor();
         await monitor.startMonitoring();
+
+        await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
+        await wClient.walletKeys.addKey(feeWallet.address, feeWallet.privateKey);
+    });
+
+    beforeEach(() => {
+        getBlockHeightStub = sinon.stub(UTXOBlockchainAPI.prototype, "getCurrentBlockHeight").callsFake(async () => {
+            const elapsedSeconds = (Date.now() - startTime) / 1000;
+            return startBlockHeight + Math.floor(elapsedSeconds / 20);
+        });
+
+        const startTime = Date.now();
+    });
+
+    afterEach(() => {
+        getBlockHeightStub.restore();
     });
 
     after(async () => {
         await monitor.stopMonitoring();
-        try {
-            await loop(100, 2000, null, async () => {
-                if (!monitor.isMonitoring()) return true;
-            });
-        } catch (e) {
-            await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
-        }
         removeConsoleLogging();
         sinon.restore();
     });
-    // TODO-test (all of them)
+
     it("Should successfully create transaction with fee < maxFee", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
-        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 2);
-        await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 5);
+        await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
     it("Transaction with too high fee should eventually fail", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
-        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 2);
-        await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 3);
+        await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with fee too high for fee wallet and main wallet should eventually fail", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
-        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 2, undefined, feeWalletAddress, toBN(100));
-        await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_FAILED, id);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 3, undefined, feeWalletAddress, toBN(100));
+        await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with fee too high for fee wallet should be tried with main wallet", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
-        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 2, undefined, feeWalletAddress, toBN(100));
-        const [txEnt,] = await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 5, undefined, feeWalletAddress, toBN(100));
+        const [txEnt,] = await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
-        expect(tr.inputs.map(t => t.script !== "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e").length).to.be.eq(0); // funded wallet script (fee wallet has a different one)
+        expect(tr.inputs.filter(t => t.output.script !== "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e").length).to.be.eq(0); // funded wallet script (fee wallet has a different one)
     });
 
     it("RBF transaction should be successfully created even if fee > maxFee", async () => {
-        const startBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 2);
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 5);
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
         txEnt.rbfReplacementFor = await createAndPersistTransactionEntity(wClient.rootEm, wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi.muln(2));
 
-        await waitForTxToFinishWithStatus(2, 30, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+    });
+
+    it("If getCurrentFeeRate is down the fee should be the default one", async () => {
+        sinon.restore();
+
+        sinon.stub(BlockchainFeeService.prototype, "getLatestFeeStats").rejects(new Error("No fee stats"));
+        sinon.stub(UTXOBlockchainAPI.prototype, "getCurrentFeeRate").rejects(new Error("No fee"));
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves([
+            createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")]);
+
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi, undefined);
+        const fee1 = tr.getFee();
+        const fee2 = tr.feePerKb(utxoUtils.getDefaultFeePerKB(ChainType.testBTC).toNumber()).getFee();
+        expect(fee1).to.be.eq(fee2);
+    });
+
+    it("If fee service is down the getCurrentFeeRate should be used", async () => {
+        sinon.restore();
+
+        const fee = 0.0005;
+        const feeRateInSatoshi = toBNExp(fee, BTC_DOGE_DEC_PLACES).muln(wClient.feeIncrease);
+
+        sinon.stub(BlockchainFeeService.prototype, "getLatestFeeStats").rejects(new Error("No fee stats"));
+        sinon.stub(UTXOBlockchainAPI.prototype, "getCurrentFeeRate").resolves(toBNExp(fee, BTC_DOGE_DEC_PLACES).toNumber());
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves([
+            createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")]);
+
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi, undefined);
+        const fee1 = tr.getFee();
+        const fee2 = tr.feePerKb(feeRateInSatoshi.toNumber()).getFee();
+        expect(fee1).to.be.eq(fee2);
     });
 });

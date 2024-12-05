@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import {expect} from "chai";
 import {
     bytesToHex,
     convertToTimestamp,
@@ -8,12 +8,14 @@ import {
     stuckTransactionConstants,
     unPrefix0x,
 } from "../../src/utils/utils";
-import { toBN, toNumber } from "../../src/utils/bnutils";
-import { ChainType } from "../../src/utils/constants";
-import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
-import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
-import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
-import { BTC } from "../../src";
+import {toBN, toNumber} from "../../src/utils/bnutils";
+import {ChainType, DEFAULT_RATE_LIMIT_OPTIONS} from "../../src/utils/constants";
+import {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
+import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
+import {getCurrentNetwork} from "../../src/chain-clients/utxo/UTXOUtils";
+import {BTC, createAxiosInstance} from "../../src";
+import {FeeStatsResponse, UTXOBlockHeightResponse} from "../../src/interfaces/IBlockchainAPI";
+import fs from "fs";
 
 const BTCMccConnectionTestInitial = {
     urls: [process.env.BTC_URL ?? ""],
@@ -27,7 +29,11 @@ describe("Util tests", () => {
     it("Should fail if unsupported network", async () => {
         const testOrm = await initializeTestMikroORM();
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
-        const BTCMccConnectionTest = { ...BTCMccConnectionTestInitial, em: testOrm.em, walletKeys: unprotectedDBWalletKeys };
+        const BTCMccConnectionTest = {
+            ...BTCMccConnectionTestInitial,
+            em: testOrm.em,
+            walletKeys: unprotectedDBWalletKeys
+        };
         const wClient = BTC.initialize(BTCMccConnectionTest);
         wClient.chainType = invalidChainType;
         const fn = () => {
@@ -122,4 +128,47 @@ describe("Util tests", () => {
         const expectedOutput = "1725050284";
         expect(convertToTimestamp(input)).to.eq(expectedOutput);
     });
+
+    it.skip("Download historic fee stats", async () => {
+        const axiosClient = createAxiosInstance("https://blockbook-bitcoin.flare.network/api/v2/", undefined, DEFAULT_RATE_LIMIT_OPTIONS);
+        const res = await axiosClient.get<UTXOBlockHeightResponse>(``);
+        const blockHeight = res.data.blockbook.bestHeight;
+
+        const arr = [];
+
+        for (let i = 0; i < 300; i++) {
+            try {
+                const res = await axiosClient.get<FeeStatsResponse>(`/feestats/${blockHeight - i}`);
+                const res2 = await axiosClient.get(`/block/${blockHeight - i}`);
+                const mapped = res.data.decilesFeePerKb.map(t => t / 1000);
+                const mid = Math.floor(mapped.length / 2);
+                const median = mapped.length % 2 === 0
+                    ? (mapped[mid - 1] + mapped[mid]) / 2
+                    : mapped[mid];
+                arr.push({
+                    blockHeight: blockHeight - i,
+                    tx_count: res2.data.txCount,
+                    avg_fee: res.data.averageFeePerKb / 1000,
+                    median_fee: median,
+                    deciles: res.data.decilesFeePerKb.map(t => t / 1000)
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        try {
+            const jsonString = JSON.stringify(arr, null, 2); // Convert array to JSON string (pretty formatted)
+            fs.writeFile('./blocks.txt', jsonString, err => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    // file written successfully
+                }
+            });
+        } catch (error) {
+            console.error('Error writing file:', error);
+        }
+    });
+
 });

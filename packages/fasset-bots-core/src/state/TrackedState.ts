@@ -17,7 +17,6 @@ import { InitialAgentData, TrackedAgentState } from "./TrackedAgentState";
 
 export const MAX_EVENT_HANDLE_RETRY = 10;
 export const SLEEP_MS_BEFORE_RETRY = 1000;
-export const MAX_AGENT_FETCH_RETRY = 10;
 export const SLEEP_MS_BEFORE_AGENT_FETCH_RETRY = 1000;
 export const MAX_AGENT_FETCH_BATCH_SIZE = 20;
 export const DANGER_BLOCK_DIFF = 50;
@@ -83,26 +82,16 @@ export class TrackedState {
     }
 
     async registerInitialAgents(): Promise<void> {
-        let retries = 0;
         let start = 0;
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            try {
-                const { 0: newAgents, 1: totalLength } = await this.context.assetManager.getAllAgents(start, start + MAX_AGENT_FETCH_BATCH_SIZE);
-                for (const agent of newAgents) {
-                    await this.getAgentTriggerAdd(agent);
-                }
-                start += MAX_AGENT_FETCH_BATCH_SIZE;
-                if (toBN(totalLength).lten(start)) break;
-            } catch (error) {
-                logger.error(`Error registering initial agents: ${error}`);
-                await sleep(SLEEP_MS_BEFORE_RETRY);
-                if (retries >= MAX_AGENT_FETCH_RETRY) {
-                    logger.error(`Failed to fetch agents after ${retries} retries.`);
-                    break;
-                }
-                retries += 1;
+            const end = start + MAX_AGENT_FETCH_BATCH_SIZE;
+            const { 0: newAgents, 1: totalLength } = await this.context.assetManager.getAllAgents(start, end);
+            for (const agent of newAgents) {
+                await this.getAgentTriggerAdd(agent);
             }
+            start += newAgents.length;
+            if (toBN(totalLength).lten(end)) break;
         }
     }
 
@@ -265,7 +254,7 @@ export class TrackedState {
         for (const collateral of this.collaterals.list) {
             const contract = await tokenContract(collateral.token);
             if (eventIs(event, contract, "Transfer")) {
-                logger.info(`Tracked State received event 'Transfer' with data ${formatArgs(event.args)}.`);
+                logger.info(`Tracked State received event 'Transfer' from token ${contract.address} with data ${formatArgs(event.args)}.`);
                 this.agents.get(event.args.from)?.withdrawVaultCollateral(contract.address, toBN(event.args.value));
                 this.agents.get(event.args.to)?.depositVaultCollateral(contract.address, toBN(event.args.value));
                 this.agentsByPool.get(event.args.from)?.withdrawPoolCollateral(toBN(event.args.value));

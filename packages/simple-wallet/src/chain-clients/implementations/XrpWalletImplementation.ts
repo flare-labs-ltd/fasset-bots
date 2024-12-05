@@ -140,6 +140,10 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops?.toString()} and reference ${note}`);
       const privateKey = await this.walletKeys.getKey(source);
+      if (await checkIfIsDeleting(this.rootEm, source)) {
+         logger.error(`Cannot receive requests. ${source} is deleting`);
+         throw new Error(`Cannot receive requests. ${source} is deleting`);
+      }
       if (!privateKey) {
          logger.error(`Cannot prepare transaction ${source}. Missing private key.`)
          throw new Error(`Cannot prepare transaction ${source}. Missing private key.`);
@@ -428,7 +432,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|null} amountInDrops - if null => AccountDelete transaction will be created
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
-    * @param {BN|undefined} maxFeeInDrops
+    * @param executeUntilBlock
     * @returns {Object} - XRP Payment or AccountDelete transaction object
     */
    async preparePaymentTransaction(

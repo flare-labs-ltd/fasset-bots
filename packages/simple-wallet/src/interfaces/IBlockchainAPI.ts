@@ -9,7 +9,7 @@ export interface IBlockchainAPI {
 
     getUTXOsFromMempool(address: string, chainType: ChainType): Promise<MempoolUTXO[]>;
 
-    getUTXOScript(txHash: string, vout: number, chainType: ChainType): Promise<string>;
+    getUTXOScript(txHash: string, vout: number): Promise<string>;
 
     getCurrentFeeRate(blockNumber?: number): Promise<number>;
 

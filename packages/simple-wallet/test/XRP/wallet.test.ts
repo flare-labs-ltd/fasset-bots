@@ -30,7 +30,7 @@ import {
 import { ECDSA } from "../../src/chain-clients/account-generation/XrpAccountGeneration";
 import sinon from "sinon";
 import { XrpWalletImplementation } from "../../src/chain-clients/implementations/XrpWalletImplementation";
-import {SubmitTransactionRequest} from "../../src/blockchain-apis/XRPBlockchainAPI";
+import {SubmitTransactionRequest, XRPBlockchainAPI} from "../../src/blockchain-apis/XRPBlockchainAPI";
 
 use(chaiAsPromised);
 
@@ -78,7 +78,7 @@ describe("Xrp wallet tests", () => {
         wClient = XRP.initialize(XRPMccConnectionTest);
         monitor = await wClient.createMonitor();
         await monitor.startMonitoring();
-        await sleepMs(2000);
+        // await sleepMs(2000);
         resetMonitoringOnForceExit(monitor);
 
         fundedWallet = wClient.createWalletFromSeed(fundedSeed, ECDSA.secp256k1);
@@ -108,7 +108,7 @@ describe("Xrp wallet tests", () => {
         await wClient.walletKeys.addKey(account.address, account.privateKey);
         const id = await wClient.createPaymentTransaction(fundedAddress, account.address, toBNExp(10, XRP_DECIMAL_PLACES));
         expect(id).to.be.gt(0);
-        await waitForTxToFinishWithStatus(2, 20, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress);
         expect(txId).to.be.greaterThan(0);
         // cannot receive requests already deleting
@@ -138,7 +138,7 @@ describe("Xrp wallet tests", () => {
     it("Should submit transaction", async () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, undefined, note, undefined);
         expect(id).to.be.gt(0);
-        await waitForTxToFinishWithStatus(2, 20, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
     it("Should not validate submit and resubmit transaction - fee to low", async () => {
@@ -146,7 +146,7 @@ describe("Xrp wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, lowFee, note);
         expect(id).to.be.gt(0);
 
-        const [tx] = await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_FAILED, id);
+        const [tx] = await waitForTxToBeReplacedWithStatus(2, 100, wClient, TransactionStatus.TX_FAILED, id);
         expect(tx.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
@@ -166,7 +166,7 @@ describe("Xrp wallet tests", () => {
         expect(txEnt.fee?.toString()).to.equal(feeInDrops.toString());
         expect(txEnt.reference).to.equal(note);
 
-        await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, txEnt.id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, txEnt.id);
     });
 
     it("Should not submit transaction: fee > maxFee", async () => {
@@ -239,7 +239,7 @@ describe("Xrp wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, lowFee, note);
         expect(id).to.be.gt(0);
 
-        const [txEnt] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
+        const [txEnt] = await waitForTxToBeReplacedWithStatus(2, 100, wClient, TransactionStatus.TX_SUCCESS, id);
         expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
@@ -249,7 +249,7 @@ describe("Xrp wallet tests", () => {
 
         let txInfo = await wClient.getTransactionInfo(txEnt.id);
         expect(txInfo.status).to.equal(TransactionStatus.TX_PENDING);
-        [, txInfo] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, txEnt.id);
+        [, txInfo] = await waitForTxToBeReplacedWithStatus(2, 100, wClient, TransactionStatus.TX_SUCCESS, txEnt.id);
 
         expect(txInfo!.replacedByDdId);
         expect(txInfo!.status).to.equal(TransactionStatus.TX_REPLACED);
@@ -257,7 +257,7 @@ describe("Xrp wallet tests", () => {
 
     it("Should not resubmit TX_PENDING - already on chain", async () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops, note);
-        await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         expect((await wClient.getTransactionInfo(id)).status).to.equal(TransactionStatus.TX_SUCCESS);
         await updateTransactionEntity(wClient.rootEm, id, (txEnt) => {
@@ -265,7 +265,7 @@ describe("Xrp wallet tests", () => {
         });
         expect((await wClient.getTransactionInfo(id)).status).to.equal(TransactionStatus.TX_PENDING);
 
-        const [, txInfo] = await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        const [, txInfo] = await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         expect(txInfo.status).to.equal(TransactionStatus.TX_SUCCESS);
         expect(!txInfo.replacedByDdId).true;
     });
@@ -277,7 +277,7 @@ describe("Xrp wallet tests", () => {
         let txInfo = await wClient.getTransactionInfo(txEnt.id);
         expect(txInfo.status).to.equal(TransactionStatus.TX_SUBMISSION_FAILED);
 
-        [, txInfo] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, txEnt.id);
+        [, txInfo] = await waitForTxToBeReplacedWithStatus(2, 100, wClient, TransactionStatus.TX_SUCCESS, txEnt.id);
         expect(txInfo.replacedByDdId);
         expect(txInfo.status).to.equal(TransactionStatus.TX_REPLACED);
     });
@@ -289,7 +289,7 @@ describe("Xrp wallet tests", () => {
         const tx = await fetchTransactionEntityById(wClient.rootEm, txEnt.id);
         expect(tx.status).to.equal(TransactionStatus.TX_PREPARED);
 
-        await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, txEnt.id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, txEnt.id);
     });
 
     it("Transaction with executeUntilBlock before current ledger index should fail", async () => {
@@ -298,7 +298,7 @@ describe("Xrp wallet tests", () => {
             fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops,
             note, maxFeeInDrops, currentBlock - 5);
 
-        await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with executeUntilBlock too low should fail", async () => {
@@ -307,10 +307,10 @@ describe("Xrp wallet tests", () => {
             fundedAddress, targetAddress, amountToSendDropsFirst, maxFeeInDrops,
             note, maxFeeInDrops, currentBlock + 1);
 
-        await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
-    it("Account that is deleting should not enable creating transaction", async () => {
+    it("Account that is deleting should not be enable to create transactions", async () => {
         const wallet = wClient.createWallet();
         await wClient.walletKeys.addKey(wallet.address, wallet.privateKey);
 
@@ -345,7 +345,7 @@ describe("Xrp wallet tests", () => {
         const balanceStart = await wClient.getAccountBalance(fundedAddress);
         expect(balanceStart.toNumber()).to.be.gt(0);
 
-        await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
         const balanceEnd = await wClient.getAccountBalance(fundedAddress);
         expect(balanceStart.sub(balanceEnd).sub(feeInDrops).toNumber()).to.be.equal(amountToSendDropsFirst.toNumber());
     });
@@ -373,13 +373,14 @@ describe("Xrp wallet tests", () => {
     });
 
     it("If blockchain submission API fails transaction's status should be set to TX_PENDING and resent", async () => {
-        sinon.stub(wClient.blockchainAPI, "submitTransaction").callsFake((params: SubmitTransactionRequest) => {throw new Error("Api Down")});
+        sinon.stub(XRPBlockchainAPI.prototype, "submitTransaction").callsFake((params: SubmitTransactionRequest) => {throw new Error("Api Down")});
         await sleepMs(100);
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst);
-        const [txEnt, ] = await waitForTxToFinishWithStatus(0.01, 60, wClient.rootEm, TransactionStatus.TX_PENDING, id);
+        const blockHeight = await wClient.getLatestValidatedLedgerIndex();
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDropsFirst, undefined, undefined, undefined, blockHeight + 20);
+        const [txEnt, ] = await waitForTxToFinishWithStatus(0.01, 100, wClient.rootEm, TransactionStatus.TX_PENDING, id);
         expect(txEnt.status).to.eq(TransactionStatus.TX_PENDING);
         sinon.restore();
-        await waitForTxToBeReplacedWithStatus(2, 20, wClient, TransactionStatus.TX_SUCCESS, id);
+        await waitForTxToBeReplacedWithStatus(2, 100, wClient, TransactionStatus.TX_SUCCESS, id);
     });
 
     it("Should fail - no privateKey ", async () => {

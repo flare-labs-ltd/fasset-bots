@@ -184,12 +184,12 @@ describe("Unit test for paying fees from additional wallet", () => {
         expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 692]);
     });
 
-    it.skip("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust", async () => { // TODO-test
+    it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust", async () => {
         sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
                     createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1400), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(2400), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
                 ]);
             } else {
                 return Promise.resolve([
@@ -200,8 +200,8 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(600));
 
-        // Outputs should be 1500 (the amount), 1400 = 3500 - 1500 - 600 (amount remainder)
+        // Outputs should be 1500 (the amount), 1400 = 1000 + 2400 - 1500 - 600 (amount remainder)
         expect(tr.outputs.length).to.be.eq(2);
-        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1400]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1300]);
     });
 });
