@@ -1,5 +1,4 @@
 import { TransactionEntity } from "../../src";
-
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { getTransactionDescendants } from "../../src/chain-clients/utxo/UTXOUtils";
 

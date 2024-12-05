@@ -82,7 +82,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         // start main loop
         this.startThread(this.rootEm, `monitoring-${this.monitoringId}`, async (threadEm) => {
             const waitStart = Date.now();
-            while (!(feeService?.hasEnoughTimestampHistory() || Date.now() - waitStart > 60_000)) {
+            while (feeService && !(feeService?.hasEnoughTimestampHistory() || Date.now() - waitStart > 60_000)) {
                 await sleepMs(500);    // wait for setupHistory to be complete (or fail)
             }
             const wallet = this.createWallet({ monitoringId: this.monitoringId, walletEm: threadEm, feeService: feeService });
@@ -281,9 +281,11 @@ export class TransactionMonitor implements ITransactionMonitor {
     ): Promise<void> {
         await this.checkIfMonitoringStopped(threadEm);
         const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
+        logger.info(`Processing ${transactionEntities.length} transactions with statuses: ${statuses}`);
         for (const txEnt of transactionEntities) {
             await this.checkIfMonitoringStopped(threadEm);
             try {
+                logger.info(`Started processing transaction ${txEnt.id} with status ${txEnt.status}`);
                 await processFunction(txEnt);
             } catch (error) /* istanbul ignore next */ {
                 logger.error(`Cannot process transaction ${txEnt.id}: ${errorMessage(error)}`);

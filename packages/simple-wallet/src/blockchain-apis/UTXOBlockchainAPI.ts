@@ -38,7 +38,7 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
             failed = true;
             throw error;
         } finally {
-            const elapsed = Date.now() - start
+            const elapsed = Date.now() - start;
             logger.info(`Blockbook request ${++this.requestCount} took ${elapsed}ms ${failed ? " (ERROR)" : ""}: ${description}`);
         }
     }

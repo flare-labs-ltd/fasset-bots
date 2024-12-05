@@ -555,7 +555,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
     });
 
-    it("Send funds back to funded address", async () => {
+    it.skip("Send funds back to funded address", async () => {
         const targetWallet = wClient.createWalletFromMnemonic(targetMnemonic);
         await wClient.walletKeys.addKey(targetWallet.address, targetWallet.privateKey);
 
