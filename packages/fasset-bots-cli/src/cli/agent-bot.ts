@@ -3,7 +3,7 @@ import "source-map-support/register";
 
 import { AgentBotCommands, AgentBotOwnerValidation, printingReporter } from "@flarelabs/fasset-bots-core";
 import { Secrets, loadAgentSettings, loadConfigFile, loadContracts } from "@flarelabs/fasset-bots-core/config";
-import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS } from "@flarelabs/fasset-bots-core/utils";
+import { CommandLineError, Currencies, errorIncluded, requireNotNullCmd, squashSpace, toBIPS, toBN } from "@flarelabs/fasset-bots-core/utils";
 import chalk from "chalk";
 import fs from "fs";
 import { programWithCommonOptions } from "../utils/program";
@@ -295,7 +295,7 @@ program
 
 program
     .command("withdrawUnderlying")
-    .description("announce and perform underlying withdrawal and get transaction hash")
+    .description("announce and perform underlying withdrawal and get transaction hash; a part of the amount will be deducted for the fee")
     .argument("<agentVaultAddress>")
     .argument("<amount>")
     .argument("<destinationAddress>")
@@ -304,6 +304,11 @@ program
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.fasset(cli.context);
+        const toTransfer = currency.parse(amount);
+        const freeUnderlying = await cli.getFreeUnderlying(agentVault);
+        if (toTransfer.gt(toBN(freeUnderlying))) {
+            throw new CommandLineError(`Cannot transfer funds. Requested amount ${amount} is higher than free underlying ${currency.formatValue(freeUnderlying)}.`)
+        }
         await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddress);
     });
 
