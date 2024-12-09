@@ -39,7 +39,7 @@
     },
     "rpcUrl": "https://songbird-api-tracer.flare.network/ext/C/rpc",
     "dataAccessLayerUrls": [
-        "https://sgb-data-availability.flare.network/api"
+        "https://sgb-data-availability.flare.network"
     ],
     "ormOptions": {
         "type": "mysql"
