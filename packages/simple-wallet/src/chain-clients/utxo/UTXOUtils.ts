@@ -105,7 +105,8 @@ export async function getTransactionDescendants(em: EntityManager, txId: number)
     const descendants = await em.find(TransactionEntity, {
         inputs: {
             $in: inputs
-        }
+        },
+        chainType: txEnt.chainType,
     });
 
     let res: TransactionEntity[] = descendants;

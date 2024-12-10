@@ -1,4 +1,4 @@
-import { Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import {Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property} from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -6,23 +6,25 @@ import {TransactionOutputEntity} from "./transactionOutput";
 import {TransactionInputEntity} from "./transactionInput";
 
 @Entity({ tableName: "transaction" })
+@Index({properties: ["chainType", "transactionHash"]})
+@Index({properties: ["chainType", "status"]})
 export class TransactionEntity {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property()
+    @Property({ type: "varchar", length: 64 })
     chainType!: ChainType;
 
-    @Property()
+    @Property({ type: "varchar", length: 128 })
     source!: string;
 
-    @Property()
+    @Property({ type: "varchar", length: 128 })
     destination!: string;
 
-    @Property({ nullable: true })
+    @Property({ type: "varchar", length: 128, nullable: true })
     transactionHash?: string;
 
-    @Property()
+    @Property({ type: "varchar", length: 64 })
     status!: TransactionStatus;
 
     @Property({ type: BNType, nullable: true })
@@ -91,7 +93,7 @@ export class TransactionEntity {
     @ManyToOne(() => TransactionEntity, { nullable: true })
     ancestor?: TransactionEntity | null;
 
-    @Property({ nullable: true })
+    @Property({ type: "varchar", length: 128, nullable: true })
     feeSource?: string;
 
     @Property({ nullable: true })

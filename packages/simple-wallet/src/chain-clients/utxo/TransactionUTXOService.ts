@@ -238,7 +238,6 @@ export class TransactionUTXOService {
     }
 
     public async getNumberOfMempoolAncestors(txHash: string): Promise<number> {
-        logger.info(`Getting number of mempool ancestors for transaction with hash ${txHash}`);
         const ancestors = await this.getMempoolAncestors(txHash);
         return ancestors.filter((t) => t.transactionHash !== txHash).length;
     }
@@ -290,7 +289,7 @@ export class TransactionUTXOService {
     }
 
     private async getTransactionEntityByHash(txHash: string) {
-        let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
+        let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs", "outputs"] });
         if (!txEnt) {
             logger.info(`Transaction with hash ${txHash} not in db, fetching it from api`);
             const tr = await this.blockchainAPI.getTransaction(txHash);
@@ -317,14 +316,13 @@ export class TransactionUTXOService {
                 });
             }
 
-            txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
+            txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs", "outputs"] });
         }
 
         return txEnt;
     }
 
     async handleMissingUTXOScripts(utxos: MempoolUTXO[], source: string): Promise<MempoolUTXO[]> {
-        logger.info(`Handling missing UTXO scripts for ${source}`);
         let count = 0;
         for (const utxo of utxos) {
             if (!utxo.script) {
@@ -340,7 +338,6 @@ export class TransactionUTXOService {
                 count++;
             }
         }
-        logger.info(`Fixed ${count} missing UTXO scripts for ${source}`);
         return utxos;
     }
 
@@ -451,11 +448,11 @@ export class TransactionUTXOService {
         const lowerTimeBound = this.timestampTracker - 24 * 60 * 60 * 1000;
         const transactions = await this.rootEm.find(TransactionEntity, {
             status: TransactionStatus.TX_SUCCESS,
-
             reachedFinalStatusInTimestamp: {
                 $gte: toBN(lowerTimeBound), $lte: toBN(this.timestampTracker)
             },
-            source: source
+            source: source,
+            chainType: this.chainType
         });
 
         const addressScriptMap = this.utxoScriptMap.get(source);
