@@ -11,7 +11,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { AgentBot } from "./AgentBot";
 import { TokenBalances } from "../utils/token-balances";
-import { KycClient } from "./plugins/KycStrategy";
+import { HandshakeAddressVerifier } from "./plugins/HandshakeAddressVerifier";
 
 type HandshakeId = { id: number } | { requestId: BN };
 
@@ -22,7 +22,7 @@ export class AgentBotHandshake {
         public bot: AgentBot,
         public agent: Agent,
         public notifier: AgentNotifier,
-        public kycClient: KycClient | null
+        public handshakeAddressVerifier: HandshakeAddressVerifier | null
     ) {}
 
     context = this.agent.context;
@@ -209,10 +209,10 @@ export class AgentBotHandshake {
      * @param addresses The list of addresses to check
      */
     async checkSanctionedAddresses(addresses: AddressCheck[]): Promise<boolean> {
-        if (this.kycClient == null) return true
+        if (this.handshakeAddressVerifier == null) return true
         for (const address of addresses) {
             logger.info(`Checking address ${address.address} on chain ${address.chainName}`);
-            const sanctioned = await this.kycClient.isSanctioned(address.address, address.chainName);
+            const sanctioned = await this.handshakeAddressVerifier.isSanctioned(address.address, address.chainName);
             if (sanctioned) {
                 return false;
             }

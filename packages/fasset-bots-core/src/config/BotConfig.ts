@@ -30,7 +30,7 @@ import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
 import { AgentBotDbUpgrades } from "../actors/AgentBotDbUpgrades";
-import { ChainalysisClient, KycClient } from "../actors/plugins/KycStrategy";
+import { ChainalysisClient, HandshakeAddressVerifier } from "../actors/plugins/HandshakeAddressVerifier";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     secrets: Secrets;
@@ -320,13 +320,13 @@ export function indexerApiKey(secrets: Secrets, indexerUrls: string[]): string[]
 }
 
 /**
- * Get the kyc client.
+ * Get the handshake address verifier client.
  */
-export function getKycClient(secrets: Secrets): KycClient | null {
-    const kycClientUrl = secrets.optional("kyc.url");
-    if (kycClientUrl == null || kycClientUrl == "") {
+export function getHandshakeAddressVerifier(secrets: Secrets): HandshakeAddressVerifier | null {
+    const havClientUrl = secrets.optional("handshakeAddressVerifierApi.url");
+    if (havClientUrl == null || havClientUrl == "") {
         return null;
     }
-    const kycClientApiKey = secrets.required("kyc.api_key");
-    return new ChainalysisClient(kycClientUrl, kycClientApiKey);
+    const havClientApiKey = secrets.required("handshakeAddressVerifierApi.api_key");
+    return new ChainalysisClient(havClientUrl, havClientApiKey);
 }

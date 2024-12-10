@@ -3,11 +3,11 @@ import { DEFAULT_TIMEOUT } from "../../utils"
 import type { AxiosInstance, AxiosRequestConfig } from "axios";
 
 
-export interface KycClient {
+export interface HandshakeAddressVerifier {
     isSanctioned(address: string, chain: string): Promise<boolean>
 }
 
-export class ChainalysisClient implements KycClient {
+export class ChainalysisClient implements HandshakeAddressVerifier {
     client: AxiosInstance;
 
     constructor(public url: string, public apiKey: string) {
