@@ -94,7 +94,6 @@ program
         const secretsPassword = await promptPassword(`Enter password for encryption of stress test secrets: `);
         const text = JSON.stringify(stressTestSecrets, null, 4);
         const encryptedSecretsContent = encryptText(secretsPassword, text, EncryptionMethod.AES_GCM_SCRYPT_AUTH);
-        fs.writeFileSync(process.env.STRESS_TEST_SECRETS_PATH!, text);
         fs.writeFileSync(process.env.STRESS_TEST_SECRETS_ENCRYPTED_PATH!, encryptedSecretsContent);
     });
 
