@@ -79,7 +79,7 @@ export class PricePublisherService {
             try {
                 const response = await axios.get<FspStatusResult>(`${url}/api/v0/fsp/status`, {
                     headers: {
-                        'x-api-key': this.apiKey
+                        'x-apikey': this.apiKey
                     }
                 });
                 const roundId = Number(requireNotNull(response.data.latest_ftso.voting_round_id));
@@ -118,7 +118,7 @@ export class PricePublisherService {
             feed_ids: feedIds
         }, {
             headers: {
-                'x-api-key': this.apiKey
+                'x-apikey': this.apiKey
             }
         });
         // get data
