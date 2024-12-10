@@ -290,7 +290,7 @@ export class TransactionService {
                     const estimateFee = await this.transactionFeeService.getEstimateFee(allUTXOs.length, txForReplacement.feeSource ? 4 : 3, feeRatePerKB);
                     const newTxFee: BN = feeToCover.add(estimateFee);
                     tr.fee(toNumber(newTxFee));
-                    logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()}, minRequiredFee ${minRequiredFeePerKb.toString()}, feeRatePerKB ${feeRatePerKB.toString()}`);
+                    logger.info(`Transaction ${txDbId} feeToCover ${feeToCover.toString()}, newTxFee ${newTxFee.toString()} and minRequiredFee ${minRequiredFeePerKb.toString()}.`);
                 }
             }
         } else {

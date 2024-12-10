@@ -104,6 +104,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
     }
 
     async getAccountBalance(account: string): Promise<BN> {
+        logger.info(`Received request to fetch balance for account ${account}.`);
         return await getAccountBalance(this.blockchainAPI, account);
     }
 
@@ -112,7 +113,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @returns {BN} - current transaction/network fee in satoshis
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
-
+        logger.info(`Received request to fetch current transaction with params ${params.source}, ${params.destination} and ${params.amount?.toString()}.`);
         try {
             const [transaction] = await this.transactionService.preparePaymentTransaction(
                 0,
