@@ -1,4 +1,4 @@
-import { Cascade, Collection, Entity, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, Index, ManyToOne, OneToMany, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
@@ -142,11 +142,12 @@ export class AgentEntity {
 // paid but the proof wasn't presented.
 @Entity()
 @Unique({ properties: ["agentAddress", "requestId"] })
+@Index({ properties: ["state"] })
 export class AgentMinting {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property()
+    @Property({ length: 32 })
     state!: AgentMintingState;
 
     @Property({ length: ADDRESS_LENGTH })
@@ -196,11 +197,12 @@ export class AgentMinting {
 // In corner case it can happen that proof of payment does not exist anymore, in that case agent obtains the proof of it and calls finishRedemptionWithoutPayment
 @Entity()
 @Unique({ properties: ["agentAddress", "requestId"] })
+@Index({ properties: ["state"] })
 export class AgentRedemption {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property()
+    @Property({ length: 32 })
     state!: AgentRedemptionState;
 
     // 'START' state data
@@ -248,7 +250,7 @@ export class AgentRedemption {
     @Property({ nullable: true })
     defaulted?: boolean;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, length: 32 })
     finalState?: AgentRedemptionFinalState;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
@@ -305,7 +307,6 @@ export class AgentUnderlyingPayment {
 
     @Property()
     state!: AgentUnderlyingPaymentState;
-
 
     @Property()
     type!: AgentUnderlyingPaymentType;
