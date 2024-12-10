@@ -96,7 +96,7 @@ export class TransactionEntity {
     @Property({ type: "varchar", length: 128, nullable: true })
     feeSource?: string;
 
-    @Property({ nullable: true })
+    @Property({ type: BNType, nullable: true })
     maxPaymentForFeeSource?: BN;
 
 }
