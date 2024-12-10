@@ -6,7 +6,7 @@ import {TransactionOutputEntity} from "./transactionOutput";
 import {TransactionInputEntity} from "./transactionInput";
 
 @Entity({ tableName: "transaction" })
-@Index({properties: ["chainType", "transactionHash"]})
+@Index({properties: ["transactionHash"]})
 @Index({properties: ["chainType", "status"]})
 export class TransactionEntity {
     @PrimaryKey({ autoincrement: true })
