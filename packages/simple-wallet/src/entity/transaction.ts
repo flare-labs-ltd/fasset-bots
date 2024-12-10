@@ -36,7 +36,7 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true })
     maxFee?: BN;
 
-    @Property()
+    @Property({ columnType: "decimal(16, 0)" })
     submittedInBlock = 0; // 0 when tx is created
 
     @Property({ type: BNType, nullable: true })
