@@ -33,6 +33,7 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     const chainIds = new Set(Object.values(config.fAssets).map(fi => fi.chainId));
     const secrets: SecretsFile = { apiKey: {} };
     secrets.apiKey.native_rpc = "";
+    secrets.apiKey.data_access_layer = "";
     if (users.includes("agent") || users.includes("user")) {
         secrets.apiKey.testXRP_rpc = [""];
         secrets.apiKey.testBTC_rpc = [""];
@@ -65,7 +66,6 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
         secrets.systemKeeper = generateNativeAccount();
         secrets.timeKeeper = generateNativeAccount();
         secrets.pricePublisher = generateNativeAccount();
-        secrets.apiKey.price_publisher_api = ""
     }
     return secrets;
 }
