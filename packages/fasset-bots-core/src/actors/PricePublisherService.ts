@@ -41,8 +41,12 @@ export class PricePublisherService {
         void loggerAsyncStorage.run("price-publisher", () => this.run());
     }
 
-    async stop() {
+    requestStop() {
         this.running = false;
+    }
+
+    async stop() {
+        this.requestStop();
         while (!this.stopped) {
             await sleep(100);
         }
