@@ -559,9 +559,9 @@ export class AgentService {
             }
             const settings = await cli.context.assetManager.getSettings();
             const priceReader = await TokenPriceReader.create(settings);
-            const cflrPrice = await priceReader.getPrice("CFLR", false, settings.maxTrustedPriceAgeSeconds);
+            const cflrPrice = await priceReader.getPrice(cli.context.nativeChainInfo.tokenSymbol, false, settings.maxTrustedPriceAgeSeconds);
             const priceUSD = cflrPrice.price.mul(toBNExp(1, 18));
-            const prices = [{ symbol: "CFLR", price: priceUSD, decimals: Number(cflrPrice.decimals) }];
+            const prices = [{ symbol: cli.context.nativeChainInfo.tokenSymbol, price: priceUSD, decimals: Number(cflrPrice.decimals) }];
 
             const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
             // For each vault calculate needed info
