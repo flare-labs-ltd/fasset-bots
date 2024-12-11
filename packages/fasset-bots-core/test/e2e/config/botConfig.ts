@@ -1,7 +1,7 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { readFileSync } from "fs";
-import { Secrets, indexerApiKey } from "../../../src/config";
+import { Secrets, dataAccessLayerApiKey, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper, createBlockchainWalletHelper, createBotConfig, createBotFAssetConfig, createFlareDataConnectorClient } from "../../../src/config/BotConfig";
 import { loadConfigFile } from "../../../src/config/config-file-loader";
 import { BotConfigFile } from "../../../src/config/config-files/BotConfigFile";
@@ -101,6 +101,7 @@ describe("Bot config tests", () => {
             indexerTestXRPUrls,
             indexerApiKey(secrets, indexerTestXRPUrls),
             DATA_ACCESS_LAYER_URLS,
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,

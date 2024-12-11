@@ -45,6 +45,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
 
     constructor(
         public dataAccessLayerUrls: string[],
+        public dataAccessLayerApiKeys: string[],
         public fdcVerificationAddress: string,
         public fdcHubAddress: string,
         public relayAddress: string,
@@ -52,8 +53,8 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         public verifierUrlApiKeys: string[],
         public account: string,
     ) {
-        for (const url of dataAccessLayerUrls) {
-            this.dataAccessLayerClients.push(axios.create(createAxiosConfig(url)));
+        for (const [index, url] of dataAccessLayerUrls.entries()) {
+            this.dataAccessLayerClients.push(axios.create(createAxiosConfig(url, dataAccessLayerApiKeys[index])));
         }
         for (const [index, url] of verifierUrls.entries()) {
             this.verifierClients.push(axios.create(createAxiosConfig(url, verifierUrlApiKeys[index])));
@@ -73,7 +74,8 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     }
 
     static async create(
-        urls: string[],
+        dataAccessLayerUrls: string[],
+        dataAccessLayerApiKeys: string[],
         attestationClientAddress: string,
         fdcHubAddress: string,
         relayAddress: string,
@@ -81,7 +83,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         verifierUrlApiKeys: string[],
         account: string
     ): Promise<FlareDataConnectorClientHelper> {
-        const helper = new FlareDataConnectorClientHelper(urls, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrls, verifierUrlApiKeys, account);
+        const helper = new FlareDataConnectorClientHelper(dataAccessLayerUrls, dataAccessLayerApiKeys, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrls, verifierUrlApiKeys, account);
         await helper.initFlareDataConnector();
         return helper;
     }
