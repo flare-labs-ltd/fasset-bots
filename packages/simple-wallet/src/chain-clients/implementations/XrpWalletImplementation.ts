@@ -136,7 +136,10 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       note?: string,
       maxFeeInDrops?: BN,
       executeUntilBlock?: number,
-      executeUntilTimestamp?: BN
+      executeUntilTimestamp?: BN,
+      feeSource?: string,
+      maxPaymentForFeeSource?: BN,
+      isFreeUnderlying?: boolean
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops?.toString()} and reference ${note}`);
       const privateKey = await this.walletKeys.getKey(source);
@@ -158,7 +161,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          note,
          maxFeeInDrops,
          executeUntilBlock,
-         executeUntilTimestamp
+         executeUntilTimestamp,
+          undefined,
+          undefined,
+          undefined,
+          isFreeUnderlying
       );
       const txExternalId = ent.id;
       return txExternalId;
@@ -302,7 +309,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          txEnt.amount ?? null,
          txEnt.fee,
          txEnt.reference,
-         txEnt.executeUntilBlock
+         txEnt.executeUntilBlock,
+          txEnt.isFreeUnderlyingTransaction
       );
       const privateKey = await this.walletKeys.getKey(txEnt.source);
       /* istanbul ignore next */
@@ -433,6 +441,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param executeUntilBlock
+    * @param isFreeUnderlying
     * @returns {Object} - XRP Payment or AccountDelete transaction object
     */
    async preparePaymentTransaction(
@@ -441,15 +450,18 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       amountInDrops: BN | null,
       feeInDrops?: BN,
       note?: string,
-      executeUntilBlock?: number
+      executeUntilBlock?: number,
+      isFreeUnderlying?: boolean
    ): Promise<xrpl.Payment | xrpl.AccountDelete> {
       const isPayment = amountInDrops != null;
+      const currentFee = await this.getCurrentTransactionFee({ isPayment });
       let tr;
       if (isPayment) {
+         const fee = feeInDrops ?? currentFee;
          tr = {
             TransactionType: "Payment",
             Destination: destination.toString(),
-            Amount: amountInDrops.toString(),
+            Amount: isFreeUnderlying ? amountInDrops.sub(fee).toString() : amountInDrops.toString(),
             Account: source,
          } as xrpl.Payment;
       } else {
@@ -462,7 +474,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
       tr.Sequence = await this.getAccountSequence(source);
       if (!feeInDrops) {
-         const currentFee = await this.getCurrentTransactionFee({ isPayment });
          tr.Fee = currentFee.toString();
       } else {
          tr.Fee = feeInDrops.toString();
