@@ -1,3 +1,4 @@
+import { AgentSettingsConfig } from "./AgentSettingsConfig";
 import type { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./BotStrategyConfig";
 
 export type DatabaseType = "mysql" | "sqlite" | "postgresql";
@@ -93,6 +94,8 @@ export interface BotConfigFile {
     challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenge
 }
 
+export type AgentSettingsConfigDefaults = Omit<AgentSettingsConfig, "poolTokenSuffix" | "vaultCollateralFtsoSymbol">;
+
 export interface AgentBotFassetSettingsJson {
     /**
      * The amount of underlying currency on woner's underlying address, below which an alert is triggered.
@@ -106,6 +109,11 @@ export interface AgentBotFassetSettingsJson {
      * @pattern ^[0-9]+(\.[0-9]+)?$
      */
     minimumFreeUnderlyingBalance: string;
+
+    /**
+     * Settings that are prefilled in new agent creation settings file/form (per-FAsset overrides).
+     */
+    defaultAgentSettings?: Partial<AgentSettingsConfigDefaults>;
 }
 
 export interface AgentBotSettingsJson {
@@ -151,6 +159,11 @@ export interface AgentBotSettingsJson {
      * The list of address to whose pings the agent will respond.
      */
     trustedPingSenders: string[];
+
+    /**
+     * Settings that are prefilled in new agent creation settings file/form.
+     */
+    defaultAgentSettings: AgentSettingsConfigDefaults;
 
     /**
      * Per FAsset settings.

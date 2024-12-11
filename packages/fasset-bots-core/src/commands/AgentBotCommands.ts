@@ -123,15 +123,7 @@ export class AgentBotCommands {
             $schema: `file://${schema.startsWith("/") ? "" : "/"}${schema}`,
             poolTokenSuffix: "",
             vaultCollateralFtsoSymbol: collaterals.map(c => c.tokenFtsoSymbol).join("|"),
-            fee: "0.25%",
-            poolFeeShare: "40%",
-            mintingVaultCollateralRatio: "1.6",
-            mintingPoolCollateralRatio: "2.3",
-            poolExitCollateralRatio: "2.3",
-            poolTopupCollateralRatio: "2.1",
-            poolTopupTokenPriceFactor: "0.9",
-            buyFAssetByAgentFactor: "0.99",
-            handshakeType: 0,
+            ...this.agentBotSettings.defaultAgentSettings,
         };
     }
 

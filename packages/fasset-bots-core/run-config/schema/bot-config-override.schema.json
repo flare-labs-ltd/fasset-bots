@@ -5,6 +5,10 @@
         "AgentBotFassetSettingsJson": {
             "additionalProperties": false,
             "properties": {
+                "defaultAgentSettings": {
+                    "$ref": "#/definitions/Partial<AgentSettingsConfigDefaults>",
+                    "description": "Settings that are prefilled in new agent creation settings file/form (per-FAsset overrides)."
+                },
                 "minimumFreeUnderlyingBalance": {
                     "description": "The amount of underlying currency on woner's underlying address, below which the address should be topped-up,\nto prevent negative free underlying balance after redemptions.",
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
@@ -25,6 +29,10 @@
         "AgentBotSettingsJson": {
             "additionalProperties": false,
             "properties": {
+                "defaultAgentSettings": {
+                    "$ref": "#/definitions/AgentSettingsConfigDefaults",
+                    "description": "Settings that are prefilled in new agent creation settings file/form."
+                },
                 "fAssets": {
                     "additionalProperties": {
                         "$ref": "#/definitions/AgentBotFassetSettingsJson"
@@ -68,6 +76,7 @@
                 }
             },
             "required": [
+                "defaultAgentSettings",
                 "fAssets",
                 "liquidationPreventionFactor",
                 "minBalanceOnServiceAccount",
@@ -82,6 +91,10 @@
         "AgentBotSettingsJsonOverride": {
             "additionalProperties": false,
             "properties": {
+                "defaultAgentSettings": {
+                    "$ref": "#/definitions/AgentSettingsConfigDefaults",
+                    "description": "Settings that are prefilled in new agent creation settings file/form."
+                },
                 "fAssets": {
                     "additionalProperties": {
                         "$ref": "#/definitions/Partial<AgentBotFassetSettingsJson>"
@@ -123,6 +136,67 @@
                     "type": "string"
                 }
             },
+            "type": "object"
+        },
+        "AgentSettingsConfigDefaults": {
+            "additionalProperties": false,
+            "properties": {
+                "buyFAssetByAgentFactor": {
+                    "description": "FTSO price factor at which the agent pays for burned fassets (in vault tokens) during pool providers' self close exit.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "fee": {
+                    "description": "The minting fee percentage.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "handshakeType": {
+                    "description": "The handshake type required by the agent. Currently supported values are\n- 0 - no handshake is performed\n- 1 - handshake is performed by external service api (configured further in bot config)",
+                    "type": "integer"
+                },
+                "mintingPoolCollateralRatio": {
+                    "description": "Agent's minting collateral ratio for pool collateral (minimum CR at which the minting can happen).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "mintingVaultCollateralRatio": {
+                    "description": "Agent's minting collateral ratio for vault collateral (minimum CR at which the minting can happen).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolExitCollateralRatio": {
+                    "description": "Collateral pool's exit collateral ratio (minimum CR for pool collateral at which the collateral pool providers can exit;\nhowever, self-close exit is allowed even at lower pool CR).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolFeeShare": {
+                    "description": "The percentage of the minting fee that goes to the collateral pool.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolTopupCollateralRatio": {
+                    "description": "Pool collateral ratio below which the providers can enter at discounted rate.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolTopupTokenPriceFactor": {
+                    "description": "Discounted price factor at which providers can enter when topup is active (i.e. the pool CR is below poolTopupCollateralRatio).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "buyFAssetByAgentFactor",
+                "fee",
+                "handshakeType",
+                "mintingPoolCollateralRatio",
+                "mintingVaultCollateralRatio",
+                "poolExitCollateralRatio",
+                "poolFeeShare",
+                "poolTopupCollateralRatio",
+                "poolTopupTokenPriceFactor"
+            ],
             "type": "object"
         },
         "ApiNotifierConfig": {
@@ -297,6 +371,10 @@
         "Partial<AgentBotFassetSettingsJson>": {
             "additionalProperties": false,
             "properties": {
+                "defaultAgentSettings": {
+                    "$ref": "#/definitions/Partial<AgentSettingsConfigDefaults>",
+                    "description": "Settings that are prefilled in new agent creation settings file/form (per-FAsset overrides)."
+                },
                 "minimumFreeUnderlyingBalance": {
                     "description": "The amount of underlying currency on woner's underlying address, below which the address should be topped-up,\nto prevent negative free underlying balance after redemptions.",
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
@@ -305,6 +383,56 @@
                 "recommendedOwnerBalance": {
                     "description": "The amount of underlying currency on woner's underlying address, below which an alert is triggered.",
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "Partial<AgentSettingsConfigDefaults>": {
+            "additionalProperties": false,
+            "properties": {
+                "buyFAssetByAgentFactor": {
+                    "description": "FTSO price factor at which the agent pays for burned fassets (in vault tokens) during pool providers' self close exit.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "fee": {
+                    "description": "The minting fee percentage.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "handshakeType": {
+                    "description": "The handshake type required by the agent. Currently supported values are\n- 0 - no handshake is performed\n- 1 - handshake is performed by external service api (configured further in bot config)",
+                    "type": "number"
+                },
+                "mintingPoolCollateralRatio": {
+                    "description": "Agent's minting collateral ratio for pool collateral (minimum CR at which the minting can happen).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "mintingVaultCollateralRatio": {
+                    "description": "Agent's minting collateral ratio for vault collateral (minimum CR at which the minting can happen).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolExitCollateralRatio": {
+                    "description": "Collateral pool's exit collateral ratio (minimum CR for pool collateral at which the collateral pool providers can exit;\nhowever, self-close exit is allowed even at lower pool CR).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolFeeShare": {
+                    "description": "The percentage of the minting fee that goes to the collateral pool.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolTopupCollateralRatio": {
+                    "description": "Pool collateral ratio below which the providers can enter at discounted rate.",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
+                    "type": "string"
+                },
+                "poolTopupTokenPriceFactor": {
+                    "description": "Discounted price factor at which providers can enter when topup is active (i.e. the pool CR is below poolTopupCollateralRatio).",
+                    "pattern": "^\\d+(\\.\\d+)?%?$",
                     "type": "string"
                 }
             },

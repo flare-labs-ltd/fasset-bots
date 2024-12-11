@@ -1,4 +1,4 @@
-import { AgentBotSettings } from "../../src/config";
+import { AgentBotSettings, AgentSettingsConfigDefaults } from "../../src/config";
 import { ChainInfo, NativeChainInfo } from "../../src/fasset/ChainInfo";
 import { ChainId } from "../../src/underlying-chain/ChainId";
 import { BN_ZERO, toBNExp } from "../../src/utils";
@@ -92,6 +92,18 @@ export const testChainInfo: Record<TestChainType, TestChainInfo> = {
     },
 };
 
+export const defaultCreateAgentSettings: AgentSettingsConfigDefaults = {
+    fee: "1%",
+    poolFeeShare: "40%",
+    mintingVaultCollateralRatio: "1.6",
+    mintingPoolCollateralRatio: "2.3",
+    poolExitCollateralRatio: "2.3",
+    poolTopupCollateralRatio: "2.1",
+    poolTopupTokenPriceFactor: "0.9",
+    buyFAssetByAgentFactor: "0.99",
+    handshakeType: 0
+};
+
 export const parallelBots = false;
 
 export const testAgentBotSettings: Record<string, AgentBotSettings> = {
@@ -105,6 +117,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 18),
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
+        defaultAgentSettings: defaultCreateAgentSettings,
     },
     "FBTC": {
         parallel: parallelBots,
@@ -116,6 +129,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         recommendedOwnerUnderlyingBalance: toBNExp(0.1, 8),
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
+        defaultAgentSettings: defaultCreateAgentSettings,
     },
     "FXRP": {
         parallel: parallelBots,
@@ -127,5 +141,6 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
+        defaultAgentSettings: defaultCreateAgentSettings,
     }
 }

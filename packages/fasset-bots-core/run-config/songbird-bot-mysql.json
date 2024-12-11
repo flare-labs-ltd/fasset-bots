@@ -1,9 +1,6 @@
 {
     "$schema": "./schema/bot-config-override.schema.json",
     "extends": "songbird-bot.json",
-    "agentBotSettings": {
-        "parallel": true
-    },
     "ormOptions": {
         "type": "mysql",
         "dbName": "fasset_bots",

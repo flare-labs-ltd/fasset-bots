@@ -24,7 +24,7 @@ import { agentNotifierThrottlingTimes } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport, ThrottlingNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { AgentBotFassetSettingsJson, AgentBotSettingsJson, AgentSettingsConfigDefaults, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./config-files/BotStrategyConfig";
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
@@ -68,6 +68,7 @@ export interface AgentBotSettings {
     minimumFreeUnderlyingBalance: BN;
     minBalanceOnServiceAccount: BN;
     minBalanceOnWorkAccount: BN;
+    defaultAgentSettings: AgentSettingsConfigDefaults;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "flareDataConnector" | "verificationClient" | "agentBotSettings">;
@@ -238,6 +239,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
         minBalanceOnServiceAccount: native.parse(agentBotSettings.minBalanceOnServiceAccount),
         minBalanceOnWorkAccount: native.parse(agentBotSettings.minBalanceOnWorkAccount),
+        defaultAgentSettings: { ...agentBotSettings.defaultAgentSettings, ...fassetSettings.defaultAgentSettings },
     }
 }
 
