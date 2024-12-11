@@ -680,6 +680,25 @@
     },
     {
       "anonymous": false,
+      "inputs": [],
+      "name": "EmergencyPauseTransfersCanceled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "pausedUntil",
+          "type": "uint256"
+        }
+      ],
+      "name": "EmergencyPauseTransfersTriggered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
       "inputs": [
         {
           "indexed": false,

@@ -681,6 +681,25 @@ export interface IISettingsManagementInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setRejectOrCancelCollateralReservationReturnFactorBIPS: {
+    (
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setRejectRedemptionRequestWindowSeconds: {
     (
       _value: number | BN | string,
@@ -1554,6 +1573,25 @@ export interface IISettingsManagementInstance extends Truffle.ContractInstance {
     };
 
     setRedemptionFeeBips: {
+      (
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    setRejectOrCancelCollateralReservationReturnFactorBIPS: {
       (
         _value: number | BN | string,
         txDetails?: Truffle.TransactionDetails

@@ -736,6 +736,25 @@
     },
     {
       "anonymous": false,
+      "inputs": [],
+      "name": "EmergencyPauseTransfersCanceled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "pausedUntil",
+          "type": "uint256"
+        }
+      ],
+      "name": "EmergencyPauseTransfersTriggered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
       "inputs": [
         {
           "indexed": false,
@@ -4560,6 +4579,11 @@
               "type": "uint64"
             },
             {
+              "internalType": "uint16",
+              "name": "rejectOrCancelCollateralReservationReturnFactorBIPS",
+              "type": "uint16"
+            },
+            {
               "internalType": "uint64",
               "name": "rejectRedemptionRequestWindowSeconds",
               "type": "uint64"
@@ -5902,6 +5926,32 @@
           "internalType": "struct ITransferFees.TransferFeeSettings",
           "name": "",
           "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "transfersEmergencyPaused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "transfersEmergencyPausedUntil",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",

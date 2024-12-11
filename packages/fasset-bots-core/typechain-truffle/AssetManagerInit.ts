@@ -189,6 +189,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
         cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectOrCancelCollateralReservationReturnFactorBIPS:
+          | number
+          | BN
+          | string;
         rejectRedemptionRequestWindowSeconds: number | BN | string;
         takeOverRedemptionRequestWindowSeconds: number | BN | string;
         rejectedRedemptionDefaultFactorVaultCollateralBIPS:
@@ -270,6 +274,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
         cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectOrCancelCollateralReservationReturnFactorBIPS:
+          | number
+          | BN
+          | string;
         rejectRedemptionRequestWindowSeconds: number | BN | string;
         takeOverRedemptionRequestWindowSeconds: number | BN | string;
         rejectedRedemptionDefaultFactorVaultCollateralBIPS:
@@ -351,6 +359,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
         cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectOrCancelCollateralReservationReturnFactorBIPS:
+          | number
+          | BN
+          | string;
         rejectRedemptionRequestWindowSeconds: number | BN | string;
         takeOverRedemptionRequestWindowSeconds: number | BN | string;
         rejectedRedemptionDefaultFactorVaultCollateralBIPS:
@@ -432,6 +444,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
         maxEmergencyPauseDurationSeconds: number | BN | string;
         emergencyPauseDurationResetAfterSeconds: number | BN | string;
         cancelCollateralReservationAfterSeconds: number | BN | string;
+        rejectOrCancelCollateralReservationReturnFactorBIPS:
+          | number
+          | BN
+          | string;
         rejectRedemptionRequestWindowSeconds: number | BN | string;
         takeOverRedemptionRequestWindowSeconds: number | BN | string;
         rejectedRedemptionDefaultFactorVaultCollateralBIPS:
@@ -596,6 +612,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
           cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectOrCancelCollateralReservationReturnFactorBIPS:
+            | number
+            | BN
+            | string;
           rejectRedemptionRequestWindowSeconds: number | BN | string;
           takeOverRedemptionRequestWindowSeconds: number | BN | string;
           rejectedRedemptionDefaultFactorVaultCollateralBIPS:
@@ -677,6 +697,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
           cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectOrCancelCollateralReservationReturnFactorBIPS:
+            | number
+            | BN
+            | string;
           rejectRedemptionRequestWindowSeconds: number | BN | string;
           takeOverRedemptionRequestWindowSeconds: number | BN | string;
           rejectedRedemptionDefaultFactorVaultCollateralBIPS:
@@ -758,6 +782,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
           cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectOrCancelCollateralReservationReturnFactorBIPS:
+            | number
+            | BN
+            | string;
           rejectRedemptionRequestWindowSeconds: number | BN | string;
           takeOverRedemptionRequestWindowSeconds: number | BN | string;
           rejectedRedemptionDefaultFactorVaultCollateralBIPS:
@@ -839,6 +867,10 @@ export interface AssetManagerInitInstance extends Truffle.ContractInstance {
           maxEmergencyPauseDurationSeconds: number | BN | string;
           emergencyPauseDurationResetAfterSeconds: number | BN | string;
           cancelCollateralReservationAfterSeconds: number | BN | string;
+          rejectOrCancelCollateralReservationReturnFactorBIPS:
+            | number
+            | BN
+            | string;
           rejectRedemptionRequestWindowSeconds: number | BN | string;
           takeOverRedemptionRequestWindowSeconds: number | BN | string;
           rejectedRedemptionDefaultFactorVaultCollateralBIPS:

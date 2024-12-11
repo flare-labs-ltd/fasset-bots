@@ -494,6 +494,19 @@
           "type": "uint256"
         }
       ],
+      "name": "setRejectOrCancelCollateralReservationReturnFactorBIPS",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
       "name": "setRejectRedemptionRequestWindowSeconds",
       "outputs": [],
       "stateMutability": "nonpayable",

@@ -7,9 +7,11 @@ import type { Truffle } from "./types";
 import BN from "bn.js";
 import { EventData, PastEventOptions } from "web3-eth-contract";
 
-export interface TransferFeeFacetContract
-  extends Truffle.Contract<TransferFeeFacetInstance> {
-  "new"(meta?: Truffle.TransactionDetails): Promise<TransferFeeFacetInstance>;
+export interface EmergencyPauseTransfersFacetContract
+  extends Truffle.Contract<EmergencyPauseTransfersFacetInstance> {
+  "new"(
+    meta?: Truffle.TransactionDetails
+  ): Promise<EmergencyPauseTransfersFacetInstance>;
 }
 
 export interface AgentAvailable {
@@ -712,32 +714,6 @@ export interface SettingChanged {
   };
 }
 
-export interface TransferFeeChangeScheduled {
-  name: "TransferFeeChangeScheduled";
-  args: {
-    nextTransferFeeMillionths: BN;
-    scheduledAt: BN;
-    0: BN;
-    1: BN;
-  };
-}
-
-export interface TransferFeesClaimed {
-  name: "TransferFeesClaimed";
-  args: {
-    agentVault: string;
-    recipient: string;
-    agentClaimedUBA: BN;
-    poolClaimedUBA: BN;
-    remainingUnclaimedEpochs: BN;
-    0: string;
-    1: string;
-    2: BN;
-    3: BN;
-    4: BN;
-  };
-}
-
 export interface UnderlyingBalanceChanged {
   name: "UnderlyingBalanceChanged";
   args: {
@@ -872,8 +848,6 @@ export type AllEvents =
   | SelfMint
   | SettingArrayChanged
   | SettingChanged
-  | TransferFeeChangeScheduled
-  | TransferFeesClaimed
   | UnderlyingBalanceChanged
   | UnderlyingBalanceTooLow
   | UnderlyingBalanceToppedUp
@@ -882,363 +856,96 @@ export type AllEvents =
   | UnderlyingWithdrawalConfirmed
   | VaultCollateralWithdrawalAnnounced;
 
-export interface TransferFeeFacetInstance extends Truffle.ContractInstance {
-  agentTransferFeeShare(
-    _agentVault: string,
-    _maxEpochsToClaim: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  agentTransferFeeShareForEpoch(
-    _agentVault: string,
-    _epoch: number | BN | string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
-
-  agentUnclaimedTransferFeeEpochs(
-    _agentVault: string,
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<{ 0: BN; 1: BN }>;
-
-  claimTransferFees: {
+export interface EmergencyPauseTransfersFacetInstance
+  extends Truffle.ContractInstance {
+  emergencyPauseTransfers: {
     (
-      _agentVault: string,
-      _recipient: string,
-      _maxEpochsToClaim: number | BN | string,
+      _byGovernance: boolean,
+      _duration: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<Truffle.TransactionResponse<AllEvents>>;
     call(
-      _agentVault: string,
-      _recipient: string,
-      _maxEpochsToClaim: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: BN; 1: BN; 2: BN }>;
-    sendTransaction(
-      _agentVault: string,
-      _recipient: string,
-      _maxEpochsToClaim: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _agentVault: string,
-      _recipient: string,
-      _maxEpochsToClaim: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  currentTransferFeeEpoch(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  fassetTransferFeePaid: {
-    (
-      _fee: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _fee: number | BN | string,
+      _byGovernance: boolean,
+      _duration: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<void>;
     sendTransaction(
-      _fee: number | BN | string,
+      _byGovernance: boolean,
+      _duration: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<string>;
     estimateGas(
-      _fee: number | BN | string,
+      _byGovernance: boolean,
+      _duration: number | BN | string,
       txDetails?: Truffle.TransactionDetails
     ): Promise<number>;
   };
 
-  firstClaimableTransferFeeEpoch(
+  emergencyPauseTransfersDetails(
     txDetails?: Truffle.TransactionDetails
-  ): Promise<BN>;
+  ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
 
-  initAgentsMintingHistory: {
-    (_agentVaults: string[], txDetails?: Truffle.TransactionDetails): Promise<
+  resetEmergencyPauseTransfersTotalDuration: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
-    call(
-      _agentVaults: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _agentVaults: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _agentVaults: string[],
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
   };
 
-  initTransferFeeFacet: {
-    (
-      _transferFeeMillionths: number | BN | string,
-      _firstEpochStartTs: number | BN | string,
-      _epochDuration: number | BN | string,
-      _maxUnexpiredEpochs: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _transferFeeMillionths: number | BN | string,
-      _firstEpochStartTs: number | BN | string,
-      _epochDuration: number | BN | string,
-      _maxUnexpiredEpochs: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _transferFeeMillionths: number | BN | string,
-      _firstEpochStartTs: number | BN | string,
-      _epochDuration: number | BN | string,
-      _maxUnexpiredEpochs: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _transferFeeMillionths: number | BN | string,
-      _firstEpochStartTs: number | BN | string,
-      _epochDuration: number | BN | string,
-      _maxUnexpiredEpochs: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  setTransferFeeMillionths: {
-    (
-      _value: number | BN | string,
-      _scheduledAt: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<Truffle.TransactionResponse<AllEvents>>;
-    call(
-      _value: number | BN | string,
-      _scheduledAt: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<void>;
-    sendTransaction(
-      _value: number | BN | string,
-      _scheduledAt: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<string>;
-    estimateGas(
-      _value: number | BN | string,
-      _scheduledAt: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<number>;
-  };
-
-  transferFeeCalculationDataForAgent(
-    _agentVault: string,
-    _epoch: number | BN | string,
+  transfersEmergencyPaused(
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{
-    totalFees: BN;
-    cumulativeMinted: BN;
-    totalCumulativeMinted: BN;
-    claimable: boolean;
-    claimed: boolean;
-  }>;
+  ): Promise<boolean>;
 
-  transferFeeEpochData(
-    _epoch: number | BN | string,
+  transfersEmergencyPausedUntil(
     txDetails?: Truffle.TransactionDetails
-  ): Promise<{
-    startTs: BN;
-    endTs: BN;
-    totalFees: BN;
-    claimedFees: BN;
-    claimable: boolean;
-    expired: boolean;
-  }>;
-
-  transferFeeMillionths(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-  transferFeeSettings(
-    txDetails?: Truffle.TransactionDetails
-  ): Promise<{
-    transferFeeMillionths: BN;
-    firstEpochStartTs: BN;
-    epochDuration: BN;
-    maxUnexpiredEpochs: BN;
-    firstClaimableEpoch: BN;
-  }>;
+  ): Promise<BN>;
 
   methods: {
-    agentTransferFeeShare(
-      _agentVault: string,
-      _maxEpochsToClaim: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    agentTransferFeeShareForEpoch(
-      _agentVault: string,
-      _epoch: number | BN | string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    agentUnclaimedTransferFeeEpochs(
-      _agentVault: string,
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<{ 0: BN; 1: BN }>;
-
-    claimTransferFees: {
+    emergencyPauseTransfers: {
       (
-        _agentVault: string,
-        _recipient: string,
-        _maxEpochsToClaim: number | BN | string,
+        _byGovernance: boolean,
+        _duration: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<Truffle.TransactionResponse<AllEvents>>;
       call(
-        _agentVault: string,
-        _recipient: string,
-        _maxEpochsToClaim: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<{ 0: BN; 1: BN; 2: BN }>;
-      sendTransaction(
-        _agentVault: string,
-        _recipient: string,
-        _maxEpochsToClaim: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _agentVault: string,
-        _recipient: string,
-        _maxEpochsToClaim: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    currentTransferFeeEpoch(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
-
-    fassetTransferFeePaid: {
-      (
-        _fee: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _fee: number | BN | string,
+        _byGovernance: boolean,
+        _duration: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<void>;
       sendTransaction(
-        _fee: number | BN | string,
+        _byGovernance: boolean,
+        _duration: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<string>;
       estimateGas(
-        _fee: number | BN | string,
+        _byGovernance: boolean,
+        _duration: number | BN | string,
         txDetails?: Truffle.TransactionDetails
       ): Promise<number>;
     };
 
-    firstClaimableTransferFeeEpoch(
+    emergencyPauseTransfersDetails(
       txDetails?: Truffle.TransactionDetails
-    ): Promise<BN>;
+    ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
 
-    initAgentsMintingHistory: {
-      (_agentVaults: string[], txDetails?: Truffle.TransactionDetails): Promise<
+    resetEmergencyPauseTransfersTotalDuration: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
-      call(
-        _agentVaults: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _agentVaults: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _agentVaults: string[],
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
     };
 
-    initTransferFeeFacet: {
-      (
-        _transferFeeMillionths: number | BN | string,
-        _firstEpochStartTs: number | BN | string,
-        _epochDuration: number | BN | string,
-        _maxUnexpiredEpochs: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _transferFeeMillionths: number | BN | string,
-        _firstEpochStartTs: number | BN | string,
-        _epochDuration: number | BN | string,
-        _maxUnexpiredEpochs: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _transferFeeMillionths: number | BN | string,
-        _firstEpochStartTs: number | BN | string,
-        _epochDuration: number | BN | string,
-        _maxUnexpiredEpochs: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _transferFeeMillionths: number | BN | string,
-        _firstEpochStartTs: number | BN | string,
-        _epochDuration: number | BN | string,
-        _maxUnexpiredEpochs: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    setTransferFeeMillionths: {
-      (
-        _value: number | BN | string,
-        _scheduledAt: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<Truffle.TransactionResponse<AllEvents>>;
-      call(
-        _value: number | BN | string,
-        _scheduledAt: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<void>;
-      sendTransaction(
-        _value: number | BN | string,
-        _scheduledAt: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<string>;
-      estimateGas(
-        _value: number | BN | string,
-        _scheduledAt: number | BN | string,
-        txDetails?: Truffle.TransactionDetails
-      ): Promise<number>;
-    };
-
-    transferFeeCalculationDataForAgent(
-      _agentVault: string,
-      _epoch: number | BN | string,
+    transfersEmergencyPaused(
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{
-      totalFees: BN;
-      cumulativeMinted: BN;
-      totalCumulativeMinted: BN;
-      claimable: boolean;
-      claimed: boolean;
-    }>;
+    ): Promise<boolean>;
 
-    transferFeeEpochData(
-      _epoch: number | BN | string,
+    transfersEmergencyPausedUntil(
       txDetails?: Truffle.TransactionDetails
-    ): Promise<{
-      startTs: BN;
-      endTs: BN;
-      totalFees: BN;
-      claimedFees: BN;
-      claimable: boolean;
-      expired: boolean;
-    }>;
-
-    transferFeeMillionths(txDetails?: Truffle.TransactionDetails): Promise<BN>;
-
-    transferFeeSettings(
-      txDetails?: Truffle.TransactionDetails
-    ): Promise<{
-      transferFeeMillionths: BN;
-      firstEpochStartTs: BN;
-      epochDuration: BN;
-      maxUnexpiredEpochs: BN;
-      firstClaimableEpoch: BN;
-    }>;
+    ): Promise<BN>;
   };
 
   getPastEvents(event: string): Promise<EventData[]>;

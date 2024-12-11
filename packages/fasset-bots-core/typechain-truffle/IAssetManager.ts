@@ -349,6 +349,19 @@ export interface EmergencyPauseCanceled {
   args: {};
 }
 
+export interface EmergencyPauseTransfersCanceled {
+  name: "EmergencyPauseTransfersCanceled";
+  args: {};
+}
+
+export interface EmergencyPauseTransfersTriggered {
+  name: "EmergencyPauseTransfersTriggered";
+  args: {
+    pausedUntil: BN;
+    0: BN;
+  };
+}
+
 export interface EmergencyPauseTriggered {
   name: "EmergencyPauseTriggered";
   args: {
@@ -858,6 +871,8 @@ export type AllEvents =
   | DuplicatePaymentConfirmed
   | DustChanged
   | EmergencyPauseCanceled
+  | EmergencyPauseTransfersCanceled
+  | EmergencyPauseTransfersTriggered
   | EmergencyPauseTriggered
   | FullLiquidationStarted
   | HandshakeRequired
@@ -2619,6 +2634,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     maxEmergencyPauseDurationSeconds: BN;
     emergencyPauseDurationResetAfterSeconds: BN;
     cancelCollateralReservationAfterSeconds: BN;
+    rejectOrCancelCollateralReservationReturnFactorBIPS: BN;
     rejectRedemptionRequestWindowSeconds: BN;
     takeOverRedemptionRequestWindowSeconds: BN;
     rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;
@@ -3699,6 +3715,14 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
     maxUnexpiredEpochs: BN;
     firstClaimableEpoch: BN;
   }>;
+
+  transfersEmergencyPaused(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  transfersEmergencyPausedUntil(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   unstickMinting: {
     (
@@ -5650,6 +5674,7 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       maxEmergencyPauseDurationSeconds: BN;
       emergencyPauseDurationResetAfterSeconds: BN;
       cancelCollateralReservationAfterSeconds: BN;
+      rejectOrCancelCollateralReservationReturnFactorBIPS: BN;
       rejectRedemptionRequestWindowSeconds: BN;
       takeOverRedemptionRequestWindowSeconds: BN;
       rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;
@@ -6730,6 +6755,14 @@ export interface IAssetManagerInstance extends Truffle.ContractInstance {
       maxUnexpiredEpochs: BN;
       firstClaimableEpoch: BN;
     }>;
+
+    transfersEmergencyPaused(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
+    transfersEmergencyPausedUntil(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     unstickMinting: {
       (
