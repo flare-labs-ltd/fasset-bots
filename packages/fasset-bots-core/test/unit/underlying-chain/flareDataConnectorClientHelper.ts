@@ -2,7 +2,7 @@ import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExis
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import rewire from "rewire";
-import { Secrets, indexerApiKey } from "../../../src/config";
+import { Secrets, dataAccessLayerApiKey, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper, createFlareDataConnectorClient } from "../../../src/config/BotConfig";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/FlareDataConnectorClientHelper";
@@ -32,6 +32,7 @@ describe("testXRP attestation/flare data connector tests", () => {
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
             indexerApiKey(secrets, INDEXER_URL_XRP),
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
@@ -154,6 +155,7 @@ describe("testBTC attestation/flare data connector tests", () => {
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_BTC,
             indexerApiKey(secrets, INDEXER_URL_BTC),
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
@@ -260,6 +262,7 @@ describe("testDOGE attestation/flare data connector tests", () => {
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_DOGE,
             indexerApiKey(secrets, INDEXER_URL_DOGE),
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
@@ -414,6 +417,7 @@ describe("Flare data connector tests - decoding", () => {
         flareDataConnectorClient = await createFlareDataConnectorClient(
             INDEXER_URL_XRP,
             indexerApiKey(secrets, INDEXER_URL_XRP),
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             DATA_ACCESS_LAYER_URLS,
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
