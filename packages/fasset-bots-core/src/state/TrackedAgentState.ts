@@ -34,6 +34,7 @@ export class TrackedAgentState {
         this.agentSettings.poolTopupCollateralRatioBIPS = toBN(data.creationData.poolTopupCollateralRatioBIPS);
         this.agentSettings.poolTopupTokenPriceFactorBIPS = toBN(data.creationData.poolTopupTokenPriceFactorBIPS);
         this.agentSettings.handshakeType = toBN(data.creationData.handshakeType);
+        this.totalVaultCollateralWei[this.agentSettings.vaultCollateralToken] = BN_ZERO;
     }
 
     // identifying addresses

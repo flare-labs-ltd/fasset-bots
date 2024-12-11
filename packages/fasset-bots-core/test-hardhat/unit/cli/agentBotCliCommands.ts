@@ -477,7 +477,7 @@ describe("AgentBot cli commands unit tests", () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelCollateralPoolTokenRedemption(agent.vaultAddress);
-        expect(spyConsole).to.be.called.exactly(0);
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'prepareCreateAgentSettings'", async () => {
