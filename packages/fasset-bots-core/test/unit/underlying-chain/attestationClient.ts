@@ -1,6 +1,6 @@
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { Secrets, createFlareDataConnectorClient, indexerApiKey, supportedChainId } from "../../../src/config";
+import { Secrets, createFlareDataConnectorClient, dataAccessLayerApiKey, indexerApiKey, supportedChainId } from "../../../src/config";
 import { createBlockchainIndexerHelper, createBlockchainWalletHelper } from "../../../src/config/BotConfig";
 import { ORM } from "../../../src/config/orm";
 import { AttestationHelper } from "../../../src/underlying-chain/AttestationHelper";
@@ -27,6 +27,7 @@ const finalizationBlocks: number = 6;
 async function createAttestationHelper(
     chainId: ChainId,
     dataAccessLayerUrls: string[],
+    dataAccessLayerApiKeys: string[],
     fdcVerificationAddress: string,
     fdcHubAddress: string,
     relayAddress: string,
@@ -37,7 +38,7 @@ async function createAttestationHelper(
     if (!supportedChainId(chainId)) {
         throw new Error(`SourceId ${chainId} not supported.`);
     }
-    const flareDataConnector = await createFlareDataConnectorClient(indexerUrls, indexerApiKeys, dataAccessLayerUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, owner);
+    const flareDataConnector = await createFlareDataConnectorClient(indexerUrls, indexerApiKeys, dataAccessLayerUrls, dataAccessLayerApiKeys, fdcVerificationAddress, fdcHubAddress, relayAddress, owner);
     const indexer = createBlockchainIndexerHelper(chainId, indexerUrls, indexerApiKeys);
     return new AttestationHelper(flareDataConnector, indexer, chainId);
 }
@@ -61,6 +62,7 @@ describe("Attestation client unit tests", () => {
         attestationHelper = await createAttestationHelper(
             chainId,
             DATA_ACCESS_LAYER_URLS,
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
@@ -77,6 +79,7 @@ describe("Attestation client unit tests", () => {
         const latestRound = await (attestationHelper.flareDataConnector as FlareDataConnectorClientHelper).latestFinalizedRound();
         const localAttestationHelper = await createAttestationHelper(
             chainId,
+            [],
             [],
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,

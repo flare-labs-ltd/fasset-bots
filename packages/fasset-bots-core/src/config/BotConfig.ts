@@ -201,10 +201,12 @@ export async function createBotFAssetConfig(
         assertNotNull(submitter);   // if this is missing, it is program error
         const fdcHubAddress = await retriever.getContractAddress("FdcHub");
         const relayAddress = await retriever.getContractAddress("Relay");
-        const apiKeys: string[] = indexerApiKey(secrets, fassetInfo.indexerUrls);
-        result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrls, apiKeys);
-        result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrls, apiKeys);
-        result.flareDataConnector = await createFlareDataConnectorClient(fassetInfo.indexerUrls, apiKeys, dataAccessLayerUrls, settings.fdcVerification, fdcHubAddress, relayAddress, submitter);
+        const indexerApiKeys: string[] = indexerApiKey(secrets, fassetInfo.indexerUrls);
+        const dataAccessLayerApiKeys: string[] = dataAccessLayerApiKey(secrets, dataAccessLayerUrls);
+        result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrls, indexerApiKeys);
+        result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrls, indexerApiKeys);
+        result.flareDataConnector = await createFlareDataConnectorClient(fassetInfo.indexerUrls, indexerApiKeys,
+            dataAccessLayerUrls, dataAccessLayerApiKeys, settings.fdcVerification, fdcHubAddress, relayAddress, submitter);
     }
     return result;
 }
@@ -287,12 +289,13 @@ export async function createFlareDataConnectorClient(
     indexerWebServerUrls: string[],
     indexerApiKeys: string[],
     dataAccessLayerUrls: string[],
+    dataAccessLayerApiKeys: string[],
     fdcVerificationAddress: string,
     fdcHubAddress: string,
     relayAddress: string,
     submitter: string
 ): Promise<FlareDataConnectorClientHelper> {
-    return await FlareDataConnectorClientHelper.create(dataAccessLayerUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, indexerWebServerUrls, indexerApiKeys, submitter);
+    return await FlareDataConnectorClientHelper.create(dataAccessLayerUrls, dataAccessLayerApiKeys, fdcVerificationAddress, fdcHubAddress, relayAddress, indexerWebServerUrls, indexerApiKeys, submitter);
 }
 
 export async function createVerificationApiClient(indexerWebServerUrls: string[], indexerApiKeys: string[]): Promise<VerificationPrivateApiClient> {
@@ -315,8 +318,18 @@ export function indexerApiKey(secrets: Secrets, indexerUrls: string[]): string[]
     if (Array.isArray(apiTokenKey) && apiTokenKey.length != indexerUrls.length) {
         throw new Error(`Cannot create indexers. The number of URLs and API keys do not match.`);
     }
-    const apiTokenKeys = Array.isArray(apiTokenKey) ? apiTokenKey : Array(indexerUrls.length).fill(apiTokenKey);
-    return apiTokenKeys;
+    return Array.isArray(apiTokenKey) ? apiTokenKey : Array(indexerUrls.length).fill(apiTokenKey);
+}
+
+/**
+ * Extract data access layer api key.
+ */
+export function dataAccessLayerApiKey(secrets: Secrets, dataAccessLayerUrls: string[]): string[] {
+    const apiTokenKey = secrets.requiredOrRequiredArray("apiKey.data_access_layer");
+    if (Array.isArray(apiTokenKey) && apiTokenKey.length != dataAccessLayerUrls.length) {
+        throw new Error(`Cannot create dataAccessLayer. The number of URLs and API keys do not match.`);
+    }
+    return Array.isArray(apiTokenKey) ? apiTokenKey : Array(dataAccessLayerUrls.length).fill(apiTokenKey);
 }
 
 /**
