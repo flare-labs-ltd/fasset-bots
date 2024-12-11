@@ -1,11 +1,13 @@
+import "dotenv/config";
 import { AsyncLocalStorage } from "async_hooks";
 import { createLogger, format } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
+import { Console } from "winston/lib/winston/transports";
 import * as Transport from "winston-transport";
 
 export const loggerAsyncStorage = new AsyncLocalStorage<string>();
 
-export type LoggerPaths = { text?: string, json?: string };
+export type LoggerPaths = { text?: string, json?: string, logTarget?: string };
 
 export function createCustomizedLogger(paths: LoggerPaths) {
     const transports: Transport[] = [];
@@ -39,6 +41,9 @@ export function createCustomizedLogger(paths: LoggerPaths) {
             ...(commonOptions as any),
         }));
     }
+    if (paths.logTarget === 'console') {
+        transports.push(...transports.map((transport) => new Console({ ...commonOptions, format: transport.format })));
+    }
     return createLogger({ transports });
 }
 
@@ -56,4 +61,5 @@ const mainFileName = (require.main?.filename ?? "").replace(/\\/g, "/");
 const fnMatch = mainFileName.match(/\/src\/(cli|run)\/([^/]+)\.(cjs|mjs|js|ts)$/);
 const loggerName = fnMatch ? fnMatch[2] : "log";
 
-export const logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log` });
+export const logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log`,
+    logTarget: process.env.LOG_TARGET });

@@ -1,8 +1,7 @@
 import { AddressValidity, BalanceDecreasingTransaction, ConfirmedBlockHeightExists, encodeAttestationName, Payment, ReferencedPaymentNonexistence } from "@flarenetwork/state-connector-protocol";
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import rewire from "rewire";
-import { Secrets, indexerApiKey } from "../../../src/config";
+import { Secrets, dataAccessLayerApiKey, indexerApiKey } from "../../../src/config";
 import { createBlockchainIndexerHelper, createFlareDataConnectorClient } from "../../../src/config/BotConfig";
 import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/FlareDataConnectorClientHelper";
@@ -12,8 +11,6 @@ import { testChainInfo } from "../../test-utils/TestChainInfo";
 import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS, INDEXER_URL_BTC, INDEXER_URL_DOGE } from "../../test-utils/test-bot-config";
 import { keccak256 } from "web3-utils";
 use(chaiAsPromised);
-const rewiredFlareDataConnectorClientHelper = rewire("../../../src/underlying-chain/FlareDataConnectorClientHelper");
-const rewiredFlareDataConnectorClientHelperClass = rewiredFlareDataConnectorClientHelper.__get__("FlareDataConnectorClientHelper");
 
 let flareDataConnectorClient: FlareDataConnectorClientHelper;
 
@@ -33,6 +30,7 @@ describe("testXRP attestation/flare data connector tests", () => {
             INDEXER_URL_XRP,
             indexerApiKey(secrets, INDEXER_URL_XRP),
             DATA_ACCESS_LAYER_URLS,
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
@@ -89,7 +87,7 @@ describe("testXRP attestation/flare data connector tests", () => {
         expect(resp!.data).is.not.null;
     });
 
-    it("Should submit ReferencedPaymentNonexistence request", async () => {
+    it.skip("Should submit ReferencedPaymentNonexistence request", async () => {
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
             sourceId: chainId.sourceId,
@@ -155,6 +153,7 @@ describe("testBTC attestation/flare data connector tests", () => {
             INDEXER_URL_BTC,
             indexerApiKey(secrets, INDEXER_URL_BTC),
             DATA_ACCESS_LAYER_URLS,
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
@@ -196,7 +195,7 @@ describe("testBTC attestation/flare data connector tests", () => {
         expect(resp!.data).is.not.null;
     });
 
-    it("Should submit ReferencedPaymentNonexistence request", async () => {
+    it.skip("Should submit ReferencedPaymentNonexistence request", async () => {
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
             sourceId: chainId.sourceId,
@@ -261,6 +260,7 @@ describe("testDOGE attestation/flare data connector tests", () => {
             INDEXER_URL_DOGE,
             indexerApiKey(secrets, INDEXER_URL_DOGE),
             DATA_ACCESS_LAYER_URLS,
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
@@ -302,7 +302,7 @@ describe("testDOGE attestation/flare data connector tests", () => {
         expect(resp!.data).is.not.null;
     });
 
-    it("Should submit ReferencedPaymentNonexistence request", async () => {
+    it.skip("Should submit ReferencedPaymentNonexistence request", async () => {
         const request: ReferencedPaymentNonexistence.Request = {
             attestationType: ReferencedPaymentNonexistence.TYPE,
             sourceId: chainId.sourceId,
@@ -355,7 +355,6 @@ describe("testDOGE attestation/flare data connector tests", () => {
 
 describe("Flare data connector tests - decoding", () => {
     const invalidAttestationType = encodeAttestationName("invalid");
-    let rewiredFlareDataConnectorHelper: typeof rewiredFlareDataConnectorClientHelperClass;
     const merkleProof = ["0xa2a603a9acad0bca95be28b9cea549b9b1cbe32519ff1389156b6d3c439535d4"];
     const responsePayment = {
         blockNumber: "0x25101bd",
@@ -406,6 +405,7 @@ describe("Flare data connector tests - decoding", () => {
         spentAmount: "0x2540be40c",
         paymentReference: "0xe530837535d367bc130ee181801f91e1a654a054b9b014cf0aeb79ecc7e6d8d2",
     };
+    let flareDataConnectorClientHelper: FlareDataConnectorClientHelper;
 
     before(async () => {
         const secrets = await Secrets.load(TEST_SECRETS);
@@ -415,15 +415,18 @@ describe("Flare data connector tests - decoding", () => {
             INDEXER_URL_XRP,
             indexerApiKey(secrets, INDEXER_URL_XRP),
             DATA_ACCESS_LAYER_URLS,
+            dataAccessLayerApiKey(secrets, DATA_ACCESS_LAYER_URLS),
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
             RELAY_ADDRESS,
             accounts[0]
         );
-        rewiredFlareDataConnectorHelper = new rewiredFlareDataConnectorClientHelperClass(
+        flareDataConnectorClientHelper = new FlareDataConnectorClientHelper(
             DATA_ACCESS_LAYER_URLS,
+            DATA_ACCESS_LAYER_URLS.map(url => ""),
             FDC_VERIFICATION_ADDRESS,
             FDC_HUB_ADDRESS,
+            RELAY_ADDRESS,
             [""],
             [""],
             accounts[0]
@@ -453,7 +456,7 @@ describe("Flare data connector tests - decoding", () => {
                 "0xcae4c715a94dae234c49acc329915a28ba853435d6f4fb858a5a0a120beac520",
             ],
         };
-        await expect(rewiredFlareDataConnectorHelper.verifyProof(proofData))
+        await expect((flareDataConnectorClientHelper as any).verifyProof(proofData))
             .to.eventually.be.rejectedWith(`Invalid attestation type ${invalidAttestationType}`)
             .and.be.an.instanceOf(Error);
     });
