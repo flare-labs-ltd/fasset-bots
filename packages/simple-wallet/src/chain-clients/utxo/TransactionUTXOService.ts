@@ -293,7 +293,7 @@ export class TransactionUTXOService {
     }
 
     private async getTransactionEntityByHash(txHash: string) {
-        let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
+        let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs", "outputs"] });
         if (!txEnt) {
             logger.info(`Transaction with hash ${txHash} not in db, fetching it from API`);
             const tr = await this.blockchainAPI.getTransaction(txHash);
@@ -319,7 +319,7 @@ export class TransactionUTXOService {
                 });
             }
 
-            txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
+            txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs", "outputs"] });
         }
 
         return txEnt;
@@ -451,11 +451,11 @@ export class TransactionUTXOService {
         const lowerTimeBound = this.timestampTracker - 24 * 60 * 60 * 1000;
         const transactions = await this.rootEm.find(TransactionEntity, {
             status: TransactionStatus.TX_SUCCESS,
-
             reachedFinalStatusInTimestamp: {
                 $gte: toBN(lowerTimeBound), $lte: toBN(this.timestampTracker)
             },
-            source: source
+            source: source,
+            chainType: this.chainType
         });
 
         const addressScriptMap = this.utxoScriptMap.get(source);
