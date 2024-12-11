@@ -10,8 +10,8 @@ export type SecretsUser = "user" | "agent" | "other";
 
 export function generateSecrets(configFile: string, users: SecretsUser[], agentManagementAddress?: string) {
     const web3 = new Web3();
-    function generateAccount(chainNames: Set<string>) {
-        const result: { [key: string]: ChainAccount } = {};
+    function generateAccount(chainNames: Set<string>, initData: any) {
+        const result: { [key: string]: ChainAccount } = { ...initData };
         result.native = generateNativeAccount();
         for (const chainName of chainNames) {
             const underlyingAccount = generateUnderlyingAccount(chainName);
@@ -35,36 +35,39 @@ export function generateSecrets(configFile: string, users: SecretsUser[], agentM
     secrets.apiKey.native_rpc = "";
     secrets.apiKey.data_access_layer = "";
     if (users.includes("agent") || users.includes("user")) {
-        secrets.apiKey.testXRP_rpc = [""];
-        secrets.apiKey.testBTC_rpc = [""];
-        secrets.apiKey.testDOGE_rpc = [""];
+        // api keys
+        for (const chainId of chainIds) {
+            secrets.apiKey[`${chainId}_rpc`] = [""];
+        }
         secrets.apiKey.indexer = [""];
-    }
-    if (users.includes("agent")) {
-        secrets.apiKey.agent_bot = crypto.randomBytes(32).toString("hex");
-        secrets.wallet = {
-            encryption_password: crypto.randomBytes(15).toString("base64"),
-        };
-        secrets.owner = generateAccount(chainIds);
-        secrets.owner.management = { address: requireNotNull(agentManagementAddress) } as any;
-        secrets.requestSubmitter = generateNativeAccount();
-        secrets.timeKeeper = generateNativeAccount();
+        // database - needed for wallet
         secrets.database = {
             user: "",
             password: ""
         }
-    }
-    if (users.includes("user")) {
-        secrets.user = generateAccount(chainIds);
+        // wallet
         secrets.wallet = {
             encryption_password: crypto.randomBytes(15).toString("base64"),
         };
     }
+    if (users.includes("agent")) {
+        secrets.apiKey.agent_bot = crypto.randomBytes(32).toString("hex");
+        secrets.owner = generateAccount(chainIds, {
+            management: { address: requireNotNull(agentManagementAddress) }
+        });
+    }
+    if (users.includes("user")) {
+        secrets.user = generateAccount(chainIds, {});
+    }
+    if (users.includes("agent")) {
+        secrets.requestSubmitter = generateNativeAccount();
+        secrets.timeKeeper = generateNativeAccount();
+    }
     if (users.includes("other")) {
+        secrets.timeKeeper = generateNativeAccount();
         secrets.challenger = generateNativeAccount();
         secrets.liquidator = generateNativeAccount();
         secrets.systemKeeper = generateNativeAccount();
-        secrets.timeKeeper = generateNativeAccount();
         secrets.pricePublisher = generateNativeAccount();
     }
     return secrets;
