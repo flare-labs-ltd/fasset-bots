@@ -32,7 +32,7 @@
         "minBalanceOnWorkAccount": "200",
         "fAssets": {
             "FXRP": {
-                "recommendedOwnerBalance": "50",
+                "recommendedOwnerBalance": "5",
                 "minimumFreeUnderlyingBalance": "0.01"
             }
         }
