@@ -16,7 +16,7 @@
             "tokenName": "XRP",
             "tokenSymbol": "XRP",
             "tokenDecimals": 6,
-            "indexerUrls": ["https://fdc-verifier.aflabs.org/verifier/xrp"],
+            "indexerUrls": ["https://fdc-verifiers-mainnet.flare.network/verifier/xrp"],
             "walletUrls": ["https://xrpl-api.flare.network"],
             "minimumAccountBalance": "1",
             "priceChangeEmitter": "FtsoV2PriceStore"
