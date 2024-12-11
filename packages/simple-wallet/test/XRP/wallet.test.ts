@@ -372,8 +372,7 @@ describe("Xrp wallet tests", () => {
     it("Free underlying with unspecified fee", async () => {
         const txId = await wClient.createPaymentTransaction(
             fundedAddress, targetAddress, amountToSendDropsFirst, undefined,
-            undefined, undefined, undefined, undefined,
-            undefined, undefined, true
+            undefined, undefined, undefined, undefined, true
         );
 
         const [txEnt,] = await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
@@ -384,8 +383,7 @@ describe("Xrp wallet tests", () => {
     it("Free underlying with specified fee", async () => {
         const txId = await wClient.createPaymentTransaction(
             fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops,
-            undefined, undefined, undefined, undefined,
-            undefined, undefined, true
+            undefined, undefined, undefined, undefined, true
         );
 
         const [txEnt,] = await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);

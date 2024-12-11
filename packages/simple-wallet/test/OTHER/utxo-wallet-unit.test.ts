@@ -137,13 +137,13 @@ describe("UTXOWalletImplementation unit tests", () => {
 
     it("Transaction with fee too high for fee wallet and main wallet should eventually fail", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 3, undefined, feeWalletAddress, toBN(100));
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(100), startBlockHeight + 3, undefined, undefined, feeWalletAddress, toBN(100));
         await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_FAILED, id);
     });
 
     it("Transaction with fee too high for fee wallet should be tried with main wallet", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
-        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 5, undefined, feeWalletAddress, toBN(100));
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 5, undefined, undefined, feeWalletAddress, toBN(100));
         const [txEnt,] = await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;

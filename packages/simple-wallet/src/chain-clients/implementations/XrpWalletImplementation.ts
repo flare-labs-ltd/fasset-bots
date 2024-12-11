@@ -137,8 +137,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       maxFeeInDrops?: BN,
       executeUntilBlock?: number,
       executeUntilTimestamp?: BN,
-      feeSource?: string,
-      maxPaymentForFeeSource?: BN,
       isFreeUnderlying?: boolean
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops?.toString()} and reference ${note}`);

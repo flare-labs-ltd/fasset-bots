@@ -471,7 +471,7 @@ export class AgentBotCommands {
                 agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
             });
             const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference,
-                undefined, undefined, undefined, undefined, undefined, true);
+                undefined, undefined, undefined, undefined, true);
             await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
                 agentEnt.underlyingWithdrawalConfirmTransactionId = txDbId;
             });

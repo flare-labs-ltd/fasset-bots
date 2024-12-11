@@ -363,11 +363,11 @@ export class Agent {
         options?: TransactionOptionsWithFee,
         untilBlockNumber?: number,
         untilBlockTimestamp?: BN,
+        isFreeUnderlying?: boolean,
         feeSourceAddress?: string,
-        isFreeUnderlying?: boolean
     ): Promise<number> {
         // No check for underlying payment as checks were already performed during redemption, withdrawal and top up initiation. Other transfers are using function performPayment.
-        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp, feeSourceAddress, isFreeUnderlying);
+        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp, isFreeUnderlying, feeSourceAddress);
     }
 
     /**
