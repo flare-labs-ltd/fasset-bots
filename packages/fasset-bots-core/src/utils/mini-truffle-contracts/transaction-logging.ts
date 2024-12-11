@@ -1,6 +1,7 @@
+import "dotenv/config";
 import { createCustomizedLogger } from "../logger";
 
-export const transactionLogger = createCustomizedLogger({ json: "log/transactions/transactions-%DATE%.log.json" });
+export const transactionLogger = createCustomizedLogger({ json: "log/transactions/transactions-%DATE%.log.json", logTarget: process.env.LOG_TARGET });
 
 export class ErrorWithCause extends Error {
     #errorCause: any;
