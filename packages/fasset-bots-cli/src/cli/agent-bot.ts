@@ -470,7 +470,38 @@ program
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         await cli.selfMint(agentVault, toBN(numberOfLots));
-        console.log(`Agent ${agentVault} self minted ${numberOfLots}.`);
+    });
+
+program
+    .command("proveSelfMintPayment")
+    .description("agent proves selfMint payment")
+    .argument("<agentVaultAddress>")
+    .argument("<transactionHash>")
+    .argument("<numberOfLots>")
+    .action(async (agentVault: string, transactionHash: string, numberOfLots: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        validateInteger(numberOfLots, "Number of lots", { min: 1 });
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        await cli.proveSelfMintPayment(agentVault, transactionHash, numberOfLots);
+    });
+
+program
+    .command("executeSelfMint")
+    .description("execute selfMint")
+    .argument("<agentVaultAddress>")
+    .argument("<transactionHash>")
+    .argument("<proof>")
+    .argument("<numberOfLots>")
+    .action(async (agentVault: string, transactionHash: string, proof: string, numberOfLots: string) => {
+        validateAddress(agentVault, "Agent vault address");
+        validateInteger(numberOfLots, "Number of lots", { min: 1 });
+        const options: { config: string; secrets: string; fasset: string } = program.opts();
+        const secrets = await Secrets.load(options.secrets);
+        const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+        const proofObj = JSON.parse(proof);
+        await cli.executeSelfMinting(agentVault, transactionHash, proofObj, numberOfLots);
     });
 
 program

@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { decodeAttestationName } from "@flarenetwork/state-connector-protocol";
+import { decodeAttestationName, Payment } from "@flarenetwork/state-connector-protocol";
 import BN from "bn.js";
 import chalk from "chalk";
 import { InfoBotCommands } from "..";
@@ -805,17 +805,8 @@ export class AgentBotCommands {
         console.log(`Transaction was accepted ${transactionHash}. Waiting for its finalization ...`);
         logger.info(`Agent ${agentVault} is waiting for transaction ${transactionHash} finalization ...`);
         await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(transactionHash);
-        console.log(`Waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agent.underlyingAddress} ...`);
-        logger.info(`Agent ${agentVault} is waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agent.underlyingAddress}.`);
-        await this.notifierFor(agentVault).sendSelfMintProvingPayment(numberOfLots.toString());
-        const proof = await agentBot.context.attestationProvider.provePayment(transactionHash, this.ownerUnderlyingAddress, agent.underlyingAddress);
-        console.log(`Executing payment...`);
-        logger.info(`Agent ${agentVault} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
-        const res = await this.context.assetManager.selfMint(proof, agentVault, numberOfLots, { from: agent.owner.workAddress });
-        requiredEventArgs(res, 'SelfMint');
-        await this.notifierFor(agentVault).sendSelfMintExecuted(numberOfLots.toString());
-        console.log("Done");
-        logger.info(`Agent ${agentVault} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
+        const proof = await this.proveSelfMintPayment(agentVault, transactionHash, numberOfLots.toString());
+        await this.executeSelfMinting(agentVault, transactionHash, proof, numberOfLots.toString());
     }
 
     /**
@@ -844,6 +835,28 @@ export class AgentBotCommands {
         console.log("Done");
         await this.notifierFor(agentVault).sendSelfMintUnderlyingExecuted(numberOfLots.toString());
         logger.info(`Agent ${agentVault} executed minting from free underlying.`);
+    }
+
+    async proveSelfMintPayment(agentVault: string, transactionHash: string, numberOfLots: string): Promise<Payment.Proof> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        console.log(`Waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress} ...`);
+        logger.info(`Agent ${agentVault} is waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress}.`);
+        await this.notifierFor(agentVault).sendSelfMintProvingPayment(numberOfLots, transactionHash);
+        const proof = await agentBot.context.attestationProvider.provePayment(transactionHash, this.ownerUnderlyingAddress, agentBot.agent.underlyingAddress);
+        console.log(`Received proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress}.`);
+        logger.info(`Received proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress}.`);
+        return proof;
+    }
+
+    async executeSelfMinting(agentVault: string, transactionHash: string, proof: Payment.Proof, numberOfLots: string): Promise<void> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        console.log(`Executing payment...`);
+        logger.info(`Agent ${agentVault} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
+        const res = await this.context.assetManager.selfMint(web3DeepNormalize(proof), agentVault, numberOfLots, { from: agentBot.agent.owner.workAddress });
+        requiredEventArgs(res, 'SelfMint');
+        await this.notifierFor(agentVault).sendSelfMintExecuted(numberOfLots);
+        console.log(`Agent ${agentVault} executed minting.`);
+        logger.info(`Agent ${agentVault} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
     }
 
     private async getAmountToPayUBAForSelfMint(agent: Agent, numberOfLots: BN) {

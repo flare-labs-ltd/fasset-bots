@@ -543,11 +543,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendSelfMintPerformingPayment(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_PERFORM_PAYMENT, `Performing underlying payment for self mint of ${lots} on vault ${this.address}.`);
+        await this.info(AgentNotificationKey.SELF_MINT_PERFORM_PAYMENT, `Performing underlying payment for self mint of ${lots} lots on vault ${this.address}.`);
     }
 
-    async sendSelfMintProvingPayment(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_PROVE_PAYMENT, `Proving underlying payment for self mint of ${lots} on vault ${this.address}.`);
+    async sendSelfMintProvingPayment(lots: string, transactionHash: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_PROVE_PAYMENT, `Proving underlying payment ${transactionHash} for self mint of ${lots} lots on vault ${this.address}.`);
     }
 
     async sendSelfMintExecuted(lots: string) {
