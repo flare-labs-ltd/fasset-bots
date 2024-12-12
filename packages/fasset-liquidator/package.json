@@ -47,7 +47,7 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
-    "@flarelabs/fasset": "1.0.0",
+    "@flarelabs/fasset": "1.0.0-beta.12",
     "@openzeppelin/contracts": "^4.9.3",
     "blazeswap": "git+https://github.com/kuco23/blazeswap.git#main",
     "commander": "^11.1.0",
