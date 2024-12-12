@@ -61,7 +61,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -121,7 +121,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -181,7 +181,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -241,7 +241,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -284,7 +284,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -324,7 +324,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -364,7 +364,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -404,7 +404,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -447,7 +447,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -487,7 +487,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -527,7 +527,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -567,7 +567,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -632,7 +632,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -652,7 +652,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -672,7 +672,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -692,7 +692,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
       _profitTo: string,
       _config: {
         flashLender: string;
-        maxFlashFee: number | BN | string;
+        maxFlashFeeBips: number | BN | string;
         dex: string;
         dexPair1: {
           path: string[];
@@ -780,7 +780,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -840,7 +840,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -900,7 +900,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -960,7 +960,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1003,7 +1003,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1043,7 +1043,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1083,7 +1083,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1123,7 +1123,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1166,7 +1166,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1206,7 +1206,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1246,7 +1246,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1286,7 +1286,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1351,7 +1351,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1371,7 +1371,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1391,7 +1391,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];
@@ -1411,7 +1411,7 @@ export interface IChallengerInstance extends Truffle.ContractInstance {
         _profitTo: string,
         _config: {
           flashLender: string;
-          maxFlashFee: number | BN | string;
+          maxFlashFeeBips: number | BN | string;
           dex: string;
           dexPair1: {
             path: string[];

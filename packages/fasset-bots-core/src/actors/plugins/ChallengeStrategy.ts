@@ -4,11 +4,11 @@ import type { ChallengerInstance } from "../../../typechain-truffle";
 import { ActorBaseKind } from "../../fasset-bots/ActorBase";
 import { IChallengerContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
-import { MAX_UINT256, ZERO_ADDRESS } from "../../utils";
+import { MAX_BIPS, ZERO_ADDRESS } from "../../utils";
 import { EventScope } from "../../utils/events/ScopedEvents";
 import { artifacts } from "../../utils/web3";
 import { TrackedState } from "../../state/TrackedState";
-import { DexChallengeStrategyConfig, DefaultLiquidationStrategyConfig, DexLiquidationStrategyConfig } from "../../config";
+import { DexChallengeStrategyConfig, DefaultLiquidationStrategyConfig } from "../../config";
 
 const Challenger = artifacts.require("Challenger");
 
@@ -63,7 +63,7 @@ export class DefaultChallengeStrategy extends ChallengeStrategy<DefaultLiquidati
 export class DexChallengeStrategy extends ChallengeStrategy<DexChallengeStrategyConfig> {
 
     protected async dexMinPriceOracle(challenger: ChallengerInstance, agent: TrackedAgentState): Promise<[BN, BN, BN, BN]> {
-        const maxSlippage = this.config.maxAllowedSlippage;
+        const maxSlippage = this.config.maxAllowedSlippage ?? 0.02;
         const { 0: minPriceMulDex1, 1: minPriceDivDex1, 2: minPriceMulDex2, 3: minPriceDivDex2 } =
             await challenger.maxSlippageToMinPrices(maxSlippage, maxSlippage, agent.vaultAddress, { from: this.address });
         return [minPriceMulDex1, minPriceDivDex1, minPriceMulDex2, minPriceDivDex2];
@@ -73,7 +73,7 @@ export class DexChallengeStrategy extends ChallengeStrategy<DexChallengeStrategy
         const challenger = await Challenger.at(this.config.address);
         const arbitrageConfig = await this.arbitrageConfig(challenger, agent);
         await challenger.illegalPaymentChallenge(proof, agent.vaultAddress, this.address, arbitrageConfig, {
-            from: this.address, maxPriorityFeePerGas: this.config?.maxPriorityFeePerGas })
+            from: this.address, maxPriorityFeePerGas: this.config.maxPriorityFeePerGas })
             .catch((e) => scope.exitOnExpectedError(e,
                 ["chlg: already liquidating", "chlg: transaction confirmed", "matching redemption active", "matching ongoing announced pmt"],
                 ActorBaseKind.CHALLENGER, this.address));
@@ -84,7 +84,7 @@ export class DexChallengeStrategy extends ChallengeStrategy<DexChallengeStrategy
         const challenger = await Challenger.at(this.config.address);
         const arbitrageConfig = await this.arbitrageConfig(challenger, agent);
         await challenger.doublePaymentChallenge(proof1, proof2, agent.vaultAddress, this.address, arbitrageConfig, {
-            from: this.address, maxPriorityFeePerGas: this.config?.maxPriorityFeePerGas })
+            from: this.address, maxPriorityFeePerGas: this.config.maxPriorityFeePerGas })
             .catch((e) => scope.exitOnExpectedError(e, ["chlg dbl: already liquidating"], ActorBaseKind.CHALLENGER, this.address));
     }
 
@@ -93,17 +93,18 @@ export class DexChallengeStrategy extends ChallengeStrategy<DexChallengeStrategy
         const challenger = await Challenger.at(this.config.address);
         const arbitrageConfig = await this.arbitrageConfig(challenger, agent);
         await challenger.freeBalanceNegativeChallenge(proofs, agent.vaultAddress, this.address, arbitrageConfig, {
-            from: this.address, maxPriorityFeePerGas: this.config?.maxPriorityFeePerGas })
+            from: this.address, maxPriorityFeePerGas: this.config.maxPriorityFeePerGas })
             .catch((e) => scope.exitOnExpectedError(e, ["mult chlg: already liquidating", "mult chlg: enough balance"],
                 ActorBaseKind.CHALLENGER, this.address));
     }
 
-    private async arbitrageConfig(challenger: ChallengerInstance, agent: TrackedAgentState): Promise<any> {
+    private async arbitrageConfig(challenger: ChallengerInstance, agent: TrackedAgentState) {
         const oraclePrices = await this.dexMinPriceOracle(challenger, agent);
+        const maxFlashFee = this.config.maxFlashFee ?? 0.1;
         return {
-            flashLender: ZERO_ADDRESS,
-            maxFlashFee: MAX_UINT256,
-            dex: ZERO_ADDRESS,
+            flashLender: this.config.flashLender ?? ZERO_ADDRESS,
+            maxFlashFeeBips: MAX_BIPS * maxFlashFee,
+            dex: this.config.dexRouter ?? ZERO_ADDRESS,
             dexPair1: {
                 path: [],
                 minPriceMul: oraclePrices[0],

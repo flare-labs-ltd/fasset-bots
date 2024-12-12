@@ -11,12 +11,18 @@ export interface DefaultChallengeStrategyConfig {
 
 export interface DexLiquidationStrategyConfig extends DefaultLiquidationStrategyConfig {
     address: string;
-    maxAllowedSlippage: number;
+    maxAllowedSlippage?: number;
+    maxFlashFee?: number;
+    flashLender?: string;
+    dexRouter?: string;
 }
 
 export interface DexChallengeStrategyConfig extends DefaultChallengeStrategyConfig {
     address: string;
-    maxAllowedSlippage: number;
+    maxAllowedSlippage?: number;
+    maxFlashFee?: number;
+    flashLender?: string;
+    dexRouter?: string;
 }
 
 interface BotStrategy<T> {
