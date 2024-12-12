@@ -136,6 +136,8 @@ describe("XRP mainnet wallet tests", () => {
             transactionIds.push(await wClient.createPaymentTransaction(fundedAddress, wallet.address, amount));
         }
 
+        await Promise.all(transactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 240, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
+
         const transferTransactionIds = [];
         for (let i = 1; i < N; i++) {
             const id1 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops);
@@ -144,6 +146,33 @@ describe("XRP mainnet wallet tests", () => {
             transferTransactionIds.push(id1, id2, id3)
         }
         await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 240, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
+    });
+
+    it("Stress test - transactions with insufficient fee should be resubmitted", async () => {
+        const N = 40;
+        const amountToSendDrops = toBNExp(0.2, XRP_DECIMAL_PLACES);
+        const xrpReserveAmount = toBNExp(1, XRP_DECIMAL_PLACES);
+
+        const transactionIds = [];
+        for (let i = 0; i < N; i++) {
+            const wallet = stressTestSecrets.XRP.targetWallets[i];
+            await wClient.walletKeys.addKey(wallet.address, wallet.private_key);
+            const balance = await wClient.getAccountBalance(wallet.address);
+            const amount = balance.gt(xrpReserveAmount) ? amountToSendDrops.muln(3.5) : amountToSendDrops.muln(3.5).add(xrpReserveAmount);
+
+            transactionIds.push(await wClient.createPaymentTransaction(fundedAddress, wallet.address, amount, toBN("5")));
+        }
+
+        await Promise.all(transactionIds.map(async (t) => await waitForTxToBeReplacedWithStatus(2, 240, wClient, TransactionStatus.TX_SUCCESS, t)));
+
+        const transferTransactionIds = [];
+        for (let i = 1; i < N; i++) {
+            const id1 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops, toBN("5"));
+            const id2 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops, toBN("5"));
+            const id3 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops, toBN("5"));
+            transferTransactionIds.push(id1, id2, id3)
+        }
+        await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToBeReplacedWithStatus(2, 240, wClient, TransactionStatus.TX_SUCCESS, t)));
     });
 
     it("Should delete account", async () => {
