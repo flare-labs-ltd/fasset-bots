@@ -35,7 +35,7 @@
         "test": "yarn run -T mocha",
         "test_all": "yarn test --recursive \"test/**/*.test.ts\"",
         "test:coverage": "yarn run -T nyc yarn test_all",
-        "encrypt-test-secrets": "node dist/test/test-util/encrypt_secrets.js",
+        "mainnet-secrets": "node dist/test/test-util/mainnet_secrets.js",
         "test-mainnet-btc": "yarn run -T mocha test/BTC/mainnet.test.ts",
         "test-mainnet-doge": "yarn run -T mocha test/DOGE/mainnet.test.ts",
         "test-mainnet-xrp": "yarn run -T mocha test/XRP/mainnet.test.ts"

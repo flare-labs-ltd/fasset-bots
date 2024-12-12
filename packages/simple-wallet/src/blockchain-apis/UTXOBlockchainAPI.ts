@@ -136,7 +136,8 @@ export class UTXOBlockchainAPI implements IBlockchainAPI {
 
             const firstResp = await client.get<UTXOAddressResponse>(`/address/${address}?${params.toString()}`);
             for (let i = 0; i < firstResp.data.totalPages; i++) {
-                const resp = await client.get<UTXOAddressResponse>(`/address/${address}?${params.toString()}`);
+                params.set("page", String(i + 1));
+                const resp = await client.get<UTXOAddressResponse>(`/address/${address}?${{...params}.toString()}`);
                 const inputSet = new Set(inputs.map(input => `${input.prevTxId}:${input.outputIndex}`));
 
                 for (const txHash of resp.data.txids) {

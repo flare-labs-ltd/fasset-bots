@@ -151,6 +151,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @param executeUntilTimestamp
      * @param feeSource - address of the wallet which is used for paying transaction fees
      * @param maxPaymentForFeeSource
+     * @param isFreeUnderlying - transfer funds where fee is allocated from amount if it's not directly specified
      * @returns {Object} - containing transaction id tx_id and optional result
      */
     async createPaymentTransaction(
@@ -163,7 +164,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
         feeSource?: string,
-        maxPaymentForFeeSource?: BN
+        maxPaymentForFeeSource?: BN,
+        isFreeUnderlying?: boolean
     ): Promise<number> {
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
@@ -196,7 +198,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             executeUntilBlock,
             executeUntilTimestamp,
             feeSource,
-            maxPaymentForFeeSource
+            maxPaymentForFeeSource,
+            isFreeUnderlying
         );
     }
 
@@ -288,6 +291,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.reference,
                 rbfReplacementFor,
                 txEnt.feeSource,
+                txEnt.isFreeUnderlyingTransaction
             );
             const privateKey = await this.walletKeys.getKey(txEnt.source);
             const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
@@ -316,7 +320,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEnt.amount ?? null,
                     txEnt.fee,
                     txEnt.reference,
-                    rbfReplacementFor
+                    rbfReplacementFor,
+                    undefined,
+                    txEnt.isFreeUnderlyingTransaction
                 );
                 logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxPaymentForFeeSource})`);
                 payingFeesFromFeeSource = false;
@@ -334,6 +340,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         txEntToUpdate.fee = txEnt.maxFee!;
                     });
                 } else {
+                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                        txEntToUpdate.lastProcessingError = `Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`;
+                    });
                     logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
                     return;
                 }
@@ -399,7 +408,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 });
                 return;
             }
-            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash, txEnt.replaced_by || txEnt.rbfReplacementFor ? false : true);
+            const txResp = await this.blockchainAPI.getTransaction(txEnt.transactionHash, !txEnt.replaced_by && !txEnt.rbfReplacementFor);
             // success
             if (txResp.blockHash && txResp.confirmations) {
                 logger.info(`Submitted transaction ${txEnt.id} has ${txResp.confirmations}. Needed ${this.enoughConfirmations}.`);
@@ -753,6 +762,10 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         const errorDescription = error.response.data.error.toLowerCase();
         const txEnt = await fetchTransactionEntityById(this.rootEm, txId);
         logger.error(`Transaction ${txId} submission failed with Axios error (${errorDescription}): ${errorMessage(error)}`);
+
+        await updateTransactionEntity(this.rootEm, txId, txEntToUpdate => {
+            txEntToUpdate.lastProcessingError = `Axios error (${errorDescription}): ${errorMessage(error)}`;
+        });
 
         if (errorDescription.includes("too-long-mempool-chain")) {
             logger.error(`Transaction ${txId} has too-long-mempool-chain`);

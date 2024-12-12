@@ -239,7 +239,11 @@ export class TransactionUTXOService {
 
     public async getNumberOfMempoolAncestors(txHash: string): Promise<number> {
         const ancestors = await this.getMempoolAncestors(txHash);
-        return ancestors.filter((t) => t.transactionHash !== txHash).length;
+        const numOfAncestors = ancestors.filter((t) => t.transactionHash !== txHash).length;
+        if (numOfAncestors > 0) {
+            logger.info(`Transaction with hash ${txHash} has ${numOfAncestors} mempool ancestors`);
+        }
+        return numOfAncestors;
     }
 
     private async getMempoolAncestors(txHash: string): Promise<Loaded<TransactionEntity, "inputs" | "outputs">[]> {
@@ -291,10 +295,9 @@ export class TransactionUTXOService {
     private async getTransactionEntityByHash(txHash: string) {
         let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs", "outputs"] });
         if (!txEnt) {
-            logger.info(`Transaction with hash ${txHash} not in db, fetching it from api`);
+            logger.info(`Transaction with hash ${txHash} not in db, fetching it from API`);
             const tr = await this.blockchainAPI.getTransaction(txHash);
             /* istanbul ignore else */
-            // if ((tr && inMempool && tr.blockHash && tr.confirmations < this.enoughConfirmations) || (tr && !inMempool)) {
             if (tr) {
                 logger.info(`Transaction with hash ${txHash} fetched from API will be saved to DB`);
                 await transactional(this.rootEm, async (em) => {
@@ -460,11 +463,14 @@ export class TransactionUTXOService {
             return;
         }
 
+        const startSize = Array.from(addressScriptMap.keys()).length;
         for (const txEnt of transactions) {
             const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
             for (const t of tr.inputs) {
                 addressScriptMap.delete(`${t.prevTxId}:${t.outputIndex}`);
             }
         }
+        const endSize = Array.from(addressScriptMap.keys()).length;
+        logger.info(`Removed ${startSize - endSize} UTXO scripts used by transactions that were accepted to blockchain for address ${source}; it currently has ${endSize} scripts stored`);
     }
 }

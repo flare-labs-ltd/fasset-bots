@@ -29,9 +29,10 @@ import {
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import sinon from "sinon";
-import {FeeStatus} from "../../src/chain-clients/utxo/TransactionFeeService";
+import {FeeStatus, TransactionFeeService} from "../../src/chain-clients/utxo/TransactionFeeService";
 import {MempoolUTXO, UTXORawTransactionInput} from "../../src/interfaces/IBlockchainAPI";
 import {TransactionMonitor} from "../../src/chain-clients/monitoring/TransactionMonitor";
+import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
 
 use(chaiAsPromised);
 // bitcoin test network with fundedAddress "mvvwChA3SRa5X8CuyvdT4sAcYNvN5FxzGE" at
@@ -437,8 +438,8 @@ describe("Bitcoin wallet tests", () => {
         const walletPk = "cTceSr6rvmAoQAXq617sk4smnzNUvAqkZdnfatfsjbSixBcJqDcY";
         await wClient.walletKeys.addKey(walletAddress, walletPk);
 
-        sinon.stub(wClient.transactionFeeService, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
-        sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
+        sinon.stub(TransactionFeeService.prototype, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
+        sinon.stub(TransactionFeeService.prototype, "getFeePerKB").resolves(new BN(1000));
 
         const utxosFromMempool: MempoolUTXO[] = [
             {
@@ -457,7 +458,7 @@ describe("Bitcoin wallet tests", () => {
             },
         ];
 
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").resolves(utxosFromMempool);
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves(utxosFromMempool);
 
         const [tr] = await wClient.transactionService.preparePaymentTransaction(0, walletAddress, fundedAddress, toBN(100020));
         const privateKey = await wClient.walletKeys.getKey(walletAddress);

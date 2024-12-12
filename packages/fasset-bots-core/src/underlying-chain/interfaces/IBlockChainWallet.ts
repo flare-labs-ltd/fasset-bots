@@ -34,7 +34,8 @@ export interface IBlockChainWallet {
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
-        feeSourceAddress?: string
+        feeSourceAddress?: string,
+        isFreeUnderlying?: boolean
     ): Promise<number>;
 
     // Add a generic transaction from a set of source addresses to a set of target addresses.
