@@ -56,15 +56,9 @@
         "type": "mysql"
     },
     "liquidationStrategy": {
-        "className": "DefaultLiquidationStrategy",
-        "config": {
-            "gasPrice": "21000"
-        }
+        "className": "DefaultLiquidationStrategy"
     },
     "challengeStrategy": {
-        "className": "DefaultChallengeStrategy",
-        "config": {
-            "gasPrice": "21000"
+        "className": "DefaultChallengeStrategy"
     }
-}
 }

@@ -248,7 +248,7 @@
         "DefaultChallengeStrategyConfig": {
             "additionalProperties": false,
             "properties": {
-                "gasPrice": {
+                "maxPriorityFeePerGas": {
                     "type": "string"
                 }
             },
@@ -260,11 +260,11 @@
                 "address": {
                     "type": "string"
                 },
-                "gasPrice": {
-                    "type": "string"
-                },
                 "maxAllowedSlippage": {
                     "type": "number"
+                },
+                "maxPriorityFeePerGas": {
+                    "type": "string"
                 }
             },
             "required": [
@@ -279,11 +279,11 @@
                 "address": {
                     "type": "string"
                 },
-                "gasPrice": {
-                    "type": "string"
-                },
                 "maxAllowedSlippage": {
                     "type": "number"
+                },
+                "maxPriorityFeePerGas": {
+                    "type": "string"
                 }
             },
             "required": [
