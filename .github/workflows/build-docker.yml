@@ -3,7 +3,7 @@ name: container-images
 on:
   workflow_dispatch:
   push:
-    branches: [ "staging-beta" , "songbird-release-candidate" ]
+    branches: [ "staging-beta" , "songbird-release" ]
     #tags: [ "v*" ]
 
 jobs:
@@ -23,10 +23,8 @@ jobs:
 
     - run: echo "IMAGE_TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
 
-    - run: echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-      if: github.ref_name == 'staging-beta'
-    #- run: echo "IMAGE_TAG=songbird-release-candidate" >> $GITHUB_ENV
-    #  if: github.ref_name == 'songbird-release-candidate'
+    #- run: echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+    #  if: github.ref_name == 'staging-beta'
 
     - run: echo "IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
       if: startsWith(github.ref, 'refs/tags/v')
