@@ -121,7 +121,7 @@ describe("XRP mainnet wallet tests", () => {
         expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
-    it.only("Stress test", async () => {
+    it("Stress test", async () => {
         const N = 50;
         const amountToSendDrops = toBNExp(0.2, XRP_DECIMAL_PLACES);
         const xrpReserveAmount = toBNExp(1, XRP_DECIMAL_PLACES);
@@ -146,7 +146,7 @@ describe("XRP mainnet wallet tests", () => {
         await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 240, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
     });
 
-    it.skip("Should delete account", async () => {
+    it("Should delete account", async () => {
         const sourceBalanceStart = await wClient.getAccountBalance(fundedAddress);
         const id = await wClient.createDeleteAccountTransaction(targetAddress, fundedAddress);
         await waitForTxToFinishWithStatus(2, 25 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
