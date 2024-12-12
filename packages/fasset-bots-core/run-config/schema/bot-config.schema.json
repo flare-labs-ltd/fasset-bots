@@ -292,7 +292,16 @@
                 "address": {
                     "type": "string"
                 },
+                "dexRouter": {
+                    "type": "string"
+                },
+                "flashLender": {
+                    "type": "string"
+                },
                 "maxAllowedSlippage": {
+                    "type": "number"
+                },
+                "maxFlashFee": {
                     "type": "number"
                 },
                 "maxPriorityFeePerGas": {
@@ -300,8 +309,7 @@
                 }
             },
             "required": [
-                "address",
-                "maxAllowedSlippage"
+                "address"
             ],
             "type": "object"
         },
@@ -311,7 +319,16 @@
                 "address": {
                     "type": "string"
                 },
+                "dexRouter": {
+                    "type": "string"
+                },
+                "flashLender": {
+                    "type": "string"
+                },
                 "maxAllowedSlippage": {
+                    "type": "number"
+                },
+                "maxFlashFee": {
                     "type": "number"
                 },
                 "maxPriorityFeePerGas": {
@@ -320,7 +337,7 @@
             },
             "required": [
                 "address",
-                "maxAllowedSlippage"
+                "maxFlashFee"
             ],
             "type": "object"
         },
