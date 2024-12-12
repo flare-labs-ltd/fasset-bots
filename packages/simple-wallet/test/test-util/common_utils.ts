@@ -274,9 +274,9 @@ export function validateEncryptionPassword(password: string) {
     }
 }
 
-export async function promptPassword(): Promise<string> {
+export async function promptPassword(message?: string): Promise<string> {
     const password = await read({
-        prompt: `Enter the password: `,
+        prompt: message ?? `Enter the password: `,
         silent: true,
         replace: "*"
     });
@@ -317,6 +317,22 @@ export interface AccountSecrets {
         api_key: string;
         fundedWallet: Wallet;
         targetWallet: Wallet;
+    };
+}
+
+export interface AccountSecretsForStressTest {
+    BTC: {
+        fundedWallet: Wallet[];
+        targetWallets: Wallet[];
+    };
+    DOGE: {
+        fundedWallet: Wallet[];
+        targetWallets: Wallet[];
+    };
+    XRP: {
+        api_key: string;
+        fundedWallet: Wallet[];
+        targetWallets: Wallet[];
     };
 }
 

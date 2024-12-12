@@ -29,7 +29,8 @@ export async function createInitialTransactionEntity(
     executeUntilTimestamp?: BN,
     replacementFor?: TransactionEntity,
     feeSource?: string,
-    maxPaymentForFeeSource?: BN
+    maxPaymentForFeeSource?: BN,
+    isFreeUnderlying?: boolean
 ): Promise<TransactionEntity> {
     logger.info(`Creating transaction ${source}, ${destination}, ${amountInDrops};${replacementFor ? ` replacing ${replacementFor.id} (${replacementFor.transactionHash}).` : ""}`);
     return await transactional(rootEm, async (em) => {
@@ -46,7 +47,8 @@ export async function createInitialTransactionEntity(
             fee: feeInDrops ?? null,
             rbfReplacementFor: replacementFor ?? null,
             feeSource: feeSource ?? null,
-            maxPaymentForFeeSource: maxPaymentForFeeSource ?? null
+            maxPaymentForFeeSource: maxPaymentForFeeSource ?? null,
+            isFreeUnderlyingTransaction: isFreeUnderlying ?? false,
         } as RequiredEntityData<TransactionEntity>);
         await em.flush();
         logger.info(`Created transaction ${ent.id}.`);

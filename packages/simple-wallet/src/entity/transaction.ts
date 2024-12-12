@@ -72,6 +72,12 @@ export class TransactionEntity {
     @Property({ columnType: 'text', nullable: true })
     serverSubmitResponse?: string;
 
+    @Property({ columnType: "text", nullable: true })
+    lastProcessingError?: string;
+
+    @Property()
+    isFreeUnderlyingTransaction: boolean = false;
+
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity | null;
 
