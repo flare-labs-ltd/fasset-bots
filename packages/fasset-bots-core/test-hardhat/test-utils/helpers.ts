@@ -24,7 +24,7 @@ import { BNish, ZERO_ADDRESS, checkedCast, requireNotNull, toBN, toBNExp } from 
 import { NotifierTransport } from "../../src/utils/notifier/BaseNotifier";
 import { artifacts } from "../../src/utils/web3";
 import { web3DeepNormalize } from "../../src/utils/web3normalize";
-import { testAgentBotSettings, testChainInfo } from "../../test/test-utils/TestChainInfo";
+import { testAgentBotSettings, testChainInfo, TestChainType } from "../../test/test-utils/TestChainInfo";
 import { fundUnderlying } from "../../test/test-utils/test-helpers";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { IERC20Instance } from "../../typechain-truffle";
@@ -67,7 +67,7 @@ export async function createTestAgentBot(
     const addressValidityProof = await AgentBot.initializeUnderlyingAddress(context, owner, ownerUnderlyingAddress, vaultUnderlyingAddress);
     const agentVaultSettings = options ?? await createAgentVaultInitSettings(context, loadAgentSettings(DEFAULT_AGENT_SETTINGS_PATH_HARDHAT));
     agentVaultSettings.poolTokenSuffix = DEFAULT_POOL_TOKEN_SUFFIX();
-    const agentBotSettings = requireNotNull(testAgentBotSettings[context.fAssetSymbol]);
+    const agentBotSettings = requireNotNull(testAgentBotSettings[context.chainInfo.chainId.chainName as TestChainType]);
     const agentBot = await AgentBot.create(orm.em, context, agentBotSettings, owner, ownerUnderlyingAddress, addressValidityProof, agentVaultSettings, notifiers, new MockHandshakeAddressVerifier());
     agentBot.timekeeper = { latestProof: undefined };
     return agentBot;
@@ -141,7 +141,7 @@ export function createTestAgentBotRunner(
     loopDelay: number,
     notifiers: NotifierTransport[] = testNotifierTransports,
 ): AgentBotRunner {
-    const testAgentBotSettingsMap = new Map(Object.entries(testAgentBotSettings));
+    const testAgentBotSettingsMap = new Map([["FETH", testAgentBotSettings.eth], ["FBTC", testAgentBotSettings.btc], ["FDOGE", testAgentBotSettings.doge], ["FXRP", testAgentBotSettings.xrp]]);
     return new AgentBotRunner(secrets, contexts, testAgentBotSettingsMap, orm, loopDelay, notifiers, testTimekeeperService, false, null);
 }
 
