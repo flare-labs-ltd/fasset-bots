@@ -35,7 +35,7 @@ export type TestChainType = "eth" | "btc" | "xrp" | "doge";
 
 export const testChainInfo: Record<TestChainType, TestChainInfo> = {
     eth: {
-        chainId: ChainId.LTC,
+        chainId: ChainId.from("testETH"),
         name: "Ethereum",
         symbol: "ETH",
         decimals: 18,
@@ -106,8 +106,8 @@ export const defaultCreateAgentSettings: AgentSettingsConfigDefaults = {
 
 export const parallelBots = false;
 
-export const testAgentBotSettings: Record<string, AgentBotSettings> = {
-    "FETH": {
+export const testAgentBotSettings: Record<TestChainType, AgentBotSettings> = {
+    eth: {
         parallel: parallelBots,
         trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
@@ -119,7 +119,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
     },
-    "FBTC": {
+    btc: {
         parallel: parallelBots,
         trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
@@ -131,7 +131,7 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
     },
-    "FXRP": {
+    xrp: {
         parallel: parallelBots,
         trustedPingSenders: new Set([]),
         liquidationPreventionFactor: 1.2,
@@ -142,5 +142,21 @@ export const testAgentBotSettings: Record<string, AgentBotSettings> = {
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
-    }
+    },
+    doge: {
+        parallel: parallelBots,
+        trustedPingSenders: new Set([]),
+        liquidationPreventionFactor: 1.2,
+        vaultCollateralReserveFactor: 0.1,
+        poolCollateralReserveFactor: 0.1,
+        minimumFreeUnderlyingBalance: toBNExp(12, 6),
+        recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
+        minBalanceOnServiceAccount: toBNExp(2, 18),
+        minBalanceOnWorkAccount: toBNExp(200, 18),
+        defaultAgentSettings: defaultCreateAgentSettings,
+    },
+}
+
+for (const [key, ci] of Object.entries(testChainInfo)) {
+    testAgentBotSettings[ci.chainId.chainName as TestChainType] = testAgentBotSettings[key as TestChainType];
 }
