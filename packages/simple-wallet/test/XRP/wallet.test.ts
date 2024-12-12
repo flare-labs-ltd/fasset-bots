@@ -391,6 +391,17 @@ describe("Xrp wallet tests", () => {
         expect((toBN(tr.Fee).add(toBN(tr.Amount))).eq(txEnt.amount!)).to.be.true;
     });
 
+    it("Free underlying with a too low fee should be resubmitted", async () => {
+        const txId = await wClient.createPaymentTransaction(
+            fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops,
+            undefined, undefined, undefined, undefined, true
+        );
+
+        const [txEnt,] = await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+        const tr = JSON.parse(txEnt.raw!);
+        expect((toBN(tr.Fee).add(toBN(tr.Amount))).eq(txEnt.amount!)).to.be.true;
+    });
+
     it.skip("Stress test", async () => {
         const file = fs.readFileSync(process.env.TESTNET_STRESS_TEST_SECRETS_PATH!).toString();
         const testSecrets = JSON.parse(file) as AccountSecretsForStressTest;

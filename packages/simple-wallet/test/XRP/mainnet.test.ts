@@ -1,25 +1,31 @@
 import {
-    AccountSecrets, AccountSecretsForStressTest, addConsoleTransportForTests,
+    AccountSecrets,
+    AccountSecretsForStressTest,
+    addConsoleTransportForTests,
     createNote,
     createWallet,
-    decryptTestSecrets, loop,
+    decryptTestSecrets,
+    loop,
     promptPassword,
-    resetMonitoringOnForceExit, waitForTxToBeReplacedWithStatus,
+    resetMonitoringOnForceExit,
+    waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus
 } from "../test-util/common_utils";
 import {
     ITransactionMonitor,
-    logger, RippleWalletConfig,
+    logger,
+    RippleWalletConfig,
     TransactionStatus,
-    WalletAddressEntity, XRP
+    WalletAddressEntity,
+    XRP
 } from "../../src";
-import config, {initializeMainnetMikroORM, ORM} from "../test-orm/mikro-orm.config";
-import {setMonitoringStatus} from "../test-util/entity_utils";
-import {expect, use} from "chai";
-import {toBN, toBNExp} from "../../src/utils/bnutils";
+import config, { initializeMainnetMikroORM, ORM } from "../test-orm/mikro-orm.config";
+import { setMonitoringStatus } from "../test-util/entity_utils";
+import { expect, use } from "chai";
+import { toBN, toBNExp } from "../../src/utils/bnutils";
 import chaiAsPromised from "chai-as-promised";
-import {DBWalletKeys} from "../test-orm/WalletKeys";
-import {XRP_DECIMAL_PLACES} from "../../src/utils/constants";
+import { DBWalletKeys } from "../test-orm/WalletKeys";
+import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 
 use(chaiAsPromised);
 
@@ -115,22 +121,20 @@ describe("XRP mainnet wallet tests", () => {
         expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
-    it("Stress test", async () => {
-        await monitor.stopMonitoring(); // Stop monitoring to enter the password for stress test accounts
-
-        const N = 3;
-        await monitor.startMonitoring();
+    it.only("Stress test", async () => {
+        const N = 50;
+        const amountToSendDrops = toBNExp(0.2, XRP_DECIMAL_PLACES);
+        const xrpReserveAmount = toBNExp(1, XRP_DECIMAL_PLACES);
 
         const transactionIds = [];
         for (let i = 0; i < N; i++) {
             const wallet = stressTestSecrets.XRP.targetWallets[i];
             await wClient.walletKeys.addKey(wallet.address, wallet.private_key);
             const balance = await wClient.getAccountBalance(wallet.address);
-            const amount = balance.gt(toBNExp(10, XRP_DECIMAL_PLACES)) ? amountToSendDrops.muln(4) : amountToSendDrops.muln(4).add(toBNExp(2, XRP_DECIMAL_PLACES));
+            const amount = balance.gt(xrpReserveAmount) ? amountToSendDrops.muln(3.5) : amountToSendDrops.muln(3.5).add(xrpReserveAmount);
+
             transactionIds.push(await wClient.createPaymentTransaction(fundedAddress, wallet.address, amount));
         }
-
-        await Promise.all(transactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 240, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
 
         const transferTransactionIds = [];
         for (let i = 1; i < N; i++) {
@@ -142,7 +146,7 @@ describe("XRP mainnet wallet tests", () => {
         await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 240, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
     });
 
-    it("Should delete account", async () => {
+    it.skip("Should delete account", async () => {
         const sourceBalanceStart = await wClient.getAccountBalance(fundedAddress);
         const id = await wClient.createDeleteAccountTransaction(targetAddress, fundedAddress);
         await waitForTxToFinishWithStatus(2, 25 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);

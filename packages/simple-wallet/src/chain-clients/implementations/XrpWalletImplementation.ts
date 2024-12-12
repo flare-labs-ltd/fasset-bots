@@ -126,6 +126,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|undefined} maxFeeInDrops
     * @param executeUntilBlock
     * @param executeUntilTimestamp
+    * @param isFreeUnderlying
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    async createPaymentTransaction(
@@ -171,12 +172,12 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    /**
     * @param {string} source
-    * @param {string} privateKey
     * @param {string} destination
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
-    * @param {number|undefined} sequence
+    * @param executeUntilBlock
+    * @param executeUntilTimestamp
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    async createDeleteAccountTransaction(
@@ -409,7 +410,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             originalTx.reference,
             originalTx.maxFee,
             originalTx.executeUntilBlock,
-            originalTx.executeUntilTimestamp
+            originalTx.executeUntilTimestamp,
+            undefined,
+             undefined,
+             undefined,
+            originalTx.isFreeUnderlyingTransaction
          );
          await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_REPLACED;
