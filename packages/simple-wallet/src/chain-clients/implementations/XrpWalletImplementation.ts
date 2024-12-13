@@ -126,6 +126,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|undefined} maxFeeInDrops
     * @param executeUntilBlock
     * @param executeUntilTimestamp
+    * @param isFreeUnderlying
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    async createPaymentTransaction(
@@ -136,7 +137,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       note?: string,
       maxFeeInDrops?: BN,
       executeUntilBlock?: number,
-      executeUntilTimestamp?: BN
+      executeUntilTimestamp?: BN,
+      isFreeUnderlying?: boolean
    ): Promise<number> {
       logger.info(`Received request to create tx from ${source} to ${destination} with amount ${amountInDrops?.toString()} and reference ${note}`);
       const privateKey = await this.walletKeys.getKey(source);
@@ -158,7 +160,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          note,
          maxFeeInDrops,
          executeUntilBlock,
-         executeUntilTimestamp
+         executeUntilTimestamp,
+          undefined,
+          undefined,
+          undefined,
+          isFreeUnderlying
       );
       const txExternalId = ent.id;
       return txExternalId;
@@ -166,12 +172,12 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
    /**
     * @param {string} source
-    * @param {string} privateKey
     * @param {string} destination
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param {BN|undefined} maxFeeInDrops
-    * @param {number|undefined} sequence
+    * @param executeUntilBlock
+    * @param executeUntilTimestamp
     * @returns {Object} - containing transaction id tx_id and optional result
     */
    async createDeleteAccountTransaction(
@@ -248,8 +254,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          await handleMissingPrivateKey(this.rootEm, txEnt.id, "resubmitSubmissionFailedTransactions");
          return;
       }
-      const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
-      await this.resubmitTransaction(txEnt.id, privateKey, transaction, newFee);
+      await this.resubmitTransaction(txEnt.id, privateKey, transaction);
    }
 
    async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
@@ -266,8 +271,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       }
 
       if (!await this.checkIfTransactionAppears(txEnt.id)) {
-         const newFee = toBN(transaction.Fee!);
-         await this.resubmitTransaction(txEnt.id, privateKey, transaction, newFee);
+         await this.resubmitTransaction(txEnt.id, privateKey, transaction);
       }
    }
 
@@ -302,7 +306,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          txEnt.amount ?? null,
          txEnt.fee,
          txEnt.reference,
-         txEnt.executeUntilBlock
+         txEnt.executeUntilBlock,
+          txEnt.isFreeUnderlyingTransaction
       );
       const privateKey = await this.walletKeys.getKey(txEnt.source);
       /* istanbul ignore next */
@@ -350,16 +355,14 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       const txStatus = await this.submitTransaction(signed.txBlob, txId);
       // resubmit with higher fee
       if (txStatus == TransactionStatus.TX_SUBMISSION_FAILED) {
-         const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
-         await this.resubmitTransaction(txId, privateKey, transaction, newFee);
+         await this.resubmitTransaction(txId, privateKey, transaction);
       }
       if (txStatus == TransactionStatus.TX_PENDING) {
          if (await this.checkIfTransactionAppears(txId)) {
             return
          }
          // tx did not show up => resubmit with the same data
-         const newFee = toBN(transaction.Fee!);
-         await this.resubmitTransaction(txId, privateKey, transaction, newFee);
+         await this.resubmitTransaction(txId, privateKey, transaction);
       }
    }
 
@@ -383,15 +386,21 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       return false;
    }
 
-   async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete, newFee: BN) {
+   async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete) {
       logger.info(`Transaction ${txId} is being resubmitted.`);
-      const origTx = await fetchTransactionEntityById(this.rootEm, txId);
-      if (checkIfFeeTooHigh(newFee, origTx.maxFee ?? null)) {
-         await failTransaction(this.rootEm, txId, `Cannot resubmit transaction ${txId}. Due to fee restriction (fee: ${newFee.toString()}, maxFee: ${origTx.maxFee?.toString()})`);
+      const originalTx = await fetchTransactionEntityById(this.rootEm, txId);
+      let newFee = toBN(transaction.Fee!);
+      if (originalTx.status === TransactionStatus.TX_SUBMISSION_FAILED) {
+         newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
+      }
+      if (checkIfFeeTooHigh(newFee, originalTx.maxFee ?? null)) {
+         await failTransaction(this.rootEm, txId, `Cannot resubmit transaction ${txId}. Due to fee restriction (fee: ${newFee.toString()}, maxFee: ${originalTx.maxFee?.toString()})`);
       } else {
-         const originalTx = await fetchTransactionEntityById(this.rootEm, txId);
          const newTransaction = transaction;
          newTransaction.Fee = newFee.toString();
+         if (originalTx.amount && newTransaction.TransactionType === 'Payment' && originalTx.isFreeUnderlyingTransaction){
+            newTransaction.Amount = originalTx.amount.sub(newFee).toString();
+         }
          // store tx + update previous one
          const resubmittedTx = await createInitialTransactionEntity(
             this.rootEm,
@@ -403,7 +412,11 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             originalTx.reference,
             originalTx.maxFee,
             originalTx.executeUntilBlock,
-            originalTx.executeUntilTimestamp
+            originalTx.executeUntilTimestamp,
+            undefined,
+            undefined,
+            undefined,
+            originalTx.isFreeUnderlyingTransaction
          );
          await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_REPLACED;
@@ -433,6 +446,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
     * @param {BN|undefined} feeInDrops - automatically set if undefined
     * @param {string|undefined} note
     * @param executeUntilBlock
+    * @param isFreeUnderlying
     * @returns {Object} - XRP Payment or AccountDelete transaction object
     */
    async preparePaymentTransaction(
@@ -441,15 +455,18 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       amountInDrops: BN | null,
       feeInDrops?: BN,
       note?: string,
-      executeUntilBlock?: number
+      executeUntilBlock?: number,
+      isFreeUnderlying?: boolean
    ): Promise<xrpl.Payment | xrpl.AccountDelete> {
       const isPayment = amountInDrops != null;
+      const currentFee = await this.getCurrentTransactionFee({ isPayment });
       let tr;
       if (isPayment) {
+         const fee = feeInDrops ?? currentFee;
          tr = {
             TransactionType: "Payment",
             Destination: destination.toString(),
-            Amount: amountInDrops.toString(),
+            Amount: isFreeUnderlying ? amountInDrops.sub(fee).toString() : amountInDrops.toString(),
             Account: source,
          } as xrpl.Payment;
       } else {
@@ -462,7 +479,6 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
 
       tr.Sequence = await this.getAccountSequence(source);
       if (!feeInDrops) {
-         const currentFee = await this.getCurrentTransactionFee({ isPayment });
          tr.Fee = currentFee.toString();
       } else {
          tr.Fee = feeInDrops.toString();

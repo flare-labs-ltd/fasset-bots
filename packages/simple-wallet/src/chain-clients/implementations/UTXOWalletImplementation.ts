@@ -163,9 +163,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         maxFeeInSatoshi?: BN,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
+        isFreeUnderlying?: boolean,
         feeSource?: string,
-        maxPaymentForFeeSource?: BN,
-        isFreeUnderlying?: boolean
+        maxPaymentForFeeSource?: BN
     ): Promise<number> {
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
