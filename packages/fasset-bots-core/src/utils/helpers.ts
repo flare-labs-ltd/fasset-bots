@@ -323,7 +323,7 @@ export async function retryCall<R>(name: string, call: () => Promise<R>, maxRetr
                 logger.error(`All ${maxRetries} retry attempts exhausted for function ${name}`, error);
                 throw error;
             }
-            logger.info(`Retry ${retry} failed for function ${name}. Retrying after delay of ${retry * retryDelayMs} ms.`);
+            logger.info(`Retry ${retry} failed for function ${name}. Retrying after delay of ${retry * retryDelayMs} ms. ${error}`);
             await sleep(retry * retryDelayMs);
         }
     }

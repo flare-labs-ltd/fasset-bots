@@ -457,7 +457,7 @@ describe("Flare data connector tests - decoding", () => {
             ],
         };
         await expect((flareDataConnectorClientHelper as any).verifyProof(proofData))
-            .to.eventually.be.rejectedWith(`Invalid attestation type ${invalidAttestationType}`)
-            .and.be.an.instanceOf(Error);
+            .to.eventually.be.fulfilled
+            .and.be.eq(false);
     });
 });
