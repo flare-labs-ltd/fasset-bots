@@ -254,8 +254,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
          await handleMissingPrivateKey(this.rootEm, txEnt.id, "resubmitSubmissionFailedTransactions");
          return;
       }
-      const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
-      await this.resubmitTransaction(txEnt.id, privateKey, transaction, newFee);
+      await this.resubmitTransaction(txEnt.id, privateKey, transaction);
    }
 
    async checkPendingTransaction(txEnt: TransactionEntity): Promise<void> {
@@ -272,8 +271,7 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       }
 
       if (!await this.checkIfTransactionAppears(txEnt.id)) {
-         const newFee = toBN(transaction.Fee!);
-         await this.resubmitTransaction(txEnt.id, privateKey, transaction, newFee);
+         await this.resubmitTransaction(txEnt.id, privateKey, transaction);
       }
    }
 
@@ -357,16 +355,14 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       const txStatus = await this.submitTransaction(signed.txBlob, txId);
       // resubmit with higher fee
       if (txStatus == TransactionStatus.TX_SUBMISSION_FAILED) {
-         const newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
-         await this.resubmitTransaction(txId, privateKey, transaction, newFee);
+         await this.resubmitTransaction(txId, privateKey, transaction);
       }
       if (txStatus == TransactionStatus.TX_PENDING) {
          if (await this.checkIfTransactionAppears(txId)) {
             return
          }
          // tx did not show up => resubmit with the same data
-         const newFee = toBN(transaction.Fee!);
-         await this.resubmitTransaction(txId, privateKey, transaction, newFee);
+         await this.resubmitTransaction(txId, privateKey, transaction);
       }
    }
 
@@ -390,15 +386,21 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
       return false;
    }
 
-   async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete, newFee: BN) {
+   async resubmitTransaction(txId: number, privateKey: string, transaction: xrpl.Payment | xrpl.AccountDelete) {
       logger.info(`Transaction ${txId} is being resubmitted.`);
-      const origTx = await fetchTransactionEntityById(this.rootEm, txId);
-      if (checkIfFeeTooHigh(newFee, origTx.maxFee ?? null)) {
-         await failTransaction(this.rootEm, txId, `Cannot resubmit transaction ${txId}. Due to fee restriction (fee: ${newFee.toString()}, maxFee: ${origTx.maxFee?.toString()})`);
+      const originalTx = await fetchTransactionEntityById(this.rootEm, txId);
+      let newFee = toBN(transaction.Fee!);
+      if (originalTx.status === TransactionStatus.TX_SUBMISSION_FAILED) {
+         newFee = toBN(transaction.Fee!).muln(this.feeIncrease);
+      }
+      if (checkIfFeeTooHigh(newFee, originalTx.maxFee ?? null)) {
+         await failTransaction(this.rootEm, txId, `Cannot resubmit transaction ${txId}. Due to fee restriction (fee: ${newFee.toString()}, maxFee: ${originalTx.maxFee?.toString()})`);
       } else {
-         const originalTx = await fetchTransactionEntityById(this.rootEm, txId);
          const newTransaction = transaction;
          newTransaction.Fee = newFee.toString();
+         if (originalTx.amount && newTransaction.TransactionType === 'Payment' && originalTx.isFreeUnderlyingTransaction){
+            newTransaction.Amount = originalTx.amount.sub(newFee).toString();
+         }
          // store tx + update previous one
          const resubmittedTx = await createInitialTransactionEntity(
             this.rootEm,
@@ -412,8 +414,8 @@ export class XrpWalletImplementation extends XrpAccountGeneration implements Wri
             originalTx.executeUntilBlock,
             originalTx.executeUntilTimestamp,
             undefined,
-             undefined,
-             undefined,
+            undefined,
+            undefined,
             originalTx.isFreeUnderlyingTransaction
          );
          await updateTransactionEntity(this.rootEm, txId, (txEnt) => {

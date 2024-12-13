@@ -37,6 +37,8 @@ import sinon from "sinon";
 import { XrpWalletImplementation } from "../../src/chain-clients/implementations/XrpWalletImplementation";
 import { SubmitTransactionRequest, XRPBlockchainAPI } from "../../src/blockchain-apis/XRPBlockchainAPI";
 import fs from "fs";
+import xrpl from "xrpl";
+
 
 use(chaiAsPromised);
 
@@ -392,14 +394,16 @@ describe("Xrp wallet tests", () => {
     });
 
     it("Free underlying with a too low fee should be resubmitted", async () => {
-        const txId = await wClient.createPaymentTransaction(
-            fundedAddress, targetAddress, amountToSendDropsFirst, feeInDrops,
-            undefined, undefined, undefined, undefined, true
-        );
+        const amount = amountToSendDropsFirst;
+        const lowFee = toBN("5"); // toBN("10") is minFee for XRP
+        const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amount, lowFee, undefined, undefined, undefined, undefined, true);
+        expect(id).to.be.gt(0);
 
-        const [txEnt,] = await waitForTxToFinishWithStatus(2, 100, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
-        const tr = JSON.parse(txEnt.raw!);
-        expect((toBN(tr.Fee).add(toBN(tr.Amount))).eq(txEnt.amount!)).to.be.true;
+        const [txEnt] = await waitForTxToBeReplacedWithStatus(2, 100, wClient, TransactionStatus.TX_SUCCESS, id);
+        expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
+        const transaction = JSON.parse(txEnt.replaced_by!.raw!) as xrpl.Payment;
+        const fee = lowFee.muln(wClient.feeIncrease);
+        expect(toBN(transaction.Amount.toString()).eq(amount.sub(fee))).to.be.true;
     });
 
     it.skip("Stress test", async () => {
