@@ -112,7 +112,7 @@ export enum TransactionStatus {
     TX_PREPARED = "prepared",
     TX_REPLACED = "replaced", // tx was replaced with new transaction
     TX_REPLACED_PENDING = "replaced_pending", // (in utxo) pending replacement (when we don't know if original or replacement will be accepted)
-    TX_SUBMISSION_FAILED = "submission_failed", //xrp: failed due ti insufficient fee -> replace tx
+    TX_SUBMISSION_FAILED = "submission_failed", //xrp: failed due to insufficient fee -> replace tx
     TX_SUBMITTED = "submitted", // utxo: tx is in mempool
     TX_PENDING = "pending", //xrp: submit fn received error -> tx might be submitted or not; utxo: tx was send but was not yet seen in mempool
     TX_SUCCESS = "success", // confirmed transaction: xrp -> tx is in validated ledger; utxo -> tx was confirmed by x blocks
