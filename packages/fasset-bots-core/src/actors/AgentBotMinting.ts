@@ -400,9 +400,9 @@ export class AgentBotMinting {
      */
     async findMinting(em: EM, mintingId: MintingId): Promise<AgentMinting> {
         if ("id" in mintingId) {
-            return await em.findOneOrFail(AgentMinting, { id: mintingId.id }, { refresh: true });
+            return await em.findOneOrFail(AgentMinting, { id: mintingId.id }, { refresh: true, populate: ["handshake"] });
         } else {
-            return await em.findOneOrFail(AgentMinting, { agentAddress: this.agent.vaultAddress, requestId: mintingId.requestId }, { refresh: true });
+            return await em.findOneOrFail(AgentMinting, { agentAddress: this.agent.vaultAddress, requestId: mintingId.requestId }, { refresh: true, populate: ["handshake"]  });
         }
     }
 }
