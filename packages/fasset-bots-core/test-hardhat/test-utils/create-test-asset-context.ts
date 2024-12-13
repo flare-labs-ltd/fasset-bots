@@ -380,6 +380,7 @@ function createTestAssetManagerSettings(
         emergencyPauseDurationResetAfterSeconds: bnToString(parameters.emergencyPauseDurationResetAfterSeconds),
         redemptionPaymentExtensionSeconds: bnToString(15),
         cancelCollateralReservationAfterSeconds: 30,
+        rejectOrCancelCollateralReservationReturnFactorBIPS: toBIPS(0.95),
         rejectRedemptionRequestWindowSeconds: 120,
         takeOverRedemptionRequestWindowSeconds: 120,
         rejectedRedemptionDefaultFactorVaultCollateralBIPS: toBIPS(1.05),

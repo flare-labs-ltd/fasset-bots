@@ -2,21 +2,27 @@ export type LiquidatorBotStrategyDefinition = BotStrategy<DexLiquidationStrategy
 export type ChallengerBotStrategyDefinition = BotStrategy<DexChallengeStrategyConfig | DefaultChallengeStrategyConfig>;
 
 export interface DefaultLiquidationStrategyConfig {
-    gasPrice?: string;
+    maxPriorityFeePerGas?: string;
 }
 
 export interface DefaultChallengeStrategyConfig {
-    gasPrice?: string;
+    maxPriorityFeePerGas?: string;
 }
 
 export interface DexLiquidationStrategyConfig extends DefaultLiquidationStrategyConfig {
     address: string;
-    maxAllowedSlippage: number;
+    maxAllowedSlippage?: number;
+    maxFlashFee?: number;
+    flashLender?: string;
+    dexRouter?: string;
 }
 
 export interface DexChallengeStrategyConfig extends DefaultChallengeStrategyConfig {
     address: string;
-    maxAllowedSlippage: number;
+    maxAllowedSlippage?: number;
+    maxFlashFee?: number;
+    flashLender?: string;
+    dexRouter?: string;
 }
 
 interface BotStrategy<T> {

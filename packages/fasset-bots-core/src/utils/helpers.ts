@@ -323,7 +323,7 @@ export async function retryCall<R>(name: string, call: () => Promise<R>, maxRetr
                 logger.error(`All ${maxRetries} retry attempts exhausted for function ${name}`, error);
                 throw error;
             }
-            logger.info(`Retry ${retry} failed for function ${name}. Retrying after delay of ${retry * retryDelayMs} ms.`);
+            logger.info(`Retry ${retry} failed for function ${name}. Retrying after delay of ${retry * retryDelayMs} ms. ${error}`);
             await sleep(retry * retryDelayMs);
         }
     }
@@ -427,4 +427,13 @@ export function substituteEnvVars(obj: unknown) {
         }
     }
     return obj;
+}
+
+/**
+ * Same as Web3.utils.keccak256 (or Web3.utils.sha3), but does not return null for empty string or zero-length bytes.
+ */
+export function keccak256(data: string): string {
+    // this is the value of empty string hash as returned by Solidity's keccak256
+    const emptyStringHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+    return Web3.utils.keccak256(data) ?? emptyStringHash;
 }

@@ -325,6 +325,19 @@ export interface EmergencyPauseCanceled {
   args: {};
 }
 
+export interface EmergencyPauseTransfersCanceled {
+  name: "EmergencyPauseTransfersCanceled";
+  args: {};
+}
+
+export interface EmergencyPauseTransfersTriggered {
+  name: "EmergencyPauseTransfersTriggered";
+  args: {
+    pausedUntil: BN;
+    0: BN;
+  };
+}
+
 export interface EmergencyPauseTriggered {
   name: "EmergencyPauseTriggered";
   args: {
@@ -806,6 +819,8 @@ export type AllEvents =
   | DuplicatePaymentConfirmed
   | DustChanged
   | EmergencyPauseCanceled
+  | EmergencyPauseTransfersCanceled
+  | EmergencyPauseTransfersTriggered
   | EmergencyPauseTriggered
   | FullLiquidationStarted
   | HandshakeRequired

@@ -106,8 +106,10 @@ export class AgentService {
 
     async poolFeesBalance(fAssetSymbol: string, agentVaultAddress: string): Promise<AgentBalance> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
-        const balance = await cli.poolFeesBalance(agentVaultAddress);
-        return { balance };
+        const { agentBot } = await cli.getAgentBot(agentVaultAddress);
+        const balance = await agentBot.agent.poolFeeBalance();
+        const balanceF = await agentBot.tokens.fAsset.formatValue(balance);
+        return { balance: balanceF };
     }
 
     async withdrawPoolCollateral(fAssetSymbol: string, agentVaultAddress: string, amount: string): Promise<void> {
@@ -329,11 +331,11 @@ export class AgentService {
 
     async saveAlert(notification: PostAlert): Promise<void> {
         // Currently delete alerts that are older than 5 days
-        if(notification.title == "MINTING STARTED" || notification.title == "MINTING EXECUTED" || notification.title == "REDEMPTION STARTED" ||
+        /*if(notification.title == "MINTING STARTED" || notification.title == "MINTING EXECUTED" || notification.title == "REDEMPTION STARTED" ||
             notification.title == "REDEMPTION PAID" || notification.title == "REDEMPTION PAYMENT PROOF REQUESTED" || notification.title == "REDEMPTION WAS PERFORMED"){
             await this.deleteExpiredAlerts();
             return;
-        }
+        }*/
         const alert = new Alert(notification.bot_type,notification.address, notification.level, notification.title, notification.description, Date.now()+ (4 * 24 * 60 * 60 * 1000), Date.now());
         await this.deleteExpiredAlerts();
         await this.em.persistAndFlush(alert);
@@ -557,9 +559,9 @@ export class AgentService {
             }
             const settings = await cli.context.assetManager.getSettings();
             const priceReader = await TokenPriceReader.create(settings);
-            const cflrPrice = await priceReader.getPrice("CFLR", false, settings.maxTrustedPriceAgeSeconds);
+            const cflrPrice = await priceReader.getPrice(cli.context.nativeChainInfo.tokenSymbol, false, settings.maxTrustedPriceAgeSeconds);
             const priceUSD = cflrPrice.price.mul(toBNExp(1, 18));
-            const prices = [{ symbol: "CFLR", price: priceUSD, decimals: Number(cflrPrice.decimals) }];
+            const prices = [{ symbol: cli.context.nativeChainInfo.tokenSymbol, price: priceUSD, decimals: Number(cflrPrice.decimals) }];
 
             const lotSize = Number(settings.lotSizeAMG) * Number(settings.assetMintingGranularityUBA);
             // For each vault calculate needed info

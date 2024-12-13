@@ -31,6 +31,7 @@ import { ChallengesFacetContract } from "./ChallengesFacet";
 import { CollateralReservationsFacetContract } from "./CollateralReservationsFacet";
 import { CollateralTypesFacetContract } from "./CollateralTypesFacet";
 import { EmergencyPauseFacetContract } from "./EmergencyPauseFacet";
+import { EmergencyPauseTransfersFacetContract } from "./EmergencyPauseTransfersFacet";
 import { LiquidationFacetContract } from "./LiquidationFacet";
 import { MintingFacetContract } from "./MintingFacet";
 import { RedemptionConfirmationsFacetContract } from "./RedemptionConfirmationsFacet";
@@ -231,6 +232,9 @@ export type * from "./types";
       ): CollateralReservationsFacetContract;
       require(name: "CollateralTypesFacet"): CollateralTypesFacetContract;
       require(name: "EmergencyPauseFacet"): EmergencyPauseFacetContract;
+      require(
+        name: "EmergencyPauseTransfersFacet"
+      ): EmergencyPauseTransfersFacetContract;
       require(name: "LiquidationFacet"): LiquidationFacetContract;
       require(name: "MintingFacet"): MintingFacetContract;
       require(
@@ -520,6 +524,10 @@ export {
   EmergencyPauseFacetContract,
   EmergencyPauseFacetInstance,
 } from "./EmergencyPauseFacet";
+export {
+  EmergencyPauseTransfersFacetContract,
+  EmergencyPauseTransfersFacetInstance,
+} from "./EmergencyPauseTransfersFacet";
 export {
   LiquidationFacetContract,
   LiquidationFacetInstance,

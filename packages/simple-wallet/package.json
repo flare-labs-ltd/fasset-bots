@@ -1,6 +1,6 @@
 {
     "name": "@flarelabs/simple-wallet",
-    "version": "1.0.0-beta.16",
+    "version": "1.0.2",
     "description": "Fasset bots simple wallet",
     "engines": {
         "node": ">=14.6.0"
@@ -35,7 +35,7 @@
         "test": "yarn run -T mocha",
         "test_all": "yarn test --recursive \"test/**/*.test.ts\"",
         "test:coverage": "yarn run -T nyc yarn test_all",
-        "encrypt-test-secrets": "node dist/test/test-util/encrypt_secrets.js",
+        "mainnet-secrets": "node dist/test/test-util/mainnet_secrets.js",
         "test-mainnet-btc": "yarn run -T mocha test/BTC/mainnet.test.ts",
         "test-mainnet-doge": "yarn run -T mocha test/DOGE/mainnet.test.ts",
         "test-mainnet-xrp": "yarn run -T mocha test/XRP/mainnet.test.ts"
@@ -52,11 +52,14 @@
         "@types/node": "20.7.0",
         "axios": "1.5.1",
         "axios-retry": "3.8.0",
+        "bip32": "5.0.0-rc.0",
         "bip39": "3.0.4",
         "bip84": "0.2.9",
+        "bitcoinjs-lib": "6.1.7",
         "bitcore-lib": "10.0.36",
         "bitcore-lib-doge": "10.0.36",
         "bn.js": "5.2.1",
+        "commander": "11.0.0",
         "crypto": "1.0.1",
         "dogecoin-bip84": "0.0.5",
         "dotenv": "16.3.1",
@@ -79,7 +82,7 @@
         "@types/sinon": "17.0.3",
         "chai": "4.3.8",
         "chai-as-promised": "7.1.1",
-        "read": "^4.0.0",
+        "read": "4.0.0",
         "rewire": "7.0.0",
         "sinon": "18.0.0",
         "typescript": "5.6.2",

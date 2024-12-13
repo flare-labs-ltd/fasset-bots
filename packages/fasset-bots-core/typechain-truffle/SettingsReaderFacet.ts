@@ -91,6 +91,7 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
     maxEmergencyPauseDurationSeconds: BN;
     emergencyPauseDurationResetAfterSeconds: BN;
     cancelCollateralReservationAfterSeconds: BN;
+    rejectOrCancelCollateralReservationReturnFactorBIPS: BN;
     rejectRedemptionRequestWindowSeconds: BN;
     takeOverRedemptionRequestWindowSeconds: BN;
     rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;
@@ -176,6 +177,7 @@ export interface SettingsReaderFacetInstance extends Truffle.ContractInstance {
       maxEmergencyPauseDurationSeconds: BN;
       emergencyPauseDurationResetAfterSeconds: BN;
       cancelCollateralReservationAfterSeconds: BN;
+      rejectOrCancelCollateralReservationReturnFactorBIPS: BN;
       rejectRedemptionRequestWindowSeconds: BN;
       takeOverRedemptionRequestWindowSeconds: BN;
       rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;

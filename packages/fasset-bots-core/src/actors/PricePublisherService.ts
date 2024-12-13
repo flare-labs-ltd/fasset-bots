@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
-import { BotConfigFile, loadContracts, Secrets } from '../config';
+import { BotConfigFile, dataAccessLayerApiKey, loadContracts, Secrets } from '../config';
 import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
 import { FspStatusResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
@@ -15,7 +15,7 @@ export class PricePublisherService {
         private ftsoV2PriceStore: FtsoV2PriceStoreInstance,
         private publisherAddress: string,
         private priceFeedApiUrls: string[],
-        private apiKey: string,
+        private apiKeys: string[],
         private loopDelayMs: number,
     ) {
     }
@@ -29,10 +29,10 @@ export class PricePublisherService {
             "Field dataAccessLayerUrls must be defined and nonempty for price publisher");
         assertNotNullCmd(runConfig.contractsJsonFile, "Contracts file is required for price publisher");
         const contracts = loadContracts(runConfig.contractsJsonFile);
-        const publisherApiKey = secrets.optional("apiKey.data_access_layer") ?? "";
+        const publisherApiKeys = dataAccessLayerApiKey(secrets, runConfig.dataAccessLayerUrls);
         const maxDelayMs = runConfig.pricePublisherConfig.loopDelayMs ?? DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS;
         const ftsoV2PriceStore = await FtsoV2PriceStore.at(contracts.FtsoV2PriceStore.address);
-        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.dataAccessLayerUrls, publisherApiKey, maxDelayMs);
+        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.dataAccessLayerUrls, publisherApiKeys, maxDelayMs);
         return pricePublisherService;
     }
 
@@ -41,8 +41,12 @@ export class PricePublisherService {
         void loggerAsyncStorage.run("price-publisher", () => this.run());
     }
 
-    async stop() {
+    requestStop() {
         this.running = false;
+    }
+
+    async stop() {
+        this.requestStop();
         while (!this.stopped) {
             await sleep(100);
         }
@@ -71,11 +75,11 @@ export class PricePublisherService {
 
     async getLastAvailableRoundId() {
         let lastRoundId = -1;
-        for (const url of this.priceFeedApiUrls) {
+        for (const [index, url] of this.priceFeedApiUrls.entries()) {
             try {
                 const response = await axios.get<FspStatusResult>(`${url}/api/v0/fsp/status`, {
                     headers: {
-                        'x-api-key': this.apiKey
+                        'x-apikey': this.apiKeys[index]
                     }
                 });
                 const roundId = Number(requireNotNull(response.data.latest_ftso.voting_round_id));
@@ -92,9 +96,9 @@ export class PricePublisherService {
 
     async getFeedData(votingRoundId: number, feedIds: string[]) {
         let errors = 0;
-        for (const url of this.priceFeedApiUrls) {
+        for (const [index, url] of this.priceFeedApiUrls.entries()) {
             try {
-                const feeds = await this.getFeedDataForUrl(url, votingRoundId, feedIds);
+                const feeds = await this.getFeedDataForUrl(url, this.apiKeys[index], votingRoundId, feedIds);
                 if (feeds != null) {
                     return feeds;
                 }
@@ -109,12 +113,12 @@ export class PricePublisherService {
         return null;
     }
 
-    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FtsoFeedResultWithProof[] | null> {
+    private async getFeedDataForUrl(url: string, apiKey: string, votingRoundId: number, feedIds: string[]): Promise<FtsoFeedResultWithProof[] | null> {
         const response = await axios.post(`${url}/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}`, {
             feed_ids: feedIds
         }, {
             headers: {
-                'x-api-key': this.apiKey
+                'x-apikey': apiKey
             }
         });
         // get data

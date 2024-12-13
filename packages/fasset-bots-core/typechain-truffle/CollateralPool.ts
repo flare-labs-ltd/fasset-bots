@@ -38,6 +38,16 @@ export interface BeaconUpgraded {
   };
 }
 
+export interface ClaimedReward {
+  name: "ClaimedReward";
+  args: {
+    amountNatWei: BN;
+    rewardType: BN;
+    0: BN;
+    1: BN;
+  };
+}
+
 export interface Donated {
   name: "Donated";
   args: {
@@ -94,6 +104,18 @@ export interface IncompleteSelfCloseExit {
   };
 }
 
+export interface PaidOut {
+  name: "PaidOut";
+  args: {
+    recipient: string;
+    paidNatWei: BN;
+    burnedTokensWei: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
 export interface Upgraded {
   name: "Upgraded";
   args: {
@@ -105,10 +127,12 @@ export interface Upgraded {
 export type AllEvents =
   | AdminChanged
   | BeaconUpgraded
+  | ClaimedReward
   | Donated
   | Entered
   | Exited
   | IncompleteSelfCloseExit
+  | PaidOut
   | Upgraded;
 
 export interface CollateralPoolInstance extends Truffle.ContractInstance {

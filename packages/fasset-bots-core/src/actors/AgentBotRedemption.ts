@@ -361,7 +361,7 @@ export class AgentBotRedemption {
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
                 const feeSourceAddress = this.context.chainInfo.useOwnerUnderlyingAddressForPayingFees ? this.bot.ownerUnderlyingAddress : undefined;
                 return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined,
-                    { maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)) }, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), feeSourceAddress);
+                    { maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)) }, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), false, feeSourceAddress);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,
@@ -659,9 +659,9 @@ export class AgentBotRedemption {
      */
     async findRedemption(em: EM, rd: RedemptionId) {
         if ("id" in rd) {
-            return await em.findOneOrFail(AgentRedemption, { id: rd.id }, { refresh: true });
+            return await em.findOneOrFail(AgentRedemption, { id: rd.id }, { refresh: true, populate: ["rejectedRedemptionRequest"] });
         } else {
-            return await em.findOneOrFail(AgentRedemption, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true });
+            return await em.findOneOrFail(AgentRedemption, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true, populate: ["rejectedRedemptionRequest"] });
         }
     }
 

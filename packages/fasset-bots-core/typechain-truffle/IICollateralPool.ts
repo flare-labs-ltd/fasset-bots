@@ -12,6 +12,16 @@ export interface IICollateralPoolContract
   "new"(meta?: Truffle.TransactionDetails): Promise<IICollateralPoolInstance>;
 }
 
+export interface ClaimedReward {
+  name: "ClaimedReward";
+  args: {
+    amountNatWei: BN;
+    rewardType: BN;
+    0: BN;
+    1: BN;
+  };
+}
+
 export interface Donated {
   name: "Donated";
   args: {
@@ -68,7 +78,25 @@ export interface IncompleteSelfCloseExit {
   };
 }
 
-export type AllEvents = Donated | Entered | Exited | IncompleteSelfCloseExit;
+export interface PaidOut {
+  name: "PaidOut";
+  args: {
+    recipient: string;
+    paidNatWei: BN;
+    burnedTokensWei: BN;
+    0: string;
+    1: BN;
+    2: BN;
+  };
+}
+
+export type AllEvents =
+  | ClaimedReward
+  | Donated
+  | Entered
+  | Exited
+  | IncompleteSelfCloseExit
+  | PaidOut;
 
 export interface IICollateralPoolInstance extends Truffle.ContractInstance {
   agentVault(txDetails?: Truffle.TransactionDetails): Promise<string>;

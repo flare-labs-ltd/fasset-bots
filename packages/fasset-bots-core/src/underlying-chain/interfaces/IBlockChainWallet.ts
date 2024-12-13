@@ -34,6 +34,7 @@ export interface IBlockChainWallet {
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
+        isFreeUnderlying?: boolean,
         feeSourceAddress?: string
     ): Promise<number>;
 

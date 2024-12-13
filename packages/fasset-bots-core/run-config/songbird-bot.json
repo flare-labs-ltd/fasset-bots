@@ -1,0 +1,64 @@
+{
+    "$schema": "./schema/bot-config.schema.json",
+    "loopDelay": 1000,
+    "contractsJsonFile": "../fasset-deployment/songbird.json",
+    "prioritizeAddressUpdater": true,
+    "nativeChainInfo": {
+        "chainName": "Songbird",
+        "tokenSymbol": "SGB",
+        "finalizationBlocks": 6,
+        "readLogsChunkSize": 30,
+        "recommendedOwnerBalance": "10"
+    },
+    "fAssets": {
+        "FXRP": {
+            "chainId": "XRP",
+            "tokenName": "XRP",
+            "tokenSymbol": "XRP",
+            "tokenDecimals": 6,
+            "indexerUrls": ["https://fdc-verifiers-mainnet.flare.network/verifier/xrp"],
+            "walletUrls": ["https://xrpl-api.flare.network"],
+            "minimumAccountBalance": "1",
+            "priceChangeEmitter": "FtsoV2PriceStore"
+        }
+    },
+    "agentBotSettings": {
+        "parallel": true,
+        "liquidationPreventionFactor": "1.2",
+        "vaultCollateralReserveFactor": "0.1",
+        "poolCollateralReserveFactor": "0.1",
+        "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901","0x459BC23f08f0091A15cc3871c325463DeA609905"],
+        "minBalanceOnServiceAccount": "10",
+        "minBalanceOnWorkAccount": "200",
+        "defaultAgentSettings": {
+            "fee": "1%",
+            "poolFeeShare": "30%",
+            "mintingVaultCollateralRatio": "1.3",
+            "mintingPoolCollateralRatio": "1.6",
+            "poolExitCollateralRatio": "1.5",
+            "poolTopupCollateralRatio": "1.6",
+            "poolTopupTokenPriceFactor": "0.995",
+            "buyFAssetByAgentFactor": "0.99",
+            "handshakeType": 0
+        },
+        "fAssets": {
+            "FXRP": {
+                "recommendedOwnerBalance": "5",
+                "minimumFreeUnderlyingBalance": "0.01"
+            }
+        }
+    },
+    "rpcUrl": "https://songbird-api-tracer.flare.network/ext/C/rpc",
+    "dataAccessLayerUrls": [
+        "https://sgb-data-availability.flare.network"
+    ],
+    "ormOptions": {
+        "type": "mysql"
+    },
+    "liquidationStrategy": {
+        "className": "DefaultLiquidationStrategy"
+    },
+    "challengeStrategy": {
+        "className": "DefaultChallengeStrategy"
+    }
+}
