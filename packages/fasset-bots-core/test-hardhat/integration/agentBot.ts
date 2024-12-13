@@ -605,6 +605,7 @@ describe("Agent bot tests", () => {
         const events = filterEventList(allEvents, context.assetManager, "CollateralReserved");
         assert.equal(events.length, 1);
         const crt = events[0].args;
+        orm.em.clear();
 
         // skip time so the payment will expire on underlying chain
         chain.skipTimeTo(Number(crt.lastUnderlyingTimestamp));
@@ -661,6 +662,7 @@ describe("Agent bot tests", () => {
         const events = filterEventList(allEvents, context.assetManager, "CollateralReserved");
         assert.equal(events.length, 1);
         const crt = events[0].args;
+        orm.em.clear();
 
         // pay for minting from wrong underlying address
         const minter2 = await createTestMinter(context, minterAddress, chain, "RANDOM_MINTER_UNDERLYING_ADDRESS");

@@ -659,9 +659,9 @@ export class AgentBotRedemption {
      */
     async findRedemption(em: EM, rd: RedemptionId) {
         if ("id" in rd) {
-            return await em.findOneOrFail(AgentRedemption, { id: rd.id }, { refresh: true });
+            return await em.findOneOrFail(AgentRedemption, { id: rd.id }, { refresh: true, populate: ["rejectedRedemptionRequest"] });
         } else {
-            return await em.findOneOrFail(AgentRedemption, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true });
+            return await em.findOneOrFail(AgentRedemption, { agentAddress: this.agent.vaultAddress, requestId: rd.requestId }, { refresh: true, populate: ["rejectedRedemptionRequest"] });
         }
     }
 
