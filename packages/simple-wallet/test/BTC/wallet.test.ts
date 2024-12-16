@@ -24,8 +24,7 @@ import {
 import {DriverException} from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import {
-    createAndPersistTransactionEntity,
-    setMonitoringStatus,
+    createAndPersistTransactionEntity, setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import sinon from "sinon";

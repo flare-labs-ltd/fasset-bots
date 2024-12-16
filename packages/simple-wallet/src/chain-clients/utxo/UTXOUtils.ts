@@ -1,6 +1,6 @@
 import {logger} from "../../utils/logger";
 import {
-    BTC_DEFAULT_FEE_PER_KB,
+    BTC_DEFAULT_FEE_PER_KB, BTC_DOGE_DEC_PLACES,
     BTC_DUST_AMOUNT,
     BTC_LEDGER_CLOSE_TIME_MS,
     BTC_MAINNET,
@@ -20,7 +20,7 @@ import {
     UTXO_OUTPUT_SIZE_SEGWIT,
 } from "../../utils/constants";
 import BN from "bn.js";
-import {toBN} from "../../utils/bnutils";
+import { toBN, toBNExp } from "../../utils/bnutils";
 import * as bitcore from "bitcore-lib";
 import dogecore from "bitcore-lib-doge";
 import {TransactionEntity} from "../../entity/transaction";
@@ -219,5 +219,29 @@ export function utxoOnly(chainType: ChainType) {
     } else {
         return false;
     }
+}
 
+export function getRelayFeePerKB(chainType: ChainType) {
+    if (chainType === ChainType.BTC || chainType === ChainType.testBTC) {
+        return toBN(1000);
+    } else if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
+        return toBNExp(1, BTC_DOGE_DEC_PLACES - 2); // The default minimum transaction fee for relay is set at 0.001 DOGE/kB: https://github.com/dogecoin/dogecoin/blob/master/doc/fee-recommendation.md
+    }
+
+    throw Error(`getRelayFeePerKB executed for unknown chain: ${chainType}`);
+}
+
+export function getMinimumUTXOValue(chainType: ChainType) {
+    switch (chainType) {
+        case ChainType.BTC:
+            return toBN(50_000); // 1 lot = 0,2 btc, reward is 0,25% * 0,2 btc
+        case ChainType.testBTC:
+            return toBN(10_000);
+        case ChainType.DOGE:
+            return toBN(1_000_000);
+        case ChainType.testDOGE:
+            return toBN(1_000_000);
+        default:
+            throw new Error(`Unsupported chain type ${chainType}`);
+    }
 }

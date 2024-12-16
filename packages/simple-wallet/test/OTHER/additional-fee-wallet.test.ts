@@ -1,16 +1,20 @@
 import sinon from "sinon";
-import {BitcoinWalletConfig, BTC, logger} from "../../src";
-import {toBN} from "web3-utils";
-import {addConsoleTransportForTests} from "../test-util/common_utils";
-import {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config";
-import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {FeeStatus, TransactionFeeService} from "../../src/chain-clients/utxo/TransactionFeeService";
+import { BitcoinWalletConfig, BTC, logger } from "../../src";
+import { toBN } from "web3-utils";
+import { addConsoleTransportForTests, createNote } from "../test-util/common_utils";
+import config, { initializeTestMikroORMWithConfig, ORM } from "../test-orm/mikro-orm.config";
+import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import BN from "bn.js";
-import {createUTXO} from "../test-util/entity_utils";
-import {expect} from "chai";
-import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
+import { createAndPersistTransactionEntity, createUTXO } from "../test-util/entity_utils";
+import { expect } from "chai";
+import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
+import { estimateTxSize } from "../../src/utils/utils";
+import { getMinAmountToSend, getRelayFeePerKB } from "../../src/chain-clients/utxo/UTXOUtils";
+import { ChainType } from "../../src/utils/constants";
 
 const walletSecret = "wallet_secret";
+const amountToSendSatoshi = toBN(10000);
 const BTCMccConnectionTestInitial = {
     urls: [process.env.BTC_URL ?? ""],
     apiTokenKeys: [process.env.FLARE_API_PORTAL_KEY ?? ""],
@@ -30,7 +34,7 @@ describe("Unit test for paying fees from additional wallet", () => {
 
     before(async () => {
         addConsoleTransportForTests(logger);
-        testOrm = await initializeTestMikroORM();
+        testOrm = await initializeTestMikroORMWithConfig({...config, dbName: "unit-test-db"});
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
@@ -233,7 +237,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
 
         expect(ogUTXOs.map(t => t.transactionHash)).to.include.members(utxos.map(t => t.transactionHash));
-        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1000]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500]);
         expect(tr.getFee()).to.be.eq(fee);
     });
 
@@ -253,7 +257,8 @@ describe("Unit test for paying fees from additional wallet", () => {
         });
 
         const fee = 1500;
-        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee), undefined, undefined, true);
+        const note = createNote();
+        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee), note, undefined, true);
         const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(targetAddress);
 
         expect(utxos.map(t => t.transactionHash)).to.include.members(ogUTXOs.map(t => t.transactionHash));
@@ -284,6 +289,76 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         expect(utxos.map(t => t.transactionHash)).to.include.members(["ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5"]);
         expect(tr.outputs.map(t => t.satoshis)).to.include.members([1700, 800, 2500 - 1535]);
+    });
 
+    it("RBF fee per byte should be >= original fee byte + relay fee per byte", async () => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+            return Promise.resolve([
+                createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(15000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            ]);
+        });
+
+        const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi);
+        const mempoolUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
+        const inputs = mempoolUTXOs.slice(0, 3);
+
+        txEnt.raw = JSON.stringify({
+            inputs: inputs.map(t => ({
+                prevTxId: t.transactionHash,
+                outputIndex: t.position,
+                sequenceNumber: 0,
+                script: "",
+                scriptString: "",
+                output: {
+                    satoshis: t.value.toNumber(),
+                    script: t.script
+                },
+            })),
+        });
+
+        const feeInSatoshi = toBN(307);
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(2, fundedAddress, targetAddress, getMinAmountToSend(wClient.chainType), feeInSatoshi, undefined, txEnt);
+        const vSize = Math.ceil(estimateTxSize(ChainType.testBTC, tr));
+        const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
+        expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
+        expect(tr.inputs.map(t => t.prevTxId.toString('hex'))).to.have.members(inputs.map(t => t.transactionHash));
+    });
+
+    it("Should use additional UTXOs to cover relay fee", async () => {
+        sinon.restore();
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+            return Promise.resolve([
+                createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e",),
+            ]);
+        });
+        sinon.stub(TransactionFeeService.prototype, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
+
+        const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi);
+        const inputs = [
+            createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(1500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")
+        ];
+
+        txEnt.raw = JSON.stringify({
+            inputs: inputs.map(t => ({
+                prevTxId: t.transactionHash,
+                outputIndex: t.position,
+                sequenceNumber: 0,
+                script: "",
+                scriptString: "",
+                output: {
+                    satoshis: t.value.toNumber(),
+                    script: t.script
+                },
+            })),
+        });
+
+        const feeInSatoshi = toBN(1400);
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(2, fundedAddress, targetAddress, getMinAmountToSend(wClient.chainType), feeInSatoshi, undefined, txEnt);
+        const vSize = Math.ceil(estimateTxSize(ChainType.testBTC, tr));
+        const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
+        expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
+        expect(tr.inputs.length).to.be.gt(inputs.length);
     });
 });

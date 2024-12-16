@@ -18,6 +18,7 @@ export class BlockchainFeeService {
     currentBlockHeight: number = -1;
     initialSetup: boolean = true;
     running: boolean = false;
+    private readonly rootEm: EntityManager;
 
     readonly calculateFeeBlocks = 3;
     readonly medianTimestampBlocks = 11;
@@ -25,7 +26,8 @@ export class BlockchainFeeService {
     sleepTimeMs = 10_000;
     setupHistorySleepTimeMs = 1_500;
 
-    constructor(blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
+    constructor(rootEm: EntityManager, blockchainAPI: UTXOBlockchainAPI, chainType: ChainType, monitoringId: string) {
+        this.rootEm = rootEm;
         this.chainType = chainType;
         this.blockchainAPI = blockchainAPI;
         this.monitoringId = monitoringId;
@@ -33,14 +35,26 @@ export class BlockchainFeeService {
         this.timestampHistory = new BlockValueHistory(chainType, "timestamp", this.medianTimestampBlocks * 2);
     }
 
-    getLatestFeeStats(): BN {
+    async getLatestFeeStats(): Promise<BN> {
         const defaultFee = getDefaultFeePerKB(this.chainType);
         let weightedFeeSum = toBN(0);
         let totalWeight = 0;
         for (let index = 1; index <= this.calculateFeeBlocks; index++) {
             const blockHeight = this.currentBlockHeight - this.calculateFeeBlocks + index;
             const historyFee = this.feeHistory.data.get(blockHeight);
-            const fee = historyFee != null && !historyFee.eqn(0) ? historyFee : defaultFee;
+
+            let fee = historyFee;
+            if (!historyFee || historyFee && historyFee.eqn(0)) {
+                logger.info(`Re-fetching fee rate for block ${blockHeight}`);
+                fee = await this.feeHistory.loadBlockFromService(this.rootEm, blockHeight, async (bh) => await this.getFeeRateAt(bh));
+            }
+
+            if (!fee || fee && fee.eqn(0)) {
+                logger.warn(`Using default fee for block ${blockHeight}`);
+            }
+
+            fee = fee && !fee.eqn(0) ? fee : defaultFee;
+
             const weight = index;
             weightedFeeSum = weightedFeeSum.add(fee.muln(weight));
             totalWeight += weight;

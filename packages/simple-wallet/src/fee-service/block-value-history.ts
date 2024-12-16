@@ -74,11 +74,12 @@ export class BlockValueHistory {
     }
 
     async loadBlockFromService(rootEm: EntityManager, blockHeight: number, service: (blockHeight: number) => Promise<BN | null>) {
-        if (this.data.has(blockHeight)) return;
+        if (this.data.has(blockHeight)) this.data.get(blockHeight);
         try {
             const value = await service(blockHeight);
             if (value == null) return;
             await this.add(rootEm, blockHeight, value);
+            return value;
         } catch (error) {
             logger.error(`Error obtaining history value "${this.dbKey}" for chain ${this.chainType} and block height ${blockHeight}: ${errorMessage(error)}`);
         }

@@ -11,7 +11,7 @@ import BN from "bn.js";
 import {toBN} from "web3-utils";
 import {expect, use} from "chai";
 import {FeeStatus, TransactionFeeService} from "../../src/chain-clients/utxo/TransactionFeeService";
-import {createTransactionEntityBase, createUTXO} from "../test-util/entity_utils";
+import { createTransactionEntityBase, createUTXO } from "../test-util/entity_utils";
 import sinon from "sinon";
 import { toBNExp } from "../../src/utils/bnutils";
 import { BTC_DOGE_DEC_PLACES } from "../../src/utils/constants";
