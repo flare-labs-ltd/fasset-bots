@@ -3,7 +3,7 @@ import { LiquidatorInstance } from "../../../typechain-truffle";
 import { ILiquidatorContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
-import { Currencies, MAX_BIPS, MAX_UINT256, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
+import { Currencies, MAX_BIPS, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
 import { artifacts } from "../../utils/web3";
 import type { DefaultLiquidationStrategyConfig, DexLiquidationStrategyConfig } from "../../config/config-files/BotStrategyConfig";
 
