@@ -14,11 +14,11 @@ export class HeaderApiKeyStrategy extends PassportStrategy(Strategy, "notifier_k
     public validate = (apiKey: string, done: (error: Error | null, data: any) => object) => {
         const notifierKey = cachedSecrets.optional("apiKey.notifier_key");
         if (!notifierKey) {
-            done(null, true);
+            return done(new UnauthorizedException("'notifier_key' is not configured"), null);
         }
-        if (notifierKey === apiKey) {
-            done(null, true);
+        if (notifierKey === apiKey) { // allow access
+            return done(null, true);
         }
-        done(new UnauthorizedException(), null);
+        return done(new UnauthorizedException("Invalid 'notifier_key' API key"), null);
     };
 }
