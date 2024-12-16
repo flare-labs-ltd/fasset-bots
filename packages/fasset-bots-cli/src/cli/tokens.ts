@@ -61,16 +61,16 @@ program
             if (!orm) {
                 throw new CommandLineError(`Undefined orm for underlying payment`);
             }
-            const chainInfo = token.chainInfo;
-            const chainId = ChainId.from(chainInfo.chainId);
-            assertCmd(chainInfo.walletUrls != null && chainInfo.walletUrls.length > 0, `At least one walletUrl for chain ${chainId} is required`);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, chainInfo.walletUrls, chainInfo.stuckTransactionOptions);
-            await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
-            const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
-            const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
-            const minBN = currency.parse(token.chainInfo.minimumAccountBalance ?? "0");
-            await enoughUnderlyingFunds(wallet, accountFrom.address, addressTo, amountNat, minBN);
             try {
+                const chainInfo = token.chainInfo;
+                const chainId = ChainId.from(chainInfo.chainId);
+                assertCmd(chainInfo.walletUrls != null && chainInfo.walletUrls.length > 0, `At least one walletUrl for chain ${chainId} is required`);
+                const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, chainInfo.walletUrls, chainInfo.stuckTransactionOptions);
+                await wallet.addExistingAccount(accountFrom.address, accountFrom.private_key);
+                const currency = new Currency(chainInfo.tokenSymbol, chainInfo.tokenDecimals);
+                const amountNat = cmdOptions.baseUnit ? toBN(amount) : currency.parse(amount);
+                const minBN = currency.parse(token.chainInfo.minimumAccountBalance ?? "0");
+                await enoughUnderlyingFunds(wallet, accountFrom.address, addressTo, amountNat, minBN);
                 const stopBot = async () => {
                     console.log("Stopping wallet monitoring...");
                     return wallet.requestStop();
@@ -89,7 +89,9 @@ program
                 });
                 const txHash = await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
                 console.info(`Payment transaction ${txHash}. Check transaction status in database or explorer.`);
-            } finally {}
+            } finally {
+                await orm.close();
+            }
         }
     });
 
@@ -129,13 +131,17 @@ program
             if (!orm) {
                 throw new CommandLineError(`Undefined orm for underlying payment`);
             }
-            const chainInfo = token.chainInfo;
-            const chainId = ChainId.from(chainInfo.chainId);
-            assertCmd(chainInfo.walletUrls != null && chainInfo.walletUrls.length > 0, `At least one walletUrl for chain ${chainId} is required`);
-            const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, chainInfo.walletUrls, chainInfo.stuckTransactionOptions);
-            const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
-            const amount = await balance.balance(address);
-            console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));
+            try {
+                const chainInfo = token.chainInfo;
+                const chainId = ChainId.from(chainInfo.chainId);
+                assertCmd(chainInfo.walletUrls != null && chainInfo.walletUrls.length > 0, `At least one walletUrl for chain ${chainId} is required`);
+                const wallet = await createBlockchainWalletHelper(secrets, chainId, orm.em, chainInfo.walletUrls, chainInfo.stuckTransactionOptions);
+                const balance = await TokenBalances.wallet(wallet, chainInfo.tokenSymbol, chainInfo.tokenDecimals);
+                const amount = await balance.balance(address);
+                console.log(cmdOptions.baseUnit ? String(amount) : balance.format(amount));
+            } finally {
+                await orm.close();
+            }
         }
     });
 
