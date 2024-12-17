@@ -17,7 +17,7 @@ export class TransactionInputEntity {
     @Property({type: BNType})
     amount!: BN;
 
-    @Property({columnType: process.env.DB_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text"})
+    @Property({columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text"})
     script!: string;
 
     @ManyToOne(() => TransactionEntity)

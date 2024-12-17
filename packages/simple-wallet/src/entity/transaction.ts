@@ -66,13 +66,13 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true  })
     amount?: BN;
 
-    @Property({ columnType: process.env.DB_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
+    @Property({ columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
     raw?: string;
 
-    @Property({ columnType: process.env.DB_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
+    @Property({ columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
     serverSubmitResponse?: string;
 
-    @Property({ columnType: process.env.DB_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
+    @Property({ columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
     lastProcessingError?: string;
 
     @Property()
