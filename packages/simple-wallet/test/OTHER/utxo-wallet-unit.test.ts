@@ -6,7 +6,7 @@ import {
     logger,
     TransactionStatus,
 } from "../../src";
-import config, { initializeTestMikroORMWithConfig, ORM } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { addConsoleTransportForTests, waitForTxToFinishWithStatus } from "../test-util/common_utils";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
@@ -57,7 +57,7 @@ describe("UTXOWalletImplementation unit tests", () => {
 
     before(async () => {
         removeConsoleLogging = addConsoleTransportForTests(logger);
-        testOrm = await initializeTestMikroORMWithConfig({...config, dbName: "unit-test-db"});
+        testOrm = await initializeTestMikroORM({...config, dbName: "unit-test-db"});
         const em = testOrm.em;
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(em);
         BTCMccConnectionTest = {

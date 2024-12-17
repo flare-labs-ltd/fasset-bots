@@ -1,4 +1,4 @@
-import config, { initializeTestMikroORMWithConfig, ORM } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import {ChainType} from "../../src/utils/constants";
 import {EntityManager} from "@mikro-orm/core";
 import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
@@ -21,7 +21,7 @@ describe("getNumberOfMempoolAncestors", () => {
     }
 
     before(async () => {
-        testOrm = await initializeTestMikroORMWithConfig({...config, dbName: "get-transaction-descendants-test-db"});
+        testOrm = await initializeTestMikroORM({...config, dbName: "get-transaction-descendants-test-db"});
         em = testOrm.em;
         services.rootEm = em;
         services.blockchainAPI = new MockBlockchainAPI();
