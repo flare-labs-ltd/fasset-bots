@@ -105,7 +105,7 @@ describe("Bitcoin mainnet wallet tests", () => {
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(id, blockHeight);
 
-        const [replacedTxEnt,] = await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING, TransactionStatus.TX_REPLACED], id);
+        const replacedTxEnt = await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING, TransactionStatus.TX_REPLACED], id);
         await waitForTxToFinishWithStatus(2, enoughConfirmations * 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, replacedTxEnt.replaced_by!.id);
     });
 

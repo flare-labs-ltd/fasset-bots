@@ -142,7 +142,7 @@ describe("UTXOWalletImplementation unit tests", () => {
     it("Transaction with fee too high for fee wallet should be tried with main wallet", async () => {
         // Transaction size is 276.5 (3 inputs + 2 outputs) > 100 (maxFee)
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi.muln(2), undefined, undefined, toBN(500), startBlockHeight + 5, undefined, undefined, feeWalletAddress, toBN(100));
-        const [txEnt,] = await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
+        const txEnt = await waitForTxToFinishWithStatus(2, 300, wClient.rootEm, TransactionStatus.TX_SUCCESS, id);
 
         const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
         expect(tr.inputs.filter(t => t.output.script !== "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e").length).to.be.eq(0); // funded wallet script (fee wallet has a different one)

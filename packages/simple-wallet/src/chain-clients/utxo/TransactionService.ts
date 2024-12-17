@@ -254,7 +254,7 @@ export class TransactionService {
             const txData = {
                 source: source,
                 destination: destination,
-                amount: freeUnderlying ? amountInSatoshi.sub(feeAmount) : amountInSatoshi,
+                amount: freeUnderlying && !txForReplacement ? amountInSatoshi.sub(feeAmount) : amountInSatoshi,
                 fee: feeInSatoshi,
                 feePerKB: feePerKB,
                 useChange: true,
@@ -272,7 +272,7 @@ export class TransactionService {
         let tr;
         if (freeUnderlying && !feeInSatoshi) {
             const trForFee = await this.createBitcoreTransaction(source, destination, amountInSatoshi, undefined, feePerKB, utxos, true, note);
-            const amount = utxosForFeeAmount.gtn(trForFee.getFee()) ? amountInSatoshi : amountInSatoshi.subn(trForFee.getFee() - utxosForFeeAmount.toNumber())
+            const amount = utxosForFeeAmount.gtn(trForFee.getFee()) || txForReplacement ? amountInSatoshi : amountInSatoshi.subn(trForFee.getFee() - utxosForFeeAmount.toNumber());
             tr = await this.createBitcoreTransaction(source, destination, amount, toBN(trForFee.getFee()), undefined, utxos, true, note);
         } else {
             tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
@@ -303,10 +303,11 @@ export class TransactionService {
         txForReplacement?: TransactionEntity,
     ): Promise<[Transaction, MempoolUTXO[]]> {
         const feePerKB = await this.transactionFeeService.getFeePerKB();
+        const amount = txForReplacement ? amountInSatoshi : amountInSatoshi.sub(feeInSatoshi ?? toBN(0));
         const txData = {
             source: source,
             destination: destination,
-            amount: feeInSatoshi ? amountInSatoshi.sub(feeInSatoshi) : amountInSatoshi,
+            amount: amount,
             fee: feeInSatoshi ?? toBN(0),
             feePerKB: txForReplacement ? feePerKB : undefined,
             useChange: true,
@@ -318,7 +319,7 @@ export class TransactionService {
 
         if (feeInSatoshi) {
             this.transactionChecks(txDbId, txData, utxos);
-            tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi.sub(feeInSatoshi), feeInSatoshi, undefined, utxos, true, note);
+            tr = await this.createBitcoreTransaction(source, destination, amount, feeInSatoshi, undefined, utxos, true, note);
         } else {
             const trForFee = await this.createBitcoreTransaction(source, destination, amountInSatoshi, undefined, feePerKB, utxos, true, note);
             tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi.subn(trForFee.getFee()), toBN(trForFee.getFee()), undefined, utxos, true, note);

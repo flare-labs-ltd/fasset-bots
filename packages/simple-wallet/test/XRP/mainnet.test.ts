@@ -117,7 +117,7 @@ describe("XRP mainnet wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDrops, lowFee, note);
         expect(id).to.be.gt(0);
 
-        const [txEnt] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
+        const txEnt = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
         expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
