@@ -4,6 +4,7 @@ import { BotConfigFile, dataAccessLayerApiKey, loadContracts, Secrets } from '..
 import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
 import { FspStatusResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
+import { withSettings } from '../utils/mini-truffle-contracts/contracts';
 
 export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
 
@@ -141,33 +142,21 @@ export class PricePublisherService {
         if (feedsData != null) {
             const lastPublishedRoundId = Number(await this.ftsoV2PriceStore.lastPublishedVotingRoundId());
             if (votingRoundId > lastPublishedRoundId) {
-                const gasPrice = await this.estimateGasPrice();
-                await this.ftsoV2PriceStore.publishPrices(feedsData, { from: this.publisherAddress, gasPrice: gasPrice.toString() });
+                const ftsoV2PriceStore = withSettings(this.ftsoV2PriceStore, {
+                    // It is really important that at least one bot submits prices soon after they are proved,
+                    // so force a very large price factor if the submission isn't mined immediately.
+                    resubmitTransaction: [
+                        { afterMS: 5000, priceFactor: 2.0 },
+                        { afterMS: 15000, priceFactor: 5.0 },
+                    ]
+                });
+                await ftsoV2PriceStore.publishPrices(feedsData, { from: this.publisherAddress });
                 logger.info(`Prices published for round ${votingRoundId}`);
             } else {
                 logger.info(`Prices for round ${votingRoundId} already published`);
             }
         } else {
             logger.info(`No new price data available`);
-        }
-    }
-
-    async estimateGasPrice(lastBlock?: number) {
-        try {
-            lastBlock ??= await web3.eth.getBlockNumber() - 3;
-            const feeHistory = await web3.eth.getFeeHistory(50, lastBlock, [0]);
-            const baseFee = feeHistory.baseFeePerGas;
-            // get max fee of the last 50 blocks
-            let maxFee = BigInt(0);
-            for (const fee of baseFee) {
-                if (BigInt(fee) > maxFee) {
-                    maxFee = BigInt(fee);
-                }
-            }
-            return maxFee * BigInt(3);
-        } catch (e) {
-            logger.warn("Using getFeeHistory failed; will use getGasPrice instead");
-            return BigInt(await web3.eth.getGasPrice()) * BigInt(5);
         }
     }
 }

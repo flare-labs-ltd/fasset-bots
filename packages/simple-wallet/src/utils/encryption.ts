@@ -2,8 +2,6 @@ import crypto from "crypto";
 
 // the constants are same as the prefixes
 export enum EncryptionMethod {
-    // AES256-GCM with SHA256 key hashing (not secure, used for compatibility)
-    AES_GCM_SHA = "",
     // AES256-GCM with SCRYPT key hashing, without authentication (used for compatibility)
     AES_GCM_SCRYPT = "@",
     // AES256-GCM with SCRYPT key hashing, with authentication (recommended - detects ciphertext corruption and wrong passwords)
@@ -50,16 +48,12 @@ function extractMethod(encText: string): [method: EncryptionMethod, encTextNoPre
     } else if (encText.startsWith(EncryptionMethod.AES_GCM_SCRYPT)) {
         return [EncryptionMethod.AES_GCM_SCRYPT, encText.slice(1)];
     } else {
-        return [EncryptionMethod.AES_GCM_SHA, encText];
+        throw new Error("Invalid encrypted text format");
     }
 }
 
 function createPasswordHash(method: EncryptionMethod, password: string, salt: Buffer) {
-    if (method !== EncryptionMethod.AES_GCM_SHA) {
-        const N = 2 ** 15, r = 8, p = 1;    // provides ~100ms hash time
-        const scryptOptions: crypto.ScryptOptions = { N, r, p, maxmem: 256 * N * r };
-        return crypto.scryptSync(Buffer.from(password, "ascii"), salt, 32, scryptOptions);
-    } else {
-        return crypto.createHash("sha256").update(password, "ascii").digest();
-    }
+    const N = 2 ** 15, r = 8, p = 1;    // provides ~100ms hash time
+    const scryptOptions: crypto.ScryptOptions = { N, r, p, maxmem: 256 * N * r };
+    return crypto.scryptSync(Buffer.from(password, "ascii"), salt, 32, scryptOptions);
 }

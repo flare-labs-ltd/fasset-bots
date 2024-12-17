@@ -4,7 +4,7 @@ import { getTransactionDescendants } from "../../src/chain-clients/utxo/UTXOUtil
 
 import { expect } from "chai";
 import { EntityManager } from "@mikro-orm/core";
-import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import {
     createTransactionEntity, createTransactionEntityWithInputsAndOutputs,
     createTransactionInputEntity, createTransactionOutputEntity
@@ -16,7 +16,7 @@ describe("getTransactionDescendants", () => {
     before(async () => {
         const conf = { ...config };
         conf.dbName = "unit-test-db";
-        em = (await initializeTestMikroORMWithConfig(conf)).em;
+        em = (await initializeTestMikroORM(conf)).em;
     });
 
     beforeEach(async () => {
