@@ -45,7 +45,6 @@ export class BlockchainFeeService {
             }
         }
 
-        const defaultFee = getDefaultFeePerKB(this.chainType);
         let weightedFeeSum = toBN(0);
         let totalWeight = 0;
         for (let index = 1; index <= this.calculateFeeBlocks; index++) {
@@ -58,11 +57,7 @@ export class BlockchainFeeService {
                 fee = await this.feeHistory.loadBlockFromService(this.rootEm, blockHeight, async (bh) => await this.getFeeRateAt(bh));
             }
 
-            if (!fee || fee && fee.eqn(0)) {
-                logger.warn(`Using default fee for block ${blockHeight}`);
-            }
-
-            fee = fee && !fee.eqn(0) ? fee : defaultFee;
+            fee = fee && fee.gtn(0) ? fee : getDefaultFeePerKB(this.chainType);
 
             const weight = index;
             weightedFeeSum = weightedFeeSum.add(fee.muln(weight));
