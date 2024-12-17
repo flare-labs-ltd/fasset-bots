@@ -57,6 +57,10 @@ describe("UTXO selection algorithm test", () => {
         sinon.stub(TransactionFeeService.prototype, "getFeePerKB").resolves(new BN(1000));
     });
 
+    after(async () => {
+        await testOrm.close();
+    })
+
     it("It should fail if there's not enough UTXOs 1", async () => {
         sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves([
             createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(10020), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),

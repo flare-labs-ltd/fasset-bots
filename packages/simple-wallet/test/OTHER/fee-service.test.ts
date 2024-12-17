@@ -54,6 +54,7 @@ describe("Fee service tests BTC", () => {
 
     after(async () => {
         removeConsoleLogging();
+        await testOrm.close();
     });
 
     it("Should get current block height", async () => {

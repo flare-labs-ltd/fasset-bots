@@ -2,7 +2,7 @@ import sinon from "sinon";
 import { BitcoinWalletConfig, BTC, logger } from "../../src";
 import { toBN } from "web3-utils";
 import { addConsoleTransportForTests, createNote } from "../test-util/common_utils";
-import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORMWithConfig, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
 import BN from "bn.js";
@@ -34,7 +34,7 @@ describe("Unit test for paying fees from additional wallet", () => {
 
     before(async () => {
         addConsoleTransportForTests(logger);
-        testOrm = await initializeTestMikroORM({...config, dbName: "unit-test-db"});
+        testOrm = await initializeTestMikroORMWithConfig({...config, dbName: "unit-test-db"});
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(testOrm.em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
@@ -51,6 +51,10 @@ describe("Unit test for paying fees from additional wallet", () => {
         sinon.stub(TransactionFeeService.prototype, "getFeePerKB").resolves(new BN(1000));
         sinon.stub(TransactionUTXOService.prototype, "getNumberOfMempoolAncestors").resolves(0);
     });
+
+    after(async () => {
+        await testOrm.close();
+    })
 
     it("It should create transaction from 'base' wallet even if the 'fee' wallet doesn't have enough funds", async () => {
         sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {

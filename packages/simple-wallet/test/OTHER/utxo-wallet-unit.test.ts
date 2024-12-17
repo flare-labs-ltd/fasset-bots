@@ -6,7 +6,7 @@ import {
     logger,
     TransactionStatus,
 } from "../../src";
-import config, { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORMWithConfig, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { addConsoleTransportForTests, waitForTxToFinishWithStatus } from "../test-util/common_utils";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
@@ -45,6 +45,7 @@ const BTCMccConnectionTestInitial = {
 let BTCMccConnectionTest: BitcoinWalletConfig;
 let wClient: UTXOWalletImplementation;
 let monitor: ITransactionMonitor;
+let testOrm: ORM;
 
 let fundedWallet: ICreateWalletResponse;
 let feeWallet: ICreateWalletResponse;
@@ -56,10 +57,8 @@ describe("UTXOWalletImplementation unit tests", () => {
 
     before(async () => {
         removeConsoleLogging = addConsoleTransportForTests(logger);
-
-        const conf = {...config};
-        conf.dbName = "unit-test-db";
-        const em = (await initializeTestMikroORM(conf)).em;
+        testOrm = await initializeTestMikroORMWithConfig({...config, dbName: "unit-test-db"});
+        const em = testOrm.em;
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
@@ -119,6 +118,7 @@ describe("UTXOWalletImplementation unit tests", () => {
         await monitor.stopMonitoring();
         removeConsoleLogging();
         sinon.restore();
+        await testOrm.close();
     });
 
     it("Should successfully create transaction with fee < maxFee", async () => {

@@ -87,6 +87,7 @@ describe("Dogecoin wallet tests", () => {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
         removeConsoleLogging();
+        await testOrm.close();
     });
 
     it("Should not create transaction: amount = dust amount", async () => {

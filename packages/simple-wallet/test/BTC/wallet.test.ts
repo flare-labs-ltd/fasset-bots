@@ -64,7 +64,7 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 // first change address: tb1q38w40nmt5chk4a60mrh502h7m3l5w6pxpxvr0c
 // first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
 
-const amountToSendSatoshi = toBN(100020);
+const amountToSendSatoshi = toBN(1000200);
 const feeInSatoshi = toBN(12000);
 const maxFeeInSatoshi = toBN(1100);
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
@@ -108,6 +108,7 @@ describe("Bitcoin wallet tests", () => {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
         removeConsoleLogging();
+        await testOrm.close();
     });
 
     beforeEach(async () => {

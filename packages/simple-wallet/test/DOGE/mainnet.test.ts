@@ -84,6 +84,7 @@ describe("DOGE mainnet wallet tests", () => {
 
         await wClient.rootEm.nativeDelete(WalletAddressEntity, {});
         wClient.rootEm.clear();
+        await testOrm.close();
     });
 
     it("Should successfully create and submit transaction", async () => {
