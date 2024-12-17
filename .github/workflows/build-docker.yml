@@ -1,10 +1,9 @@
 name: container-images
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ "staging-beta" , "songbird-release" ]
-    #tags: [ "v*" ]
+    branches: [ "main" ]
+    tags: [ "v*" ]
 
 jobs:
   build-container-image:
@@ -12,8 +11,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      attestations: write
-      id-token: write
     steps:
     - uses: actions/checkout@v4
       with:
@@ -21,13 +18,33 @@ jobs:
     - uses: docker/setup-qemu-action@v3
     - uses: docker/setup-buildx-action@v3
 
-    - run: echo "IMAGE_TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+    - name: Set ALL_TAGS
+      env:
+        REPOSITORY: '${{ github.repository }}'
+      run: |
+        # tag main if main branch
+        if [[ "${{ github.ref_name }}" == "main" ]]; then
+          image_tags=("main")
+        # tag with tag name if tag
+        elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          image_tags=("${{ github.ref_name }}")
+          # tag with latest if tag is a new major, minor or patch version
+          if [[ "${{ github.ref_name}}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            image_tags+=("latest")
+            image_tags+=("songbird-release")
+          fi
+        fi
 
-    #- run: echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-    #  if: github.ref_name == 'staging-beta'
+        lc_repo=${REPOSITORY,,}
 
-    - run: echo "IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
-      if: startsWith(github.ref, 'refs/tags/v')
+        image_paths=()
+        for tag in ${image_tags[@]}; do
+          image_paths+=("ghcr.io/$lc_repo:$tag")
+        done
+
+        # join with ',' and then skip first character
+        ALL_TAGS=$(printf ',%s' "${image_paths[@]}")
+        echo "ALL_TAGS=${ALL_TAGS:1}" >>$GITHUB_ENV
 
     - name: Login to ghcr.io
       uses: docker/login-action@v3
@@ -36,19 +53,10 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: set lower case repository
-      run: |
-        echo "REPOSITORY_LC=${REPOSITORY,,}" >>${GITHUB_ENV}
-      env:
-        REPOSITORY: '${{ github.repository }}'
-
     - name: Build and push default image
       uses: docker/build-push-action@v5
       with:
         context: . # Because GH actions are for kids and put protection on everything; https://stackoverflow.com/a/71159809/11276254
-        # it is not working for linux/arm64
-        #platforms: linux/amd64,linux/arm64
-        platforms: linux/amd64
+        platforms: linux/amd64,linux/arm64
         push: true
-        tags: |
-          ghcr.io/${{ env.REPOSITORY_LC }}:${{ env.IMAGE_TAG }}
+        tags: ${{ env.ALL_TAGS }}
