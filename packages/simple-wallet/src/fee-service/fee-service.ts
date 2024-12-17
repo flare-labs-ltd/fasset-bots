@@ -36,6 +36,15 @@ export class BlockchainFeeService {
     }
 
     async getLatestFeeStats(): Promise<BN> {
+        if (this.currentBlockHeight < 0) {
+            const blockHeight = await this.getCurrentBlockHeight();
+            if (blockHeight) {
+                this.currentBlockHeight = blockHeight;
+            } else {
+                logger.warn(`Stored block height is ${this.currentBlockHeight} and current block height could not be fetched from API`);
+            }
+        }
+
         const defaultFee = getDefaultFeePerKB(this.chainType);
         let weightedFeeSum = toBN(0);
         let totalWeight = 0;
