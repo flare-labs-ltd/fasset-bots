@@ -6,16 +6,15 @@ import {
     logger,
     TransactionStatus,
 } from "../../src";
-import config, {initializeTestMikroORMWithConfig} from "../test-orm/mikro-orm.config";
+import config, {initializeTestMikroORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
-import {addConsoleTransportForTests, loop, waitForTxToFinishWithStatus} from "../test-util/common_utils";
+import {addConsoleTransportForTests, waitForTxToFinishWithStatus} from "../test-util/common_utils";
 import {UTXOWalletImplementation} from "../../src/chain-clients/implementations/UTXOWalletImplementation";
 import sinon from "sinon";
 import {fetchTransactionEntityById, updateTransactionEntity} from "../../src/db/dbutils";
 import {
     createAndPersistTransactionEntity,
     createUTXO,
-    setMonitoringStatus
 } from "../test-util/entity_utils";
 import {toBN} from "web3-utils";
 import BN from "bn.js";
@@ -61,7 +60,7 @@ describe("UTXOWalletImplementation unit tests", () => {
 
         const conf = {...config};
         conf.dbName = "unit-test-db";
-        const em = (await initializeTestMikroORMWithConfig(conf)).em;
+        const em = (await initializeTestMikroORM(conf)).em;
         const unprotectedDBWalletKeys = new UnprotectedDBWalletKeys(em);
         BTCMccConnectionTest = {
             ...BTCMccConnectionTestInitial,
