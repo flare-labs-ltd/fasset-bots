@@ -32,7 +32,8 @@
         "run-timekeeper": "node packages/fasset-bots-cli/dist/src/run/run-timekeeper",
         "run-pinger": "node packages/fasset-bots-cli/dist/src/run/run-pinger",
         "---------API-RUN---SCRIPTS": "",
-        "start_agent_api": "cd packages/fasset-bots-api && yarn nest start",
+        "start_agent_api_toplevel": "node packages/fasset-bots-api/dist/src/bot-api/agent/main",
+        "start_agent_api": "cd packages/fasset-bots-api && yarn build_agent_api_nest && cd ../.. && yarn start_agent_api_toplevel",
         "start_agent_api_debug": "cd packages/fasset-bots-api && yarn nest start --debug --watch"
     },
     "devDependencies": {
