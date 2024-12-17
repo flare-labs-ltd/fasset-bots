@@ -74,7 +74,7 @@ export class BlockValueHistory {
     }
 
     async loadBlockFromService(rootEm: EntityManager, blockHeight: number, service: (blockHeight: number) => Promise<BN | null>) {
-        if (this.data.has(blockHeight)) this.data.get(blockHeight);
+        if (this.data.has(blockHeight)) return this.data.get(blockHeight);
         try {
             const value = await service(blockHeight);
             if (value == null) return;

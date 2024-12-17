@@ -332,7 +332,6 @@ export class TransactionUTXOService {
     }
 
     async handleMissingUTXOScripts(utxos: MempoolUTXO[], source: string): Promise<MempoolUTXO[]> {
-        let count = 0;
         for (const utxo of utxos) {
             if (!utxo.script) {
                 if (!this.utxoScriptMap.has(source)) {
@@ -344,7 +343,6 @@ export class TransactionUTXOService {
                     addressScriptMap.set(`${utxo.transactionHash}:${utxo.position}`, script);
                 }
                 utxo.script = addressScriptMap.get(`${utxo.transactionHash}:${utxo.position}`)!;
-                count++;
             }
         }
         return utxos;
