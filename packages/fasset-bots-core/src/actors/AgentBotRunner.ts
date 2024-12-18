@@ -32,7 +32,6 @@ export class AgentBotRunner {
         public loopDelay: number,
         public notifierTransports: NotifierTransport[],
         public timekeeperService: ITimeKeeperService,
-        public autoUpdateContracts: boolean,
         public handshakeAddressVerifier: HandshakeAddressVerifier | null
     ) {}
 
@@ -261,7 +260,7 @@ export class AgentBotRunner {
         }
         const handshakeAddressVerifier = getHandshakeAddressVerifier(secrets);
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, botConfig.autoUpdateContracts, handshakeAddressVerifier);
+        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, handshakeAddressVerifier);
     }
 
     async addSimpleWalletToLoop(agentBot: AgentBot) {
