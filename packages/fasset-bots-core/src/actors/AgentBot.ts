@@ -48,7 +48,6 @@ const CollateralPoolToken = artifacts.require("CollateralPoolToken");
 export interface IRunner {
     stopRequested: boolean;
     restartRequested: boolean;
-    autoUpdateContracts: boolean;
 }
 
 export interface ITimeKeeper {
