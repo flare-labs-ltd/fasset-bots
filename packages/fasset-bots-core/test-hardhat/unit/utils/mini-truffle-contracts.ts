@@ -12,7 +12,7 @@ import { TransactionSubmitRevertedError, waitForFinalization, waitForNonceIncrea
 import { TransactionFailedError } from "../../../src/utils/mini-truffle-contracts/methods";
 import { ContractSettings, TransactionWaitFor } from "../../../src/utils/mini-truffle-contracts/types";
 import { artifacts, contractSettings, web3 } from "../../../src/utils/web3";
-import { FakePriceReaderInstance } from "../../../typechain-truffle";
+import { FakePriceReaderInstance, Truffle } from "../../../typechain-truffle";
 
 describe("mini truffle and artifacts tests", () => {
     const TEST_LOCK_DIR = "./test-data/locks";
@@ -660,6 +660,8 @@ describe("mini truffle and artifacts tests", () => {
             const res3 = await withSettings(fpr, settings2).setDecimals("XRP", 12, { gasPrice: 1.5e9 });
             assert.equal(res3.receipt.effectiveGasPrice, 3.0e9);
             // try 4
+            await setMining("auto");
+            await setMining("interval", 2000);
             const settings3: Partial<ContractSettings> = {
                 resubmitTransaction: [
                     { afterMS: 0, priceFactor: 1.5 },
@@ -667,12 +669,40 @@ describe("mini truffle and artifacts tests", () => {
                     { afterMS: 1500, priceFactor: 3 },
                 ],
             };
-            const res4 = await withSettings(fpr, settings3).setDecimals("XRP", 20, { gasPrice: 1.5e9 });
-            // console.log(res4.receipt.effectiveGasPrice);
+            const res4 = await withSettings(fpr, settings3).setDecimals("XRP", 15, { gasPrice: 1.5e9 });
             assert.equal(res4.receipt.effectiveGasPrice, 4.5e9);
+            // try 5
+            await setMining("auto");
+            await setMining("interval", 2000);
+            const settings4: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 0, priceFactor: 1.5 },
+                    { afterMS: 750, priceFactor: 2 },
+                    { afterMS: 2000, priceFactor: 3 },
+                ],
+            };
+            const res5 = await withSettings(fpr, settings4).setDecimals("XRP", 20, { gasPrice: 1.5e9 });
+            assert.equal(res5.receipt.effectiveGasPrice, 3e9);
             // check result
             const { 2: dec } = await fpr.getPrice("XRP");
             assert.equal(Number(dec), 20);
+        });
+
+        it("actual 'nonce too low' should return correct error", async () => {
+            const FakePriceReader = artifacts.require("FakePriceReader");
+            const settings1: Partial<ContractSettings> = {
+                resubmitTransaction: [
+                    { afterMS: 1000, priceFactor: 2 },
+                    { afterMS: 3000, priceFactor: 3 },
+                ],
+            };
+            const fpr = await withSettings(FakePriceReader, settings1).new(accounts[0]);
+            await setMining("interval", 1000);
+            const nonce = await web3.eth.getTransactionCount(accounts[0], "latest");
+            const res1 = await fpr.setDecimals("XRP", 10, { gasPrice: 1.5e9, nonce: nonce } as Truffle.TransactionDetails);
+            await expectRevertWithCorrectStack(
+                fpr.setDecimals("XRP", 10, { gasPrice: 1.5e9, nonce: nonce } as Truffle.TransactionDetails),
+                "nonce too low");
         });
     });
 
