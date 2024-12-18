@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
 import { BotConfigFile, dataAccessLayerApiKey, loadContracts, Secrets } from '../config';
-import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
+import { artifacts, assertCmd, assertNotNullCmd, errorIncluded, requireNotNull, sleep, web3 } from "../utils";
 import { FspStatusResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { withSettings } from '../utils/mini-truffle-contracts/contracts';
 
 export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
+export const PRICE_PUBLISHING_TIME_RANDOMIZATION_MS = 5000;
 
 const FtsoV2PriceStore = artifacts.require("FtsoV2PriceStore");
 
@@ -62,10 +63,17 @@ export class PricePublisherService {
                 const lastAvailableRoundId = await this.getLastAvailableRoundId();
                 const lastPublishedRoundId = Number(await this.ftsoV2PriceStore.lastPublishedVotingRoundId());
                 if (lastAvailableRoundId > lastPublishedRoundId) {
+                    // wait a small random time to avoid many reverts because all agents publish at the same time
+                    const randomWaitMS = Math.floor(Math.random() * PRICE_PUBLISHING_TIME_RANDOMIZATION_MS);
+                    await sleep(randomWaitMS);
                     await this.getAndPublishFeedData(lastAvailableRoundId);
                 }
             } catch (error) {
-                logger.error(`Error in publishing prices: ${error}`);
+                if (errorIncluded(error, ["prices already published"])) {
+                    logger.info("Reverted with: prices already published")
+                } else {
+                    logger.error(`Error in publishing prices: ${error}`);
+                }
             }
             await sleep(this.loopDelayMs);
         }

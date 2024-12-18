@@ -234,17 +234,11 @@ export class AgentBotEventReader {
             }
             try {
                 if (this.needsToRestartDueToContractChanges) {
-                    if (this.bot.runner?.autoUpdateContracts) {
-                        this.needsToRestartDueToContractChanges = false;
-                        logger.info(`Agent ${this.agentVaultAddress} received event 'ContractChanged'.`);
-                        console.log(`Agent ${this.agentVaultAddress} received event 'ContractChanged'.`);
-                        assertNotNull(this.bot.runner, "Cannot restart - runner not set.");
-                        this.bot.runner.restartRequested = true;
-                    } else {
-                        this.needsToRestartDueToContractChanges = false;
-                        console.warn(`Agent ${this.agentVaultAddress} received event 'ContractChanged'. Contract address/es should be appropriately updated.`);
-                        logger.warn(`Agent ${this.agentVaultAddress} received event 'ContractChanged'. Contract address/es should be appropriately updated.`);
-                    }
+                    this.needsToRestartDueToContractChanges = false;
+                    logger.info(`Agent ${this.agentVaultAddress} received event 'ContractChanged'.`);
+                    console.log(`Agent ${this.agentVaultAddress} received event 'ContractChanged'.`);
+                    assertNotNull(this.bot.runner, "Cannot restart - runner not set.");
+                    this.bot.runner.restartRequested = true;
                 }
             } catch (error) {
                 console.error(`Error handling event 'ContractChanged' for agent ${this.agentVaultAddress}: ${error}`);

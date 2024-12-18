@@ -251,13 +251,15 @@ export function reportError(error: any) {
 }
 
 // either (part of) error message or an error constructor
-export type ErrorFilter = string | { new(...args: any[]): Error };
+export type ErrorFilter = string | RegExp | { new(...args: any[]): Error };
 
 export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
     const message = String(error?.message ?? "");
     for (const expectedErr of expectedErrors) {
         if (typeof expectedErr === "string") {
             if (message.includes(expectedErr)) return true;
+        } else if (expectedErr instanceof RegExp) {
+            if (expectedErr.test(message)) return true;
         } else {
             if (error instanceof expectedErr) return true;
         }
