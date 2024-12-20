@@ -103,17 +103,6 @@ export class AgentEntity {
     @Property()
     withdrawalAllowedAtAmount: string = "";
 
-    // agent withdraw underlying
-
-    @Property({ type: BNType })
-    underlyingWithdrawalAnnouncedAtTimestamp: BN = BN_ZERO;
-
-    @Property()
-    underlyingWithdrawalConfirmTransaction: string = "";//deprecated
-
-    @Property()
-    underlyingWithdrawalConfirmTransactionId: number = 0;
-
     // agent cancel underlying announcement
 
     @Property()
@@ -359,6 +348,12 @@ export class AgentUnderlyingPayment {
     @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
 
+    @Property({ type: BNType }) // only relevant for AgentUnderlyingPaymentType.WITHDRAWAL
+    announcedAtTimestamp: BN = BN_ZERO;
+
+    @Property({ nullable: true })
+    cancelled?: boolean;
+
     // 'PAID' state data
 
     @Property({ nullable: true })
@@ -374,6 +369,8 @@ export class AgentUnderlyingPayment {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    //
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();

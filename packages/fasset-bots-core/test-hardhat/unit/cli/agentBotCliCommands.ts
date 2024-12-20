@@ -297,32 +297,38 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should run command 'withdrawUnderlying' and 'cancelUnderlyingWithdrawal'", async () => {
         const spyAnnounce = spy.on(botCliCommands, "withdrawUnderlying");
-        const agent = await createAgent();
+        const agentBot = await createAgentBot();
         const amountToWithdraw = toBN(100);
-        await fundUnderlying(context, agent.underlyingAddress, amountToWithdraw);
-        await botCliCommands.withdrawUnderlying(agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
-        const agentEntAnnounce = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEntAnnounce.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
+        await fundUnderlying(context, agentBot.agent.underlyingAddress, amountToWithdraw);
+        await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
+
+        const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
+        if (latest === null) throw Error;
+        expect(toBN(latest.announcedAtTimestamp).gt(BN_ZERO)).to.be.true;
         expect(spyAnnounce).to.be.called.once;
         // cannot withdraw again until announcement is still active
-        const res = await botCliCommands.withdrawUnderlying(agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
+        const res = await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
         expect(res).to.be.null;
         //  not enough time passed
-        await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
-        const agentEntCancelTooSoon = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEntCancelTooSoon.underlyingWithdrawalAnnouncedAtTimestamp).gt(BN_ZERO)).to.be.true;
+        await agentBot.handleTimelockedProcesses(orm.em);
+        const latestToSoon = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
+        if (latestToSoon === null) throw Error;
+        const latestId = latestToSoon.id;
+        expect(toBN(latestToSoon.announcedAtTimestamp).gt(BN_ZERO)).to.be.true;
         // time passed
         await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
-        const agentEntCancel = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agent.vaultAddress } as FilterQuery<AgentEntity>);
-        expect(toBN(agentEntCancel.underlyingWithdrawalAnnouncedAtTimestamp).eq(BN_ZERO)).to.be.true;
+        await botCliCommands.cancelUnderlyingWithdrawal(agentBot.agent.vaultAddress);
+        await agentBot.handleTimelockedProcesses(orm.em);
+        const latestCancel = await orm.em.findOneOrFail(AgentUnderlyingPayment, { id: latestId } as FilterQuery<AgentUnderlyingPayment>);
+        if (latestCancel === null) throw Error;
+        expect(latestCancel.cancelled).to.be.true;
     });
 
     it("Should run command 'cancelUnderlyingWithdrawal' - no active withdrawals", async () => {
         const agent = await createAgent();
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
-        expect(spyConsole).to.be.called.twice;
+        expect(spyConsole).to.be.called.once;
     });
 
     it("Should run command 'withdrawUnderlying'", async () => {
