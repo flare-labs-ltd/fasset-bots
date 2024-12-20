@@ -317,6 +317,13 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.once;
     });
 
+    it("Should send underlying confirmed (3rd party)", async () => {
+        const notifier = new ChallengerNotifier("challenger", [transport]);
+        const spySend = spy.on(notifier, "sendUnderlyingPaymentConfirmed");
+        await notifier.sendUnderlyingPaymentConfirmed("agentVault", "hash");
+        expect(spySend).to.have.been.called.once;
+    });
+
     it("Should send agent liquidated", async () => {
         const notifier = new LiquidatorNotifier("liquidator", [transport]);
         const spySend = spy.on(notifier, "sendAgentLiquidated");
