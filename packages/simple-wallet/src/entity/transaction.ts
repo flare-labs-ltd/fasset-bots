@@ -1,7 +1,7 @@
-import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property, Type } from "@mikro-orm/core";
+import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
-import {BNType} from "../utils/orm-types";
+import { BNType, TextType } from "../utils/orm-types";
 import {TransactionOutputEntity} from "./transactionOutput";
 import {TransactionInputEntity} from "./transactionInput";
 
@@ -66,13 +66,13 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true  })
     amount?: BN;
 
-    @Property({ columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
+    @Property({ type: TextType, nullable: true })
     raw?: string;
 
-    @Property({ columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
+    @Property({ type: TextType, nullable: true })
     serverSubmitResponse?: string;
 
-    @Property({ columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text", nullable: true })
+    @Property({ type: TextType, nullable: true })
     lastProcessingError?: string;
 
     @Property()

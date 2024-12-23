@@ -18,3 +18,9 @@ export class BNType extends Type<BN | string | number | null> {
         return `decimal(38, 0)`;
     }
 }
+
+export class TextType extends Type<string | null> {
+    override getColumnType(): string {
+        return this.platform?.getConfig().get("type") === "mysql" ? "mediumtext" : "text";
+    }
+}

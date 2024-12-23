@@ -22,7 +22,7 @@ import {
     waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus,
 } from "../test-util/common_utils";
-import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { logger } from "../../src/utils/logger";
 import { sleepMs } from "../../src/utils/utils";
@@ -104,6 +104,7 @@ describe("Xrp wallet tests", () => {
         }
 
         removeConsoleTransport();
+        await testOrm.close();
     });
 
     it("Monitoring should be running", async () => {

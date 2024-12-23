@@ -1,5 +1,5 @@
 import { Entity, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
-import {BNType} from "../utils/orm-types";
+import { BNType, TextType } from "../utils/orm-types";
 import BN from "bn.js";
 import { TransactionEntity } from "./transaction";
 
@@ -17,7 +17,7 @@ export class TransactionOutputEntity {
     @Property({type: BNType})
     amount!: BN;
 
-    @Property({columnType: process.env.DATABASE_TYPE?.toLowerCase() === "mysql" ? "mediumtext" : "text"})
+    @Property({type: TextType})
     script!: string;
 
     @ManyToOne(() => TransactionEntity)
