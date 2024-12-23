@@ -305,9 +305,9 @@ program
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         const currency = await Currencies.fasset(cli.context);
         const toTransfer = currency.parse(amount);
-        const freeUnderlying = await cli.getFreeUnderlying(agentVault);
-        if (toTransfer.gt(toBN(freeUnderlying))) {
-            throw new CommandLineError(`Cannot transfer funds. Requested amount ${amount} is higher than free underlying ${currency.formatValue(freeUnderlying)}.`)
+        const safeToWithdrawUnderlying = await cli.getSafeToWithdrawUnderlying(agentVault);
+        if (toTransfer.gt(toBN(safeToWithdrawUnderlying))) {
+            throw new CommandLineError(`Cannot transfer funds. Requested amount ${amount} is higher than safe to withdraw underlying ${currency.formatValue(safeToWithdrawUnderlying)}.`)
         }
         await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddress);
     });
@@ -403,8 +403,10 @@ program
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         const freeUnderlying = await cli.getFreeUnderlying(agentVault);
+        const safeToWithdrawUnderlying = await cli.getSafeToWithdrawUnderlying(agentVault);
         const currency = await Currencies.fasset(cli.context);
         console.log(`Agent ${agentVault} has ${currency.format(freeUnderlying)} free underlying.`);
+        console.log(`It is safe to withdraw up to ${currency.format(safeToWithdrawUnderlying)}.`);
     });
 
 program

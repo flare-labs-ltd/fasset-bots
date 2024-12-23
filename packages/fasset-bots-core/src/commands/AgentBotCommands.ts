@@ -20,7 +20,7 @@ import { AgentSettings, CollateralClass } from "../fasset/AssetManagerTypes";
 import { DBWalletKeys } from "../underlying-chain/WalletKeys";
 import { Currencies, TokenBalances, formatBips, resolveInFassetBotsCore, squashSpace, web3DeepNormalize } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
-import { confirmationAllowedAt, getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
+import { getAgentSettings, proveAndUpdateUnderlyingBlock } from "../utils/fasset-helpers";
 import { BN_ZERO, MAX_BIPS, errorIncluded, isEnumValue, maxBN, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
@@ -489,14 +489,15 @@ export class AgentBotCommands {
         if (latest && latest.txDbId) {
             const txDbId = latest.txDbId;
             const info = await this.context.wallet.checkTransactionStatus(txDbId);
-            if (info.status === TransactionStatus.TX_FAILED ||
-                (info.status === TransactionStatus.TX_REPLACED && info.replacedByStatus === TransactionStatus.TX_FAILED)){
-                    this.cancelUnderlyingWithdrawalAnnouncement(agentBot, agentVault);
+            const txFailed = info.status === TransactionStatus.TX_FAILED ||
+                (info.status === TransactionStatus.TX_REPLACED && info.replacedByStatus === TransactionStatus.TX_FAILED);
+            if (txFailed) {
+                await this.cancelUnderlyingWithdrawalAnnouncement(agentBot, agentVault);
             } else {
                 console.warn(`Agent ${agentVault} will not cancel underlying withdrawal announcement. Underlying payment ${latest.id} is still active.`)
             }
         } else if (latest === null) {
-            this.cancelUnderlyingWithdrawalAnnouncement(agentBot, agentVault);
+            await this.cancelUnderlyingWithdrawalAnnouncement(agentBot, agentVault);
         } else {
             console.warn(`Agent ${agentVault} will not cancel latest underlying withdrawal announcement. Underlying payment ${latest.id} is still active.`)
         }
@@ -697,6 +698,15 @@ export class AgentBotCommands {
         const free = info.freeUnderlyingBalanceUBA.toString();
         logger.info(`Agent ${agentVault} has free underlying  ${free}.`);
         return free;
+    }
+
+    async getSafeToWithdrawUnderlying(agentVault: string): Promise<string> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const info = await agentBot.agent.getAgentInfo();
+        const required = toBN(info.mintedUBA).add(toBN(info.redeemingUBA));
+        const free = toBN(info.underlyingBalanceUBA).sub(required);
+        logger.info(`Agent ${agentVault} has free underlying ${free} safe to withdraw.`);
+        return String(free);
     }
 
     /**
