@@ -183,8 +183,8 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         try {
             // check if round has been finalized
             // (it can happen that API returns proof finalized, but it is not finalized in flare data connector yet)
-            const roundFinalizedOnChain = await this.roundFinalizedOnChain(roundId);
-            if (!roundFinalizedOnChain) {
+            const roundFinalized = await this.roundFinalized(roundId);
+            if (!roundFinalized) {
                 return AttestationNotProved.NOT_FINALIZED;
             }
             // obtain proof
