@@ -700,12 +700,17 @@ export class AgentBotCommands {
         return free;
     }
 
+    /**
+     * Returns maximum amount safe to withdraw from the vault underlying address.
+     * @param agentVault agent's vault address
+     * @returns amount of underlying safe to withdraw (as string)
+     */
     async getSafeToWithdrawUnderlying(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
         const info = await agentBot.agent.getAgentInfo();
         const required = toBN(info.mintedUBA).add(toBN(info.redeemingUBA));
-        const free = toBN(info.underlyingBalanceUBA).sub(required);
-        logger.info(`Agent ${agentVault} has free underlying ${free} safe to withdraw.`);
+        const free = maxBN(toBN(info.underlyingBalanceUBA).sub(required), BN_ZERO);
+        logger.info(`Agent ${agentVault} has ${free} safe to withdraw free underlying.`);
         return String(free);
     }
 
