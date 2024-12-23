@@ -4,6 +4,7 @@ enum ChallengerNotificationKey {
     ILLEGAL_TRANSACTION_CHALLENGE = "ILLEGAL TRANSACTION CHALLENGE",
     DOUBLE_PAYMENT_CHALLENGE = "DOUBLE PAYMENT CHALLENGE",
     FREE_BALANCE_NEGATIVE_CHALLENGE = "FREE BALANCE NEGATIVE CHALLENGE",
+    UNDERLYING_PAYMENT_CONFIRMED = "UNDERLYING PAYMENT CONFIRMED",
 }
 
 export class ChallengerNotifier extends BaseNotifier<ChallengerNotificationKey> {
@@ -29,6 +30,13 @@ export class ChallengerNotifier extends BaseNotifier<ChallengerNotificationKey> 
         await this.info(
             ChallengerNotificationKey.FREE_BALANCE_NEGATIVE_CHALLENGE,
             `Challenger ${this.address} successfully challenged agent ${agentVault} for free negative balance.`
+        );
+    }
+
+    async sendUnderlyingPaymentConfirmed(agentVault: string, transactionHash: string) {
+        await this.info(
+            ChallengerNotificationKey.UNDERLYING_PAYMENT_CONFIRMED,
+            `Challenger ${this.address} successfully confirmed underlying payment ${transactionHash} for agent ${agentVault}.`
         );
     }
 }

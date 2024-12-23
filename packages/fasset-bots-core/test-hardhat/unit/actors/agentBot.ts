@@ -14,7 +14,7 @@ import { MockChain } from "../../../src/mock/MockChain";
 import { MockFlareDataConnectorClient } from "../../../src/mock/MockFlareDataConnectorClient";
 import { requiredEventArgs } from "../../../src/utils/events/truffle";
 import { attestationWindowSeconds } from "../../../src/utils/fasset-helpers";
-import { MINUTES, ZERO_ADDRESS, checkedCast, maxBN, toBN } from "../../../src/utils/helpers";
+import { MINUTES, ZERO_ADDRESS, checkedCast, maxBN, sleep, toBN } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { latestBlockTimestampBN } from "../../../src/utils/web3helpers";
 import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -25,6 +25,7 @@ import { TestAssetBotContext, createTestAssetContext } from "../../test-utils/cr
 import { getLotSize } from "../../test-utils/fuzzing-utils";
 import { loadFixtureCopyVars } from "../../test-utils/hardhat-test-helpers";
 import { createTestAgentBot, createTestAgentBotAndMakeAvailable, mintVaultCollateralToOwner, updateAgentBotUnderlyingBlockProof } from "../../test-utils/helpers";
+import { sleepMs } from "../../../../simple-wallet/src/utils/utils";
 use(spies);
 use(chaiAsPromised);
 
@@ -598,23 +599,32 @@ describe("Agent bot unit tests", () => {
 
     it("Should confirm underlying withdrawal announcement", async () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress, undefined, false);
-        const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // announce
         const resp = await agentBot.agent.announceUnderlyingWithdrawal();
-        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
-        await orm.em.persist(agentEnt).flush();
         // pay
+        const latestBlock = await latestBlockTimestampBN();
         const paymentAmount = toBN(100);
         await fundUnderlying(context, agentBot.agent.underlyingAddress, paymentAmount);
-        const tx = await agentBot.agent.performPayment("SomeRandomUnderlyingAddress", paymentAmount, resp.paymentReference);
-        agentEnt.underlyingWithdrawalConfirmTransaction = tx;
-        // confirmation not yet allowed
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
-        // confirmation allowed
-        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
-        await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
+        const txDbId = await agentBot.agent.initiatePayment("SomeRandomUnderlyingAddress", paymentAmount, resp.paymentReference,
+            undefined, undefined, undefined, undefined, true);
+        await agentBot.underlyingManagement.createAgentUnderlyingPayment(orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID, undefined, latestBlock);
+        const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
+        if (latest === null) throw Error;
+        expect(latest.state === AgentUnderlyingPaymentState.PAID).to.be.true;
+        // run agent's steps until underlying payment is confirmed
+        for (let i = 0; ; i++) {
+            await updateAgentBotUnderlyingBlockProof(context, agentBot);
+            await time.advanceBlock();
+            chain.mine();
+            await agentBot.runStep(orm.em);
+            // check if underlying payment is done
+            orm.em.clear();
+            const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, { txDbId: txDbId }  as FilterQuery<AgentUnderlyingPayment> );
+            console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
+            await sleepMs(5_000);
+            if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
+            assert.isBelow(i, 50);  // prevent infinite loops
+        }
     });
 
     it("Should cancel underlying withdrawal announcement", async () => {
@@ -622,17 +632,17 @@ describe("Agent bot unit tests", () => {
         const agentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
         // announce
         await agentBot.agent.announceUnderlyingWithdrawal();
-        agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = await latestBlockTimestampBN();
         agentEnt.underlyingWithdrawalWaitingForCancelation = true;
         await orm.em.persist(agentEnt).flush();
         // cancelation not yet allowed
         await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.underlyingWithdrawalAnnouncedAtTimestamp).gtn(0)).to.be.true;
+        const reAgentEnt = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        expect(reAgentEnt.underlyingWithdrawalWaitingForCancelation).to.be.true;
         // cancelation allowed
         await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
         await agentBot.handleTimelockedProcesses(orm.em);
-        expect(toBN(agentEnt.exitAvailableAllowedAtTimestamp).eqn(0)).to.be.true;
-        expect(agentEnt.underlyingWithdrawalWaitingForCancelation).to.be.false;
+        const reAgentEnt2 = await orm.em.findOneOrFail(AgentEntity, { vaultAddress: agentBot.agent.vaultAddress } as FilterQuery<AgentEntity>);
+        expect(reAgentEnt2.underlyingWithdrawalWaitingForCancelation).to.be.false;
     });
 
     it("Should ignore 'MintingExecuted' when self mint", async () => {
