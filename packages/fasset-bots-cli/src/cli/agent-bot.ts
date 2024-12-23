@@ -174,16 +174,15 @@ program
     .command("underlyingTopUp")
     .description("agent underlying top up")
     .argument("<agentVaultAddress>")
-    .action(async (agentVault: string) => {
+    .argument("<amount>")
+    .action(async (agentVault: string, amount: string) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         console.warn("Ensure run-agent is running to successfully top up.");
-        const minFreeUnderlyingBalance = cli.agentBotSettings.minimumFreeUnderlyingBalance;
-        if (minFreeUnderlyingBalance) {
-            const { agentBot } = await cli.getAgentBot(agentVault);
-            await agentBot.underlyingManagement.checkUnderlyingBalanceAndTopup(cli.orm.em);
-        }
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
+        const amountUBA = currency.parse(amount);
+        await cli.underlyingTopUp(agentVault, amountUBA);
     });
 
 program

@@ -295,13 +295,43 @@ describe("AgentBot cli commands unit tests", () => {
         expect(toBN(amount).gt(toBN(amountAfter))).to.be.true;
     });
 
+    it("Should run commands 'underlyingTopup' and then 'withdrawUnderlying'", async () => {
+        const agentBot = await createAgentBot();
+        const amountToWithdraw = toBN(100);
+        await fundUnderlying(context, agentBot.owner.workAddress, amountToWithdraw);
+        // topup
+        await botCliCommands.underlyingTopUp(agentBot.agent.vaultAddress, amountToWithdraw);
+        for (let i = 0; i < 5; i++) {
+            await agentBot.runStep(orm.em);
+            await time.increase(100);
+        }
+        // withdraw
+        await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
+        const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
+        expect(latest).to.not.be.null;
+        expect(toBN(latest!.announcedAtTimestamp).gt(BN_ZERO)).to.be.true;
+        for (let i = 0; i < 5; i++) {
+            await agentBot.runStep(orm.em);
+            await time.increase(100);
+        }
+        // there should be two payments in state of done
+        orm.em.clear();
+        const payments = await orm.em.find(AgentUnderlyingPayment, {});
+        expect(payments.length).to.be.eq(2);
+        expect(payments[0].state).to.be.eq(AgentUnderlyingPaymentState.DONE);
+        expect(payments[0].type).to.be.eq(AgentUnderlyingPaymentType.TOP_UP);
+        expect(payments[1].state).to.be.eq(AgentUnderlyingPaymentState.DONE);
+        expect(payments[1].type).to.be.eq(AgentUnderlyingPaymentType.WITHDRAWAL);
+        expect(String(await chain.getBalance("SomeRandomUnderlyingAddress"))).to.be.eq("100");
+    });
+
     it("Should run command 'withdrawUnderlying' and 'cancelUnderlyingWithdrawal'", async () => {
         const spyAnnounce = spy.on(botCliCommands, "withdrawUnderlying");
         const agentBot = await createAgentBot();
-        const amountToWithdraw = toBN(100);
-        await fundUnderlying(context, agentBot.agent.underlyingAddress, amountToWithdraw);
+        const amountToWithdraw = toBN(100e6);
+        // await fundUnderlying(context, agentBot.agent.underlyingAddress, amountToWithdraw);
+        console.log(String(await chain.getBalance(agentBot.agent.underlyingAddress)));
         await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
-
         const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
         if (latest === null) throw Error;
         expect(toBN(latest.announcedAtTimestamp).gt(BN_ZERO)).to.be.true;
@@ -310,17 +340,23 @@ describe("AgentBot cli commands unit tests", () => {
         const res = await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
         expect(res).to.be.null;
         //  not enough time passed
-        await agentBot.handleTimelockedProcesses(orm.em);
+        await botCliCommands.cancelUnderlyingWithdrawal(agentBot.agent.vaultAddress);
+        // await agentBot.handleTimelockedProcesses(orm.em);
+        orm.em.clear();
         const latestToSoon = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
         if (latestToSoon === null) throw Error;
         const latestId = latestToSoon.id;
         expect(toBN(latestToSoon.announcedAtTimestamp).gt(BN_ZERO)).to.be.true;
+        expect(latestToSoon.cancelled).to.not.be.true;
         // time passed
-        await time.increase((await context.assetManager.getSettings()).confirmationByOthersAfterSeconds);
+        const settings = await context.assetManager.getSettings();
+        await time.increase(settings.announcedUnderlyingConfirmationMinSeconds);
         await botCliCommands.cancelUnderlyingWithdrawal(agentBot.agent.vaultAddress);
-        await agentBot.handleTimelockedProcesses(orm.em);
-        const latestCancel = await orm.em.findOneOrFail(AgentUnderlyingPayment, { id: latestId } as FilterQuery<AgentUnderlyingPayment>);
-        if (latestCancel === null) throw Error;
+        for (let i = 0; i < 3; i++) {
+            await agentBot.runStep(orm.em);
+        }
+        orm.em.clear();
+        const latestCancel = await orm.em.findOneOrFail(AgentUnderlyingPayment, { id: latestId });
         expect(latestCancel.cancelled).to.be.true;
     });
 

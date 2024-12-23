@@ -857,4 +857,9 @@ export class AgentBotCommands {
         });
         console.log(`Agent ${agentVault} sent cancel underlying withdrawal announcement. It will be executed by 'run-agent'.`)
     }
+
+    async underlyingTopUp(agentVault: string, amountUBA: BN) {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        await agentBot.underlyingManagement.underlyingTopUp(this.orm.em, amountUBA);
+    }
 }
