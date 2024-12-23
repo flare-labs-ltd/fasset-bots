@@ -27,8 +27,6 @@ echo "***** Copying artifacts... **************************************"
 cd ${projdir}
 rm -rf artifacts; mkdir -p artifacts
 rm -rf typechain-truffle; mkdir -p typechain-truffle
-rm -rf fasset-deployment; mkdir -p fasset-deployment
-rm -rf fasset-config; mkdir -p fasset-config
 
 # copy fasset artifacts
 cd ${fassetsdir}/artifacts
@@ -59,10 +57,7 @@ bash scripts/rename-and-update-artifacts.sh
 
 # copy contract addresses
 echo "***** Copying config... *****************************************"
-cd ${fassetsdir}/deployment/deploys
-cp -R . ${projdir}/fasset-deployment
-rm -f ${projdir}/fasset-deployment/hardhat*
-
-# copy deploy configs
+# copy schemas and deploy configs for hardhat (for unit tests)
 cd ${fassetsdir}/deployment/config
-cp -R . ${projdir}/fasset-config
+cp ./*.schema.json ${projdir}/fasset-config/
+cp -R hardhat ${projdir}/fasset-config/

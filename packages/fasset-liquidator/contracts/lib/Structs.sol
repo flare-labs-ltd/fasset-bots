@@ -39,7 +39,7 @@ struct DexPairConfig {
 
 struct ArbitrageConfig {
     address flashLender;
-    uint256 maxFlashFee;
+    uint256 maxFlashFeeBips;
     address dex;
     DexPairConfig dexPair1;
     DexPairConfig dexPair2;

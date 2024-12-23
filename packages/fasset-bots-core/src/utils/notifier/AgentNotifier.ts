@@ -80,6 +80,7 @@ export enum AgentNotificationKey {
     UNDERLYING_PAYMENT_PAID = "UNDERLYING PAYMENT",
     UNDERLYING_PAYMENT_PROOF = "UNDERLYING PAYMENT PROOF REQUESTED",
     UNDERLYING_NO_PROOF_OBTAINED = "NO PROOF OBTAINED FOR UNDERLYING PAYMENT",
+    UNDERLYING_PAYMENT_TOP_UP_FAILED = "UNDERLYING TOP UP FAILED",
     // pool
     BUY_POOL_TOKENS = "BUY POOL TOKENS",
     VAULT_COLLATERAL_DEPOSIT = "VAULT COLLATERAL DEPOSIT",
@@ -222,6 +223,13 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
         await this.danger(
             AgentNotificationKey.POOL_COLLATERAL_TOP_UP_FAILED,
             `Agent ${this.address} POOL could not be automatically topped up with collateral ${value} due to price changes.`
+        );
+    }
+
+    async sendUnderlyingTopUpFailedAlert(underlyingPaymentId: number) {
+        await this.danger(
+            AgentNotificationKey.UNDERLYING_PAYMENT_TOP_UP_FAILED,
+            `Agent ${this.address} cannot top up underlying payment ${underlyingPaymentId}.`
         );
     }
 
@@ -543,11 +551,11 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
     }
 
     async sendSelfMintPerformingPayment(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_PERFORM_PAYMENT, `Performing underlying payment for self mint of ${lots} on vault ${this.address}.`);
+        await this.info(AgentNotificationKey.SELF_MINT_PERFORM_PAYMENT, `Performing underlying payment for self mint of ${lots} lots on vault ${this.address}.`);
     }
 
-    async sendSelfMintProvingPayment(lots: string) {
-        await this.info(AgentNotificationKey.SELF_MINT_PROVE_PAYMENT, `Proving underlying payment for self mint of ${lots} on vault ${this.address}.`);
+    async sendSelfMintProvingPayment(lots: string, transactionHash: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_PROVE_PAYMENT, `Proving underlying payment ${transactionHash} for self mint of ${lots} lots on vault ${this.address}.`);
     }
 
     async sendSelfMintExecuted(lots: string) {

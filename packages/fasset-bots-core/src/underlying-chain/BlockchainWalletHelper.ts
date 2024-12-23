@@ -25,7 +25,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         options?: TransactionOptionsWithFee,
         executeUntilBlock?: number,
         executeUntilTimestamp?: BN,
-        feeSource?: string,
+        isFreeUnderlying?: boolean,
+        feeSource?: string
     ): Promise<number> {
         const value = toBN(amount);
         const fee = undefined;
@@ -34,7 +35,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         const note = reference ? unPrefix0x(reference) : undefined;
         const privateKey = await this.walletKeys.getKey(sourceAddress);
         if (privateKey) {
-            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee, executeUntilBlock, executeUntilTimestamp, feeSource, maxPaymentForFeeSource);
+            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee, executeUntilBlock, executeUntilTimestamp, isFreeUnderlying, feeSource, maxPaymentForFeeSource);
             return dbId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);

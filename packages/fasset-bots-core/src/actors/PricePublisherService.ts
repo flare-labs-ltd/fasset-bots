@@ -1,11 +1,13 @@
 import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
-import { BotConfigFile, loadContracts, Secrets } from '../config';
-import { artifacts, assertCmd, assertNotNullCmd, requireNotNull, sleep, web3 } from "../utils";
+import { BotConfigFile, dataAccessLayerApiKey, loadContracts, Secrets } from '../config';
+import { artifacts, assertCmd, assertNotNullCmd, errorIncluded, requireNotNull, sleep, web3 } from "../utils";
 import { FspStatusResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
+import { withSettings } from '../utils/mini-truffle-contracts/contracts';
 
 export const DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS = 1000;
+export const PRICE_PUBLISHING_TIME_RANDOMIZATION_MS = 5000;
 
 const FtsoV2PriceStore = artifacts.require("FtsoV2PriceStore");
 
@@ -15,7 +17,7 @@ export class PricePublisherService {
         private ftsoV2PriceStore: FtsoV2PriceStoreInstance,
         private publisherAddress: string,
         private priceFeedApiUrls: string[],
-        private apiKey: string,
+        private apiKeys: string[],
         private loopDelayMs: number,
     ) {
     }
@@ -29,10 +31,10 @@ export class PricePublisherService {
             "Field dataAccessLayerUrls must be defined and nonempty for price publisher");
         assertNotNullCmd(runConfig.contractsJsonFile, "Contracts file is required for price publisher");
         const contracts = loadContracts(runConfig.contractsJsonFile);
-        const publisherApiKey = secrets.optional("apiKey.data_access_layer") ?? "";
+        const publisherApiKeys = dataAccessLayerApiKey(secrets, runConfig.dataAccessLayerUrls);
         const maxDelayMs = runConfig.pricePublisherConfig.loopDelayMs ?? DEFAULT_PRICE_PUBLISHER_LOOP_DELAY_MS;
         const ftsoV2PriceStore = await FtsoV2PriceStore.at(contracts.FtsoV2PriceStore.address);
-        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.dataAccessLayerUrls, publisherApiKey, maxDelayMs);
+        const pricePublisherService = new PricePublisherService(ftsoV2PriceStore, pricePublisherAddress, runConfig.dataAccessLayerUrls, publisherApiKeys, maxDelayMs);
         return pricePublisherService;
     }
 
@@ -41,8 +43,12 @@ export class PricePublisherService {
         void loggerAsyncStorage.run("price-publisher", () => this.run());
     }
 
-    async stop() {
+    requestStop() {
         this.running = false;
+    }
+
+    async stop() {
+        this.requestStop();
         while (!this.stopped) {
             await sleep(100);
         }
@@ -57,10 +63,17 @@ export class PricePublisherService {
                 const lastAvailableRoundId = await this.getLastAvailableRoundId();
                 const lastPublishedRoundId = Number(await this.ftsoV2PriceStore.lastPublishedVotingRoundId());
                 if (lastAvailableRoundId > lastPublishedRoundId) {
+                    // wait a small random time to avoid many reverts because all agents publish at the same time
+                    const randomWaitMS = Math.floor(Math.random() * PRICE_PUBLISHING_TIME_RANDOMIZATION_MS);
+                    await sleep(randomWaitMS);
                     await this.getAndPublishFeedData(lastAvailableRoundId);
                 }
             } catch (error) {
-                logger.error(`Error in publishing prices: ${error}`);
+                if (errorIncluded(error, ["prices already published"])) {
+                    logger.info("Reverted with: prices already published")
+                } else {
+                    logger.error(`Error in publishing prices: ${error}`);
+                }
             }
             await sleep(this.loopDelayMs);
         }
@@ -71,11 +84,11 @@ export class PricePublisherService {
 
     async getLastAvailableRoundId() {
         let lastRoundId = -1;
-        for (const url of this.priceFeedApiUrls) {
+        for (const [index, url] of this.priceFeedApiUrls.entries()) {
             try {
                 const response = await axios.get<FspStatusResult>(`${url}/api/v0/fsp/status`, {
                     headers: {
-                        'x-api-key': this.apiKey
+                        'x-apikey': this.apiKeys[index]
                     }
                 });
                 const roundId = Number(requireNotNull(response.data.latest_ftso.voting_round_id));
@@ -92,9 +105,9 @@ export class PricePublisherService {
 
     async getFeedData(votingRoundId: number, feedIds: string[]) {
         let errors = 0;
-        for (const url of this.priceFeedApiUrls) {
+        for (const [index, url] of this.priceFeedApiUrls.entries()) {
             try {
-                const feeds = await this.getFeedDataForUrl(url, votingRoundId, feedIds);
+                const feeds = await this.getFeedDataForUrl(url, this.apiKeys[index], votingRoundId, feedIds);
                 if (feeds != null) {
                     return feeds;
                 }
@@ -109,12 +122,12 @@ export class PricePublisherService {
         return null;
     }
 
-    private async getFeedDataForUrl(url: string, votingRoundId: number, feedIds: string[]): Promise<FtsoFeedResultWithProof[] | null> {
+    private async getFeedDataForUrl(url: string, apiKey: string, votingRoundId: number, feedIds: string[]): Promise<FtsoFeedResultWithProof[] | null> {
         const response = await axios.post(`${url}/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}`, {
             feed_ids: feedIds
         }, {
             headers: {
-                'x-api-key': this.apiKey
+                'x-apikey': apiKey
             }
         });
         // get data
@@ -137,33 +150,21 @@ export class PricePublisherService {
         if (feedsData != null) {
             const lastPublishedRoundId = Number(await this.ftsoV2PriceStore.lastPublishedVotingRoundId());
             if (votingRoundId > lastPublishedRoundId) {
-                const gasPrice = await this.estimateGasPrice();
-                await this.ftsoV2PriceStore.publishPrices(feedsData, { from: this.publisherAddress, gasPrice: gasPrice.toString() });
+                const ftsoV2PriceStore = withSettings(this.ftsoV2PriceStore, {
+                    // It is really important that at least one bot submits prices soon after they are proved,
+                    // so force a very large price factor if the submission isn't mined immediately.
+                    resubmitTransaction: [
+                        { afterMS: 5000, priceFactor: 2.0 },
+                        { afterMS: 15000, priceFactor: 5.0 },
+                    ]
+                });
+                await ftsoV2PriceStore.publishPrices(feedsData, { from: this.publisherAddress });
                 logger.info(`Prices published for round ${votingRoundId}`);
             } else {
                 logger.info(`Prices for round ${votingRoundId} already published`);
             }
         } else {
             logger.info(`No new price data available`);
-        }
-    }
-
-    async estimateGasPrice(lastBlock?: number) {
-        try {
-            lastBlock ??= await web3.eth.getBlockNumber() - 3;
-            const feeHistory = await web3.eth.getFeeHistory(50, lastBlock, [0]);
-            const baseFee = feeHistory.baseFeePerGas;
-            // get max fee of the last 50 blocks
-            let maxFee = BigInt(0);
-            for (const fee of baseFee) {
-                if (BigInt(fee) > maxFee) {
-                    maxFee = BigInt(fee);
-                }
-            }
-            return maxFee * BigInt(3);
-        } catch (e) {
-            logger.warn("Using getFeeHistory failed; will use getGasPrice instead");
-            return BigInt(await web3.eth.getGasPrice()) * BigInt(5);
         }
     }
 }

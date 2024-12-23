@@ -3,7 +3,7 @@ import { LiquidatorInstance } from "../../../typechain-truffle";
 import { ILiquidatorContext } from "../../fasset-bots/IAssetBotContext";
 import { TrackedAgentState } from "../../state/TrackedAgentState";
 import { TrackedState } from "../../state/TrackedState";
-import { Currencies, MAX_UINT256, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
+import { Currencies, MAX_BIPS, ZERO_ADDRESS, formatFixed, logger, squashSpace, toBN } from "../../utils";
 import { artifacts } from "../../utils/web3";
 import type { DefaultLiquidationStrategyConfig, DexLiquidationStrategyConfig } from "../../config/config-files/BotStrategyConfig";
 
@@ -50,7 +50,8 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy<DefaultLiqui
 
     protected async liquidate(agent: TrackedAgentState, amountUBA: BN): Promise<void> {
         const before = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
-        await this.context.assetManager.liquidate(agent.vaultAddress, amountUBA, { from: this.address, gasPrice: this.config?.gasPrice });
+        await this.context.assetManager.liquidate(agent.vaultAddress, amountUBA, {
+            from: this.address, maxPriorityFeePerGas: this.config?.maxPriorityFeePerGas });
         const after = await this.context.assetManager.getAgentInfo(agent.vaultAddress);
         const diff = toBN(before.mintedUBA).sub(toBN(after.mintedUBA));
         const cur = await Currencies.fasset(this.context);
@@ -66,9 +67,9 @@ export class DefaultLiquidationStrategy extends LiquidationStrategy<DefaultLiqui
 export class DexLiquidationStrategy extends LiquidationStrategy<DexLiquidationStrategyConfig> {
 
     protected async dexMinPriceOracle(challenger: LiquidatorInstance, agent: TrackedAgentState): Promise<[BN, BN, BN, BN]> {
-        const maxSlippage = this.config.maxAllowedSlippage
+        const maxSlippageBips = MAX_BIPS * (this.config.maxAllowedSlippage ?? 0.02);
         const { 0: minPriceMulDex1, 1: minPriceDivDex1, 2: minPriceMulDex2, 3: minPriceDivDex2 } =
-            await challenger.maxSlippageToMinPrices(maxSlippage, maxSlippage, agent.vaultAddress, { from: this.address });
+            await challenger.maxSlippageToMinPrices(maxSlippageBips, maxSlippageBips, agent.vaultAddress, { from: this.address });
         return [minPriceMulDex1, minPriceDivDex1, minPriceMulDex2, minPriceDivDex2];
     }
 
@@ -81,10 +82,11 @@ export class DexLiquidationStrategy extends LiquidationStrategy<DexLiquidationSt
     public async liquidate(agent: TrackedAgentState): Promise<void> {
         const liquidator = await Liquidator.at(this.config.address);
         const oraclePrices = await this.dexMinPriceOracle(liquidator, agent);
+        const maxFlashFee = this.config.maxFlashFee ?? 0.1;
         await liquidator.runArbitrage(agent.vaultAddress, this.address, {
-            flashLender: ZERO_ADDRESS,
-            maxFlashFee: MAX_UINT256,
-            dex: ZERO_ADDRESS,
+            flashLender: this.config.flashLender ?? ZERO_ADDRESS,
+            maxFlashFeeBips: MAX_BIPS * maxFlashFee,
+            dex: this.config.dexRouter ?? ZERO_ADDRESS,
             dexPair1: {
                 path: [],
                 minPriceMul: oraclePrices[0],

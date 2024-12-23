@@ -24,13 +24,13 @@ import { agentNotifierThrottlingTimes } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { ApiNotifierTransport, ConsoleNotifierTransport, LoggerNotifierTransport, ThrottlingNotifierTransport } from "../utils/notifier/NotifierTransports";
 import { AssetContractRetriever } from "./AssetContractRetriever";
-import { AgentBotFassetSettingsJson, AgentBotSettingsJson, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, OrmConfigOptions } from "./config-files/BotConfigFile";
+import { AgentBotFassetSettingsJson, AgentBotSettingsJson, AgentSettingsConfigDefaults, ApiNotifierConfig, BotConfigFile, BotFAssetInfo, BotNativeChainInfo, OrmConfigOptions } from "./config-files/BotConfigFile";
 import { LiquidatorBotStrategyDefinition, ChallengerBotStrategyDefinition } from "./config-files/BotStrategyConfig";
 import { DatabaseAccount } from "./config-files/SecretsFile";
 import { createWalletClient, requireSupportedChainId } from "./create-wallet-client";
 import { EM, ORM } from "./orm";
 import { AgentBotDbUpgrades } from "../actors/AgentBotDbUpgrades";
-import { ChainalysisClient, KycClient } from "../actors/plugins/KycStrategy";
+import { ChainalysisClient, HandshakeAddressVerifier } from "../actors/plugins/HandshakeAddressVerifier";
 
 export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     secrets: Secrets;
@@ -41,7 +41,6 @@ export interface BotConfig<T extends BotFAssetConfig = BotFAssetConfig> {
     nativeChainInfo: NativeChainInfo;
     contractRetriever: AssetContractRetriever;
     // liquidation strategies for liquidator and challenger
-    autoUpdateContracts: boolean // used to auto update contract, when ContractChanged event
     liquidationStrategy?: LiquidatorBotStrategyDefinition; // only for liquidator (optional)
     challengeStrategy?: ChallengerBotStrategyDefinition; // only for challenger (optional)
 }
@@ -68,6 +67,7 @@ export interface AgentBotSettings {
     minimumFreeUnderlyingBalance: BN;
     minBalanceOnServiceAccount: BN;
     minBalanceOnWorkAccount: BN;
+    defaultAgentSettings: AgentSettingsConfigDefaults;
 }
 
 export type BotFAssetAgentConfig = RequireFields<BotFAssetConfig, "wallet" | "blockchainIndexerClient" | "flareDataConnector" | "verificationClient" | "agentBotSettings">;
@@ -112,7 +112,6 @@ export async function createBotConfig(type: BotConfigType, secrets: Secrets, con
             contractRetriever: retriever,
             liquidationStrategy: configFile.liquidationStrategy,
             challengeStrategy: configFile.challengeStrategy,
-            autoUpdateContracts: configFile.prioritizeAddressUpdater
         };
         return result;
     } catch (error) {
@@ -201,10 +200,12 @@ export async function createBotFAssetConfig(
         assertNotNull(submitter);   // if this is missing, it is program error
         const fdcHubAddress = await retriever.getContractAddress("FdcHub");
         const relayAddress = await retriever.getContractAddress("Relay");
-        const apiKeys: string[] = indexerApiKey(secrets, fassetInfo.indexerUrls);
-        result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrls, apiKeys);
-        result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrls, apiKeys);
-        result.flareDataConnector = await createFlareDataConnectorClient(fassetInfo.indexerUrls, apiKeys, dataAccessLayerUrls, settings.fdcVerification, fdcHubAddress, relayAddress, submitter);
+        const indexerApiKeys: string[] = indexerApiKey(secrets, fassetInfo.indexerUrls);
+        const dataAccessLayerApiKeys: string[] = dataAccessLayerApiKey(secrets, dataAccessLayerUrls);
+        result.blockchainIndexerClient = createBlockchainIndexerHelper(chainId, fassetInfo.indexerUrls, indexerApiKeys);
+        result.verificationClient = await createVerificationApiClient(fassetInfo.indexerUrls, indexerApiKeys);
+        result.flareDataConnector = await createFlareDataConnectorClient(fassetInfo.indexerUrls, indexerApiKeys,
+            dataAccessLayerUrls, dataAccessLayerApiKeys, settings.fdcVerification, fdcHubAddress, relayAddress, submitter);
     }
     return result;
 }
@@ -236,6 +237,7 @@ function createAgentBotSettings(agentBotSettings: AgentBotSettingsJson, fassetSe
         recommendedOwnerUnderlyingBalance: underlying.parse(fassetSettings.recommendedOwnerBalance),
         minBalanceOnServiceAccount: native.parse(agentBotSettings.minBalanceOnServiceAccount),
         minBalanceOnWorkAccount: native.parse(agentBotSettings.minBalanceOnWorkAccount),
+        defaultAgentSettings: { ...agentBotSettings.defaultAgentSettings, ...fassetSettings.defaultAgentSettings },
     }
 }
 
@@ -287,12 +289,13 @@ export async function createFlareDataConnectorClient(
     indexerWebServerUrls: string[],
     indexerApiKeys: string[],
     dataAccessLayerUrls: string[],
+    dataAccessLayerApiKeys: string[],
     fdcVerificationAddress: string,
     fdcHubAddress: string,
     relayAddress: string,
     submitter: string
 ): Promise<FlareDataConnectorClientHelper> {
-    return await FlareDataConnectorClientHelper.create(dataAccessLayerUrls, fdcVerificationAddress, fdcHubAddress, relayAddress, indexerWebServerUrls, indexerApiKeys, submitter);
+    return await FlareDataConnectorClientHelper.create(dataAccessLayerUrls, dataAccessLayerApiKeys, fdcVerificationAddress, fdcHubAddress, relayAddress, indexerWebServerUrls, indexerApiKeys, submitter);
 }
 
 export async function createVerificationApiClient(indexerWebServerUrls: string[], indexerApiKeys: string[]): Promise<VerificationPrivateApiClient> {
@@ -315,18 +318,28 @@ export function indexerApiKey(secrets: Secrets, indexerUrls: string[]): string[]
     if (Array.isArray(apiTokenKey) && apiTokenKey.length != indexerUrls.length) {
         throw new Error(`Cannot create indexers. The number of URLs and API keys do not match.`);
     }
-    const apiTokenKeys = Array.isArray(apiTokenKey) ? apiTokenKey : Array(indexerUrls.length).fill(apiTokenKey);
-    return apiTokenKeys;
+    return Array.isArray(apiTokenKey) ? apiTokenKey : Array(indexerUrls.length).fill(apiTokenKey);
 }
 
 /**
- * Get the kyc client.
+ * Extract data access layer api key.
  */
-export function getKycClient(secrets: Secrets): KycClient | null {
-    const kycClientUrl = secrets.optional("kyc.url");
-    if (kycClientUrl == null || kycClientUrl == "") {
+export function dataAccessLayerApiKey(secrets: Secrets, dataAccessLayerUrls: string[]): string[] {
+    const apiTokenKey = secrets.requiredOrRequiredArray("apiKey.data_access_layer");
+    if (Array.isArray(apiTokenKey) && apiTokenKey.length != dataAccessLayerUrls.length) {
+        throw new Error(`Cannot create dataAccessLayer. The number of URLs and API keys do not match.`);
+    }
+    return Array.isArray(apiTokenKey) ? apiTokenKey : Array(dataAccessLayerUrls.length).fill(apiTokenKey);
+}
+
+/**
+ * Get the handshake address verifier client.
+ */
+export function getHandshakeAddressVerifier(secrets: Secrets): HandshakeAddressVerifier | null {
+    const havClientUrl = secrets.optional("handshakeAddressVerifierApi.url");
+    if (havClientUrl == null || havClientUrl == "") {
         return null;
     }
-    const kycClientApiKey = secrets.required("kyc.api_key");
-    return new ChainalysisClient(kycClientUrl, kycClientApiKey);
+    const havClientApiKey = secrets.required("handshakeAddressVerifierApi.api_key");
+    return new ChainalysisClient(havClientUrl, havClientApiKey);
 }

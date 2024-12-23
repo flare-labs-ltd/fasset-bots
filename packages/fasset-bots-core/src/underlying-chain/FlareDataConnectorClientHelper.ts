@@ -45,6 +45,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
 
     constructor(
         public dataAccessLayerUrls: string[],
+        public dataAccessLayerApiKeys: string[],
         public fdcVerificationAddress: string,
         public fdcHubAddress: string,
         public relayAddress: string,
@@ -52,8 +53,8 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         public verifierUrlApiKeys: string[],
         public account: string,
     ) {
-        for (const url of dataAccessLayerUrls) {
-            this.dataAccessLayerClients.push(axios.create(createAxiosConfig(url)));
+        for (const [index, url] of dataAccessLayerUrls.entries()) {
+            this.dataAccessLayerClients.push(axios.create(createAxiosConfig(url, dataAccessLayerApiKeys[index])));
         }
         for (const [index, url] of verifierUrls.entries()) {
             this.verifierClients.push(axios.create(createAxiosConfig(url, verifierUrlApiKeys[index])));
@@ -73,7 +74,8 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
     }
 
     static async create(
-        urls: string[],
+        dataAccessLayerUrls: string[],
+        dataAccessLayerApiKeys: string[],
         attestationClientAddress: string,
         fdcHubAddress: string,
         relayAddress: string,
@@ -81,7 +83,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         verifierUrlApiKeys: string[],
         account: string
     ): Promise<FlareDataConnectorClientHelper> {
-        const helper = new FlareDataConnectorClientHelper(urls, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrls, verifierUrlApiKeys, account);
+        const helper = new FlareDataConnectorClientHelper(dataAccessLayerUrls, dataAccessLayerApiKeys, attestationClientAddress, fdcHubAddress, relayAddress, verifierUrls, verifierUrlApiKeys, account);
         await helper.initFlareDataConnector();
         return helper;
     }
@@ -173,7 +175,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
 
     async obtainProof(round: number, requestData: string): Promise<OptionalAttestationProof> {
         const proof = await retry(this.obtainProofFromFlareDataConnector.bind(this), [round, requestData], DEFAULT_RETRIES);
-        logger.info(`Flare data connector helper: obtained proof ${formatArgs(proof)}`);
+        logger.info(`Flare data connector helper: obtained proof ${JSON.stringify(proof)}`);
         return proof;
     }
 
@@ -207,7 +209,6 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
             }
             throw new FlareDataConnectorClientError("There aren't any working attestation providers.");
         } catch (e) {
-            logger.error(`Flare data connector error`, e);
             /* istanbul ignore next */
             throw e instanceof FlareDataConnectorClientError ? e : new FlareDataConnectorClientError(String(e));
         }
@@ -218,6 +219,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
         // does the client have info about this round yet?
         const latestRound = await this.latestFinalizedRoundOnClient(client).catch(() => 0);
         if (latestRound < roundId) {
+            logger.info(`Client ${client.getUri()} does not yet have data for round ${roundId} (latest=${latestRound})`);
             return null;
         }
         // get response
@@ -242,10 +244,13 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
             data: response.data.response,
             merkleProof: response.data.proof,
         };
-        const verified = await this.verifyProof(proof);
+        const verified = await this.verifyProof(proof)
+            .catch(e => {
+                logger.error(`Error verifying proof: ${e}`);
+            });
         /* istanbul ignore next */
         if (!verified) {
-            logger.error(`Flare data connector error: proof does not verify on ${client.getUri()}! Round=${roundId} request=${requestBytes}.`);
+            logger.error(`Flare data connector error: proof does not verify on ${client.getUri()}! Round=${roundId} request=${requestBytes} proof=${JSON.stringify(proof)}.`);
             return null; // since the round is finalized, the client apparently has invalid proof - skip it
         }
         return proof;
@@ -267,7 +272,7 @@ export class FlareDataConnectorClientHelper implements IFlareDataConnectorClient
                 return await this.fdcVerification.verifyAddressValidity(normalizedProofData);
             default:
                 logger.error(`Flare data connector error: invalid attestation type ${proofData.data.attestationType}`);
-                throw new FlareDataConnectorClientError(`Invalid attestation type ${proofData.data.attestationType}`);
+                return false;
         }
     }
 }

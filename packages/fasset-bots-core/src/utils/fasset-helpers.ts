@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AssetManagerEvents, IAssetAgentContext, IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
-import { AgentInfo, AgentSettings } from "../fasset/AssetManagerTypes";
+import { AgentInfo, AgentSettings, AssetManagerSettings } from "../fasset/AssetManagerTypes";
 import { AttestationHelper } from "../underlying-chain/AttestationHelper";
 import { BlockchainIndexerHelper } from "../underlying-chain/BlockchainIndexerHelper";
 import { IBlock } from "../underlying-chain/interfaces/IBlockChain";
@@ -123,5 +123,14 @@ export function maxFeeMultiplier(chainId: ChainId): number {
         return 10;
     } else {
         return 1;
+    }
+}
+
+export function confirmationAllowedAt(announcedAt: BN, assetManagerSettings: AssetManagerSettings): BN | null {
+    if (toBN(announcedAt).gt(BN_ZERO)) {
+        const announcedUnderlyingConfirmationMinSeconds = toBN(assetManagerSettings.announcedUnderlyingConfirmationMinSeconds);
+        return toBN(announcedAt).add(announcedUnderlyingConfirmationMinSeconds);
+    } else {
+        return null;
     }
 }

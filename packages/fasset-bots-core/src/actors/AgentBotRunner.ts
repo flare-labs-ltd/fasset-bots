@@ -1,6 +1,6 @@
 import { CreateRequestContext } from "@mikro-orm/core";
 import BN from "bn.js";
-import { AgentBotConfig, AgentBotSettings, getKycClient, Secrets } from "../config";
+import { AgentBotConfig, AgentBotSettings, getHandshakeAddressVerifier, Secrets } from "../config";
 import { createAgentBotContext } from "../config/create-asset-context";
 import { ORM } from "../config/orm";
 import { AgentEntity } from "../entities/agent";
@@ -13,7 +13,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { AgentBot, AgentBotLocks, AgentBotTransientStorage, ITimeKeeper } from "./AgentBot";
 import { ITransactionMonitor } from "@flarelabs/simple-wallet";
 import { ChainId } from "../underlying-chain/ChainId";
-import { KycClient } from "./plugins/KycStrategy";
+import { HandshakeAddressVerifier } from "./plugins/HandshakeAddressVerifier";
 
 export const FUND_MIN_INTERVAL_MS = 60 * 3 * 1000; // 3 minutes
 
@@ -32,8 +32,7 @@ export class AgentBotRunner {
         public loopDelay: number,
         public notifierTransports: NotifierTransport[],
         public timekeeperService: ITimeKeeperService,
-        public autoUpdateContracts: boolean,
-        public kycClient: KycClient | null
+        public handshakeAddressVerifier: HandshakeAddressVerifier | null
     ) {}
 
     public stopRequested = false;
@@ -184,7 +183,7 @@ export class AgentBotRunner {
         }
         const agentBotSettings = requireNotNull(this.settings.get(agentEntity.fassetSymbol));    // cannot be missing - see create()
         const ownerUnderlyingAddress = AgentBot.underlyingAddress(this.secrets, context.chainInfo.chainId);
-        const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEntity, ownerUnderlyingAddress, this.notifierTransports, this.kycClient);
+        const agentBot = await AgentBot.fromEntity(context, agentBotSettings, agentEntity, ownerUnderlyingAddress, this.notifierTransports, this.handshakeAddressVerifier);
         agentBot.runner = this;
         agentBot.timekeeper = this.timekeeperService.get(agentEntity.fassetSymbol);
         agentBot.transientStorage = getOrCreate(this.transientStorage, agentBot.agent.vaultAddress, () => new AgentBotTransientStorage());
@@ -259,9 +258,9 @@ export class AgentBotRunner {
             logger.info(squashSpace`Owner's ${ownerAddress} AgentBotRunner set context for fasset token ${chainConfig.fAssetSymbol}
                 on chain ${assetContext.chainInfo.chainId} with asset manager ${assetContext.assetManager.address}`);
         }
-        const kycClient = getKycClient(secrets);
+        const handshakeAddressVerifier = getHandshakeAddressVerifier(secrets);
         logger.info(`Owner ${ownerAddress} created AgentBotRunner.`);
-        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, botConfig.autoUpdateContracts, kycClient);
+        return new AgentBotRunner(secrets, contexts, settings, botConfig.orm, botConfig.loopDelay, botConfig.notifiers, timekeeperService, handshakeAddressVerifier);
     }
 
     async addSimpleWalletToLoop(agentBot: AgentBot) {

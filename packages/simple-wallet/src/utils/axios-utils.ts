@@ -7,14 +7,16 @@ import axiosRateLimit from "../axios-rate-limiter/axios-rate-limit";
 import { AxiosError } from "axios";
 import { fullStackTrace, sleepMs, updateErrorWithFullStackTrace } from "./utils";
 
-export async function tryWithClients<T>(clients: AxiosInstance[], operation: (client: AxiosInstance) => Promise<T>, method: string) {
+export async function tryWithClients<T>(clients: AxiosInstance[], operation: (client: AxiosInstance) => Promise<T>, method: string, logWithStackTrace: boolean = true) {
     for (const [index] of clients.entries()) {
         try {
             const result = await operation(clients[index]);
             return result;
         } catch (error) {
             const failedUrl = clients[index].defaults.baseURL ?? 'Unknown URL';
-            logger.warn(`Client with index ${index}, url ${failedUrl} and method ${method} failed with: ${errorMessage(error)}`);
+            if (logWithStackTrace) {
+                logger.warn(`Client with index ${index}, url ${failedUrl} and method ${method} failed with: ${errorMessageWithStackTrace(error)}`);
+            }
             const lastClient = clients.length - 1;
             if (index === lastClient) {
                 throw updateErrorWithFullStackTrace(error);
@@ -28,7 +30,7 @@ export function isORMError(e: unknown) {
     return e instanceof ValidationError || e instanceof DriverException || e instanceof UniqueConstraintViolationException;
 }
 
-export function errorMessage(e: unknown) {
+export function errorMessageWithStackTrace(e: unknown) {
     if (e instanceof AxiosError) {
         const { code, config, response } = e;
         const statusCode = response?.status ?? 'No Status';
@@ -47,6 +49,28 @@ export function errorMessage(e: unknown) {
         return `${e.name} - ${e.message}\nStack Trace: ${fullStackTrace(e, 1)}`;
     } else {
         return `Unkown error - ${String(e)}\nStack Trace: ${new Error(String(e)).stack}`;
+    }
+}
+
+export function errorMessage(e: unknown) {
+    if (e instanceof AxiosError) {
+        const { code, config, response } = e;
+        const statusCode = response?.status ?? 'No Status';
+        const statusText = response?.statusText ?? 'No Status Text';
+        const url = config?.url ?? 'No URL';
+        let responseData = 'No Response Data';
+        if (response?.data) {
+            if (typeof response.data === 'string') {
+                responseData = response.data;
+            } else if (typeof response.data === 'object') {
+                responseData = JSON.stringify(response.data, null, 2);
+            }
+        }
+        return `AxiosError - Code: ${code}, URL: ${url}, Status: ${statusCode} ${statusText} - ${e.message}\nResponse Data: ${responseData}`;
+    } else if (e instanceof Error) {
+        return `${e.name} - ${e.message}`;
+    } else {
+        return `Unkown error - ${String(e)}`;
     }
 }
 

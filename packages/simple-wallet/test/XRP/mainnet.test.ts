@@ -1,27 +1,31 @@
 import {
     AccountSecrets,
+    AccountSecretsForStressTest,
     addConsoleTransportForTests,
     createNote,
     createWallet,
     decryptTestSecrets,
     loop,
     promptPassword,
-    resetMonitoringOnForceExit, waitForTxToBeReplacedWithStatus,
+    resetMonitoringOnForceExit,
+    waitForTxToBeReplacedWithStatus,
     waitForTxToFinishWithStatus
 } from "../test-util/common_utils";
 import {
     ITransactionMonitor,
-    logger, RippleWalletConfig,
+    logger,
+    RippleWalletConfig,
     TransactionStatus,
-    WalletAddressEntity, XRP
+    WalletAddressEntity,
+    XRP
 } from "../../src";
-import config, {initializeMainnetMikroORM, ORM} from "../test-orm/mikro-orm.config";
-import {setMonitoringStatus} from "../test-util/entity_utils";
-import {expect, use} from "chai";
-import {toBN, toBNExp} from "../../src/utils/bnutils";
+import config, { initializeMainnetMikroORM, ORM } from "../test-orm/mikro-orm.config";
+import { setMonitoringStatus } from "../test-util/entity_utils";
+import { expect, use } from "chai";
+import { toBN, toBNExp } from "../../src/utils/bnutils";
 import chaiAsPromised from "chai-as-promised";
-import {DBWalletKeys} from "../test-orm/WalletKeys";
-import {XRP_DECIMAL_PLACES} from "../../src/utils/constants";
+import { DBWalletKeys } from "../test-orm/WalletKeys";
+import { XRP_DECIMAL_PLACES } from "../../src/utils/constants";
 
 use(chaiAsPromised);
 
@@ -40,6 +44,7 @@ const amountToSendDrops = toBNExp(10, XRP_DECIMAL_PLACES);
 let wClient: XRP;
 let testOrm: ORM;
 let monitor: ITransactionMonitor;
+let stressTestSecrets: AccountSecretsForStressTest;
 
 describe("XRP mainnet wallet tests", () => {
     let removeConsoleLogging: () => void;
@@ -47,6 +52,9 @@ describe("XRP mainnet wallet tests", () => {
     before(async () => {
         const password = await promptPassword();
         const testSecrets = await decryptTestSecrets(process.env.TEST_SECRETS_ENCRYPTED_PATH!, password) as AccountSecrets;
+        const passwordForStressTest = await promptPassword(`Enter password for stress test secrets: `);
+        stressTestSecrets = await decryptTestSecrets(process.env.STRESS_TEST_SECRETS_ENCRYPTED_PATH!, passwordForStressTest) as AccountSecretsForStressTest;
+
         const apiKey = testSecrets.XRP.api_key;
 
         removeConsoleLogging = addConsoleTransportForTests(logger);
@@ -113,6 +121,60 @@ describe("XRP mainnet wallet tests", () => {
         expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
+    it("Stress test", async () => {
+        const N = 50;
+        const amountToSendDrops = toBNExp(0.2, XRP_DECIMAL_PLACES);
+        const xrpReserveAmount = toBNExp(1, XRP_DECIMAL_PLACES);
+
+        const transactionIds = [];
+        for (let i = 0; i < N; i++) {
+            const wallet = stressTestSecrets.XRP.targetWallets[i];
+            await wClient.walletKeys.addKey(wallet.address, wallet.private_key);
+            const balance = await wClient.getAccountBalance(wallet.address);
+            const amount = balance.gt(xrpReserveAmount) ? amountToSendDrops.muln(3.5) : amountToSendDrops.muln(3.5).add(xrpReserveAmount);
+
+            transactionIds.push(await wClient.createPaymentTransaction(fundedAddress, wallet.address, amount));
+        }
+
+        await Promise.all(transactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 240, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
+
+        const transferTransactionIds = [];
+        for (let i = 1; i < N; i++) {
+            const id1 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops);
+            const id2 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops);
+            const id3 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops);
+            transferTransactionIds.push(id1, id2, id3)
+        }
+        await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 240, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
+    });
+
+    it("Stress test - transactions with insufficient fee should be resubmitted", async () => {
+        const N = 40;
+        const amountToSendDrops = toBNExp(0.2, XRP_DECIMAL_PLACES);
+        const xrpReserveAmount = toBNExp(1, XRP_DECIMAL_PLACES);
+
+        const transactionIds = [];
+        for (let i = 0; i < N; i++) {
+            const wallet = stressTestSecrets.XRP.targetWallets[i];
+            await wClient.walletKeys.addKey(wallet.address, wallet.private_key);
+            const balance = await wClient.getAccountBalance(wallet.address);
+            const amount = balance.gt(xrpReserveAmount) ? amountToSendDrops.muln(3.5) : amountToSendDrops.muln(3.5).add(xrpReserveAmount);
+
+            transactionIds.push(await wClient.createPaymentTransaction(fundedAddress, wallet.address, amount, toBN("5")));
+        }
+
+        await Promise.all(transactionIds.map(async (t) => await waitForTxToBeReplacedWithStatus(2, 240, wClient, TransactionStatus.TX_SUCCESS, t)));
+
+        const transferTransactionIds = [];
+        for (let i = 1; i < N; i++) {
+            const id1 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops, toBN("5"));
+            const id2 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops, toBN("5"));
+            const id3 = await wClient.createPaymentTransaction(stressTestSecrets.XRP.targetWallets[i].address, fundedAddress, amountToSendDrops, toBN("5"));
+            transferTransactionIds.push(id1, id2, id3)
+        }
+        await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToBeReplacedWithStatus(2, 240, wClient, TransactionStatus.TX_SUCCESS, t)));
+    });
+
     it("Should delete account", async () => {
         const sourceBalanceStart = await wClient.getAccountBalance(fundedAddress);
         const id = await wClient.createDeleteAccountTransaction(targetAddress, fundedAddress);
@@ -124,6 +186,5 @@ describe("XRP mainnet wallet tests", () => {
         expect(sourceBalanceEnd.gt(sourceBalanceStart)).to.be.true;
         expect(targetBalanceEnd.eqn(0)).to.be.true;
     });
-
 });
 

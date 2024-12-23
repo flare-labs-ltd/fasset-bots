@@ -1,0 +1,16 @@
+{
+    "$schema": "./schema/bot-config-override.schema.json",
+    "extends": "songbird-bot.json",
+    "ormOptions": {
+        "type": "mysql",
+        "dbName": "fasset_bots",
+        "host": "localhost",
+        "port": 3306,
+        "allowGlobalContext": true,
+        "pool": {
+            "min": 0,
+            "max": 80,
+            "acquireTimeoutMillis": 60000
+        }
+    }
+}

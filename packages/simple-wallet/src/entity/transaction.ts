@@ -1,4 +1,4 @@
-import { Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import {Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property} from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import {BNType} from "../utils/orm-types";
@@ -6,23 +6,25 @@ import {TransactionOutputEntity} from "./transactionOutput";
 import {TransactionInputEntity} from "./transactionInput";
 
 @Entity({ tableName: "transaction" })
+@Index({properties: ["transactionHash"]})
+@Index({properties: ["chainType", "status"]})
 export class TransactionEntity {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property()
+    @Property({ type: "varchar", length: 64 })
     chainType!: ChainType;
 
-    @Property()
+    @Property({ type: "varchar", length: 128 })
     source!: string;
 
-    @Property()
+    @Property({ type: "varchar", length: 128 })
     destination!: string;
 
-    @Property({ nullable: true })
+    @Property({ type: "varchar", length: 128, nullable: true })
     transactionHash?: string;
 
-    @Property()
+    @Property({ type: "varchar", length: 64 })
     status!: TransactionStatus;
 
     @Property({ type: BNType, nullable: true })
@@ -34,7 +36,7 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true })
     maxFee?: BN;
 
-    @Property()
+    @Property({ columnType: "decimal(16, 0)" })
     submittedInBlock = 0; // 0 when tx is created
 
     @Property({ type: BNType, nullable: true })
@@ -70,6 +72,12 @@ export class TransactionEntity {
     @Property({ columnType: 'text', nullable: true })
     serverSubmitResponse?: string;
 
+    @Property({ columnType: "text", nullable: true })
+    lastProcessingError?: string;
+
+    @Property()
+    isFreeUnderlyingTransaction: boolean = false;
+
     @OneToOne(() => TransactionEntity, { nullable: true })
     replaced_by?: TransactionEntity | null;
 
@@ -91,10 +99,10 @@ export class TransactionEntity {
     @ManyToOne(() => TransactionEntity, { nullable: true })
     ancestor?: TransactionEntity | null;
 
-    @Property({ nullable: true })
+    @Property({ type: "varchar", length: 128, nullable: true })
     feeSource?: string;
 
-    @Property({ nullable: true })
+    @Property({ type: BNType, nullable: true })
     maxPaymentForFeeSource?: BN;
 
 }
@@ -104,7 +112,7 @@ export enum TransactionStatus {
     TX_PREPARED = "prepared",
     TX_REPLACED = "replaced", // tx was replaced with new transaction
     TX_REPLACED_PENDING = "replaced_pending", // (in utxo) pending replacement (when we don't know if original or replacement will be accepted)
-    TX_SUBMISSION_FAILED = "submission_failed", //xrp: failed due ti insufficient fee -> replace tx
+    TX_SUBMISSION_FAILED = "submission_failed", //xrp: failed due to insufficient fee -> replace tx
     TX_SUBMITTED = "submitted", // utxo: tx is in mempool
     TX_PENDING = "pending", //xrp: submit fn received error -> tx might be submitted or not; utxo: tx was send but was not yet seen in mempool
     TX_SUCCESS = "success", // confirmed transaction: xrp -> tx is in validated ledger; utxo -> tx was confirmed by x blocks

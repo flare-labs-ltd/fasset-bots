@@ -1,11 +1,11 @@
-import { DOGE, TransactionStatus } from "../../src";
-import { DogecoinWalletConfig, ITransactionMonitor } from "../../src/interfaces/IWalletTransaction";
+import {DOGE, TransactionStatus} from "../../src";
+import {DogecoinWalletConfig, ITransactionMonitor} from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
-import { expect, use } from "chai";
-import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
-import { toBN, toBNExp } from "../../src/utils/bnutils";
-import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
-import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
+import {expect, use} from "chai";
+import {BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT} from "../../src/utils/constants";
+import {toBN, toBNExp} from "../../src/utils/bnutils";
+import {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config";
+import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
     loop,
@@ -13,10 +13,11 @@ import {
     waitForTxToFinishWithStatus,
 } from "../test-util/common_utils";
 import BN from "bn.js";
-import { logger } from "../../src/utils/logger";
-import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
-import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
-import { setMonitoringStatus } from "../test-util/entity_utils";
+import {logger} from "../../src/utils/logger";
+import {getCurrentTimestampInSeconds, sleepMs} from "../../src/utils/utils";
+import {fetchTransactionEntityById, updateTransactionEntity} from "../../src/db/dbutils";
+import {createTransactionEntity, setMonitoringStatus} from "../test-util/entity_utils";
+
 use(chaiAsPromised);
 
 const DOGEMccConnectionTestInitial = {
@@ -47,7 +48,6 @@ const feeInSatoshi = toBNExp(2, DOGE_DECIMAL_PLACES);
 
 let wClient: DOGE;
 let testOrm: ORM;
-const chainType = ChainType.testDOGE;
 let monitor: ITransactionMonitor;
 
 describe("Dogecoin wallet tests", () => {
@@ -124,6 +124,7 @@ describe("Dogecoin wallet tests", () => {
             txEnt.fee,
             txEnt.reference        );
 
+        const currentBlockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEntToUpdate) => {
             txEntToUpdate.raw = JSON.stringify(transaction);
             txEntToUpdate.status = TransactionStatus.TX_PREPARED;
@@ -131,7 +132,7 @@ describe("Dogecoin wallet tests", () => {
             txEntToUpdate.fee = toBN(transaction.getFee());
             txEntToUpdate.reachedStatusPendingInTimestamp =  toBN(getCurrentTimestampInSeconds());
             txEntToUpdate.executeUntilTimestamp = toBN(getCurrentTimestampInSeconds());
-            txEntToUpdate.executeUntilBlock = undefined;
+            txEntToUpdate.executeUntilBlock = currentBlockHeight + 100;
         });
         await wClient.checkPendingTransaction(txEnt);
         expect(txEnt.status).to.eq(TransactionStatus.TX_SUBMITTED);
@@ -140,5 +141,94 @@ describe("Dogecoin wallet tests", () => {
     it("Should create estimate fee", async () => {
         const fee = await wClient.transactionFeeService.getEstimateFee(1, 3, toBNExp(1, BTC_DOGE_DEC_PLACES));
         expect(fee.gtn(0));
+    });
+
+    it("Should send multiple transactions", async () => {
+        const amount = toBNExp(1, BTC_DOGE_DEC_PLACES);
+
+        const ids = [];
+        for (let i = 0; i < 10; i++) {
+            const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amount);
+            ids.push(id);
+        }
+
+        await Promise.all(ids.map(t => waitForTxToFinishWithStatus(2, 3 * 60, wClient.rootEm, [TransactionStatus.TX_SUBMITTED], t)));
+    });
+
+    it("Should successfully setup the utxoScriptMap and query from it", async () => {
+        const addresses = [fundedAddress, targetAddress];
+
+        const mempoolUTXOs = [];
+        for (const address of addresses) {
+            const utxos = await wClient.blockchainAPI.getUTXOsFromMempool(address);
+            await wClient.transactionUTXOService.handleMissingUTXOScripts(utxos, address);
+            mempoolUTXOs.push(utxos);
+        }
+
+        for (const [i, address] of addresses.entries()) {
+            for (const utxo of mempoolUTXOs[i]) {
+                expect(utxo.script).to.be.eq(wClient.transactionUTXOService.getUtxoScriptMap().get(address)!.get(`${utxo.transactionHash}:${utxo.position}`));
+            }
+        }
+    });
+
+    it("Should delete UTXO scripts for UTXOs used by transaction that were accepted to blockchain", async () => {
+        const addresses = [fundedAddress, targetAddress];
+
+        const mempoolUTXOs = [];
+        for (const address of addresses) {
+            const utxos = await wClient.blockchainAPI.getUTXOsFromMempool(address);
+            await wClient.transactionUTXOService.handleMissingUTXOScripts(utxos, address);
+            mempoolUTXOs.push(utxos);
+        }
+
+        const txHashes = [
+            // fundedAddress
+            ["1ebbd9ac0e0d6a27b69a384c97ac5f6f5f60cf405d791cf76992c8d15539f190", "d2ad88b48a9077d20ff45adeda411aa1cde0a0431f0dbefa9aeae12d72b0ffaf", "104b38173506cc85f62b1184e3f6cd1cf75e86472ae9a5f403724fe37c2b2279", "98275c53575cf77e39d82960082f13fc98175defd6180bc159c58703272b51c4"],
+            // targetAddress
+            ["cf5ff00933a93c112aabb4db8396f60003363891b461ee93536eb85e7d9809b8", "418f3d6c641758d3fadfd8bcaab60eda112228f8a4fec2b9236bc975f16ef43a", "e24a55c316aaa9fb9a5610f442086f082083c9871e0c608e9cd4a91c23c2a93e", "f3f9566f1a2583f8606ce5c404ca3a8ea42cca04a537c5ce395cc6aa3025370e"]
+        ];
+
+        const txEnts = [];
+
+        for (const [i, address] of addresses.entries()) {
+            for (const hash of txHashes[i]) {
+                const txResp = await wClient.blockchainAPI.getTransaction(hash);
+
+                txResp.vin.forEach(input =>
+                    wClient.transactionUTXOService.getUtxoScriptMap().get(address)!.set(`${input.txid}:${input.vout}`, "asdf")
+                );
+
+                const txEnt = createTransactionEntity(address, "", txResp.txid);
+                txEnt.raw = JSON.stringify({
+                    inputs: txResp.vin.map(t => ({
+                        prevTxId: t.txid,
+                        outputIndex: t.vout,
+                        sequenceNumber: 0,
+                        script: "",
+                        scriptString: "",
+                        output: {
+                            satoshis: "",
+                            script: ""
+                        },
+                    })),
+                });
+                txEnt.reachedFinalStatusInTimestamp = toBN(Date.now() - 30 * 60 * 60 * 1000);
+                txEnt.chainType = ChainType.testDOGE;
+                txEnts.push(txEnt);
+            }
+        }
+
+        await wClient.rootEm.persistAndFlush(txEnts);
+
+        const numberOfScripts = addresses.map(address => Array.from(wClient.transactionUTXOService.getUtxoScriptMap().get(address)!.keys()).length);
+        wClient.transactionUTXOService.setTimestampTracker(Date.now() - 30 * 60 * 60 * 1000);
+
+        await wClient.transactionUTXOService.removeOldUTXOScripts();
+        const numberOfScriptsAfterRemoval = addresses.map(address => Array.from(wClient.transactionUTXOService.getUtxoScriptMap().get(address)!.keys()).length);
+
+        for (let i = 0; i < addresses.length; i++) {
+            expect(numberOfScripts[i]).to.be.gt(numberOfScriptsAfterRemoval[i]);
+        }
     });
 });

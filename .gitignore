@@ -52,6 +52,7 @@ packages/fasset-bots-core/run-config/coston-bot-demo-publisher.json
 
 # config file with various keys and addresses
 secrets.json
+secrets.*.json
 test-data/simple-wallet-secrets.json
 
 # fasset-liquidator specific

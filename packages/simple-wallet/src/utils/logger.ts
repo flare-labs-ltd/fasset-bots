@@ -1,11 +1,13 @@
+import "dotenv/config";
 import { AsyncLocalStorage } from "async_hooks";
 import { createLogger, format } from "winston";
+import { Console } from "winston/lib/winston/transports";
 import DailyRotateFile from "winston-daily-rotate-file";
 import * as Transport from "winston-transport";
 
 export const loggerAsyncStorage = new AsyncLocalStorage<string>();
 
-export type LoggerPaths = { text?: string, json?: string };
+export type LoggerPaths = { text?: string, json?: string, logTarget?: string };
 
 export function createCustomizedLogger(paths: LoggerPaths) {
     const transports: Transport[] = [];
@@ -39,6 +41,9 @@ export function createCustomizedLogger(paths: LoggerPaths) {
             ...(commonOptions as any),
         }));
     }
+    if (paths.logTarget === 'console') {
+        transports.push(...transports.map((transport) => new Console({ ...commonOptions, format: transport.format })));
+    }
     return createLogger({ transports });
 }
 
@@ -54,4 +59,5 @@ function formatThreadId() {
 // use different
 const loggerName = "simple-wallet";
 
-export const logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log` });
+export const logger = createCustomizedLogger({ json: `log/json/${loggerName}-%DATE%.log.json`, text: `log/text/${loggerName}-%DATE%.log`,
+    logTarget: process.env.SEND_LOGS_TO });

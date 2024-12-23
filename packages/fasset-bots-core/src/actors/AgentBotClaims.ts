@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { ZERO_ADDRESS, toBN } from "../utils/helpers";
+import { BN_ZERO, ZERO_ADDRESS, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";
 import { AgentBot } from "./AgentBot";
@@ -19,39 +19,55 @@ export class AgentBotClaims {
      * Checks if there are any claims for agent vault and collateral pool.
      */
     async checkForClaims(): Promise<void> {
-        // FTSO rewards
-        await this.checkFTSORewards(ClaimType.VAULT);
-        await this.checkFTSORewards(ClaimType.POOL);
+        // delegation rewards
+        await this.checkDelegationRewards(ClaimType.VAULT);
+        await this.checkDelegationRewards(ClaimType.POOL);
         // airdrop distribution rewards
         await this.checkAirdropClaims(ClaimType.VAULT);
         await this.checkAirdropClaims(ClaimType.POOL);
         await this.checkTransferFeesClaims();
     }
 
-    async checkFTSORewards(type: ClaimType) {
+    async checkDelegationRewards(type: ClaimType) {
         /* istanbul ignore next */
         if (this.bot.stopRequested()) return;
         try {
-            logger.info(`Agent ${this.agent.vaultAddress} started checking for FTSO rewards.`);
+            logger.info(`Agent ${this.agent.vaultAddress} started checking for delegation rewards.`);
             const IRewardManager = artifacts.require("IRewardManager");
             const rewardManagerAddress = await this.context.addressUpdater.getContractAddress("RewardManager");
             const rewardManager = await IRewardManager.at(rewardManagerAddress);
             const addressToClaim = type === ClaimType.VAULT ? this.agent.vaultAddress : this.agent.collateralPool.address;
-            throw new Error("Not implemented yet");
-            // const notClaimedRewards: BN[] = await rewardManager.getEpochsWithUnclaimedRewards(addressToClaim);
-            // if (notClaimedRewards.length > 0) {
-            //     const unClaimedEpoch = notClaimedRewards[notClaimedRewards.length - 1];
-            //     logger.info(`Agent ${this.agent.vaultAddress} is claiming Ftso rewards for ${addressToClaim} for epochs ${unClaimedEpoch}`);
-            //     if (type === ClaimType.VAULT) {
-            //         await this.agent.agentVault.claimFtsoRewards(rewardManager.address, unClaimedEpoch, addressToClaim, { from: this.agent.owner.workAddress });
-            //     } else {
-            //         await this.agent.collateralPool.claimFtsoRewards(rewardManager.address, unClaimedEpoch, { from: this.agent.owner.workAddress });
-            //     }
-            // }
-            // logger.info(`Agent ${this.agent.vaultAddress} finished checking for claims.`);
+            const stateOfRewards = await rewardManager.getStateOfRewards(addressToClaim);
+            let lastRewardEpoch = -1;
+            for (let i = 0; i < stateOfRewards.length; i++) {
+                // check if all rewards are initialised in the epoch
+                let epochAmount = BN_ZERO;
+                let allInitialised = true;
+                for (let j = 0; j < stateOfRewards[i].length; j++) {
+                    epochAmount = epochAmount.add(toBN(stateOfRewards[i][j].amount));
+                    allInitialised &&= stateOfRewards[i][j].initialised;
+                }
+                if (!allInitialised) {
+                    break;
+                }
+                if (epochAmount.gtn(0)) {
+                    // as amount > 0 at least one record for epoch exists
+                    // epochs are in ascending order, so we can always use the last one
+                    lastRewardEpoch = toBN(stateOfRewards[i][0].rewardEpochId).toNumber();
+                }
+            }
+            if (lastRewardEpoch >= 0) {
+                logger.info(`Agent ${this.agent.vaultAddress} is claiming delegation rewards for ${addressToClaim} for epoch ${lastRewardEpoch}`);
+                if (type === ClaimType.VAULT) {
+                    await this.agent.agentVault.claimDelegationRewards(rewardManager.address, lastRewardEpoch, this.agent.owner.workAddress, [], { from: this.agent.owner.workAddress });
+                } else {
+                    await this.agent.collateralPool.claimDelegationRewards(rewardManager.address, lastRewardEpoch, [], { from: this.agent.owner.workAddress });
+                }
+            }
+            logger.info(`Agent ${this.agent.vaultAddress} finished checking for delegation claims.`);
         } catch (error) {
-            console.error(`Error handling FTSO rewards for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling FTSO rewards for ${type}:`, error);
+            console.error(`Error handling delegation rewards for ${type} for agent ${this.agent.vaultAddress}: ${error}`);
+            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling delegation rewards for ${type}:`, error);
         }
     }
 
@@ -70,7 +86,7 @@ export class AgentBotClaims {
             if (toBN(claimable).gtn(0)) {
                 logger.info(`Agent ${this.agent.vaultAddress} is claiming airdrop distribution for ${addressToClaim} for month ${endMonth}.`);
                 if (type === ClaimType.VAULT) {
-                    await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonth, addressToClaim, { from: this.agent.owner.workAddress });
+                    await this.agent.agentVault.claimAirdropDistribution(distributionToDelegators.address, endMonth, this.agent.owner.workAddress, { from: this.agent.owner.workAddress });
                 } else {
                     await this.agent.collateralPool.claimAirdropDistribution(distributionToDelegators.address, endMonth, { from: this.agent.owner.workAddress });
                 }

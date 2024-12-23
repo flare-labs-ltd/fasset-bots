@@ -4,7 +4,6 @@ import { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { getCurrentNetwork } from "../../src/chain-clients/utxo/UTXOUtils";
 import { BTC } from "../../src";
-import { TransactionMonitor } from "../../src/chain-clients/monitoring/TransactionMonitor";
 
 describe("Bitcoin network helper tests", () => {
    it("Should switch to mainnet", async () => {

@@ -200,7 +200,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "maxFlashFee",
+              "name": "maxFlashFeeBips",
               "type": "uint256"
             },
             {
@@ -372,7 +372,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "maxFlashFee",
+              "name": "maxFlashFeeBips",
               "type": "uint256"
             },
             {
@@ -544,7 +544,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "maxFlashFee",
+              "name": "maxFlashFeeBips",
               "type": "uint256"
             },
             {
@@ -711,7 +711,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "maxFlashFee",
+              "name": "maxFlashFeeBips",
               "type": "uint256"
             },
             {

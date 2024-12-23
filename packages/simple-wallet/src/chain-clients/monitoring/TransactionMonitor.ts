@@ -82,7 +82,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         // start main loop
         this.startThread(this.rootEm, `monitoring-${this.monitoringId}`, async (threadEm) => {
             const waitStart = Date.now();
-            while (!(feeService?.hasEnoughTimestampHistory() || Date.now() - waitStart > 60_000)) {
+            while (feeService && !(feeService?.hasEnoughTimestampHistory() || Date.now() - waitStart > 60_000)) {
                 await sleepMs(500);    // wait for setupHistory to be complete (or fail)
             }
             const wallet = this.createWallet({ monitoringId: this.monitoringId, walletEm: threadEm, feeService: feeService });
@@ -243,6 +243,7 @@ export class TransactionMonitor implements ITransactionMonitor {
     }
 
     private async monitoringMainLoop(threadEm: EntityManager, wallet: IMonitoredWallet) {
+        let count = 0;
         while (this.monitoring) {
             try {
                 const networkUp = await wallet.checkNetworkStatus();
@@ -257,12 +258,18 @@ export class TransactionMonitor implements ITransactionMonitor {
                 }
                 await this.processTransactions(threadEm, [TransactionStatus.TX_PENDING], wallet.checkPendingTransaction.bind(wallet));
                 await this.processTransactions(threadEm, [TransactionStatus.TX_CREATED], wallet.prepareAndSubmitCreatedTransaction.bind(wallet));
-                await this.processTransactions(threadEm, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction.bind(wallet));
+                // only check submitted transactions every 10 loops
+                if (count % 10 === 0) {
+                    await this.processTransactions(threadEm, [TransactionStatus.TX_SUBMITTED, TransactionStatus.TX_REPLACED_PENDING], wallet.checkSubmittedTransaction.bind(wallet));
+                }
             } catch (error) {
                 if (error instanceof StopTransactionMonitor) break;
                 logger.error(`Monitoring ${this.monitoringId} run into error. Restarting in ${MONITOR_LOOP_SLEEP}: ${errorMessage(error)}`);
             }
-            await sleepMs(MONITOR_LOOP_SLEEP);
+            if (this.monitoring) {
+                await sleepMs(MONITOR_LOOP_SLEEP);
+            }
+            count++;
         }
         logger.info(`Monitoring stopped for chain ${this.monitoringId}`);
     }
@@ -274,9 +281,11 @@ export class TransactionMonitor implements ITransactionMonitor {
     ): Promise<void> {
         await this.checkIfMonitoringStopped(threadEm);
         const transactionEntities = await fetchTransactionEntities(this.rootEm, this.chainType, statuses);
+        logger.info(`Processing ${transactionEntities.length} transactions with statuses: ${statuses}`);
         for (const txEnt of transactionEntities) {
             await this.checkIfMonitoringStopped(threadEm);
             try {
+                logger.info(`Started processing transaction ${txEnt.id} with status ${txEnt.status}`);
                 await processFunction(txEnt);
             } catch (error) /* istanbul ignore next */ {
                 logger.error(`Cannot process transaction ${txEnt.id}: ${errorMessage(error)}`);

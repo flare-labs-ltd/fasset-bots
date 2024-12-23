@@ -1,11 +1,10 @@
 import { TransactionEntity } from "../../src";
-
 import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { getTransactionDescendants } from "../../src/chain-clients/utxo/UTXOUtils";
 
 import { expect } from "chai";
 import { EntityManager } from "@mikro-orm/core";
-import config, { initializeTestMikroORMWithConfig } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
 import {
     createTransactionEntity, createTransactionEntityWithInputsAndOutputs,
     createTransactionInputEntity, createTransactionOutputEntity
@@ -17,7 +16,7 @@ describe("getTransactionDescendants", () => {
     before(async () => {
         const conf = { ...config };
         conf.dbName = "unit-test-db";
-        em = (await initializeTestMikroORMWithConfig(conf)).em;
+        em = (await initializeTestMikroORM(conf)).em;
     });
 
     beforeEach(async () => {
@@ -70,7 +69,7 @@ describe("getTransactionDescendants", () => {
         expect(descendants).to.include.members([tx2, tx3]);
     });
 
-    it("should handle transactions with multiple inputs", async () => {
+    it("Should handle transactions with multiple inputs", async () => {
         /*
         tx1: output1 -> tx2 [input1] output2
                                                 -> tx3 [input2, input3]

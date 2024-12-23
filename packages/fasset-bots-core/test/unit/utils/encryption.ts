@@ -7,14 +7,6 @@ describe("encryption unit tests", () => {
     const password = "this is password";
     const wrongPassword = "this is wrong password";
 
-    it("Should encrypt and decrypt (hash pwd with sha256)", async () => {
-        const encrypted = encryptText(password, plaintext, EncryptionMethod.AES_GCM_SHA);
-        assert.isFalse(encrypted.startsWith("@"));
-        assert.isFalse(encrypted.startsWith("#"));
-        const decrypted = decryptText(password, encrypted);
-        assert.equal(decrypted, plaintext);
-    });
-
     it("Should encrypt and decrypt (hash pwd with scrypt)", async () => {
         const encrypted = encryptText(password, plaintext, EncryptionMethod.AES_GCM_SCRYPT);
         assert.isTrue(encrypted.startsWith("@"));
@@ -35,6 +27,13 @@ describe("encryption unit tests", () => {
         assert.throws(() => decryptText(wrongPassword, encrypted), "Unsupported state or unable to authenticate data");
     });
 
+    it("Should fail decrypt with invalid prefix", async () => {
+        const encrypted = "24352174abcdf";
+        assert.isFalse(encrypted.startsWith("@"));
+        assert.isFalse(encrypted.startsWith("#"));
+        assert.throws(() => decryptText(password, encrypted), "Invalid encrypted text format");
+    });
+
     function encryptTextOld(password: string, text: string, useScrypt: boolean): string {
         const initVector = crypto.randomBytes(16);
         const passwordHash = createPasswordHashOld(useScrypt, password, initVector);
@@ -53,14 +52,6 @@ describe("encryption unit tests", () => {
             return crypto.createHash("sha256").update(password, "ascii").digest();
         }
     }
-
-    it("Should be backward compatible (hash pwd with sha256)", async () => {
-        const encrypted = encryptTextOld(password, plaintext, false);
-        assert.isFalse(encrypted.startsWith("@"));
-        assert.isFalse(encrypted.startsWith("#"));
-        const decrypted = decryptText(password, encrypted);
-        assert.equal(decrypted, plaintext);
-    });
 
     it("Should be backward compatible (hash pwd with scrypt)", async () => {
         const encrypted = encryptTextOld(password, plaintext, true);

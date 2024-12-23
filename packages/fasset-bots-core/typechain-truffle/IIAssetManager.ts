@@ -365,6 +365,19 @@ export interface EmergencyPauseCanceled {
   args: {};
 }
 
+export interface EmergencyPauseTransfersCanceled {
+  name: "EmergencyPauseTransfersCanceled";
+  args: {};
+}
+
+export interface EmergencyPauseTransfersTriggered {
+  name: "EmergencyPauseTransfersTriggered";
+  args: {
+    pausedUntil: BN;
+    0: BN;
+  };
+}
+
 export interface EmergencyPauseTriggered {
   name: "EmergencyPauseTriggered";
   args: {
@@ -919,6 +932,8 @@ export type AllEvents =
   | DuplicatePaymentConfirmed
   | DustChanged
   | EmergencyPauseCanceled
+  | EmergencyPauseTransfersCanceled
+  | EmergencyPauseTransfersTriggered
   | EmergencyPauseTriggered
   | FullLiquidationStarted
   | GovernanceCallTimelocked
@@ -2265,6 +2280,33 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     txDetails?: Truffle.TransactionDetails
   ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
 
+  emergencyPauseTransfers: {
+    (
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _byGovernance: boolean,
+      _duration: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
+  emergencyPauseTransfersDetails(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
+
   emergencyPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
   emergencyPausedUntil(txDetails?: Truffle.TransactionDetails): Promise<BN>;
@@ -2935,6 +2977,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     maxEmergencyPauseDurationSeconds: BN;
     emergencyPauseDurationResetAfterSeconds: BN;
     cancelCollateralReservationAfterSeconds: BN;
+    rejectOrCancelCollateralReservationReturnFactorBIPS: BN;
     rejectRedemptionRequestWindowSeconds: BN;
     takeOverRedemptionRequestWindowSeconds: BN;
     rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;
@@ -3807,6 +3850,15 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
   };
 
   resetEmergencyPauseTotalDuration: {
+    (txDetails?: Truffle.TransactionDetails): Promise<
+      Truffle.TransactionResponse<AllEvents>
+    >;
+    call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
+
+  resetEmergencyPauseTransfersTotalDuration: {
     (txDetails?: Truffle.TransactionDetails): Promise<
       Truffle.TransactionResponse<AllEvents>
     >;
@@ -4695,6 +4747,25 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     ): Promise<number>;
   };
 
+  setRejectOrCancelCollateralReservationReturnFactorBIPS: {
+    (
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<Truffle.TransactionResponse<AllEvents>>;
+    call(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<void>;
+    sendTransaction(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<string>;
+    estimateGas(
+      _value: number | BN | string,
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<number>;
+  };
+
   setRejectRedemptionRequestWindowSeconds: {
     (
       _value: number | BN | string,
@@ -4998,6 +5069,14 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     maxUnexpiredEpochs: BN;
     firstClaimableEpoch: BN;
   }>;
+
+  transfersEmergencyPaused(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  transfersEmergencyPausedUntil(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<BN>;
 
   unpauseMinting: {
     (txDetails?: Truffle.TransactionDetails): Promise<
@@ -6607,6 +6686,33 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       txDetails?: Truffle.TransactionDetails
     ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
 
+    emergencyPauseTransfers: {
+      (
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _byGovernance: boolean,
+        _duration: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
+    emergencyPauseTransfersDetails(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<{ 0: BN; 1: BN; 2: boolean }>;
+
     emergencyPaused(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
 
     emergencyPausedUntil(txDetails?: Truffle.TransactionDetails): Promise<BN>;
@@ -7277,6 +7383,7 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       maxEmergencyPauseDurationSeconds: BN;
       emergencyPauseDurationResetAfterSeconds: BN;
       cancelCollateralReservationAfterSeconds: BN;
+      rejectOrCancelCollateralReservationReturnFactorBIPS: BN;
       rejectRedemptionRequestWindowSeconds: BN;
       takeOverRedemptionRequestWindowSeconds: BN;
       rejectedRedemptionDefaultFactorVaultCollateralBIPS: BN;
@@ -8149,6 +8256,15 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
     };
 
     resetEmergencyPauseTotalDuration: {
+      (txDetails?: Truffle.TransactionDetails): Promise<
+        Truffle.TransactionResponse<AllEvents>
+      >;
+      call(txDetails?: Truffle.TransactionDetails): Promise<void>;
+      sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+      estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+    };
+
+    resetEmergencyPauseTransfersTotalDuration: {
       (txDetails?: Truffle.TransactionDetails): Promise<
         Truffle.TransactionResponse<AllEvents>
       >;
@@ -9061,6 +9177,25 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       ): Promise<number>;
     };
 
+    setRejectOrCancelCollateralReservationReturnFactorBIPS: {
+      (
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<Truffle.TransactionResponse<AllEvents>>;
+      call(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<void>;
+      sendTransaction(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<string>;
+      estimateGas(
+        _value: number | BN | string,
+        txDetails?: Truffle.TransactionDetails
+      ): Promise<number>;
+    };
+
     setRejectRedemptionRequestWindowSeconds: {
       (
         _value: number | BN | string,
@@ -9367,6 +9502,14 @@ export interface IIAssetManagerInstance extends Truffle.ContractInstance {
       maxUnexpiredEpochs: BN;
       firstClaimableEpoch: BN;
     }>;
+
+    transfersEmergencyPaused(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
+
+    transfersEmergencyPausedUntil(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<BN>;
 
     unpauseMinting: {
       (txDetails?: Truffle.TransactionDetails): Promise<

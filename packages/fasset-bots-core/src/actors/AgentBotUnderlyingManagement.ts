@@ -8,13 +8,16 @@ import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { squashSpace } from "../utils/formatting";
-import { assertNotNull, messageForExpectedError, toBN } from "../utils/helpers";
+import { assertNotNull, BN_ZERO, messageForExpectedError, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { AgentTokenBalances } from "./AgentTokenBalances";
 import { TransactionStatus } from "@flarelabs/simple-wallet";
+import { Payment } from "@flarenetwork/state-connector-protocol/dist/generated/types/typescript/Payment";
+import { confirmationAllowedAt } from "../utils/fasset-helpers";
+import { latestBlockTimestampBN } from "../utils/web3helpers";
 
 export class AgentBotUnderlyingManagement {
     static deepCopyWithObjectCreate = true;
@@ -114,7 +117,7 @@ export class AgentBotUnderlyingManagement {
      * @param txHash transaction hash
      * @param type enum for underlying payment type from entity AgentUnderlyingPayment
      */
-    async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string): Promise<void> {
+    async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string, announcedAt?: BN): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             em.create(
                 AgentUnderlyingPayment,
@@ -124,6 +127,7 @@ export class AgentBotUnderlyingManagement {
                     txHash: txHash ?? null,
                     txDbId: txDbId,
                     type: type,
+                    announcedAtTimestamp: announcedAt ?? BN_ZERO
                 } as RequiredEntityData<AgentUnderlyingPayment>,
                 { persist: true }
             );
@@ -176,7 +180,7 @@ export class AgentBotUnderlyingManagement {
     async nextUnderlyingPaymentStep(rootEm: EM, id: number): Promise<void> {
         try {
             const underlyingPayment = await rootEm.findOneOrFail(AgentUnderlyingPayment, { id: Number(id) }, { refresh: true });
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} is handling open underlying ${underlyingPayment.type} payment
+            logger.info(squashSpace`Agent ${this.agent.vaultAddress} is handling open underlying ${underlyingPayment.type} payment id ${id} and hash
                 ${underlyingPayment.txHash} in state ${underlyingPayment.state}.`);
             switch (underlyingPayment.state) {
                 case AgentUnderlyingPaymentState.PAID:
@@ -216,6 +220,14 @@ export class AgentBotUnderlyingManagement {
                     await this.requestPaymentProof(rootEm, underlyingPayment);
                     await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
                 }
+            } else {
+                if (underlyingPayment.type === AgentUnderlyingPaymentType.WITHDRAWAL) {
+                    await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                        agentEnt.underlyingWithdrawalWaitingForCancelation = true;
+                    });
+                } else if (underlyingPayment.type === AgentUnderlyingPaymentType.TOP_UP) {
+                    await this.cancelTopUpPayment(rootEm, underlyingPayment);
+                }
             }
         } else if (info.status == TransactionStatus.TX_REPLACED && (
             info.replacedByStatus == TransactionStatus.TX_SUCCESS || info.replacedByStatus == TransactionStatus.TX_FAILED
@@ -230,6 +242,16 @@ export class AgentBotUnderlyingManagement {
                 if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
                     await this.requestPaymentProof(rootEm, underlyingPayment);
                     await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
+                }
+            } else {
+                if (underlyingPayment.type === AgentUnderlyingPaymentType.WITHDRAWAL) {
+                    if (underlyingPayment.type === AgentUnderlyingPaymentType.WITHDRAWAL) {
+                        await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
+                            agentEnt.underlyingWithdrawalWaitingForCancelation = true;
+                        });
+                    }
+                } else if (underlyingPayment.type === AgentUnderlyingPaymentType.TOP_UP) {
+                    await this.cancelTopUpPayment(rootEm, underlyingPayment);
                 }
             }
         }
@@ -289,19 +311,19 @@ export class AgentBotUnderlyingManagement {
                 if (underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP) {
                     await this.context.assetManager.confirmTopupPayment(web3DeepNormalize(proof), this.agent.vaultAddress,
                         { from: this.agent.owner.workAddress });
+                    await this.sendUnderlyingPaymentConfirmed(rootEm, underlyingPayment, proof);
                 } else {
-                    await this.context.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(proof), this.agent.vaultAddress,
+                    const allowedAt = confirmationAllowedAt(underlyingPayment.announcedAtTimestamp, await this.bot.agent.assetManager.getSettings())
+                    const latestTimestamp = await latestBlockTimestampBN();
+                    if (allowedAt && allowedAt.lt(latestTimestamp)) {
+                        await this.context.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(proof), this.agent.vaultAddress,
                         { from: this.agent.owner.workAddress });
+                        await this.sendUnderlyingPaymentConfirmed(rootEm, underlyingPayment, proof);
+                    } else {
+                        logger.info(`Agent ${this.agent.vaultAddress} cannot yet confirm ${underlyingPayment.type} payment ${underlyingPayment.txHash} with id ${underlyingPayment.id}`)
+                    }
                 }
             });
-            underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
-                state: AgentUnderlyingPaymentState.DONE,
-            });
-            await this.notifier.sendConfirmWithdrawUnderlying(underlyingPayment.type);
-            logger.info(squashSpace`Agent ${this.agent.vaultAddress} confirmed underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
-                with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
-            const agentInfo = await this.agent.getAgentInfo();
-            console.log(`Agent ${this.agent.vaultAddress} free underlying is ${agentInfo.freeUnderlyingBalanceUBA.toString()}`)
         } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} cannot obtain payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
                 in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
@@ -326,4 +348,36 @@ export class AgentBotUnderlyingManagement {
         });
     }
 
+    async sendUnderlyingPaymentConfirmed(rootEm: EM, underlyingPayment:  Readonly<AgentUnderlyingPayment>, proof: Payment.Proof): Promise<void> {
+        underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+            state: AgentUnderlyingPaymentState.DONE,
+        });
+        await this.notifier.sendConfirmWithdrawUnderlying(underlyingPayment.type);
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} confirmed underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}
+            with proof ${JSON.stringify(web3DeepNormalize(proof))}.`);
+        const agentInfo = await this.agent.getAgentInfo();
+        console.log(`Agent ${this.agent.vaultAddress} free underlying is ${agentInfo.freeUnderlyingBalanceUBA.toString()}`)
+    }
+
+    async getLatestOpenUnderlyingWithdrawal(rootEm: EM, vaultAddress: string): Promise<AgentUnderlyingPayment | null>{
+        const latestUnderlyingWithdrawal = await rootEm.findOne(AgentUnderlyingPayment,
+            {
+              state: { $ne: AgentUnderlyingPaymentState.DONE },
+              type: AgentUnderlyingPaymentType.WITHDRAWAL,
+              agentAddress: vaultAddress
+            },
+            { orderBy: { createdAt: 'DESC' } }
+          );
+
+        return latestUnderlyingWithdrawal;
+    }
+
+    async cancelTopUpPayment(rootEm: EM, underlyingPayment: AgentUnderlyingPayment): Promise<void>{
+        await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
+            state: AgentUnderlyingPaymentState.DONE,
+            cancelled: true
+        });
+        logger.warn(`Agent ${this.agent.vaultAddress} cancelled top up underlying payment ${underlyingPayment.id}.`);
+        await this.notifier.sendUnderlyingTopUpFailedAlert(underlyingPayment.id);
+    }
 }

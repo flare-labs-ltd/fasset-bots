@@ -13,6 +13,8 @@ import {ArbitrageConfig, EcosystemData, DexPairConfig} from "./lib/Structs.sol";
 import {UniswapV2} from "./lib/UniswapV2.sol";
 import {Ecosystem} from "./lib/Ecosystem.sol";
 import {Optimum} from "./lib/Optimum.sol";
+import {MAX_BIPS} from "./lib/Constants.sol";
+
 
 
 /**
@@ -206,7 +208,7 @@ contract Liquidator is ILiquidator, Ownable {
             address,
             ArbitrageConfig
         ));
-        require(_fee <= _config.maxFlashFee,
+        require(_fee <= _config.maxFlashFeeBips * _amount / MAX_BIPS,
             "Liquidator: Flash lender passed too high fee");
         require(_token == _config.dexPair1.path[0],
             "Liquidator: Flash lender passed invalid token");

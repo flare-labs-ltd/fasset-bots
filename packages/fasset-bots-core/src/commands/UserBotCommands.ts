@@ -22,7 +22,6 @@ import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/w
 import { latestBlockTimestamp } from "../utils/web3helpers";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { InfoBotCommands } from "./InfoBotCommands";
-import { latestBlock } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 import { eventIs } from "../utils/events/truffle";
 
 export const CollateralPool = artifacts.require("CollateralPool");

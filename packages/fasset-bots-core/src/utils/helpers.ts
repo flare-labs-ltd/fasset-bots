@@ -251,13 +251,15 @@ export function reportError(error: any) {
 }
 
 // either (part of) error message or an error constructor
-export type ErrorFilter = string | { new(...args: any[]): Error };
+export type ErrorFilter = string | RegExp | { new(...args: any[]): Error };
 
 export function errorIncluded(error: any, expectedErrors: ErrorFilter[]) {
     const message = String(error?.message ?? "");
     for (const expectedErr of expectedErrors) {
         if (typeof expectedErr === "string") {
             if (message.includes(expectedErr)) return true;
+        } else if (expectedErr instanceof RegExp) {
+            if (expectedErr.test(message)) return true;
         } else {
             if (error instanceof expectedErr) return true;
         }
@@ -323,7 +325,7 @@ export async function retryCall<R>(name: string, call: () => Promise<R>, maxRetr
                 logger.error(`All ${maxRetries} retry attempts exhausted for function ${name}`, error);
                 throw error;
             }
-            logger.info(`Retry ${retry} failed for function ${name}. Retrying after delay of ${retry * retryDelayMs} ms.`);
+            logger.info(`Retry ${retry} failed for function ${name}. Retrying after delay of ${retry * retryDelayMs} ms. ${error}`);
             await sleep(retry * retryDelayMs);
         }
     }

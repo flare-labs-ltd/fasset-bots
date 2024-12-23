@@ -12,7 +12,7 @@ import { EvmEvent } from "../../src/utils/events/common";
 import { eventIs } from "../../src/utils/events/truffle";
 import { BN_ZERO, DAYS, fail, firstValue, getOrCreateAsync, HOURS, sleep, toBN, toBNExp } from "../../src/utils/helpers";
 import { artifacts, web3 } from "../../src/utils/web3";
-import { TestChainInfo } from "../../test/test-utils/TestChainInfo";
+import { defaultCreateAgentSettings, TestChainInfo } from "../../test/test-utils/TestChainInfo";
 import { createTestOrm } from "../../test/test-utils/create-test-orm";
 import { testNotifierTransports } from "../../test/test-utils/testNotifierTransports";
 import { FakeERC20Instance, IERC20MetadataInstance, Truffle } from "../../typechain-truffle";
@@ -89,6 +89,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         recommendedOwnerUnderlyingBalance: toBNExp(50, 6),
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
+        defaultAgentSettings: defaultCreateAgentSettings,
     };
 
     // const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];
@@ -157,7 +158,7 @@ describe("Toplevel runner and commands integration test - massively parallel ver
         // timekeeper
         timekeeperService = new TimeKeeperService(contexts, ownerWorkAddress, testTimekeeperTimingConfig({ loopDelayMs: loopDelay, updateIntervalMs: 10_000 }));
         // agent bot runner
-        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, false, null);
+        botRunner = new AgentBotRunner(secrets, contexts, agentBotSettingsMap, orm, loopDelay, testNotifierTransports, timekeeperService, null);
         // currencies
         const usdc = context0.stablecoins.usdc as FakeERC20Instance;
         usdcCurrency = await Currencies.erc20(usdc as IERC20MetadataInstance);

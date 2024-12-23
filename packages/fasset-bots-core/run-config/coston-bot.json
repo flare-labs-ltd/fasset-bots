@@ -61,6 +61,17 @@
         "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901","0x459BC23f08f0091A15cc3871c325463DeA609905"],
         "minBalanceOnServiceAccount": "2",
         "minBalanceOnWorkAccount": "200",
+        "defaultAgentSettings": {
+            "fee": "1%",
+            "poolFeeShare": "40%",
+            "mintingVaultCollateralRatio": "1.6",
+            "mintingPoolCollateralRatio": "2.3",
+            "poolExitCollateralRatio": "2.3",
+            "poolTopupCollateralRatio": "2.1",
+            "poolTopupTokenPriceFactor": "0.9",
+            "buyFAssetByAgentFactor": "0.99",
+            "handshakeType": 0
+        },
         "fAssets": {
             "FTestXRP": {
                 "recommendedOwnerBalance": "50",
@@ -94,15 +105,9 @@
         }
     },
     "liquidationStrategy": {
-        "className": "DefaultLiquidationStrategy",
-        "config": {
-            "gasPrice": "21000"
-        }
+        "className": "DefaultLiquidationStrategy"
     },
     "challengeStrategy": {
-        "className": "DefaultChallengeStrategy",
-        "config": {
-            "gasPrice": "21000"
+        "className": "DefaultChallengeStrategy"
     }
-}
 }

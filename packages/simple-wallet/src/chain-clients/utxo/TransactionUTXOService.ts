@@ -2,20 +2,25 @@ import {
     createTransactionInputEntity,
     findTransactionsWithStatuses,
     transactional,
-    transformUTXOToTxInputEntity,
+    transformUTXOToTxInputEntity
 } from "../../db/dbutils";
 import BN from "bn.js";
-import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
-import { BTC_DOGE_DEC_PLACES, ChainType, MEMPOOL_CHAIN_LENGTH_LIMIT } from "../../utils/constants";
-import { logger } from "../../utils/logger";
-import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
-import { FeeStatus } from "./TransactionFeeService";
-import { toBN, toBNExp } from "../../utils/bnutils";
-import { TransactionInputEntity } from "../../entity/transactionInput";
-import { getDustAmount, isEnoughUTXOs } from "./UTXOUtils";
-import { MempoolUTXO, UTXORawTransaction, UTXORawTransactionInput, UTXOVinResponse } from "../../interfaces/IBlockchainAPI";
-import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
-import { IUtxoWalletServices } from "./IUtxoWalletServices";
+import {TransactionEntity, TransactionStatus} from "../../entity/transaction";
+import {BTC_DOGE_DEC_PLACES, ChainType, MEMPOOL_CHAIN_LENGTH_LIMIT} from "../../utils/constants";
+import {logger} from "../../utils/logger";
+import {EntityManager, Loaded, RequiredEntityData} from "@mikro-orm/core";
+import {FeeStatus} from "./TransactionFeeService";
+import {toBN, toBNExp} from "../../utils/bnutils";
+import {TransactionInputEntity} from "../../entity/transactionInput";
+import {getDustAmount, isEnoughUTXOs} from "./UTXOUtils";
+import {
+    MempoolUTXO,
+    UTXORawTransaction,
+    UTXORawTransactionInput,
+    UTXOVinResponse
+} from "../../interfaces/IBlockchainAPI";
+import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
+import {IUtxoWalletServices} from "./IUtxoWalletServices";
 
 export interface TransactionData {
     source: string;
@@ -37,6 +42,10 @@ export class TransactionUTXOService {
     private readonly rootEm: EntityManager;
     private readonly blockchainAPI: UTXOBlockchainAPI;
 
+    // <address, Map<hash:vout, script>>
+    private utxoScriptMap: Map<string, Map<string, string>>;
+    private timestampTracker: number;
+
     constructor(services: IUtxoWalletServices, chainType: ChainType, enoughConfirmations: number) {
         this.services = services;
         this.chainType = chainType;
@@ -53,6 +62,17 @@ export class TransactionUTXOService {
 
         this.rootEm = services.rootEm;
         this.blockchainAPI = services.blockchainAPI;
+
+        this.utxoScriptMap = new Map<string, Map<string, string>>();
+        this.timestampTracker = Date.now();
+    }
+
+    getUtxoScriptMap() {
+        return this.utxoScriptMap;
+    }
+
+    setTimestampTracker(timestamp: number) {
+        this.timestampTracker = timestamp;
     }
 
     /**
@@ -62,6 +82,8 @@ export class TransactionUTXOService {
      * @returns {UTXOEntity[]}
      */
     async fetchUTXOs(txData: TransactionData, rbfedRawTx?: string): Promise<MempoolUTXO[]> {
+        await this.removeOldUTXOScripts();
+
         logger.info(`Listing UTXOs for address ${txData.source}`);
         const currentFeeStatus = await this.services.transactionFeeService.getCurrentFeeStatus();
         const unspentUTXOs = await this.filteredAndSortedMempoolUTXOs(txData.source);
@@ -69,7 +91,7 @@ export class TransactionUTXOService {
         if (rbfedRawTx) {
             const rbfedRaw = JSON.parse(rbfedRawTx) as UTXORawTransaction;
             const rbfedInputs = rbfedRaw.inputs;
-            rbfUTXOs = await this.createUTXOMempoolFromInputs(rbfedInputs);
+            rbfUTXOs = await this.createUTXOMempoolFromInputs(txData.source, rbfedInputs);
         }
         const needed = await this.selectUTXOs(unspentUTXOs, rbfUTXOs, txData, currentFeeStatus);
         if (needed) {
@@ -85,7 +107,7 @@ export class TransactionUTXOService {
         const validRbfUTXOs = rbfUTXOs.filter((utxo) => utxo.value.gte(getDustAmount(this.chainType))); // should not be necessary
 
         if (validRbfUTXOs && validRbfUTXOs.length > 0) {
-            logger.info(`Transaction got RBF UTXOs: ${validRbfUTXOs.map(t => {t.transactionHash.toString(), t.position.toString()})}`);
+            logger.info(`Transaction got RBF UTXOs: ${validRbfUTXOs.map(t => `${t.transactionHash.toString()}, ${t.position.toString()}`).join('; ')}`);
         }
 
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
@@ -217,7 +239,11 @@ export class TransactionUTXOService {
 
     public async getNumberOfMempoolAncestors(txHash: string): Promise<number> {
         const ancestors = await this.getMempoolAncestors(txHash);
-        return ancestors.filter((t) => t.transactionHash !== txHash).length;
+        const numOfAncestors = ancestors.filter((t) => t.transactionHash !== txHash).length;
+        if (numOfAncestors > 0) {
+            logger.info(`Transaction with hash ${txHash} has ${numOfAncestors} mempool ancestors`);
+        }
+        return numOfAncestors;
     }
 
     private async getMempoolAncestors(txHash: string): Promise<Loaded<TransactionEntity, "inputs" | "outputs">[]> {
@@ -266,20 +292,14 @@ export class TransactionUTXOService {
         }
     }
 
-    private async getTransactionEntityByHash(txHash: string, inMempool: boolean = true) {
-        let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
-        if (txEnt && txEnt.status != TransactionStatus.TX_SUBMISSION_FAILED) {
-            const tr = await this.blockchainAPI.getTransaction(txHash);
-            if (tr.blockHash && tr.confirmations >= this.enoughConfirmations) {
-                txEnt.status = TransactionStatus.TX_SUCCESS;
-                await this.rootEm.persistAndFlush(txEnt);
-            }
-        }
+    private async getTransactionEntityByHash(txHash: string) {
+        let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs", "outputs"] });
         if (!txEnt) {
+            logger.info(`Transaction with hash ${txHash} not in db, fetching it from API`);
             const tr = await this.blockchainAPI.getTransaction(txHash);
             /* istanbul ignore else */
-            if ((tr && inMempool && tr.blockHash && tr.confirmations < this.enoughConfirmations) || (tr && !inMempool)) {
-                logger.warn(`Tx with hash ${txHash} not in db, fetched from api`);
+            if (tr) {
+                logger.info(`Transaction with hash ${txHash} fetched from API will be saved to DB`);
                 await transactional(this.rootEm, async (em) => {
                     /* istanbul ignore next */
                     const txEnt = em.create(TransactionEntity, {
@@ -299,26 +319,36 @@ export class TransactionUTXOService {
                 });
             }
 
-            txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash }, { populate: ["inputs", "outputs"] });
+            txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs", "outputs"] });
         }
 
         return txEnt;
     }
 
-    async handleMissingUTXOScripts(utxos: MempoolUTXO[]): Promise<MempoolUTXO[]> {
+    async handleMissingUTXOScripts(utxos: MempoolUTXO[], source: string): Promise<MempoolUTXO[]> {
+        let count = 0;
         for (const utxo of utxos) {
             if (!utxo.script) {
-                const script = await this.blockchainAPI.getUTXOScript(utxo.transactionHash, utxo.position);
-                utxo.script = script
+                if (!this.utxoScriptMap.has(source)) {
+                    this.utxoScriptMap.set(source, new Map<string, string>());
+                }
+                const addressScriptMap = this.utxoScriptMap.get(source) as Map<string, string>;
+                if (!addressScriptMap.has(`${utxo.transactionHash}:${utxo.position}`)) {
+                    const script = await this.blockchainAPI.getUTXOScript(utxo.transactionHash, utxo.position);
+                    addressScriptMap.set(`${utxo.transactionHash}:${utxo.position}`, script);
+                }
+                utxo.script = addressScriptMap.get(`${utxo.transactionHash}:${utxo.position}`)!;
+                count++;
             }
         }
         return utxos;
     }
 
     async createInputsFromUTXOs(dbUTXOs: MempoolUTXO[], txId: number) {
+        logger.info(`Creating inputs from UTXOs for transaction ${txId}`);
         const inputs: TransactionInputEntity[] = [];
         for (const utxo of dbUTXOs) {
-            const tx = await this.getTransactionEntityByHash(utxo.transactionHash, false);
+            const tx = await this.getTransactionEntityByHash(utxo.transactionHash);
             /* istanbul ignore else */
             if (tx) {
                 inputs.push(transformUTXOToTxInputEntity(utxo, tx));
@@ -386,7 +416,7 @@ export class TransactionUTXOService {
         return sortedMempoolUTXOs;
     }
 
-    private async createUTXOMempoolFromInputs(inputs: UTXORawTransactionInput[]): Promise<MempoolUTXO[]> {
+    private async createUTXOMempoolFromInputs(source: string, inputs: UTXORawTransactionInput[]): Promise<MempoolUTXO[]> {
         const mempoolRbfUTXOs: MempoolUTXO[] = [];
         for (const input of inputs) {
             const mempoolRbfUTXO: MempoolUTXO = {
@@ -394,10 +424,53 @@ export class TransactionUTXOService {
                 position: input.outputIndex,
                 value: toBN(input.output.satoshis),
                 confirmed: false,
-                script: await this.blockchainAPI.getUTXOScript(input.prevTxId, input.outputIndex)
+                script: "",
             };
             mempoolRbfUTXOs.push(mempoolRbfUTXO);
         }
-        return mempoolRbfUTXOs;
+        const res = await this.handleMissingUTXOScripts(mempoolRbfUTXOs, source);
+        return res;
+    }
+
+    async removeOldUTXOScripts() {
+        const currentTime = Date.now();
+        if (currentTime < this.timestampTracker + 24 * 60 * 60 * 1000) {
+            return;
+        }
+
+        const addresses = this.utxoScriptMap.keys();
+        for (const address of addresses) {
+            await this.removeOldUTXOScriptsForAddress(address);
+        }
+
+        this.timestampTracker = Date.now();
+    }
+
+    private async removeOldUTXOScriptsForAddress(source: string) {
+        logger.info(`Removing UTXO scripts used by transactions that were accepted to blockchain for address ${source}`);
+        const lowerTimeBound = this.timestampTracker - 24 * 60 * 60 * 1000;
+        const transactions = await this.rootEm.find(TransactionEntity, {
+            status: TransactionStatus.TX_SUCCESS,
+            reachedFinalStatusInTimestamp: {
+                $gte: toBN(lowerTimeBound), $lte: toBN(this.timestampTracker)
+            },
+            source: source,
+            chainType: this.chainType
+        });
+
+        const addressScriptMap = this.utxoScriptMap.get(source);
+        if (!addressScriptMap) {
+            return;
+        }
+
+        const startSize = Array.from(addressScriptMap.keys()).length;
+        for (const txEnt of transactions) {
+            const tr = JSON.parse(txEnt.raw!) as UTXORawTransaction;
+            for (const t of tr.inputs) {
+                addressScriptMap.delete(`${t.prevTxId}:${t.outputIndex}`);
+            }
+        }
+        const endSize = Array.from(addressScriptMap.keys()).length;
+        logger.info(`Removed ${startSize - endSize} UTXO scripts used by transactions that were accepted to blockchain for address ${source}; it currently has ${endSize} scripts stored`);
     }
 }

@@ -395,6 +395,10 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
 
   transferFeeMillionths(txDetails?: Truffle.TransactionDetails): Promise<BN>;
 
+  transfersEmergencyPaused(
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
   updateCollateral: {
     (
       arg0: string,
@@ -774,6 +778,10 @@ export interface AssetManagerMockInstance extends Truffle.ContractInstance {
     };
 
     transferFeeMillionths(txDetails?: Truffle.TransactionDetails): Promise<BN>;
+
+    transfersEmergencyPaused(
+      txDetails?: Truffle.TransactionDetails
+    ): Promise<boolean>;
 
     updateCollateral: {
       (

@@ -89,6 +89,7 @@ export class TransactionFeeService {
     }
 
     async calculateTotalFeeOfDescendants(em: EntityManager, oldTx: TransactionEntity): Promise<BN> {
+        logger.info(`Calculating total fee of descendants of transaction ${oldTx.id}`);
         const descendants = await getTransactionDescendants(em, oldTx.id);
         let feeToCover: BN = toBN(0);
         /* istanbul ignore next */

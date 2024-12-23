@@ -105,7 +105,8 @@ export async function getTransactionDescendants(em: EntityManager, txId: number)
     const descendants = await em.find(TransactionEntity, {
         inputs: {
             $in: inputs
-        }
+        },
+        chainType: txEnt.chainType,
     });
 
     let res: TransactionEntity[] = descendants;
@@ -178,11 +179,14 @@ export function getConfirmedAfter(chainType: ChainType): number {
 export function getDefaultFeePerKB(chainType: ChainType): BN {
     switch (chainType) {
         case ChainType.BTC:
+            logger.warn(`Fetching default fee for chain type ${chainType}: ${BTC_DEFAULT_FEE_PER_KB.toString()}`)
             return toBN(BTC_DEFAULT_FEE_PER_KB);
         case ChainType.testBTC:
+            logger.warn(`Fetching default fee for chain type ${chainType}: ${TEST_BTC_DEFAULT_FEE_PER_KB.toString()}`)
             return toBN(TEST_BTC_DEFAULT_FEE_PER_KB);
         case ChainType.DOGE:
         case ChainType.testDOGE:
+            logger.warn(`Fetching default fee for chain type ${chainType}: ${DOGE_DEFAULT_FEE_PER_KB.toString()}`)
             return toBN(DOGE_DEFAULT_FEE_PER_KB);
         default:
             throw new Error(`Unsupported chain type ${chainType}`);

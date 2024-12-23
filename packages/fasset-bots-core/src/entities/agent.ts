@@ -1,4 +1,4 @@
-import { Cascade, Collection, Entity, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Cascade, Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 import BN from "bn.js";
 import { BNType } from "../config/orm-types";
 import { EvmEvent, eventOrder } from "../utils/events/common";
@@ -103,17 +103,6 @@ export class AgentEntity {
     @Property()
     withdrawalAllowedAtAmount: string = "";
 
-    // agent withdraw underlying
-
-    @Property({ type: BNType })
-    underlyingWithdrawalAnnouncedAtTimestamp: BN = BN_ZERO;
-
-    @Property()
-    underlyingWithdrawalConfirmTransaction: string = "";//deprecated
-
-    @Property()
-    underlyingWithdrawalConfirmTransactionId: number = 0;
-
     // agent cancel underlying announcement
 
     @Property()
@@ -177,11 +166,12 @@ export class AgentHandshake {
 // paid but the proof wasn't presented.
 @Entity()
 @Unique({ properties: ["agentAddress", "requestId"] })
+@Index({ properties: ["state"] })
 export class AgentMinting {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property()
+    @Property({ length: 32 })
     state!: AgentMintingState;
 
     @Property({ length: ADDRESS_LENGTH })
@@ -234,11 +224,12 @@ export class AgentMinting {
 // In corner case it can happen that proof of payment does not exist anymore, in that case agent obtains the proof of it and calls finishRedemptionWithoutPayment
 @Entity()
 @Unique({ properties: ["agentAddress", "requestId"] })
+@Index({ properties: ["state"] })
 export class AgentRedemption {
     @PrimaryKey({ autoincrement: true })
     id!: number;
 
-    @Property()
+    @Property({ length: 32 })
     state!: AgentRedemptionState;
 
     // 'START' state data
@@ -293,7 +284,7 @@ export class AgentRedemption {
     @Property({ nullable: true })
     defaulted?: boolean;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true, length: 32 })
     finalState?: AgentRedemptionFinalState;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
@@ -351,12 +342,17 @@ export class AgentUnderlyingPayment {
     @Property()
     state!: AgentUnderlyingPaymentState;
 
-
     @Property()
     type!: AgentUnderlyingPaymentType;
 
     @Property({ length: ADDRESS_LENGTH })
     agentAddress!: string;
+
+    @Property({ type: BNType }) // only relevant for AgentUnderlyingPaymentType.WITHDRAWAL
+    announcedAtTimestamp: BN = BN_ZERO;
+
+    @Property({ nullable: true })
+    cancelled?: boolean;
 
     // 'PAID' state data
 
@@ -373,6 +369,8 @@ export class AgentUnderlyingPayment {
 
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
+
+    //
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();

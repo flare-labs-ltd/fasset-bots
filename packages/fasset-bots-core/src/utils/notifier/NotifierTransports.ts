@@ -83,7 +83,9 @@ export class ApiNotifierTransport implements NotifierTransport {
         // run alert sending in the background
         void this.client.post(`/api/agent/botAlert`, request)
             .catch((e: AxiosError) => {
-                logger.error(`Notifier error: cannot send notification ${formatArgs(request)}: ${e.status}: ${(e.response?.data as any)?.error}`);
+                const status = e.response?.status ?? "unknown status";
+                const errorMessage = (e.response?.data as any)?.error ?? "unknown error";
+                logger.error(`Notifier error: cannot send notification ${formatArgs(request)}: ${status}: ${errorMessage}`);
                 console.error(`${chalk.red("Notifier error:")} cannot send notification (${request.level} to ${request.bot_type}) "${request.title}: ${request.description}"`)
             });
     }

@@ -1,13 +1,14 @@
 import sinon from "sinon";
-import { BitcoinWalletConfig, BTC, logger } from "../../src";
-import { toBN } from "web3-utils";
-import { addConsoleTransportForTests } from "../test-util/common_utils";
-import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
-import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
-import { FeeStatus } from "../../src/chain-clients/utxo/TransactionFeeService";
+import {BitcoinWalletConfig, BTC, logger} from "../../src";
+import {toBN} from "web3-utils";
+import {addConsoleTransportForTests} from "../test-util/common_utils";
+import {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config";
+import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
+import {FeeStatus, TransactionFeeService} from "../../src/chain-clients/utxo/TransactionFeeService";
 import BN from "bn.js";
-import { createUTXO } from "../test-util/entity_utils";
-import { expect } from "chai";
+import {createUTXO} from "../test-util/entity_utils";
+import {expect} from "chai";
+import {TransactionUTXOService} from "../../src/chain-clients/utxo/TransactionUTXOService";
 
 const walletSecret = "wallet_secret";
 const BTCMccConnectionTestInitial = {
@@ -42,13 +43,13 @@ describe("Unit test for paying fees from additional wallet", () => {
 
     beforeEach(() => {
         sinon.restore();
-        sinon.stub(wClient.transactionFeeService, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
-        sinon.stub(wClient.transactionFeeService, "getFeePerKB").resolves(new BN(1000));
-        sinon.stub(wClient.transactionUTXOService, "getNumberOfMempoolAncestors").resolves(0);
+        sinon.stub(TransactionFeeService.prototype, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
+        sinon.stub(TransactionFeeService.prototype, "getFeePerKB").resolves(new BN(1000));
+        sinon.stub(TransactionUTXOService.prototype, "getNumberOfMempoolAncestors").resolves(0);
     });
 
     it("It should create transaction from 'base' wallet even if the 'fee' wallet doesn't have enough funds", async () => {
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
                     createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(10020), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -70,29 +71,8 @@ describe("Unit test for paying fees from additional wallet", () => {
         expect(tr.getFee()).to.be.eq(fee);
     });
 
-    it("It should create transaction from base wallet even if the 'fee' wallet doesn't have any funds", async () => {
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
-            if (source === fundedAddress) {
-                return Promise.resolve([
-                    createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(10020), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                    createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                ]);
-            } else {
-                return Promise.resolve([]);
-            }
-        });
-
-        const fee = 2000;
-        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee));
-        const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
-
-        expect(ogUTXOs.map(t => t.transactionHash)).to.have.members(utxos.map(t => t.transactionHash));
-        expect(tr.getFee()).to.be.eq(fee);
-    });
-
     it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned", async () => {
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
                     createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -115,7 +95,7 @@ describe("Unit test for paying fees from additional wallet", () => {
     });
 
     it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust 1", async () => {
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
                     createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(2000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -138,7 +118,7 @@ describe("Unit test for paying fees from additional wallet", () => {
     });
 
     it("If 'fee' wallet has enough funds fee should be covered from it, fee should be covered from it if it's greater than dust 2", async () => {
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
                     createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -162,7 +142,7 @@ describe("Unit test for paying fees from additional wallet", () => {
     });
 
     it("If 'fee' wallet has enough funds fee should be covered from it if fee is greater than dust", async () => {
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
                     createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
@@ -177,19 +157,19 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), undefined);
 
-        // Transaction should have 2 inputs and 2 ouputs => size is 208.5 vB => fee is 276 (since it's 1000sat/vB)
+        // Transaction should have 2 inputs and 2 ouputs => size is 208.5 vB => fee is 208 (since it's 1000sat/vB)
         // Outputs should be 1500 (the amount), 692 = 2400 - 1500 - 208 (amount remainder)
         expect(tr.inputs.filter(t => t.prevTxId.toString('hex') != "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5").length).to.be.eq(tr.inputs.length);
         expect(tr.outputs.length).to.be.eq(2);
         expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 692]);
     });
 
-    it.skip("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust", async () => { // TODO-test
-        sinon.stub(wClient.transactionUTXOService, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+    it("If 'fee' wallet has enough funds fee should be covered from it, remainder should be returned only if it's greater than dust", async () => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             if (source === fundedAddress) {
                 return Promise.resolve([
                     createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1400), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(2400), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
                 ]);
             } else {
                 return Promise.resolve([
@@ -200,8 +180,110 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(600));
 
-        // Outputs should be 1500 (the amount), 1400 = 3500 - 1500 - 600 (amount remainder)
+        // Outputs should be 1500 (the amount), 1400 = 1000 + 2400 - 1500 - 600 (amount remainder)
         expect(tr.outputs.length).to.be.eq(2);
-        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1400]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1300]);
+    });
+
+    it("Free underlying: Should create transaction with specified amount and fee", async () => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves([
+            createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+        ]);
+
+        const [tr,] = await wClient.transactionService.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, toBN(1500), toBN(600));
+        expect(tr.outputs.length).to.be.eq(2);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 900]);
+        expect(tr.getFee()).to.be.eq(600);
+    });
+
+    it("Free underlying: Should create transaction with specified amount and unspecified fee", async () => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").resolves([
+            createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+        ]);
+
+        // Transaction should have 3 inputs and 2 ouputs => size is 276.5 vB => fee is 276 (since it's 1000sat/vB)
+        const [tr,] = await wClient.transactionService.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, toBN(2100));
+        expect(tr.outputs.length).to.be.eq(2);
+        // Since the fee is not specified the amount is reduced by fee in order to cover it
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([2100 - 276, 3000 - 2100]);
+        expect(tr.getFee()).to.be.eq(276);
+    });
+
+    it("Free underlying: It should create transaction from 'base' wallet even if the 'fee' wallet doesn't have enough funds", async () => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+            if (source === fundedAddress) {
+                return Promise.resolve([
+                    createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(2500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                ]);
+            } else {
+                return Promise.resolve([
+                    createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")
+                ]);
+            }
+        });
+
+        const fee = 2000;
+        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee), undefined, undefined, true);
+        const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
+
+        expect(ogUTXOs.map(t => t.transactionHash)).to.include.members(utxos.map(t => t.transactionHash));
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1000]);
+        expect(tr.getFee()).to.be.eq(fee);
+    });
+
+    it("Free underlying: It should create transaction from 'fee' wallet", async () => {
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+            if (source === fundedAddress) {
+                return Promise.resolve([
+                    createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(1500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                ]);
+            } else {
+                return Promise.resolve([
+                    createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(1500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                ]);
+            }
+        });
+
+        const fee = 1500;
+        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1500), toBN(fee), undefined, undefined, true);
+        const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(targetAddress);
+
+        expect(utxos.map(t => t.transactionHash)).to.include.members(ogUTXOs.map(t => t.transactionHash));
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 1000]);
+        expect(tr.getFee()).to.be.eq(fee);
+    });
+
+    it("Free underlying: It should create transaction from 'fee' wallet even if fee is not specified", async () => {
+        sinon.restore();
+        sinon.stub(TransactionFeeService.prototype, "getFeePerKB").resolves(new BN(5000));
+        sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
+            if (source === fundedAddress) {
+                return Promise.resolve([
+                    createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(1500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                ]);
+            } else {
+                return Promise.resolve([
+                    createUTXO("0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5", 0, toBN(2500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                    createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+                ]);
+            }
+        });
+
+        // Transaction should have 3 inputs and 3 ouputs => size is 307.5 vB => fee is 1535 (since it's 5000sat/vB)
+        const [tr, utxos] = await wClient.transactionService.preparePaymentTransactionWithAdditionalFeeWallet(0, fundedAddress, fundedFeeAddress, targetAddress, toBN(1700), undefined, undefined, undefined, true);
+        const ogUTXOs = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(targetAddress);
+
+        expect(utxos.map(t => t.transactionHash)).to.include.members(["ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", "2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", "0b24228b83a64803ccf00f9878d56a0306c4b76f17c4b5bdc1cd35358e04feb5"]);
+        expect(tr.outputs.map(t => t.satoshis)).to.include.members([1700, 800, 2500 - 1535]);
+
     });
 });
