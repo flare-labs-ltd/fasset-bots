@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import chalk from "chalk";
-import { Secrets, createBotConfig } from "../config";
+import { Secrets, closeBotConfig, createBotConfig } from "../config";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext, isAssetAgentContext } from "../config/create-asset-context";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
@@ -17,6 +17,7 @@ import { TokenBalances } from "../utils/token-balances";
 import { artifacts, authenticatedHttpProvider, initWeb3, web3 } from "../utils/web3";
 import { AgentInfoReader, CollateralPriceCalculator } from "./AgentInfoReader";
 import { ColumnPrinter } from "./ColumnPrinter";
+import { CleanupRegistration } from "./UserBotCommands";
 
 // This key is only for fetching info from the chain; don't ever use it or send any tokens to it!
 const INFO_ACCOUNT_KEY = "0x4a2cc8e041ff98ef4daad2e5e4c1c3f3d5899cf9d0d321b1243e0940d8281c33";
@@ -38,7 +39,7 @@ export class InfoBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of InfoBot
      */
-    static async create(secrets: Secrets, configFile: string, fAssetSymbol: string | undefined): Promise<InfoBotCommands> {
+    static async create(secrets: Secrets, configFile: string, fAssetSymbol: string | undefined, registerCleanup?: CleanupRegistration): Promise<InfoBotCommands> {
         logger.info(`InfoBot started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
         const config = loadConfigFile(configFile, `InfoBot`);
@@ -46,6 +47,7 @@ export class InfoBotCommands {
         const apiKey = secrets.optional("apiKey.native_rpc");
         const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), [INFO_ACCOUNT_KEY], null);
         const botConfig = await createBotConfig("user", secrets, config, accounts[0]);
+        registerCleanup?.(() => closeBotConfig(botConfig));
         // create config
         const chainConfig = fAssetSymbol ? botConfig.fAssets.get(fAssetSymbol) : firstValue(botConfig.fAssets);
         assertNotNullCmd(chainConfig, `FAsset "${fAssetSymbol}" does not exist`);
