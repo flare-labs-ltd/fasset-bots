@@ -29,7 +29,7 @@
         "poolCollateralReserveFactor": "0.1",
         "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901","0x459BC23f08f0091A15cc3871c325463DeA609905"],
         "minBalanceOnServiceAccount": "10",
-        "minBalanceOnWorkAccount": "200",
+        "minBalanceOnWorkAccount": "1000",
         "defaultAgentSettings": {
             "fee": "1%",
             "poolFeeShare": "30%",
