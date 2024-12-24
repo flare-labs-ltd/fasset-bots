@@ -207,6 +207,14 @@
                 },
                 "apiUrl": {
                     "type": "string"
+                },
+                "level": {
+                    "enum": [
+                        "critical",
+                        "danger",
+                        "info"
+                    ],
+                    "type": "string"
                 }
             },
             "required": [
@@ -304,8 +312,7 @@
                 }
             },
             "required": [
-                "address",
-                "maxFlashFee"
+                "address"
             ],
             "type": "object"
         },

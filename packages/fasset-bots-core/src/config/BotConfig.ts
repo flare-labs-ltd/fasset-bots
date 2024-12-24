@@ -143,7 +143,7 @@ export function standardNotifierTransports(secrets: Secrets, apiNotifierConfigs:
     transports.push(new LoggerNotifierTransport());
     if (apiNotifierConfigs !== undefined) {
         for (const apiNotifierConfig of apiNotifierConfigs) {
-            const transport = new ApiNotifierTransport(apiNotifierConfig.apiUrl, apiNotifierConfig.apiKey);
+            const transport = new ApiNotifierTransport(apiNotifierConfig);
             transports.push(new ThrottlingNotifierTransport(transport, agentNotifierThrottlingTimes));
         }
     }

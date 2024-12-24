@@ -1,10 +1,11 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import chalk from "chalk";
 import { formatArgs } from "../formatting";
-import { DEFAULT_TIMEOUT, systemTimestamp } from "../helpers";
+import { systemTimestamp } from "../helpers";
 import { logger } from "../logger";
 import { BotType, NotificationLevel, NotifierTransport } from "./BaseNotifier";
 import { createAxiosConfig } from "@flarelabs/simple-wallet";
+import type { ApiNotifierConfig } from "../../config";
 
 export class ConsoleNotifierTransport implements NotifierTransport {
     async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {
@@ -65,14 +66,19 @@ export interface PostAlert {
 
 export class ApiNotifierTransport implements NotifierTransport {
     static deepCopyWithObjectCreate = true;
+    protected minimumLevel: NotificationLevel = NotificationLevel.DANGER;
 
     client: AxiosInstance;
 
-    constructor(public alertsUrl: string, public apiKey: string) {
-        this.client = axios.create(createAxiosConfig(alertsUrl, apiKey));
+    constructor(public apiNotifierConfig: ApiNotifierConfig) {
+        this.client = axios.create(createAxiosConfig(apiNotifierConfig.apiUrl, apiNotifierConfig.apiKey));
+        if (apiNotifierConfig.level != null) {
+            this.minimumLevel = apiNotifierConfig.level;
+        }
     }
 
     async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string) {
+        if (this.isLesserLevel(level, this.minimumLevel)) return;
         const request: PostAlert = {
             bot_type: type,
             address: address,
@@ -89,4 +95,10 @@ export class ApiNotifierTransport implements NotifierTransport {
                 console.error(`${chalk.red("Notifier error:")} cannot send notification (${request.level} to ${request.bot_type}) "${request.title}: ${request.description}"`)
             });
     }
+
+    protected isLesserLevel(level1: NotificationLevel, level2: NotificationLevel): boolean {
+        const vals = Object.values(NotificationLevel);
+        return vals.indexOf(level1) < vals.indexOf(level2)
+    }
+
 }
