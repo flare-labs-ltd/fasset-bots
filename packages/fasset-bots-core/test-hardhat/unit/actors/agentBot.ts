@@ -615,13 +615,13 @@ describe("Agent bot unit tests", () => {
         for (let i = 0; ; i++) {
             await updateAgentBotUnderlyingBlockProof(context, agentBot);
             await time.advanceBlock();
+            await time.increase(10);
             chain.mine();
             await agentBot.runStep(orm.em);
             // check if underlying payment is done
             orm.em.clear();
             const underlyingPayment = await orm.em.findOneOrFail(AgentUnderlyingPayment, { txDbId: txDbId }  as FilterQuery<AgentUnderlyingPayment> );
             console.log(`Agent step ${i}, state = ${underlyingPayment.state}`);
-            await sleepMs(5_000);
             if (underlyingPayment.state === AgentUnderlyingPaymentState.DONE) break;
             assert.isBelow(i, 50);  // prevent infinite loops
         }
