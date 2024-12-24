@@ -107,6 +107,12 @@ describe("Notifier tests", () => {
         expect(spySend).to.have.been.called.twice;
     });
 
+    it("Should send top up underlying failed alert", async () => {
+        const spySend = spy.on(transport, "send");
+        await notifier.sendUnderlyingTopUpFailedAlert(1);
+        expect(spySend).to.have.been.called.once;
+    });
+
     it("Should send low balance on owner's underlying address alert", async () => {
         const spySend = spy.on(notifier, "sendLowBalanceOnUnderlyingOwnersAddress");
         await notifier.sendLowBalanceOnUnderlyingOwnersAddress("underlying", "1" as FormattedString);
@@ -308,6 +314,13 @@ describe("Notifier tests", () => {
         const notifier = new ChallengerNotifier("challenger", [transport]);
         const spySend = spy.on(notifier, "sendFreeBalanceNegative");
         await notifier.sendFreeBalanceNegative("agentVault");
+        expect(spySend).to.have.been.called.once;
+    });
+
+    it("Should send underlying confirmed (3rd party)", async () => {
+        const notifier = new ChallengerNotifier("challenger", [transport]);
+        const spySend = spy.on(notifier, "sendUnderlyingPaymentConfirmed");
+        await notifier.sendUnderlyingPaymentConfirmed("agentVault", "hash");
         expect(spySend).to.have.been.called.once;
     });
 

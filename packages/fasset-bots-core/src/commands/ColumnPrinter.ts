@@ -11,7 +11,7 @@ export class ColumnPrinter {
     }
 
     line(...items: string[]) {
-        const chunks = this.columns.map(([_, width, align], ind) => (align === "l" ? items[ind].padEnd(width) : items[ind].padStart(width)));
+        const chunks = this.columns.map(([_, width, align], ind) => (align === "l" ? String(items[ind]).padEnd(width) : String(items[ind]).padStart(width)));
         return chunks.join(this.separator);
     }
 

@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { RedemptionRequested } from "../../typechain-truffle/IIAssetManager";
+import { RedemptionRequested, UnderlyingWithdrawalAnnounced } from "../../typechain-truffle/IIAssetManager";
 import { BotFAssetConfigWithIndexer, KeeperBotConfig, createChallengerContext } from "../config";
 import { ActorBase, ActorBaseKind } from "../fasset-bots/ActorBase";
 import { IChallengerContext } from "../fasset-bots/IAssetBotContext";
@@ -9,7 +9,7 @@ import { TrackedAgentState } from "../state/TrackedAgentState";
 import { TrackedState } from "../state/TrackedState";
 import { AttestationHelperError } from "../underlying-chain/AttestationHelper";
 import { ITransaction } from "../underlying-chain/interfaces/IBlockChain";
-import { web3 } from "../utils";
+import { latestBlockTimestamp, latestBlockTimestampBN, web3 } from "../utils";
 import { EventScope } from "../utils/events/ScopedEvents";
 import { ScopedRunner } from "../utils/events/ScopedRunner";
 import { EventArgs } from "../utils/events/common";
@@ -26,9 +26,18 @@ const MAX_NEGATIVE_BALANCE_REPORT = 50; // maximum number of transactions to rep
 interface ActiveRedemption {
     agentAddress: string;
     amount: BN;
+    receivedAt: number; // event was recorded in challenger at that time
+    paymentAddress: string;
     // underlying block and timestamp after which the redemption payment is invalid and can be challenged
     validUntilBlock: BN;
     validUntilTimestamp: BN;
+}
+
+interface ActiveWithdrawal {
+    agentAddress: string;
+    receivedAt: number; // event was recorded in challenger at that time
+    announcementId: BN;
+    paymentReference: string;
 }
 
 export class Challenger extends ActorBase {
@@ -57,9 +66,11 @@ export class Challenger extends ActorBase {
     }
 
     activeRedemptions = new Map<string, ActiveRedemption>(); // paymentReference => { agent vault address, requested redemption amount }
+    activeWithdrawals = new Map<string, ActiveWithdrawal>(); // paymentReference => { agent vault address, <other underlying withdrawal data> }
     transactionForPaymentReference = new Map<string, string>(); // paymentReference => transaction hash
     unconfirmedTransactions = new Map<string, Map<string, ITransaction>>(); // agentVaultAddress => (txHash => transaction)
     challengedAgents = new Set<string>();
+    confirmingReference = new Set<string>();
 
     static async create(config: KeeperBotConfig, address: string, fAsset: BotFAssetConfigWithIndexer): Promise<Challenger> {
         logger.info(`Challenger ${address} started to create asset context.`);
@@ -94,7 +105,7 @@ export class Challenger extends ActorBase {
             for (const event of events) {
                 if (eventIs(event, this.context.assetManager, "RedemptionRequested")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionRequested' with data ${formatArgs(event.args)}.`);
-                    this.handleRedemptionRequested(event.args);
+                    await this.handleRedemptionRequested(event.args);
                     logger.info(`Challenger ${this.address} stored active redemption: ${formatArgs(event.args)}.`);
                 } else if (eventIs(event, this.context.assetManager, "RedemptionPerformed")) {
                     logger.info(`Challenger ${this.address} received event 'RedemptionPerformed' with data ${formatArgs(event.args)}.`);
@@ -110,7 +121,16 @@ export class Challenger extends ActorBase {
                     logger.info(`Challenger ${this.address} deleted active redemption: ${formatArgs(event.args)}.`);
                 } else if (eventIs(event, this.context.assetManager, "UnderlyingWithdrawalConfirmed")) {
                     logger.info(`Challenger ${this.address} received event 'UnderlyingWithdrawalConfirmed' with data ${formatArgs(event.args)}.`);
-                    await this.handleTransactionConfirmed(event.args.agentVault, event.args.transactionHash);
+                    await this.handleAnnouncementFinished(event.args);
+                    logger.info(`Challenger ${this.address} deleted active withdrawal: ${formatArgs(event.args)}.`);
+                } else if (eventIs(event, this.context.assetManager, "UnderlyingWithdrawalAnnounced")) {
+                    logger.info(`Challenger ${this.address} received event 'UnderlyingWithdrawalAnnounced' with data ${formatArgs(event.args)}.`);
+                    await this.handleWithdrawalAnnounced(event.args);
+                    logger.info(`Challenger ${this.address} stored active withdrawal: ${formatArgs(event.args)}.`);
+                } else if (eventIs(event, this.context.assetManager, "UnderlyingWithdrawalCancelled")) {
+                    logger.info(`Challenger ${this.address} received event 'UnderlyingWithdrawalCancelled' with data ${formatArgs(event.args)}.`);
+                    await this.handleAnnouncementFinished(event.args);
+                    logger.info(`Challenger ${this.address} deleted active withdrawal: ${formatArgs(event.args)}.`);
                 }
             }
         } catch (error) {
@@ -126,6 +146,9 @@ export class Challenger extends ActorBase {
         for (const transaction of transactions) {
             this.handleUnderlyingTransaction(transaction);
         }
+        // handleUnconfirmedTransaction
+        const latestTimestampBN = await latestBlockTimestampBN();
+        this.checkIfConfirmationNeeded(latestTimestampBN);
         // mark as handled
         this.lastEventUnderlyingBlockHandled = to + 1;
     }
@@ -164,15 +187,29 @@ export class Challenger extends ActorBase {
     /**
      * @param args event's RedemptionRequested arguments
      */
-    handleRedemptionRequested(args: EventArgs<RedemptionRequested>): void {
+    async handleRedemptionRequested(args: EventArgs<RedemptionRequested>): Promise<void> {
         this.activeRedemptions.set(args.paymentReference, {
             agentAddress: args.agentVault,
             amount: toBN(args.valueUBA),
+            receivedAt: await latestBlockTimestamp(),
+            paymentAddress: args.paymentAddress,
             // see Challenges.sol for this calculation
             validUntilBlock: toBN(args.lastUnderlyingBlock).add(toBN(this.state.settings.underlyingBlocksForPayment)),
             validUntilTimestamp: toBN(args.lastUnderlyingTimestamp).add(toBN(this.state.settings.underlyingSecondsForPayment)),
         });
     }
+
+    /**
+     * @param args event's UnderlyingWithdrawalAnnounced arguments
+     */
+        async handleWithdrawalAnnounced(args: EventArgs<UnderlyingWithdrawalAnnounced>): Promise<void> {
+            this.activeWithdrawals.set(args.paymentReference, {
+                agentAddress: args.agentVault,
+                receivedAt: await latestBlockTimestamp(),
+                announcementId: args.announcementId,
+                paymentReference: args.paymentReference
+            });
+        }
 
     /**
      * @param args object containing redemption request id, agent's vault address and underlying transaction hash
@@ -184,6 +221,20 @@ export class Challenger extends ActorBase {
         this.activeRedemptions.delete(reference);
         // also mark transaction as confirmed
         await this.handleTransactionConfirmed(args.agentVault, args.transactionHash);
+    }
+
+    /**
+     * @param args object containing withdrawal request id, agent's vault address and underlying transaction hash
+     */
+    async handleAnnouncementFinished(args: { announcementId: BN; agentVault: string; transactionHash?: string }): Promise<void> {
+        // clean up transactionForPaymentReference tracking - after withdrawal is finished
+        const reference = PaymentReference.announcedWithdrawal(args.announcementId);
+        this.transactionForPaymentReference.delete(reference);
+        this.activeWithdrawals.delete(reference);
+        // also mark transaction as confirmed
+        if (args.transactionHash) {
+            await this.handleTransactionConfirmed(args.agentVault, args.transactionHash);
+        }
     }
 
     // illegal transactions
@@ -374,6 +425,17 @@ export class Challenger extends ActorBase {
     }
 
     /**
+     * @param scope
+     * @param txHash underlying transaction hash
+     * @param underlyingAddressString underlying address
+     */
+    async waitForPaymentProof(scope: EventScope, txHash: string, fromAddress: string | null, toAddress: string | null) {
+        await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(txHash);
+        return await this.context.attestationProvider.provePayment(txHash, fromAddress, toAddress)
+            .catch((e) => scope.exitOnExpectedError(e, [AttestationHelperError], ActorBaseKind.CHALLENGER, this.address));
+    }
+
+    /**
      * @param agentVault agent's vault address
      * @param body
      */
@@ -396,5 +458,82 @@ export class Challenger extends ActorBase {
     async getLatestUnderlyingBlock(): Promise<number> {
         const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
         return blockHeight;
+    }
+
+    checkIfConfirmationNeeded(latestTimestampBN: BN): void {
+        logger.info(`Challenger ${this.address} is checking agent if any transactions need to be confirmed.`);
+        const confirmationAllowedAfterSeconds = toBN(this.state.settings.confirmationByOthersAfterSeconds);
+        for (const redemptionData of this.activeRedemptions) {
+            const reference = redemptionData[0];
+            const redemption = redemptionData[1];
+            if (this.confirmingReference.has(reference)) {
+                continue;
+            }
+            const validAt = confirmationAllowedAfterSeconds.add(toBN(redemption.receivedAt));
+            if (latestTimestampBN.gt(validAt)) {
+                const transactionHash = this.transactionForPaymentReference.get(reference);
+                if (!transactionHash) {
+                    logger.warn(`Challenger ${this.address} cannot retrieve transaction hash for payment reference ${reference}.`)
+                    continue;
+                }
+                this.confirmingReference.add(reference);
+                this.runner.startThread((scope) =>
+                    this.confirmRedemptionPayment(scope, transactionHash, redemption.paymentAddress, reference, redemption.agentAddress)
+                        .finally(() => {
+                            this.confirmingReference.delete(reference);
+                        })
+                    );
+            }
+        }
+        for (const withdrawalData of this.activeWithdrawals) {
+            const reference = withdrawalData[0];
+            const withdrawal = withdrawalData[1];
+            if (this.confirmingReference.has(reference)) {
+                continue;
+            }
+            const validAt = confirmationAllowedAfterSeconds.add(toBN(withdrawal.receivedAt));
+            if (latestTimestampBN.gt(validAt)) {
+                const transactionHash = this.transactionForPaymentReference.get(reference);
+                if (!transactionHash) {
+                    logger.warn(`Challenger ${this.address} cannot retrieve transaction hash for payment reference ${reference}.`)
+                    continue;
+                }
+                this.confirmingReference.add(reference);
+                this.runner.startThread((scope) =>
+                    this.confirmWithdrawal(scope, transactionHash, withdrawal.agentAddress, reference)
+                        .finally(() => {
+                            this.confirmingReference.delete(reference);
+                        })
+                    );
+            }
+        }
+    }
+
+    async confirmRedemptionPayment(scope: EventScope, transactionHash: string, paymentAddress: string, reference: string, vaultAddress: string) {
+            logger.info(`Challenger ${this.address} is trying to confirm redemption ${transactionHash} for agent ${vaultAddress}.`);
+            try {
+                const proof = await this.waitForPaymentProof(scope, transactionHash, null, paymentAddress);
+                const requestId = PaymentReference.decodeId(reference);
+                await this.context.assetManager.confirmRedemptionPayment(web3DeepNormalize(proof), requestId, { from: this.address });
+                logger.info(`Challenger ${this.address} successfully confirmed redemption payment ${transactionHash} for agent ${vaultAddress}.`);
+                await this.notifier.sendUnderlyingPaymentConfirmed(vaultAddress, transactionHash);
+                await this.handleRedemptionFinished({requestId: requestId, agentVault: vaultAddress, transactionHash})
+            } catch(error) {
+                logger.error(`Challenger ${this.address} CANNOT confirmed redemption payment ${transactionHash} for agent ${vaultAddress} with error ${error}.`);
+            }
+    }
+
+    async confirmWithdrawal(scope: EventScope, transactionHash: string, agentAddress: string, reference: string) {
+        logger.info(`Challenger ${this.address} is trying to confirm withdrawal payment ${transactionHash} for agent ${agentAddress}.`);
+        try {
+            const proof = await this.waitForPaymentProof(scope, transactionHash, null, null);
+            await this.context.assetManager.confirmUnderlyingWithdrawal(web3DeepNormalize(proof), agentAddress, { from: this.address });
+            logger.info(`Challenger ${this.address} successfully confirmed withdrawal payment ${transactionHash} for agent ${agentAddress}.`);
+            await this.notifier.sendUnderlyingPaymentConfirmed(agentAddress, transactionHash);
+            const announcementId = PaymentReference.decodeId(reference);
+            await this.handleAnnouncementFinished({announcementId: announcementId, agentVault: agentAddress, transactionHash})
+        } catch(error) {
+            logger.error(`Challenger ${this.address} CANNOT confirmed withdrawal payment ${transactionHash} for agent ${agentAddress} with error ${error}.`);
+        }
     }
 }

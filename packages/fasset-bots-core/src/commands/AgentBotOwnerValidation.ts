@@ -134,7 +134,7 @@ export class AgentBotOwnerValidation {
             const faucetInfo = nativeChainInfo.faucet
                 ? `\nGo to [${nativeChainInfo.faucet}] and fund [${owner.workAddress}] or transfer some ${natToken.symbol} from management address.`
                 : `\nTransfer some ${natToken.symbol} from management address.`;
-            this.reporter.error(`Agent work address (${owner.managementAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
+            this.reporter.error(`Agent work address (${owner.workAddress}) balance must be at least ${recBalFmt} (current balance is ${balanceFmt}).${faucetInfo}`);
         } else {
             this.reporter.log(`    work address has balance ${balanceFmt}.`);
         }
