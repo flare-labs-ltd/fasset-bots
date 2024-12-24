@@ -20,6 +20,15 @@
             "walletUrls": ["https://xrpl-api.flare.network"],
             "minimumAccountBalance": "1",
             "priceChangeEmitter": "FtsoV2PriceStore"
+        },
+        "FDOGE": {
+            "chainId": "DOGE",
+            "tokenName": "DOGE",
+            "tokenSymbol": "DOGE",
+            "tokenDecimals": 8,
+            "indexerUrls": ["https://fdc-verifiers-mainnet.flare.network/verifier/doge"],
+            "walletUrls": ["https://blockbook-dogecoin.flare.network/api/v2"],
+            "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
     "agentBotSettings": {
@@ -29,14 +38,14 @@
         "poolCollateralReserveFactor": "0.1",
         "trustedPingSenders": ["0x8B7843E9768599EEF1136e59380e6F79dB6fb901","0x459BC23f08f0091A15cc3871c325463DeA609905"],
         "minBalanceOnServiceAccount": "10",
-        "minBalanceOnWorkAccount": "200",
+        "minBalanceOnWorkAccount": "1000",
         "defaultAgentSettings": {
             "fee": "1%",
             "poolFeeShare": "30%",
-            "mintingVaultCollateralRatio": "1.3",
-            "mintingPoolCollateralRatio": "1.6",
-            "poolExitCollateralRatio": "1.5",
-            "poolTopupCollateralRatio": "1.6",
+            "mintingVaultCollateralRatio": "1.4",
+            "mintingPoolCollateralRatio": "1.7",
+            "poolExitCollateralRatio": "1.6",
+            "poolTopupCollateralRatio": "1.5",
             "poolTopupTokenPriceFactor": "0.995",
             "buyFAssetByAgentFactor": "0.99",
             "handshakeType": 0
@@ -45,6 +54,10 @@
             "FXRP": {
                 "recommendedOwnerBalance": "5",
                 "minimumFreeUnderlyingBalance": "0.01"
+            },
+            "FDOGE": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "20"
             }
         }
     },

@@ -23,6 +23,8 @@ export class CancelToken {
     cancelled = false;
     registrations = new Map<CancelTokenRegistration, () => void>();
 
+    constructor(public name?: string) {}
+
     /**
      * Registers a promise rejection for when the token is cancelled.
      * If the token is already cancelled, the promise will reject immediately (in the next tick).
@@ -32,7 +34,7 @@ export class CancelToken {
     register(reject: (err: any) => void): CancelTokenRegistration {
         // Creating error here gives more useful stack trace where the cancelled promise is created;
         // otherwise we get the stack trace of cancel() call.
-        const error = new PromiseCancelled();
+        const error = new PromiseCancelled("Promise cancelled" + (this.name ? ` (${this.name})` : ""));
         const rejectFn = () => reject(error);
         const registrationId = ++CancelToken.lastRegistrationId;
         if (this.cancelled) {

@@ -28,7 +28,7 @@ program
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
-        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         await bot.printSystemInfo();
     });
 
@@ -39,7 +39,7 @@ program
     .action(async (opts: { all: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
-        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         if (opts.all) {
             await bot.printAllAgents();
         } else {
@@ -51,13 +51,19 @@ program
     .command("agentInfo")
     .description("info about an agent")
     .argument("<agentVaultAddress>", "the address of the agent vault")
-    .action(async (agentVaultAddress: string) => {
+    .option("--raw", "print raw output of getAgentInfo")
+    .option("--owner", "print some info about the owner")
+    .action(async (agentVaultAddress: string, opts: { raw?: boolean, owner?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         validateAddress(agentVaultAddress, "Agent vault address");
         try {
             const secrets = await Secrets.load(options.secrets);
-            const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
-            await bot.printAgentInfo(agentVaultAddress);
+            const bot = await InfoBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
+            if (opts.raw) {
+                await bot.printRawAgentInfo(agentVaultAddress);
+            } else {
+                await bot.printAgentInfo(agentVaultAddress, opts.owner ? "auto" : undefined);
+            }
         } catch (error) {
             translateError(error, { "invalid agent vault address": `Agent vault with address ${agentVaultAddress} does not exist.` });
         }
@@ -218,7 +224,7 @@ program
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
-        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         await bot.printPools();
     });
 
@@ -228,7 +234,7 @@ program
     .action(async () => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
-        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset);
+        const bot = await InfoBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
         const address = secrets.required("user.native.address");
         await bot.printPoolTokenBalance(address);
     });

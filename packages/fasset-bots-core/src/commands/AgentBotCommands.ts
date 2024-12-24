@@ -28,7 +28,7 @@ import { NotifierTransport } from "../utils/notifier/BaseNotifier";
 import { artifacts, authenticatedHttpProvider, initWeb3 } from "../utils/web3";
 import { latestBlockTimestampBN } from "../utils/web3helpers";
 import { AgentBotOwnerValidation } from "./AgentBotOwnerValidation";
-import { WalletAddressEntity } from "@flarelabs/simple-wallet";
+import { TransactionStatus, WalletAddressEntity } from "@flarelabs/simple-wallet";
 import { requiredEventArgs } from "../utils/events/truffle";
 import { PaymentReference } from "../fasset/PaymentReference";
 
@@ -465,21 +465,15 @@ export class AgentBotCommands {
             const { agentBot } = await this.getAgentBot(agentVault);
             const announce = await agentBot.agent.announceUnderlyingWithdrawal();
             const latestBlock = await latestBlockTimestampBN();
-            await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = latestBlock;
-            });
             const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference,
                 undefined, undefined, undefined, undefined, true);
-            await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                agentEnt.underlyingWithdrawalConfirmTransactionId = txDbId;
-            });
-            await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID);
+            await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID, undefined, latestBlock);
             logger.info(`Agent ${agentVault} initiated transaction with database id ${txDbId}.`)
             console.log(`Agent ${agentVault} initiated transaction with database id ${txDbId}. Please ensure 'run-agent' is running for the transaction to be processed further.`)
             return txDbId;
-        } catch (error) {
+        } catch (error: any) {
             logger.error(`Agent ${agentVault} is received error while announcing underlying withdrawal.`, error);
-            console.error(error);
+            console.error(error?.message ?? error);
             return null;
         }
     }
@@ -490,43 +484,22 @@ export class AgentBotCommands {
      */
     async cancelUnderlyingWithdrawal(agentVault: string): Promise<void> {
         logger.info(`Agent ${agentVault} is trying to cancel underlying withdrawal announcement.`);
-        const { agentBot, readAgentEnt } = await this.getAgentBot(agentVault);
-        const confirmationAllowedAt = await agentBot.underlyingWithdrawal.confirmationAllowedAt(readAgentEnt);
-        if (confirmationAllowedAt != null) {
-            logger.info(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
-            console.log(`Agent ${agentVault} is waiting for canceling underlying withdrawal.`);
-            const latestTimestamp = await latestBlockTimestampBN();
-            if (confirmationAllowedAt.lt(latestTimestamp)) {
-                await agentBot.agent.cancelUnderlyingWithdrawal();
-                logger.info(`Agent ${agentVault} canceled underlying withdrawal of tx ${readAgentEnt.underlyingWithdrawalConfirmTransaction}.`);
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.underlyingWithdrawalAnnouncedAtTimestamp = BN_ZERO;
-                });
-                await this.notifierFor(agentVault).sendCancelWithdrawUnderlying();
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(this.orm.em, agentVault);
+        if (latest && latest.txDbId) {
+            const txDbId = latest.txDbId;
+            const info = await this.context.wallet.checkTransactionStatus(txDbId);
+            const txFailed = info.status === TransactionStatus.TX_FAILED ||
+                (info.status === TransactionStatus.TX_REPLACED && info.replacedByStatus === TransactionStatus.TX_FAILED);
+            if (txFailed) {
+                await this.cancelUnderlyingWithdrawalAnnouncement(agentBot, agentVault);
             } else {
-                await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
-                    agentEnt.underlyingWithdrawalWaitingForCancelation = true;
-                });
-                logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${confirmationAllowedAt}. Current ${latestTimestamp.toString()}.`);
-                console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Allowed at ${confirmationAllowedAt}. Current ${latestTimestamp.toString()}.`);
+                console.warn(`Agent ${agentVault} will not cancel underlying withdrawal announcement. Underlying payment ${latest.id} is still active.`)
             }
-        } else { // should not happen. But try anyway.
-            try {
-                await agentBot.agent.cancelUnderlyingWithdrawal();
-            } catch(error: any) {
-                if (error.message?.includes("cancel too soon")) {
-                    logger.info(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Try again later.`);
-                    console.log(`Agent ${agentVault} cannot yet cancel underlying withdrawal. Try again later.`)
-                } else if (error.message?.includes("no active announcement")) {
-                    await this.notifierFor(agentVault).sendNoActiveWithdrawal();
-                    logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
-                    console.log(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
-                } else {
-                    await this.notifierFor(agentVault).sendNoActiveWithdrawal();
-                    logger.info(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
-                    console.log(`Agent ${agentVault} has no active underlying withdrawal announcement.`);
-                }
-            }
+        } else if (latest === null) {
+            await this.cancelUnderlyingWithdrawalAnnouncement(agentBot, agentVault);
+        } else {
+            console.warn(`Agent ${agentVault} will not cancel latest underlying withdrawal announcement. Underlying payment ${latest.id} is still active.`)
         }
     }
 
@@ -728,6 +701,20 @@ export class AgentBotCommands {
     }
 
     /**
+     * Returns maximum amount safe to withdraw from the vault underlying address.
+     * @param agentVault agent's vault address
+     * @returns amount of underlying safe to withdraw (as string)
+     */
+    async getSafeToWithdrawUnderlying(agentVault: string): Promise<string> {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        const info = await agentBot.agent.getAgentInfo();
+        const required = toBN(info.mintedUBA).add(toBN(info.redeemingUBA));
+        const free = maxBN(toBN(info.underlyingBalanceUBA).sub(required), BN_ZERO);
+        logger.info(`Agent ${agentVault} has ${free} safe to withdraw free underlying.`);
+        return String(free);
+    }
+
+    /**
      * Switches vault collateral
      * @param agentVault agent's vault address
      * @param token vault collateral token address
@@ -862,5 +849,17 @@ export class AgentBotCommands {
         // amount to pay
         const toPayUBA = amountUBA.add(poolFeeUBA);
         return toPayUBA;
+    }
+
+    private async cancelUnderlyingWithdrawalAnnouncement(agentBot: AgentBot, agentVault: string) {
+        await agentBot.updateAgentEntity(this.orm.em, async (agentEnt) => {
+            agentEnt.underlyingWithdrawalWaitingForCancelation = true;
+        });
+        console.log(`Agent ${agentVault} sent cancel underlying withdrawal announcement. It will be executed by 'run-agent'.`)
+    }
+
+    async underlyingTopUp(agentVault: string, amountUBA: BN) {
+        const { agentBot } = await this.getAgentBot(agentVault);
+        await agentBot.underlyingManagement.underlyingTopUp(this.orm.em, amountUBA);
     }
 }

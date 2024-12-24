@@ -89,7 +89,7 @@ describe("Attestation client unit tests", () => {
             indexerApiKey(secrets, indexerUrls)
         );
         await expect(localAttestationHelper.flareDataConnector.obtainProof(latestRound, "requestData"))
-            .to.eventually.be.rejectedWith(`There aren't any working attestation providers.`)
+            .to.eventually.be.rejectedWith(`No data access layer clients available for obtaining latest round`)
             .and.be.an.instanceOf(Error);
     });
 

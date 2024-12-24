@@ -1,10 +1,10 @@
 export const allTemplate = {
-    "fee": "0.25%",
-    "poolFeeShare": "40%",
-    "mintingVaultCollateralRatio": "1.6",
-    "mintingPoolCollateralRatio": "2.4",
-    "poolExitCollateralRatio": "2.6",
-    "poolTopupCollateralRatio": "2.2",
-    "poolTopupTokenPriceFactor": "0.8",
-    "buyFAssetByAgentFactor": "0.99"
+    "fee": "1%",
+    "poolFeeShare": "30%",
+    "mintingVaultCollateralRatio": "1.3",
+    "mintingPoolCollateralRatio": "1.6",
+    "poolExitCollateralRatio": "1.6",
+    "poolTopupCollateralRatio": "1.5",
+    "poolTopupTokenPriceFactor": "0.995",
+    "buyFAssetByAgentFactor": "0.99",
 }

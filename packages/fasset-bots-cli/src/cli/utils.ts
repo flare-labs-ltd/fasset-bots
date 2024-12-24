@@ -10,7 +10,7 @@ import { Secrets } from "@flarelabs/fasset-bots-core/config";
 
 const program = programWithCommonOptions("util", "single_fasset");
 
-program.name("fake-price-reader").description("Command line commands managing and reading prices on fake price reader");
+program.name("utils").description("Various helpful tools");
 
 program
     .command("logs")
