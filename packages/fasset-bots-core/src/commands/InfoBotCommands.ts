@@ -4,7 +4,7 @@ import { Secrets, closeBotConfig, createBotConfig } from "../config";
 import { loadConfigFile } from "../config/config-file-loader";
 import { createAgentBotContext, isAssetAgentContext } from "../config/create-asset-context";
 import { IAssetNativeChainContext } from "../fasset-bots/IAssetBotContext";
-import { OwnerAddressPair } from "../fasset/Agent";
+import { Agent, OwnerAddressPair } from "../fasset/Agent";
 import { AgentStatus, AssetManagerSettings, AvailableAgentInfo, CollateralClass } from "../fasset/AssetManagerTypes";
 import { ERC20TokenBalance, latestBlockTimestampBN } from "../utils";
 import { CommandLineError, assertCmd, assertNotNullCmd } from "../utils/command-line-errors";
@@ -343,7 +343,7 @@ export class InfoBotCommands {
      * Get agent info (nicely formatted, with info about underlying and owner addresses)
      * @param agentVault agent's vault address
      */
-    async printAgentInfo(vaultAddress: string, owner?: OwnerAddressPair, ownerUnderlyingAddress?: string) {
+    async printAgentInfo(vaultAddress: string, owner?: OwnerAddressPair | "auto", ownerUnderlyingAddress?: string) {
         assertCmd(isAssetAgentContext(this.context), "Cannot use printAgentInfo for this setup");
         function formatBackedAmount(amountUBA: BNish) {
             const lots = toBN(amountUBA).div(air.lotSizeUBA());
@@ -434,7 +434,10 @@ export class InfoBotCommands {
         console.log(`    Required balance: ${underlyingBR.format(toBN(agentInfo.requiredUnderlyingBalanceUBA))}`);
         console.log(`    Free balance: ${underlyingBR.format(toBN(agentInfo.freeUnderlyingBalanceUBA))}`);
         // data for agent owner
-        if (owner && ownerUnderlyingAddress) {
+        if (owner === "auto") {
+            owner = await Agent.getOwnerAddressPair(this.context, agentInfo.ownerManagementAddress);
+        }
+        if (owner) {
             if (owner.managementAddress === agentInfo.ownerManagementAddress) {
                 console.log(`Agent owner management address: ${agentInfo.ownerManagementAddress}`);
                 console.log(`    Balance: ${await nativeBR.formatBalance(agentInfo.ownerManagementAddress)}`);
@@ -443,14 +446,17 @@ export class InfoBotCommands {
                 console.log(`Agent owner work address: ${agentInfo.ownerWorkAddress}`);
                 console.log(`    Balance: ${await formatCollateralAt(poolNativeCollateral, agentInfo.ownerWorkAddress)}`);
                 console.log(`    Balance: ${await formatCollateralAt(air.vaultCollateral, agentInfo.ownerWorkAddress)}`);
-                //
-                console.log(`Agent owner underlying (${underlyingBR.symbol}) address: ${ownerUnderlyingAddress}`);
-                console.log(`    Balance: ${await underlyingBR.formatBalance(ownerUnderlyingAddress)}`);
+                // only the agent owner knows the owner underlying address
+                if (ownerUnderlyingAddress) {
+                    console.log(`Agent owner underlying (${underlyingBR.symbol}) address: ${ownerUnderlyingAddress}`);
+                    console.log(`    Balance: ${await underlyingBR.formatBalance(ownerUnderlyingAddress)}`);
+                }
             } else {
                 console.log(`Agent vault owned by agent owner with management address ${agentInfo.ownerManagementAddress}`);
             }
         }
     }
+
     /* istanbul ignore next */
     async* readAssetManagerLogs(blockCount: number) {
         const eventDecoder = new Web3ContractEventDecoder({ assetManager: this.context.assetManager });

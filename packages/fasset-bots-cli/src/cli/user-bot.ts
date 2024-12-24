@@ -51,8 +51,9 @@ program
     .command("agentInfo")
     .description("info about an agent")
     .argument("<agentVaultAddress>", "the address of the agent vault")
-    .option("--raw", "print raw aoutput of getAgentInfo")
-    .action(async (agentVaultAddress: string, opts: { raw?: boolean }) => {
+    .option("--raw", "print raw output of getAgentInfo")
+    .option("--owner", "print some info about the owner")
+    .action(async (agentVaultAddress: string, opts: { raw?: boolean, owner?: boolean }) => {
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         validateAddress(agentVaultAddress, "Agent vault address");
         try {
@@ -61,7 +62,7 @@ program
             if (opts.raw) {
                 await bot.printRawAgentInfo(agentVaultAddress);
             } else {
-                await bot.printAgentInfo(agentVaultAddress);
+                await bot.printAgentInfo(agentVaultAddress, opts.owner ? "auto" : undefined);
             }
         } catch (error) {
             translateError(error, { "invalid agent vault address": `Agent vault with address ${agentVaultAddress} does not exist.` });
