@@ -15,7 +15,7 @@ export class AgentRegistrationTransport extends ApiNotifierTransport {
         const secretsKey = beta === "open" ? 'openBeta' : 'closedBeta';
         const apiUrl = secrets.required(`${secretsKey}.registrationApiUrl`);
         const apiKey = secrets.required(`${secretsKey}.registrationApiKey`);
-        super(apiUrl, apiKey);
+        super({ apiUrl, apiKey });
     }
 
     async awaitingFinalization(): Promise<AgentRegistrationSubmission[]> {
