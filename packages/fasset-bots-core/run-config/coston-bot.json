@@ -91,7 +91,7 @@
             }
         }
     },
-    "rpcUrl": "https://coston-api-tracer.flare.network/ext/C/rpc",
+    "rpcUrl": "https://coston-api.flare.network/ext/C/rpc",
     "dataAccessLayerUrls": [
         "https://da.cflr.testfsp.aflabs.org:4443"
     ],
