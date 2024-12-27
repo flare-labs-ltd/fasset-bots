@@ -58,9 +58,14 @@ describe("Challenger tests", () => {
         return { orm, context, state, chain };
     }
 
-    async function runChallengerStep(challenger: Challenger) {
+    async function runChallengerStep(challenger: Challenger, timeout = 20_000) {
         await challenger.runStep();
-        await sleep(100);   // wait for background operations to do something
+        // wait for background operations to finish
+        const start = Date.now();
+        while (challenger.runner.runningThreads > 0) {
+            await sleep(50);
+            assert(Date.now() - start < timeout, `Threads did not finish in ${timeout} ms`);
+        }
     }
 
     beforeEach(async () => {
