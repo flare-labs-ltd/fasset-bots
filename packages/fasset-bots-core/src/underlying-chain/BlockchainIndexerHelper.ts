@@ -309,10 +309,7 @@ export class BlockchainIndexerHelper implements IBlockChain {
                 if (data.items.length == 0) {
                     break;
                 }
-                // offset = data.offset + data.limit;
-                // if (offset >= data.count) {
-                //     break;
-                // }
+                offset = data.offset + data.limit;
             }
         }
         return txs;
