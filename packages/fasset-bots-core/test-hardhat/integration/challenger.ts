@@ -19,6 +19,7 @@ import { fundUnderlying, performRedemptionPayment } from "../../test/test-utils/
 import { TestAssetBotContext, createTestAssetContext } from "../test-utils/create-test-asset-context";
 import { loadFixtureCopyVars } from "../test-utils/hardhat-test-helpers";
 import { assertWeb3DeepEqual, createCRAndPerformMintingAndRunSteps, createTestAgentBotAndMakeAvailable, createTestChallenger, createTestLiquidator, createTestMinter, createTestRedeemer, getAgentStatus, runWithManualFDCFinalization, updateAgentBotUnderlyingBlockProof } from "../test-utils/helpers";
+import { Challenger } from "../../src/actors/Challenger";
 use(spies);
 
 const IERC20 = artifacts.require("IERC20");
@@ -57,6 +58,11 @@ describe("Challenger tests", () => {
         return { orm, context, state, chain };
     }
 
+    async function runChallengerStep(challenger: Challenger) {
+        await challenger.runStep();
+        await sleep(100);   // wait for background operations to do something
+    }
+
     beforeEach(async () => {
         ({ orm, context, chain, state } = await loadFixtureCopyVars(initialize));
     });
@@ -66,7 +72,7 @@ describe("Challenger tests", () => {
         const spyChlg = spy.on(challenger, "illegalTransactionChallenge");
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // faucet underlying
         const underlyingBalance = toBN(1000000000);
         await fundUnderlying(context, agentBot.agent.underlyingAddress, underlyingBalance);
@@ -78,7 +84,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -98,7 +104,7 @@ describe("Challenger tests", () => {
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
         // perform illegal payment
@@ -109,7 +115,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -127,7 +133,7 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const redeemer = await createTestRedeemer(context, redeemerAddress);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         // transfer FAssets
@@ -162,7 +168,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -181,7 +187,7 @@ describe("Challenger tests", () => {
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         const agentInfo = await agentBot.agent.getAgentInfo();
@@ -195,7 +201,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -216,7 +222,7 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const redeemer = await createTestRedeemer(context, redeemerAddress);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         // transfer FAssets
@@ -256,7 +262,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             await agentBot.runStep(orm.em);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -274,7 +280,7 @@ describe("Challenger tests", () => {
         // create test actors
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         const agentInfo = await agentBot.agent.getAgentInfo();
@@ -293,7 +299,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -310,7 +316,7 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const redeemer = await createTestRedeemer(context, redeemerAddress);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 1, orm, chain);
         // transfer FAssets
@@ -365,7 +371,7 @@ describe("Challenger tests", () => {
         await agentBot.runStep(orm.em);
         expect(fetchedRedemption.state).eq(AgentRedemptionState.DONE);
         // catch 'RedemptionPaymentFailed' event
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         let argsFailed: any = null;
         let argsDefault: any = null;
         for (const item of res!.logs) {
@@ -393,7 +399,7 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const redeemer = await createTestRedeemer(context, redeemerAddress);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         // transfer FAssets
@@ -423,7 +429,7 @@ describe("Challenger tests", () => {
         await agentBot.runStep(orm.em);
         await agentBot.runStep(orm.em);
         // catch 'RedemptionPaymentBlocked' event
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // send notification
         await agentBot.runStep(orm.em);
         expect(spyRedemption).to.have.been.called.once;
@@ -435,7 +441,7 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         const underlyingBalanceUBA = toBN((await agentBot.agent.getAgentInfo()).underlyingBalanceUBA).sub(context.chainInfo.minimumAccountBalance);
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
@@ -449,7 +455,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -472,7 +478,7 @@ describe("Challenger tests", () => {
         assert.equal(agentStatus1, AgentStatus.NORMAL);
         const faultyContext = await createTestAssetContext(accounts[0], testChainInfo.xrp, { useAlwaysFailsProver: true });
         const challenger = await createTestChallenger(faultyContext, challengerAddress, state);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         const underlyingBalanceUBA = toBN((await agentBot.agent.getAgentInfo()).underlyingBalanceUBA).sub(context.chainInfo.minimumAccountBalance);
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
@@ -481,7 +487,7 @@ describe("Challenger tests", () => {
         await fundUnderlying(context, agentBot.agent.underlyingAddress, underlyingBalanceUBA);
         await agentBot.agent.performPayment("underlying", underlyingBalanceUBA);
         chain.mine(chain.finalizationBlocks + 1);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // check status
         const agentStatus2 = await getAgentStatus(agentBot);
         assert.equal(agentStatus2, AgentStatus.NORMAL);
@@ -493,7 +499,7 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 2, orm, chain);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         const underlyingBalanceUBA = (await agentBot.agent.getAgentInfo()).underlyingBalanceUBA;
         // announce and perform underlying withdrawal
         const underlyingWithdrawal = await agentBot.agent.announceUnderlyingWithdrawal();
@@ -516,7 +522,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -536,7 +542,7 @@ describe("Challenger tests", () => {
         const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
         const minter = await createTestMinter(context, minterAddress, chain);
         const redeemer = await createTestRedeemer(context, redeemerAddress);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         // transfer FAssets
@@ -566,7 +572,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
             if (agentStatus === AgentStatus.FULL_LIQUIDATION) break;
@@ -591,7 +597,7 @@ describe("Challenger tests", () => {
         const minter = await createTestMinter(context, minterAddress, chain);
         const minter2 = await createTestMinter(context, minter2Address, chain);
         const redeemer = await createTestRedeemer(context, redeemerAddress);
-        await challenger.runStep();
+        await runChallengerStep(challenger);
         // create collateral reservation and perform minting
         await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
         // Generate balance in funder minter
@@ -632,7 +638,7 @@ describe("Challenger tests", () => {
             await time.advanceBlock();
             chain.mine();
             await time.increase(10);
-            await challenger.runStep();
+            await runChallengerStep(challenger);
             await agentBot.runStep(orm.em);
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -660,5 +666,109 @@ describe("Challenger tests", () => {
         // The balance is changed, meaning that the agent is liquidated
         expect(pBalanceAfter.gt(pBalanceBefore)).to.be.true;
         expect(fBalanceAfter.lt(fBalanceBefore)).to.be.true;
+    });
+
+    it("should do 3rd party confirmation for redemption payment", async () => {
+        const challenger = await createTestChallenger(context, challengerAddress, state);
+        // create test actors
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        const redeemer = await createTestRedeemer(context, minterAddress);
+        await runChallengerStep(challenger);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
+        // start redemption and perform redemption payment
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        const [reqs] = await redeemer.requestRedemption(2);
+        await performRedemptionPayment(agentBot.agent, reqs[0]);
+        // now the agent shoud be in redeeming state
+        const info1 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info1.redeemingUBA).gtn(0)).to.be.true;
+        // skip half an hour
+        await time.increase(1800);
+        // the challenger can't do anything for now
+        for (let i = 0; i < 5; i++) {
+            await time.increase(10);
+            await time.advanceBlock();
+            chain.mine();
+            await runChallengerStep(challenger);
+        }
+        // no change for now
+        const info2 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info2.redeemingUBA).gtn(0)).to.be.true;
+        // also no reward for challenger yet
+        expect(Number(await context.stablecoins.usdc.balanceOf(challenger.address))).to.be.eq(0);
+        // now skip 2 hours
+        await time.increase(7200);
+        // now the 3rd party confirmation should work
+        for (let i = 0; i < 5; i++) {
+            await time.increase(10);
+            await time.advanceBlock();
+            chain.mine();
+            await runChallengerStep(challenger);
+        }
+        // redeeming is closed now
+        const info3 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info3.redeemingUBA).eqn(0)).to.be.true;
+        // an challenger got some reward
+        expect(Number(await context.stablecoins.usdc.balanceOf(challenger.address))).to.be.gt(1e6);
+        // but the agent is is still healthy
+        expect(Number(info3.status)).to.be.eq(AgentStatus.NORMAL);
+    });
+
+    it("should do 3rd party confirmation for underlying withdrawal", async () => {
+        const withdrawalAmount = 100e6;
+        const challenger = await createTestChallenger(context, challengerAddress, state);
+        // create test actors
+        const agentBot = await createTestAgentBotAndMakeAvailable(context, orm, ownerAddress);
+        const minter = await createTestMinter(context, minterAddress, chain);
+        await runChallengerStep(challenger);
+        chain.mint(underlyingAddress, 2 * withdrawalAmount);
+        // create collateral reservation and perform minting
+        await createCRAndPerformMintingAndRunSteps(minter, agentBot, 3, orm, chain);
+        // perform topup
+        const tx = await agentBot.agent.performTopupPayment(withdrawalAmount, underlyingAddress);
+        chain.mine(chain.finalizationBlocks + 1);
+        await agentBot.agent.confirmTopupPayment(tx);
+        // agent should have free underlying now
+        const info0 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info0.freeUnderlyingBalanceUBA).gtn(withdrawalAmount)).to.be.true;
+        // perform underlying withdrawal (without confirmation)
+        await proveAndUpdateUnderlyingBlock(context.attestationProvider, context.assetManager, ownerAddress);
+        const uw = await agentBot.agent.announceUnderlyingWithdrawal();
+        await agentBot.agent.performPayment(agentBot.ownerUnderlyingAddress, withdrawalAmount, uw.paymentReference);
+        // now the agent shoud have open underlying withdrawal
+        const info1 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info1.announcedUnderlyingWithdrawalId).eqn(0)).to.be.false;
+        // skip half an hour
+        await time.increase(1800);
+        // the challenger can't do anything for now
+        for (let i = 0; i < 5; i++) {
+            await time.increase(10);
+            await time.advanceBlock();
+            chain.mine();
+            await runChallengerStep(challenger);
+        }
+        // no change for now
+        const info2 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info2.announcedUnderlyingWithdrawalId).eqn(0)).to.be.false;
+        // also no reward for challenger yet
+        expect(Number(await context.stablecoins.usdc.balanceOf(challenger.address))).to.be.eq(0);
+        // now skip 2 hours
+        await time.increase(7200);
+        // now the 3rd party confirmation should work
+        for (let i = 0; i < 5; i++) {
+            await time.increase(10);
+            await time.advanceBlock();
+            chain.mine();
+            await runChallengerStep(challenger);
+        }
+        // underlying withdrawal is closed now
+        const info3 = await agentBot.agent.getAgentInfo();
+        expect(toBN(info3.announcedUnderlyingWithdrawalId).eqn(0)).to.be.true;
+        // an challenger got some reward
+        expect(Number(await context.stablecoins.usdc.balanceOf(challenger.address))).to.be.gt(1e6);
+        // but the agent is is still healthy
+        expect(Number(info3.status)).to.be.eq(AgentStatus.NORMAL);
     });
 });
