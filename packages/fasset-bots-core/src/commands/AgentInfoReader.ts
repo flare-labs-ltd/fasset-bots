@@ -3,7 +3,7 @@ import { IIAssetManagerInstance } from "../../typechain-truffle";
 import { AgentInfo, AssetManagerSettings, CollateralClass, CollateralType } from "../fasset/AssetManagerTypes";
 import { CollateralPrice } from "../state/CollateralPrice";
 import { TokenPriceReader } from "../state/TokenPrice";
-import { TokenBalances } from "../utils";
+import { latestBlockTimestampBN, TokenBalances } from "../utils";
 import { TokenBalance } from "../utils/TokenBalance";
 import { MAX_BIPS, maxBN, toBN } from "../utils/helpers";
 
@@ -17,6 +17,7 @@ export class AgentInfoReader {
         public vaultCollateral: CollateralPriceCalculator,
         public poolCollateral: CollateralPriceCalculator,
         public poolTokenBalanceReader: TokenBalance,
+        public timestamp: BN,
     ) {}
 
     static async create(assetManager: IIAssetManagerInstance, agentVault: string) {
@@ -28,7 +29,8 @@ export class AgentInfoReader {
         const vaultCollateral = await CollateralPriceCalculator.create(tokenPriceReader, settings, agentInfo, vaultCollateralType, agentVault);
         const poolCollateral = await CollateralPriceCalculator.create(tokenPriceReader, settings, agentInfo, poolCollateralType, agentInfo.collateralPool);
         const poolTokenBalance = await TokenBalances.collateralPoolToken(agentInfo.collateralPool);
-        return new AgentInfoReader(assetManager, agentVault, settings, tokenPriceReader, agentInfo, vaultCollateral, poolCollateral, poolTokenBalance);
+        const timestamp = await latestBlockTimestampBN();
+        return new AgentInfoReader(assetManager, agentVault, settings, tokenPriceReader, agentInfo, vaultCollateral, poolCollateral, poolTokenBalance, timestamp);
     }
 
     lotSizeUBA() {
