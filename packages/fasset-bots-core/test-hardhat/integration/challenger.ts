@@ -77,7 +77,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -108,7 +108,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -161,7 +161,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -194,7 +194,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -255,7 +255,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             await agentBot.runStep(orm.em);
             const agentStatus = await getAgentStatus(agentBot);
@@ -292,7 +292,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -448,7 +448,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -515,7 +515,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -565,7 +565,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             const agentStatus = await getAgentStatus(agentBot);
             console.log(`Challenger step ${i}, agent status = ${AgentStatus[agentStatus]}`);
@@ -631,7 +631,7 @@ describe("Challenger tests", () => {
         for (let i = 0; ; i++) {
             await time.advanceBlock();
             chain.mine();
-            await sleep(3000);
+            await time.increase(10);
             await challenger.runStep();
             await agentBot.runStep(orm.em);
             const agentStatus = await getAgentStatus(agentBot);
@@ -653,7 +653,7 @@ describe("Challenger tests", () => {
         console.log("Liquidating...");
         await liquidator.runStep();
         while (liquidator.runner.runningThreads > 0) {
-            await sleep(2000);
+            await sleep(200);
         }
         const fBalanceAfter = await state.context.fAsset.balanceOf(liquidatorAddress);
         const pBalanceAfter = await poolCollateralToken.balanceOf(liquidatorAddress);
