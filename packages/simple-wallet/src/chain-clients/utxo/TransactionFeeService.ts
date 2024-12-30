@@ -48,7 +48,7 @@ export class TransactionFeeService {
         try {
             const feeService = this.services.feeService;
             if (feeService) {
-                const movingAverageWeightedFee = feeService.getLatestFeeStats();
+                const movingAverageWeightedFee = await feeService.getLatestFeeStats();
                 if (movingAverageWeightedFee?.gtn(0)) {
                     return enforceMinimalAndMaximalFee(this.chainType, movingAverageWeightedFee);
                 }

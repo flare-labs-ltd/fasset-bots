@@ -6,13 +6,21 @@ import {
 } from "../../db/dbutils";
 import BN from "bn.js";
 import {TransactionEntity, TransactionStatus} from "../../entity/transaction";
-import {BTC_DOGE_DEC_PLACES, ChainType, MEMPOOL_CHAIN_LENGTH_LIMIT} from "../../utils/constants";
+import {
+    ChainType,
+    MEMPOOL_CHAIN_LENGTH_LIMIT,
+} from "../../utils/constants";
 import {logger} from "../../utils/logger";
 import {EntityManager, Loaded, RequiredEntityData} from "@mikro-orm/core";
 import {FeeStatus} from "./TransactionFeeService";
-import {toBN, toBNExp} from "../../utils/bnutils";
+import {toBN} from "../../utils/bnutils";
 import {TransactionInputEntity} from "../../entity/transactionInput";
-import {getDustAmount, isEnoughUTXOs} from "./UTXOUtils";
+import {
+    getDustAmount,
+    getMinimumUTXOValue,
+    getRelayFeePerKB,
+    isEnoughUTXOs
+} from "./UTXOUtils";
 import {
     MempoolUTXO,
     UTXORawTransaction,
@@ -21,6 +29,7 @@ import {
 } from "../../interfaces/IBlockchainAPI";
 import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
 import {IUtxoWalletServices} from "./IUtxoWalletServices";
+import { estimateTxSize } from "../../utils/utils";
 
 export interface TransactionData {
     source: string;
@@ -30,6 +39,7 @@ export interface TransactionData {
     feePerKB?: BN;
     useChange: boolean;
     note?: string;
+    replacementFor?: TransactionEntity;
 }
 
 export class TransactionUTXOService {
@@ -52,13 +62,7 @@ export class TransactionUTXOService {
         this.enoughConfirmations = enoughConfirmations;
 
         /* istanbul ignore next */
-        if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
-            this.minimumUTXOValue = toBNExp(0.1, BTC_DOGE_DEC_PLACES);
-        } else if (this.chainType === ChainType.testBTC || this.chainType === ChainType.BTC) {
-            this.minimumUTXOValue = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
-        } else {
-            this.minimumUTXOValue = toBNExp(0.0001, BTC_DOGE_DEC_PLACES); // 10k sats
-        }
+        this.minimumUTXOValue = getMinimumUTXOValue(this.chainType);
 
         this.rootEm = services.rootEm;
         this.blockchainAPI = services.blockchainAPI;
@@ -284,7 +288,9 @@ export class TransactionUTXOService {
         const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
         const calculatedTxFee = toBN(tr.getFee());
         if (txData.fee) {
-            return valueBeforeFee.sub(txData.fee);
+            const size = Math.ceil(estimateTxSize(this.chainType, tr));
+            const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000).divn(1000);
+            return txData.replacementFor ? valueBeforeFee.sub(txData.fee).sub(toBN(size).mul(relayFeePerB)) : valueBeforeFee.sub(txData.fee);
         } else if (calculatedTxFee.ltn(0)) {
             return toBN(-10); // return any negative value
         } else {
@@ -326,7 +332,6 @@ export class TransactionUTXOService {
     }
 
     async handleMissingUTXOScripts(utxos: MempoolUTXO[], source: string): Promise<MempoolUTXO[]> {
-        let count = 0;
         for (const utxo of utxos) {
             if (!utxo.script) {
                 if (!this.utxoScriptMap.has(source)) {
@@ -338,7 +343,6 @@ export class TransactionUTXOService {
                     addressScriptMap.set(`${utxo.transactionHash}:${utxo.position}`, script);
                 }
                 utxo.script = addressScriptMap.get(`${utxo.transactionHash}:${utxo.position}`)!;
-                count++;
             }
         }
         return utxos;

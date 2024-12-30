@@ -84,6 +84,7 @@ describe("DOGE mainnet wallet tests", () => {
 
         await wClient.rootEm.nativeDelete(WalletAddressEntity, {});
         wClient.rootEm.clear();
+        await testOrm.close();
     });
 
     it("Should successfully create and submit transaction", async () => {
@@ -109,7 +110,7 @@ describe("DOGE mainnet wallet tests", () => {
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(id, blockHeight);
 
-        const [replacedTxEnt,] = await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING, TransactionStatus.TX_REPLACED], id);
+        const replacedTxEnt = await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING, TransactionStatus.TX_REPLACED], id);
         await waitForTxToFinishWithStatus(2, enoughConfirmations * 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, replacedTxEnt.replaced_by!.id);
     });
 

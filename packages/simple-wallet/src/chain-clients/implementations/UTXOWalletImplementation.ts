@@ -29,8 +29,7 @@ import {
     handleFeeToLow,
     handleMissingPrivateKey,
     resetTransactionEntity,
-    transactional,
-    updateTransactionEntity
+    transactional, updateTransactionEntity
 } from "../../db/dbutils";
 import { logger } from "../../utils/logger";
 import { UTXOAccountGeneration } from "../account-generation/UTXOAccountGeneration";
@@ -94,7 +93,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         this.transactionFeeService = new TransactionFeeService(this, this.chainType, this.feeIncrease);
         this.transactionUTXOService = new TransactionUTXOService(this, this.chainType, this.enoughConfirmations);
         this.transactionService = new TransactionService(this, this.chainType);
-        this.feeService = overrides.feeService ?? new BlockchainFeeService(this.blockchainAPI, this.chainType, this.monitoringId);
+        this.feeService = overrides.feeService ?? new BlockchainFeeService(this.rootEm, this.blockchainAPI, this.chainType, this.monitoringId);
     }
 
     abstract clone(data: CreateWalletOverrides): UTXOWalletImplementation;
@@ -113,7 +112,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @returns {BN} - current transaction/network fee in satoshis
      */
     async getCurrentTransactionFee(params: UTXOFeeParams): Promise<BN> {
-        logger.info(`Received request to fetch current transaction with params ${params.source}, ${params.destination} and ${params.amount?.toString()}.`);
+        logger.info(`Received request to fetch current transaction fee with params ${params.source}, ${params.destination} and ${params.amount?.toString()}.`);
         try {
             const [transaction] = await this.transactionService.preparePaymentTransaction(
                 0,
@@ -149,9 +148,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
      * @param {BN|undefined} maxFeeInSatoshi
      * @param executeUntilBlock
      * @param executeUntilTimestamp
+     * @param isFreeUnderlying - transfer funds where fee is allocated from amount if it's not directly specified
      * @param feeSource - address of the wallet which is used for paying transaction fees
      * @param maxPaymentForFeeSource
-     * @param isFreeUnderlying - transfer funds where fee is allocated from amount if it's not directly specified
      * @returns {Object} - containing transaction id tx_id and optional result
      */
     async createPaymentTransaction(
@@ -632,9 +631,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
         }
         // send less as in original tx (as time for payment passed) or "delete transaction" amount
-        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType)
+        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType);
         const totalFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)).add(oldTx.fee!); // covering conflicting txs
         logger.info(`Descendants fee ${totalFee.sub(oldTx.fee!).toNumber()}, oldTx fee ${oldTx.fee}, total fee ${totalFee}`);
+
+        if (oldTx.isFreeUnderlyingTransaction && !oldTx.feeSource && totalFee.add(newValue!).gt(oldTx.amount!)) {
+            logger.warn(`Cannot RBF transaction ${txId} because fee (${totalFee}) + amount (${newValue}) is greater than amount able to spend (${oldTx.amount})`);
+            return;
+        }
+
         const replacementTx = await createInitialTransactionEntity(
             this.rootEm,
             this.chainType,
@@ -647,7 +652,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             oldTx.executeUntilBlock,
             oldTx.executeUntilTimestamp,
             oldTx,
-            oldTx.feeSource
+            oldTx.feeSource,
+            undefined,
+            oldTx.isFreeUnderlyingTransaction
         );
 
         await updateTransactionEntity(this.rootEm, txId, (txEnt) => {

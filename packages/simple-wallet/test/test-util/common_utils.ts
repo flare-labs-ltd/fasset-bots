@@ -65,7 +65,7 @@ export async function loop(sleepIntervalMs: number, timeLimit: number, tx: Trans
  * @param status
  * @param txId
  */
-export async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, rootEm: EntityManager, status: TransactionStatus | TransactionStatus[], txId: number): Promise<[TransactionEntity, TransactionInfo]> {
+export async function waitForTxToFinishWithStatus(sleepInterval: number, timeLimit: number, rootEm: EntityManager, status: TransactionStatus | TransactionStatus[], txId: number): Promise<TransactionEntity> {
     let tx = await fetchTransactionEntityById(rootEm, txId);
     await loop(sleepInterval * 1000, timeLimit * 1000, tx,async () => {
         try {
@@ -80,16 +80,10 @@ export async function waitForTxToFinishWithStatus(sleepInterval: number, timeLim
         }
     });
 
-    try {
-        return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];
-    } catch (error) {
-        logger.error("Test util error: ", error);
-        await sleepMs(1000);
-        return [await fetchTransactionEntityById(rootEm, txId), await getTransactionInfoById(rootEm, txId)];
-    }
+    return fetchTransactionEntityById(rootEm, txId)
 }
 
-export async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit: number, wClient: XRP | BTC | DOGE, status: TransactionStatus, txId: number): Promise<[TransactionEntity, TransactionInfo]> {
+export async function waitForTxToBeReplacedWithStatus(sleepInterval: number, timeLimit: number, wClient: XRP | BTC | DOGE, status: TransactionStatus, txId: number): Promise<TransactionEntity> {
     let txInfo = await wClient.getTransactionInfo(txId);
     let replacedTx: TransactionEntity | TransactionInfo | null = null;
 
@@ -101,7 +95,7 @@ export async function waitForTxToBeReplacedWithStatus(sleepInterval: number, tim
             return checkStatus(replacedTx, [status]);
     });
 
-    return [await fetchTransactionEntityById(wClient.rootEm, txId), await wClient.getTransactionInfo(txId)];
+    return fetchTransactionEntityById(wClient.rootEm, txId);
 }
 
 export function addConsoleTransportForTests (logger: Logger) {

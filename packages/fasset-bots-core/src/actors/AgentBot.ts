@@ -655,6 +655,7 @@ export class AgentBot {
                 await this.locks.nativeChainLock(this.owner.workAddress).lockAndRun(async () => {
                     await this.agent.agentPingResponse(query, data);
                 });
+                logger.info(`Agent ${this.agent.vaultAddress} responded to agent ping with data ${data}.`);
             }
         } catch (error) {
             logger.error(`Error responding to ping for agent ${this.agent.vaultAddress}`, error);

@@ -423,6 +423,8 @@ export class InfoBotCommands {
         console.log(`    Vault collateral balance: ${await vaultBR.formatBalance(vaultAddress)}`);
         console.log(`    Pool tokens balance: ${await poolTokenBR.formatBalance(vaultAddress)}`);
         console.log(`    Pool fee share: ${fassetBR.format(await collateralPool.fAssetFeesOf(vaultAddress))}`);
+        console.log(`    Announced vault collateral withdrawal: ${vaultBR.format(agentInfo.announcedVaultCollateralWithdrawalWei)}`);
+        console.log(`    Announced pool token withdrawal: ${poolTokenBR.format(agentInfo.announcedPoolTokensWithdrawalWei) }`);
         console.log(`Agent collateral pool: ${agentInfo.collateralPool}`);
         console.log(`    Collateral balance: ${await poolBR.formatBalance(agentInfo.collateralPool)}`);
         console.log(`    Total pool token supply: ${poolTokenBR.format(await (poolTokenBR as ERC20TokenBalance).totalSupply())}`);

@@ -1,7 +1,7 @@
-import {Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property} from "@mikro-orm/core";
+import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
-import {BNType} from "../utils/orm-types";
+import { BNType, TextType } from "../utils/orm-types";
 import {TransactionOutputEntity} from "./transactionOutput";
 import {TransactionInputEntity} from "./transactionInput";
 
@@ -66,13 +66,13 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true  })
     amount?: BN;
 
-    @Property({ columnType: 'text', nullable: true })
+    @Property({ type: TextType, nullable: true })
     raw?: string;
 
-    @Property({ columnType: 'text', nullable: true })
+    @Property({ type: TextType, nullable: true })
     serverSubmitResponse?: string;
 
-    @Property({ columnType: "text", nullable: true })
+    @Property({ type: TextType, nullable: true })
     lastProcessingError?: string;
 
     @Property()
@@ -84,10 +84,10 @@ export class TransactionEntity {
     @OneToOne(() => TransactionEntity, { nullable: true })
     rbfReplacementFor?: TransactionEntity | null;
 
-    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    @Property({ onCreate: () => new Date(), defaultRaw: "CURRENT_TIMESTAMP" })
     createdAt: Date = new Date();
 
-    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    @Property({ onUpdate: () => new Date(), defaultRaw: "CURRENT_TIMESTAMP" })
     updatedAt: Date = new Date();
 
     @OneToMany(() => TransactionInputEntity, input => input.transaction, {orphanRemoval: true})

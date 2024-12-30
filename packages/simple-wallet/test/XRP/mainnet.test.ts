@@ -117,7 +117,7 @@ describe("XRP mainnet wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendDrops, lowFee, note);
         expect(id).to.be.gt(0);
 
-        const [txEnt] = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
+        const txEnt = await waitForTxToBeReplacedWithStatus(2, 40, wClient, TransactionStatus.TX_SUCCESS, id);
         expect(txEnt.status).to.equal(TransactionStatus.TX_REPLACED);
     });
 
@@ -186,5 +186,20 @@ describe("XRP mainnet wallet tests", () => {
         expect(sourceBalanceEnd.gt(sourceBalanceStart)).to.be.true;
         expect(targetBalanceEnd.eqn(0)).to.be.true;
     });
+
+    it("Delete target wallets", async () => {
+        const transactionIds = [];
+        for (let i = 0; i < stressTestSecrets.XRP.targetWallets.length; i++) {
+            const wallet = stressTestSecrets.XRP.targetWallets[i];
+            await wClient.walletKeys.addKey(wallet.address, wallet.private_key);
+            const balance = await wClient.getAccountBalance(wallet.address);
+            if (balance.gtn(0)) {
+                transactionIds.push(await wClient.createDeleteAccountTransaction(wallet.address, fundedAddress));
+            }
+        }
+
+        await Promise.all(transactionIds.map(async (t) => await waitForTxToBeReplacedWithStatus(10, 30 * 60, wClient, TransactionStatus.TX_SUCCESS, t)));
+    });
+
 });
 

@@ -20,6 +20,15 @@
             "walletUrls": ["https://xrpl-api.flare.network"],
             "minimumAccountBalance": "1",
             "priceChangeEmitter": "FtsoV2PriceStore"
+        },
+        "FDOGE": {
+            "chainId": "DOGE",
+            "tokenName": "DOGE",
+            "tokenSymbol": "DOGE",
+            "tokenDecimals": 8,
+            "indexerUrls": ["https://fdc-verifiers-mainnet.flare.network/verifier/doge"],
+            "walletUrls": ["https://blockbook-dogecoin.flare.network/api/v2"],
+            "priceChangeEmitter": "FtsoV2PriceStore"
         }
     },
     "agentBotSettings": {
@@ -45,6 +54,10 @@
             "FXRP": {
                 "recommendedOwnerBalance": "5",
                 "minimumFreeUnderlyingBalance": "0.01"
+            },
+            "FDOGE": {
+                "recommendedOwnerBalance": "50",
+                "minimumFreeUnderlyingBalance": "20"
             }
         }
     },

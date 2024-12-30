@@ -24,8 +24,7 @@ import {
 import {DriverException} from "@mikro-orm/core";
 import * as utxoUtils from "../../src/chain-clients/utxo/UTXOUtils";
 import {
-    createAndPersistTransactionEntity,
-    setMonitoringStatus,
+    createAndPersistTransactionEntity, setMonitoringStatus,
     setWalletStatusInDB,
 } from "../test-util/entity_utils";
 import sinon from "sinon";
@@ -65,7 +64,7 @@ const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 // first change address: tb1q38w40nmt5chk4a60mrh502h7m3l5w6pxpxvr0c
 // first change address private key: cTyRVJd6AUUshTBS7DcxfemJh6zeb3iCEJCWYtBsTHizybuHFt6r
 
-const amountToSendSatoshi = toBN(100020);
+const amountToSendSatoshi = toBN(1000200);
 const feeInSatoshi = toBN(12000);
 const maxFeeInSatoshi = toBN(1100);
 const note = "10000000000000000000000000000000000000000beefbeaddeafdeaddeedcac";
@@ -109,6 +108,7 @@ describe("Bitcoin wallet tests", () => {
             await setMonitoringStatus(wClient.rootEm, wClient.chainType, 0);
         }
         removeConsoleLogging();
+        await testOrm.close();
     });
 
     beforeEach(async () => {
@@ -124,7 +124,7 @@ describe("Bitcoin wallet tests", () => {
         const feeToUse = feeInSatoshi.muln(10);
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeToUse);
         expect(txId).greaterThan(0);
-        const [txEnt] = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const txEnt = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const info = await wClient.getTransactionInfo(txId);
         expect(info.transactionHash).to.eq(txEnt.transactionHash);
         expect((txEnt.fee!).eq(feeToUse)).to.be.true;
@@ -136,7 +136,7 @@ describe("Bitcoin wallet tests", () => {
     it("Should not create transaction: fee > maxFee", async () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, note, maxFeeInSatoshi);
         expect(txId).greaterThan(0);
-        const [txEnt] = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
+        const txEnt = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect((txEnt.fee!).eq(feeInSatoshi)).to.be.true;
         expect((txEnt.maxFee!).eq(maxFeeInSatoshi)).to.be.true;
     });
@@ -166,7 +166,7 @@ describe("Bitcoin wallet tests", () => {
         const id = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, feeInSatoshi, currentBlock - wClient.executionBlockOffset);
         expect(id).to.be.gt(0);
 
-        const [txEnt] = await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
+        const txEnt = await waitForTxToFinishWithStatus(2, 40, wClient.rootEm, TransactionStatus.TX_FAILED, id);
         expect(txEnt.status).to.equal(TransactionStatus.TX_FAILED);
     });
 
@@ -176,7 +176,7 @@ describe("Bitcoin wallet tests", () => {
         txEnt.raw = JSON.stringify(transaction);
         txEnt.status = TransactionStatus.TX_PREPARED;
         await wClient.rootEm.flush();
-        const [tx] = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.id);
+        const tx = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.id);
         expect(tx.status).to.equal(TransactionStatus.TX_SUBMITTED);
         await dbutils.updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
@@ -265,8 +265,7 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(txId, blockHeight);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING], txId);
-        const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED_PENDING], txId);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
         await dbutils.updateTransactionEntity(wClient.rootEm, txEnt.replaced_by!.id, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
@@ -356,20 +355,18 @@ describe("Bitcoin wallet tests", () => {
         const fundTxId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSendSatoshi);
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, fundTxId);
 
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined, undefined, undefined, undefined, feeSourceAddress);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, note, undefined, undefined, undefined, false, feeSourceAddress);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
 
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(txId, blockHeight);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED_PENDING, txId);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED_PENDING, txId);
 
-        const txEnt = await dbutils.fetchTransactionEntityById(wClient.rootEm, txId);
         const { address1Included,  address2Included } = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, txEnt.raw!);
         expect(address1Included).to.include(true);
         expect(address2Included).to.include(true);
-        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
+        const replacementTxEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
 
-        const replacementTxEnt = await fetchTransactionEntityById(wClient.rootEm, txEnt.replaced_by!.id);
         const { address1Included: address1Included1,  address2Included: address2Included1} = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, replacementTxEnt.raw!);
         expect(address1Included1).to.include(true);
         expect(address2Included1).to.include(true);

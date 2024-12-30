@@ -54,6 +54,7 @@ describe("Fee service tests BTC", () => {
 
     after(async () => {
         removeConsoleLogging();
+        await testOrm.close();
     });
 
     it("Should get current block height", async () => {
@@ -62,7 +63,7 @@ describe("Fee service tests BTC", () => {
     });
 
     it("Should get latest fee stats", async () => {
-        const feeStats = feeService.getLatestFeeStats();
+        const feeStats = await feeService.getLatestFeeStats();
         expect(feeStats.gten(0)).to.be.true;
     });
 

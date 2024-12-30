@@ -1,5 +1,5 @@
 import { Entity, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
-import {BNType} from "../utils/orm-types";
+import { BNType, TextType } from "../utils/orm-types";
 import BN from "bn.js";
 import { TransactionEntity } from "./transaction";
 
@@ -17,16 +17,16 @@ export class TransactionOutputEntity {
     @Property({type: BNType})
     amount!: BN;
 
-    @Property({type: "text"})
+    @Property({type: TextType})
     script!: string;
 
     @ManyToOne(() => TransactionEntity)
     transaction!: TransactionEntity;
 
-    @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    @Property({ onCreate: () => new Date(), defaultRaw: "CURRENT_TIMESTAMP" })
     createdAt: Date = new Date();
 
-    @Property({ onUpdate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
+    @Property({ onUpdate: () => new Date(), defaultRaw: "CURRENT_TIMESTAMP" })
     updatedAt: Date = new Date();
 
 }

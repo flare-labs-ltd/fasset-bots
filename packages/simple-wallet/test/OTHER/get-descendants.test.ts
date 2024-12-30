@@ -4,25 +4,30 @@ import { getTransactionDescendants } from "../../src/chain-clients/utxo/UTXOUtil
 
 import { expect } from "chai";
 import { EntityManager } from "@mikro-orm/core";
-import config, { initializeTestMikroORM } from "../test-orm/mikro-orm.config";
+import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import {
     createTransactionEntity, createTransactionEntityWithInputsAndOutputs,
     createTransactionInputEntity, createTransactionOutputEntity
 } from "../test-util/entity_utils";
-import {TransactionOutputEntity} from "../../src/entity/transactionOutput";
+import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
+
+let testOrm: ORM;
 
 describe("getTransactionDescendants", () => {
     let em: EntityManager;
     before(async () => {
-        const conf = { ...config };
-        conf.dbName = "unit-test-db";
-        em = (await initializeTestMikroORM(conf)).em;
+        testOrm = await initializeTestMikroORM({...config, dbName: "unit-test-db"});
+        em = testOrm.em;
     });
 
     beforeEach(async () => {
         await em.nativeDelete(TransactionInputEntity, {});
         await em.nativeDelete(TransactionOutputEntity, {});
         await em.nativeDelete(TransactionEntity, {});
+    });
+
+    after(async () => {
+        await testOrm.close();
     });
 
     it("should return an empty array when there are no descendants", async () => {

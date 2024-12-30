@@ -1,6 +1,12 @@
 import {
    ChainType,
-   DEFAULT_FEE_INCREASE, DROPS_PER_XRP
+   DEFAULT_FEE_INCREASE,
+   DROPS_PER_XRP,
+   UTXO_INPUT_SIZE,
+   UTXO_INPUT_SIZE_SEGWIT,
+   UTXO_OUTPUT_SIZE,
+   UTXO_OUTPUT_SIZE_SEGWIT,
+   UTXO_OVERHEAD_SIZE, UTXO_OVERHEAD_SIZE_SEGWIT
 } from "./constants";
 import { StuckTransaction } from "../interfaces/IWalletTransaction";
 import BN from "bn.js";
@@ -9,6 +15,7 @@ import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
 import crypto from "crypto";
+import { Transaction } from "bitcore-lib";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
@@ -158,4 +165,13 @@ export function fullStackTrace(error: Error, skipDepth: number = 0): string {
    const extraStackLines = (stackError.stack ?? "").split("\n").slice(skipDepth + 2);
    const filteredStackLines = extraStackLines.filter(l => !originalStack.includes(l));
    return originalStack.trimEnd() + "\n" + filteredStackLines.join("\n");
+}
+
+export function estimateTxSize(chainType: ChainType, tr: Transaction, note?: string) {
+   const noteSize = note ? Buffer.byteLength(note, 'utf8') : 0;
+   if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
+      return tr.inputs.length * UTXO_INPUT_SIZE + tr.outputs.length * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE + noteSize;
+   } else {
+      return tr.inputs.length * UTXO_INPUT_SIZE_SEGWIT + tr.outputs.length * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT + noteSize;
+   }
 }
