@@ -19,6 +19,6 @@ export class FaultyNotifierTransport extends ApiNotifierTransport {
 
     override async send(type: BotType, address: string, level: NotificationLevel, title: string, message: string): Promise<void> {
         await super.send(type, address, level, title, message);
-        await sleep(1000);
+        await sleep(100);
     }
 }
