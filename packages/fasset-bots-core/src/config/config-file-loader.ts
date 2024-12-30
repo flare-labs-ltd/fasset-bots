@@ -61,8 +61,9 @@ function mergeFAssets(overrideFile: string, configFAssets: Record<string, any>, 
         if (symbol in configFAssets) {
             resultFAssets[symbol] = { ...configFAssets[symbol], ...info };
         } else {
-            console.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
-            logger.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
+            resultFAssets[symbol] = { ...info };
+            console.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, adding new fasset type.`)
+            logger.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, adding new fasset type.`)
         }
     }
     return resultFAssets;
