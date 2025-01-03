@@ -4,7 +4,7 @@ import path from "path";
 import { CommandLineError, assertCmd, logger } from "../utils";
 import { requireNotNull, substituteEnvVars } from "../utils/helpers";
 import { resolveInFassetBotsCore } from "../utils/package-paths";
-import { BotConfigFile, BotConfigFileOverride } from "./config-files/BotConfigFile";
+import { AgentBotFassetSettingsJson, BotConfigFile, BotConfigFileOverride, BotFAssetInfo } from "./config-files/BotConfigFile";
 import { loadContracts } from "./contracts";
 import { IJsonLoader, JsonLoader } from "./json-loader";
 
@@ -14,33 +14,40 @@ const botConfigLoader: IJsonLoader<BotConfigFile> =
 const botConfigOverrideLoader: IJsonLoader<BotConfigFileOverride> =
     new JsonLoader(resolveInFassetBotsCore("run-config/schema/bot-config-override.schema.json"), "bot config JSON");
 
+const fAssetInfoLoader: IJsonLoader<BotFAssetInfo> =
+    new JsonLoader(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON", "BotFAssetInfo");
+
+const agentBotFassetSettingsLoader: IJsonLoader<AgentBotFassetSettingsJson> =
+    new JsonLoader(resolveInFassetBotsCore("run-config/schema/bot-config.schema.json"), "bot config JSON", "AgentBotFassetSettingsJson");
+
 /**
  * Loads configuration file and checks it.
  * @param fPath configuration file path
- * @param configInfo
+ * @param configInfo information about file type to print in config messages
+ * @param validate perform JSON schema validation
  * @returns instance BotConfigFile
  */
-export function loadConfigFile(fPath: string, configInfo?: string): BotConfigFile {
-    const config = loadConfigFileRecursive(fPath, configInfo);
+export function loadConfigFile(fPath: string, configInfo: string = "", validate: boolean = true): BotConfigFile {
+    const config = loadConfigFileRecursive(fPath, configInfo, validate, new Set());
     namespaceOrmPath(config);
     validateConfigFile(config);
     return config;
 }
 
-function loadConfigFileRecursive(fPath: string, configInfo?: string, visitedFiles: Set<string> = new Set()): BotConfigFile {
-    const config = loadConfigFileOrOverride(fPath, configInfo);
+function loadConfigFileRecursive(fPath: string, configInfo: string, validate: boolean, visitedFiles: Set<string>): BotConfigFile {
+    const config = loadConfigFileOrOverride(fPath, configInfo, validate);
     updateConfigFilePaths(fPath, config);
     if ("extends" in config) {
         visitedFiles.add(fPath);
         assertCmd(!visitedFiles.has(config.extends), `Circular config file dependency in ${config.extends}`);
-        const base = loadConfigFileRecursive(config.extends, configInfo, visitedFiles);
-        return mergeConfigFiles(base, fPath, config);
+        const base = loadConfigFileRecursive(config.extends, configInfo, validate, visitedFiles);
+        return mergeConfigFiles(base, fPath, config, validate);
     } else {
         return config;  // not override
     }
 }
 
-function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override: BotConfigFileOverride) {
+function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override: BotConfigFileOverride, validate: boolean) {
     const result: any = { ...config };
     for (const [key, value] of Object.entries(override)) {
         if (key === "extends" || key === "fAssets") continue;
@@ -49,28 +56,36 @@ function mergeConfigFiles(config: BotConfigFile, overrideFile: string, override:
     result.ormOptions = { ...config.ormOptions, ...override.ormOptions };
     result.walletOptions = { ...config.walletOptions, ...override.walletOptions };
     result.nativeChainInfo = { ...config.nativeChainInfo, ...override.nativeChainInfo };
-    result.fAssets = mergeFAssets(overrideFile, config.fAssets, override.fAssets);
+    result.fAssets = mergeFAssets(overrideFile, config.fAssets, override.fAssets, validate, fAssetInfoLoader, "fAssets");
     result.agentBotSettings = { ...config.agentBotSettings, ...override.agentBotSettings };
-    result.agentBotSettings.fAssets = mergeFAssets(`${overrideFile} (agentBotSettings)`, config.agentBotSettings.fAssets, override.agentBotSettings?.fAssets);
+    result.agentBotSettings.fAssets = mergeFAssets(`${overrideFile} (agentBotSettings)`, config.agentBotSettings.fAssets, override.agentBotSettings?.fAssets,
+        validate, agentBotFassetSettingsLoader, "agentBotSettings/fAssets");
     return result;
 }
 
-function mergeFAssets(overrideFile: string, configFAssets: Record<string, any>, overrideFAssets: Record<string, any> | undefined) {
+function mergeFAssets(overrideFile: string, configFAssets: Record<string, any>, overrideFAssets: Record<string, any> | undefined, validate: boolean, subtypeLoader: IJsonLoader<any>, subpath: string) {
     const resultFAssets: Record<string, any> = { ...configFAssets };
     for (const [symbol, info] of Object.entries(overrideFAssets ?? {})) {
         if (symbol in configFAssets) {
             resultFAssets[symbol] = { ...configFAssets[symbol], ...info };
         } else {
-            console.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
-            logger.warn(`Invalid fAsset symbol ${symbol} in config override file ${overrideFile}, ignored.`)
+            if (validate) {
+                console.warn(`New fAsset symbol ${symbol} in config override file ${overrideFile}, adding new fasset type.`)
+                logger.warn(`New fAsset symbol ${symbol} in config override file ${overrideFile}, adding new fasset type.`)
+                subtypeLoader.validate(info, `${subpath}/${symbol}`);
+            }
+            resultFAssets[symbol] = { ...info };
         }
     }
     return resultFAssets;
 }
 
-export function loadConfigFileOrOverride(fPath: string, configInfo?: string): BotConfigFile | BotConfigFileOverride {
+export function loadConfigFileOrOverride(fPath: string, configInfo: string, validate: boolean): BotConfigFile | BotConfigFileOverride {
     try {
         const json = substituteEnvVars(JsonLoader.loadSimple(fPath));
+        if (!validate) {
+            return json as any;
+        }
         if ("extends" in (json as any)) {
             return botConfigOverrideLoader.validate(json, fPath);
         } else {

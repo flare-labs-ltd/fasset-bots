@@ -51,7 +51,7 @@ export function programWithCommonOptions(userType: UserTypeForOptions, fassets: 
 
     function normalizeFAssetNameCase(configFName: string, fasset: string) {
         try {
-            const configFile = loadConfigFile(configFName);
+            const configFile = loadConfigFile(configFName, "", false);
             for (const fassetKey of Object.keys(configFile.fAssets)) {
                 if (fassetKey.toLowerCase() === fasset.toLowerCase()) {
                     return fassetKey;

@@ -22,12 +22,17 @@ export class JsonLoader<T> {
 
     constructor(
         public schema: string | JSONSchemaType<T>,
-        public formatName: string = "JSON"
+        public formatName: string = "JSON",
+        public subtypeName?: string,
     ) {}
 
     getValidator() {
         if (!this.ajvValidator) {
-            const schema = typeof this.schema === "string" ? (JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>) : this.schema;
+            let schema = typeof this.schema === "string" ? (JSON.parse(readFileSync(this.schema).toString()) as JSONSchemaType<T>) : this.schema;
+            if (this.subtypeName != null) {
+                const subtypeSchema = schema.definitions?.[this.subtypeName] as any;
+                schema = { ...schema, ...subtypeSchema };   // override `properties`, `required` and `type` with subtype defs
+            }
             this.ajvValidator = ajv.compile(schema);
         }
         return this.ajvValidator;
@@ -46,9 +51,10 @@ export class JsonLoader<T> {
         }
     }
 
-    validate(data: unknown, filename: string): T {
+    validate(data: unknown, filename: string, subpath?: string): T {
         const validator = this.getValidator();
-        if (validator(data)) {
+        const ctx = subpath ? { instancePath: subpath } as any : undefined;
+        if (validator(data, ctx)) {
             delete (data as any)["$schema"]; // $schema field is only needed for validation, might interfere otherwise
             return data;
         }
