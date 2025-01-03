@@ -6,7 +6,14 @@
             "walletUrls": ["https://my.wallet.xyz"]
         },
         "Fnothing": {
-            "walletUrls": ["https://my.wallet.xyz"]
+            "chainId": "nothing",
+            "tokenName": "nothing",
+            "tokenSymbol": "nothing",
+            "tokenDecimals": 8,
+            "indexerUrls": ["https://my.indexer.xyz"],
+            "walletUrls": ["https://my.wallet.xyz"],
+            "minimumAccountBalance": "1",
+            "priceChangeEmitter": "FtsoV2PriceStore"
         }
     }
 }

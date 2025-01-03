@@ -35,7 +35,7 @@ describe("config file loader tests", () => {
         expect(configFile.assetManagerController).eq("0xd5d90c61cF30B86b1c4507515e91470334d77Ad6");
         expect(configFile.fAssets.FTestXRP.tokenSymbol).eq("testXRP");
         expect(configFile.fAssets.FTestXRP.walletUrls![0]).eq("https://my.wallet.xyz");
-        expect(configFile.fAssets.Fnothing).eq(undefined);  // cannot override unknown fasset
+        expect(configFile.fAssets.Fnothing?.chainId).eq("nothing");  // can override unknown fasset
         expect(configFile.ormOptions?.dbName).eq("fasset-bots-coston.d5d90c61.db")
     });
 
