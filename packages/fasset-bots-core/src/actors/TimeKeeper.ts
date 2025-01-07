@@ -144,7 +144,7 @@ export class TimeKeeperUpdate {
         await cancelableSleep(delay, cancelUpdate);
         const { 0: lastUnderlyingBlock, 1: _lastUnderlyingTimestamp, 2: lastUpdatedAt } = await this.context.assetManager.currentUnderlyingBlock();
         const currentNativeTs = await latestBlockTimestamp();
-        const shouldUpdate = Number(proof.data.requestBody.blockNumber) > Number(lastUnderlyingBlock)
+        const shouldUpdate = Number(proof.data.requestBody.blockNumber) + Number(proof.data.responseBody.numberOfConfirmations) > Number(lastUnderlyingBlock)
             && currentNativeTs - Number(lastUpdatedAt) >= this.timing.maxUnderlyingTimestampAgeS;
         if (shouldUpdate) {
             await this.context.assetManager.updateCurrentBlock(web3DeepNormalize(proof), { from: this.address });
