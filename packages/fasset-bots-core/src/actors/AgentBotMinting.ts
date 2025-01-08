@@ -144,20 +144,23 @@ export class AgentBotMinting {
                 case AgentMintingState.REQUEST_PAYMENT_PROOF:
                     await this.checkPaymentAndExecuteMinting(rootEm, minting);
                     break;
+                case AgentMintingState.DONE:
+                    break;  // ignore - it might have become DONE by an event handler while handling some other minting
                 default:
                     console.error(`Minting state: ${minting.state} not supported`);
                     logger.error(`Agent ${this.agent.vaultAddress} run into minting state ${minting.state} not supported for minting ${minting.requestId}.`);
             }
         } catch (error) {
-            console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
             if (errorIncluded(error, ["invalid crt id"])) {
                 const minting = await this.findMinting(rootEm, { id });
                 await this.updateMinting(rootEm, minting, {
                     state: AgentMintingState.DONE,
                 });
-                logger.error(`Agent ${this.agent.vaultAddress} closed minting ${id} due to "invalid crt id"`);
-                console.error(`Agent ${this.agent.vaultAddress} closed minting ${id} due to "invalid crt id"`);
+                logger.warn(`Agent ${this.agent.vaultAddress} closed minting ${id} because it was already executed`);
+                console.log(`Agent ${this.agent.vaultAddress} closed minting ${id} because it was already executed`);
+            } else {
+                console.error(`Error handling next minting step for minting ${id} agent ${this.agent.vaultAddress}: ${error}`);
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling handling next minting step for minting ${id}:`, error);
             }
         }
     }
