@@ -281,7 +281,7 @@ describe("Xrp wallet tests", () => {
         const txEnt = await createAndSignXRPTransactionWithStatus(wClient, fundedWallet.address,
             targetAddress, amountToSendDropsFirst, note, feeInDrops, TransactionStatus.TX_SUBMISSION_FAILED);
 
-        let txInfo = await wClient.getTransactionInfo(txEnt.id);
+        const txInfo = await wClient.getTransactionInfo(txEnt.id);
         expect(txInfo.status).to.equal(TransactionStatus.TX_SUBMISSION_FAILED);
 
         const tx = await waitForTxToBeReplacedWithStatus(2, 100, wClient, TransactionStatus.TX_SUCCESS, txEnt.id);

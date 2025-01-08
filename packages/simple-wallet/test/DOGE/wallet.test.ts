@@ -44,6 +44,8 @@ const targetFirstChange = {
     privateKey: "cgAnaNqPmVUr3Am1VAzGX9zGEVw5AJ2FWMYw65dBGnUUJs4iTEkP",
 };
 
+const amountToSend = toBNExp(1, BTC_DOGE_DEC_PLACES);
+
 let wClient: DOGE;
 let testOrm: ORM;
 let monitor: ITransactionMonitor;
@@ -232,24 +234,29 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should submit transaction", async () => {
-        const amountToSendSatoshi = toBNExp(1, BTC_DOGE_DEC_PLACES);
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend);
         expect(txId).greaterThan(0);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
     });
 
     it("Free underlying with unspecified fee should have txFee + txAmount = amount", async () => {
-        const amountToSendSatoshi = toBNExp(1, BTC_DOGE_DEC_PLACES);
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, true);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend, undefined, undefined, undefined, undefined, undefined, true);
         expect(txId).greaterThan(0);
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
         const tx = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
-        expect(Number(tx.value)).to.be.eq(txEnt.amount!.toNumber());
+
+        let val = 0;
+        for (const txOut of tx.vout) {
+            if (!txOut.addresses.includes(fundedAddress)) {
+                val += Number(txOut.value);
+            }
+        }
+
+        expect(val + Number(tx.fees)).to.be.eq(txEnt.amount!.toNumber());
     });
 
     it("Replacement of free underlying transaction should have txFee + txAmount < originalAmount", async () => {
-        const amountToSendSatoshi = toBNExp(1, BTC_DOGE_DEC_PLACES);
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, true);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend, undefined, undefined, undefined, undefined, undefined, true);
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.tryToReplaceByFee(txId, blockHeight);
@@ -260,7 +267,6 @@ describe("Dogecoin wallet tests", () => {
 
     it.skip('Stress test', async () => {
         const N = 50;
-        const amountToSend = toBNExp(1, BTC_DOGE_DEC_PLACES);
         const minAmount = toBNExp(1, BTC_DOGE_DEC_PLACES);
 
         const transactionIds = [];

@@ -1,17 +1,14 @@
 import { EntityManager, FilterQuery, RequiredEntityData, TransactionOptions } from "@mikro-orm/core";
-import { Transaction } from "bitcore-lib";
 import BN from "bn.js";
 import { TransactionEntity, TransactionStatus } from "../entity/transaction";
 import { TransactionInputEntity } from "../entity/transactionInput";
-import { TransactionOutputEntity } from "../entity/transactionOutput";
 import { WalletAddressEntity } from "../entity/wallet";
-import { MempoolUTXO, UTXORawTransactionOutput } from "../interfaces/IBlockchainAPI";
+import { MempoolUTXO } from "../interfaces/IBlockchainAPI";
 import { TransactionInfo } from "../interfaces/IWalletTransaction";
 import { toBN } from "../utils/bnutils";
 import { ChainType } from "../utils/constants";
 import { logger } from "../utils/logger";
 import { getCurrentTimestampInSeconds, updateErrorWithFullStackTrace } from "../utils/utils";
-import Output = Transaction.Output;
 import { errorMessage } from "../utils/axios-utils";
 import { MonitoringStateEntity } from "../entity/monitoringState";
 
@@ -67,7 +64,7 @@ export async function updateTransactionEntity(rootEm: EntityManager, id: number,
 export async function fetchTransactionEntityById(rootEm: EntityManager, id: number): Promise<TransactionEntity> {
     return await rootEm.findOneOrFail(TransactionEntity, { id }, {
         refresh: true,
-        populate: ["replaced_by", "rbfReplacementFor", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
+        populate: ["replaced_by", "rbfReplacementFor", "inputs", "ancestor", "ancestor.replaced_by"],
     });
 }
 
@@ -80,7 +77,7 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
         },
         {
             refresh: true,
-            populate: ["replaced_by", "rbfReplacementFor", "inputs", "outputs", "ancestor", "ancestor.replaced_by"],
+            populate: ["replaced_by", "rbfReplacementFor", "inputs", "ancestor", "ancestor.replaced_by"],
             orderBy: { id: "ASC" },
         }
     );
@@ -89,7 +86,6 @@ export async function fetchTransactionEntities(rootEm: EntityManager, chainType:
 export function resetTransactionEntity(txEnt: TransactionEntity) {
     txEnt.status = TransactionStatus.TX_CREATED;
     txEnt.inputs.removeAll();
-    txEnt.outputs.removeAll();
     txEnt.raw = "";
     txEnt.transactionHash = "";
     txEnt.fee = undefined;
@@ -99,43 +95,9 @@ export function resetTransactionEntity(txEnt: TransactionEntity) {
     txEnt.rbfReplacementFor = null;
 }
 
-export async function createTransactionOutputEntities(rootEm: EntityManager, transaction: Transaction, txId: number) {
-    const txEnt = await fetchTransactionEntityById(rootEm, txId);
-    return transaction.outputs.map((output, index) => transformOutputToTxOutputEntity(index, output, txEnt));
-}
-
-function transformOutputToTxOutputEntity(vout: number, output: Output, transaction: TransactionEntity): TransactionOutputEntity {
-    const parsedOutput = JSON.parse(JSON.stringify(output)) as UTXORawTransactionOutput;
-
-    /* istanbul ignore next */
-    return createTransactionOutputEntity(
-        transaction,
-        transaction.transactionHash ?? "",
-        toBN(output.satoshis),
-        vout,
-        parsedOutput.script ?? ""
-    );
-}
-
 export function transformUTXOToTxInputEntity(utxo: MempoolUTXO, transaction: TransactionEntity): TransactionInputEntity {
     /* istanbul ignore next */
     return createTransactionInputEntity(transaction, utxo.transactionHash, utxo.value, utxo.position, utxo.script ?? "");
-}
-
-export function createTransactionOutputEntity(
-    txEnt: TransactionEntity,
-    txHash: string,
-    amount: BN | string | number,
-    vout: number,
-    script: string
-): TransactionOutputEntity {
-    const entity = new TransactionOutputEntity();
-    entity.transactionHash = txHash;
-    entity.vout = vout;
-    entity.amount = toBN(amount);
-    entity.script = script;
-    entity.transaction = txEnt;
-    return entity;
 }
 
 export function createTransactionInputEntity(
@@ -144,7 +106,7 @@ export function createTransactionInputEntity(
     amount: BN | string | number,
     vout: number,
     script: string
-): TransactionOutputEntity {
+): TransactionInputEntity {
     const entity = new TransactionInputEntity();
     entity.transactionHash = txHash;
     entity.vout = vout;
@@ -274,7 +236,6 @@ export async function handleFeeToLow(rootEm: EntityManager, txEnt: TransactionEn
     await updateTransactionEntity(rootEm, txEnt.id, (txEnt) => {
         txEnt.status = TransactionStatus.TX_CREATED;
         txEnt.inputs.removeAll();
-        txEnt.outputs.removeAll();
         txEnt.raw = "";
         txEnt.transactionHash = "";
         txEnt.fee = undefined;

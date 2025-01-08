@@ -21,7 +21,6 @@ import {
 import BN, { max } from "bn.js";
 import {
     checkIfIsDeleting, createInitialTransactionEntity,
-    createTransactionOutputEntities,
     failDueToNoTimeToSubmit,
     failTransaction,
     fetchTransactionEntityById,
@@ -309,7 +308,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 return;
             }
 
-            let payingFeesFromFeeSource = txEnt.feeSource && !feeToHighForFeeSource;
+            let payingFeesFromFeeSource = !!txEnt.feeSource && !feeToHighForFeeSource;
             if (txEnt.feeSource && feeToHighForFeeSource && !feeToHighForMainSource) {
                 // If amount to pay from fee source is too high - try to pay it from main source
                 [transaction, dbUTXOs] = await this.transactionService.preparePaymentTransaction(
@@ -327,14 +326,16 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 payingFeesFromFeeSource = false;
             } else if (txEnt.feeSource && feeToHighForFeeSource && feeToHighForMainSource && rbfReplacementFor) {
                 // If transaction is rbf and amount to pay from fee source is too high for both - set it to the max of both
-                const maxFee = max(txEnt.maxFee!, txEnt.maxPaymentForFeeSource!);
-                transaction.fee(toNumber(maxFee));
-                payingFeesFromFeeSource = maxFee.eq(txEnt.maxPaymentForFeeSource!);
+                const maxFee = max(txEnt.maxFee ?? toBN(0), txEnt.maxPaymentForFeeSource ?? toBN(0));
+                if (maxFee.gtn(0)) {
+                    transaction.fee(toNumber(maxFee));
+                }
+                payingFeesFromFeeSource = !!txEnt.maxPaymentForFeeSource && maxFee.eq(txEnt.maxPaymentForFeeSource) || !!txEnt.maxFee;
             }
 
             // If fee source is non-existent/doesn't have high enough max amount
             if (!payingFeesFromFeeSource && checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null)) {
-                if (rbfReplacementFor) {
+                if (rbfReplacementFor && txEnt.maxFee) {
                     await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                         txEntToUpdate.fee = txEnt.maxFee!;
                     });
@@ -347,14 +348,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 }
             } else {
                 const inputs = await this.transactionUTXOService.createInputsFromUTXOs(dbUTXOs, txEnt.id);
-                const outputs = await createTransactionOutputEntities(this.rootEm, transaction, txEnt.id);
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                     txEntToUpdate.raw = JSON.stringify(transaction);
                     txEntToUpdate.status = TransactionStatus.TX_PREPARED;
                     txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
                     txEntToUpdate.fee = toBN(transaction.getFee()); // set the new fee if the original one was null/wrong
                     txEntToUpdate.inputs.add(inputs);
-                    txEntToUpdate.outputs.add(outputs);
+                    txEntToUpdate.numberOfOutputs = transaction.outputs.length;
                 });
                 logger.info(`Transaction ${txEnt.id} prepared.`);
                 await this.signAndSubmitProcess(txEnt.id, transaction, privateKey, privateKeyForFee);
@@ -377,7 +377,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         await updateTransactionEntity(this.rootEm, txEnt.id, (txEnt) => {
                             txEnt.status = TransactionStatus.TX_CREATED;
                             txEnt.inputs.removeAll();
-                            txEnt.outputs.removeAll();
                             txEnt.raw = "";
                             txEnt.transactionHash = "";
                         });
@@ -385,7 +384,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                         if (txEnt.rbfReplacementFor) {
                             await updateTransactionEntity(this.rootEm, txEnt.rbfReplacementFor.id, (txEnt) => {
                                 txEnt.inputs.removeAll();
-                                txEnt.outputs.removeAll();
                             });
                             logger.info(`Original transaction ${txEnt.rbfReplacementFor.id} was cleared due to invalid utxo.`);
                         }
@@ -812,7 +810,6 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             await updateTransactionEntity(this.rootEm, txId, (txEnt) => {
                 txEnt.status = txEnt.rbfReplacementFor ? TransactionStatus.TX_FAILED : TransactionStatus.TX_CREATED;
                 txEnt.inputs.removeAll();
-                txEnt.outputs.removeAll();
                 txEnt.raw = "";
                 txEnt.transactionHash = "";
             });

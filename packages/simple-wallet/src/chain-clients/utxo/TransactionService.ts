@@ -263,6 +263,7 @@ export class TransactionService {
             } as TransactionData;
 
             utxos = await this.utxoService.fetchUTXOs(txData);
+            utxosForFee = []; // ignore utxos for fee
         } else {
             utxos = utxosForAmount.concat(utxosForFee);
         }
@@ -272,7 +273,7 @@ export class TransactionService {
         let tr;
         if (freeUnderlying && !feeInSatoshi) {
             const trForFee = await this.createBitcoreTransaction(source, destination, amountInSatoshi, undefined, feePerKB, utxos, true, note);
-            const amount = utxosForFeeAmount.gtn(trForFee.getFee()) || txForReplacement ? amountInSatoshi : amountInSatoshi.subn(trForFee.getFee() - utxosForFeeAmount.toNumber());
+            const amount = utxosForFeeAmount.gtn(trForFee.getFee()) || txForReplacement ? amountInSatoshi : amountInSatoshi.sub(toBN(trForFee.getFee() - utxosForFeeAmount.toNumber()));
             tr = await this.createBitcoreTransaction(source, destination, amount, toBN(trForFee.getFee()), undefined, utxos, true, note);
         } else {
             tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
@@ -284,10 +285,10 @@ export class TransactionService {
 
         await this.correctFeeForRBF(txDbId, tr, txForReplacement);
 
-        const correctedFee = tr.getFee() + (feeInSatoshi ? 0 : feePerKB.muln(31).divn(1000).toNumber()); // Fee should be higher since we have additional output (+31vB)!
-        if (utxosForFeeAmount.subn(correctedFee).gt(getDustAmount(this.chainType))) {
-            const remainder = utxosForFeeAmount.subn(correctedFee);
-            tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, toBN(correctedFee), undefined, utxos, true, note, feeSource, remainder);
+        const correctedFee = toBN(tr.getFee()).add(feeInSatoshi ? toBN(0) : feePerKB.muln(31).divn(1000)); // Fee should be higher since we have additional output (+31vB)!
+        if (utxosForFeeAmount.sub(correctedFee).gt(getDustAmount(this.chainType))) {
+            const remainder = utxosForFeeAmount.sub(correctedFee);
+            tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, correctedFee, undefined, utxos, true, note, feeSource, remainder);
         }
 
         return [tr, utxos];
@@ -322,7 +323,8 @@ export class TransactionService {
             tr = await this.createBitcoreTransaction(source, destination, amount, feeInSatoshi, undefined, utxos, true, note);
         } else {
             const trForFee = await this.createBitcoreTransaction(source, destination, amountInSatoshi, undefined, feePerKB, utxos, true, note);
-            tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi.subn(trForFee.getFee()), toBN(trForFee.getFee()), undefined, utxos, true, note);
+            const fee = toBN(trForFee.getFee());
+            tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi.sub(fee), fee, undefined, utxos, true, note);
         }
 
         if (!txForReplacement) {
