@@ -79,7 +79,7 @@ export class Challenger extends ActorBase {
         const lastBlock = await web3.eth.getBlockNumber();
         const trackedState = new TrackedState(context, lastBlock);
         await trackedState.initialize(true);
-        const blockHeight = await context.blockchainIndexer.getBlockHeight();
+        const blockHeight = await context.blockchainIndexer.getLastFinalizedBlockNumber();
         logger.info(`Challenger ${address} initialized tracked state.`);
         return new Challenger(context, new ScopedRunner(), address, trackedState, blockHeight, config.notifiers);
     }
@@ -139,7 +139,7 @@ export class Challenger extends ActorBase {
         }
         // Underlying chain events
         const from = this.lastEventUnderlyingBlockHandled;
-        const to = await this.getLatestUnderlyingBlock();
+        const to = await this.getLatestAvailableUnderlyingBlock();
         logger.info(`Challenger ${this.address} started reading unhandled underlying transactions FROM ${from} TO ${to}.`);
         const transactions = await this.context.blockchainIndexer.getTransactionsWithinBlockRange(from, to);
         logger.info(`Challenger ${this.address} finished reading unhandled underlying transactions FROM ${from} TO ${to}.`);
@@ -455,8 +455,8 @@ export class Challenger extends ActorBase {
     /**
      * @returns underlying block height
      */
-    async getLatestUnderlyingBlock(): Promise<number> {
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+    async getLatestAvailableUnderlyingBlock(): Promise<number> {
+        const blockHeight = await this.context.blockchainIndexer.getLastFinalizedBlockNumber();
         return blockHeight;
     }
 

@@ -101,11 +101,11 @@ describe("Attestation client unit tests", () => {
             const reference = "reference";
             const amount = 1;
             await context.wallet.addTransactionAndWaitForItsFinalization(underlying1, underlying2, amount, reference);
-            const blockNumber = await context.blockchainIndexer.getBlockHeight();
+            const blockNumber = await context.blockchainIndexer.getLastFinalizedBlockNumber();
             const blockTimestamp = (await context.blockchainIndexer.getBlockAt(blockNumber))?.timestamp;
             const endBlock = blockNumber + 10;
             await expect(context.attestationProvider.requestReferencedPaymentNonexistenceProof(underlying2, reference, toBN(amount), blockNumber, endBlock, blockTimestamp!))
-                .to.eventually.be.rejectedWith(`overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${blockTimestamp}, height ${blockNumber})`)
+                .to.eventually.be.rejectedWith(`overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${blockTimestamp}, last finalized block ${blockNumber})`)
                 .and.be.an.instanceOf(Error);
         });
 

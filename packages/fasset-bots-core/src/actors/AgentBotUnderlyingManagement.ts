@@ -214,9 +214,7 @@ export class AgentBotUnderlyingManagement {
                     txHash: info.transactionHash
                 });
                 assertNotNull(underlyingPayment.txHash);
-                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
-                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                if (await this.bot.underlyingTransactionFinalized(underlyingPayment.txHash)) {
                     await this.requestPaymentProof(rootEm, underlyingPayment);
                     await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
                 }
@@ -237,9 +235,7 @@ export class AgentBotUnderlyingManagement {
                     txHash: info.replacedByHash
                 });
                 assertNotNull(underlyingPayment.txHash);
-                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
-                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                if (await this.bot.underlyingTransactionFinalized(underlyingPayment.txHash)) {
                     await this.requestPaymentProof(rootEm, underlyingPayment);
                     await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
                 }

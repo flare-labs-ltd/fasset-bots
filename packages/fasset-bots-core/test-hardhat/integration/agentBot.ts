@@ -1253,8 +1253,6 @@ describe("Agent bot tests", () => {
         chain.skipTimeTo(Number(rdReq.lastUnderlyingTimestamp) + 10);
         chain.mine(Number(rdReq.lastUnderlyingBlock) + 10);
         await updateAgentBotUnderlyingBlockProof(context, agentBot);
-        const blockHeight = await agentBot.context.blockchainIndexer.getBlockHeight();
-        const lastBlock = await agentBot.context.blockchainIndexer.getBlockAt(blockHeight);
         // first step wil set state to UNPAID
         await agentBot.runStep(orm.em);
         orm.em.clear();

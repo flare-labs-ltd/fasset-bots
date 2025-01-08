@@ -130,7 +130,7 @@ describe("Fuzzing tests", () => {
         }
         // create challenger
         const challengerAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS];
-        challenger = new Challenger(context, runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getBlockHeight(), notifiers);
+        challenger = new Challenger(context, runner, challengerAddress, commonTrackedState, await context.blockchainIndexer.chain.getLastFinalizedBlockNumber(), notifiers);
         eventFormatter.addAddress(`CHALLENGER`, challenger.address);
         // create time keeper
         const timeKeeperAddress = accounts[firstAgentAddress + 3 * N_AGENTS + N_CUSTOMERS + N_KEEPERS + N_LIQUIDATORS + 1];

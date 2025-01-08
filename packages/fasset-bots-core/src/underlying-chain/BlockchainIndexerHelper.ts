@@ -213,16 +213,16 @@ export class BlockchainIndexerHelper implements IBlockChain {
         }
     }
 
-    async getBlockHeight(): Promise<number> {
-        const blockHeight = await retry(this.getBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
+    async getCurrentBlockHeight(): Promise<number> {
+        const blockHeight = await retry(this.getCurrentBlockHeightFromIndexer.bind(this), [], DEFAULT_RETRIES);
         return blockHeight;
     }
 
-    async getBlockHeightFromIndexer(): Promise<number> {
+    async getCurrentBlockHeightFromIndexer(): Promise<number> {
         const resp = await tryWithClients(
             this.clients,
-            (client: AxiosInstance) => client.get<ApiWrapper<number>>(`/api/indexer/block-height-indexed`),
-            "getBlockHeightFromIndexer"
+            (client: AxiosInstance) => client.get<ApiWrapper<number>>(`/api/indexer/block-height-tip`),
+            "getCurrentBlockHeightFromIndexer"
         );
         const status = resp.data.status;
         const data = resp.data.data;
@@ -231,7 +231,31 @@ export class BlockchainIndexerHelper implements IBlockChain {
             return data;
         } else {
             const errorMessage = resp.data.errorMessage;
-            const info = `Cannot retrieve block height: ${status}: ${errorMessage ? errorMessage : ""}`;
+            const info = `Cannot retrieve block height (tip): ${status}: ${errorMessage ? errorMessage : ""}`;
+            logger.error(`Block chain indexer helper error: ${info}`);
+            throw new BlockChainIndexerHelperError(info);
+        }
+    }
+
+    async getLastFinalizedBlockNumber(): Promise<number> {
+        const blockHeight = await retry(this.getLastFinalizedBlockNumberFromIndexer.bind(this), [], DEFAULT_RETRIES);
+        return blockHeight;
+    }
+
+    async getLastFinalizedBlockNumberFromIndexer(): Promise<number> {
+        const resp = await tryWithClients(
+            this.clients,
+            (client: AxiosInstance) => client.get<ApiWrapper<number>>(`/api/indexer/block-height-indexed`),
+            "getLastFinalizedBlockNumberFromIndexer"
+        );
+        const status = resp.data.status;
+        const data = resp.data.data;
+        /* istanbul ignore else */
+        if (status === "OK" && data) {
+            return data;
+        } else {
+            const errorMessage = resp.data.errorMessage;
+            const info = `Cannot retrieve block height (indexed): ${status}: ${errorMessage ? errorMessage : ""}`;
             logger.error(`Block chain indexer helper error: ${info}`);
             throw new BlockChainIndexerHelperError(info);
         }
@@ -443,14 +467,14 @@ export class BlockchainIndexerHelper implements IBlockChain {
     private async waitForUnderlyingTransaction(txHash: string, maxBlocksToWaitForTx?: number): Promise<ITransaction | null> {
         const transaction = await this.getTransaction(txHash);
         if (transaction != null) return transaction;
-        let currentBlockHeight = await this.getBlockHeight();
+        let currentBlockHeight = await this.getCurrentBlockHeight();
         const initialBlockHeight = currentBlockHeight;
         const waitBlocks = maxBlocksToWaitForTx ?? this.finalizationBlocks;
         while (currentBlockHeight < initialBlockHeight + waitBlocks) {
-            await sleep(1000);
+            await sleep(this.secondsPerBlock * 1000);
             const transaction = await this.getTransaction(txHash);
             if (transaction != null) return transaction;
-            currentBlockHeight = await this.getBlockHeight();
+            currentBlockHeight = await this.getCurrentBlockHeight();
         }
         return null;
     }

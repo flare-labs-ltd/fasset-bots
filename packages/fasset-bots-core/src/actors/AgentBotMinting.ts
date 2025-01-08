@@ -16,6 +16,7 @@ import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { formatArgs } from "../utils/formatting";
+import { lastFinalizedUnderlyingBlock } from "../utils";
 
 type MintingId = { id: number } | { requestId: BN };
 
@@ -185,10 +186,9 @@ export class AgentBotMinting {
      * @param minting AgentMinting entity
      */
     async handleOpenMinting(rootEm: EM, minting: Readonly<AgentMinting>) {
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-        const latestBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
+        const lastFinalizedBlock = await lastFinalizedUnderlyingBlock(this.context.blockchainIndexer);
         // wait times expires on underlying + finalizationBlock
-        if (latestBlock && Number(minting.lastUnderlyingBlock) + 1 + this.context.blockchainIndexer.finalizationBlocks < latestBlock.number) {
+        if (lastFinalizedBlock && Number(minting.lastUnderlyingBlock) + 1 < lastFinalizedBlock.number && Number(minting.lastUnderlyingTimestamp) < lastFinalizedBlock.timestamp) {
             // time for payment expired on underlying
             logger.info(`Agent ${this.agent.vaultAddress} waited that time for underlying payment expired for minting ${minting.requestId}.`);
             const txs = await this.agent.context.blockchainIndexer.getTransactionsByReference(minting.paymentReference);

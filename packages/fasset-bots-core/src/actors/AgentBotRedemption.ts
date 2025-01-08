@@ -17,7 +17,7 @@ import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
 import { TransactionStatus } from "@flarelabs/simple-wallet";
-import { maxFeeMultiplier } from "../utils/fasset-helpers";
+import { lastFinalizedUnderlyingBlock, maxFeeMultiplier } from "../utils/fasset-helpers";
 import { AddressCheck } from "./AgentBotHandshake";
 import { blockTimestamp, latestBlockTimestamp } from "../utils/web3helpers";
 
@@ -298,26 +298,21 @@ export class AgentBotRedemption {
      * @param redemption AgentRedemption entity
      */
     async checkBeforeRedemptionPayment(rootEm: EM, redemption: Readonly<AgentRedemption>): Promise<void> {
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-        const lastBlock = await this.context.blockchainIndexer.getBlockAt(blockHeight);
-
-        /* istanbul ignore else */
-        if (lastBlock && this.stillTimeToPayForRedemption(lastBlock, redemption)) {
+        const lastFinalizedBlock = await lastFinalizedUnderlyingBlock(this.context.blockchainIndexer);
+        if (this.stillTimeToPayForRedemption(lastFinalizedBlock, redemption)) {
             if (await this.redeemerAddressValid(redemption.paymentAddress)) {
                 await this.payOrRejectRedemption(rootEm, redemption);
             } else {
                 await this.startRejectRedemption(rootEm, redemption);
             }
-        } else if (lastBlock) {
+        } else {
             logger.info(squashSpace`Agent ${this.agent.vaultAddress} DID NOT pay for redemption ${redemption.requestId}.
                 Time expired on underlying chain. Last block for payment was ${redemption.lastUnderlyingBlock}
-                with timestamp ${redemption.lastUnderlyingTimestamp}. Current block is ${lastBlock.number}
-                with timestamp ${lastBlock.timestamp}.`);
+                with timestamp ${redemption.lastUnderlyingTimestamp}. Current block is ${lastFinalizedBlock.number}
+                with timestamp ${lastFinalizedBlock.timestamp}.`);
             redemption = await this.updateRedemption(rootEm, redemption, {
                 state: AgentRedemptionState.UNPAID,
             });
-        } else {
-            logger.info(`Agent ${this.agent.vaultAddress} could not retrieve last block in checkBeforeRedemptionPayment for ${redemption.requestId}.`);
         }
     }
 
@@ -463,13 +458,11 @@ export class AgentBotRedemption {
      * @returns
      */
     stillTimeToPayForRedemption(lastBlock: IBlock, redemption: Readonly<AgentRedemption>): boolean {
-        const lastAcceptedBlockNumber = lastBlock.number + this.context.blockchainIndexer.finalizationBlocks + 1;
-        const lastAcceptedTimestamp =
-            lastBlock.timestamp +
-            this.context.blockchainIndexer.finalizationBlocks * this.context.blockchainIndexer.secondsPerBlock +
-            this.context.blockchainIndexer.secondsPerBlock;
-        return toBN(lastAcceptedBlockNumber).lt(toBN(redemption.lastUnderlyingBlock)) ||
-            toBN(lastAcceptedTimestamp).lt(toBN(redemption.lastUnderlyingTimestamp));
+        const blocksToCurrent = this.context.blockchainIndexer.finalizationBlocks + 1;
+        const currentBlockNumberEstimate = lastBlock.number + blocksToCurrent;
+        const currentTimestampEstimate = lastBlock.timestamp + blocksToCurrent * this.context.blockchainIndexer.secondsPerBlock;
+        return toBN(currentBlockNumberEstimate).lt(toBN(redemption.lastUnderlyingBlock)) ||
+            toBN(currentTimestampEstimate).lt(toBN(redemption.lastUnderlyingTimestamp));
     }
 
     /**
@@ -486,9 +479,7 @@ export class AgentBotRedemption {
                     txHash: info.transactionHash
                 });
                 assertNotNull(redemption.txHash);
-                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
-                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                if (await this.bot.underlyingTransactionFinalized(redemption.txHash)) {
                     await this.requestPaymentProof(rootEm, redemption);
                     await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
                 }
@@ -501,9 +492,7 @@ export class AgentBotRedemption {
                     txHash: info.replacedByHash
                 });
                 assertNotNull(redemption.txHash);
-                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(redemption.txHash);
-                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                if (await this.bot.underlyingTransactionFinalized(redemption.txHash)) {
                     await this.requestPaymentProof(rootEm, redemption);
                     await this.notifier.sendRedemptionRequestPaymentProof(redemption.requestId.toString());
                 }

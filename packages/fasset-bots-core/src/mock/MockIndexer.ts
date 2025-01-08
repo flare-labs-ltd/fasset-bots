@@ -41,8 +41,12 @@ export class MockIndexer extends BlockchainIndexerHelper {
         return await this.chain.getBlockAt(blockNumber);
     }
 
-    async getBlockHeight(): Promise<number> {
-        return await this.chain.getBlockHeight();
+    async getCurrentBlockHeight(): Promise<number> {
+        return await this.chain.getCurrentBlockHeight();
+    }
+
+    async getLastFinalizedBlockNumber(): Promise<number> {
+        return await this.chain.getLastFinalizedBlockNumber();
     }
 
     async getTransactionsWithinBlockRange(from: number, to: number): Promise<ITransaction[] | []> {

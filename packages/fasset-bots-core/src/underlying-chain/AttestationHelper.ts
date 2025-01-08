@@ -103,10 +103,10 @@ export class AttestationHelper {
         logger.info(squashSpace`Attestation helper: requesting referenced payment nonexistence proof with destinationAddress ${destinationAddress},
             paymentReference ${paymentReference}, amount ${amount.toString()}, startBlock ${startBlock}, endBlock ${endBlock}, endTimestamp ${endTimestamp}
             and sourceAddresses ${sourceAddresses}`);
-        const overflowBlockNum = Math.max(endBlock + 1, await this.chain.getBlockHeight() - this.chain.finalizationBlocks);
+        const overflowBlockNum = Math.max(endBlock + 1, await this.chain.getLastFinalizedBlockNumber());
         const overflowBlock = await this.chain.getBlockAt(overflowBlockNum);
         if (overflowBlock == null || overflowBlock.timestamp <= endTimestamp) {
-            const info = `overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${endTimestamp}, height ${await this.chain.getBlockHeight()})`;
+            const info = `overflow block not found (overflowBlock ${endBlock + 1}, endTimestamp ${endTimestamp}, last finalized block ${await this.chain.getLastFinalizedBlockNumber()})`;
             logger.error(`Attestation helper error: ${info}`);
             throw new AttestationHelperError(info);
         }
@@ -138,15 +138,7 @@ export class AttestationHelper {
 
     async requestConfirmedBlockHeightExistsProof(queryWindow: number): Promise<AttestationRequestId> {
         logger.info(`Attestation helper: requesting confirmed block height exists proof with queryWindow ${queryWindow}`);
-        const blockHeight = await this.chain.getBlockHeight();
-        const blockNumber = Math.max(blockHeight - this.chain.finalizationBlocks, 0);
-        const finalizationBlockNumber = blockNumber + this.chain.finalizationBlocks;
-        const finalizationBlock = await this.chain.getBlockAt(finalizationBlockNumber);
-        /* istanbul ignore if */
-        if (finalizationBlock == null) {
-            logger.error(`Attestation helper error: finalization block not found (finalization block ${finalizationBlockNumber}, height ${blockHeight})`);
-            throw new AttestationHelperError(`finalization block not found (finalization block ${finalizationBlockNumber}, height ${blockHeight})`);
-        }
+        const blockNumber = await this.chain.getLastFinalizedBlockNumber();
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
             sourceId: this.chainId.sourceId,

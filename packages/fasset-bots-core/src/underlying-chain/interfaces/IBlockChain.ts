@@ -49,27 +49,50 @@ export interface IBlock {
 }
 
 export interface IBlockChain {
-    // Estimated number of blocks to reach finalization.
+    /**
+     * Estimated number of blocks to reach finalization.
+     */
     finalizationBlocks: number;
 
-    // Estimated number of seconds per block.
+    /**
+     * Estimated number of seconds per block.
+     */
     secondsPerBlock: number;
 
-    // Return the transaction with given hash or `null` if the transaction doesn't exist.
+    /**
+     * Return the transaction with given hash or `null` if the transaction doesn't exist.
+     * Only finalized transactions are guaranteed to be available.
+     */
     getTransaction(txHash: string): Promise<ITransaction | null>;
 
-    // Return the block hash of the transaction with given hash or `null` if the transaction hasn't been mined yet.
+    /**
+     * Return the block hash of the transaction with given hash or `null` if the transaction doesn't exist.
+     * Only finalized transactions are guaranteed to be available.
+     */
     getTransactionBlock(txHash: string): Promise<IBlockId | null>;
 
-    // Return the balance of an address on the chain. If the address does not exist, returns 0.
+    /**
+     * Return the balance of an address on the chain. If the address does not exist, returns 0.
+     */
     getBalance(address: string): Promise<BN>;
 
-    // Return block with given hash.
+    /**
+     * Return block with given hash.
+     */
     getBlock(blockHash: string): Promise<IBlock | null>;
 
-    // Return block (or one of the blocks, in case of multiple tips) with given block number.
+    /**
+     * Return block with given block number. Only finalized blocks are guaranteed to be available.
+     */
     getBlockAt(blockNumber: number): Promise<IBlock | null>;
 
-    // Return the (approximate) current block height (last mined block number).
-    getBlockHeight(): Promise<number>;
+    /**
+     * Return the (approximate) current block height (last mined block number).
+     */
+    getCurrentBlockHeight(): Promise<number>;
+
+    /**
+     * Return the number of the last finalized block (it should always be available in the indexer).
+     */
+    getLastFinalizedBlockNumber(): Promise<number>;
 }

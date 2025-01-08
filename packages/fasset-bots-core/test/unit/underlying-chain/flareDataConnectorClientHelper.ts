@@ -7,18 +7,16 @@ import { ChainId } from "../../../src/underlying-chain/ChainId";
 import { FlareDataConnectorClientHelper } from "../../../src/underlying-chain/FlareDataConnectorClientHelper";
 import { prefix0x, ZERO_BYTES32 } from "../../../src/utils/helpers";
 import { initWeb3 } from "../../../src/utils/web3";
-import { testChainInfo } from "../../test-utils/TestChainInfo";
 import { DATA_ACCESS_LAYER_URLS, COSTON_RPC, INDEXER_URL_XRP, FDC_HUB_ADDRESS, FDC_VERIFICATION_ADDRESS, TEST_SECRETS, RELAY_ADDRESS, INDEXER_URL_BTC, INDEXER_URL_DOGE } from "../../test-utils/test-bot-config";
 import { keccak256 } from "web3-utils";
 use(chaiAsPromised);
 
 let flareDataConnectorClient: FlareDataConnectorClientHelper;
 
-// TODO: enable when we get fdc version of indexer/verifier
 describe("testXRP attestation/flare data connector tests", () => {
     const chainId = ChainId.testXRP;
     let secrets: Secrets;
-    const roundId = 802134;
+    let roundId: number;
     let account: string;
 
     before(async () => {
@@ -36,6 +34,7 @@ describe("testXRP attestation/flare data connector tests", () => {
             RELAY_ADDRESS,
             account
         );
+        roundId = await flareDataConnectorClient.latestFinalizedRound() - 10;
     });
 
     it("Should return round is finalized", async () => {
@@ -55,14 +54,14 @@ describe("testXRP attestation/flare data connector tests", () => {
 
     it("Should submit ConfirmedBlockHeightExists request", async () => {
         const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_XRP, indexerApiKey(secrets, INDEXER_URL_XRP));
-        const blockHeight = await blockChainIndexerClient.getBlockHeight();
+        const lastFinalizedBlock = await blockChainIndexerClient.getLastFinalizedBlockNumber();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
             sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
-                blockNumber: String(blockHeight - testChainInfo.xrp.finalizationBlocks),
+                blockNumber: String(lastFinalizedBlock),
                 queryWindow: String(queryWindow),
             },
         };
@@ -163,14 +162,14 @@ describe("testBTC attestation/flare data connector tests", () => {
 
     it("Should submit ConfirmedBlockHeightExists request", async () => {
         const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_BTC, indexerApiKey(secrets, INDEXER_URL_BTC));
-        const blockHeight = await blockChainIndexerClient.getBlockHeight();
+        const lastFinalizedBlock = await blockChainIndexerClient.getLastFinalizedBlockNumber();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
             sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
-                blockNumber: String(blockHeight - testChainInfo.btc.finalizationBlocks),
+                blockNumber: String(lastFinalizedBlock),
                 queryWindow: String(queryWindow),
             },
         };
@@ -270,14 +269,14 @@ describe("testDOGE attestation/flare data connector tests", () => {
 
     it("Should submit ConfirmedBlockHeightExists request", async () => {
         const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_DOGE, indexerApiKey(secrets, INDEXER_URL_DOGE));
-        const blockHeight = await blockChainIndexerClient.getBlockHeight();
+        const lastFinalizedBlock = await blockChainIndexerClient.getLastFinalizedBlockNumber();
         const queryWindow = 86400;
         const request: ConfirmedBlockHeightExists.Request = {
             attestationType: ConfirmedBlockHeightExists.TYPE,
             sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
-                blockNumber: String(blockHeight - testChainInfo.doge.finalizationBlocks),
+                blockNumber: String(lastFinalizedBlock),
                 queryWindow: String(queryWindow),
             },
         };
