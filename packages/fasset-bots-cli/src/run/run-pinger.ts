@@ -33,6 +33,7 @@ program.action(async (pingSleep: number) => {
     const infoBots = await Promise.all(fassetList.map(f => InfoBotCommands.create(secrets, options.config, f.fAssetSymbol, undefined, accounts)));
     logger.info(`Asset manager controller is ${config.contractRetriever.assetManagerController.address}.`);
     // has to come after info bots are created, otherwise the web3 instance is overwritten
+    // eslint-disable-next-line no-constant-condition
     while (true) {
         for (let i = 0; i < fassetList.length; i++) {
             const infoBot = infoBots[i];

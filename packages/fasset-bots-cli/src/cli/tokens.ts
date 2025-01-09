@@ -8,7 +8,7 @@ import {
     loadConfigFile, loadContracts, overrideAndCreateOrm,
 } from "@flarelabs/fasset-bots-core/config";
 import {
-    CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertCmd, assertNotNullCmd, authenticatedHttpProvider, initWeb3, logger,
+    CommandLineError, Currencies, Currency, EVMNativeTokenBalance, TokenBalances, artifacts, assertCmd, authenticatedHttpProvider, initWeb3, logger,
     requireNotNull, requiredAddressBalance, sendWeb3Transaction, toBN
 } from "@flarelabs/fasset-bots-core/utils";
 import BN from "bn.js";

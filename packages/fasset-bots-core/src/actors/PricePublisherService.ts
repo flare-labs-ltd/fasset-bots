@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { FtsoV2PriceStoreInstance } from '../../typechain-truffle';
 import { BotConfigFile, dataAccessLayerApiKey, loadContracts, Secrets } from '../config';
-import { artifacts, assertCmd, assertNotNullCmd, errorIncluded, requireNotNull, sleep, web3 } from "../utils";
+import { artifacts, assertCmd, assertNotNullCmd, errorIncluded, requireNotNull, sleep } from "../utils";
 import { FspStatusResult, FtsoFeedResultWithProof } from '../utils/data-access-layer-types';
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { withSettings } from '../utils/mini-truffle-contracts/contracts';

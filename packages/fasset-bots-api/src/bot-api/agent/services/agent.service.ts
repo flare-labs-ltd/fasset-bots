@@ -1,11 +1,11 @@
 import { ActivityTimestampEntity, AgentBotCommands, AgentEntity, AgentInfoReader, AgentSettingName, AgentStatus, AgentUpdateSettingState, CollateralClass, InfoBotCommands, TokenPriceReader, generateSecrets } from "@flarelabs/fasset-bots-core";
 import { AgentSettingsConfig, Secrets, createBotOrm, loadAgentConfigFile, loadConfigFile } from "@flarelabs/fasset-bots-core/config";
-import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, ZERO_ADDRESS, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
+import { BN_ZERO, BNish, Currencies, MAX_BIPS, TokenBalances, artifacts, createSha256Hash, formatFixed, generateRandomHexString, requireEnv, resolveInFassetBotsCore, toBN, toBNExp, web3 } from "@flarelabs/fasset-bots-core/utils";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, AllVaults, CollateralTemplate, Collaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo, requiredKeysForSecrets } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO, Alerts } from "../../common/AgentSettingsDTO";
@@ -609,8 +609,6 @@ export class AgentService {
 
                 //Calculate usd values
                 const vaultCollateralType = await cli.context.assetManager.getCollateralType(CollateralClass.VAULT, infoVault.vaultCollateralToken)
-                const priceVault = await priceReader.getPrice(vaultCollateralType.tokenFtsoSymbol, false, settings.maxTrustedPriceAgeSeconds);
-                const priceVaultUSD = priceVault.price.mul(toBNExp(1, 18));
                 const existingPrice = prices.find(p => p.symbol === vaultCollateralType.tokenFtsoSymbol);
                 let totalVaultCollateralUSD = toBN(0);
                 let totalPoolCollateralUSD = toBN(0);
