@@ -797,15 +797,16 @@ export class AgentBotCommands {
         const { agentBot } = await this.getAgentBot(agentVault);
         const freeCollateralLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
         if (freeCollateralLots.lt(numberOfLots)) {
-            logger.error(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots. But it was asked for ${numberOfLots}.`);
-            throw new CommandLineError(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots.`);
+            logger.error(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeCollateralLots} lots of collateral. But it was asked for ${numberOfLots}.`);
+            throw new CommandLineError(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeCollateralLots} lots of collateral.`);
         }
         const agent = agentBot.agent;
         const toPayUBA = await this.getAmountToPayUBAForSelfMint(agent, numberOfLots);
-        const freeUnderlying = toBN((await agent.getAgentInfo()).freeUnderlyingBalanceUBA);
+        const freeUnderlying = await agentBot.getSafeToWithdrawUnderlying();
         if (freeUnderlying.lt(toPayUBA)) {
-            logger.error(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeUnderlying.toString()} underlying in UBA. But it was asked for ${toPayUBA}.`);
-            throw new CommandLineError(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeUnderlying.toString()} underlying in UBA, but its need ${toPayUBA}.`);
+            const currency = await Currencies.fassetUnderlyingToken(this.context);
+            logger.error(`Cannot self mint from free underlying. Agent ${agentVault} has available ${currency.format(freeUnderlying)} on vault underlying address, but needs ${currency.format(toPayUBA)}.`);
+            throw new CommandLineError(`Cannot self mint from free underlying. Agent ${agentVault} has available ${currency.format(freeUnderlying)} on vault underlying address, but needs ${currency.format(toPayUBA)}.`);
         }
         const res = await this.context.assetManager.mintFromFreeUnderlying(agentVault, numberOfLots, { from: agent.owner.workAddress });
         requiredEventArgs(res, 'SelfMint');

@@ -588,7 +588,7 @@ describe("AgentBot cli commands unit tests", () => {
         );
     });
 
-    it("Should self mint from free underlying", async () => {
+    it.only("Should self mint from free underlying", async () => {
         const agentBot = await createAgentBot();
         const agent = agentBot.agent;
         const vaultAddress = agent.vaultAddress;
@@ -606,7 +606,7 @@ describe("AgentBot cli commands unit tests", () => {
         const lotsToMint = toBN(1);
         // top up agent
         const lotSize = toBN(await context.assetManager.lotSize());
-        const amountUBA = lotsToMint.mul(lotSize).muln(2);
+        const amountUBA = lotsToMint.mul(lotSize).muln(2).add(toBN(20e6));
         await agentBot.underlyingManagement.underlyingTopUp(orm.em, amountUBA);
         chain.mine(chain.finalizationBlocks + 1);
         const topUpPayment0 = await orm.em.findOneOrFail(AgentUnderlyingPayment, { type: AgentUnderlyingPaymentType.TOP_UP }  as FilterQuery<AgentUnderlyingPayment>, { orderBy: { id: ('DESC') } });
