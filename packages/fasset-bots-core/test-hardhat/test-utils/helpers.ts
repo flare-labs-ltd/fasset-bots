@@ -92,7 +92,7 @@ export async function mintVaultCollateralToOwner(amount: BNish, vaultCollateralT
 }
 
 export async function createTestChallenger(context: IChallengerContext, address: string, state: TrackedState): Promise<Challenger> {
-    return new Challenger(context, new ScopedRunner(), address, state, await context.blockchainIndexer.getBlockHeight(), testNotifierTransports);
+    return new Challenger(context, new ScopedRunner(), address, state, await context.blockchainIndexer.getLastFinalizedBlockNumber(), testNotifierTransports);
 }
 
 export async function createTestLiquidator(context: ILiquidatorContext, address: string, state: TrackedState): Promise<Liquidator> {

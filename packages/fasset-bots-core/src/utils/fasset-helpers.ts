@@ -50,9 +50,9 @@ export async function attestationWindowSeconds(assetManager: IIAssetManagerInsta
     const settings = await assetManager.getSettings();
     return Number(settings.attestationWindowSeconds);
 }
-/* istanbul ignore next */
-export async function latestUnderlyingBlock(blockchainIndexer: BlockchainIndexerHelper): Promise<IBlock> {
-    const blockHeight = await blockchainIndexer.getBlockHeight();
+
+export async function lastFinalizedUnderlyingBlock(blockchainIndexer: BlockchainIndexerHelper): Promise<IBlock> {
+    const blockHeight = await blockchainIndexer.getLastFinalizedBlockNumber();
     const latestBlock = await blockchainIndexer.getBlockAt(blockHeight);
     return requireNotNull(latestBlock, "Block at block height does not exist");
 }

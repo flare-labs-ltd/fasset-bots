@@ -304,6 +304,7 @@ describe("AgentBot cli commands unit tests", () => {
         for (let i = 0; i < 5; i++) {
             await agentBot.runStep(orm.em);
             await time.increase(100);
+            chain.mine(10);
         }
         // withdraw
         await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
@@ -313,6 +314,7 @@ describe("AgentBot cli commands unit tests", () => {
         for (let i = 0; i < 5; i++) {
             await agentBot.runStep(orm.em);
             await time.increase(100);
+            chain.mine(10);
         }
         // there should be two payments in state of done
         orm.em.clear();

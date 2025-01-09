@@ -104,11 +104,6 @@ describe("Attestation client unit tests", () => {
         await walletHelper.addExistingAccount(fundedAddressXRP, fundedPrivateKeyXRP);
         const transaction = await walletHelper.addTransactionAndWaitForItsFinalization(fundedAddressXRP, targetAddressXRP, 1000000, ref, undefined);
         await blockChainIndexerClient.waitForUnderlyingTransactionFinalization(transaction);
-        let currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
-        const finalBlock = currentBlockHeight + finalizationBlocks;
-        while (currentBlockHeight <= finalBlock) {
-            currentBlockHeight = await blockChainIndexerClient.getBlockHeight();
-        }
         const requestPayment = await attestationHelper.requestPaymentProof(transaction, fundedAddressXRP, targetAddressXRP);
         // request balance decreasing
         const requestDecreasing = await attestationHelper.requestBalanceDecreasingTransactionProof(transaction, fundedAddressXRP);

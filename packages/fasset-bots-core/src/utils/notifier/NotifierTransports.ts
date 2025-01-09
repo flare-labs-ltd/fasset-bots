@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosInstance } from "axios";
 import chalk from "chalk";
 import { formatArgs } from "../formatting";
 import { systemTimestamp } from "../helpers";

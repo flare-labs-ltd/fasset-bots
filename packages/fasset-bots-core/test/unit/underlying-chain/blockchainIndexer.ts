@@ -206,9 +206,14 @@ describe("testXRP blockchain tests via indexer", () => {
         expect(retrievedBlock).to.be.null;
     });
 
-    it("Should retrieve block height", async () => {
-        const retrievedHeight = await blockchainIndexerClient.getBlockHeight();
+    it("Should retrieve last finalized block", async () => {
+        const retrievedHeight = await blockchainIndexerClient.getLastFinalizedBlockNumber();
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
+    });
+
+    it("Should retrieve block height", async () => {
+        const retrievedHeight = await blockchainIndexerClient.getCurrentBlockHeight();
+        expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);  // FDC verifier has no finalization blocks on XRP
     });
 
     it("Should retrieve transaction block", async () => {
@@ -225,12 +230,9 @@ describe("testXRP blockchain tests via indexer", () => {
 
     it("Should find last block in indexer", async () => {
         const chain: IBlockChain = blockchainIndexerClient;
-        let overflowBlockNum = await chain.getBlockHeight();
-        while (true) {
-            const overflowBlock = await chain.getBlockAt(overflowBlockNum);
-            if (overflowBlock != null) break;
-            --overflowBlockNum;
-        }
+        const overflowBlockNum = await chain.getCurrentBlockHeight();
+        const overflowBlock = await chain.getBlockAt(overflowBlockNum);
+        expect(overflowBlock).to.be.null;
     });
 
     it("Should return appropriate status", async () => {
@@ -397,9 +399,14 @@ describe("testDOGE blockchain tests via indexer", () => {
         expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
-    it("Should retrieve block height", async () => {
-        const retrievedHeight = await blockChainIndexerClient.getBlockHeight();
+    it("Should retrieve last finalized block", async () => {
+        const retrievedHeight = await blockChainIndexerClient.getLastFinalizedBlockNumber();
         expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
+    });
+
+    it("Should retrieve block height", async () => {
+        const retrievedHeight = await blockChainIndexerClient.getCurrentBlockHeight();
+        expect(retrievedHeight).to.be.greaterThanOrEqual(blockId + blockChainIndexerClient.finalizationBlocks);
     });
 
     it("Should retrieve transaction block", async () => {
@@ -450,10 +457,14 @@ describe("testBTC blockchain tests via indexer", () => {
         expect(blockId).to.be.eq(retrievedBlock?.number);
     });
 
+    it("Should retrieve last finalized block", async () => {
+        const retrievedHeight = await blockChainIndexerClient.getLastFinalizedBlockNumber();
+        expect(retrievedHeight).to.be.greaterThanOrEqual(blockId);
+    });
+
     it("Should retrieve block height", async () => {
-        const retrievedHeight = await blockChainIndexerClient.getBlockHeight();
-        // add finalizationBlocks due to temporary "hack" (testBTC indexer returns last seen block on chain and not last confirm as other indexers)
-        expect(retrievedHeight + blockChainIndexerClient.finalizationBlocks).to.be.greaterThanOrEqual(blockId);
+        const retrievedHeight = await blockChainIndexerClient.getCurrentBlockHeight();
+        expect(retrievedHeight).to.be.greaterThanOrEqual(blockId + blockChainIndexerClient.finalizationBlocks);
     });
 
     it("Should retrieve transaction block", async () => {

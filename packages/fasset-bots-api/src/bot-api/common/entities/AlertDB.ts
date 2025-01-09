@@ -1,5 +1,4 @@
 import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
-import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
 
 @Entity({ tableName: "alertFull" })
 export class Alert {

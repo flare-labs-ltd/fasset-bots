@@ -39,13 +39,13 @@ export class InfoBotCommands {
      * @param fAssetSymbol symbol for the fasset
      * @returns instance of InfoBot
      */
-    static async create(secrets: Secrets, configFile: string, fAssetSymbol: string | undefined, registerCleanup?: CleanupRegistration): Promise<InfoBotCommands> {
+    static async create(secrets: Secrets, configFile: string, fAssetSymbol: string | undefined, registerCleanup?: CleanupRegistration, accounts?: string[]): Promise<InfoBotCommands> {
         logger.info(`InfoBot started to initialize cli environment.`);
         console.error(chalk.cyan("Initializing environment..."));
         const config = loadConfigFile(configFile, `InfoBot`);
         // init web3 and accounts
-        const apiKey = secrets.optional("apiKey.native_rpc");
-        const accounts = await initWeb3(authenticatedHttpProvider(config.rpcUrl, apiKey), [INFO_ACCOUNT_KEY], null);
+        const rpcApiKey = secrets.optional("apiKey.native_rpc")
+        accounts ??= await initWeb3(authenticatedHttpProvider(config.rpcUrl, rpcApiKey), [INFO_ACCOUNT_KEY], null);
         const botConfig = await createBotConfig("user", secrets, config, accounts[0]);
         registerCleanup?.(() => closeBotConfig(botConfig));
         // create config

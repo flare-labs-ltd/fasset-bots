@@ -123,7 +123,7 @@ describe("Actor tests - coston", () => {
         const challengerContext = await createChallengerContext(actorConfig, chainConfigActor);
         const challenger = await createTestChallenger(challengerContext, challengerAddress, state);
         expect(challenger.address).to.eq(challengerAddress);
-        const blockHeight = await context.blockchainIndexer.getBlockHeight();
+        const blockHeight = await context.blockchainIndexer.getLastFinalizedBlockNumber();
         const finalizationBlocks = 6;
         expect(challenger.lastEventUnderlyingBlockHandled).to.be.lte(blockHeight + finalizationBlocks);
     });

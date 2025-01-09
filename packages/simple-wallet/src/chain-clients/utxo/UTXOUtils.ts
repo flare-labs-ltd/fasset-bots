@@ -89,13 +89,13 @@ export function getEstimatedNumberOfOutputs(amountInSatoshi: BN | null, note?: s
 
 export async function getTransactionDescendants(em: EntityManager, txId: number): Promise<TransactionEntity[]> {
     const txEnt = await fetchTransactionEntityById(em, txId);
-    if (txEnt.outputs.length === 0) {
+    if (txEnt.numberOfOutputs === 0) {
         return [];
     }
 
-    const condition = txEnt.outputs.map(output => ({
-        transactionHash: output.transactionHash,
-        vout: output.vout
+    const condition = Array.from({ length: txEnt.numberOfOutputs }, (_, i) => ({
+        transactionHash: txEnt.transactionHash,
+        vout: i
     }));
 
     const inputs = (await em.find(TransactionInputEntity, {

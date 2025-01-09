@@ -214,9 +214,7 @@ export class AgentBotUnderlyingManagement {
                     txHash: info.transactionHash
                 });
                 assertNotNull(underlyingPayment.txHash);
-                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
-                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                if (await this.bot.underlyingTransactionFinalized(underlyingPayment.txHash)) {
                     await this.requestPaymentProof(rootEm, underlyingPayment);
                     await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
                 }
@@ -237,9 +235,7 @@ export class AgentBotUnderlyingManagement {
                     txHash: info.replacedByHash
                 });
                 assertNotNull(underlyingPayment.txHash);
-                const txBlock = await this.context.blockchainIndexer.getTransactionBlock(underlyingPayment.txHash);
-                const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
-                if (txBlock != null && blockHeight - txBlock.number >= this.context.blockchainIndexer.finalizationBlocks) {
+                if (await this.bot.underlyingTransactionFinalized(underlyingPayment.txHash)) {
                     await this.requestPaymentProof(rootEm, underlyingPayment);
                     await this.notifier.sendAgentUnderlyingPaymentRequestPaymentProof(underlyingPayment.txHash, underlyingPayment.type);
                 }
@@ -263,12 +259,12 @@ export class AgentBotUnderlyingManagement {
      */
     async requestPaymentProof(rootEm: EM, underlyingPayment: Readonly<AgentUnderlyingPayment>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is sending request for payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`);
-        assertNotNull(underlyingPayment.txHash);
         try {
             const sourceAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? null : this.agent.underlyingAddress;
             const tragetAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? this.agent.underlyingAddress : null;
             const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
-                return await this.context.attestationProvider.requestPaymentProof(underlyingPayment.txHash!, sourceAddress, tragetAddress);
+                assertNotNull(underlyingPayment.txHash);
+                return await this.context.attestationProvider.requestPaymentProof(underlyingPayment.txHash, sourceAddress, tragetAddress);
             });
             underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
                 state: AgentUnderlyingPaymentState.REQUESTED_PROOF,
@@ -329,7 +325,8 @@ export class AgentBotUnderlyingManagement {
                 in round ${underlyingPayment.proofRequestRound} and data ${underlyingPayment.proofRequestData}.`);
             // wait for one more round and then reset to state PAID, which will eventually resubmit request
             if (await this.bot.enoughTimePassedToObtainProof(underlyingPayment)) {
-                await this.notifier.sendAgentUnderlyingPaymentNoProofObtained(underlyingPayment.txHash!, underlyingPayment.type, underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData);
+                assertNotNull(underlyingPayment.txHash);
+                await this.notifier.sendAgentUnderlyingPaymentNoProofObtained(underlyingPayment.txHash, underlyingPayment.type, underlyingPayment.proofRequestRound, underlyingPayment.proofRequestData);
                 logger.info(`Agent ${this.agent.vaultAddress} will retry obtaining payment proof for underlying payment ${underlyingPayment.txHash}.`);
                 underlyingPayment = await this.updateUnderlyingPayment(rootEm, underlyingPayment, {
                     state: AgentUnderlyingPaymentState.PAID,

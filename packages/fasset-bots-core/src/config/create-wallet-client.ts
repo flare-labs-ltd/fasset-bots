@@ -36,7 +36,7 @@ export async function createWalletClient(
     if (chainId === ChainId.BTC || chainId === ChainId.testBTC) {
         const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.btc_rpc"); // added the last one to be backward compatible
         const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
-        return await BTC.initialize({
+        return BTC.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testBTC,
             apiTokenKeys: apiTokenKeys,
@@ -47,7 +47,7 @@ export async function createWalletClient(
     } else if (chainId === ChainId.DOGE || chainId === ChainId.testDOGE) {
         const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.doge_rpc"); // added the last one to be backward compatible
         const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
-        return await DOGE.initialize({
+        return DOGE.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testDOGE,
             apiTokenKeys: apiTokenKeys,
@@ -58,7 +58,7 @@ export async function createWalletClient(
     } else {
         const apiTokenKey = secrets.optionalOrOptionalArray(`apiKey.${chainId.chainName}_rpc`) ?? secrets.optionalOrOptionalArray("apiKey.xrp_rpc"); // added the last one to be backward compatible
         const apiTokenKeys = checkUrlAndApiKeyArraysMatch(apiTokenKey, walletUrls, chainId);
-        return await XRP.initialize({
+        return XRP.initialize({
             urls: walletUrls,
             inTestnet: chainId === ChainId.testXRP,
             apiTokenKeys: apiTokenKeys,

@@ -554,7 +554,7 @@ export class UserBotCommands {
     }
 
     async redemptionTimeElapsed(state: RedeemData): Promise<boolean> {
-        const blockHeight = await this.context.blockchainIndexer.getBlockHeight();
+        const blockHeight = await this.context.blockchainIndexer.getLastFinalizedBlockNumber();
         const lastBlock = requireNotNull(await this.context.blockchainIndexer.getBlockAt(blockHeight));
         return blockHeight > Number(state.lastUnderlyingBlock) && lastBlock.timestamp > Number(state.lastUnderlyingTimestamp);
     }

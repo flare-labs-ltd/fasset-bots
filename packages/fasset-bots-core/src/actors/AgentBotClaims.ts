@@ -1,4 +1,3 @@
-import BN from "bn.js";
 import { BN_ZERO, ZERO_ADDRESS, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { artifacts } from "../utils/web3";

@@ -150,14 +150,15 @@ export class AgentBotHandshake {
             }
             logger.info(`Agent ${this.agent.vaultAddress} executed handshake for collateral reservation ${handshake.requestId}.`);
         } catch (error) {
-            console.error(`Error handling execute handshake step for minting ${handshakeId} agent ${this.agent.vaultAddress}: ${error}`);
-            logger.error(`Agent ${this.agent.vaultAddress} run into error while handling execute handshake for minting ${handshakeId}:`, error);
             if (errorIncluded(error, ["invalid crt id", "handshake not required", "handshake not required or collateral reservation already approved"])) {
                 await this.updateHandshake(rootEm, handshakeId, {
                     state: AgentHandshakeState.APPROVED
                 });
-                logger.error(`Agent ${this.agent.vaultAddress} closed handshake ${handshakeId} due to "invalid crt id"`);
-                console.error(`Agent ${this.agent.vaultAddress} closed handshake ${handshakeId} due to "invalid crt id"`);
+                logger.warn(`Agent ${this.agent.vaultAddress} closed handshake ${handshakeId} because it was already approved`);
+                console.log(`Agent ${this.agent.vaultAddress} closed handshake ${handshakeId} because it was already approved`);
+            } else {
+                console.error(`Error handling execute handshake step for minting ${handshakeId} agent ${this.agent.vaultAddress}: ${error}`);
+                logger.error(`Agent ${this.agent.vaultAddress} run into error while handling execute handshake for minting ${handshakeId}:`, error);
             }
         }
     }

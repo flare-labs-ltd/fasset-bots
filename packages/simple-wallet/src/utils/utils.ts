@@ -9,7 +9,7 @@ import {
    UTXO_OVERHEAD_SIZE, UTXO_OVERHEAD_SIZE_SEGWIT
 } from "./constants";
 import { StuckTransaction } from "../interfaces/IWalletTransaction";
-import BN from "bn.js";
+import BN, { max, min } from "bn.js";
 import { toBN } from "./bnutils";
 import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
@@ -98,7 +98,7 @@ export function checkIfShouldStillSubmit(client: UTXOWalletImplementation | XrpW
    if (executeUntilTimestamp && executeUntilTimestamp.toString().length > 11) { // legacy: there used to be dates stored in db.
        executeUntilTimestamp = toBN(convertToTimestamp(executeUntilTimestamp.toString()));
    }
-   const timeRestrictionMet = executeUntilTimestamp && now && (now.addn(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType)).gte(executeUntilTimestamp));
+   const timeRestrictionMet = executeUntilTimestamp && now && (now.add(toBN(client.executionBlockOffset * getDefaultBlockTimeInSeconds(client.chainType))).gte(executeUntilTimestamp));
 
    if (executeUntilBlock && !executeUntilTimestamp && blockRestrictionMet) {
       return false;
@@ -174,4 +174,8 @@ export function estimateTxSize(chainType: ChainType, tr: Transaction, note?: str
    } else {
       return tr.inputs.length * UTXO_INPUT_SIZE_SEGWIT + tr.outputs.length * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT + noteSize;
    }
+}
+
+export function between(num: BN, a: BN, b: BN) {
+   return num.gt(min(a, b)) && num.lt(max(a, b));
 }

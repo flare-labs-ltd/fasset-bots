@@ -73,8 +73,8 @@ describe("TokenBalance unit tests", () => {
         expect(pool.decimals).to.eq(POOL_TOKEN_DECIMALS);
 
         expect(await pool.formatBalance(accounts[0])).to.be.a('string');
-        assert(BN.isBN(await pool.parse("1000")), 'Expected result to be a BN object');
-        expect(await pool.formatValue("1000")).to.be.a('string');
-        expect(await pool.formatValue("1000")).to.be.a('string');
+        assert(BN.isBN(pool.parse("1000")), 'Expected result to be a BN object');
+        expect(pool.formatValue("1000")).to.be.a('string');
+        expect(pool.formatValue("1000")).to.be.a('string');
     });
 });

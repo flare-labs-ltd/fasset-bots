@@ -1,5 +1,5 @@
 import { FeeParams, ITransactionMonitor, IWalletKeys, TransactionInfo, TransactionStatus, WalletClient } from "@flarelabs/simple-wallet";
-import { sleep, toBN, unPrefix0x } from "../utils/helpers";
+import { requireNotNull, sleep, toBN, unPrefix0x } from "../utils/helpers";
 import { IBlockChainWallet, TransactionOptionsWithFee } from "./interfaces/IBlockChainWallet";
 import BN from "bn.js";
 import { formatArgs, logger } from "../utils";
@@ -108,13 +108,13 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                     logger.info(`Replacement transaction txDbId ${replacedId}`);
                     if (info.replacedByStatus === TransactionStatus.TX_SUCCESS) {
                         logger.info(`Replacement transaction ${replacedId} succeeded.`);
-                        return info.replacedByHash!;
+                        return requireNotNull(info.replacedByHash);
                     } else if (info.replacedByStatus === TransactionStatus.TX_FAILED) {
                         logger.warn(`Replacement transaction ${replacedId} failed.`);
                         await sleep(10000);
                         info = await this.checkTransactionStatus(id);
                         if (info.status === TransactionStatus.TX_SUCCESS) {
-                            return info.transactionHash!;
+                            return requireNotNull(info.transactionHash);
                         } else {
                             logger.warn(`Original transaction ${id} is still not successful. Exiting the loop.`);
                             break;

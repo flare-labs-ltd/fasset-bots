@@ -635,6 +635,13 @@ export class AgentBot {
         }
     }
 
+    async underlyingTransactionFinalized(txHash: string) {
+        const txBlock = await this.context.blockchainIndexer.getTransactionBlock(txHash);
+        const blockHeight = await this.context.blockchainIndexer.getLastFinalizedBlockNumber();
+        // TODO: could replace '<' with '<='? That might make more proof requests fail.
+        return txBlock != null && txBlock.number < blockHeight;
+    }
+
     /**
      * Respond to ping, measuring agent liveness
      * @param query query number - 0 means return version
