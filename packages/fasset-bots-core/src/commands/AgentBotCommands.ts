@@ -461,21 +461,22 @@ export class AgentBotCommands {
      */
     async withdrawUnderlying(agentVault: string, amount: string | BN, destinationAddress: string): Promise<number | null> {
         logger.info(`Agent ${agentVault} is trying to announce underlying withdrawal with amount ${amount.toString()} to destination ${destinationAddress}.`);
-        try {
-            const { agentBot } = await this.getAgentBot(agentVault);
-            const announce = await agentBot.agent.announceUnderlyingWithdrawal();
-            const latestBlock = await latestBlockTimestampBN();
-            const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference,
-                undefined, undefined, undefined, undefined, true);
-            await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID, undefined, latestBlock);
-            logger.info(`Agent ${agentVault} initiated transaction with database id ${txDbId}.`)
-            console.log(`Agent ${agentVault} initiated transaction with database id ${txDbId}. Please ensure 'run-agent' is running for the transaction to be processed further.`)
-            return txDbId;
-        } catch (error: any) {
-            logger.error(`Agent ${agentVault} is received error while announcing underlying withdrawal.`, error);
-            console.error(error?.message ?? error);
-            return null;
+        const { agentBot } = await this.getAgentBot(agentVault);
+        // check that amount is not too high (we don't want the agent to go to full liquidation)
+        const safeToWithdraw = await agentBot.getSafeToWithdrawUnderlying();
+        if (toBN(amount).gt(safeToWithdraw)) {
+            const currency = await Currencies.fassetUnderlyingToken(this.context);
+            throw new CommandLineError(`Cannot transfer funds. Requested amount ${currency.formatValue(amount)} is higher than safe to withdraw underlying ${currency.formatValue(safeToWithdraw)}.`);
         }
+        // announce and perform payment
+        const announce = await agentBot.agent.announceUnderlyingWithdrawal();
+        const latestBlock = await latestBlockTimestampBN();
+        const txDbId = await agentBot.agent.initiatePayment(destinationAddress, amount, announce.paymentReference,
+            undefined, undefined, undefined, undefined, true);
+        await agentBot.underlyingManagement.createAgentUnderlyingPayment(this.orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID, undefined, latestBlock);
+        logger.info(`Agent ${agentVault} initiated transaction with database id ${txDbId}.`)
+        console.log(`Agent ${agentVault} initiated transaction with database id ${txDbId}. Please ensure 'run-agent' is running for the transaction to be processed further.`)
+        return txDbId;
     }
 
     /**
@@ -707,9 +708,7 @@ export class AgentBotCommands {
      */
     async getSafeToWithdrawUnderlying(agentVault: string): Promise<string> {
         const { agentBot } = await this.getAgentBot(agentVault);
-        const info = await agentBot.agent.getAgentInfo();
-        const required = toBN(info.mintedUBA).add(toBN(info.redeemingUBA));
-        const free = maxBN(toBN(info.underlyingBalanceUBA).sub(required), BN_ZERO);
+        const free = await agentBot.getSafeToWithdrawUnderlying();
         logger.info(`Agent ${agentVault} has ${free} safe to withdraw free underlying.`);
         return String(free);
     }

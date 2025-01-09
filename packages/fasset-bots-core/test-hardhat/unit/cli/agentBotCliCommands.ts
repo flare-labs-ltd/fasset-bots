@@ -9,7 +9,7 @@ import { loadAgentSettings } from "../../../src/config/AgentVaultInitSettings";
 import { ORM } from "../../../src/config/orm";
 import { AgentEntity, AgentUnderlyingPayment, AgentUpdateSetting } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
-import { MockChain } from "../../../src/mock/MockChain";
+import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
 import { CommandLineError } from "../../../src/utils";
 import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
@@ -297,17 +297,18 @@ describe("AgentBot cli commands unit tests", () => {
 
     it("Should run commands 'underlyingTopup' and then 'withdrawUnderlying'", async () => {
         const agentBot = await createAgentBot();
-        const amountToWithdraw = toBN(100);
-        await fundUnderlying(context, agentBot.owner.workAddress, amountToWithdraw);
+        const amountToWithdraw = toBN(100e6);
         // topup
-        await botCliCommands.underlyingTopUp(agentBot.agent.vaultAddress, amountToWithdraw);
+        await fundUnderlying(context, agentBot.owner.workAddress, amountToWithdraw.muln(2));
+        await botCliCommands.underlyingTopUp(agentBot.agent.vaultAddress, amountToWithdraw.muln(2));
         for (let i = 0; i < 5; i++) {
             await agentBot.runStep(orm.em);
             await time.increase(100);
             chain.mine(10);
         }
         // withdraw
-        await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
+        const txHash = await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
+        expect(txHash).to.not.be.undefined.and.to.not.be.null;
         const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
         expect(latest).to.not.be.null;
         expect(toBN(latest!.announcedAtTimestamp).gt(BN_ZERO)).to.be.true;
@@ -324,26 +325,36 @@ describe("AgentBot cli commands unit tests", () => {
         expect(payments[0].type).to.be.eq(AgentUnderlyingPaymentType.TOP_UP);
         expect(payments[1].state).to.be.eq(AgentUnderlyingPaymentState.DONE);
         expect(payments[1].type).to.be.eq(AgentUnderlyingPaymentType.WITHDRAWAL);
-        expect(String(await chain.getBalance("SomeRandomUnderlyingAddress"))).to.be.eq("100");
+        expect(String(await chain.getBalance("SomeRandomUnderlyingAddress"))).to.be.eq(String(amountToWithdraw));
     });
 
     it("Should run command 'withdrawUnderlying' and 'cancelUnderlyingWithdrawal'", async () => {
         const spyAnnounce = spy.on(botCliCommands, "withdrawUnderlying");
         const agentBot = await createAgentBot();
         const amountToWithdraw = toBN(100e6);
-        // await fundUnderlying(context, agentBot.agent.underlyingAddress, amountToWithdraw);
-        console.log(String(await chain.getBalance(agentBot.agent.underlyingAddress)));
+        // topup
+        await fundUnderlying(context, agentBot.owner.workAddress, amountToWithdraw.muln(2));
+        await botCliCommands.underlyingTopUp(agentBot.agent.vaultAddress, amountToWithdraw.muln(2));
+        for (let i = 0; i < 5; i++) {
+            await agentBot.runStep(orm.em);
+            await time.increase(100);
+            chain.mine(10);
+        }
+        // withdraw
         await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
+        // check
         const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
         if (latest === null) throw Error;
         expect(toBN(latest.announcedAtTimestamp).gt(BN_ZERO)).to.be.true;
         expect(spyAnnounce).to.be.called.once;
-        // cannot withdraw again until announcement is still active
-        const res = await botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
-        expect(res).to.be.null;
+        // pretend that the transaction has failed
+        const transaction = (context.wallet as MockChainWallet).transactionList[latest.txDbId!];
+        transaction.status = 1;
+        // cannot withdraw again while announcement is still active
+        await expectRevert(botCliCommands.withdrawUnderlying(agentBot.agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress"),
+            "announced underlying withdrawal active");
         //  not enough time passed
         await botCliCommands.cancelUnderlyingWithdrawal(agentBot.agent.vaultAddress);
-        // await agentBot.handleTimelockedProcesses(orm.em);
         orm.em.clear();
         const latestToSoon = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
         if (latestToSoon === null) throw Error;
@@ -367,13 +378,6 @@ describe("AgentBot cli commands unit tests", () => {
         const spyConsole = spy.on(console, "log");
         await botCliCommands.cancelUnderlyingWithdrawal(agent.vaultAddress);
         expect(spyConsole).to.be.called.once;
-    });
-
-    it("Should run command 'withdrawUnderlying'", async () => {
-        const agent = await createAgent();
-        const amountToWithdraw = 100;
-        const txHash = await botCliCommands.withdrawUnderlying(agent.vaultAddress, amountToWithdraw.toString(), "SomeRandomUnderlyingAddress");
-        expect(txHash).to.not.be.undefined;
     });
 
     it("Should run command 'listActiveAgents'", async () => {
@@ -412,6 +416,8 @@ describe("AgentBot cli commands unit tests", () => {
         expect(freeVault).to.eq("0");
         const freeUnderlying = await botCliCommands.getFreeUnderlying(agent.vaultAddress);
         expect(freeUnderlying).to.eq("0");
+        const safeToWithdrawUnderlying = await botCliCommands.getSafeToWithdrawUnderlying(agent.vaultAddress);
+        expect(safeToWithdrawUnderlying).to.eq("0");
     });
 
     it("Should run command switch vault collateral", async () => {

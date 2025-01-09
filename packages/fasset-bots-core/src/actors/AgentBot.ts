@@ -18,7 +18,7 @@ import { EventArgs, EvmEvent } from "../utils/events/common";
 import { eventIs } from "../utils/events/truffle";
 import { FairLock } from "../utils/FairLock";
 import { formatArgs, formatTimestamp, squashSpace } from "../utils/formatting";
-import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, sleepUntil, toBN } from "../utils/helpers";
+import { BN_ZERO, BNish, DAYS, MINUTES, ZERO_ADDRESS, assertNotNull, getOrCreate, maxBN, sleepUntil, toBN } from "../utils/helpers";
 import { logger, loggerAsyncStorage } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { NotifierTransport } from "../utils/notifier/BaseNotifier";
@@ -672,6 +672,13 @@ export class AgentBot {
     async enoughTimePassedToObtainProof(request: { proofRequestRound?: number, proofRequestData?: string }) {
         assertNotNull(request.proofRequestRound);
         return await this.context.attestationProvider.flareDataConnector.roundFinalized(request.proofRequestRound + 1);
+    }
+
+    async getSafeToWithdrawUnderlying() {
+        const info = await this.agent.getAgentInfo();
+        const backingUBA = toBN(info.mintedUBA).add(toBN(info.redeemingUBA));
+        const required = backingUBA.add(this.agentBotSettings.minimumFreeUnderlyingBalance);
+        return maxBN(toBN(info.underlyingBalanceUBA).sub(required), BN_ZERO);
     }
 
     /**

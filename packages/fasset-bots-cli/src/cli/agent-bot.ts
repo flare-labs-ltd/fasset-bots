@@ -302,12 +302,7 @@ program
         const options: { config: string; secrets: string; fasset: string } = program.opts();
         const secrets = await Secrets.load(options.secrets);
         const cli = await AgentBotCommands.create(secrets, options.config, options.fasset, registerToplevelFinalizer);
-        const currency = await Currencies.fasset(cli.context);
-        const toTransfer = currency.parse(amount);
-        const safeToWithdrawUnderlying = await cli.getSafeToWithdrawUnderlying(agentVault);
-        if (toTransfer.gt(toBN(safeToWithdrawUnderlying))) {
-            throw new CommandLineError(`Cannot transfer funds. Requested amount ${amount} is higher than safe to withdraw underlying ${currency.formatValue(safeToWithdrawUnderlying)}.`)
-        }
+        const currency = await Currencies.fassetUnderlyingToken(cli.context);
         await cli.withdrawUnderlying(agentVault, currency.parse(amount), destinationAddress);
     });
 
