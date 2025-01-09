@@ -230,8 +230,9 @@ describe("testXRP blockchain tests via indexer", () => {
 
     it("Should find last block in indexer", async () => {
         const chain: IBlockChain = blockchainIndexerClient;
-        const overflowBlockNum = await chain.getCurrentBlockHeight();
-        const overflowBlock = await chain.getBlockAt(overflowBlockNum);
+        const currentBlockNum = await chain.getCurrentBlockHeight();
+        // it should be currentBlockNum+1, but XRP is very fast, so that might fail
+        const overflowBlock = await chain.getBlockAt(currentBlockNum + 5);
         expect(overflowBlock).to.be.null;
     });
 

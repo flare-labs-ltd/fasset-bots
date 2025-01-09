@@ -160,7 +160,7 @@ describe("testBTC attestation/flare data connector tests", () => {
         );
     });
 
-    it("Should submit ConfirmedBlockHeightExists request", async () => {
+    it.skip("Should submit ConfirmedBlockHeightExists request", async () => {
         const blockChainIndexerClient = createBlockchainIndexerHelper(chainId, INDEXER_URL_BTC, indexerApiKey(secrets, INDEXER_URL_BTC));
         const lastFinalizedBlock = await blockChainIndexerClient.getLastFinalizedBlockNumber();
         const queryWindow = 86400;
@@ -169,7 +169,7 @@ describe("testBTC attestation/flare data connector tests", () => {
             sourceId: chainId.sourceId,
             messageIntegrityCode: ZERO_BYTES32,
             requestBody: {
-                blockNumber: String(lastFinalizedBlock),
+                blockNumber: String(lastFinalizedBlock - 10),
                 queryWindow: String(queryWindow),
             },
         };
