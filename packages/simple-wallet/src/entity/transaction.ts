@@ -2,7 +2,6 @@ import { Collection, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryKey, 
 import BN from "bn.js";
 import {ChainType} from "../utils/constants";
 import { BNType, TextType } from "../utils/orm-types";
-import {TransactionOutputEntity} from "./transactionOutput";
 import {TransactionInputEntity} from "./transactionInput";
 
 @Entity({ tableName: "transaction" })
@@ -93,9 +92,6 @@ export class TransactionEntity {
     @OneToMany(() => TransactionInputEntity, input => input.transaction, {orphanRemoval: true})
     inputs = new Collection<TransactionInputEntity>(this);
 
-    @OneToMany(() => TransactionOutputEntity, output => output.transaction, {orphanRemoval: true})
-    outputs = new Collection<TransactionOutputEntity>(this);
-
     @ManyToOne(() => TransactionEntity, { nullable: true })
     ancestor?: TransactionEntity | null;
 
@@ -105,6 +101,8 @@ export class TransactionEntity {
     @Property({ type: BNType, nullable: true })
     maxPaymentForFeeSource?: BN;
 
+    @Property()
+    numberOfOutputs: number = 0;
 }
 
 export enum TransactionStatus {

@@ -6,10 +6,9 @@ import { expect } from "chai";
 import { EntityManager } from "@mikro-orm/core";
 import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import {
-    createTransactionEntity, createTransactionEntityWithInputsAndOutputs,
-    createTransactionInputEntity, createTransactionOutputEntity
+    createTransactionEntity, createTransactionEntityWithInputs,
+    createTransactionInputEntity
 } from "../test-util/entity_utils";
-import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
 
 let testOrm: ORM;
 
@@ -22,7 +21,6 @@ describe("getTransactionDescendants", () => {
 
     beforeEach(async () => {
         await em.nativeDelete(TransactionInputEntity, {});
-        await em.nativeDelete(TransactionOutputEntity, {});
         await em.nativeDelete(TransactionEntity, {});
     });
 
@@ -43,10 +41,9 @@ describe("getTransactionDescendants", () => {
         tx1: output1 -> tx2 [input]
          */
         const input1 = createTransactionInputEntity("txHash1", 0);
-        const output1 = createTransactionOutputEntity("txHash1", 0);
-        const tx1 = createTransactionEntityWithInputsAndOutputs("address1", "address2", "txHash1", [], [output1]);
+        const tx1 = createTransactionEntityWithInputs("address1", "address2", "txHash1", [], 1);
 
-        const tx2 = createTransactionEntityWithInputsAndOutputs("address1", "address3", "txHash2", [input1]);
+        const tx2 = createTransactionEntityWithInputs("address1", "address3", "txHash2", [input1]);
         await em.persistAndFlush([tx1, tx2, input1]);
 
         const descendants = await getTransactionDescendants(em, tx1.id);
@@ -59,14 +56,12 @@ describe("getTransactionDescendants", () => {
         tx1: output1 -> tx2 [input1] output2 -> tx3 [input2]
          */
         const input1 = createTransactionInputEntity("txHash1", 0);
-        const output1 = createTransactionOutputEntity("txHash1", 0);
-        const tx1 = createTransactionEntityWithInputsAndOutputs("address1", "address2", "txHash1", [], [output1]);
+        const tx1 = createTransactionEntityWithInputs("address1", "address2", "txHash1", [], 1);
 
         const input2 = createTransactionInputEntity("txHash2", 0);
-        const output2 = createTransactionOutputEntity("txHash2", 0);
-        const tx2 = createTransactionEntityWithInputsAndOutputs("address1", "address3", "txHash2", [input1], [output2]);
+        const tx2 = createTransactionEntityWithInputs("address1", "address3", "txHash2", [input1], 1);
 
-        const tx3 = createTransactionEntityWithInputsAndOutputs("address1", "address4", "txHash3", [input2]);
+        const tx3 = createTransactionEntityWithInputs("address1", "address4", "txHash3", [input2]);
         await em.persistAndFlush([tx1, tx2, tx3]);
 
         const descendants = await getTransactionDescendants(em, tx1.id);
@@ -82,15 +77,13 @@ describe("getTransactionDescendants", () => {
          */
 
         const input1 = createTransactionInputEntity("txHash1", 0);
-        const output1 = createTransactionOutputEntity("txHash1", 0);
-        const tx1 = createTransactionEntityWithInputsAndOutputs("address1", "address2", "txHash1", [], [output1]);
+        const tx1 = createTransactionEntityWithInputs("address1", "address2", "txHash1", [], 1);
 
         const input2 = createTransactionInputEntity("txHash2", 0);
-        const output2 = createTransactionOutputEntity("txHash2", 0);
         const input3 = createTransactionInputEntity("txHashOther", 0);
-        const tx2 = createTransactionEntityWithInputsAndOutputs("address1", "address3", "txHash2", [input1], [output2]);
+        const tx2 = createTransactionEntityWithInputs("address1", "address3", "txHash2", [input1], 1);
 
-        const tx3 = createTransactionEntityWithInputsAndOutputs("address1", "address4", "txHash3", [input2, input3]);
+        const tx3 = createTransactionEntityWithInputs("address1", "address4", "txHash3", [input2, input3]);
         await em.persistAndFlush([tx1, tx2, tx3]);
 
         const descendants = await getTransactionDescendants(em, tx1.id);

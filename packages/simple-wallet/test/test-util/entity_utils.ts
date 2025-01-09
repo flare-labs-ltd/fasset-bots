@@ -11,7 +11,6 @@ import { TransactionInputEntity } from "../../src/entity/transactionInput";
 import { toBN } from "web3-utils";
 import { EntityManager, RequiredEntityData } from "@mikro-orm/core";
 import { transactional, updateMonitoringState } from "../../src/db/dbutils";
-import { TransactionOutputEntity } from "../../src/entity/transactionOutput";
 import {MempoolUTXO} from "../../src/interfaces/IBlockchainAPI";
 
 export function createTransactionEntity(source: string, destination: string, txHash: string, inputs?: TransactionEntity[], status?: TransactionStatus): TransactionEntity {
@@ -27,7 +26,7 @@ export function createTransactionEntity(source: string, destination: string, txH
     return txEnt;
 }
 
-export function createTransactionEntityWithInputsAndOutputs(source: string, destination: string, txHash: string, inputs?: TransactionInputEntity[], outputs?: TransactionOutputEntity[]): TransactionEntity {
+export function createTransactionEntityWithInputs(source: string, destination: string, txHash: string, inputs?: TransactionInputEntity[], numOutputs?: number): TransactionEntity {
     const txEnt = new TransactionEntity();
     txEnt.chainType = ChainType.testBTC;
     txEnt.status = TransactionStatus.TX_SUCCESS;
@@ -35,7 +34,7 @@ export function createTransactionEntityWithInputsAndOutputs(source: string, dest
     txEnt.transactionHash = txHash;
     txEnt.destination = destination;
     txEnt.inputs.set(inputs ?? []);
-    txEnt.outputs.set(outputs ?? []);
+    txEnt.numberOfOutputs = numOutputs ?? 0;
     return txEnt;
 }
 
@@ -61,15 +60,6 @@ export function createUTXO(mintTransactionHash: string, position: 0, value: BN, 
 
 export function createTransactionInputEntity(transactionHash: string, vout: number) {
     const inputEnt = new TransactionInputEntity();
-    inputEnt.transactionHash = transactionHash;
-    inputEnt.vout = vout;
-    inputEnt.amount = toBN(0);
-    inputEnt.script = "";
-    return inputEnt;
-}
-
-export function createTransactionOutputEntity(transactionHash: string, vout: number) {
-    const inputEnt = new TransactionOutputEntity();
     inputEnt.transactionHash = transactionHash;
     inputEnt.vout = vout;
     inputEnt.amount = toBN(0);
