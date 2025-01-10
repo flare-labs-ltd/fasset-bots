@@ -116,6 +116,11 @@ export interface AgentBotFassetSettingsJson {
      * Settings that are prefilled in new agent creation settings file/form (per-FAsset overrides).
      */
     defaultAgentSettings?: Partial<AgentSettingsConfigDefaults>;
+
+    /**
+     * A factor used to increase the minimum safety fee per KB. If set to 0, the minimum safety fee will not be applied.
+     */
+    feeSafetyFactorPerKB: number;
 }
 
 export interface AgentBotSettingsJson {

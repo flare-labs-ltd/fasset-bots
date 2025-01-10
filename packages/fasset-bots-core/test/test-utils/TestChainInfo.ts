@@ -118,6 +118,7 @@ export const testAgentBotSettings: Record<TestChainType, AgentBotSettings> = {
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
+        feeSafetyFactorPerKB: 0
     },
     btc: {
         parallel: parallelBots,
@@ -130,6 +131,7 @@ export const testAgentBotSettings: Record<TestChainType, AgentBotSettings> = {
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
+        feeSafetyFactorPerKB: 0
     },
     xrp: {
         parallel: parallelBots,
@@ -142,6 +144,7 @@ export const testAgentBotSettings: Record<TestChainType, AgentBotSettings> = {
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
+        feeSafetyFactorPerKB: 0
     },
     doge: {
         parallel: parallelBots,
@@ -154,6 +157,7 @@ export const testAgentBotSettings: Record<TestChainType, AgentBotSettings> = {
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
+        feeSafetyFactorPerKB: 0
     },
 }
 

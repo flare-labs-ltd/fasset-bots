@@ -179,3 +179,14 @@ export function estimateTxSize(chainType: ChainType, tr: Transaction, note?: str
 export function between(num: BN, a: BN, b: BN) {
    return num.gt(min(a, b)) && num.lt(max(a, b));
 }
+
+/**
+ * Return the maximum of two or more BN values.
+ */
+export function maxBN(first: BN, ...rest: BN[]) {
+   let result = first;
+   for (const x of rest) {
+       if (x.gt(result)) result = x;
+   }
+   return result;
+}

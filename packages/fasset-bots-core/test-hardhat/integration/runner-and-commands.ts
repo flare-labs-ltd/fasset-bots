@@ -91,6 +91,7 @@ describe("Toplevel runner and commands integration test", () => {
         minBalanceOnServiceAccount: toBNExp(2, 18),
         minBalanceOnWorkAccount: toBNExp(200, 18),
         defaultAgentSettings: defaultCreateAgentSettings,
+        feeSafetyFactorPerKB: 0
     };
 
     const testChainInfos = [testXrpChainInfo, simCoinXChainInfo];

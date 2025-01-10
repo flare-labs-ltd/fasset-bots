@@ -1,13 +1,11 @@
 import {
     BTC_LOW_FEE_PER_KB,
     BTC_MID_FEE_PER_KB,
-    BTC_MIN_ALLOWED_FEE_PER_KB,
     ChainType,
     DOGE_LOW_FEE_PER_KB,
-    DOGE_MID_FEE_PER_KB, DOGE_MIN_ALLOWED_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB,
+    DOGE_MID_FEE_PER_KB, TEST_BTC_LOW_FEE_PER_KB, TEST_BTC_MID_FEE_PER_KB,
     TEST_DOGE_LOW_FEE_PER_KB,
     TEST_DOGE_MID_FEE_PER_KB,
-    UTXO_BLOCK_SIZE_IN_KB,
     UTXO_INPUT_SIZE,
     UTXO_INPUT_SIZE_SEGWIT,
     UTXO_OUTPUT_SIZE,
@@ -131,26 +129,4 @@ export class TransactionFeeService {
         }
     }
 
-    async getSecurityFeePerKB(gain: BN | null, feePerKB: BN, blocksToFill?: number): Promise<BN> {
-        if (!gain || !blocksToFill) { // gain = null in case of deleteAccount; blocksToFill is undefined when not paying for redemption
-            return feePerKB;
-        }
-        const cost = feePerKB.muln(UTXO_BLOCK_SIZE_IN_KB * blocksToFill);
-        logger.info(`Cost: ${cost.toString()}, Gain: ${gain.toString()}, FeePerKB: ${feePerKB.toString()}, BlocksToFill: ${blocksToFill}`);
-        if (cost.gte(gain)) {
-            return feePerKB;
-        } else {
-            const adjustedFeePerKB = gain.divn(UTXO_BLOCK_SIZE_IN_KB * blocksToFill).add(this.getSafetyMargin());
-            logger.info(`Using adjustedFeePerKB of ${adjustedFeePerKB}`);
-            return adjustedFeePerKB;
-        }
-    }
-
-    private getSafetyMargin(): BN {
-        if (this.chainType === ChainType.testDOGE || this.chainType === ChainType.DOGE) {
-            return DOGE_MIN_ALLOWED_FEE_PER_KB;
-        } else {
-            return BTC_MIN_ALLOWED_FEE_PER_KB;
-        }
-    }
 }

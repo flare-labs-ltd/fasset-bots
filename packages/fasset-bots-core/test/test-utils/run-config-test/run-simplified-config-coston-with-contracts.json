@@ -49,11 +49,13 @@
         "fAssets": {
             "FTestXRP": {
                 "recommendedOwnerBalance": "50",
-                "minimumFreeUnderlyingBalance": "0.01"
+                "minimumFreeUnderlyingBalance": "0.01",
+                "feeSafetyFactorPerKB": 0
             },
             "FSimCoinX": {
                 "recommendedOwnerBalance": "50",
-                "minimumFreeUnderlyingBalance": "0.01"
+                "minimumFreeUnderlyingBalance": "0.01",
+                "feeSafetyFactorPerKB": 0
             }
         }
     },

@@ -9,6 +9,10 @@
                     "$ref": "#/definitions/Partial<AgentSettingsConfigDefaults>",
                     "description": "Settings that are prefilled in new agent creation settings file/form (per-FAsset overrides)."
                 },
+                "feeSafetyFactorPerKB": {
+                    "description": "A factor used to increase the minimum safety fee per KB. If set to 0, the minimum safety fee will not be applied.",
+                    "type": "number"
+                },
                 "minimumFreeUnderlyingBalance": {
                     "description": "The amount of underlying currency on woner's underlying address, below which the address should be topped-up,\nto prevent negative free underlying balance after redemptions.",
                     "pattern": "^[0-9]+(\\.[0-9]+)?$",
@@ -21,6 +25,7 @@
                 }
             },
             "required": [
+                "feeSafetyFactorPerKB",
                 "minimumFreeUnderlyingBalance",
                 "recommendedOwnerBalance"
             ],
@@ -398,6 +403,10 @@
                 "defaultAgentSettings": {
                     "$ref": "#/definitions/Partial<AgentSettingsConfigDefaults>",
                     "description": "Settings that are prefilled in new agent creation settings file/form (per-FAsset overrides)."
+                },
+                "feeSafetyFactorPerKB": {
+                    "description": "A factor used to increase the minimum safety fee per KB. If set to 0, the minimum safety fee will not be applied.",
+                    "type": "number"
                 },
                 "minimumFreeUnderlyingBalance": {
                     "description": "The amount of underlying currency on woner's underlying address, below which the address should be topped-up,\nto prevent negative free underlying balance after redemptions.",
