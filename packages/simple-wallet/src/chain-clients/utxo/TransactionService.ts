@@ -9,7 +9,7 @@ import {
 import {TransactionEntity} from "../../entity/transaction";
 import {Transaction} from "bitcore-lib";
 import { getAccountBalance, getCore, getDustAmount, getOutputSize, getRelayFeePerKB } from "./UTXOUtils";
-import { estimateTxSize, unPrefix0x } from "../../utils/utils";
+import { estimateTxSize, maxBN, unPrefix0x } from "../../utils/utils";
 import {toBN, toNumber} from "../../utils/bnutils";
 import {TransactionData, TransactionUTXOService} from "./TransactionUTXOService";
 import {TransactionFeeService} from "./TransactionFeeService";
@@ -47,7 +47,8 @@ export class TransactionService {
         executeUntilTimestamp?: BN,
         feeSource?: string,
         maxPaymentForFeeSource?: BN,
-        isFreeUnderlying?: boolean
+        isFreeUnderlying?: boolean,
+        securityFeePerKB?: BN
     ): Promise<number> {
         /* istanbul ignore next */
         logger.info(
@@ -66,7 +67,8 @@ export class TransactionService {
             undefined,
             feeSource,
             maxPaymentForFeeSource,
-            isFreeUnderlying
+            isFreeUnderlying,
+            securityFeePerKB
         );
         return ent.id;
     }
@@ -121,7 +123,8 @@ export class TransactionService {
         note?: string,
         txForReplacement?: TransactionEntity,
         feeSource?: string,
-        freeUnderlying?: boolean
+        freeUnderlying?: boolean,
+        securityFeePerKB?: BN
     ): Promise<[Transaction, MempoolUTXO[]]> {
         if (amountInSatoshi?.lte(getDustAmount(this.chainType))) {
             logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
@@ -131,11 +134,11 @@ export class TransactionService {
         }
 
         if (feeSource && amountInSatoshi && !freeUnderlying) {
-            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement);
+            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, undefined, securityFeePerKB);
         } else if (freeUnderlying) {
             return this.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi!, feeInSatoshi, note, txForReplacement)
         } else {
-            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement)
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, securityFeePerKB)
         }
     }
 
@@ -147,9 +150,11 @@ export class TransactionService {
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
+        securityFeePerKB?: BN
     ): Promise<[Transaction, MempoolUTXO[]]> {
         const isPayment = amountInSatoshi != null;
-        const feePerKB = await this.transactionFeeService.getFeePerKB();
+        const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
+        const feePerKB = maxBN(feePerKBFromFeeService, securityFeePerKB ?? toBN(0));
         const txData = {
             source: source,
             destination: destination,
@@ -210,9 +215,11 @@ export class TransactionService {
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
-        freeUnderlying?: boolean
+        freeUnderlying?: boolean,
+        securityFeePerKB?: BN
     ): Promise<[Transaction, MempoolUTXO[]]> {
-        const feePerKB = feeInSatoshi ?? await this.transactionFeeService.getFeePerKB();
+        const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
+        const feePerKB = maxBN(feePerKBFromFeeService, securityFeePerKB ?? toBN(0));
         const txDataForAmount = {
             source: source,
             destination: destination,
@@ -237,7 +244,7 @@ export class TransactionService {
         const txDataForFee = {
             source: feeSource,
             destination: destination,
-            amount: toBN(baseTransaction.getFee()),
+            amount: toBN(baseTransaction.getFee()), //TODO if feeInSatoshi? should it be feeInSatoshi?
             fee: toBN(0),
             feePerKB: feePerKB,
             useChange: false,

@@ -163,7 +163,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         executeUntilTimestamp?: BN,
         isFreeUnderlying?: boolean,
         feeSource?: string,
-        maxPaymentForFeeSource?: BN
+        maxPaymentForFeeSource?: BN,
+        securityFeePerKB?: BN
     ): Promise<number> {
         if (await checkIfIsDeleting(this.rootEm, source)) {
             logger.error(`Cannot receive requests. ${source} is deleting`);
@@ -197,7 +198,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             executeUntilTimestamp,
             feeSource,
             maxPaymentForFeeSource,
-            isFreeUnderlying
+            isFreeUnderlying,
+            securityFeePerKB
         );
     }
 
@@ -289,7 +291,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.reference,
                 rbfReplacementFor,
                 txEnt.feeSource,
-                txEnt.isFreeUnderlyingTransaction
+                txEnt.isFreeUnderlyingTransaction,
+                txEnt.securityFeePerKB
             );
             const privateKey = await this.walletKeys.getKey(txEnt.source);
             const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;

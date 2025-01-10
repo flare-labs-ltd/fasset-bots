@@ -32,10 +32,11 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         const fee = undefined;
         const maxFee = options?.maxFee ? toBN(options.maxFee) : undefined;
         const maxPaymentForFeeSource = options?.maxPaymentForFeeSource ? toBN(options.maxPaymentForFeeSource) : undefined;
+        const securityFeePerKB = options?.securityFeePerKB ? toBN(options.securityFeePerKB) : undefined;
         const note = reference ? unPrefix0x(reference) : undefined;
         const privateKey = await this.walletKeys.getKey(sourceAddress);
         if (privateKey) {
-            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee, executeUntilBlock, executeUntilTimestamp, isFreeUnderlying, feeSource, maxPaymentForFeeSource);
+            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee, executeUntilBlock, executeUntilTimestamp, isFreeUnderlying, feeSource, maxPaymentForFeeSource, securityFeePerKB);
             return dbId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);

@@ -19,6 +19,7 @@ export interface TransactionOptionsWithFee {
     maxPaymentForFeeSource?: NumberLike,
     gasPrice?: NumberLike;
     gasLimit?: NumberLike;
+    securityFeePerKB?: NumberLike;
 }
 
 export interface IBlockChainWallet {
