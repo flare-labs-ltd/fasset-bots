@@ -349,6 +349,7 @@ export class AgentBotRedemption {
         logger.info(`Agent ${this.agent.vaultAddress} is trying to pay for redemption ${redemption.requestId}.`);
         const redemptionFee = toBN(redemption.feeUBA);
         const paymentAmount = toBN(redemption.valueUBA).sub(redemptionFee);
+        const blocksToPay = Number((await this.agent.assetManager.getSettings()).underlyingBlocksForPayment);
         redemption = await this.updateRedemption(rootEm, redemption, {
             state: AgentRedemptionState.PAYING,
         });
@@ -356,7 +357,7 @@ export class AgentBotRedemption {
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
                 const feeSourceAddress = this.context.chainInfo.useOwnerUnderlyingAddressForPayingFees ? this.bot.ownerUnderlyingAddress : undefined;
                 return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined,
-                    { maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)) }, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), false, feeSourceAddress);
+                    { maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)), blocksToFill: blocksToPay }, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), false, feeSourceAddress);
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,

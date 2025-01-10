@@ -9,7 +9,7 @@ import {
 import {TransactionEntity} from "../../entity/transaction";
 import {Transaction} from "bitcore-lib";
 import { getAccountBalance, getCore, getDustAmount, getOutputSize, getRelayFeePerKB } from "./UTXOUtils";
-import { estimateTxSize, maxBN, unPrefix0x } from "../../utils/utils";
+import { estimateTxSize, unPrefix0x } from "../../utils/utils";
 import {toBN, toNumber} from "../../utils/bnutils";
 import {TransactionData, TransactionUTXOService} from "./TransactionUTXOService";
 import {TransactionFeeService} from "./TransactionFeeService";
@@ -48,7 +48,7 @@ export class TransactionService {
         feeSource?: string,
         maxPaymentForFeeSource?: BN,
         isFreeUnderlying?: boolean,
-        securityFeePerKB?: BN
+        blocksToFill?: number
     ): Promise<number> {
         /* istanbul ignore next */
         logger.info(
@@ -68,7 +68,7 @@ export class TransactionService {
             feeSource,
             maxPaymentForFeeSource,
             isFreeUnderlying,
-            securityFeePerKB
+            blocksToFill
         );
         return ent.id;
     }
@@ -124,7 +124,7 @@ export class TransactionService {
         txForReplacement?: TransactionEntity,
         feeSource?: string,
         freeUnderlying?: boolean,
-        securityFeePerKB?: BN
+        blocksToFill?: number
     ): Promise<[Transaction, MempoolUTXO[]]> {
         if (amountInSatoshi?.lte(getDustAmount(this.chainType))) {
             logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
@@ -134,11 +134,11 @@ export class TransactionService {
         }
 
         if (feeSource && amountInSatoshi && !freeUnderlying) {
-            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, undefined, securityFeePerKB);
+            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement);
         } else if (freeUnderlying) {
             return this.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi!, feeInSatoshi, note, txForReplacement)
         } else {
-            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, securityFeePerKB)
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, blocksToFill)
         }
     }
 
@@ -150,11 +150,11 @@ export class TransactionService {
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
-        securityFeePerKB?: BN
+        blocksToFill?: number
     ): Promise<[Transaction, MempoolUTXO[]]> {
         const isPayment = amountInSatoshi != null;
         const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
-        const feePerKB = maxBN(feePerKBFromFeeService, securityFeePerKB ?? toBN(0));
+        const feePerKB = await this.transactionFeeService.getSecurityFeePerKB(amountInSatoshi, feePerKBFromFeeService, blocksToFill);
         const txData = {
             source: source,
             destination: destination,
@@ -216,10 +216,9 @@ export class TransactionService {
         note?: string,
         txForReplacement?: TransactionEntity,
         freeUnderlying?: boolean,
-        securityFeePerKB?: BN
     ): Promise<[Transaction, MempoolUTXO[]]> {
-        const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
-        const feePerKB = maxBN(feePerKBFromFeeService, securityFeePerKB ?? toBN(0));
+        const feePerKB = await this.transactionFeeService.getFeePerKB();
+        // TODO - add blocksToFill
         const txDataForAmount = {
             source: source,
             destination: destination,

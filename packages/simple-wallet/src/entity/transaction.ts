@@ -104,8 +104,8 @@ export class TransactionEntity {
     @Property()
     numberOfOutputs: number = 0;
 
-    @Property({ type: BNType, nullable: true })
-    securityFeePerKB?: BN;
+    @Property({ nullable: true })
+    blocksToFill?: number;
 }
 
 export enum TransactionStatus {

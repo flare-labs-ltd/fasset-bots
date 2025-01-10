@@ -27,7 +27,7 @@ export interface WriteWalletInterface extends WalletAccountGenerationInterface {
       isFreeUnderlying?: boolean,
       feeSource?: string,
       maxPaymentForFeeSource?: BN,
-      securityFeePerKB?: BN
+      blocksToFill?: number
    ): Promise<number>;
 
    createDeleteAccountTransaction(
