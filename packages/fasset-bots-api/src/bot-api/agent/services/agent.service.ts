@@ -5,7 +5,7 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/NotifierTransports";
-import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
+import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
 import { AgentSettingsDTO, Alerts } from "../../common/AgentSettingsDTO";
@@ -628,6 +628,11 @@ export class AgentService {
                 const air = await AgentInfoReader.create(assetManager, vault.vaultAddress);
                 const lotsPoolBacked = toBN(info.totalPoolCollateralNATWei).div(air.poolCollateral.mintingCollateralRequired(air.lotSizeUBA()));
                 const lotsVaultBacked = toBN(info.totalVaultCollateralWei).div(air.vaultCollateral.mintingCollateralRequired(air.lotSizeUBA()));
+                const del = await cli.context.wNat.delegatesOf(vault.collateralPoolAddress);
+                const delegates: Delegation [] = [];
+                for (let i=0; i < del[0].length; i++) {
+                    delegates.push({address: del[0][i], delegation: (Number(del[1][i])/100).toString()});
+                }
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
                     vaultAmount: formatFixed(toBN(info.totalVaultCollateralWei), Number(await collateralToken.decimals()), { decimals: 3, groupDigits: true, groupSeparator: "," }),
@@ -642,6 +647,7 @@ export class AgentService {
                     lotsPoolBacked: lotsPoolBacked.toString(),
                     lotsVaultBacked: lotsVaultBacked.toString(),
                     handshakeType: Number(info.handshakeType),
+                    delegates: delegates,
                 };
                 allVaults.push(vaultInfo);
             }
@@ -711,5 +717,52 @@ export class AgentService {
     async selfMintFromFreeUnderlying(fAssetSymbol: string, agentVaultAddress: string, lots: string): Promise<void> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.selfMintFromFreeUnderlying(agentVaultAddress, toBN(lots));
+    }
+
+    async getAmountToPayUBAForSelfMint(fAssetSymbol: string, agentVaultAddress: string, numberOfLots: string): Promise<any> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        const { agentBot } = await cli.getAgentBot(agentVaultAddress);
+        // amount to mint
+        const settings = await cli.context.assetManager.getSettings();
+        const agentSettings = await agentBot.agent.getAgentSettings();
+        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const amountUBA = toBN(numberOfLots).mul(lotSize);
+        // pool fee
+        const feeBIPS = toBN(agentSettings.feeBIPS);
+        const poolFeeShareBIPS = toBN(agentSettings.poolFeeShareBIPS);
+        const poolFeeUBA = amountUBA.mul(feeBIPS).divn(MAX_BIPS).mul(poolFeeShareBIPS).divn(MAX_BIPS);
+        // amount to pay
+        const toPayUBA = amountUBA.add(poolFeeUBA);
+        const underlyingAddress = this.secrets.optional(`owner.${cli.context.chainInfo.symbol}.address`);
+        let balanceFormatted = "0";
+        if (underlyingAddress) {
+            const underlyingBalance = await cli.context.wallet.getBalance(underlyingAddress);
+            console.log(formatFixed(toBN(underlyingBalance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  }));
+            //const collateral = { symbol: cli.context.chainInfo.symbol , balance: formatFixed(toBN(underlyingBalance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  }) } as any;
+            //balances.push(collateral);
+            balanceFormatted = formatFixed(toBN(underlyingBalance), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        }
+        const toPayFormatted = formatFixed(toBN(toPayUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        return {amountToPay: toPayFormatted, ownerBalance: balanceFormatted, assetSymbol: cli.context.chainInfo.symbol};
+    }
+
+    async getAmountToPayUBAForSelfMintFromFreeUnderlying(fAssetSymbol: string, agentVaultAddress: string, numberOfLots: string): Promise<any> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        const { agentBot } = await cli.getAgentBot(agentVaultAddress);
+        // amount to mint
+        const settings = await cli.context.assetManager.getSettings();
+        const agentSettings = await agentBot.agent.getAgentSettings();
+        const lotSize = toBN(settings.lotSizeAMG).mul(toBN(settings.assetMintingGranularityUBA));
+        const amountUBA = toBN(numberOfLots).mul(lotSize);
+        // pool fee
+        const feeBIPS = toBN(agentSettings.feeBIPS);
+        const poolFeeShareBIPS = toBN(agentSettings.poolFeeShareBIPS);
+        const poolFeeUBA = amountUBA.mul(feeBIPS).divn(MAX_BIPS).mul(poolFeeShareBIPS).divn(MAX_BIPS);
+        // amount to pay
+        const toPayUBA = amountUBA.add(poolFeeUBA);
+        const agentInfo = await cli.context.assetManager.getAgentInfo(agentVaultAddress);
+        const balanceFormatted = formatFixed(toBN(agentInfo.freeUnderlyingBalanceUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        const toPayFormatted = formatFixed(toBN(toPayUBA), cli.context.chainInfo.decimals, { decimals: cli.context.chainInfo.symbol.includes("XRP") ? 3 : 6, groupDigits: true, groupSeparator: ","  });
+        return {amountToPay: toPayFormatted, ownerBalance: balanceFormatted, assetSymbol: cli.context.chainInfo.symbol};
     }
 }
