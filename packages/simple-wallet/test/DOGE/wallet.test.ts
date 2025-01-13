@@ -8,6 +8,7 @@ import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
+    bothWalletAddresses,
     loop,
     resetMonitoringOnForceExit,
     waitForTxToFinishWithStatus,
@@ -289,5 +290,35 @@ describe("Dogecoin wallet tests", () => {
             transferTransactionIds.push(id1, id2, id3)
         }
         await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
+    });
+
+    it("Should submit and replace transaction with 2 wallets", async () => {
+        const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
+        const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
+        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
+
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
+        await wClient.tryToReplaceByFee(txId, blockHeight);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED_PENDING, txId);
+
+        const { address1Included,  address2Included } = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, txEnt.raw!);
+        expect(address1Included).to.include(true);
+        expect(address2Included).to.include(true);
+        const replacementTxEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
+
+        const { address1Included: address1Included1,  address2Included: address2Included1} = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, replacementTxEnt.raw!);
+        expect(address1Included1).to.include(true);
+        expect(address2Included1).to.include(true);
+
+        await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_REPLACED;
+        });
+        await updateTransactionEntity(wClient.rootEm, txEnt.replaced_by!.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
     });
 });

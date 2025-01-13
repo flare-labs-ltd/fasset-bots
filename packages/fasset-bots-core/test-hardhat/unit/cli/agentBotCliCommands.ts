@@ -588,7 +588,7 @@ describe("AgentBot cli commands unit tests", () => {
         );
     });
 
-    it.only("Should self mint from free underlying", async () => {
+    it("Should self mint from free underlying", async () => {
         const agentBot = await createAgentBot();
         const agent = agentBot.agent;
         const vaultAddress = agent.vaultAddress;
