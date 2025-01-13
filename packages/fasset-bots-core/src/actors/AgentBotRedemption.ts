@@ -357,8 +357,14 @@ export class AgentBotRedemption {
         try {
             const txDbId = await this.bot.locks.underlyingLock(this.agent.underlyingAddress).lockAndRun(async () => {
                 const feeSourceAddress = this.context.chainInfo.useOwnerUnderlyingAddressForPayingFees ? this.bot.ownerUnderlyingAddress : undefined;
-                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined,
-                    { maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)), minFeePerKB: minFeePerKB }, toBN(redemption.lastUnderlyingBlock).toNumber(), toBN(redemption.lastUnderlyingTimestamp), false, feeSourceAddress);
+                return await this.agent.initiatePayment(redemption.paymentAddress, paymentAmount, redemption.paymentReference, undefined, {
+                    maxFee: redemptionFee.muln(maxFeeMultiplier(this.context.chainInfo.chainId)),
+                    minFeePerKB: minFeePerKB,
+                    executeUntilBlock: redemption.lastUnderlyingBlock,
+                    executeUntilTimestamp: redemption.lastUnderlyingTimestamp,
+                    isFreeUnderlying: false,
+                    feeSourceAddress: feeSourceAddress
+                });
             });
             redemption = await this.updateRedemption(rootEm, redemption, {
                 txDbId: txDbId,

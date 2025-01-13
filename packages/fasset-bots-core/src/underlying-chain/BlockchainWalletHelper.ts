@@ -22,21 +22,20 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         targetAddress: string,
         amount: string | number | BN,
         reference: string | null,
-        options?: TransactionOptionsWithFee,
-        executeUntilBlock?: number,
-        executeUntilTimestamp?: BN,
-        isFreeUnderlying?: boolean,
-        feeSource?: string
+        options?: TransactionOptionsWithFee
     ): Promise<number> {
         const value = toBN(amount);
         const fee = undefined;
         const maxFee = options?.maxFee ? toBN(options.maxFee) : undefined;
         const maxPaymentForFeeSource = options?.maxPaymentForFeeSource ? toBN(options.maxPaymentForFeeSource) : undefined;
         const minFeePerKB = options?.minFeePerKB ? toBN(options.minFeePerKB) : undefined;
+        const executeUntilBlock = options?.executeUntilBlock ? toBN(options?.executeUntilBlock).toNumber() : undefined;
+        const executeUntilTimestamp = options?.executeUntilTimestamp ? toBN(options?.executeUntilTimestamp) : undefined;
         const note = reference ? unPrefix0x(reference) : undefined;
         const privateKey = await this.walletKeys.getKey(sourceAddress);
         if (privateKey) {
-            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee, executeUntilBlock, executeUntilTimestamp, isFreeUnderlying, feeSource, maxPaymentForFeeSource, minFeePerKB);
+            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee,
+                executeUntilBlock, executeUntilTimestamp, options?.isFreeUnderlying, options?.feeSourceAddress, maxPaymentForFeeSource, minFeePerKB);
             return dbId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
@@ -141,8 +140,14 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         }
     }
 
-    async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<string> {
-        const id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock, executeUntilTimestamp);
+    async addTransactionAndWaitForItsFinalization(
+        sourceAddress: string,
+        targetAddress: string,
+        amount: string | number | BN,
+        reference: string | null,
+        options?: TransactionOptionsWithFee
+    ): Promise<string> {
+        const id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options);
         const hash = await this.waitForTransactionFinalization(id);
         return hash;
     }
