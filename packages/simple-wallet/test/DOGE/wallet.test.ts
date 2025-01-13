@@ -321,4 +321,34 @@ describe("Dogecoin wallet tests", () => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
         });
     });
+
+    it("Should submit free underlying transaction", async () => {
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, true);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
+        const transactionValue = toBN(transaction.vout[0].value);
+        const transactionFee = toBN(transaction.fees);
+        expect(transactionValue.add(transactionFee).eq(amountToSendSatoshi)).to.be.true;
+
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
+    it("Should submit free underlying transaction with custom fee", async () => {
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const feeInSatoshi = toBNExp(1, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, feeInSatoshi, undefined, undefined, undefined, undefined, true);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
+        expect(toBN(transaction.fees).eq(feeInSatoshi)).to.be.true;
+
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
 });
