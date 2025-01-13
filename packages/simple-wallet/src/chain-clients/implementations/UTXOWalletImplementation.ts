@@ -292,7 +292,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 rbfReplacementFor,
                 txEnt.feeSource,
                 txEnt.isFreeUnderlyingTransaction,
-                txEnt.minFeePerKB
+                txEnt.minFeePerKB,
+                txEnt.maxFee
             );
             const privateKey = await this.walletKeys.getKey(txEnt.source);
             const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
