@@ -331,7 +331,7 @@ export class TransactionUTXOService {
         const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
         const calculatedTxFee = toBN(tr.getFee());
         if (txData.fee && txData.fee.gtn(0)) {
-            const size = Math.ceil(estimateTxSize(this.chainType, tr));
+            const size = Math.ceil(estimateTxSize(this.chainType, tr.inputs.length, tr.outputs.length));
             const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000).divn(1000);
             return txData.replacementFor ? valueBeforeFee.sub(txData.fee).sub(toBN(size).mul(relayFeePerB)) : valueBeforeFee.sub(txData.fee);
         } else if (calculatedTxFee.ltn(0)) {
