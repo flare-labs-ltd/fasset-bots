@@ -49,6 +49,7 @@ let testOrm: ORM;
 
 let fundedWallet: ICreateWalletResponse;
 let feeWallet: ICreateWalletResponse;
+let feePerKBFromFeeService: BN;
 
 describe("UTXOWalletImplementation unit tests", () => {
     let removeConsoleLogging: () => void;
@@ -79,6 +80,8 @@ describe("UTXOWalletImplementation unit tests", () => {
 
         await wClient.walletKeys.addKey(fundedWallet.address, fundedWallet.privateKey);
         await wClient.walletKeys.addKey(feeWallet.address, feeWallet.privateKey);
+
+        feePerKBFromFeeService = await wClient.transactionFeeService.getFeePerKB();
     });
 
     beforeEach(() => {
@@ -157,7 +160,7 @@ describe("UTXOWalletImplementation unit tests", () => {
             createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")]);
 
-        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi, undefined);
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi, feePerKBFromFeeService);
         const fee1 = tr.getFee();
         const fee2 = tr.feePerKb(utxoUtils.getDefaultFeePerKB(ChainType.testBTC).toNumber()).getFee();
         expect(fee1).to.be.eq(fee2);
@@ -175,7 +178,7 @@ describe("UTXOWalletImplementation unit tests", () => {
             createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
             createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, amountToSendSatoshi, "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")]);
 
-        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi, undefined);
+        const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, amountToSendSatoshi, feePerKBFromFeeService);
         const fee1 = tr.getFee();
         const fee2 = tr.feePerKb(feeRateInSatoshi.toNumber()).getFee();
         expect(fee1).to.be.eq(fee2);

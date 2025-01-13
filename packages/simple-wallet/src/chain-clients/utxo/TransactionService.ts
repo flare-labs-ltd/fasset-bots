@@ -134,12 +134,24 @@ export class TransactionService {
             );
         }
 
+        const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
+        const feePerKB = maxBN(feePerKBFromFeeService, minFeePerKB ?? toBN(0));
+        let usingSuggestedFee = false;
+        if (minFeePerKB && minFeePerKB.gtn(0)) {
+            logger.info(`Transaction ${txDbId} received ${feePerKB.toString()} feePerKb; feePerKBFromFeeService is ${feePerKBFromFeeService.toString()}, minFeePerKB is ${minFeePerKB.toString()}`)
+            if (feePerKB.eq(feePerKBFromFeeService) && !feePerKBFromFeeService.eq(minFeePerKB)) {
+                usingSuggestedFee = true;
+            }
+        }
+
         if (feeSource && amountInSatoshi && !freeUnderlying) {
-            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, undefined, minFeePerKB);
+            // TODO - if usingSuggestedFee === true and maxFee is exceeded => us maxFee as fee for tx
+            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, feePerKB, feeInSatoshi, note, txForReplacement);
         } else if (freeUnderlying) {
-            return this.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi!, feeInSatoshi, note, txForReplacement)
+            return this.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi!, feePerKB, feeInSatoshi, note, txForReplacement);
         } else {
-            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, minFeePerKB)
+            // TODO - if usingSuggestedFee === true and maxFee is exceeded => us maxFee as fee for tx
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feePerKB, feeInSatoshi, note, txForReplacement);
         }
     }
 
@@ -148,17 +160,13 @@ export class TransactionService {
         source: string,
         destination: string,
         amountInSatoshi: BN | null,
+        feePerKB: BN,
         feeInSatoshi?: BN,
         note?: string,
-        txForReplacement?: TransactionEntity,
-        minFeePerKB?: BN
+        txForReplacement?: TransactionEntity
     ): Promise<[Transaction, MempoolUTXO[]]> {
         const isPayment = amountInSatoshi != null;
-        const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
-        const feePerKB = maxBN(feePerKBFromFeeService, minFeePerKB ?? toBN(0));
-        if (minFeePerKB) {
-            logger.info(`Transaction ${txDbId} received ${feePerKB.toString()} feePerKb; feePerKBFromFeeService is ${feePerKBFromFeeService.toString()}, minFeePerKB is ${minFeePerKB.toString()}`)
-        }
+
         const txData = {
             source: source,
             destination: destination,
@@ -216,17 +224,12 @@ export class TransactionService {
         feeSource: string,
         destination: string,
         amountInSatoshi: BN,
+        feePerKB: BN,
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
-        freeUnderlying?: boolean,
-        minFeePerKB?: BN
     ): Promise<[Transaction, MempoolUTXO[]]> {
-        const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
-        const feePerKB = maxBN(feePerKBFromFeeService, minFeePerKB ?? toBN(0));
-        if (minFeePerKB && minFeePerKB.gtn(0)) {
-            logger.info(`Transaction ${txDbId} received ${feePerKB.toString()} feePerKb; feePerKBFromFeeService is ${feePerKBFromFeeService.toString()}, minFeePerKB is ${minFeePerKB.toString()}`)
-        }
+
         const txDataForAmount = {
             source: source,
             destination: destination,
@@ -245,13 +248,13 @@ export class TransactionService {
 
         // If fee is lower than dust ignore the fee source
         if (!toBN(baseTransaction.getFee()).gt(getDustAmount(this.chainType))) {
-            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement);
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feePerKB, feeInSatoshi, note, txForReplacement);
         }
 
         const txDataForFee = {
             source: feeSource,
             destination: destination,
-            amount: toBN(baseTransaction.getFee()), //TODO if feeInSatoshi? should it be feeInSatoshi?
+            amount: toBN(baseTransaction.getFee()),
             fee: toBN(0),
             feePerKB: feePerKB,
             useChange: false,
@@ -264,11 +267,10 @@ export class TransactionService {
         // Not enough funds on wallet for handling fees - we use additional UTXOs from main wallet
         if (utxosForFee.length === 0) {
             utxosForFee = await this.utxoService.filteredAndSortedMempoolUTXOs(feeSource);
-            const feeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
             const txData = {
                 source: source,
                 destination: destination,
-                amount: freeUnderlying && !txForReplacement ? amountInSatoshi.sub(feeAmount) : amountInSatoshi,
+                amount: amountInSatoshi,
                 fee: feeInSatoshi,
                 feePerKB: feePerKB,
                 useChange: true,
@@ -284,18 +286,7 @@ export class TransactionService {
 
         const utxosForFeeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
 
-        let tr;
-        if (freeUnderlying && !feeInSatoshi) {
-            const trForFee = await this.createBitcoreTransaction(source, destination, amountInSatoshi, undefined, feePerKB, utxos, true, note);
-            const amount = utxosForFeeAmount.gtn(trForFee.getFee()) || txForReplacement ? amountInSatoshi : amountInSatoshi.sub(toBN(trForFee.getFee() - utxosForFeeAmount.toNumber()));
-            tr = await this.createBitcoreTransaction(source, destination, amount, toBN(trForFee.getFee()), undefined, utxos, true, note);
-        } else {
-            tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
-        }
-
-        if (freeUnderlying && utxosForFeeAmount.ltn(tr.getFee()) && !txForReplacement) {
-            await this.correctFeeForFreeUnderlying(tr, utxos, utxosForFeeAmount, source, destination, amountInSatoshi, note);
-        }
+        let tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, feeInSatoshi, feePerKB, utxos, true, note);
 
         await this.correctFeeForRBF(txDbId, tr, txForReplacement);
 
@@ -313,11 +304,11 @@ export class TransactionService {
         source: string,
         destination: string,
         amountInSatoshi: BN,
+        feePerKB: BN,
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
     ): Promise<[Transaction, MempoolUTXO[]]> {
-        const feePerKB = await this.transactionFeeService.getFeePerKB();
         const amount = txForReplacement ? amountInSatoshi : amountInSatoshi.sub(feeInSatoshi ?? toBN(0));
         const txData = {
             source: source,
