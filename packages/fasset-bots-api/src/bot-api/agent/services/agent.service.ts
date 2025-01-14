@@ -8,7 +8,7 @@ import { PostAlert } from "../../../../../fasset-bots-core/src/utils/notifier/No
 import { APIKey, AgentBalance, AgentCreateResponse, AgentData, AgentSettings, AgentUnderlying, AgentVaultStatus, AllBalances, AllCollaterals, CollateralTemplate, Collaterals, Delegation, ExtendedAgentVaultInfo, UnderlyingAddress, VaultCollaterals, VaultInfo } from "../../common/AgentResponse";
 import * as fs from 'fs';
 import Web3 from "web3";
-import { AgentSettingsDTO, Alerts } from "../../common/AgentSettingsDTO";
+import { AgentSettingsDTO, Alerts, DelegateDTO } from "../../common/AgentSettingsDTO";
 import { allTemplate } from "../../common/VaultTemplates";
 import { SecretsFile } from "../../../../../fasset-bots-core/src/config/config-files/SecretsFile";
 import { EntityManager } from "@mikro-orm/core";
@@ -147,6 +147,13 @@ export class AgentService {
     async delegatePoolCollateral(fAssetSymbol: string, agentVaultAddress: string, recipientAddress: string, bips: string): Promise<void> {
         const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
         await cli.delegatePoolCollateral(agentVaultAddress, recipientAddress, bips);
+    }
+
+    async delegatePoolCollateralArray(fAssetSymbol: string, agentVaultAddress: string, delegates: DelegateDTO[]): Promise<void> {
+        const cli = await AgentBotCommands.create(this.secrets, FASSET_BOT_CONFIG, fAssetSymbol);
+        for (const delegation of delegates) {
+            await cli.delegatePoolCollateral(agentVaultAddress, delegation.address, delegation.bips);
+        }
     }
 
     async undelegatePoolCollateral(fAssetSymbol: string, agentVaultAddress: string): Promise<void> {
@@ -630,8 +637,10 @@ export class AgentService {
                 const lotsVaultBacked = toBN(info.totalVaultCollateralWei).div(air.vaultCollateral.mintingCollateralRequired(air.lotSizeUBA()));
                 const del = await cli.context.wNat.delegatesOf(vault.collateralPoolAddress);
                 const delegates: Delegation [] = [];
+                let delegationPercentage = 0;
                 for (let i=0; i < del[0].length; i++) {
                     delegates.push({address: del[0][i], delegation: (Number(del[1][i])/100).toString()});
+                    delegationPercentage = delegationPercentage + (Number(del[1][i])/100);
                 }
                 const vaultInfo: VaultInfo = { address: vault.vaultAddress, updating: updating, status: info.publiclyAvailable, mintedlots: mintedLots.toString(),
                     freeLots: info.freeCollateralLots, vaultCR: vaultCR.toString(), poolCR: poolCR.toString(), mintedAmount: mintedAmount.toString(),
@@ -648,6 +657,7 @@ export class AgentService {
                     lotsVaultBacked: lotsVaultBacked.toString(),
                     handshakeType: Number(info.handshakeType),
                     delegates: delegates,
+                    delegationPercentage: delegationPercentage.toString(),
                 };
                 allVaults.push(vaultInfo);
             }

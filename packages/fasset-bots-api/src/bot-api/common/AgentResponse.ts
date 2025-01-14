@@ -104,6 +104,7 @@ export interface VaultInfo {
     lotsVaultBacked: string;
     handshakeType: number;
     delegates: Delegation[];
+    delegationPercentage: string;
 }
 
 export interface AllVaults {
