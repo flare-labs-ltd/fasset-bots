@@ -167,12 +167,20 @@ export function fullStackTrace(error: Error, skipDepth: number = 0): string {
    return originalStack.trimEnd() + "\n" + filteredStackLines.join("\n");
 }
 
-export function estimateTxSize(chainType: ChainType, tr: Transaction, note?: string) {
+export function estimateTxSize(chainType: ChainType, nInputs: number, nOutputs: number, note?: string) {
    const noteSize = note ? Buffer.byteLength(note, 'utf8') : 0;
    if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
-      return tr.inputs.length * UTXO_INPUT_SIZE + tr.outputs.length * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE + noteSize;
+      return nInputs * UTXO_INPUT_SIZE + nOutputs * UTXO_OUTPUT_SIZE + UTXO_OVERHEAD_SIZE + noteSize;
    } else {
-      return tr.inputs.length * UTXO_INPUT_SIZE_SEGWIT + tr.outputs.length * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT + noteSize;
+      return nInputs * UTXO_INPUT_SIZE_SEGWIT + nOutputs * UTXO_OUTPUT_SIZE_SEGWIT + UTXO_OVERHEAD_SIZE_SEGWIT + noteSize;
+   }
+}
+
+export function getOutputSize(chainType: ChainType) {
+   if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
+      return 34;
+   } else {
+      return 31;
    }
 }
 

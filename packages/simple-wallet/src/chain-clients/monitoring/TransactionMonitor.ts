@@ -113,7 +113,7 @@ export class TransactionMonitor implements ITransactionMonitor {
         const monitoringState = await fetchMonitoringState(this.rootEm, this.chainType);
         if (monitoringState == null) return null;
         const elapsed = now - monitoringState.lastPingInTimestamp.toNumber();
-        if (elapsed > MONITOR_PING_INTERVAL) return null;
+        if (elapsed > MONITOR_EXPIRATION_INTERVAL) return null;
         return monitoringState.processOwner;
     }
 

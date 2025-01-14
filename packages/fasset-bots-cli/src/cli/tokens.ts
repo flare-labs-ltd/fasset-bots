@@ -87,7 +87,11 @@ program
                 process.on("SIGHUP", () => {
                     stopBot().then().catch(logger.error);
                 });
-                const txHash = await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                const txDbId = await wallet.addTransaction(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                const txHash = await wallet.waitForTransactionFinalization(txDbId, message => {
+                    logger.info(message);
+                    console.log(message);
+                });
                 console.info(`Payment transaction ${txHash}. Check transaction status in database or explorer.`);
             } finally {
                 await orm.close();

@@ -334,13 +334,11 @@ export class Agent {
      * @param paymentAmount amount to be transferred
      * @param paymentReference payment reference
      * @param options instance of TransactionOptionsWithFee
-     * @param untilBlockNumber
-     * @param untilBlockTimestamp
      * @returns transaction hash
      */
-    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
+    async performPayment(paymentDestinationAddress: string, paymentAmount: BNish, paymentReference: string | null = null, paymentSourceAddress: string = this.underlyingAddress, options?: TransactionOptionsWithFee): Promise<string> {
         await checkUnderlyingFunds(this.context, paymentSourceAddress, paymentAmount, paymentDestinationAddress);
-        return await this.wallet.addTransactionAndWaitForItsFinalization(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp);
+        return await this.wallet.addTransactionAndWaitForItsFinalization(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 
     /**
@@ -350,10 +348,6 @@ export class Agent {
      * @param paymentReference payment reference
      * @param paymentSourceAddress
      * @param options instance of TransactionOptionsWithFee
-     * @param untilBlockNumber
-     * @param untilBlockTimestamp
-     * @param feeSourceAddress
-     * @param isFreeUnderlying - if true, fee will be allocated from amount
      * @returns transaction id from local database
      */
     async initiatePayment(
@@ -361,14 +355,10 @@ export class Agent {
         paymentAmount: BNish,
         paymentReference: string | null = null,
         paymentSourceAddress: string = this.underlyingAddress,
-        options?: TransactionOptionsWithFee,
-        untilBlockNumber?: number,
-        untilBlockTimestamp?: BN,
-        isFreeUnderlying?: boolean,
-        feeSourceAddress?: string,
+        options?: TransactionOptionsWithFee
     ): Promise<number> {
         // No check for underlying payment as checks were already performed during redemption, withdrawal and top up initiation. Other transfers are using function performPayment.
-        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options, untilBlockNumber, untilBlockTimestamp, isFreeUnderlying, feeSourceAddress);
+        return await this.wallet.addTransaction(paymentSourceAddress, paymentDestinationAddress, paymentAmount, paymentReference, options);
     }
 
     /**

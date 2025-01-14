@@ -20,6 +20,10 @@ export interface TransactionOptionsWithFee {
     gasPrice?: NumberLike;
     gasLimit?: NumberLike;
     minFeePerKB?: NumberLike;
+    executeUntilBlock?: NumberLike;
+    executeUntilTimestamp?: NumberLike;
+    isFreeUnderlying?: boolean;
+    feeSourceAddress?: string;
 }
 
 export interface IBlockChainWallet {
@@ -32,11 +36,7 @@ export interface IBlockChainWallet {
         targetAddress: string,
         amount: NumberLike,
         reference: string | null,
-        options?: TransactionOptionsWithFee,
-        executeUntilBlock?: number,
-        executeUntilTimestamp?: BN,
-        isFreeUnderlying?: boolean,
-        feeSourceAddress?: string
+        options?: TransactionOptionsWithFee
     ): Promise<number>;
 
     // Add a generic transaction from a set of source addresses to a set of target addresses.
@@ -74,9 +74,7 @@ export interface IBlockChainWallet {
         targetAddress: string,
         amount: NumberLike,
         reference: string | null,
-        options?: TransactionOptionsWithFee,
-        executeUntilBlock?: number,
-        executeUntilTimestamp?: BN,
+        options?: TransactionOptionsWithFee
     ): Promise<string>;
 
     // Waits for transaction to reach finalize status (TX_SUCCESS, TX_FAILED, TX_REPLACED?)

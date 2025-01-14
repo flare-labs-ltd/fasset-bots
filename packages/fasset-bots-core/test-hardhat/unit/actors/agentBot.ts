@@ -605,8 +605,7 @@ describe("Agent bot unit tests", () => {
         const latestBlock = await latestBlockTimestampBN();
         const paymentAmount = toBN(100);
         await fundUnderlying(context, agentBot.agent.underlyingAddress, paymentAmount);
-        const txDbId = await agentBot.agent.initiatePayment("SomeRandomUnderlyingAddress", paymentAmount, resp.paymentReference,
-            undefined, undefined, undefined, undefined, true);
+        const txDbId = await agentBot.agent.initiatePayment("SomeRandomUnderlyingAddress", paymentAmount, resp.paymentReference, undefined, { isFreeUnderlying: true });
         await agentBot.underlyingManagement.createAgentUnderlyingPayment(orm.em, txDbId, AgentUnderlyingPaymentType.WITHDRAWAL, AgentUnderlyingPaymentState.PAID, undefined, latestBlock);
         const latest = await agentBot.underlyingManagement.getLatestOpenUnderlyingWithdrawal(orm.em, agentBot.agent.vaultAddress);
         if (latest === null) throw Error;

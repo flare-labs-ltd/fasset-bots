@@ -118,9 +118,9 @@ export class Minter {
         return await this.assetManager.collateralReservationFee(lots);
     }
 
-    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, untilBlockNumber?: number, untilBlockTimestamp?: BN): Promise<string> {
+    async performPayment(paymentAddress: string, paymentAmount: BNish, paymentReference: string | null = null, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<string> {
         await checkUnderlyingFunds(this.context, this.underlyingAddress, paymentAmount, paymentAddress);
-        return this.wallet.addTransactionAndWaitForItsFinalization(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, undefined, untilBlockNumber, untilBlockTimestamp);
+        return this.wallet.addTransactionAndWaitForItsFinalization(this.underlyingAddress, paymentAddress, paymentAmount, paymentReference, { executeUntilBlock, executeUntilTimestamp });
     }
 
     async waitForEvent(contract: Truffle.ContractInstance, fromBlock: number, maxWaitMs: number, predicate: (event: EvmEvent) => boolean) {
