@@ -8,7 +8,7 @@ import { Agent } from "../fasset/Agent";
 import { AttestationHelperError, attestationProved } from "../underlying-chain/AttestationHelper";
 import { AttestationNotProved } from "../underlying-chain/interfaces/IFlareDataConnectorClient";
 import { squashSpace } from "../utils/formatting";
-import { assertNotNull, BN_ZERO, messageForExpectedError, toBN } from "../utils/helpers";
+import { assertNotNull, BN_ZERO, messageForExpectedError, requireNotNull, toBN } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
@@ -94,6 +94,42 @@ export class AgentBotUnderlyingManagement {
         return true;
     }
 
+    /**
+     * Tries to top up AgentBot's underlying account from owner's. It notifies about successful and unsuccessful try.
+     * It also checks owner's underlying balance and notifies when it is too low.
+     * @param amount amount to transfer from owner's underlying address to agent's underlying address
+     * @param agentVault agent's vault address
+     */
+    async startSelfMinting(em: EM, lots: BN): Promise<boolean> {
+        const amount = await this.agent.getSelfMintPaymentAmount(lots);
+        const amountF = await this.tokens.underlying.format(amount);
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to pay for self-minting to underlying address ${this.agent.underlyingAddress}
+            from owner's underlying address ${this.ownerUnderlyingAddress}.`);
+        const hasEnoughBalance = await this.checkForLowOwnerUnderlyingBalance();
+        if (!hasEnoughBalance) {
+            logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            return false;
+        }
+        // check and log the fee
+        const estimatedFee = toBN(await this.context.wallet.getTransactionFee({
+            source: this.ownerUnderlyingAddress,
+            destination: this.agent.underlyingAddress,
+            amount: amount,
+            isPayment: true
+        }));
+        logger.info(`Agent's ${this.agent.vaultAddress} calculated estimated underlying fee is ${estimatedFee.toString()}.`);
+        // start payment
+        const txDbId = await this.bot.locks.underlyingLock(this.ownerUnderlyingAddress).lockAndRun(async () => {
+            return await this.agent.initiateSelfMintPayment(amount, this.ownerUnderlyingAddress);
+        });
+        await this.createAgentUnderlyingPayment(em, txDbId, AgentUnderlyingPaymentType.SELF_MINT, AgentUnderlyingPaymentState.PAID, undefined, undefined, lots);
+        logger.info(squashSpace`Agent ${this.agent.vaultAddress}'s owner initiated underlying ${AgentUnderlyingPaymentType.SELF_MINT} payment
+            to ${this.agent.underlyingAddress} with amount ${amountF} from ${this.ownerUnderlyingAddress} with transactions database id  ${txDbId}.`);
+        await this.checkForLowOwnerUnderlyingBalance();
+        return true;
+    }
+
     async checkForLowOwnerUnderlyingBalance(): Promise<boolean> {
         const ownerUnderlyingBalance = await this.context.wallet.getBalance(this.ownerUnderlyingAddress);
         const expectedBalance = this.agentBotSettings.recommendedOwnerUnderlyingBalance;
@@ -117,7 +153,7 @@ export class AgentBotUnderlyingManagement {
      * @param txHash transaction hash
      * @param type enum for underlying payment type from entity AgentUnderlyingPayment
      */
-    async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string, announcedAt?: BN): Promise<void> {
+    async createAgentUnderlyingPayment(rootEm: EM, txDbId: number, type: AgentUnderlyingPaymentType, paymentState: AgentUnderlyingPaymentState, txHash?: string, announcedAt?: BN, selfMintLots?: BN): Promise<void> {
         await this.bot.runInTransaction(rootEm, async (em) => {
             em.create(
                 AgentUnderlyingPayment,
@@ -127,7 +163,8 @@ export class AgentBotUnderlyingManagement {
                     txHash: txHash ?? null,
                     txDbId: txDbId,
                     type: type,
-                    announcedAtTimestamp: announcedAt ?? BN_ZERO
+                    announcedAtTimestamp: announcedAt ?? BN_ZERO,
+                    selfMintLots: selfMintLots,
                 } as RequiredEntityData<AgentUnderlyingPayment>,
                 { persist: true }
             );
@@ -223,7 +260,7 @@ export class AgentBotUnderlyingManagement {
                     await this.bot.updateAgentEntity(rootEm, async (agentEnt) => {
                         agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                     });
-                } else if (underlyingPayment.type === AgentUnderlyingPaymentType.TOP_UP) {
+                } else if (underlyingPayment.type === AgentUnderlyingPaymentType.TOP_UP || underlyingPayment.type === AgentUnderlyingPaymentType.SELF_MINT) {
                     await this.cancelTopUpPayment(rootEm, underlyingPayment);
                 }
             }
@@ -246,7 +283,7 @@ export class AgentBotUnderlyingManagement {
                             agentEnt.underlyingWithdrawalWaitingForCancelation = true;
                         });
                     }
-                } else if (underlyingPayment.type === AgentUnderlyingPaymentType.TOP_UP) {
+                } else if (underlyingPayment.type === AgentUnderlyingPaymentType.TOP_UP || underlyingPayment.type === AgentUnderlyingPaymentType.SELF_MINT) {
                     await this.cancelTopUpPayment(rootEm, underlyingPayment);
                 }
             }
@@ -260,8 +297,9 @@ export class AgentBotUnderlyingManagement {
     async requestPaymentProof(rootEm: EM, underlyingPayment: Readonly<AgentUnderlyingPayment>): Promise<void> {
         logger.info(`Agent ${this.agent.vaultAddress} is sending request for payment proof for underlying ${underlyingPayment.type} payment ${underlyingPayment.txHash}.`);
         try {
-            const sourceAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? null : this.agent.underlyingAddress;
-            const tragetAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP ? this.agent.underlyingAddress : null;
+            const paymentToVaultUnderlyingAddress = underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP || underlyingPayment.type == AgentUnderlyingPaymentType.SELF_MINT;
+            const sourceAddress = paymentToVaultUnderlyingAddress ? null : this.agent.underlyingAddress;
+            const tragetAddress = paymentToVaultUnderlyingAddress ? this.agent.underlyingAddress : null;
             const request = await this.bot.locks.nativeChainLock(this.bot.requestSubmitterAddress()).lockAndRun(async () => {
                 assertNotNull(underlyingPayment.txHash);
                 return await this.context.attestationProvider.requestPaymentProof(underlyingPayment.txHash, sourceAddress, tragetAddress);
@@ -307,6 +345,9 @@ export class AgentBotUnderlyingManagement {
                 if (underlyingPayment.type == AgentUnderlyingPaymentType.TOP_UP) {
                     await this.context.assetManager.confirmTopupPayment(web3DeepNormalize(proof), this.agent.vaultAddress,
                         { from: this.agent.owner.workAddress });
+                    await this.sendUnderlyingPaymentConfirmed(rootEm, underlyingPayment, proof);
+                } if (underlyingPayment.type == AgentUnderlyingPaymentType.SELF_MINT) {
+                    await this.bot.minting.executeSelfMinting(proof, requireNotNull(underlyingPayment.selfMintLots));
                     await this.sendUnderlyingPaymentConfirmed(rootEm, underlyingPayment, proof);
                 } else {
                     const allowedAt = confirmationAllowedAt(underlyingPayment.announcedAtTimestamp, await this.bot.agent.assetManager.getSettings())

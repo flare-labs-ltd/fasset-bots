@@ -21,7 +21,7 @@ import { logger } from "../utils";
 import { EventArgs } from "../utils/events/common";
 import { ContractWithEvents, findRequiredEvent, requiredEventArgs } from "../utils/events/truffle";
 import { checkUnderlyingFunds, getAgentSettings } from "../utils/fasset-helpers";
-import { BNish, expectErrors, toBN } from "../utils/helpers";
+import { BNish, expectErrors, MAX_BIPS, toBN } from "../utils/helpers";
 import { artifacts } from "../utils/web3";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentInfo, AgentSettings, AssetManagerSettings, CollateralClass, CollateralType } from "./AssetManagerTypes";
@@ -120,7 +120,6 @@ export class Agent {
      * @param index needed/used in case pool token suffix is already taken
      * @returns instance of Agent
      */
-
     static async create(ctx: IAssetAgentContext, owner: OwnerAddressPair, addressValidityProof: AddressValidity.Proof, agentSettings: AgentSettings): Promise<Agent> {
         // create agent
         const response = await ctx.assetManager.createAgentVault(
@@ -278,6 +277,33 @@ export class Agent {
      */
     async initiateTopupPayment(amount: BNish, underlyingAddress: string): Promise<number> {
         return await this.initiatePayment(this.underlyingAddress, amount, PaymentReference.topup(this.agentVault.address), underlyingAddress);
+    }
+
+    /**
+     * Initiates self-mint underlying payment.
+     * @param amount amount to be topped up
+     * @param underlyingAddress source underlying address
+     * @returns transaction id from local database
+     */
+    async initiateSelfMintPayment(amount: BNish, underlyingAddress: string): Promise<number> {
+        return await this.initiatePayment(this.underlyingAddress, amount, PaymentReference.selfMint(this.agentVault.address), underlyingAddress);
+    }
+
+    /**
+     * The amount of underlying payment required to mint `lots` lots (in UBA).
+     * Includes minted amount and pool fee share.
+     */
+    async getSelfMintPaymentAmount(lots: BNish) {
+        const lotSize = await this.context.assetManager.lotSize();
+        const agentSettings = await this.getAgentSettings();
+        // amount to mint
+        const amountUBA = toBN(lots).mul(lotSize);
+        // pool fee
+        const feeBIPS = toBN(agentSettings.feeBIPS);
+        const poolFeeShareBIPS = toBN(agentSettings.poolFeeShareBIPS);
+        const poolFeeUBA = amountUBA.mul(feeBIPS).divn(MAX_BIPS).mul(poolFeeShareBIPS).divn(MAX_BIPS);
+        // amount to pay
+        return amountUBA.add(poolFeeUBA);
     }
 
     /**

@@ -1,4 +1,4 @@
-import { ConfirmedBlockHeightExists } from "@flarenetwork/state-connector-protocol";
+import { ConfirmedBlockHeightExists, Payment } from "@flarenetwork/state-connector-protocol";
 import { RequiredEntityData } from "@mikro-orm/core";
 import BN from "bn.js";
 import { CollateralReservationDeleted, CollateralReserved, MintingExecuted, SelfMint } from "../../typechain-truffle/IIAssetManager";
@@ -15,7 +15,7 @@ import { logger } from "../utils/logger";
 import { AgentNotifier } from "../utils/notifier/AgentNotifier";
 import { web3DeepNormalize } from "../utils/web3normalize";
 import { AgentBot } from "./AgentBot";
-import { formatArgs } from "../utils/formatting";
+import { formatArgs, squashSpace } from "../utils/formatting";
 import { lastFinalizedUnderlyingBlock } from "../utils";
 
 type MintingId = { id: number } | { requestId: BN };
@@ -380,6 +380,30 @@ export class AgentBotMinting {
                     proofRequestRound: undefined,
                     proofRequestData: undefined,
                 });
+            }
+        }
+    }
+
+    async executeSelfMinting(proof: Payment.Proof, lots: BN) {
+        try {
+            await this.context.assetManager.selfMint(web3DeepNormalize(proof), this.agent.vaultAddress, lots, { from: this.agent.owner.workAddress });
+        } catch (error) {
+            if (errorIncluded(error, ["self-mint payment too small"])) {
+                const lotSizeUBA = await this.context.assetManager.lotSize();
+                const agentInfo = await this.bot.agent.getAgentInfo();
+                const poolFeeBIPS = toBN(agentInfo.feeBIPS).mul(toBN(agentInfo.poolFeeShareBIPS)).addn(MAX_BIPS - 1).divn(MAX_BIPS);    // round up
+                const maxMintLots = toBN(proof.data.responseBody.receivedAmount).muln(MAX_BIPS).div(poolFeeBIPS.addn(MAX_BIPS)).div(lotSizeUBA);
+                if (maxMintLots.gte(lots)) throw error; // not size issue or cannot fix
+                await this.notifier.sendSelfMintPaymentTooSmall(String(lots), String(maxMintLots));
+                await this.executeSelfMinting(proof, maxMintLots);
+            } else if (errorIncluded(error, ["not enough free collateral"])) {
+                const agentInfo = await this.bot.agent.getAgentInfo();
+                const freeCollateralLots = toBN(agentInfo.freeCollateralLots);
+                if (freeCollateralLots.gte(lots)) throw error; // not size issue or cannot fix
+                await this.notifier.sendSelfMintPaymentTooSmall(String(lots), String(freeCollateralLots));
+                await this.executeSelfMinting(proof, freeCollateralLots);
+            } else {
+                throw error;
             }
         }
     }

@@ -766,23 +766,15 @@ export class AgentBotCommands {
     async selfMint(agentVault: string, numberOfLots: BN): Promise<void> {
         logger.info(`Agent ${agentVault} is trying self mint ${numberOfLots} lots.`);
         await this.notifierFor(agentVault).sendSelfMintStarted(numberOfLots.toString());
+        // check if enough free collateral
         const { agentBot } = await this.getAgentBot(agentVault);
         const freeCollateralLots = toBN((await agentBot.agent.getAgentInfo()).freeCollateralLots);
         if (freeCollateralLots.lt(numberOfLots)) {
             logger.error(`Cannot self mint. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots. But it was asked for ${numberOfLots}.`);
             throw new CommandLineError(`Cannot self mint. Agent ${agentVault} has available ${freeCollateralLots.toString()} lots.`);
         }
-        const agent = agentBot.agent;
-        // amount to pay
-        const toPayUBA = await this.getAmountToPayUBAForSelfMint(agent, numberOfLots);
-        // send transaction
-        await this.notifierFor(agentVault).sendSelfMintPerformingPayment(numberOfLots.toString());
-        const transactionHash = await agent.performPayment(agent.underlyingAddress, toPayUBA, PaymentReference.selfMint(agentVault), this.ownerUnderlyingAddress)
-        console.log(`Transaction was accepted ${transactionHash}. Waiting for its finalization ...`);
-        logger.info(`Agent ${agentVault} is waiting for transaction ${transactionHash} finalization ...`);
-        await this.context.blockchainIndexer.waitForUnderlyingTransactionFinalization(transactionHash);
-        const proof = await this.proveSelfMintPayment(agentVault, transactionHash, numberOfLots.toString());
-        await this.executeSelfMinting(agentVault, transactionHash, proof, numberOfLots.toString());
+        // start
+        await agentBot.underlyingManagement.startSelfMinting(this.orm.em, numberOfLots);
     }
 
     /**
@@ -800,7 +792,7 @@ export class AgentBotCommands {
             throw new CommandLineError(`Cannot self mint from free underlying. Agent ${agentVault} has available ${freeCollateralLots} lots of collateral.`);
         }
         const agent = agentBot.agent;
-        const toPayUBA = await this.getAmountToPayUBAForSelfMint(agent, numberOfLots);
+        const toPayUBA = await agent.getSelfMintPaymentAmount(numberOfLots);
         const freeUnderlying = await agentBot.getSafeToWithdrawUnderlying();
         if (freeUnderlying.lt(toPayUBA)) {
             const currency = await Currencies.fassetUnderlyingToken(this.context);
@@ -812,42 +804,6 @@ export class AgentBotCommands {
         console.log("Done");
         await this.notifierFor(agentVault).sendSelfMintUnderlyingExecuted(numberOfLots.toString());
         logger.info(`Agent ${agentVault} executed minting from free underlying.`);
-    }
-
-    async proveSelfMintPayment(agentVault: string, transactionHash: string, numberOfLots: string): Promise<Payment.Proof> {
-        const { agentBot } = await this.getAgentBot(agentVault);
-        console.log(`Waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress} ...`);
-        logger.info(`Agent ${agentVault} is waiting for proof of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress}.`);
-        await this.notifierFor(agentVault).sendSelfMintProvingPayment(numberOfLots, transactionHash);
-        const proof = await agentBot.context.attestationProvider.provePayment(transactionHash, this.ownerUnderlyingAddress, agentBot.agent.underlyingAddress);
-        console.log(`Received proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress}.`);
-        logger.info(`Received proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}, ${this.ownerUnderlyingAddress} and ${agentBot.agent.underlyingAddress}.`);
-        return proof;
-    }
-
-    async executeSelfMinting(agentVault: string, transactionHash: string, proof: Payment.Proof, numberOfLots: string): Promise<void> {
-        const { agentBot } = await this.getAgentBot(agentVault);
-        console.log(`Executing payment...`);
-        logger.info(`Agent ${agentVault} is executing minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
-        const res = await this.context.assetManager.selfMint(web3DeepNormalize(proof), agentVault, numberOfLots, { from: agentBot.agent.owner.workAddress });
-        requiredEventArgs(res, 'SelfMint');
-        await this.notifierFor(agentVault).sendSelfMintExecuted(numberOfLots);
-        console.log(`Agent ${agentVault} executed minting.`);
-        logger.info(`Agent ${agentVault} executed minting with proof ${JSON.stringify(web3DeepNormalize(proof))} of underlying payment transaction ${transactionHash}.`);
-    }
-
-    private async getAmountToPayUBAForSelfMint(agent: Agent, numberOfLots: BN) {
-        const agentSettings = await agent.getAgentSettings();
-        // amount to mint
-        const lotSize = toBN(await this.infoBot().getLotSizeBN());
-        const amountUBA = numberOfLots.mul(lotSize);
-        // pool fee
-        const feeBIPS = toBN(agentSettings.feeBIPS);
-        const poolFeeShareBIPS = toBN(agentSettings.poolFeeShareBIPS);
-        const poolFeeUBA = amountUBA.mul(feeBIPS).divn(MAX_BIPS).mul(poolFeeShareBIPS).divn(MAX_BIPS);
-        // amount to pay
-        const toPayUBA = amountUBA.add(poolFeeUBA);
-        return toPayUBA;
     }
 
     private async cancelUnderlyingWithdrawalAnnouncement(agentBot: AgentBot, agentVault: string) {

@@ -49,6 +49,7 @@ export enum AgentUnderlyingPaymentState {
 
 export enum AgentUnderlyingPaymentType {
     TOP_UP = "top_up",
+    SELF_MINT = "self_mint",
     WITHDRAWAL = "withdrawal",
 }
 
