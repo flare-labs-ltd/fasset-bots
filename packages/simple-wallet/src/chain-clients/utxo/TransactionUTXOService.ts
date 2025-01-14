@@ -4,17 +4,17 @@ import {
     transactional,
     transformUTXOToTxInputEntity
 } from "../../db/dbutils";
-import BN from "bn.js";
-import {TransactionEntity, TransactionStatus} from "../../entity/transaction";
+import BN, { min } from "bn.js";
+import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import {
     ChainType,
     MEMPOOL_CHAIN_LENGTH_LIMIT,
 } from "../../utils/constants";
-import {logger} from "../../utils/logger";
-import {EntityManager, Loaded, RequiredEntityData} from "@mikro-orm/core";
-import {FeeStatus} from "./TransactionFeeService";
-import {toBN} from "../../utils/bnutils";
-import {TransactionInputEntity} from "../../entity/transactionInput";
+import { logger } from "../../utils/logger";
+import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
+import { FeeStatus } from "./TransactionFeeService";
+import { toBN } from "../../utils/bnutils";
+import { TransactionInputEntity } from "../../entity/transactionInput";
 import {
     getDustAmount,
     getMinimumUTXOValue,
@@ -27,9 +27,9 @@ import {
     UTXORawTransactionInput,
     UTXOVinResponse
 } from "../../interfaces/IBlockchainAPI";
-import {UTXOBlockchainAPI} from "../../blockchain-apis/UTXOBlockchainAPI";
-import {IUtxoWalletServices} from "./IUtxoWalletServices";
-import { between, estimateTxSize } from "../../utils/utils";
+import { UTXOBlockchainAPI } from "../../blockchain-apis/UTXOBlockchainAPI";
+import { IUtxoWalletServices } from "./IUtxoWalletServices";
+import { between } from "../../utils/utils";
 
 export interface TransactionData {
     source: string;
@@ -318,11 +318,12 @@ export class TransactionUTXOService {
 
     private async calculateChangeValue(txData: TransactionData, utxos: MempoolUTXO[]): Promise<BN> {
         const transactionService = this.services.transactionService;
+        const fee = txData.replacementFor ? undefined : txData.fee;
         const tr = await transactionService.createBitcoreTransaction(
             txData.source,
             txData.destination,
             txData.amount,
-            txData.fee,
+            fee,
             txData.feePerKB,
             utxos,
             txData.useChange,
@@ -331,9 +332,11 @@ export class TransactionUTXOService {
         const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
         const calculatedTxFee = toBN(tr.getFee());
         if (txData.fee && txData.fee.gtn(0)) {
-            const size = Math.ceil(estimateTxSize(this.chainType, tr.inputs.length, tr.outputs.length));
-            const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000).divn(1000);
-            return txData.replacementFor ? valueBeforeFee.sub(txData.fee).sub(toBN(size).mul(relayFeePerB)) : valueBeforeFee.sub(txData.fee);
+            const size = await this.services.transactionService.calculateTransactionSize(tr, txData.source);
+            const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
+            const relayFee = toBN(size).mul(relayFeePerB);
+            // If we're doing rbf we need to pay fee >= ogFee and feePerKB >= ogFeePerKB
+            return txData.replacementFor ? min(valueBeforeFee.sub(txData.fee).sub(relayFee), valueBeforeFee.sub(relayFee).sub(toBN(tr.getFee()))) : valueBeforeFee.sub(txData.fee);
         } else if (calculatedTxFee.ltn(0)) {
             return toBN(-10); // return any negative value
         } else {
@@ -342,7 +345,10 @@ export class TransactionUTXOService {
     }
 
     private async getTransactionEntityByHash(txHash: string) {
-        let txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs"] });
+        let txEnt = await this.rootEm.findOne(TransactionEntity, {
+            transactionHash: txHash,
+            chainType: this.chainType
+        }, {populate: ["inputs"]});
         if (!txEnt) {
             logger.info(`Transaction with hash ${txHash} not in db, fetching it from API`);
             const tr = await this.blockchainAPI.getTransaction(txHash);
@@ -369,7 +375,10 @@ export class TransactionUTXOService {
                 });
             }
 
-            txEnt = await this.rootEm.findOne(TransactionEntity, { transactionHash: txHash, chainType: this.chainType }, { populate: ["inputs"] });
+            txEnt = await this.rootEm.findOne(TransactionEntity, {
+                transactionHash: txHash,
+                chainType: this.chainType
+            }, {populate: ["inputs"]});
         }
 
         return txEnt;

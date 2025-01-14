@@ -298,7 +298,7 @@ describe("Dogecoin wallet tests", () => {
         await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
 
         const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
-        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
 
         const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();

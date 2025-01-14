@@ -5,13 +5,10 @@ import { addConsoleTransportForTests, createNote } from "../test-util/common_uti
 import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
-import BN from "bn.js";
 import { createAndPersistTransactionEntity, createUTXO } from "../test-util/entity_utils";
 import { expect } from "chai";
 import { TransactionUTXOService } from "../../src/chain-clients/utxo/TransactionUTXOService";
-import { estimateTxSize } from "../../src/utils/utils";
 import { getMinAmountToSend, getRelayFeePerKB } from "../../src/chain-clients/utxo/UTXOUtils";
-import { ChainType } from "../../src/utils/constants";
 
 const walletSecret = "wallet_secret";
 const amountToSendSatoshi = toBN(10000);
@@ -249,7 +246,7 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const feeInSatoshi = toBN(307);
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(2, fundedAddress, targetAddress, getMinAmountToSend(wClient.chainType), false, feePerKB, feeInSatoshi, undefined, undefined, txEnt);
-        const vSize = Math.ceil(estimateTxSize(ChainType.testBTC, tr.inputs.length, tr.outputs.length));
+        const vSize = await wClient.transactionService.calculateTransactionSize(tr, fundedAddress);
         const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
         expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
         expect(tr.inputs.map(t => t.prevTxId.toString('hex'))).to.have.members(inputs.map(t => t.transactionHash));
@@ -286,7 +283,7 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const feeInSatoshi = toBN(1400);
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(2, fundedAddress, targetAddress, getMinAmountToSend(wClient.chainType), false, feePerKB, feeInSatoshi, undefined, undefined, txEnt);
-        const vSize = Math.ceil(estimateTxSize(ChainType.testBTC, tr.inputs.length, tr.outputs.length));
+        const vSize = await wClient.transactionService.calculateTransactionSize(tr, fundedAddress);
         const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
         expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
         expect(tr.inputs.length).to.be.gt(inputs.length);
