@@ -63,8 +63,8 @@ export class DexFtsoPriceSyncer {
         while (true) {
             try {
                 await this.syncDex(config, greedySpend)
-            } catch (error) {
-                console.error("Error runninx DexFtsoPriceSyncer bot", error)
+            } catch (error: any) {
+                console.error("Error runninx DexFtsoPriceSyncer bot", error?.stack ?? error)
             }
             await sleep(DEX_SYNC_SLEEP_MS)
         }

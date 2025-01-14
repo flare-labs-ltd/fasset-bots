@@ -103,7 +103,7 @@ program
     })
 
 program.parseAsync(process.argv).catch((error) => {
-    console.error("Uncaught error in liquidator", error);
+    console.error("Uncaught error in liquidator", error?.stack ?? error);
     process.exit(1);
 });
 

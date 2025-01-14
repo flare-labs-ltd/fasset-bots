@@ -271,7 +271,8 @@ async function validateAddressForToken(secrets: Secrets, token: TokenType, addre
         const verificationClient = new VerificationPrivateApiClient(token.chainInfo.indexerUrls, apiKeys);
         const result = await verificationClient.checkAddressValidity(chainId.sourceId, address)
             .catch(e => {
-                logger.error(`Error validating address ${address} on chain ${chainId}`);
+                console.error(`Error validating address ${address} on chain ${chainId} - verifier API error`);
+                logger.error(`Error validating address ${address} on chain ${chainId} - verifier API error:`, e);
                 return null;
             });
         if (result?.isValid === false) {

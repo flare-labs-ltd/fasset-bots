@@ -60,7 +60,7 @@ async function activityTimestampUpdate(rootEm: EM) {
         await em.persistAndFlush(stateEnt);
     }).catch(error => {
         logger.error("Error updating timestamp:", error);
-        console.error("Error updating timestamp:", error);
+        console.error(`Error updating timestamp: ${error}`);
     });
 }
 

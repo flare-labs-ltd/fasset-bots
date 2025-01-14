@@ -31,7 +31,7 @@ export function toplevelRun(main: () => Promise<void>) {
                 process.exitCode = error.exitCode;
             } else {
                 logger.error(`***** ${scriptInfo} ended with unexpected error:`, error);
-                console.error(error);
+                console.error(error?.stack ?? error);
                 process.exitCode = 2;
             }
         })

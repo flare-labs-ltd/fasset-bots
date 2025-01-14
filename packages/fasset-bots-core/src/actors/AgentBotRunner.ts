@@ -60,7 +60,7 @@ export class AgentBotRunner {
             /* istanbul ignore next */
             void this.ensureWalletMonitoringRunning().catch((error) => {
                 logger.error(`Ensure wallet monitoring is running ended unexpectedly:`, error);
-                console.error(`Ensure wallet monitoring is running ended unexpectedly ended unexpectedly:`, error);
+                console.error(`Ensure wallet monitoring is running ended unexpectedly ended unexpectedly: ${error?.stack ?? error}`);
             });
             while (!this.readyToStop()) {
                 await this.runStep();
@@ -156,7 +156,7 @@ export class AgentBotRunner {
                 if (agentBot == null) continue;
                 void agentBot.runThreads(this.orm.em).catch((error) => {
                     logger.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
-                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly:`, error);
+                    console.error(`Agent bot ${agentBot.agent?.vaultAddress} thread ended unexpectedly: ${error?.stack ?? error}`);
                 });
                 this.runningAgentBots.set(agentEntity.vaultAddress, agentBot);
                 console.log(squashSpace`Running agent ${agentBot.agent.vaultAddress} for ${await agentBot.context.fAsset.symbol()}
