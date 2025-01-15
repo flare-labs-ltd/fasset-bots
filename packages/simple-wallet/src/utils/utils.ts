@@ -15,7 +15,6 @@ import { getDefaultBlockTimeInSeconds } from "../chain-clients/utxo/UTXOUtils";
 import { UTXOWalletImplementation } from "../chain-clients/implementations/UTXOWalletImplementation";
 import { XrpWalletImplementation } from "../chain-clients/implementations/XrpWalletImplementation";
 import crypto from "crypto";
-import { Transaction } from "bitcore-lib";
 
 export async function sleepMs(ms: number) {
    await new Promise<void>((resolve) => setTimeout(() => resolve(), ms));

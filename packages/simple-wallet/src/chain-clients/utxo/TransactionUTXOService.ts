@@ -114,7 +114,7 @@ export class TransactionUTXOService {
         }
 
         if (!isEnoughUTXOs(rbfUTXOs.concat(allUTXOs), txData.amount, txData.fee)) {
-            logger.info(`Account doesn't have enough UTXOs - Skipping selection.
+            logger.info(`Account ${txData.source} doesn't have enough UTXOs - Skipping selection.
                 Amount: ${txData.amount.toNumber()},
                 UTXO values: [${rbfUTXOs.concat(allUTXOs).map(t => t.value.toNumber()).join(', ')}],
                 ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
@@ -213,7 +213,7 @@ export class TransactionUTXOService {
 
         if (!positiveValueReached) {
             logger.info(
-                `Failed to collect enough UTXOs to cover amount and fee.
+                `Failed to collect enough UTXOs to cover amount and fee for account ${txData.source}.
                     Amount: ${txData.amount.toNumber()},
                     UTXO values: [${baseUTXOs.map(t => t.value.toNumber()).join(', ')}],
                     ${txData.fee ? "fee" : "feePerKB"}: ${txData.fee?.toNumber() ?? txData.feePerKB?.toNumber()}`
@@ -332,7 +332,7 @@ export class TransactionUTXOService {
         const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
         const calculatedTxFee = toBN(tr.getFee());
         if (txData.fee && txData.fee.gtn(0)) {
-            const size = await this.services.transactionService.calculateTransactionSize(tr, txData.source);
+            const size = tr._estimateSize();
             const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
             const relayFee = toBN(size).mul(relayFeePerB);
             // If we're doing rbf we need to pay fee >= ogFee and feePerKB >= ogFeePerKB

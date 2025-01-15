@@ -5,5 +5,6 @@ declare module 'bitcore-lib' {
     _calculateSize(): number;
     _calculateVSize(noRound?: boolean): number;
     _calculateWeight(): number;
+    _estimateSize(): number;
   }
 }

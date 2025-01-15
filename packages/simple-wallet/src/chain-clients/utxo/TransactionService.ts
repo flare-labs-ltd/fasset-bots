@@ -213,7 +213,7 @@ export class TransactionService {
 
         this.transactionChecks(txDbId, txData, utxos);
         const tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, txForReplacement ? undefined : feeInSatoshi, feePerKB, utxos, isPayment, note);
-        await this.correctFeeForRBF(txDbId, source, tr, feePerKB, feeInSatoshi, txForReplacement);
+        await this.correctFeeForRBF(txDbId, tr, feeInSatoshi, txForReplacement);
         this.correctFee(txDbId, tr, usingSuggestedFee, !!txForReplacement, maxFee);
 
         return [tr, utxos];
@@ -292,7 +292,7 @@ export class TransactionService {
 
         let tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, txForReplacement ? undefined : feeInSatoshi, feePerKB, utxos, true, note);
 
-        await this.correctFeeForRBF(txDbId, source, tr, feePerKB, feeInSatoshi, txForReplacement, utxosForFeeAmount, feeSource);
+        await this.correctFeeForRBF(txDbId, tr, feeInSatoshi, txForReplacement);
         this.correctFee(txDbId, tr, usingSuggestedFee, !!txForReplacement, maxFee);
 
         const correctedFee = toBN(tr.getFee()).add(feeInSatoshi ? toBN(0) : feePerKB.muln(getOutputSize(this.chainType)).divn(1000)); // Fee should be higher since we have additional output (+31vB)!
@@ -341,7 +341,7 @@ export class TransactionService {
             await this.correctFeeForFreeUnderlying(tr, utxos, toBN(0), source, destination, amountInSatoshi, note);
         }
 
-        await this.correctFeeForRBF(txDbId, source, tr, feePerKB, feeInSatoshi, txForReplacement);
+        await this.correctFeeForRBF(txDbId, tr, feeInSatoshi, txForReplacement);
 
         return [tr, utxos];
     }
@@ -357,7 +357,7 @@ export class TransactionService {
         }
     }
 
-    private async correctFeeForRBF(txDbId: number, source: string, tr: Transaction, feePerKB: BN, fee?: BN, txForReplacement?: TransactionEntity, utxosForFeeAmount?: BN, feeSource?: string) {
+    private async correctFeeForRBF(txDbId: number, tr: Transaction, fee?: BN, txForReplacement?: TransactionEntity) {
         if (txForReplacement) {
             if (toBN(tr.getFee()).lt(fee!)) {
                 tr.fee(fee!.toNumber());
@@ -365,7 +365,7 @@ export class TransactionService {
 
             const currentFee = toBN(tr.getFee());
             const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
-            const txSize = await this.calculateTransactionSize(tr, source, feeSource);
+            const txSize = tr._estimateSize();
 
             tr.fee(currentFee.add(toBN(txSize).mul(relayFeePerB)).toNumber());
             logger.info(`Increasing RBF fee for transaction ${txDbId} from ${currentFee.toNumber()} satoshi to ${tr.getFee()} satoshi; estimated transaction size is ${txSize} (${tr.inputs.length} inputs, ${tr.outputs.length} outputs)`);
@@ -437,17 +437,5 @@ export class TransactionService {
         }
 
         return tr;
-    }
-
-    async calculateTransactionSize(tr: Transaction, source: string, feeSource?: string) {
-        const privateKey = await this.services.walletKeys.getKey(source);
-        /* istanbul ignore next */
-        const privateKeyForFee = feeSource ? await this.services.walletKeys.getKey(feeSource) : undefined;
-        if (privateKey) {
-            const signedTx = privateKeyForFee ? tr.sign(privateKey).sign(privateKeyForFee) : tr.sign(privateKey);
-            return signedTx._calculateVSize(false);
-        } else {
-            return tr._calculateVSize(false);
-        }
     }
 }

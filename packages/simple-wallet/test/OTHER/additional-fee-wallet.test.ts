@@ -246,7 +246,7 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const feeInSatoshi = toBN(307);
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(2, fundedAddress, targetAddress, getMinAmountToSend(wClient.chainType), false, feePerKB, feeInSatoshi, undefined, undefined, txEnt);
-        const vSize = await wClient.transactionService.calculateTransactionSize(tr, fundedAddress);
+        const vSize = tr._estimateSize();
         const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
         expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
         expect(tr.inputs.map(t => t.prevTxId.toString('hex'))).to.have.members(inputs.map(t => t.transactionHash));
@@ -283,7 +283,7 @@ describe("Unit test for paying fees from additional wallet", () => {
 
         const feeInSatoshi = toBN(1400);
         const [tr,] = await wClient.transactionService.preparePaymentTransactionWithSingleWallet(2, fundedAddress, targetAddress, getMinAmountToSend(wClient.chainType), false, feePerKB, feeInSatoshi, undefined, undefined, txEnt);
-        const vSize = await wClient.transactionService.calculateTransactionSize(tr, fundedAddress);
+        const vSize = tr._estimateSize();
         const relayFeePerB = getRelayFeePerKB(wClient.chainType).muln(wClient.transactionFeeService.feeIncrease).divn(1000);
         expect(toBN(tr.getFee()).sub(toBN(vSize).mul(relayFeePerB)).toNumber()).to.be.gte(feeInSatoshi.toNumber());
         expect(tr.inputs.length).to.be.gt(inputs.length);
