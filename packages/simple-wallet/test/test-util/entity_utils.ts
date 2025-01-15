@@ -47,7 +47,7 @@ export function createTransactionEntityBase(id: number, source: string, destinat
     return txEnt;
 }
 
-export function createUTXO(mintTransactionHash: string, position: 0, value: BN, script: string, confirmed?: boolean): MempoolUTXO {
+export function createUTXO(mintTransactionHash: string, position: number = 0, value: BN, script: string, confirmed?: boolean): MempoolUTXO {
     return {
         transactionHash: mintTransactionHash,
         position: position,
@@ -56,7 +56,6 @@ export function createUTXO(mintTransactionHash: string, position: 0, value: BN, 
         confirmed: confirmed ?? true
     }
 }
-
 
 export function createTransactionInputEntity(transactionHash: string, vout: number) {
     const inputEnt = new TransactionInputEntity();

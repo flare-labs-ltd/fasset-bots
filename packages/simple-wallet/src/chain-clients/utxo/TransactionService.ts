@@ -208,7 +208,7 @@ export class TransactionService {
                 txData.amount = amountInSatoshi;
             }
         } else {
-            utxos = await this.utxoService.fetchUTXOs(txData, txForReplacement?.raw);
+            utxos = await this.utxoService.fetchUTXOs(txData, source, txForReplacement?.raw);
         }
 
         this.transactionChecks(txDbId, txData, utxos);
@@ -245,7 +245,7 @@ export class TransactionService {
         } as TransactionData;
 
         /* istanbul ignore next: skip for the ?.utxos ... */
-        const utxosForAmount = await this.utxoService.fetchUTXOs(txDataForAmount, txForReplacement?.raw);
+        const utxosForAmount = await this.utxoService.fetchUTXOs(txDataForAmount, source, txForReplacement?.raw);
         this.transactionChecks(txDbId, txDataForAmount, utxosForAmount);
 
         const baseTransaction = await this.createBitcoreTransaction(source, destination, amountInSatoshi, txForReplacement ? undefined : feeInSatoshi, feePerKB, utxosForAmount, true, note);
@@ -261,12 +261,12 @@ export class TransactionService {
             amount: max(toBN(baseTransaction.getFee()), feeInSatoshi ?? toBN(0)), // In case of RBF we need to consider the maximum of both (baseTransaction.fee is calculated on basis of oldFeePerKB)
             fee: toBN(0),
             feePerKB: feePerKB,
-            useChange: false,
+            useChange: true,
             note: note,
             replacementFor: txForReplacement
         } as TransactionData;
 
-        let utxosForFee = await this.utxoService.fetchUTXOs(txDataForFee);
+        let utxosForFee = await this.utxoService.fetchUTXOs(txDataForFee, feeSource, txForReplacement?.raw);
         let utxos: MempoolUTXO[];
         // Not enough funds on wallet for handling fees - we use additional UTXOs from main wallet
         if (utxosForFee.length === 0) {
@@ -282,8 +282,9 @@ export class TransactionService {
                 replacementFor: txForReplacement
             } as TransactionData;
 
-            utxos = await this.utxoService.fetchUTXOs(txData, txForReplacement?.raw);
-            utxosForFee = []; // ignore utxos for fee
+            utxos = await this.utxoService.fetchUTXOs(txData, source, txForReplacement?.raw);
+            utxosForFee = await this.utxoService.getRbfUTXOs(feeSource, txForReplacement?.raw);
+            utxos = utxos.concat(utxosForFee);
         } else {
             utxos = utxosForAmount.concat(utxosForFee);
         }
@@ -325,7 +326,7 @@ export class TransactionService {
             note: note,
             replacementFor: txForReplacement
         } as TransactionData;
-        const utxos = await this.utxoService.fetchUTXOs(txData, txForReplacement?.raw);
+        const utxos = await this.utxoService.fetchUTXOs(txData, source, txForReplacement?.raw);
         let tr;
 
         if (feeInSatoshi) {

@@ -256,15 +256,15 @@ describe("Unit test for paying fees from additional wallet", () => {
         sinon.restore();
         sinon.stub(TransactionUTXOService.prototype, "filteredAndSortedMempoolUTXOs").callsFake((source) => {
             return Promise.resolve([
-                createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e",),
+                createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 1, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e",),
             ]);
         });
         sinon.stub(TransactionFeeService.prototype, "getCurrentFeeStatus").resolves(FeeStatus.LOW);
 
         const txEnt = await createAndPersistTransactionEntity(wClient.rootEm, wClient.chainType, fundedAddress, targetAddress, amountToSendSatoshi);
         const inputs = [
-            createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 0, toBN(1500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
-            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 0, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")
+            createUTXO("ef99f95e95b18adfc44aae79722946e583677eb631a89a1b62fe0e275801a10c", 2, toBN(1500), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
+            createUTXO("2a6a5d5607492467e357140426f48e75e5ab3fa5fb625b6f201cce284f0dc55e", 1, toBN(10000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e")
         ];
 
         txEnt.raw = JSON.stringify({
