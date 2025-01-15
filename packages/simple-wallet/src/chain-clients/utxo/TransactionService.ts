@@ -358,17 +358,19 @@ export class TransactionService {
     }
 
     private async correctFeeForRBF(txDbId: number, tr: Transaction, fee?: BN, txForReplacement?: TransactionEntity) {
-        if (txForReplacement) {
-            if (toBN(tr.getFee()).lt(fee!)) {
-                tr.fee(fee!.toNumber());
+        if (txForReplacement && fee) {
+            if (toBN(tr.getFee()).lt(fee)) {
+                tr.fee(fee.toNumber());
             }
 
             const currentFee = toBN(tr.getFee());
-            const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
+            const relayFeePerB = getRelayFeePerKB(this.chainType).divn(1000).muln(this.services.transactionFeeService.feeIncrease);
             const txSize = tr._estimateSize();
 
             tr.fee(currentFee.add(toBN(txSize).mul(relayFeePerB)).toNumber());
             logger.info(`Increasing RBF fee for transaction ${txDbId} from ${currentFee.toNumber()} satoshi to ${tr.getFee()} satoshi; estimated transaction size is ${txSize} (${tr.inputs.length} inputs, ${tr.outputs.length} outputs)`);
+        } else if (txForReplacement && !fee) {
+            logger.warn(`Undefined fee for rbf transaction ${txForReplacement.id}`);
         }
     }
 

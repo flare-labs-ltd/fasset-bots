@@ -103,7 +103,7 @@ export interface RateLimitOptions {
 export interface StuckTransaction {
    blockOffset?: number; // How many block to wait for transaction to be validated
    retries?: number; // How many times should transaction retry to successfully submit
-   feeIncrease?: number; // Factor to increase fee in resubmitting process
+   feeIncrease?: number; // Factor to increase fee in resubmitting process (should be integer)
    executionBlockOffset?: number; //
    enoughConfirmations? : number; // number of confirmations to be declared successful
 }
