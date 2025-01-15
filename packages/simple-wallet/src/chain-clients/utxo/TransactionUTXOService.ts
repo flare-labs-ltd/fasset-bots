@@ -249,7 +249,7 @@ export class TransactionUTXOService {
             if (changeValue.gtn(0) && between(changeValue, getDustAmount(this.chainType), this.minimumUTXOValue)) {
                 let smallestUTXOIndex = -1;
                 for (let j = utxos.length - 1; j > 0; j--) {
-                    if (j !== i && 1 + (await this.getNumberOfMempoolAncestors(utxos[j].transactionHash)) < 25) {
+                    if (j !== i && 1 + (await this.getNumberOfMempoolAncestors(utxos[j].transactionHash)) < MEMPOOL_CHAIN_LENGTH_LIMIT) {
                         smallestUTXOIndex = j;
                         break;
                     }
