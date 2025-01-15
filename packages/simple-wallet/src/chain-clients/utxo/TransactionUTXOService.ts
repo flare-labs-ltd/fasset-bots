@@ -82,24 +82,35 @@ export class TransactionUTXOService {
     /**
      * Retrieves unspent transactions in format accepted by transaction
      * @param txData
-     * @param rbfUTXOs
+     * @param source
+     * @param rbfedRawTx
      * @returns {UTXOEntity[]}
      */
-    async fetchUTXOs(txData: TransactionData, rbfedRawTx?: string): Promise<MempoolUTXO[]> {
+    async fetchUTXOs(txData: TransactionData, source: string, rbfedRawTx?: string): Promise<MempoolUTXO[]> {
         await this.removeOldUTXOScripts();
 
-        logger.info(`Listing UTXOs for address ${txData.source}`);
+        logger.info(`Listing UTXOs for address ${source}`);
         const currentFeeStatus = await this.services.transactionFeeService.getCurrentFeeStatus();
-        const unspentUTXOs = await this.filteredAndSortedMempoolUTXOs(txData.source);
-        let rbfUTXOs: MempoolUTXO[] = []
-        if (rbfedRawTx) {
-            const rbfedRaw = JSON.parse(rbfedRawTx) as UTXORawTransaction;
-            const rbfedInputs = rbfedRaw.inputs;
-            rbfUTXOs = await this.createUTXOMempoolFromInputs(txData.source, rbfedInputs);
-        }
+        const unspentUTXOs = await this.filteredAndSortedMempoolUTXOs(source);
+        let rbfUTXOs = await this.getRbfUTXOs(source, rbfedRawTx);
         const needed = await this.selectUTXOs(unspentUTXOs, rbfUTXOs, txData, currentFeeStatus);
         if (needed) {
             return needed;
+        }
+        return [];
+    }
+
+    async getRbfUTXOs(source: string, rbfedRawTx?: string): Promise<MempoolUTXO[]> {
+        if (rbfedRawTx) {
+            const rbfedRaw = JSON.parse(rbfedRawTx) as UTXORawTransaction;
+            const rbfedInputs = [];
+            for (const input of rbfedRaw.inputs) {
+                const tx = await this.blockchainAPI.getTransaction(input.prevTxId);
+                if (tx.vout[input.outputIndex].addresses.includes(source)) {
+                    rbfedInputs.push(input);
+                }
+            }
+            return await this.createUTXOMempoolFromInputs(source, rbfedInputs);
         }
         return [];
     }
@@ -331,7 +342,7 @@ export class TransactionUTXOService {
         );
         const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
         const calculatedTxFee = toBN(tr.getFee());
-        if (txData.fee && txData.fee.gtn(0)) {
+        if (txData.fee) {
             const size = tr._estimateSize();
             const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
             const relayFee = toBN(size).mul(relayFeePerB);
