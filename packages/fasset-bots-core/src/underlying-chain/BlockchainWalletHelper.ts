@@ -22,21 +22,20 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         targetAddress: string,
         amount: string | number | BN,
         reference: string | null,
-        options?: TransactionOptionsWithFee,
-        executeUntilBlock?: number,
-        executeUntilTimestamp?: BN,
-        isFreeUnderlying?: boolean,
-        feeSource?: string
+        options?: TransactionOptionsWithFee
     ): Promise<number> {
         const value = toBN(amount);
         const fee = undefined;
         const maxFee = options?.maxFee ? toBN(options.maxFee) : undefined;
         const maxPaymentForFeeSource = options?.maxPaymentForFeeSource ? toBN(options.maxPaymentForFeeSource) : undefined;
         const minFeePerKB = options?.minFeePerKB ? toBN(options.minFeePerKB) : undefined;
+        const executeUntilBlock = options?.executeUntilBlock ? toBN(options?.executeUntilBlock).toNumber() : undefined;
+        const executeUntilTimestamp = options?.executeUntilTimestamp ? toBN(options?.executeUntilTimestamp) : undefined;
         const note = reference ? unPrefix0x(reference) : undefined;
         const privateKey = await this.walletKeys.getKey(sourceAddress);
         if (privateKey) {
-            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee, executeUntilBlock, executeUntilTimestamp, isFreeUnderlying, feeSource, maxPaymentForFeeSource, minFeePerKB);
+            const dbId = await this.walletClient.createPaymentTransaction(sourceAddress, targetAddress, value, fee, note, maxFee,
+                executeUntilBlock, executeUntilTimestamp, options?.isFreeUnderlying, options?.feeSourceAddress, maxPaymentForFeeSource, minFeePerKB);
             return dbId;
         } else {
             throw new Error(`Cannot find address ${sourceAddress}`);
@@ -92,14 +91,42 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
 
     // background task (monitoring in simple-wallet) should be running
     /* istanbul ignore next */
-    async waitForTransactionFinalization(id: number): Promise<string> {
+    async waitForTransactionFinalization(id: number, report: (message: string) => void = () => {}): Promise<string> {
+        let prevInfo: Partial<TransactionInfo> = {};
+        function reportStatusChanges(info: TransactionInfo) {
+            if (prevInfo.status !== info.status && info.status != null) {
+                report(`Transaction status changed to ${info.status?.toUpperCase()}.`);
+            }
+            if (prevInfo.dbId !== info.dbId && info.dbId != null) {
+                report(`Transaction database id is ${info.dbId}.`);
+            }
+            if (prevInfo.transactionHash !== info.transactionHash && info.transactionHash != null) {
+                report(`Transaction hash is ${info.transactionHash}.`);
+            }
+            if (prevInfo.replacedByStatus !== info.replacedByStatus && info.replacedByStatus != null) {
+                if (prevInfo.replacedByStatus == null) {
+                    report("Transaction was stuck and will be replaced.");
+                }
+                report(`Replacement transaction status changed to ${info.replacedByStatus?.toUpperCase()}.`);
+            }
+            if (prevInfo.replacedByDdId !== info.replacedByDdId && info.replacedByDdId != null) {
+                report(`Replacement transaction database id is ${info.replacedByDdId}.`);
+            }
+            if (prevInfo.replacedByHash !== info.replacedByHash && info.replacedByHash != null) {
+                report(`Replacement transaction hash is ${info.replacedByHash}.`);
+            }
+            prevInfo = info;
+        }
         const monitor = await this.createMonitor();
         try {
             if (await monitor.runningMonitorId() == null) {
                 await monitor.startMonitoring();
+                report(`Started monitoring for transactions since no external transaction monitor is running. Monitoring id is ${monitor.getId()}.`);
+                report(`Please keep the program running at least until the transaction is submitted, preferably until finalization.`);
             }
             logger.info(`Transactions txDbId ${id} is being checked`);
             let info = await this.checkTransactionStatus(id);
+            reportStatusChanges(info);
             logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
             while (!this.requestStopVal && (info.status !== TransactionStatus.TX_SUCCESS && info.status !== TransactionStatus.TX_FAILED))
             {
@@ -114,6 +141,7 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                         logger.warn(`Replacement transaction ${replacedId} failed.`);
                         await sleep(10000);
                         info = await this.checkTransactionStatus(id);
+                        reportStatusChanges(info);
                         if (info.status === TransactionStatus.TX_SUCCESS) {
                             return requireNotNull(info.transactionHash);
                         } else {
@@ -123,11 +151,18 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
                     }
                 }
                 info = await this.checkTransactionStatus(id);
+                reportStatusChanges(info);
                 logger.info(`Transactions txDbId ${id} info: ${formatArgs(info)}`);
-                await this.ensureWalletMonitoringRunning(monitor);
+                const monitorStarted = await this.ensureWalletMonitoringRunning(monitor);
+                if (monitorStarted) {
+                    report(`Started monitoring for transactions since external transaction monitor has stopped. Monitoring id is ${monitor.getId()}.`);
+                    report(`Please keep the program running at least until the transaction is submitted, preferably until finalization.`);
+                }
                 if (this.requestStopVal) {
-                    logger.warn(`Transaction monitoring ${this.monitoringId()} was stopped due to termination signal.`);
-                    console.warn(`Transaction monitoring ${this.monitoringId()} was stopped due to termination signal.`);
+                    if (monitor.isMonitoring()) {
+                        logger.warn(`Transaction monitoring ${this.monitoringId()} was stopped due to termination signal.`);
+                        console.warn(`Transaction monitoring ${this.monitoringId()} was stopped due to termination signal.`);
+                    }
                     break;
                 }
             }
@@ -141,8 +176,14 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         }
     }
 
-    async addTransactionAndWaitForItsFinalization(sourceAddress: string, targetAddress: string, amount: string | number | BN, reference: string | null, options?: TransactionOptionsWithFee | undefined, executeUntilBlock?: number, executeUntilTimestamp?: BN): Promise<string> {
-        const id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options, executeUntilBlock, executeUntilTimestamp);
+    async addTransactionAndWaitForItsFinalization(
+        sourceAddress: string,
+        targetAddress: string,
+        amount: string | number | BN,
+        reference: string | null,
+        options?: TransactionOptionsWithFee
+    ): Promise<string> {
+        const id = await this.addTransaction(sourceAddress, targetAddress, amount, reference, options);
         const hash = await this.waitForTransactionFinalization(id);
         return hash;
     }
@@ -160,6 +201,8 @@ export class BlockchainWalletHelper implements IBlockChainWallet {
         const someMonitorRunning = await monitor.runningMonitorId() != null;
         if (!someMonitorRunning) {
             await monitor.startMonitoring();
+            return true;
         }
+        return false;
     }
 }

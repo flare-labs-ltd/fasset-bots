@@ -8,6 +8,15 @@ export class AgentSettingsDTO {
     value: string = "";
 }
 
+export class DelegateDTO {
+    @ApiProperty()
+    address: string = "";
+
+    @ApiProperty()
+    bips: string = "";
+}
+
+
 export class PasswordDTO {
     @ApiProperty()
     password: string = "";

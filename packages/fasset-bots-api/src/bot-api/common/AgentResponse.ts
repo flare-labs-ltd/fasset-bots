@@ -75,6 +75,12 @@ export interface Collaterals {
     ownerBalance: string;
 }
 
+export interface Delegation {
+    address: string;
+    delegation: string;
+}
+
+
 export interface VaultInfo {
     address: string;
     updating: boolean;
@@ -97,6 +103,8 @@ export interface VaultInfo {
     lotsPoolBacked: string;
     lotsVaultBacked: string;
     handshakeType: number;
+    delegates: Delegation[];
+    delegationPercentage: string;
 }
 
 export interface AllVaults {

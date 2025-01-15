@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } from "@nestjs/common";
 import { AgentService } from "../services/agent.service";
 import { ApiBearerAuth, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiResponseWrapper, handleApiResponse } from "../../common/ApiResponse";
 import { AgentBalance } from "../../common/AgentResponse";
 import { ErrorStatusInterceptor } from "../interceptors/error.status.interceptor";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { DelegateDTO } from "../../common/AgentSettingsDTO";
 
 
 @UseGuards(JwtAuthGuard)
@@ -88,6 +89,15 @@ export class PoolController {
         @Param("bips") bips: string
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.delegatePoolCollateral(fAssetSymbol, agentVaultAddress, recipientAddress, bips));
+    }
+
+    @Post("delegateAll/:fAssetSymbol/:agentVaultAddress")
+    public async delegatePoolCollateralArray(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Body() delegationsDTO: DelegateDTO[]
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.delegatePoolCollateralArray(fAssetSymbol, agentVaultAddress, delegationsDTO));
     }
 
     @Post("undelegate/:fAssetSymbol/:agentVaultAddress")

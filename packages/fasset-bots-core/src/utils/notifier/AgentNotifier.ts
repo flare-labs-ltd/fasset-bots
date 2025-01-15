@@ -39,6 +39,8 @@ export enum AgentNotificationKey {
     SELF_MINT_PERFORM_PAYMENT = "PERFORMING SELF MINT PAYMENT",
     SELF_MINT_PROVE_PAYMENT = "PROVING SELF MINT PAYMENT",
     SELF_MINT_EXECUTED = "EXECUTED SELF MINT",
+    SELF_MINT_PAYMENT_TOO_SMALL = "EXECUTED SELF MINT - PAYMENT TOO SMALL",
+    SELF_MINT_COLLATERAL_TOO_LOW = "COLLATERAL TOO LOW TO EXECUTE SELF MINT",
     SELF_MINT_UNDERLYING_STARTED = "SELF MINT FROM UNDERLYING STARTED",
     SELF_MINT_UNDERLYING_EXECUTED = "EXECUTED SELF MINT FROM UNDERLYING",
     // redemption
@@ -560,6 +562,19 @@ export class AgentNotifier extends BaseNotifier<AgentNotificationKey> {
 
     async sendSelfMintExecuted(lots: string) {
         await this.info(AgentNotificationKey.SELF_MINT_EXECUTED, `Executed self mint of ${lots} on vault ${this.address}.`);
+    }
+
+    async sendSelfMintPaymentTooSmall(lots: string, maxMintLots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_PAYMENT_TOO_SMALL,
+            squashSpace`Self-minting payment too small due to lot size or fee change - minted amount reduced from ${lots} lots to ${maxMintLots} lots.
+                The remainder of the deposit will become free underlying for agent vault ${this.address}.`);
+    }
+
+    async sendSelfMintCollateralTooLow(lots: string, freeCollateralLots: string) {
+        await this.info(AgentNotificationKey.SELF_MINT_COLLATERAL_TOO_LOW,
+            squashSpace`Collateral too low to execute self minting.
+                Reduced mintng from the requested lots ${lots} to free collateral lots ${freeCollateralLots}.
+                The remainder of the deposit will become free underlying for agent vault ${this.address}.`);
     }
 
     async sendSelfMintUnderlyingStarted(lots: string) {

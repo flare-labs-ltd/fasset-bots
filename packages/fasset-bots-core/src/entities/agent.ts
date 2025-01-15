@@ -370,7 +370,9 @@ export class AgentUnderlyingPayment {
     @Property({ nullable: true, type: "text" })
     proofRequestData?: string;
 
-    //
+    // only for self mint
+    @Property({ nullable: true, type: BNType })
+    selfMintLots?: BN;
 
     @Property({ onCreate: () => new Date(), defaultRaw: 'CURRENT_TIMESTAMP' })
     createdAt: Date = new Date();

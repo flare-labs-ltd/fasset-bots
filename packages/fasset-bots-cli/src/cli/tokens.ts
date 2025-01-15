@@ -87,7 +87,11 @@ program
                 process.on("SIGHUP", () => {
                     stopBot().then().catch(logger.error);
                 });
-                const txHash = await wallet.addTransactionAndWaitForItsFinalization(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                const txDbId = await wallet.addTransaction(accountFrom.address, addressTo, amountNat, cmdOptions.reference ?? null);
+                const txHash = await wallet.waitForTransactionFinalization(txDbId, message => {
+                    logger.info(message);
+                    console.log(message);
+                });
                 console.info(`Payment transaction ${txHash}. Check transaction status in database or explorer.`);
             } finally {
                 await orm.close();
@@ -267,10 +271,10 @@ async function validateAddressForToken(secrets: Secrets, token: TokenType, addre
         const verificationClient = new VerificationPrivateApiClient(token.chainInfo.indexerUrls, apiKeys);
         const result = await verificationClient.checkAddressValidity(chainId.sourceId, address)
             .catch(e => {
-                logger.error(`Error validating address ${address} on chain ${chainId}`);
-                return null;
+                logger.error(`Error validating address ${address} on chain ${chainId} - verifier API error:`, e);
+                throw new CommandLineError(`Error validating address ${address} on chain ${chainId} - verifier API error`);
             });
-        if (result?.isValid === false) {
+        if (!result.isValid) {
             throw new CommandLineError(`Address "${address}" has invalid format for chain ${chainId}`);
         }
     } else {
