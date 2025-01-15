@@ -1,6 +1,6 @@
 {
   "name": "@flarelabs/fasset-liquidator",
-  "version": "1.0.7-rc.2",
+  "version": "1.0.7",
   "description": "Liquidator utilities for the f-asset bridge on the Flare network",
   "scripts": {
     "------------ contracts -------------": "----------------- contracts -----------------",

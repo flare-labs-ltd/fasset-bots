@@ -1,6 +1,6 @@
 {
     "name": "fasset-bots-monorepo",
-    "version": "1.0.7-rc.2",
+    "version": "1.0.7",
     "private": true,
     "workspaces": {
         "packages": [
