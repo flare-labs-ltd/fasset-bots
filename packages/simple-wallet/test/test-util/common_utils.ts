@@ -22,6 +22,7 @@ import { AxiosInstance, AxiosResponse } from "axios";
 import {read} from "read";
 import fs from "fs";
 import { UTXOWalletImplementation } from "../../src/chain-clients/implementations/UTXOWalletImplementation";
+const bitcore = require('bitcore-lib');
 
 export const PASSWORD_MIN_LENGTH = 16;
 
@@ -337,22 +338,61 @@ export interface Wallet {
 }
 
 
-export async function bothWalletAddresses(wClient: UTXOWalletImplementation, address1: string, address2: string, rawTx: string): Promise<{address1Included: boolean[], address2Included: boolean[]}> {
+export async function walletAddressesIncludedInInputs(wClient: UTXOWalletImplementation, addressToBeFound: string, rawTx: string): Promise<boolean> {
     const tr = JSON.parse(rawTx) as UTXORawTransaction;
-    const address1Included = await Promise.all(tr.inputs.map(t => checkIfAddressHasTransaction(wClient, address1, t.prevTxId)));
-    const address2Included = await Promise.all(tr.inputs.map(t => checkIfAddressHasTransaction(wClient, address2, t.prevTxId)));
-    return {address1Included,  address2Included}
+    for (const input of tr.inputs) {
+        const txHash = input.prevTxId;
+        const index = input.outputIndex;
+        const transaction = await wClient.blockchainAPI.getTransaction(txHash);
+        const addresses = transaction.vout[index].addresses;
+        for (const address of addresses) {
+        }
+        if (addresses.includes(addressToBeFound)) {
+            return true;
+        }
+    }
+    return false;
 }
 
-export async function checkIfAddressHasTransaction(wClient: UTXOWalletImplementation, address: string, txHash: string): Promise<boolean> {
-    return tryWithClients(wClient.blockchainAPI.clients, async (client: AxiosInstance) => {
-        const firstResp = await client.get<UTXOAddressResponse>(`/address/${address}?`);
-        for (let i = 0; i < firstResp.data.totalPages; i++) {
-            const resp = await client.get<UTXOAddressResponse>(`/address/${address}?`);
-            if (resp.data.txids.includes(txHash)) {
-                return true;
-            }
+export async function walletAddressesIncludedInOutputs(wClient: UTXOWalletImplementation, addressToBeFound: string, rawTx: string): Promise<boolean> {
+    const tr = JSON.parse(rawTx) as UTXORawTransaction;
+    const script = getAddressScript(wClient.chainType, addressToBeFound);
+    for (const output of tr.outputs) {
+        if (output.script === script) {
+            return true;
         }
-        return false;
-    }, "");
+    }
+    return false;
+}
+
+export function getAddressScript(chainType: ChainType, address: string) {
+    if (chainType === ChainType.testDOGE) {
+        const dogeTestnet = bitcore.Networks.add({
+            name: 'dogeTestnet',
+            alias: 'dogecoin-testnet',
+            pubkeyhash: 0x71,
+            privatekey: 0xf1,
+            scripthash: 0xc4,
+            xpubkey: 0x043587cf,
+            xprivkey: 0x04358394,
+            networkMagic: 0xfcc1b7dc,
+            port: 44556,
+          });
+        const addressAddress = bitcore.Address(address, dogeTestnet);
+        const pubkeyHash = addressAddress.hashBuffer.toString('hex');
+        const scriptPubKey = `76a914${pubkeyHash}88ac`;
+        return scriptPubKey
+    } else if (chainType === ChainType.testBTC) {
+        const addressAddress = bitcore.Address(address, bitcore.Networks.testnet);
+        if (address.startsWith("tb1")) {
+            const scriptPubKey = bitcore.Script.buildWitnessV0Out(addressAddress);
+            return scriptPubKey.toHex();
+        } else {
+            const pubkeyHash = addressAddress.hashBuffer.toString('hex');
+            const scriptPubKey = `76a914${pubkeyHash}88ac`;
+            return scriptPubKey;
+        }
+    } else {
+        throw new Error("Network not supported");
+    }
 }

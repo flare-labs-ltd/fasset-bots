@@ -8,10 +8,11 @@ import {initializeTestMikroORM, ORM} from "../test-orm/mikro-orm.config";
 import {UnprotectedDBWalletKeys} from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
-    bothWalletAddresses,
     loop,
     resetMonitoringOnForceExit,
     waitForTxToFinishWithStatus,
+    walletAddressesIncludedInInputs,
+    walletAddressesIncludedInOutputs,
 } from "../test-util/common_utils";
 import {logger} from "../../src/utils/logger";
 import BN from "bn.js";
@@ -45,6 +46,7 @@ let BTCMccConnectionTest: BitcoinWalletConfig;
 
 const fundedMnemonic = "theme damage online elite clown fork gloom alpha scorpion welcome ladder camp rotate cheap gift stone fog oval soda deputy game jealous relax muscle";
 const fundedAddress = "tb1qyghw9dla9vl0kutujnajvl6eyj0q2nmnlnx3j0";
+
 const targetMnemonic = "forget fine shop cage build else tree hurry upon sure diary multiply despair skirt hill mango hurdle first screen skirt kind fresh scene prize";
 const targetAddress = "tb1q8j7jvsdqxm5e27d48p4382xrq0emrncwfr35k4";
 
@@ -328,12 +330,16 @@ describe("Bitcoin wallet tests", () => {
         await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, id);
 
         const txEnt = await fetchTransactionEntityById(wClient.rootEm, id);
-        const {
-            address1Included,
-            address2Included
-        } = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, txEnt.raw!);
-        expect(address1Included).to.include(true);
-        expect(address2Included).to.include(true);
+
+        const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)
+        const address2Included = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1Included).to.be.true;
+        expect(address2Included).to.be.true;
+        const address1IncludedOut = await walletAddressesIncludedInOutputs(wClient, fundedAddress, txEnt.raw!)
+        const address2IncludedOut = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1IncludedOut).to.be.true;
+        expect(address2IncludedOut).to.be.true;
+
         await dbutils.updateTransactionEntity(wClient.rootEm, fundTxId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
         });
@@ -362,14 +368,25 @@ describe("Bitcoin wallet tests", () => {
         await wClient.tryToReplaceByFee(txId, blockHeight);
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED_PENDING, txId);
 
-        const { address1Included,  address2Included } = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, txEnt.raw!);
-        expect(address1Included).to.include(true);
-        expect(address2Included).to.include(true);
+        const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)
+        const address2Included = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1Included).to.be.true;
+        expect(address2Included).to.be.true;
+        const address1IncludedOut = await walletAddressesIncludedInOutputs(wClient, fundedAddress, txEnt.raw!)
+        const address2IncludedOut = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1IncludedOut).to.be.true;
+        expect(address2IncludedOut).to.be.true;
+
         const replacementTxEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
 
-        const { address1Included: address1Included1,  address2Included: address2Included1} = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, replacementTxEnt.raw!);
-        expect(address1Included1).to.include(true);
-        expect(address2Included1).to.include(true);
+        const address1Included1 = await walletAddressesIncludedInInputs(wClient, fundedAddress, replacementTxEnt.raw!)
+        const address2Included1 = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
+        expect(address1Included1).to.be.true;
+        expect(address2Included1).to.be.true;
+        const address1IncludedOut1 = await walletAddressesIncludedInOutputs(wClient, fundedAddress, replacementTxEnt.raw!)
+        const address2IncludedOut1 = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
+        expect(address1IncludedOut1).to.be.true;
+        expect(address2IncludedOut1).to.be.true;
 
         await dbutils.updateTransactionEntity(wClient.rootEm, fundTxId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_SUCCESS;

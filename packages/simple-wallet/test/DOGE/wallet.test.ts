@@ -2,16 +2,17 @@ import { DOGE, TransactionStatus } from "../../src";
 import { DogecoinWalletConfig, ITransactionMonitor } from "../../src/interfaces/IWalletTransaction";
 import chaiAsPromised from "chai-as-promised";
 import { expect, use } from "chai";
-import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT } from "../../src/utils/constants";
+import { BTC_DOGE_DEC_PLACES, ChainType, DOGE_DUST_AMOUNT, DOGE_MIN_ALLOWED_AMOUNT_TO_SEND } from "../../src/utils/constants";
 import { toBN, toBNExp } from "../../src/utils/bnutils";
 import { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import {
     addConsoleTransportForTests,
-    bothWalletAddresses,
     loop,
     resetMonitoringOnForceExit,
     waitForTxToFinishWithStatus,
+    walletAddressesIncludedInInputs,
+    walletAddressesIncludedInOutputs,
 } from "../test-util/common_utils";
 import BN from "bn.js";
 import { logger } from "../../src/utils/logger";
@@ -293,6 +294,27 @@ describe("Dogecoin wallet tests", () => {
         await Promise.all(transferTransactionIds.map(async (t) => await waitForTxToFinishWithStatus(2, 10 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, t)));
     });
 
+    it("Should submit and replace transaction", async () => {
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false);
+        await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
+        await wClient.tryToReplaceByFee(txId, blockHeight);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED_PENDING, txId);
+
+        const replacementTxEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
+
+        await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_REPLACED;
+        });
+        await updateTransactionEntity(wClient.rootEm, txEnt.replaced_by!.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+
+        expect(replacementTxEnt.amount!.eq(DOGE_MIN_ALLOWED_AMOUNT_TO_SEND)).to.be.true;
+    });
+
     it("Should submit and replace transaction with 2 wallets", async () => {
         const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
         const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
@@ -306,14 +328,24 @@ describe("Dogecoin wallet tests", () => {
         await wClient.tryToReplaceByFee(txId, blockHeight);
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_REPLACED_PENDING, txId);
 
-        const { address1Included,  address2Included } = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, txEnt.raw!);
-        expect(address1Included).to.include(true);
-        expect(address2Included).to.include(true);
-        const replacementTxEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
+        const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)
+        const address2Included = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1Included).to.be.true;
+        expect(address2Included).to.be.true;
+        const address1IncludedOut = await walletAddressesIncludedInOutputs(wClient, fundedAddress, txEnt.raw!)
+        const address2IncludedOut = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1IncludedOut).to.be.true;
+        expect(address2IncludedOut).to.be.true;
 
-        const { address1Included: address1Included1,  address2Included: address2Included1} = await bothWalletAddresses(wClient, fundedAddress, feeSourceAddress, replacementTxEnt.raw!);
-        expect(address1Included1).to.include(true);
-        expect(address2Included1).to.include(true);
+        const replacementTxEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txEnt.replaced_by!.id);
+        const address1Included1 = await walletAddressesIncludedInInputs(wClient, fundedAddress, replacementTxEnt.raw!)
+        const address2Included1 = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
+        expect(address1Included1).to.be.true;
+        expect(address2Included1).to.be.true;
+        const address1Included1Out = await walletAddressesIncludedInOutputs(wClient, fundedAddress, replacementTxEnt.raw!)
+        const address2Included1Out = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
+        expect(address1Included1Out).to.be.true;
+        expect(address2Included1Out).to.be.true;
 
         await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_REPLACED;
