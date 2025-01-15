@@ -92,7 +92,7 @@ export class TransactionUTXOService {
         logger.info(`Listing UTXOs for address ${source}`);
         const currentFeeStatus = await this.services.transactionFeeService.getCurrentFeeStatus();
         const unspentUTXOs = await this.filteredAndSortedMempoolUTXOs(source);
-        let rbfUTXOs = await this.getRbfUTXOs(source, rbfedRawTx);
+        const rbfUTXOs = await this.getRbfUTXOs(source, rbfedRawTx);
         const needed = await this.selectUTXOs(unspentUTXOs, rbfUTXOs, txData, currentFeeStatus);
         if (needed) {
             return needed;
@@ -342,7 +342,7 @@ export class TransactionUTXOService {
         );
         const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
         const calculatedTxFee = toBN(tr.getFee());
-        if (txData.fee) {
+        if (txData.fee && txData.fee.gtn(0)) {
             const size = tr._estimateSize();
             const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
             const relayFee = toBN(size).mul(relayFeePerB);

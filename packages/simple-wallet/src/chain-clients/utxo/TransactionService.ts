@@ -5,7 +5,7 @@ import { EntityManager } from "@mikro-orm/core";
 import { ChainType, MAX_NUM_OF_INPUT_UTXOS, } from "../../utils/constants";
 import { TransactionEntity } from "../../entity/transaction";
 import { Transaction } from "bitcore-lib";
-import { getAccountBalance, getCore, getDustAmount, getOutputSize, getRelayFeePerKB } from "./UTXOUtils";
+import { calculateFeePerKBFromTransactionEntity, getAccountBalance, getCore, getDustAmount, getOutputSize, getRelayFeePerKB } from "./UTXOUtils";
 import { unPrefix0x } from "../../utils/utils";
 import { toBN, toNumber } from "../../utils/bnutils";
 import { TransactionData, TransactionUTXOService } from "./TransactionUTXOService";
@@ -134,7 +134,8 @@ export class TransactionService {
         }
 
         const feePerKBFromFeeService = await this.transactionFeeService.getFeePerKB();
-        const feePerKB = max(feePerKBFromFeeService, max(minFeePerKB ?? toBN(0), txForReplacement ? txForReplacement.fee!.divn(txForReplacement.size!) : toBN(0)));
+        const txForReplacementFeePerKB = calculateFeePerKBFromTransactionEntity(txForReplacement);
+        const feePerKB = max(feePerKBFromFeeService, max(minFeePerKB ?? toBN(0), txForReplacementFeePerKB));
         let usingSuggestedFee = false;
         logger.info(`Transaction ${txDbId} received ${feePerKB.toString()} feePerKb; feePerKBFromFeeService is ${feePerKBFromFeeService.toString()}, minFeePerKB is ${minFeePerKB ? minFeePerKB.toString() : undefined}`)
         if (minFeePerKB && minFeePerKB.gtn(0)) {

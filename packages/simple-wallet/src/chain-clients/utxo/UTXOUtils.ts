@@ -245,3 +245,11 @@ export function getMinimumUTXOValue(chainType: ChainType) {
             throw new Error(`Unsupported chain type ${chainType}`);
     }
 }
+
+export function calculateFeePerKBFromTransactionEntity(transaction?: TransactionEntity) : BN {
+    if (transaction && transaction.fee && transaction.size) {
+        return transaction.fee.muln(1000).divn(transaction.size);
+    } else {
+        return toBN(0);
+    }
+}

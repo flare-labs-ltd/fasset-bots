@@ -235,12 +235,12 @@ export async function updateMonitoringState(
 }
 
 export async function handleFeeToLow(rootEm: EntityManager, txEnt: TransactionEntity): Promise<void> {
-    await updateTransactionEntity(rootEm, txEnt.id, (txEnt) => {
-        txEnt.status = TransactionStatus.TX_CREATED;
-        txEnt.inputs.removeAll();
-        txEnt.raw = "";
-        txEnt.transactionHash = "";
-        txEnt.size = undefined;
+    await updateTransactionEntity(rootEm, txEnt.id, (txEntToUpdate) => {
+        txEntToUpdate.status = TransactionStatus.TX_CREATED;
+        txEntToUpdate.inputs.removeAll();
+        txEntToUpdate.raw = "";
+        txEntToUpdate.transactionHash = "";
+        txEntToUpdate.size = undefined;
     });
 }
 

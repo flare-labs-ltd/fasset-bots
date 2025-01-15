@@ -4,15 +4,14 @@ import { sleepMs } from "../../src/utils/utils";
 import { ChainType } from "../../src/utils/constants";
 import { EntityManager } from "@mikro-orm/core";
 import {BTC, decryptText, DOGE, XRP} from "../../src";
-import { fetchTransactionEntityById, getTransactionInfoById } from "../../src/db/dbutils";
+import { fetchTransactionEntityById } from "../../src/db/dbutils";
 import winston, { Logger } from "winston";
 import { logger } from "../../src";
 import { toBN } from "../../src/utils/bnutils";
-import { isORMError, tryWithClients } from "../../src";
+import { isORMError } from "../../src";
 import {
     AccountBalanceResponse,
     MempoolUTXO,
-    UTXOAddressResponse,
     UTXORawTransaction,
     UTXORawTransactionInput,
     UTXOTransactionResponse,
@@ -345,8 +344,6 @@ export async function walletAddressesIncludedInInputs(wClient: UTXOWalletImpleme
         const index = input.outputIndex;
         const transaction = await wClient.blockchainAPI.getTransaction(txHash);
         const addresses = transaction.vout[index].addresses;
-        for (const address of addresses) {
-        }
         if (addresses.includes(addressToBeFound)) {
             return true;
         }
