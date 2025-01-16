@@ -59,13 +59,6 @@ export class AgentBotUnderlyingManagement {
      * @param agentVault agent's vault address
      */
     async underlyingTopUp(em: EM, amount: BN): Promise<boolean> {
-        // check if top up in progress
-        const checkIfTopUpInProgress = await em.find(AgentUnderlyingPayment, { agentAddress: this.agent.vaultAddress, type: AgentUnderlyingPaymentType.TOP_UP, state: { $ne: AgentUnderlyingPaymentState.DONE } });
-        if (checkIfTopUpInProgress.length > 0) {
-            logger.info(`Agent ${this.agent.vaultAddress} will not top up. Top up already in progress.`);
-            return false;
-        }
-        // log
         const amountF = await this.tokens.underlying.format(amount);
         logger.info(squashSpace`Agent ${this.agent.vaultAddress} is trying to top up underlying address ${this.agent.underlyingAddress}
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
@@ -107,8 +100,8 @@ export class AgentBotUnderlyingManagement {
             from owner's underlying address ${this.ownerUnderlyingAddress}.`);
         const hasEnoughBalance = await this.checkForLowOwnerUnderlyingBalance();
         if (!hasEnoughBalance) {
-            logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
-            console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT be self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            logger.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
+            console.warn(squashSpace`Agent's ${this.agent.vaultAddress} CANNOT do self minting! Check owner's underlying balance ${this.ownerUnderlyingAddress}.`);
             return false;
         }
         // check and log the fee
