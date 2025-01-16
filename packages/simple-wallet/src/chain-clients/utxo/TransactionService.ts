@@ -139,7 +139,7 @@ export class TransactionService {
         let usingSuggestedFee = false;
         logger.info(`Transaction ${txDbId} received ${feePerKB.toString()} feePerKb; feePerKBFromFeeService is ${feePerKBFromFeeService.toString()}, minFeePerKB is ${minFeePerKB ? minFeePerKB.toString() : undefined}`)
         if (minFeePerKB && minFeePerKB.gtn(0)) {
-            if (feePerKB.eq(feePerKBFromFeeService) && !feePerKBFromFeeService.eq(minFeePerKB)) {
+            if (feePerKB.eq(minFeePerKB) && !feePerKBFromFeeService.eq(minFeePerKB)) {
                 usingSuggestedFee = true;
             }
         }
@@ -429,7 +429,6 @@ export class TransactionService {
         }
         tr.enableRBF();
 
-        /* istanbul ignore else */
         if (fee) {
             tr.fee(toNumber(fee));
         } else if (feePerKB) {

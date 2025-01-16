@@ -103,8 +103,8 @@ export class TransactionFeeService {
         return feeToCover;
     }
 
-    async getCurrentFeeStatus(): Promise<FeeStatus> {
-        const fee = await this.getFeePerKB();
+    async getCurrentFeeStatus(feePerKb?: BN): Promise<FeeStatus> {
+        const fee = feePerKb ?? await this.getFeePerKB();
         switch (this.chainType) {
             case ChainType.DOGE:
                 return this.getFeeStatusForChain(fee, DOGE_LOW_FEE_PER_KB, DOGE_MID_FEE_PER_KB);

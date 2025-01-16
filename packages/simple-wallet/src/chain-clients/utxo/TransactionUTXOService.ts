@@ -90,7 +90,7 @@ export class TransactionUTXOService {
         await this.removeOldUTXOScripts();
 
         logger.info(`Listing UTXOs for address ${source}`);
-        const currentFeeStatus = await this.services.transactionFeeService.getCurrentFeeStatus();
+        const currentFeeStatus = await this.services.transactionFeeService.getCurrentFeeStatus(txData.feePerKB);
         const unspentUTXOs = await this.filteredAndSortedMempoolUTXOs(source);
         const rbfUTXOs = await this.getRbfUTXOs(source, rbfedRawTx);
         const needed = await this.selectUTXOs(unspentUTXOs, rbfUTXOs, txData, currentFeeStatus);

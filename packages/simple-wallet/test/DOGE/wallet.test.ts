@@ -384,4 +384,18 @@ describe("Dogecoin wallet tests", () => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
         });
     });
+
+    it("Should create transaction with suggestedFeePerKb and maxFee", async () => {
+        const suggestedFeePerKb = toBNExp(3, BTC_DOGE_DEC_PLACES);
+        const maxFee = toBNExp(0.006, BTC_DOGE_DEC_PLACES);
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, maxFee, undefined, undefined, false, undefined, undefined, suggestedFeePerKb);
+        expect(txId).greaterThan(0);
+        const txEnt = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
+        expect(toBN(transaction.fees).eq(maxFee)).to.be.true;
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
 });
