@@ -7,7 +7,7 @@ import {
     stuckTransactionConstants
 } from "../../utils/utils";
 import { toBN, toNumber } from "../../utils/bnutils";
-import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME } from "../../utils/constants";
+import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME, UNKNOWN_DESTINATION, UNKNOWN_SOURCE } from "../../utils/constants";
 import {
     BaseWalletConfig,
     ITransactionMonitor,
@@ -275,8 +275,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         try {
             const utxosFromMempool = await this.blockchainAPI.getUTXOsFromMempool(txEnt.source);
             if (utxosFromMempool.length === 0) {
-                logger.warn(`Will not prepare transaction ${txEnt.id}. No utxos available.`);
-                await failTransaction(this.rootEm, txEnt.id, "No utxos available.");
+                logger.warn(`Will not prepare transaction ${txEnt.id}. No utxos available. Trying again.`);
                 return;
             }
 
@@ -293,7 +292,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.feeSource,
                 txEnt.isFreeUnderlyingTransaction,
                 txEnt.minFeePerKB,
-                txEnt.maxFee
+                txEnt.maxFee,
+                txEnt.maxPaymentForFeeSource
             );
             const privateKey = await this.walletKeys.getKey(txEnt.source);
             const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
@@ -324,11 +324,13 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEnt.reference,
                     rbfReplacementFor,
                     undefined,
-                    txEnt.isFreeUnderlyingTransaction
+                    txEnt.isFreeUnderlyingTransaction,
+                    txEnt.minFeePerKB,
+                    txEnt.maxFee
                 );
                 logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxPaymentForFeeSource})`);
                 payingFeesFromFeeSource = false;
-            } else if (txEnt.feeSource && feeToHighForFeeSource && feeToHighForMainSource && rbfReplacementFor) {
+            } else if (txEnt.feeSource && feeToHighForFeeSource && feeToHighForMainSource && rbfReplacementFor) { //TODO - check
                 // If transaction is rbf and amount to pay from fee source is too high for both - set it to the max of both
                 const maxFee = max(txEnt.maxFee ?? toBN(0), txEnt.maxPaymentForFeeSource ?? toBN(0));
                 if (maxFee.gtn(0)) {
@@ -338,8 +340,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
 
             // If fee source is non-existent/doesn't have high enough max amount
-            if (!payingFeesFromFeeSource && checkIfFeeTooHigh(toBN(transaction.getFee()), txEnt.maxFee ?? null)) {
-                if (rbfReplacementFor && txEnt.maxFee) {
+            if (!payingFeesFromFeeSource && feeToHighForMainSource) {
+                if (rbfReplacementFor && txEnt.maxFee) { // TODO-check
                     await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                         txEntToUpdate.fee = txEnt.maxFee!;
                     });
@@ -753,7 +755,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
         }
 
-        // transaction was not accepted in mempool by one minute
+        // transaction was not accepted in mempool for certain time
         const currentBlockNumber = await this.blockchainAPI.getCurrentBlockHeight();
         const shouldSubmit = checkIfShouldStillSubmit(this, currentBlockNumber, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
         if (!shouldSubmit) {
@@ -825,7 +827,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
         return TransactionStatus.TX_PREPARED;
     }
 
-    checkIfTransactionWasFetchedFromAPI(txEnt: TransactionEntity) {
-        return txEnt.source.includes("FETCHED_VIA_API_UNKNOWN_SOURCE") || txEnt.destination.includes("FETCHED_VIA_API_UNKNOWN_DESTINATION");
+    private checkIfTransactionWasFetchedFromAPI(txEnt: TransactionEntity) {
+        return txEnt.source.includes(UNKNOWN_SOURCE) || txEnt.destination.includes(UNKNOWN_DESTINATION);
     }
 }

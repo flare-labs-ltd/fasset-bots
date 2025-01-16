@@ -111,6 +111,7 @@ export class TransactionService {
      * @param freeUnderlying
      * @param minFeePerKB
      * @param maxFee
+     * @param maxFeeForFeeSource
      * @returns {Object} - BTC/DOGE transaction object
      */
     async preparePaymentTransaction(
@@ -125,6 +126,7 @@ export class TransactionService {
         freeUnderlying?: boolean,
         minFeePerKB?: BN,
         maxFee?: BN,
+        maxFeeForFeeSource?: BN
     ): Promise<[Transaction, MempoolUTXO[]]> {
         if (amountInSatoshi?.lte(getDustAmount(this.chainType))) {
             logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
@@ -145,7 +147,7 @@ export class TransactionService {
         }
 
         if (feeSource && amountInSatoshi && !freeUnderlying) {
-            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, usingSuggestedFee, feePerKB, feeInSatoshi, maxFee, note, txForReplacement);
+            return this.preparePaymentTransactionWithAdditionalFeeWallet(txDbId, source, feeSource, destination, amountInSatoshi, usingSuggestedFee, feePerKB, feeInSatoshi, maxFee, maxFeeForFeeSource, note, txForReplacement);
         } else if (freeUnderlying) {
             return this.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi!, feePerKB, feeInSatoshi, note, txForReplacement);
         } else {
@@ -179,11 +181,8 @@ export class TransactionService {
         } as TransactionData;
         let utxos: MempoolUTXO[];
 
-        if (isPayment && !feeInSatoshi) {
-            txData.feePerKB = feePerKB;
-        }
         if (amountInSatoshi == null) {
-            utxos = await this.utxoService.filteredAndSortedMempoolUTXOs(source);
+            utxos = await this.utxoService.filteredAndSortedMempoolUTXOs(source); // fetch all utxos
 
             // In case that account has large number of UTXOs the "delete account transactions" is created as a sequence of smaller transactions
             const useMultipleTransactions = utxos.length > MAX_NUM_OF_INPUT_UTXOS;
@@ -214,7 +213,7 @@ export class TransactionService {
 
         this.transactionChecks(txDbId, txData, utxos);
         const tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, txForReplacement ? undefined : feeInSatoshi, feePerKB, utxos, isPayment, note);
-        await this.correctFeeForRBF(txDbId, tr, feeInSatoshi, txForReplacement);
+        await this.correctFeeForRBF(txDbId, tr, feeInSatoshi, txForReplacement); // TODO-check
         this.correctFee(txDbId, tr, usingSuggestedFee, !!txForReplacement, maxFee);
 
         return [tr, utxos];
@@ -230,6 +229,7 @@ export class TransactionService {
         feePerKB: BN,
         feeInSatoshi?: BN,
         maxFee?: BN,
+        maxFeeForFeeSource?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
     ): Promise<[Transaction, MempoolUTXO[]]> {
@@ -293,12 +293,11 @@ export class TransactionService {
         const utxosForFeeAmount = utxosForFee.reduce((accumulator, utxo) => accumulator.add(utxo.value), new BN(0));
 
         let tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, txForReplacement ? undefined : feeInSatoshi, feePerKB, utxos, true, note);
-
         await this.correctFeeForRBF(txDbId, tr, feeInSatoshi, txForReplacement);
-        this.correctFee(txDbId, tr, usingSuggestedFee, !!txForReplacement, maxFee);
+        this.correctFee(txDbId, tr, usingSuggestedFee, !!txForReplacement, maxFeeForFeeSource);
 
         const correctedFee = toBN(tr.getFee()).add(feeInSatoshi ? toBN(0) : feePerKB.muln(getOutputSize(this.chainType)).divn(1000)); // Fee should be higher since we have additional output (+31vB)!
-        if ((usingSuggestedFee && maxFee && correctedFee.lt(maxFee) || !usingSuggestedFee) && utxosForFeeAmount.sub(correctedFee).gt(getDustAmount(this.chainType))) {
+        if ((usingSuggestedFee && maxFeeForFeeSource && correctedFee.lt(maxFeeForFeeSource) || !usingSuggestedFee) && utxosForFeeAmount.sub(correctedFee).gt(getDustAmount(this.chainType))) {
             const remainder = utxosForFeeAmount.sub(correctedFee);
             tr = await this.createBitcoreTransaction(source, destination, amountInSatoshi, correctedFee, undefined, utxos, true, note, feeSource, remainder);
         }

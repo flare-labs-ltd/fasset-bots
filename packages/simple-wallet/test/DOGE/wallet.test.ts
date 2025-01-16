@@ -398,4 +398,69 @@ describe("Dogecoin wallet tests", () => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
         });
     });
+
+    it.skip("Should create transaction with suggestedFeePerKb", async () => { // TODO
+        const suggestedFeePerKb = toBNExp(5, BTC_DOGE_DEC_PLACES);
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, undefined, undefined, suggestedFeePerKb);
+        expect(txId).greaterThan(0);
+        const txEnt = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const calculatedFeePeKB = toBN(txEnt.fee!).muln(1000).divn(txEnt.size!);
+        expect(suggestedFeePerKb.eq(calculatedFeePeKB)).to.be.true;
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
+    it("Should submit transaction with 2 wallets and suggestedFeePerKB", async () => {
+        const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
+        const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
+        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
+
+        const suggestedFeePerKb = toBNExp(5, BTC_DOGE_DEC_PLACES);
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const maxFeeForFeeSource = toBNExp(0.006, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress, maxFeeForFeeSource, suggestedFeePerKb);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)
+        const address2Included = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1Included).to.be.true;
+        expect(address2Included).to.be.true;
+        const address1IncludedOut = await walletAddressesIncludedInOutputs(wClient, fundedAddress, txEnt.raw!)
+        const address2IncludedOut = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1IncludedOut).to.be.true;
+        expect(address2IncludedOut).to.be.true;
+
+        const transaction = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
+        expect(toBN(transaction.fees).eq(maxFeeForFeeSource)).to.be.true;
+
+        await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
+    it("Should submit transaction with 2 wallets - but use only main source due to max fee restriction for fee source", async () => {
+        const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
+        const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
+        await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
+
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const maxFeeForFeeSource = toBNExp(0.0001, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress, maxFeeForFeeSource);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)
+        const address2Included = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1Included).to.be.true;
+        expect(address2Included).to.be.false;
+        const address1IncludedOut = await walletAddressesIncludedInOutputs(wClient, fundedAddress, txEnt.raw!)
+        const address2IncludedOut = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1IncludedOut).to.be.true;
+        expect(address2IncludedOut).to.be.false;
+
+        await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
 });

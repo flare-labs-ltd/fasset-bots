@@ -120,9 +120,9 @@ export class TransactionFeeService {
     }
 
     private getFeeStatusForChain(fee: BN, lowFee: BN, medium: BN): FeeStatus {
-        if (fee.lt(lowFee)) { // 0,05 DOGE/kB
+        if (fee.lt(lowFee)) {
             return FeeStatus.LOW;
-        } else if (fee.lt(medium)) { // 0,4 DOGE/kB
+        } else if (fee.lt(medium)) {
             return FeeStatus.MEDIUM;
         } else {
             return FeeStatus.HIGH;

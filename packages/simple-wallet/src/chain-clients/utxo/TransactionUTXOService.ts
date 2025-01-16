@@ -9,9 +9,11 @@ import { TransactionEntity, TransactionStatus } from "../../entity/transaction";
 import {
     ChainType,
     MEMPOOL_CHAIN_LENGTH_LIMIT,
+    UNKNOWN_DESTINATION,
+    UNKNOWN_SOURCE,
 } from "../../utils/constants";
 import { logger } from "../../utils/logger";
-import { EntityManager, Loaded, RequiredEntityData } from "@mikro-orm/core";
+import { EntityManager, getOnConflictReturningFields, Loaded, RequiredEntityData } from "@mikro-orm/core";
 import { FeeStatus } from "./TransactionFeeService";
 import { toBN } from "../../utils/bnutils";
 import { TransactionInputEntity } from "../../entity/transactionInput";
@@ -162,7 +164,7 @@ export class TransactionUTXOService {
         }
 
         if (res && (feeStatus == FeeStatus.HIGH || feeStatus == FeeStatus.MEDIUM)) {
-            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
+            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus); // TODO-check
         }
 
         const maximumNumberOfUTXOs = this.getMaximumNumberOfUTXOs(feeStatus);
@@ -181,7 +183,6 @@ export class TransactionUTXOService {
         if (rbfUTXOsValueLeft.gte(this.minimumUTXOValue)) {
             return baseUTXOs;
         }
-
         // If there is an UTXO that covers amount use it, otherwise default to selection algorithm
         const res = await this.collectUTXOsMinimal(utxos, rbfUTXOs, txData);
         if (res) {
@@ -243,7 +244,6 @@ export class TransactionUTXOService {
                 );
                 continue; //skip this utxo
             }
-
             const utxoList = [...rbfUTXOs, utxo];
             const changeValue = await this.calculateChangeValue(txData, utxoList);
             if (changeValue.gtn(0) && between(changeValue, getDustAmount(this.chainType), this.minimumUTXOValue)) {
@@ -263,7 +263,6 @@ export class TransactionUTXOService {
                 return utxoList;
             }
         }
-
         return null;
     }
 
@@ -343,11 +342,14 @@ export class TransactionUTXOService {
         const valueBeforeFee = utxos.reduce((acc, utxo) => acc.add(utxo.value), new BN(0)).sub(txData.amount);
         const calculatedTxFee = toBN(tr.getFee());
         if (txData.fee && txData.fee.gtn(0)) {
-            const size = tr._estimateSize();
-            const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
-            const relayFee = toBN(size).mul(relayFeePerB);
-            // If we're doing rbf we need to pay fee >= ogFee and feePerKB >= ogFeePerKB
-            return txData.replacementFor ? min(valueBeforeFee.sub(txData.fee).sub(relayFee), valueBeforeFee.sub(relayFee).sub(toBN(tr.getFee()))) : valueBeforeFee.sub(txData.fee);
+            if (txData.replacementFor) {
+                const size = tr._estimateSize();
+                const relayFeePerB = getRelayFeePerKB(this.chainType).muln(this.services.transactionFeeService.feeIncrease).divn(1000);
+                const relayFee = toBN(size).mul(relayFeePerB);
+                return min(valueBeforeFee.sub(txData.fee).sub(relayFee), valueBeforeFee.sub(relayFee).sub(calculatedTxFee)); // TODO
+            } else {
+                return valueBeforeFee.sub(txData.fee);
+            }
         } else if (calculatedTxFee.ltn(0)) {
             return toBN(-10); // return any negative value
         } else {
@@ -370,8 +372,8 @@ export class TransactionUTXOService {
                     /* istanbul ignore next */
                     const txEnt = em.create(TransactionEntity, {
                         chainType: this.chainType,
-                        source: tr.vin[0].addresses[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
-                        destination: "FETCHED_VIA_API_UNKNOWN_DESTINATION",
+                        source: tr.vin[0].addresses[0] ?? UNKNOWN_SOURCE,
+                        destination: UNKNOWN_DESTINATION,
                         transactionHash: txHash,
                         fee: toBN(tr.fees),
                         status: tr.blockHash && tr.confirmations >= this.enoughConfirmations ? TransactionStatus.TX_SUCCESS : TransactionStatus.TX_SUBMITTED,

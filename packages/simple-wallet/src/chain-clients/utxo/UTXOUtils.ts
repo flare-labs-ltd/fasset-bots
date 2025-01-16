@@ -227,14 +227,13 @@ export function getRelayFeePerKB(chainType: ChainType) {
     } else if (chainType === ChainType.DOGE || chainType === ChainType.testDOGE) {
         return toBNExp(1, BTC_DOGE_DEC_PLACES - 2); // The default minimum transaction fee for relay is set at 0.001 DOGE/kB: https://github.com/dogecoin/dogecoin/blob/master/doc/fee-recommendation.md
     }
-
     throw Error(`getRelayFeePerKB executed for unknown chain: ${chainType}`);
 }
 
 export function getMinimumUTXOValue(chainType: ChainType) {
     switch (chainType) {
         case ChainType.BTC:
-            return toBN(50_000); // 1 lot = 0,2 btc, reward is 0,25% * 0,2 btc
+            return toBN(50_000);
         case ChainType.testBTC:
             return toBN(10_000);
         case ChainType.DOGE:

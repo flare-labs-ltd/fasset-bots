@@ -147,3 +147,8 @@ export const RBF_AMOUNT_FACTOR = toBN(4);
 export const DROPS_PER_XRP = 1000000.0;
 // https://xrpl.org/docs/concepts/transactions/transaction-cost
 export const XRP_MINIMAL_FEE_DROPS = toBN(12);
+
+
+///// unknown source / destination
+export const UNKNOWN_SOURCE = "FETCHED_VIA_API_UNKNOWN_SOURCE";
+export const UNKNOWN_DESTINATION = "FETCHED_VIA_API_UNKNOWN_DESTINATION";
