@@ -10,7 +10,7 @@ import { ORM } from "../../../src/config/orm";
 import { AgentEntity, AgentUnderlyingPayment, AgentUpdateSetting } from "../../../src/entities/agent";
 import { Agent, OwnerAddressPair } from "../../../src/fasset/Agent";
 import { MockChain, MockChainWallet } from "../../../src/mock/MockChain";
-import { CommandLineError } from "../../../src/utils";
+import { CommandLineError, Currencies } from "../../../src/utils";
 import { BN_ZERO, checkedCast, toBN, toBNExp, toStringExp } from "../../../src/utils/helpers";
 import { artifacts, web3 } from "../../../src/utils/web3";
 import { testAgentBotSettings, testChainInfo } from "../../../test/test-utils/TestChainInfo";
@@ -667,9 +667,11 @@ describe("AgentBot cli commands unit tests", () => {
         // check free collateral lots
         const lotsToMint = toBN(1);
         // self mint
+        const toPayUBA = await agent.getSelfMintPaymentAmount(lotsToMint);
         const freeUnderlyingUBA = toBN(((await agent.getAgentInfo()).freeUnderlyingBalanceUBA));
+        const currency = await Currencies.fassetUnderlyingToken(context);
         await expect(botCliCommands.selfMintFromFreeUnderlying(vaultAddress, lotsToMint)).to.eventually.be.rejectedWith(
-            `Cannot self mint from free underlying. Agent ${vaultAddress} has available ${freeUnderlyingUBA.toString()} underlying in UBA`
+            `Cannot self mint from free underlying. Agent ${vaultAddress} has available ${currency.format(freeUnderlyingUBA)} on vault underlying address, but needs ${currency.format(toPayUBA)}.`
         );
     });
 });
