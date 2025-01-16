@@ -46,7 +46,17 @@ export class AgentBotUnderlyingManagement {
         const topUpNeeded = freeUnderlyingBalance.lt(minimumFreeUnderlyingBalance);
         logger.info(`Agent's ${this.agent.vaultAddress} free underlying balance is ${freeUnderlyingBalance}, required minimal underlying balance is ${minimumFreeUnderlyingBalance}. Top up is required ${topUpNeeded}.`);
         if (topUpNeeded) {
-            await this.underlyingTopUp(em, minimumFreeUnderlyingBalance);
+            // check for a top up in progress
+            const checkIfTopUpInProgress = await em.find(AgentUnderlyingPayment, {
+                agentAddress: this.agent.vaultAddress,
+                type: AgentUnderlyingPaymentType.TOP_UP,
+                state: { $ne: AgentUnderlyingPaymentState.DONE }
+            });
+            if (checkIfTopUpInProgress.length === 0) {
+                await this.underlyingTopUp(em, minimumFreeUnderlyingBalance);
+            } else {
+                logger.info(`Agent ${this.agent.vaultAddress} will not top up automatically. Top up already in progress.`);
+            }
         } else {
             logger.info(`Agent ${this.agent.vaultAddress} doesn't need underlying top up: freeUnderlyingBalance is ${freeUnderlyingBalance.toString()}, minimumFreeUnderlyingBalance is ${minimumFreeUnderlyingBalance.toString()}.`);
         }
