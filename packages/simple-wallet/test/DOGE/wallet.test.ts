@@ -412,7 +412,7 @@ describe("Dogecoin wallet tests", () => {
         });
     });
 
-    it("Should submit transaction with 2 wallets and suggestedFeePerKB", async () => {
+    it("Should submit transaction with 2 wallets and suggestedFeePerKB and maxFeeForSource", async () => {
         const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
         const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
         await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
