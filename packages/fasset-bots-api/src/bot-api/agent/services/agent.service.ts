@@ -327,6 +327,14 @@ export class AgentService {
         }
         agentVaultInfo.vaultCollateralToken = collateralToken.tokenFtsoSymbol;
         agentVaultInfo.poolSuffix = tokenSymbol;
+        const del = await cli.context.wNat.delegatesOf(info.collateralPool);
+        const delegates: Delegation [] = [];
+        let delegationPercentage = 0;
+        for (let i=0; i < del[0].length; i++) {
+            delegates.push({address: del[0][i], delegation: (Number(del[1][i])/100).toString()});
+            delegationPercentage = delegationPercentage + (Number(del[1][i])/100);
+        }
+        agentVaultInfo.delegates = delegates;
         return agentVaultInfo;
     }
 

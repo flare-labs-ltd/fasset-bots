@@ -143,6 +143,7 @@ export type AgentVaultInfo = BNsToStrings<AgentInfo>
 
 export type ExtendedAgentVaultInfo = AgentVaultInfo & {
     poolSuffix: string;
+    delegates: Delegation[];
 };
 
 export const requiredKeysForSecrets = ["wallet.encryption_password",
