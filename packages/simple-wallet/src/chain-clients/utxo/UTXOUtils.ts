@@ -12,6 +12,7 @@ import {
     DOGE_DUST_AMOUNT,
     DOGE_LEDGER_CLOSE_TIME_MS,
     DOGE_MAINNET,
+    DOGE_MAX_ALLOWED_FEE_PER_KB,
     DOGE_MIN_ALLOWED_AMOUNT_TO_SEND,
     DOGE_MIN_ALLOWED_FEE_PER_KB,
     DOGE_TESTNET,
@@ -196,8 +197,11 @@ export function getDefaultFeePerKB(chainType: ChainType): BN {
 export function enforceMinimalAndMaximalFee(chainType: ChainType, feePerKB: BN): BN {
     if (chainType == ChainType.DOGE || chainType == ChainType.testDOGE) {
         const minFee = DOGE_MIN_ALLOWED_FEE_PER_KB;
+        const maxFee = DOGE_MAX_ALLOWED_FEE_PER_KB;
         if (feePerKB.lt(minFee)) {
             return minFee;
+        } else if (feePerKB.gt(maxFee)) {
+            return maxFee;
         } else {
             return feePerKB;
         }
