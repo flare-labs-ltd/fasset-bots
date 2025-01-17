@@ -436,7 +436,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 const currentBlockHeight = await this.blockchainAPI.getCurrentBlockHeight();
                 // if only one block left to submit => replace by fee
                 const stillTimeToSubmit = checkIfShouldStillSubmit(this, currentBlockHeight, txEnt.executeUntilBlock, txEnt.executeUntilTimestamp);
-                if (!this.checkIfTransactionWasFetchedFromAPI(txEnt) && !stillTimeToSubmit && !txResp.blockHash && !txEnt.rbfReplacementFor) { // allow only one rbf
+                if (!txResp.blockHash && this.isAllowedToRBF(!stillTimeToSubmit, txEnt)) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 }
             }
@@ -476,7 +476,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     });
                 } else if (notFound && stillTimeToSubmit) {
                     await this.handleMalleableTransactions(txEnt);
-                } else if (notFound && !stillTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor && !txEnt.replaced_by) {
+                } else if (notFound && this.isAllowedToRBF(!stillTimeToSubmit, txEnt)) {
                     await this.tryToReplaceByFee(txEnt.id, currentBlockHeight);
                 } else if (notFound && !stillTimeToSubmit) {
                     await this.handleNotFound(txEnt);
@@ -829,5 +829,9 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
 
     private checkIfTransactionWasFetchedFromAPI(txEnt: TransactionEntity) {
         return txEnt.source.includes(UNKNOWN_SOURCE) || txEnt.destination.includes(UNKNOWN_DESTINATION);
+    }
+
+    private isAllowedToRBF(noTimeToSubmit: boolean, txEnt: TransactionEntity) {  // allow only one rbf
+        return noTimeToSubmit && !this.checkIfTransactionWasFetchedFromAPI(txEnt) && !txEnt.rbfReplacementFor && !txEnt.replaced_by;
     }
 }
