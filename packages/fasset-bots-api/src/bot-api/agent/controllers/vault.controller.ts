@@ -147,4 +147,35 @@ export class AgentVaultController {
     ): Promise<ApiResponseWrapper<void>> {
         return handleApiResponse(this.agentService.getAmountToPayUBAForSelfMint(fAssetSymbol, agentVaultAddress, lots));
     }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("amountForSelfMintFromFreeUnderlying/:fAssetSymbol/:agentVaultAddress/:lots")
+    public async getAmountToPayForSelfMintFromFreeUnderlying(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string,
+        @Param("lots") lots: string,
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.getAmountToPayUBAForSelfMintFromFreeUnderlying(fAssetSymbol, agentVaultAddress, lots));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getSelfMintBalances/:fAssetSymbol/:agentVaultAddress")
+    public async getSelfMintBalances(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.getSelfMintBalances(fAssetSymbol, agentVaultAddress));
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Get("getSelfMintFreeUnderlyingBalances/:fAssetSymbol/:agentVaultAddress")
+    public async getSelfMintBalancesFreeUnderlying(
+        @Param("fAssetSymbol") fAssetSymbol: string,
+        @Param("agentVaultAddress") agentVaultAddress: string
+    ): Promise<ApiResponseWrapper<void>> {
+        return handleApiResponse(this.agentService.getSelfMintFromFreeUnderlyingBalances(fAssetSymbol, agentVaultAddress));
+    }
 }
