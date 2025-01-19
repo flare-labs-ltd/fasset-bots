@@ -331,28 +331,15 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 );
                 logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxPaymentForFeeSource})`);
                 payingFeesFromFeeSource = false;
-            } else if (txEnt.feeSource && feeToHighForFeeSource && feeToHighForMainSource && rbfReplacementFor) { //TODO - check
-                // If transaction is rbf and amount to pay from fee source is too high for both - set it to the max of both
-                const maxFee = max(txEnt.maxFee ?? toBN(0), txEnt.maxPaymentForFeeSource ?? toBN(0));
-                if (maxFee.gtn(0)) {
-                    transaction.fee(toNumber(maxFee));
-                }
-                payingFeesFromFeeSource = !!txEnt.maxPaymentForFeeSource && maxFee.eq(txEnt.maxPaymentForFeeSource) || !!txEnt.maxFee;
             }
 
             // If fee source is non-existent/doesn't have high enough max amount
             if (!payingFeesFromFeeSource && feeToHighForMainSource) {
-                if (rbfReplacementFor && txEnt.maxFee) { // TODO-check
-                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
-                        txEntToUpdate.fee = txEnt.maxFee!;
-                    });
-                } else {
-                    await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
-                        txEntToUpdate.lastProcessingError = `Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`;
-                    });
-                    logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
-                    return;
-                }
+                await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                    txEntToUpdate.lastProcessingError = `Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`;
+                });
+                logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
+                return;
             } else {
                 const inputs = await this.transactionUTXOService.createInputsFromUTXOs(dbUTXOs, txEnt.id);
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {

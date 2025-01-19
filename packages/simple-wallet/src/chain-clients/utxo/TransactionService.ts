@@ -365,6 +365,7 @@ export class TransactionService {
         }
     }
 
+    // make fee lower if fee > maxFee
     private correctFeeDueToSuggestedFee(txDbId: number, tr: Transaction, usingSuggestedFee: boolean, isRBF: boolean, maxFee?: BN): BN {
         if (usingSuggestedFee && maxFee && toBN(tr.getFee()).gte(maxFee) && !isRBF) {
             logger.info(`Lowering fee for transaction ${txDbId} from ${tr.getFee()} satoshi to ${maxFee.toNumber()} satoshi (max fee);`);
