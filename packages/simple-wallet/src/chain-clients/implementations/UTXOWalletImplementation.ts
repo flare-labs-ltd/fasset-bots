@@ -49,6 +49,7 @@ import {
     errorMessage,
     isORMError,
     LessThanDustAmountError,
+    MissingAmountError,
     NegativeFeeError,
     NotEnoughUTXOsError,
 } from "../../utils/axios-utils";
@@ -375,6 +376,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     await failTransaction(this.rootEm, txEnt.id, error.message);
                 } else if (error instanceof NegativeFeeError) {
                     await failTransaction(this.rootEm, txEnt.id, error.message);
+                } else if (error instanceof MissingAmountError) {
+                    await failTransaction(this.rootEm, txEnt.id, error.message);
                 } else if (axios.isAxiosError(error)) {
                     const axiosError = error as AxiosError<AxiosTransactionSubmissionError>;
 
@@ -635,14 +638,12 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             }
         }
         // send less as in original tx (as time for payment passed) or "delete transaction" amount
-        const newValue: BN | null = oldTx.amount == null ? null : getMinAmountToSend(this.chainType);
+        let newValue: BN | null = null;
+        if (oldTx.amount != null) {
+            newValue = oldTx.isFreeUnderlyingTransaction ? oldTx.amount : getMinAmountToSend(this.chainType);
+        }
         const totalFee: BN = toBN(await this.transactionFeeService.calculateTotalFeeOfDescendants(this.rootEm, oldTx)).add(oldTx.fee!); // covering conflicting txs
         logger.info(`Descendants fee ${totalFee.sub(oldTx.fee!).toNumber()}, oldTx fee ${oldTx.fee}, total fee ${totalFee}`);
-
-        if (oldTx.isFreeUnderlyingTransaction && !oldTx.feeSource && totalFee.add(newValue!).gt(oldTx.amount!)) {
-            logger.warn(`Cannot RBF transaction ${txId} because fee (${totalFee}) + amount (${newValue}) is greater than amount able to spend (${oldTx.amount})`);
-            return;
-        }
 
         const replacementTx = await createInitialTransactionEntity(
             this.rootEm,
@@ -656,8 +657,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
             oldTx.executeUntilBlock,
             oldTx.executeUntilTimestamp,
             oldTx,
-            oldTx.feeSource,
-            undefined,
+            undefined,// rbf only with main utxos
+            undefined, // ignore max fee for fee source constraint, as amount to pay is way less than in original
             oldTx.isFreeUnderlyingTransaction
         );
 

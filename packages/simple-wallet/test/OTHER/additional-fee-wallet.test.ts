@@ -1,7 +1,7 @@
 import sinon from "sinon";
 import { BitcoinWalletConfig, BTC, logger } from "../../src";
 import { toBN } from "web3-utils";
-import { addConsoleTransportForTests, createNote } from "../test-util/common_utils";
+import { addConsoleTransportForTests } from "../test-util/common_utils";
 import config, { initializeTestMikroORM, ORM } from "../test-orm/mikro-orm.config";
 import { UnprotectedDBWalletKeys } from "../test-orm/UnprotectedDBWalletKey";
 import { FeeStatus, TransactionFeeService } from "../../src/chain-clients/utxo/TransactionFeeService";
@@ -197,7 +197,7 @@ describe("Unit test for paying fees from additional wallet", () => {
             createUTXO("b895eab0cd280d1bb07897576e2edbdd7791d8b85bb64e28a9b86952faf8fdc2", 0, toBN(1000), "00143cbd2641a036e99579b5386b13a8c303f3b1cf0e"),
         ]);
 
-        const [tr,] = await wClient.transactionService.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, toBN(1500), feePerKB, toBN(600));
+        const [tr,] = await wClient.transactionService.prepareFreeUnderlyingPaymentTransaction(0, fundedAddress, targetAddress, toBN(1500), feePerKB, toBN(600));
         expect(tr.outputs.length).to.be.eq(2);
         expect(tr.outputs.map(t => t.satoshis)).to.include.members([1500, 900]);
         expect(tr.getFee()).to.be.eq(600);
@@ -211,7 +211,7 @@ describe("Unit test for paying fees from additional wallet", () => {
         ]);
 
         // Transaction should have 3 inputs and 2 ouputs => size is 276.5 vB => fee is 276 (since it's 1000sat/vB)
-        const [tr,] = await wClient.transactionService.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(0, fundedAddress, targetAddress, toBN(2100), feePerKB);
+        const [tr,] = await wClient.transactionService.prepareFreeUnderlyingPaymentTransaction(0, fundedAddress, targetAddress, toBN(2100), feePerKB);
         expect(tr.outputs.length).to.be.eq(2);
         // Since the fee is not specified the amount is reduced by fee in order to cover it
         expect(tr.outputs.map(t => t.satoshis)).to.include.members([2100 - 276, 3000 - 2100]);

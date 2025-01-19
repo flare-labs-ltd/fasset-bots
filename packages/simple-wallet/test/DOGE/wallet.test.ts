@@ -20,6 +20,7 @@ import { getCurrentTimestampInSeconds, sleepMs } from "../../src/utils/utils";
 import { fetchTransactionEntityById, updateTransactionEntity } from "../../src/db/dbutils";
 import { createTransactionEntity, setMonitoringStatus } from "../test-util/entity_utils";
 import { TEST_DOGE_ACCOUNTS } from "./accounts";
+import { getDustAmount } from "../../src/chain-clients/utxo/UTXOUtils";
 
 use(chaiAsPromised);
 
@@ -34,6 +35,8 @@ const fundedMnemonic = "involve essay clean frequent stumble cheese elite custom
 const fundedAddress = "noXb5PiT85PPyQ3WBMLY7BUExm9KpfV93S";
 const targetMnemonic = "forum tissue lonely diamond sea invest hill bamboo hamster leaf asset column duck order sock dad beauty valid staff scan hospital pair law cable";
 const targetAddress = "npJo8FieqEmB1NehU4jFFEFPsdvy8ippbm";
+const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
+const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
 
 const fundedFirstChange = {
     xpub: "vpub5ZZjGgAiEbwK4oFTypCwvyHnE7XPFgEHB7iqUqmRrWEnQU9RKLKs6uok1zvwDvdWjmSnNgM2QnTmT477YECcxsxsdJANtdV9qmVfYc39PLS",
@@ -94,7 +97,7 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should not create transaction: amount = dust amount", async () => {
-        await expect(wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT)).to
+        await expect(wClient.transactionService.preparePaymentTransaction(0, fundedAddress, targetAddress, DOGE_DUST_AMOUNT.subn(1))).to
             .eventually.be.rejectedWith(`Will not prepare transaction 0, for ${fundedAddress}. Amount ${DOGE_DUST_AMOUNT.toString()} is less than dust ${DOGE_DUST_AMOUNT.toString()}`);
     });
 
@@ -103,10 +106,22 @@ describe("Dogecoin wallet tests", () => {
         expect(accountBalance.gt(new BN(0))).to.be.true;
     });
 
+    it("Should create transaction", async () => {
+        const txId = await wClient.createPaymentTransaction(fundedAddress, feeSourceAddress, amountToSend, undefined);
+        expect(txId).greaterThan(0);
+        const txEnt = await waitForTxToFinishWithStatus(2, 1 * 120, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const info = await wClient.getTransactionInfo(txId);
+        expect(info.transactionHash).to.eq(txEnt.transactionHash);
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
     it("Should create delete account transaction", async () => {
         const account = wClient.createWallet();
+        const blockHeight = await wClient.blockchainAPI.getCurrentBlockHeight();
         await wClient.walletKeys.addKey(account.address, account.privateKey);
-        const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress);
+        const txId = await wClient.createDeleteAccountTransaction(account.address, fundedAddress, undefined, undefined, undefined, blockHeight + 5);
         expect(txId).to.be.greaterThan(0);
         const txEnt = await waitForTxToFinishWithStatus(2, 2 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
         expect(txEnt.status).to.eq(TransactionStatus.TX_FAILED);
@@ -245,17 +260,47 @@ describe("Dogecoin wallet tests", () => {
     it("Free underlying with unspecified fee should have txFee + txAmount = amount", async () => {
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend, undefined, undefined, undefined, undefined, undefined, true);
         expect(txId).greaterThan(0);
-        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txId);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
         const tx = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
-
         let val = 0;
         for (const txOut of tx.vout) {
             if (!txOut.addresses.includes(fundedAddress)) {
                 val += Number(txOut.value);
             }
         }
-
+        expect(amountToSend.eq(txEnt.amount!)).to.be.true;
         expect(val + Number(tx.fees)).to.be.eq(txEnt.amount!.toNumber());
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
+    it("Free underlying with specified fee should have txFee + txAmount = amount", async () => {
+        const feeInSatoshi = toBNExp(0.1, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend, feeInSatoshi, undefined, undefined, undefined, undefined, true);
+        expect(txId).greaterThan(0);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+        const tx = await wClient.blockchainAPI.getTransaction(txEnt.transactionHash!);
+        let val = 0;
+        for (const txOut of tx.vout) {
+            if (!txOut.addresses.includes(fundedAddress)) {
+                val += Number(txOut.value);
+            }
+        }
+        expect(amountToSend.eq(txEnt.amount!)).to.be.true;
+        expect(val + Number(feeInSatoshi)).to.be.eq(txEnt.amount!.toNumber());
+        await updateTransactionEntity(wClient.rootEm, txEnt.id, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
+    it("Free underlying with specified fee and  txAmount - txFee = is dust amount", async () => {
+        const feeInSatoshi = amountToSend.sub(getDustAmount(wClient.chainType));
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSend, feeInSatoshi, undefined, undefined, undefined, undefined, true);
+        expect(txId).greaterThan(0);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_FAILED, txId);
+        const txAmount = amountToSend.sub(feeInSatoshi);
+        expect(txEnt.serverSubmitResponse!).eq(`"Will not prepare transaction ${txId}, for ${fundedAddress}. Amount ${txAmount.toString()} is less than dust ${getDustAmount(wClient.chainType).toString()}"`);
     });
 
     it("Replacement of free underlying transaction should have txFee + txAmount < originalAmount", async () => {
@@ -265,7 +310,15 @@ describe("Dogecoin wallet tests", () => {
         await wClient.tryToReplaceByFee(txId, blockHeight);
         const txEnt = await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, [TransactionStatus.TX_REPLACED, TransactionStatus.TX_REPLACED_PENDING], txId);
         const replacementTxEnt = await waitForTxToFinishWithStatus(2, 5 * 60, wClient.rootEm, TransactionStatus.TX_SUCCESS, txEnt.replaced_by!.id);
-        expect(replacementTxEnt.amount?.add(replacementTxEnt.fee!).toNumber()).to.be.lessThanOrEqual(txEnt.amount!.toNumber());
+        const transaction = await wClient.blockchainAPI.getTransaction(replacementTxEnt.transactionHash!);
+        const fee = toBN(transaction.fees);
+        let val = 0;
+        for (const txOut of transaction.vout) {
+            if (!txOut.addresses.includes(fundedAddress)) {
+                val += Number(txOut.value);
+            }
+        }
+        expect(toBN(val).add(fee).eq(amountToSend)).to.be.true;
     });
 
     it.skip('Stress test', async () => {
@@ -316,10 +369,7 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should submit and replace transaction with 2 wallets", async () => {
-        const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
-        const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
         await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
-
         const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress);
         await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
@@ -341,11 +391,11 @@ describe("Dogecoin wallet tests", () => {
         const address1Included1 = await walletAddressesIncludedInInputs(wClient, fundedAddress, replacementTxEnt.raw!)
         const address2Included1 = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
         expect(address1Included1).to.be.true;
-        expect(address2Included1).to.be.true;
+        expect(address2Included1).to.be.false;
         const address1Included1Out = await walletAddressesIncludedInOutputs(wClient, fundedAddress, replacementTxEnt.raw!)
         const address2Included1Out = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, replacementTxEnt.raw!)
         expect(address1Included1Out).to.be.true;
-        expect(address2Included1Out).to.be.true;
+        expect(address2Included1Out).to.be.false;
 
         await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
             txEnt.status = TransactionStatus.TX_REPLACED;
@@ -413,8 +463,6 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should submit transaction with 2 wallets and suggestedFeePerKB and maxFeeForSource", async () => {
-        const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
-        const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
         await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
 
         const suggestedFeePerKb = toBNExp(5, BTC_DOGE_DEC_PLACES);
@@ -441,13 +489,33 @@ describe("Dogecoin wallet tests", () => {
     });
 
     it("Should submit transaction with 2 wallets - but use only main source due to max fee restriction for fee source", async () => {
-        const feeSourceAddress = "nafMJTxsT4r5HjX6Dda8ZBZv7VQFAyjiVh";
-        const feeSourcePk = "ckiVwmG9mS8iA5i32TSg6hHVzByyWdBZ8wy5TCrDTFzVPbLPaSjE";
         await wClient.walletKeys.addKey(feeSourceAddress, feeSourcePk);
 
         const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
         const maxFeeForFeeSource = toBNExp(0.0001, BTC_DOGE_DEC_PLACES);
         const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, feeSourceAddress, maxFeeForFeeSource);
+        const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
+
+        const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)
+        const address2Included = await walletAddressesIncludedInInputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1Included).to.be.true;
+        expect(address2Included).to.be.false;
+        const address1IncludedOut = await walletAddressesIncludedInOutputs(wClient, fundedAddress, txEnt.raw!)
+        const address2IncludedOut = await walletAddressesIncludedInOutputs(wClient, feeSourceAddress, txEnt.raw!)
+        expect(address1IncludedOut).to.be.true;
+        expect(address2IncludedOut).to.be.false;
+
+        await updateTransactionEntity(wClient.rootEm, txId, (txEnt) => {
+            txEnt.status = TransactionStatus.TX_SUCCESS;
+        });
+    });
+
+    it("Should submit transaction with 2 wallets - but use only main source - not enough funds on fee source", async () => {
+        const account = wClient.createWallet()
+        await wClient.walletKeys.addKey(account.address, account.privateKey);
+
+        const amountToSendSatoshi = toBNExp(10, BTC_DOGE_DEC_PLACES);
+        const txId = await wClient.createPaymentTransaction(fundedAddress, targetAddress, amountToSendSatoshi, undefined, undefined, undefined, undefined, undefined, false, account.address);
         const txEnt = await waitForTxToFinishWithStatus(2, 15 * 60, wClient.rootEm, TransactionStatus.TX_SUBMITTED, txId);
 
         const address1Included = await walletAddressesIncludedInInputs(wClient, fundedAddress, txEnt.raw!)

@@ -113,6 +113,12 @@ export class NegativeFeeError extends Error {
     }
 }
 
+export class MissingAmountError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
 export function createAxiosInstance(url: string, apiKey?: string, rateLimitOptions?: RateLimitOptions) {
     return axiosRateLimit(axios.create(createAxiosConfig(url, apiKey, rateLimitOptions?.timeoutMs)), {
         ...DEFAULT_RATE_LIMIT_OPTIONS,
