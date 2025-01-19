@@ -15,15 +15,15 @@ export type SpentReceivedObject = {
 export interface TransactionOptionsWithFee {
     // depending on chain, set either maxFee or (gasPrice, gasLimit), but not both
     // if not used, fee/gas limits will be calculated and added automatically by the wallet
-    maxFee?: NumberLike;
-    maxPaymentForFeeSource?: NumberLike,
+    maxFee?: NumberLike; // ignored in simple-wallet when transaction is rbfed - but it makes sure to follow: original amount + original max fee >= rbf amount + rbf fee (to prevent full liquidation in case of rbf)
+    maxPaymentForFeeSource?: NumberLike, // ignored in simple-wallet when transaction rbfed
     gasPrice?: NumberLike;
     gasLimit?: NumberLike;
-    minFeePerKB?: NumberLike;
+    minFeePerKB?: NumberLike; // in simple-wallet: only used in case of redemption payment; ignored in underlying withdrawal payment
     executeUntilBlock?: NumberLike;
     executeUntilTimestamp?: NumberLike;
-    isFreeUnderlying?: boolean;
-    feeSourceAddress?: string;
+    isFreeUnderlying?: boolean; // in simple-wallet: to note free underlying withdrawal, where fee needs to be taken from withdrawal amount
+    feeSourceAddress?: string; // in simple-wallet: only used in case of redemption payment (to allow sending higher fee)
 }
 
 export interface IBlockChainWallet {
