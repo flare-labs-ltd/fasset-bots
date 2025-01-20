@@ -178,7 +178,8 @@ export class TransactionService {
             feePerKB: feePerKB,
             useChange: isPayment,
             note: note,
-            replacementFor: txForReplacement
+            replacementFor: txForReplacement,
+            maxFee: maxFee
         } as TransactionData;
         let utxos: MempoolUTXO[];
 

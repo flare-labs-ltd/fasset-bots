@@ -6,7 +6,7 @@ import {
     sleepMs,
     stuckTransactionConstants
 } from "../../utils/utils";
-import { toBN, toNumber } from "../../utils/bnutils";
+import { toBN } from "../../utils/bnutils";
 import { ChainType, MAX_UTXO_TX_SIZE_IN_B, MEMPOOL_WAITING_TIME, UNKNOWN_DESTINATION, UNKNOWN_SOURCE } from "../../utils/constants";
 import {
     BaseWalletConfig,
@@ -18,7 +18,7 @@ import {
     WriteWalletInterface,
 } from "../../interfaces/IWalletTransaction";
 
-import BN, { max } from "bn.js";
+import BN from "bn.js";
 import {
     checkIfIsDeleting, createInitialTransactionEntity,
     failDueToNoTimeToSubmit,
@@ -341,8 +341,11 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max fee (${txEnt.maxFee}) - waiting for fees to decrease`);
                 return;
             } else {
-                const inputs = await this.transactionUTXOService.createInputsFromUTXOs(dbUTXOs, txEnt.id);
-                await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
+                const utxoToTxMap = await this.transactionUTXOService.getUTXOToTransactionMap(dbUTXOs, txEnt.id);
+                await transactional(this.rootEm, async (em) => {
+                    const txEntToUpdate = await fetchTransactionEntityById(em, txEnt.id);
+                    const inputs = await this.transactionUTXOService.createInputsFromUTXOs(em, dbUTXOs, utxoToTxMap);
+
                     txEntToUpdate.raw = JSON.stringify(transaction);
                     txEntToUpdate.status = TransactionStatus.TX_PREPARED;
                     txEntToUpdate.reachedStatusPreparedInTimestamp = toBN(getCurrentTimestampInSeconds());
@@ -350,6 +353,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEntToUpdate.inputs.add(inputs);
                     txEntToUpdate.numberOfOutputs = transaction.outputs.length;
                 });
+
                 logger.info(`Transaction ${txEnt.id} prepared.`);
                 await this.signAndSubmitProcess(txEnt.id, transaction, privateKey, privateKeyForFee);
             }
@@ -482,8 +486,7 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEntToUpdate.reachedFinalStatusInTimestamp = toBN(getCurrentTimestampInSeconds());
             });
             logger.info(`checkSubmittedTransaction (rbf) transaction ${txEnt.id} changed status from ${TransactionStatus.TX_REPLACED_PENDING} to ${TransactionStatus.TX_REPLACED}.`);
-        }
-        else if (txEnt.status === TransactionStatus.TX_SUBMITTED) {
+        } else if (txEnt.status === TransactionStatus.TX_SUBMITTED) {
             if (txEnt.rbfReplacementFor?.status === TransactionStatus.TX_SUCCESS) { // rbf is not found => original should be accepted
                 await updateTransactionEntity(this.rootEm, txEnt.id, (txEntToUpdate) => {
                     txEntToUpdate.status = TransactionStatus.TX_FAILED;
