@@ -121,7 +121,8 @@ export class TransactionService {
         note?: string,
         txForReplacement?: TransactionEntity,
         feeSource?: string,
-        freeUnderlying?: boolean
+        freeUnderlying?: boolean,
+        maxFee?: BN,
     ): Promise<[Transaction, MempoolUTXO[]]> {
         if (amountInSatoshi?.lte(getDustAmount(this.chainType))) {
             logger.warn(`Will not prepare transaction ${txDbId}, for ${source}. Amount ${amountInSatoshi.toString()} is less than dust ${getDustAmount(this.chainType).toString()}`);
@@ -135,7 +136,7 @@ export class TransactionService {
         } else if (freeUnderlying) {
             return this.prepareFreeUnderlyingPaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi!, feeInSatoshi, note, txForReplacement)
         } else {
-            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement)
+            return this.preparePaymentTransactionWithSingleWallet(txDbId, source, destination, amountInSatoshi, feeInSatoshi, note, txForReplacement, maxFee)
         }
     }
 
@@ -147,6 +148,7 @@ export class TransactionService {
         feeInSatoshi?: BN,
         note?: string,
         txForReplacement?: TransactionEntity,
+        maxFee?: BN
     ): Promise<[Transaction, MempoolUTXO[]]> {
         const isPayment = amountInSatoshi != null;
         const feePerKB = await this.transactionFeeService.getFeePerKB();
@@ -157,7 +159,8 @@ export class TransactionService {
             fee: feeInSatoshi,
             useChange: isPayment,
             note: note,
-            replacementFor: txForReplacement
+            replacementFor: txForReplacement,
+            maxFee: maxFee
         } as TransactionData;
         let utxos: MempoolUTXO[];
 

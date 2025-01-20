@@ -289,7 +289,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                 txEnt.reference,
                 rbfReplacementFor,
                 txEnt.feeSource,
-                txEnt.isFreeUnderlyingTransaction
+                txEnt.isFreeUnderlyingTransaction,
+                txEnt.maxFee
             );
             const privateKey = await this.walletKeys.getKey(txEnt.source);
             const privateKeyForFee = txEnt.feeSource ? await this.walletKeys.getKey(txEnt.feeSource) : undefined;
@@ -320,7 +321,8 @@ export abstract class UTXOWalletImplementation extends UTXOAccountGeneration imp
                     txEnt.reference,
                     rbfReplacementFor,
                     undefined,
-                    txEnt.isFreeUnderlyingTransaction
+                    txEnt.isFreeUnderlyingTransaction,
+                    txEnt.maxFee
                 );
                 logger.info(`Transaction ${txEnt.id} got fee ${transaction.getFee()} that is > max amount for fee wallet (${txEnt.maxPaymentForFeeSource})`);
                 payingFeesFromFeeSource = false;

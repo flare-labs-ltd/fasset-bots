@@ -40,6 +40,7 @@ export interface TransactionData {
     useChange: boolean;
     note?: string;
     replacementFor?: TransactionEntity;
+    maxFee?: BN
 }
 
 export class TransactionUTXOService {
@@ -139,19 +140,38 @@ export class TransactionUTXOService {
         /* istanbul ignore else */
         if (feeStatus == FeeStatus.HIGH) {
             res = await this.collectUTXOs(utxos, validRbfUTXOs, txData);
+            if (res) {
+                res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
+            }
         } else if (feeStatus == FeeStatus.MEDIUM || feeStatus == FeeStatus.LOW) {
             // check if we can build tx with utxos with utxo.value < amountToSend
             const smallUTXOs = utxos.filter((utxo) => utxo.value.lte(txData.amount));
             if (isEnoughUTXOs(smallUTXOs, txData.amount, txData.fee)) {
-                res = await this.collectUTXOs(smallUTXOs, validRbfUTXOs, txData);
+                res = await this.collectUTXOs(smallUTXOs, validRbfUTXOs, txData, true);
+                if (res && feeStatus == FeeStatus.MEDIUM) {
+                    res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
+                }
+                if (res && txData.maxFee) {
+                    const transactionService = this.services.transactionService;
+                    const tr = await transactionService.createBitcoreTransaction(
+                        txData.source,
+                        txData.destination,
+                        txData.amount,
+                        txData.fee,
+                        txData.feePerKB,
+                        res,
+                        txData.useChange,
+                        txData.note
+                    );
+                    const currentFee = toBN(tr.getFee());
+                    if (currentFee.gt(txData.maxFee)) {
+                        res = null;
+                    }
+                }
             }
-            if (!res) {
+            if (!res) { // use the default algorithm
                 res = await this.collectUTXOs(utxos, validRbfUTXOs, txData);
             }
-        }
-
-        if (res && (feeStatus == FeeStatus.HIGH || feeStatus == FeeStatus.MEDIUM)) {
-            res = await this.removeExcessUTXOs(res, validRbfUTXOs.length, txData, feeStatus);
         }
 
         const maximumNumberOfUTXOs = this.getMaximumNumberOfUTXOs(feeStatus);
@@ -164,7 +184,7 @@ export class TransactionUTXOService {
         return res;
     }
 
-    private async collectUTXOs(utxos: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData) {
+    private async collectUTXOs(utxos: MempoolUTXO[], rbfUTXOs: MempoolUTXO[], txData: TransactionData, useUTXOsLessThanAmount?: boolean) {
         const baseUTXOs: MempoolUTXO[] = rbfUTXOs.slice(); // UTXOs needed for creating tx with >= 0 output
         const rbfUTXOsValueLeft = rbfUTXOs.length > 0 ? await this.calculateChangeValue(txData, baseUTXOs) : new BN(0);
         if (rbfUTXOsValueLeft.gte(this.minimumUTXOValue)) {
@@ -172,7 +192,7 @@ export class TransactionUTXOService {
         }
 
         // If there is an UTXO that covers amount use it, otherwise default to selection algorithm
-        const res = await this.collectUTXOsMinimal(utxos, rbfUTXOs, txData);
+        const res = useUTXOsLessThanAmount === true ? null : await this.collectUTXOsMinimal(utxos, rbfUTXOs, txData);
         if (res) {
             return res;
         } else {
@@ -459,7 +479,7 @@ export class TransactionUTXOService {
             }
             const aValue = (a.value);
             const bValue = (b.value);
-            return Number(aValue.sub(bValue));
+            return Number(bValue.sub(aValue));
         });
         return sortedMempoolUTXOs;
     }
