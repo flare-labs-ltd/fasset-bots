@@ -531,4 +531,20 @@ describe("Dogecoin wallet tests", () => {
             txEnt.status = TransactionStatus.TX_SUCCESS;
         });
     });
+
+    it("UTXOs should be sorted by value in descendant order", async () => {
+        const utxos = await wClient.transactionUTXOService.filteredAndSortedMempoolUTXOs(fundedAddress);
+        const confirmed = utxos.filter(t => t.confirmed);
+        const unConfirmed = utxos.filter(t => !t.confirmed);
+        for (let i = 0; i < confirmed.length - 1; i++) {
+            if (confirmed[i].value.lt(confirmed[i+1].value)) {
+                throw Error("Not descendant order of utxos")
+            }
+        }
+        for (let i = 0; i < unConfirmed.length - 1; i++) {
+            if (unConfirmed[i].value.lt(unConfirmed[i+1].value)) {
+                throw Error("Not descendant order of utxos")
+            }
+        }
+      });
 });
