@@ -95,25 +95,26 @@ export function resetTransactionEntity(txEnt: TransactionEntity) {
     txEnt.rbfReplacementFor = null;
 }
 
-export function transformUTXOToTxInputEntity(utxo: MempoolUTXO, transaction: TransactionEntity): TransactionInputEntity {
+export function transformUTXOToTxInputEntity(rootEm: EntityManager, utxo: MempoolUTXO, transaction: TransactionEntity): TransactionInputEntity {
     /* istanbul ignore next */
-    return createTransactionInputEntity(transaction, utxo.transactionHash, utxo.value, utxo.position, utxo.script ?? "");
+    return createTransactionInputEntity(rootEm, transaction, utxo.transactionHash, utxo.value, utxo.position, utxo.script ?? "");
 }
 
 export function createTransactionInputEntity(
+    rootEm: EntityManager,
     txEnt: TransactionEntity,
     txHash: string,
     amount: BN | string | number,
     vout: number,
     script: string
 ): TransactionInputEntity {
-    const entity = new TransactionInputEntity();
-    entity.transactionHash = txHash;
-    entity.vout = vout;
-    entity.amount = toBN(amount);
-    entity.script = script;
-    entity.transaction = txEnt;
-    return entity;
+    return rootEm.create(TransactionInputEntity, {
+        transaction: txEnt,
+        transactionHash: txHash,
+        vout: vout,
+        amount: toBN(amount),
+        script: script
+    } as RequiredEntityData<TransactionInputEntity>);
 }
 
 // replaced transaction

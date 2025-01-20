@@ -381,11 +381,10 @@ export class TransactionUTXOService {
                         numberOfOutputs: tr.vout.length ?? 0
                     } as RequiredEntityData<TransactionEntity>);
 
-                    const inputs = tr.vin.map((t: UTXOVinResponse) => createTransactionInputEntity(txEnt, t.txid, t.value, t.vout ?? 0, ""));
+                    const inputs = tr.vin.map((t: UTXOVinResponse) => createTransactionInputEntity(em, txEnt, t.txid, t.value, t.vout ?? 0, ""));
                     txEnt.inputs.add(inputs);
 
-                    await em.persistAndFlush(txEnt);
-                    await em.persistAndFlush(inputs);
+                    em.persist(txEnt);
                 });
             }
 
@@ -412,19 +411,28 @@ export class TransactionUTXOService {
         return utxos;
     }
 
-    async createInputsFromUTXOs(dbUTXOs: MempoolUTXO[], txId: number) {
-        logger.info(`Creating inputs from UTXOs for transaction ${txId}`);
-        const inputs: TransactionInputEntity[] = [];
+    async getUTXOToTransactionMap(dbUTXOs: MempoolUTXO[], txId: number) {
+        const utxoToTxMap = new Map<string, TransactionEntity>();
         for (const utxo of dbUTXOs) {
             const tx = await this.getTransactionEntityByHash(utxo.transactionHash);
             /* istanbul ignore else */
             if (tx) {
-                inputs.push(transformUTXOToTxInputEntity(utxo, tx));
+                utxoToTxMap.set(`${utxo.transactionHash}:${utxo.position}`, tx);
             } else {
                 logger.warn(`Transaction ${txId}: Transaction (utxo) with hash ${utxo.transactionHash} and ${utxo.position} could not be found on api`);
             }
         }
-        await this.rootEm.persistAndFlush(inputs);
+
+        return utxoToTxMap;
+    }
+
+    async createInputsFromUTXOs(em: EntityManager, dbUTXOs: MempoolUTXO[], utxoToTxMap: Map<string, TransactionEntity>) {
+        const inputs: TransactionInputEntity[] = [];
+        for (const utxo of dbUTXOs) {
+            if (utxoToTxMap.has(`${utxo.transactionHash}:${utxo.position}`)) {
+                inputs.push(transformUTXOToTxInputEntity(em, utxo, utxoToTxMap.get(`${utxo.transactionHash}:${utxo.position}`)!));
+            }
+        }
         return inputs;
     }
 
