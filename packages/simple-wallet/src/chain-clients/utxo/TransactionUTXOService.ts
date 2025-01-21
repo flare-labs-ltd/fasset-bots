@@ -373,7 +373,7 @@ export class TransactionUTXOService {
                     /* istanbul ignore next */
                     const txEnt = em.create(TransactionEntity, {
                         chainType: this.chainType,
-                        source: tr.vin[0].addresses[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
+                        source: tr.vin[0]?.addresses?.[0] ?? "FETCHED_VIA_API_UNKNOWN_SOURCE",
                         destination: "FETCHED_VIA_API_UNKNOWN_DESTINATION",
                         transactionHash: txHash,
                         fee: toBN(tr.fees),
