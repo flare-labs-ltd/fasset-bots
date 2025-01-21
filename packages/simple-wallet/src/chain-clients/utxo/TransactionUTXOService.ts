@@ -393,7 +393,7 @@ export class TransactionUTXOService {
                     /* istanbul ignore next */
                     const txEnt = em.create(TransactionEntity, {
                         chainType: this.chainType,
-                        source: tr.vin[0].addresses[0] ?? UNKNOWN_SOURCE,
+                        source: tr.vin[0]?.addresses?.[0] ?? UNKNOWN_SOURCE,
                         destination: UNKNOWN_DESTINATION,
                         transactionHash: txHash,
                         fee: toBN(tr.fees),
